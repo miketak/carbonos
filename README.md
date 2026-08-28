@@ -43,9 +43,12 @@ Trunk-based flow:
 
 1. Create a Railway project with two environments: `staging` and `production`.
 2. In **each** environment, create three services:
-   - `backend` — deploys from `backend/Dockerfile`
-   - `frontend` — deploys from `frontend/Dockerfile`
+   - `backend` — root directory `/backend`, builds from its `Dockerfile`
+   - `frontend` — root directory `/frontend`, builds from its `Dockerfile`
    - PostgreSQL database (Railway plugin/service)
+
+   The root directory setting matters: `railway up` uploads the repo root, and
+   each service picks out its subdirectory from that upload.
 3. Configure `backend` service variables (per environment), using Railway
    references to the Postgres service:
    - `DATABASE_URL` = `jdbc:postgresql://${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}`

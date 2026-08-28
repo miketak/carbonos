@@ -70,9 +70,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Railway CLI
         run: npm install -g @railway/cli
+      # Run from the repo root: the CLI uploads the current directory, and each
+      # Railway service selects its subdirectory via its rootDirectory setting.
       - name: Deploy backend
-        working-directory: backend
         run: railway up --service backend --ci
       - name: Deploy frontend
-        working-directory: frontend
         run: railway up --service frontend --ci
