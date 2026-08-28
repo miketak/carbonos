@@ -63,13 +63,8 @@ npm run lint && npm run format    # oxlint + prettier
 npm run build                     # type-check + production build
 ```
 
-Note: this machine has no local JDK/Maven — run backend builds through Docker:
-
-```bash
-docker run --rm -v "$PWD/backend":/app -w /app -v carbonos-m2:/root/.m2 \
-  -v /var/run/docker.sock:/var/run/docker.sock --network host \
-  eclipse-temurin:25-jdk ./mvnw -B verify
-```
+Java 25 (Temurin) is installed via SDKMAN; non-login shells may need
+`source "$HOME/.sdkman/bin/sdkman-init.sh"` before `./mvnw` works.
 
 ## Git & releases
 
