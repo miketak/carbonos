@@ -5,10 +5,11 @@ WORKDIR /app
 # Cache the Maven wrapper and dependencies before copying sources
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -q -B dependency:go-offline
+# Railway's builder requires an explicit cache id: s/<service id>-<target path>
+RUN --mount=type=cache,id=s/7d775dee-606b-41b5-a4ab-5f8dd7183b08-/root/.m2,target=/root/.m2 ./mvnw -q -B dependency:go-offline
 
 COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -q -B -DskipTests package
+RUN --mount=type=cache,id=s/7d775dee-606b-41b5-a4ab-5f8dd7183b08-/root/.m2,target=/root/.m2 ./mvnw -q -B -DskipTests package
 
 # ---- Runtime stage ----
 FROM eclipse-temurin:25-jre-alpine
