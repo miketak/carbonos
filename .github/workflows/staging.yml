@@ -1,0 +1,76 @@
+# Staging pipeline (trunk-based):
+#   - Pull requests to main  -> quality gates only (build + tests, no deploy)
+#   - Push to main           -> quality gates, then deploy to Railway "staging" environment
+name: Staging
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: staging-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  backend-checks:
+    name: Backend / build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Build and test (includes ModularityTests)
+        working-directory: backend
+        run: ./mvnw -B verify
+
+  frontend-checks:
+    name: Frontend / lint, test & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+      - name: Check formatting
+        working-directory: frontend
+        run: npm run format:check
+      - name: Test
+        working-directory: frontend
+        run: npm test
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  deploy-staging:
+    name: Deploy to Railway (staging)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend-checks, frontend-checks]
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    env:
+      # Railway project token scoped to the "staging" environment
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy backend
+        working-directory: backend
+        run: railway up --service backend --ci
+      - name: Deploy frontend
+        working-directory: frontend
+        run: railway up --service frontend --ci

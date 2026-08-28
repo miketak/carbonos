@@ -1,0 +1,10 @@
+# Local development profile — pairs with `docker compose up -d` at the repo root.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/carbonos
+    username: carbonos
+    password: carbonos
+
+logging:
+  level:
+    com.carbonos: DEBUG

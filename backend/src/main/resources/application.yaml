@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: carbonos
+  datasource:
+    # JDBC-format URL, e.g. jdbc:postgresql://host:5432/carbonos
+    # On Railway, compose this from the Postgres service's reference variables (see README).
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  mvc:
+    problemdetails:
+      enabled: true
+  modulith:
+    events:
+      # Flyway owns the event_publication schema (V1 migration)
+      jdbc:
+        schema-initialization:
+          enabled: false
+      republish-outstanding-events-on-restart: true
+
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,modulith
+  endpoint:
+    health:
+      probes:
+        enabled: true
