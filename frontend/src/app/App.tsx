@@ -3,6 +3,8 @@ import { AdminUsersPage } from '../features/admin/AdminUsersPage'
 import { LoginPage } from '../features/auth/LoginPage'
 import { RequireAuth } from '../features/auth/RequireAuth'
 import { HomePage } from '../features/home/HomePage'
+import { OrganizationPage } from '../features/ghg/OrganizationPage'
+import { OrganizationsPage } from '../features/ghg/OrganizationsPage'
 import { WelcomePage } from '../features/home/WelcomePage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 
@@ -16,6 +18,22 @@ export function App() {
         element={
           <RequireAuth>
             <WelcomePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/app/ghg"
+        element={
+          <RequireAuth>
+            <OrganizationsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/app/ghg/:organizationId"
+        element={
+          <RequireAuth>
+            <OrganizationPage />
           </RequireAuth>
         }
       />
