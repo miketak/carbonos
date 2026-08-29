@@ -4,6 +4,7 @@ import { LoginPage } from '../features/auth/LoginPage'
 import { RequireAuth } from '../features/auth/RequireAuth'
 import { HomePage } from '../features/home/HomePage'
 import { WelcomePage } from '../features/home/WelcomePage'
+import { ProfilePage } from '../features/profile/ProfilePage'
 
 export function App() {
   return (
@@ -15,6 +16,14 @@ export function App() {
         element={
           <RequireAuth>
             <WelcomePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/app/profile"
+        element={
+          <RequireAuth>
+            <ProfilePage />
           </RequireAuth>
         }
       />

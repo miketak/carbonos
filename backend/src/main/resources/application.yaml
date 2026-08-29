@@ -16,6 +16,11 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  servlet:
+    multipart:
+      # PSD resumes are the ceiling
+      max-file-size: 50MB
+      max-request-size: 52MB
   modulith:
     events:
       # Flyway owns the event_publication schema (V1 migration)
@@ -23,6 +28,17 @@ spring:
         schema-initialization:
           enabled: false
       republish-outstanding-events-on-restart: true
+
+carbonos:
+  storage:
+    # Any S3-compatible endpoint (Cloudflare R2, Railway bucket, MinIO).
+    endpoint: ${STORAGE_ENDPOINT}
+    region: ${STORAGE_REGION:auto} # "auto" is what R2 expects
+    access-key: ${STORAGE_ACCESS_KEY}
+    secret-key: ${STORAGE_SECRET_KEY}
+    bucket: ${STORAGE_BUCKET}
+    path-style: ${STORAGE_PATH_STYLE:false}
+    create-bucket: false
 
 server:
   port: ${PORT:8080}

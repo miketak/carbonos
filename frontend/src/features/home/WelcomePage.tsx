@@ -40,14 +40,22 @@ export function WelcomePage() {
             Measure. Certify. Sustain. Your carbon accounting workspace is being built — more
             arrives here soon.
           </p>
-          {user?.role === 'ADMIN' && (
+          <div className="mt-8 flex items-center justify-center gap-3">
             <Link
-              to="/admin/users"
-              className="mt-8 inline-block rounded-lg bg-teal px-6 py-2.5 font-semibold text-white transition-colors duration-150 hover:bg-bright-teal"
+              to="/app/profile"
+              className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-teal transition-colors duration-150 hover:bg-teal/10"
             >
-              Manage users
+              Edit profile
             </Link>
-          )}
+            {user?.role === 'ADMIN' && (
+              <Link
+                to="/admin/users"
+                className="inline-block rounded-lg bg-teal px-6 py-2.5 font-semibold text-white transition-colors duration-150 hover:bg-bright-teal"
+              >
+                Manage users
+              </Link>
+            )}
+          </div>
         </GlassCard>
       </main>
     </div>
