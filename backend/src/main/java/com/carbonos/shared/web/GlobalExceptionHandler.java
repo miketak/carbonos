@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -41,6 +42,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		}
 		problem.setProperty("errors", errors);
 		return handleExceptionInternal(ex, problem, headers, HttpStatus.UNPROCESSABLE_ENTITY, request);
+	}
+
+	/**
+	 * Oversized uploads are rejected by the servlet layer before the controller
+	 * runs; give the 413 a detail and an {@code errors.file} entry the SPA can
+	 * render inline.
+	 */
+	@Override
+	protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex,
+			HttpHeaders headers, org.springframework.http.HttpStatusCode status, WebRequest request) {
+		var message = "File is too large.";
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, message);
+		problem.setTitle("File too large");
+		problem.setProperty("errors", Map.of("file", message));
+		return handleExceptionInternal(ex, problem, headers, HttpStatus.PAYLOAD_TOO_LARGE, request);
 	}
 
 	@ExceptionHandler(Exception.class)

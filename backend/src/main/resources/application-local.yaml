@@ -5,6 +5,16 @@ spring:
     username: carbonos
     password: carbonos
 
+carbonos:
+  storage:
+    endpoint: http://localhost:9000
+    region: us-east-1
+    access-key: carbonos
+    secret-key: carbonos-secret
+    bucket: carbonos-media
+    path-style: true
+    create-bucket: true
+
 logging:
   level:
     com.carbonos: DEBUG

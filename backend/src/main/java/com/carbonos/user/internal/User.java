@@ -37,6 +37,21 @@ public class User {
 	@Column(name = "password_hash", nullable = false, length = 100)
 	private String passwordHash;
 
+	@Column(name = "avatar_key", length = 255)
+	private String avatarKey;
+
+	@Column(name = "avatar_content_type", length = 100)
+	private String avatarContentType;
+
+	@Column(name = "resume_key", length = 255)
+	private String resumeKey;
+
+	@Column(name = "resume_content_type", length = 100)
+	private String resumeContentType;
+
+	@Column(name = "resume_filename", length = 255)
+	private String resumeFilename;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -89,8 +104,39 @@ public class User {
 		return updatedAt;
 	}
 
+	public String getAvatarKey() {
+		return avatarKey;
+	}
+
+	public String getAvatarContentType() {
+		return avatarContentType;
+	}
+
+	public String getResumeKey() {
+		return resumeKey;
+	}
+
+	public String getResumeContentType() {
+		return resumeContentType;
+	}
+
+	public String getResumeFilename() {
+		return resumeFilename;
+	}
+
 	void setDisplayName(String displayName) {
 		this.displayName = displayName;
+	}
+
+	void setAvatar(String key, String contentType) {
+		this.avatarKey = key;
+		this.avatarContentType = contentType;
+	}
+
+	void setResume(String key, String contentType, String filename) {
+		this.resumeKey = key;
+		this.resumeContentType = contentType;
+		this.resumeFilename = filename;
 	}
 
 	void setRole(UserRole role) {

@@ -28,7 +28,10 @@ function readCookie(name: string): string | undefined {
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method ?? 'GET').toUpperCase()
-  const headers = new Headers({ 'Content-Type': 'application/json' })
+  // FormData bodies must let the browser set multipart/form-data with its boundary
+  const headers = new Headers(
+    init?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
+  )
   new Headers(init?.headers).forEach((value, key) => headers.set(key, value))
   if (method !== 'GET' && method !== 'HEAD') {
     const csrfToken = readCookie('XSRF-TOKEN')
@@ -50,6 +53,16 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     return undefined as T
   }
   return (await response.json()) as T
+}
+
+/** Fetches a binary body (e.g. a stored image) as a Blob. */
+export async function apiBlob(path: string): Promise<Blob> {
+  const response = await fetch(`${API_URL}${path}`, { credentials: 'include' })
+  if (!response.ok) {
+    const problem = await response.json().catch(() => undefined)
+    throw new ApiError(response.status, problem)
+  }
+  return response.blob()
 }
 
 /** Field validation errors from a 422 problem detail, for inline display. */
