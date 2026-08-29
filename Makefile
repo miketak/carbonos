@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .PHONY: db-up db-down backend frontend admin verify dev-up dev-down
 
-dev-up:           ## start db + backend + frontend in tmux (current window if inside tmux, else a "carbonos" session)
+dev-up:           ## start db + backend + frontend in tmux (a "dev-console" window if inside tmux, else a "carbonos" session)
 	./scripts/dev-up.sh
 
 dev-down:         ## tear down the dev panes/session and stop Postgres

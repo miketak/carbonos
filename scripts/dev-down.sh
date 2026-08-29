@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
 # Tear down the CarbonOS dev environment started by `make dev-up`:
-# kill the dev panes tagged @carbonos_dev (in-tmux mode), kill the
-# dedicated "carbonos" session if one exists, and stop Postgres.
+# kill the dev panes tagged @carbonos_dev (the "dev-console" window
+# closes with its last pane), kill the dedicated "carbonos" session if
+# one exists, and stop Postgres.
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
