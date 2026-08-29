@@ -1,16 +1,18 @@
 import { useState } from 'react'
-import { Button } from '../../../components/Button'
-import { GlassCard } from '../../../components/GlassCard'
-import { Skeleton } from '../../../components/Skeleton'
-import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
-import { categoryLabel, formatCo2e } from '../format'
-import { useActivitiesQuery, useDeleteActivity, useFacilitiesQuery } from '../useGhg'
-import { ActivityFormModal } from './ActivityFormModal'
-import { ScopeBadge } from './badges'
+import { useParams } from 'react-router-dom'
+import { Button } from '../../components/Button'
+import { GlassCard } from '../../components/GlassCard'
+import { Skeleton } from '../../components/Skeleton'
+import { useToast } from '../../components/toast'
+import { problemDetail } from '../../lib/api'
+import { ActivityFormModal } from './components/ActivityFormModal'
+import { ScopeBadge } from './components/badges'
+import { categoryLabel, formatCo2e } from './format'
+import { useActivitiesQuery, useDeleteActivity, useFacilitiesQuery } from './useGhg'
 
 /** Activity data: the measured quantities the calculation runs consume. */
-export function ActivitiesSection({ organizationId }: { organizationId: string }) {
+export function ActivityPage() {
+  const { organizationId = '' } = useParams()
   const activitiesQuery = useActivitiesQuery(organizationId)
   const facilitiesQuery = useFacilitiesQuery(organizationId)
   const deleteActivity = useDeleteActivity(organizationId)
@@ -24,7 +26,7 @@ export function ActivitiesSection({ organizationId }: { organizationId: string }
     <section>
       <div className="mb-3 flex items-end justify-between">
         <div>
-          <h2 className="text-lg">Activity data</h2>
+          <h1 className="text-xl">Activity data</h1>
           <p className="text-sm text-dark-teal/60">
             Fuel burned, electricity bought, kilometres travelled — per facility.
           </p>
@@ -48,7 +50,7 @@ export function ActivitiesSection({ organizationId }: { organizationId: string }
         )}
         {activities?.length === 0 && (
           <div className="p-8 text-center">
-            <h3 className="font-semibold">No activity data yet</h3>
+            <h2 className="font-semibold">No activity data yet</h2>
             <p className="mt-1 text-sm text-dark-teal/60">
               {facilities.length === 0
                 ? 'Add a facility to the boundary, then record what it consumed.'

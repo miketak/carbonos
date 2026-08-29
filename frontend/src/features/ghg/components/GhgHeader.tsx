@@ -10,7 +10,7 @@ export function GhgHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/50 bg-white/60 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+      <div className="flex h-14 items-center justify-between px-6">
         <Link
           to="/app"
           className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent"

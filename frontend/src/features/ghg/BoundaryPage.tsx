@@ -1,17 +1,19 @@
 import { useState } from 'react'
-import { Button } from '../../../components/Button'
-import { GlassCard } from '../../../components/GlassCard'
-import { Skeleton } from '../../../components/Skeleton'
-import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
-import { useDeleteFacility, useFacilitiesQuery } from '../useGhg'
-import { FacilityFormModal } from './FacilityFormModal'
-import type { Facility } from '../api'
+import { useParams } from 'react-router-dom'
+import { Button } from '../../components/Button'
+import { GlassCard } from '../../components/GlassCard'
+import { Skeleton } from '../../components/Skeleton'
+import { useToast } from '../../components/toast'
+import { problemDetail } from '../../lib/api'
+import { FacilityFormModal } from './components/FacilityFormModal'
+import { useDeleteFacility, useFacilitiesQuery } from './useGhg'
+import type { Facility } from './api'
 
 type Dialog = { kind: 'create' } | { kind: 'edit'; facility: Facility } | null
 
 /** The organizational boundary: which facilities count, and how much of each. */
-export function FacilitiesSection({ organizationId }: { organizationId: string }) {
+export function BoundaryPage() {
+  const { organizationId = '' } = useParams()
   const facilitiesQuery = useFacilitiesQuery(organizationId)
   const deleteFacility = useDeleteFacility(organizationId)
   const toast = useToast()
@@ -23,7 +25,7 @@ export function FacilitiesSection({ organizationId }: { organizationId: string }
     <section>
       <div className="mb-3 flex items-end justify-between">
         <div>
-          <h2 className="text-lg">Organizational boundary</h2>
+          <h1 className="text-xl">Organizational boundary</h1>
           <p className="text-sm text-dark-teal/60">
             Facilities, with the equity share and control flag consolidation uses.
           </p>
@@ -42,7 +44,7 @@ export function FacilitiesSection({ organizationId }: { organizationId: string }
         )}
         {facilities?.length === 0 && (
           <div className="p-8 text-center">
-            <h3 className="font-semibold">No facilities yet</h3>
+            <h2 className="font-semibold">No facilities yet</h2>
             <p className="mt-1 text-sm text-dark-teal/60">
               Add the sites this organization reports on to draw its boundary.
             </p>

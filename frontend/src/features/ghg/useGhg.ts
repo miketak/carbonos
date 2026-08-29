@@ -53,8 +53,8 @@ export function useRunsQuery(orgId: string) {
   return useQuery({ queryKey: runsKey(orgId), queryFn: () => listRuns(orgId) })
 }
 
-export function useRunQuery(id: string, enabled: boolean) {
-  return useQuery({ queryKey: runKey(id), queryFn: () => getRun(id), enabled })
+export function useRunQuery(id: string) {
+  return useQuery({ queryKey: runKey(id), queryFn: () => getRun(id) })
 }
 
 export function useCreateOrganization() {

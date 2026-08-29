@@ -31,7 +31,7 @@ export function OrganizationsPage() {
     <div className="min-h-screen bg-gradient-to-br from-soft-mint via-soft-mint to-bright-teal/15">
       <GhgHeader />
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="text-2xl">GHG accounting</h1>

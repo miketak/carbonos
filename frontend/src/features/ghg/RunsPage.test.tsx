@@ -1,11 +1,10 @@
 import { screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { renderWithProviders } from '../../../test/utils'
-import { RunsSection } from './RunsSection'
-import type { Run, RunDetail } from '../api'
+import { renderWithProviders } from '../../test/utils'
+import { RunsPage } from './RunsPage'
+import type { Run } from './api'
 
-vi.mock('../api', () => ({
+vi.mock('./api', () => ({
   listOrganizations: vi.fn(),
   getOrganization: vi.fn(),
   createOrganization: vi.fn(),
@@ -25,7 +24,7 @@ vi.mock('../api', () => ({
   deleteRun: vi.fn(),
 }))
 
-import { getRun, listRuns } from '../api'
+import { listRuns } from './api'
 
 const run: Run = {
   id: 'run-1',
@@ -41,55 +40,35 @@ const run: Run = {
   createdAt: '2026-08-29T00:00:00Z',
 }
 
-const detail: RunDetail = {
-  run,
-  lines: [
-    {
-      id: 'line-1',
-      activityId: 'act-1',
-      facilityName: 'Accra HQ',
-      factorName: 'Diesel',
-      scope: 'SCOPE_1',
-      category: 'MOBILE_COMBUSTION',
-      quantity: 1000,
-      unit: 'litre',
-      kgCo2ePerUnit: 2.66,
-      weight: 1,
-      kgCo2e: 2660,
-    },
-  ],
+function renderRunsPage() {
+  return renderWithProviders(<RunsPage />, {
+    route: '/app/ghg/org-1/runs',
+    path: '/app/ghg/:organizationId/runs',
+  })
 }
 
 beforeEach(() => {
   vi.mocked(listRuns).mockReset()
-  vi.mocked(getRun).mockReset()
 })
 
 test('shows an empty state when there are no runs', async () => {
   vi.mocked(listRuns).mockResolvedValue([])
-  renderWithProviders(<RunsSection organizationId="org-1" />)
+  renderRunsPage()
   expect(await screen.findByRole('heading', { name: /no runs yet/i })).toBeInTheDocument()
 })
 
 test('renders a run with its total and scope split', async () => {
   vi.mocked(listRuns).mockResolvedValue([run])
-  renderWithProviders(<RunsSection organizationId="org-1" />)
+  renderRunsPage()
   expect(await screen.findByText('FY2026 inventory')).toBeInTheDocument()
   expect(screen.getByText('3.01 t CO₂e')).toBeInTheDocument()
   expect(screen.getByText('2.66 t CO₂e')).toBeInTheDocument()
   expect(screen.getByText('352.8 kg CO₂e')).toBeInTheDocument()
 })
 
-test('expanding a run loads its snapshot lines', async () => {
-  const user = userEvent.setup()
+test('links each run to its report page', async () => {
   vi.mocked(listRuns).mockResolvedValue([run])
-  vi.mocked(getRun).mockResolvedValue(detail)
-  renderWithProviders(<RunsSection organizationId="org-1" />)
-
-  await user.click(await screen.findByRole('button', { name: /show details/i }))
-
-  expect(await screen.findByText('Accra HQ')).toBeInTheDocument()
-  expect(screen.getByText('Diesel')).toBeInTheDocument()
-  expect(screen.getByText('100%')).toBeInTheDocument()
-  expect(vi.mocked(getRun)).toHaveBeenCalledWith('run-1')
+  renderRunsPage()
+  const link = await screen.findByRole('link', { name: /view report/i })
+  expect(link).toHaveAttribute('href', '/app/ghg/org-1/runs/run-1')
 })
