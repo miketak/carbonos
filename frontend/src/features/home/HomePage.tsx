@@ -13,7 +13,7 @@ export function HomePage() {
           Measure. Certify. Sustain. Verified carbon data for forward-thinking companies.
         </p>
         <Link
-          to="/admin/users"
+          to="/app"
           className="mt-8 inline-block rounded-lg bg-teal px-6 py-2.5 font-semibold text-white transition-colors duration-150 hover:bg-bright-teal"
         >
           Sign in

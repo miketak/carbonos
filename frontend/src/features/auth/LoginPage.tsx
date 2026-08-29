@@ -15,7 +15,7 @@ export function LoginPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/admin/users'
+  const from = (location.state as { from?: string } | null)?.from ?? '/app'
 
   const signIn = useMutation({
     mutationFn: () => login(email, password),

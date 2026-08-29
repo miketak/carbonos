@@ -32,14 +32,14 @@ test('submits credentials and navigates on success', async () => {
   vi.mocked(login).mockResolvedValue(admin)
   renderWithProviders(<LoginPage />, {
     route: '/login',
-    extraRoutes: [{ path: '/admin/users', element: <p>admin panel</p> }],
+    extraRoutes: [{ path: '/app', element: <p>welcome home</p> }],
   })
 
   await user.type(screen.getByLabelText(/email/i), 'admin@ecoriv.com')
   await user.type(screen.getByLabelText(/password/i), 'correct-horse')
   await user.click(screen.getByRole('button', { name: /sign in/i }))
 
-  await waitFor(() => expect(screen.getByText('admin panel')).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText('welcome home')).toBeInTheDocument())
   expect(login).toHaveBeenCalledWith('admin@ecoriv.com', 'correct-horse')
 })
 

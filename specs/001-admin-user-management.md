@@ -24,10 +24,14 @@ no admin access). Statuses: `ACTIVE` and `DISABLED`.
   password to the login endpoint, they receive their profile and a session
   cookie. Invalid email, wrong password, and a `DISABLED` account all produce
   the same 401 ("Invalid credentials") so accounts cannot be enumerated.
-- **Guarding**: Visiting `/admin/users` unauthenticated redirects to `/login`
-  (and returns to the original page after login). An authenticated `MEMBER`
-  calling any `/api/admin/**` endpoint receives 403; the SPA shows an
-  access-denied panel.
+  After signing in, the SPA lands on `/app` — an authenticated welcome page
+  every active user can see; admins get a "Manage users" link from there —
+  unless the user was originally headed somewhere specific, in which case
+  they return there.
+- **Guarding**: Visiting `/app` or `/admin/users` unauthenticated redirects
+  to `/login` (and returns to the original page after login). An
+  authenticated `MEMBER` calling any `/api/admin/**` endpoint receives 403;
+  the SPA shows an access-denied panel with a link back to `/app`.
 - **List**: An admin sees all users (name, email, role, status, created date),
   sorted by creation time. No pagination (non-goal until data warrants it).
 - **Create**: An admin creates a user with email, display name, role, and a

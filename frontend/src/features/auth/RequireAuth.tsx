@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useSession } from './useSession'
@@ -40,6 +40,12 @@ export function RequireAuth({ role, children }: RequireAuthProps) {
             You do not have permission to view this page. Contact an administrator if you believe
             this is a mistake.
           </p>
+          <Link
+            to="/app"
+            className="mt-6 inline-block rounded-lg bg-teal px-5 py-2 font-semibold text-white transition-colors duration-150 hover:bg-bright-teal"
+          >
+            Back to home
+          </Link>
         </GlassCard>
       </main>
     )
