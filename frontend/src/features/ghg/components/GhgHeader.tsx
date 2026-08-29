@@ -9,7 +9,7 @@ export function GhgHeader() {
   const signOut = useLogout()
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/50 bg-white/60 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-white/50 bg-white/60 backdrop-blur-xl backdrop-saturate-150">
       <div className="flex h-14 items-center justify-between px-6">
         <Link
           to="/app"

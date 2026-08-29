@@ -18,7 +18,7 @@ export function EmissionFactorsPage() {
         </p>
       </div>
 
-      <GlassCard className="overflow-x-auto">
+      <GlassCard className="animate-fade-up overflow-x-auto">
         {factorsQuery.isPending && (
           <div aria-label="Loading emission factors" className="flex flex-col gap-2 p-4">
             <Skeleton className="h-8" />

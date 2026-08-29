@@ -7,6 +7,7 @@ import { InputField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
 import { ApiError } from '../../lib/api'
 import { login } from './api'
+import { triggerSplash } from './SplashScreen'
 import { sessionQueryKey } from './useSession'
 
 export function LoginPage() {
@@ -21,6 +22,7 @@ export function LoginPage() {
     mutationFn: () => login(email, password),
     onSuccess: (user) => {
       queryClient.setQueryData(sessionQueryKey, user)
+      triggerSplash()
       void navigate(from, { replace: true })
     },
   })
@@ -38,7 +40,7 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-soft-mint via-soft-mint to-bright-teal/20 p-6">
+    <main className="flex min-h-screen items-center justify-center p-6">
       <GlassCard className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
           <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-2xl font-bold text-transparent">

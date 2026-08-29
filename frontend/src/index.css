@@ -35,6 +35,159 @@
   }
 }
 
+/* ambient aurora blobs: very slow drift so the glass has color to refract */
+@keyframes aurora-a {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(8vw, 6vh) scale(1.15);
+  }
+}
+@keyframes aurora-b {
+  from {
+    transform: translate(0, 0) scale(1.1);
+  }
+  to {
+    transform: translate(-10vw, 8vh) scale(0.95);
+  }
+}
+@keyframes aurora-c {
+  from {
+    transform: translate(0, 0) scale(0.95);
+  }
+  to {
+    transform: translate(6vw, -8vh) scale(1.2);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    width: 0;
+  }
+}
+
+/* splash "core power-up": arcs lock → bloom ignites → solid wordmark wipes in */
+@keyframes splash-arc-cw {
+  from {
+    transform: rotate(150deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+}
+@keyframes splash-arc-ccw {
+  from {
+    transform: rotate(-150deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+}
+@keyframes splash-lock {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes splash-bloom {
+  from {
+    transform: scale(0);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+@keyframes splash-core {
+  from {
+    fill: rgba(255, 255, 255, 0.15);
+  }
+  to {
+    fill: #82ef6d;
+  }
+}
+@keyframes splash-tick {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes splash-wipe {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-10px);
+  }
+  to {
+    clip-path: inset(0);
+    transform: translateY(0);
+  }
+}
+@keyframes splash-rule {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes splash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes splash-progress {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.splash-arc {
+  transform-box: view-box;
+  transform-origin: center;
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fade-up 0.5s ease-out both;
+    animation-delay: calc(var(--stagger, 0) * 60ms);
+  }
+  .animate-bar-grow {
+    animation: bar-grow 0.8s ease-out;
+  }
+  .hover-lift {
+    transition:
+      transform 0.15s ease-out,
+      box-shadow 0.15s ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      0 8px 32px rgba(9, 168, 149, 0.22);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

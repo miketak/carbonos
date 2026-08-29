@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
@@ -28,7 +29,7 @@ export function OrganizationsPage() {
   const organizations = organizationsQuery.data
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-soft-mint via-soft-mint to-bright-teal/15">
+    <div className="min-h-screen">
       <GhgHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-10">
@@ -60,8 +61,12 @@ export function OrganizationsPage() {
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          {organizations?.map((organization) => (
-            <GlassCard key={organization.id} className="flex flex-col p-6">
+          {organizations?.map((organization, index) => (
+            <GlassCard
+              key={organization.id}
+              className="animate-fade-up hover-lift flex flex-col p-6"
+              style={{ '--stagger': index } as CSSProperties}
+            >
               <div className="flex items-start justify-between gap-3">
                 <Link
                   to={`/app/ghg/${organization.id}`}

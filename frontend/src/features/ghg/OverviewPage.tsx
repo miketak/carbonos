@@ -1,11 +1,12 @@
 import { Link, useParams } from 'react-router-dom'
+import type { CSSProperties } from 'react'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
+import { AnimatedCo2e } from './components/AnimatedCo2e'
 import { ApproachBadge, ScopeBadge } from './components/badges'
 import { CoverageMatrix } from './components/CoverageMatrix'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
 import { TopFacilities } from './components/TopFacilities'
-import { formatCo2e } from './format'
 import {
   useActivitiesQuery,
   useFacilitiesQuery,
@@ -44,8 +45,12 @@ export function OverviewPage() {
 
       {runs.length === 0 ? (
         <>
-          <SetupChecklist facilityCount={facilities.length} activityCount={activities.length} />
-          <CoverageMatrix facilities={facilities} activities={activities} />
+          <div className="animate-fade-up">
+            <SetupChecklist facilityCount={facilities.length} activityCount={activities.length} />
+          </div>
+          <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
+            <CoverageMatrix facilities={facilities} activities={activities} />
+          </div>
         </>
       ) : (
         <Dashboard facilities={facilities} activities={activities} runs={runs} />
@@ -141,16 +146,20 @@ function Dashboard({
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpis.map((kpi) => (
-          <GlassCard key={kpi.label} className={`border-l-4 p-5 ${kpi.accent}`}>
+        {kpis.map((kpi, index) => (
+          <GlassCard
+            key={kpi.label}
+            className={`animate-fade-up border-l-4 p-5 ${kpi.accent}`}
+            style={{ '--stagger': index } as CSSProperties}
+          >
             <p className="text-sm text-dark-teal/60">{kpi.label}</p>
-            <p className="mt-1 text-xl font-bold text-dark-teal">{formatCo2e(kpi.kg)}</p>
+            <AnimatedCo2e kg={kpi.kg} className="mt-1 block text-xl font-bold text-dark-teal" />
           </GlassCard>
         ))}
       </div>
 
       <div className="grid items-start gap-6 xl:grid-cols-2">
-        <GlassCard className="p-6">
+        <GlassCard className="animate-fade-up p-6" style={{ '--stagger': 4 } as CSSProperties}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-lg">{latest.label}</h2>
@@ -171,12 +180,18 @@ function Dashboard({
           </div>
         </GlassCard>
 
-        <TopFacilities runId={latest.id} />
+        <div className="animate-fade-up" style={{ '--stagger': 5 } as CSSProperties}>
+          <TopFacilities runId={latest.id} />
+        </div>
       </div>
 
       <div className="grid items-start gap-6 xl:grid-cols-2">
-        <CoverageMatrix facilities={facilities} activities={activities} />
-        <RecentActivity activities={activities} />
+        <div className="animate-fade-up" style={{ '--stagger': 6 } as CSSProperties}>
+          <CoverageMatrix facilities={facilities} activities={activities} />
+        </div>
+        <div className="animate-fade-up" style={{ '--stagger': 7 } as CSSProperties}>
+          <RecentActivity activities={activities} />
+        </div>
       </div>
     </>
   )

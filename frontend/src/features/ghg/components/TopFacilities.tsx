@@ -36,7 +36,7 @@ export function TopFacilities({ runId }: { runId: string }) {
               </span>
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-teal/10">
                 <div
-                  className="h-full rounded-full bg-teal"
+                  className="animate-bar-grow h-full rounded-full bg-teal"
                   style={{ width: max > 0 ? `${Math.max((kg / max) * 100, 2)}%` : '0%' }}
                 />
               </div>

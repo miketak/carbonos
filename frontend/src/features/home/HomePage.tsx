@@ -3,7 +3,7 @@ import { GlassCard } from '../../components/GlassCard'
 
 export function HomePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-soft-mint via-soft-mint to-bright-teal/20 p-6">
+    <main className="flex min-h-screen items-center justify-center p-6">
       <GlassCard className="max-w-md p-10 text-center">
         <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-sm font-bold tracking-widest text-transparent uppercase">
           Ecoriv
