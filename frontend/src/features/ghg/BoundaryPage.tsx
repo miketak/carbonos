@@ -11,6 +11,15 @@ import type { Facility } from './api'
 
 type Dialog = { kind: 'create' } | { kind: 'edit'; facility: Facility } | null
 
+function StatChip({ label, value }: { label: string; value: string }) {
+  return (
+    <GlassCard className="p-4">
+      <p className="text-xs text-dark-teal/60">{label}</p>
+      <p className="mt-0.5 text-lg font-bold text-dark-teal">{value}</p>
+    </GlassCard>
+  )
+}
+
 /** The organizational boundary: which facilities count, and how much of each. */
 export function BoundaryPage() {
   const { organizationId = '' } = useParams()
@@ -34,6 +43,23 @@ export function BoundaryPage() {
           Add facility
         </Button>
       </div>
+
+      {facilities && facilities.length > 0 && (
+        <div className="mb-4 grid gap-3 sm:grid-cols-3">
+          <StatChip label="Facilities" value={facilities.length.toLocaleString()} />
+          <StatChip
+            label="Controlled"
+            value={`${facilities.filter((facility) => facility.controlled).length} of ${facilities.length}`}
+          />
+          <StatChip
+            label="Avg equity share"
+            value={`${Math.round(
+              facilities.reduce((sum, facility) => sum + facility.equitySharePercent, 0) /
+                facilities.length,
+            )}%`}
+          />
+        </div>
+      )}
 
       <GlassCard className="overflow-x-auto">
         {facilitiesQuery.isPending && (

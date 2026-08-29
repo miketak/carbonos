@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { OverviewPage } from './OverviewPage'
-import type { Facility, Organization, Run } from './api'
+import type { Activity, Facility, Organization, Run, RunDetail } from './api'
 
 vi.mock('./api', () => ({
   listOrganizations: vi.fn(),
@@ -24,7 +24,7 @@ vi.mock('./api', () => ({
   deleteRun: vi.fn(),
 }))
 
-import { getOrganization, listActivities, listFacilities, listRuns } from './api'
+import { getOrganization, getRun, listActivities, listFacilities, listRuns } from './api'
 
 const organization: Organization = {
   id: 'org-1',
@@ -43,6 +43,21 @@ const facility: Facility = {
   createdAt: '2026-08-01T00:00:00Z',
 }
 
+const activity: Activity = {
+  id: 'act-1',
+  facilityId: 'fac-1',
+  facilityName: 'Accra HQ',
+  emissionFactorId: 'ef-1',
+  factorName: 'Diesel',
+  scope: 'SCOPE_1',
+  category: 'MOBILE_COMBUSTION',
+  quantity: 1000,
+  unit: 'litre',
+  activityDate: '2026-05-19',
+  note: null,
+  unweightedKgCo2e: 2660,
+}
+
 const run: Run = {
   id: 'run-1',
   label: 'FY2026 inventory',
@@ -57,6 +72,38 @@ const run: Run = {
   createdAt: '2026-08-29T00:00:00Z',
 }
 
+const detail: RunDetail = {
+  run,
+  lines: [
+    {
+      id: 'line-1',
+      activityId: 'act-1',
+      facilityName: 'Accra HQ',
+      factorName: 'Diesel',
+      scope: 'SCOPE_1',
+      category: 'MOBILE_COMBUSTION',
+      quantity: 1000,
+      unit: 'litre',
+      kgCo2ePerUnit: 2.66,
+      weight: 1,
+      kgCo2e: 2660,
+    },
+    {
+      id: 'line-2',
+      activityId: 'act-2',
+      facilityName: 'Kumasi Processing',
+      factorName: 'Grid electricity (Ghana)',
+      scope: 'SCOPE_2',
+      category: 'PURCHASED_ELECTRICITY',
+      quantity: 800,
+      unit: 'kWh',
+      kgCo2ePerUnit: 0.441,
+      weight: 1,
+      kgCo2e: 352.8,
+    },
+  ],
+}
+
 function renderOverviewPage() {
   return renderWithProviders(<OverviewPage />, {
     route: '/app/ghg/org-1',
@@ -69,6 +116,7 @@ beforeEach(() => {
   vi.mocked(listFacilities).mockReset()
   vi.mocked(listActivities).mockReset()
   vi.mocked(listRuns).mockReset()
+  vi.mocked(getRun).mockReset()
   vi.mocked(getOrganization).mockResolvedValue(organization)
 })
 
@@ -87,9 +135,11 @@ test('shows the setup checklist with the boundary step next for an empty organiz
   )
   // only the next incomplete step gets a call to action
   expect(screen.queryByRole('link', { name: /record activity/i })).not.toBeInTheDocument()
+  // no facilities yet, so there is no coverage matrix to show
+  expect(screen.queryByText(/data coverage/i)).not.toBeInTheDocument()
 })
 
-test('advances the checklist call to action as steps complete', async () => {
+test('advances the checklist and shows the coverage matrix once facilities exist', async () => {
   vi.mocked(listFacilities).mockResolvedValue([facility])
   vi.mocked(listActivities).mockResolvedValue([])
   vi.mocked(listRuns).mockResolvedValue([])
@@ -100,19 +150,42 @@ test('advances the checklist call to action as steps complete', async () => {
     '/app/ghg/org-1/activity',
   )
   expect(screen.queryByRole('link', { name: /add facilities/i })).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /data coverage/i })).toBeInTheDocument()
+  expect(screen.getByText('0% complete')).toBeInTheDocument()
 })
 
-test('shows the dashboard with the latest run once runs exist', async () => {
+test('shows the dashboard with KPI cards, panels, and the latest run once runs exist', async () => {
   vi.mocked(listFacilities).mockResolvedValue([facility])
-  vi.mocked(listActivities).mockResolvedValue([])
+  vi.mocked(listActivities).mockResolvedValue([activity])
   vi.mocked(listRuns).mockResolvedValue([run])
+  vi.mocked(getRun).mockResolvedValue(detail)
   renderOverviewPage()
 
-  expect(await screen.findByText('3.01 t CO₂e')).toBeInTheDocument()
+  // KPI cards
+  expect(await screen.findByText('Total emissions')).toBeInTheDocument()
+  expect(screen.getByText('3.01 t CO₂e')).toBeInTheDocument()
+  expect(screen.getByText('Scope 1 — Direct')).toBeInTheDocument()
+  expect(screen.getByText('Scope 3 — Indirect')).toBeInTheDocument()
+
+  // latest run card
   expect(screen.getByText('FY2026 inventory')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: /view report/i })).toHaveAttribute(
     'href',
     '/app/ghg/org-1/runs/run-1',
   )
+
+  // top facilities grouped from the run's lines
+  expect(await screen.findByText('Kumasi Processing')).toBeInTheDocument()
+
+  // coverage matrix: 1 facility with scope 1 covered out of 3 scopes
+  expect(screen.getByText('33% complete')).toBeInTheDocument()
+
+  // recent activity feed
+  expect(screen.getByText('Recent activity data')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /view all/i })).toHaveAttribute(
+    'href',
+    '/app/ghg/org-1/activity',
+  )
+
   expect(screen.queryByText(/get to your first inventory/i)).not.toBeInTheDocument()
 })

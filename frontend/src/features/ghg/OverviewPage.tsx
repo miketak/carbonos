@@ -1,8 +1,10 @@
 import { Link, useParams } from 'react-router-dom'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
-import { ApproachBadge } from './components/badges'
+import { ApproachBadge, ScopeBadge } from './components/badges'
+import { CoverageMatrix } from './components/CoverageMatrix'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
+import { TopFacilities } from './components/TopFacilities'
 import { formatCo2e } from './format'
 import {
   useActivitiesQuery,
@@ -10,7 +12,7 @@ import {
   useOrganizationQuery,
   useRunsQuery,
 } from './useGhg'
-import type { Run } from './api'
+import type { Activity, Facility, Run } from './api'
 
 /** Workspace landing page: a setup checklist until the first run, then a dashboard. */
 export function OverviewPage() {
@@ -41,13 +43,12 @@ export function OverviewPage() {
       </div>
 
       {runs.length === 0 ? (
-        <SetupChecklist facilityCount={facilities.length} activityCount={activities.length} />
+        <>
+          <SetupChecklist facilityCount={facilities.length} activityCount={activities.length} />
+          <CoverageMatrix facilities={facilities} activities={activities} />
+        </>
       ) : (
-        <Dashboard
-          facilityCount={facilities.length}
-          activityCount={activities.length}
-          runs={runs}
-        />
+        <Dashboard facilities={facilities} activities={activities} runs={runs} />
       )}
     </div>
   )
@@ -121,64 +122,100 @@ function SetupChecklist({
 }
 
 function Dashboard({
-  facilityCount,
-  activityCount,
+  facilities,
+  activities,
   runs,
 }: {
-  facilityCount: number
-  activityCount: number
+  facilities: Facility[]
+  activities: Activity[]
   runs: Run[]
 }) {
   const latest = [...runs].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+  const kpis = [
+    { label: 'Total emissions', kg: latest.totalKgCo2e, accent: 'border-l-bright-teal' },
+    { label: 'Scope 1 — Direct', kg: latest.scope1KgCo2e, accent: 'border-l-dark-teal' },
+    { label: 'Scope 2 — Energy', kg: latest.scope2KgCo2e, accent: 'border-l-teal' },
+    { label: 'Scope 3 — Indirect', kg: latest.scope3KgCo2e, accent: 'border-l-accent-green' },
+  ]
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatTile label="Latest inventory" value={formatCo2e(latest.totalKgCo2e)} />
-        <StatTile
-          label="Facilities in boundary"
-          value={facilityCount.toLocaleString()}
-          to="boundary"
-        />
-        <StatTile label="Activity records" value={activityCount.toLocaleString()} to="activity" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {kpis.map((kpi) => (
+          <GlassCard key={kpi.label} className={`border-l-4 p-5 ${kpi.accent}`}>
+            <p className="text-sm text-dark-teal/60">{kpi.label}</p>
+            <p className="mt-1 text-xl font-bold text-dark-teal">{formatCo2e(kpi.kg)}</p>
+          </GlassCard>
+        ))}
       </div>
 
-      <GlassCard className="p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg">{latest.label}</h2>
-            <p className="text-sm text-dark-teal/60">
-              {latest.periodStart} → {latest.periodEnd} · {latest.activityCount} activit
-              {latest.activityCount === 1 ? 'y' : 'ies'}
-            </p>
+      <div className="grid items-start gap-6 xl:grid-cols-2">
+        <GlassCard className="p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg">{latest.label}</h2>
+              <p className="text-sm text-dark-teal/60">
+                {latest.periodStart} → {latest.periodEnd} · {latest.activityCount} activit
+                {latest.activityCount === 1 ? 'y' : 'ies'}
+              </p>
+            </div>
+            <Link
+              to={`runs/${latest.id}`}
+              className="text-sm font-semibold text-teal hover:text-bright-teal"
+            >
+              View report →
+            </Link>
           </div>
-          <Link
-            to={`runs/${latest.id}`}
-            className="text-sm font-semibold text-teal hover:text-bright-teal"
-          >
-            View report →
-          </Link>
-        </div>
-        <div className="mt-4">
-          <ScopeBreakdown run={latest} />
-        </div>
-      </GlassCard>
+          <div className="mt-4">
+            <ScopeBreakdown run={latest} />
+          </div>
+        </GlassCard>
+
+        <TopFacilities runId={latest.id} />
+      </div>
+
+      <div className="grid items-start gap-6 xl:grid-cols-2">
+        <CoverageMatrix facilities={facilities} activities={activities} />
+        <RecentActivity activities={activities} />
+      </div>
     </>
   )
 }
 
-function StatTile({ label, value, to }: { label: string; value: string; to?: string }) {
-  const body = (
-    <>
-      <p className="text-sm text-dark-teal/60">{label}</p>
-      <p className="mt-1 text-xl font-bold text-dark-teal">{value}</p>
-    </>
-  )
-  return to ? (
-    <Link to={to}>
-      <GlassCard className="p-5 transition-colors duration-150 hover:bg-white/80">{body}</GlassCard>
-    </Link>
-  ) : (
-    <GlassCard className="p-5">{body}</GlassCard>
+function RecentActivity({ activities }: { activities: Activity[] }) {
+  const recent = [...activities]
+    .sort((a, b) => b.activityDate.localeCompare(a.activityDate))
+    .slice(0, 5)
+
+  return (
+    <GlassCard className="p-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-lg">Recent activity data</h2>
+        <Link to="activity" className="text-sm font-semibold text-teal hover:text-bright-teal">
+          View all →
+        </Link>
+      </div>
+      {recent.length === 0 && (
+        <p className="text-sm text-dark-teal/60">No activity recorded yet.</p>
+      )}
+      <ul className="flex flex-col gap-3">
+        {recent.map((activity) => (
+          <li key={activity.id} className="flex items-center justify-between gap-3 text-sm">
+            <div className="min-w-0">
+              <p className="truncate font-medium">{activity.factorName}</p>
+              <p className="truncate text-xs text-dark-teal/60">
+                {activity.facilityName} · {activity.quantity.toLocaleString()} {activity.unit}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <ScopeBadge scope={activity.scope} />
+              <span className="text-xs whitespace-nowrap text-dark-teal/60">
+                {activity.activityDate}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </GlassCard>
   )
 }

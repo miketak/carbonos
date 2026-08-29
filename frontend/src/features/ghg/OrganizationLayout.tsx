@@ -87,11 +87,30 @@ export function OrganizationLayout() {
 
       <div className="flex flex-col md:flex-row">
         <aside
-          className={`shrink-0 border-b border-white/50 bg-white/45 backdrop-blur-xl transition-[width] duration-200 md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:overflow-y-auto md:border-r md:border-b-0 ${
+          className={`relative shrink-0 border-b border-white/50 bg-white/45 backdrop-blur-xl transition-[width] duration-200 md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:border-r md:border-b-0 ${
             collapsed ? 'md:w-16' : 'md:w-64'
           }`}
         >
-          <div className="flex items-center gap-2 p-3 md:h-full md:flex-col md:items-stretch">
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="absolute top-3 -right-3 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-teal/20 bg-white text-dark-teal/70 shadow-sm transition-colors duration-150 hover:bg-teal hover:text-white md:flex"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+            >
+              <path d={collapsed ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'} />
+            </svg>
+          </button>
+          <div className="flex items-center gap-2 p-3 md:h-full md:flex-col md:items-stretch md:overflow-y-auto">
             {collapsed ? (
               <button
                 type="button"
@@ -157,18 +176,6 @@ export function OrganizationLayout() {
                 <Icon d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" />
                 <span className={collapsed ? 'md:hidden' : ''}>All organizations</span>
               </Link>
-              <button
-                type="button"
-                onClick={toggleCollapsed}
-                className={`mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap text-dark-teal/60 transition-colors duration-150 hover:bg-teal/10 ${
-                  collapsed ? 'md:justify-center md:px-2' : ''
-                }`}
-              >
-                <Icon
-                  d={collapsed ? 'm13 17 5-5-5-5M6 17l5-5-5-5' : 'm11 17-5-5 5-5M18 17l-5-5 5-5'}
-                />
-                <span className={collapsed ? 'md:hidden' : ''}>Collapse</span>
-              </button>
             </div>
           </div>
         </aside>
