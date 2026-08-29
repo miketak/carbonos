@@ -27,4 +27,4 @@ the source of truth for *how*.
 
 | #   | Spec                                                     | Status   |
 | --- | -------------------------------------------------------- | -------- |
-| 001 | [Admin user management](001-admin-user-management.md)    | Approved |
+| 001 | [Admin user management](001-admin-user-management.md)    | Implemented |
