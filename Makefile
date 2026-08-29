@@ -1,5 +1,12 @@
 SHELL := /bin/bash
-.PHONY: db-up db-down backend frontend admin verify
+.PHONY: db-up db-down backend frontend admin verify dev-up dev-down
+
+dev-up:           ## start db + backend + frontend in a tmux session (top: backend, bottom: db | frontend)
+	./scripts/dev-up.sh
+
+dev-down:         ## stop the tmux dev session and Postgres
+	-tmux kill-session -t carbonos 2>/dev/null
+	docker compose down
 
 db-up:            ## start local Postgres
 	docker compose up -d
