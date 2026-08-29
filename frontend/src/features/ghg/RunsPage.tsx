@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { CSSProperties, FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
@@ -52,10 +52,11 @@ export function RunsPage() {
             </p>
           </GlassCard>
         )}
-        {runs?.map((run) => (
+        {runs?.map((run, index) => (
           <RunCard
             key={run.id}
             run={run}
+            stagger={index}
             onDelete={() =>
               deleteRun.mutate(run.id, {
                 onSuccess: () => toast(`Run "${run.label}" deleted.`),
@@ -82,9 +83,12 @@ export function RunsPage() {
   )
 }
 
-function RunCard({ run, onDelete }: { run: Run; onDelete: () => void }) {
+function RunCard({ run, stagger, onDelete }: { run: Run; stagger: number; onDelete: () => void }) {
   return (
-    <GlassCard className="p-6">
+    <GlassCard
+      className="animate-fade-up hover-lift p-6"
+      style={{ '--stagger': stagger } as CSSProperties}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold">

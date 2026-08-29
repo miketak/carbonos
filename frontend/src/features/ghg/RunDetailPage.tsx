@@ -1,10 +1,11 @@
 import { Link, useParams } from 'react-router-dom'
+import type { CSSProperties } from 'react'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
+import { AnimatedCo2e } from './components/AnimatedCo2e'
 import { ApproachBadge } from './components/badges'
 import { RunLinesTable } from './components/RunLinesTable'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
-import { formatCo2e } from './format'
 import { useOrganizationQuery, useRunQuery } from './useGhg'
 
 /** One run read as the inventory report: period, totals by scope, snapshot lines. */
@@ -54,17 +55,18 @@ export function RunDetailPage() {
 
       {runQuery.data && (
         <>
-          <GlassCard className="p-6">
+          <GlassCard className="animate-fade-up p-6">
             <p className="text-sm text-dark-teal/60">Total emissions</p>
-            <p className="mt-1 text-3xl font-bold text-dark-teal">
-              {formatCo2e(runQuery.data.run.totalKgCo2e)}
-            </p>
+            <AnimatedCo2e
+              kg={runQuery.data.run.totalKgCo2e}
+              className="mt-1 block text-3xl font-bold text-dark-teal"
+            />
             <div className="mt-5">
               <ScopeBreakdown run={runQuery.data.run} />
             </div>
           </GlassCard>
 
-          <GlassCard className="p-6">
+          <GlassCard className="animate-fade-up p-6" style={{ '--stagger': 2 } as CSSProperties}>
             <h2 className="mb-4 text-lg">Snapshot lines</h2>
             <RunLinesTable lines={runQuery.data.lines} />
           </GlassCard>

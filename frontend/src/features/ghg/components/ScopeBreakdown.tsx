@@ -22,7 +22,7 @@ export function ScopeBreakdown({ run }: { run: Run }) {
           <span className="w-16 shrink-0 text-dark-teal/70">{scopeLabels[scope]}</span>
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-teal/10">
             <div
-              className={`h-full rounded-full ${scopeBarStyles[scope]}`}
+              className={`animate-bar-grow h-full rounded-full ${scopeBarStyles[scope]}`}
               style={{
                 width:
                   run.totalKgCo2e > 0

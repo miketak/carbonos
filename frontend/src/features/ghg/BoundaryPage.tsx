@@ -61,7 +61,7 @@ export function BoundaryPage() {
         </div>
       )}
 
-      <GlassCard className="overflow-x-auto">
+      <GlassCard className="animate-fade-up overflow-x-auto">
         {facilitiesQuery.isPending && (
           <div aria-label="Loading facilities" className="flex flex-col gap-2 p-4">
             <Skeleton className="h-8" />

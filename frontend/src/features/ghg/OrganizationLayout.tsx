@@ -81,13 +81,18 @@ export function OrganizationLayout() {
     void navigate(`/app/ghg/${id}${section ? `/${section}` : ''}`)
   }
 
+  const sectionSlug = location.pathname.split('/')[4] ?? ''
+  const activeIndex = sections.findIndex(
+    (section) => (section.to === '.' ? '' : section.to) === sectionSlug,
+  )
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-soft-mint via-soft-mint to-bright-teal/15">
+    <div className="min-h-screen">
       <GhgHeader />
 
       <div className="flex flex-col md:flex-row">
         <aside
-          className={`relative shrink-0 border-b border-white/50 bg-white/45 backdrop-blur-xl transition-[width] duration-200 md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:border-r md:border-b-0 ${
+          className={`relative shrink-0 border-b border-white/50 bg-white/45 backdrop-blur-xl backdrop-saturate-150 transition-[width] duration-200 md:sticky md:top-[57px] md:h-[calc(100vh-57px)] md:border-r md:border-b-0 ${
             collapsed ? 'md:w-16' : 'md:w-64'
           }`}
         >
@@ -145,8 +150,15 @@ export function OrganizationLayout() {
 
             <nav
               aria-label="Organization sections"
-              className="flex gap-1 overflow-x-auto md:mt-3 md:flex-col md:overflow-x-visible"
+              className="relative flex gap-1 overflow-x-auto md:mt-3 md:flex-col md:overflow-x-visible"
             >
+              {activeIndex >= 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 hidden h-9 w-full rounded-lg bg-teal transition-transform duration-200 ease-out md:block"
+                  style={{ transform: `translateY(${activeIndex * 40}px)` }}
+                />
+              )}
               {sections.map((section) => (
                 <NavLink
                   key={section.label}
@@ -154,8 +166,10 @@ export function OrganizationLayout() {
                   end={section.end}
                   title={collapsed ? section.label : undefined}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-150 ${
-                      isActive ? 'bg-teal text-white' : 'text-dark-teal/80 hover:bg-teal/10'
+                    `relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-150 ${
+                      isActive
+                        ? 'bg-teal text-white md:bg-transparent'
+                        : 'text-dark-teal/80 hover:bg-teal/10'
                     } ${collapsed ? 'md:justify-center md:px-2' : ''}`
                   }
                 >

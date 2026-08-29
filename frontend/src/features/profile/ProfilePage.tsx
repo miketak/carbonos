@@ -69,7 +69,7 @@ export function ProfilePage() {
     problemDetail(resumeUpload.error)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-soft-mint via-soft-mint to-bright-teal/15">
+    <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/50 bg-white/60 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
           <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent">
