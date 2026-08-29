@@ -1,6 +1,6 @@
 # 001 — Admin user management
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Owner**: Michael Takrama
 - **Created**: 2026-08-28
 - **Backend module(s)**: `user`
