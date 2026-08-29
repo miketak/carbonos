@@ -66,6 +66,12 @@ npm run build                     # type-check + production build
 Java 25 (Temurin) is installed via SDKMAN; non-login shells may need
 `source "$HOME/.sdkman/bin/sdkman-init.sh"` before `./mvnw` works.
 
+Makefile shortcuts (repo root): `make db-up`, `make backend`, `make frontend`,
+`make verify` (full DoD), and `make admin EMAIL=.. PASSWORD=.. [NAME=..]` to
+create or password-reset a local admin user. The backend also seeds an initial
+admin at startup when `CARBONOS_ADMIN_EMAIL` and `CARBONOS_ADMIN_PASSWORD` are
+set (idempotent; the canonical mechanism for Railway).
+
 ## Git & releases
 
 - Trunk-based: short-lived branches → PR → `main`. Direct pushes to `main`

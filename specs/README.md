@@ -25,6 +25,6 @@ the source of truth for *how*.
 
 ## Index
 
-| #   | Spec                                                     | Status |
-| --- | -------------------------------------------------------- | ------ |
-| 001 | [Signup → Contact flow](001-signup-contact-flow.md)      | Draft  |
+| #   | Spec                                                     | Status   |
+| --- | -------------------------------------------------------- | -------- |
+| 001 | [Admin user management](001-admin-user-management.md)    | Approved |
