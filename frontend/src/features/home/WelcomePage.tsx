@@ -37,10 +37,16 @@ export function WelcomePage() {
           </p>
           <h1 className="mt-2 text-2xl">Welcome, {user?.displayName}</h1>
           <p className="mt-3 text-dark-teal/70">
-            Measure. Certify. Sustain. Your carbon accounting workspace is being built — more
-            arrives here soon.
+            Measure. Certify. Sustain. Set up your reporting organizations and run your first GHG
+            inventory.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/app/ghg"
+              className="inline-block rounded-lg bg-teal px-6 py-2.5 font-semibold text-white transition-colors duration-150 hover:bg-bright-teal"
+            >
+              GHG accounting
+            </Link>
             <Link
               to="/app/profile"
               className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-teal transition-colors duration-150 hover:bg-teal/10"
@@ -50,7 +56,7 @@ export function WelcomePage() {
             {user?.role === 'ADMIN' && (
               <Link
                 to="/admin/users"
-                className="inline-block rounded-lg bg-teal px-6 py-2.5 font-semibold text-white transition-colors duration-150 hover:bg-bright-teal"
+                className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-teal transition-colors duration-150 hover:bg-teal/10"
               >
                 Manage users
               </Link>
