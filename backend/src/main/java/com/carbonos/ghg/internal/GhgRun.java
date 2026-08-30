@@ -23,10 +23,10 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 /**
- * An immutable inventory calculation: the roll-up of an organization's
- * activity data over a reporting period at the moment the run executed. Lines
- * snapshot every input, so later edits to activities, facilities, or the
- * consolidation approach never rewrite a past run.
+ * An immutable, reproducible snapshot of one inventory's accounting view at
+ * the moment it was calculated (spec 003, invariant 3). Lines denormalize
+ * every input, so later edits to facts, boundary, or classification never
+ * rewrite a past run. Recalculation creates a new run.
  */
 @Entity
 @Table(name = "ghg_runs")
@@ -36,8 +36,8 @@ public class GhgRun {
 	private UUID id;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "organization_id", nullable = false)
-	private Organization organization;
+	@JoinColumn(name = "inventory_id", nullable = false)
+	private Inventory inventory;
 
 	@Column(nullable = false, length = 120)
 	private String label;
@@ -78,13 +78,13 @@ public class GhgRun {
 	protected GhgRun() {
 	}
 
-	GhgRun(Organization organization, String label, LocalDate periodStart, LocalDate periodEnd) {
+	GhgRun(Inventory inventory, String label) {
 		this.id = UUID.randomUUID();
-		this.organization = organization;
+		this.inventory = inventory;
 		this.label = label;
-		this.periodStart = periodStart;
-		this.periodEnd = periodEnd;
-		this.consolidationApproach = organization.getConsolidationApproach();
+		this.periodStart = inventory.getPeriodStart();
+		this.periodEnd = inventory.getPeriodEnd();
+		this.consolidationApproach = inventory.getConsolidationApproach();
 		this.activityCount = 0;
 		this.totalKgCo2e = BigDecimal.ZERO;
 		this.scope1KgCo2e = BigDecimal.ZERO;
@@ -107,8 +107,8 @@ public class GhgRun {
 		return id;
 	}
 
-	public Organization getOrganization() {
-		return organization;
+	public Inventory getInventory() {
+		return inventory;
 	}
 
 	public String getLabel() {

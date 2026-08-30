@@ -7,7 +7,6 @@ import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
-import { ApproachBadge } from './components/badges'
 import { GhgHeader } from './components/GhgHeader'
 import { OrganizationFormModal } from './components/OrganizationFormModal'
 import { useDeleteOrganization, useOrganizationsQuery } from './useGhg'
@@ -36,7 +35,7 @@ export function OrganizationsPage() {
         <div className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="text-2xl">GHG accounting</h1>
-            <p className="mt-1 text-sm text-dark-teal/60">
+            <p className="mt-1 text-sm text-ink-muted">
               Set up a reporting organization, draw its boundaries, record activity, then run the
               inventory.
             </p>
@@ -54,7 +53,7 @@ export function OrganizationsPage() {
         {organizations?.length === 0 && (
           <GlassCard className="p-10 text-center">
             <h2 className="text-lg">No organizations yet</h2>
-            <p className="mt-2 text-sm text-dark-teal/60">
+            <p className="mt-2 text-sm text-ink-muted">
               Create your first reporting organization to start the GHG Protocol workflow.
             </p>
           </GlassCard>
@@ -70,20 +69,19 @@ export function OrganizationsPage() {
               <div className="flex items-start justify-between gap-3">
                 <Link
                   to={`/app/ghg/${organization.id}`}
-                  className="text-lg font-semibold text-dark-teal hover:text-teal"
+                  className="text-lg font-semibold text-dark-teal hover:text-link"
                 >
                   {organization.name}
                 </Link>
-                <ApproachBadge approach={organization.consolidationApproach} />
               </div>
-              <p className="mt-2 text-sm text-dark-teal/60">
+              <p className="mt-2 text-sm text-ink-muted">
                 {organization.facilityCount} facilit
                 {organization.facilityCount === 1 ? 'y' : 'ies'} in the boundary
               </p>
               <div className="mt-4 flex gap-2">
                 <Link
                   to={`/app/ghg/${organization.id}`}
-                  className="inline-block rounded-lg bg-teal px-4 py-1.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-bright-teal"
+                  className="inline-block rounded-lg bg-teal-deep px-4 py-1.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-dark-teal"
                 >
                   Open
                 </Link>
@@ -128,7 +126,7 @@ export function OrganizationsPage() {
       )}
       {dialog?.kind === 'delete' && (
         <Modal title="Delete organization" onClose={() => setDialog(null)}>
-          <p className="text-sm text-dark-teal/80">
+          <p className="text-sm text-ink-muted">
             Delete <strong>{dialog.organization.name}</strong>? Its facilities, activity data, and
             past runs are removed with it.
           </p>

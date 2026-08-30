@@ -26,7 +26,7 @@ import com.carbonos.user.internal.User;
 import com.carbonos.user.internal.UserRepository;
 import com.carbonos.user.internal.UserRole;
 import com.carbonos.user.internal.UserService;
-import com.carbonos.user.internal.security.AuthenticatedUser;
+import com.carbonos.user.AuthenticatedUser;
 
 @SpringBootTest
 @AutoConfigureMockMvc

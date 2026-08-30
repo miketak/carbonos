@@ -41,7 +41,7 @@ export function UserTable({
     return (
       <div className="p-12 text-center">
         <h2 className="text-lg">No users yet</h2>
-        <p className="mt-1 text-sm text-dark-teal/60">
+        <p className="mt-1 text-sm text-ink-muted">
           Add your first team member with the button above.
         </p>
       </div>
@@ -52,7 +52,7 @@ export function UserTable({
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-teal/10 text-xs text-dark-teal/60 uppercase">
+          <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
             <th className="px-6 py-3 font-medium">Name</th>
             <th className="px-6 py-3 font-medium">Role</th>
             <th className="px-6 py-3 font-medium">Status</th>
@@ -70,7 +70,7 @@ export function UserTable({
                 <div className="flex items-center gap-3">
                   <span
                     aria-hidden
-                    className="flex size-9 items-center justify-center rounded-full bg-teal/10 font-semibold text-teal"
+                    className="flex size-9 items-center justify-center rounded-full bg-teal/10 font-semibold text-link"
                   >
                     {user.displayName.charAt(0).toUpperCase()}
                   </span>
@@ -78,10 +78,10 @@ export function UserTable({
                     <p className="font-medium">
                       {user.displayName}
                       {user.id === currentUserId && (
-                        <span className="ml-2 text-xs text-dark-teal/50">(you)</span>
+                        <span className="ml-2 text-xs text-ink-muted">(you)</span>
                       )}
                     </p>
-                    <p className="text-xs text-dark-teal/60">{user.email}</p>
+                    <p className="text-xs text-ink-muted">{user.email}</p>
                   </div>
                 </div>
               </td>
@@ -91,7 +91,7 @@ export function UserTable({
               <td className="px-6 py-3">
                 <StatusBadge status={user.status} />
               </td>
-              <td className="px-6 py-3 text-dark-teal/70">
+              <td className="px-6 py-3 text-ink-muted">
                 {dateFormat.format(new Date(user.createdAt))}
               </td>
               <td className="px-6 py-3">

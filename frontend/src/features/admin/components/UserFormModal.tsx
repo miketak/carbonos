@@ -107,7 +107,7 @@ export function UserFormModal({ user, onClose, onSaved }: UserFormModalProps) {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute top-0 right-0 text-xs font-medium text-teal hover:text-bright-teal"
+              className="absolute top-0 right-0 text-xs font-medium text-link hover:text-link"
             >
               {showPassword ? 'Hide' : 'Show'}
             </button>

@@ -5,6 +5,7 @@ import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
 import { useSession } from '../auth/useSession'
 import { useLogout } from '../auth/useLogout'
+import { AccessRequestsSection } from './components/AccessRequestsSection'
 import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog'
 import { UserFormModal } from './components/UserFormModal'
 import { UserTable } from './components/UserTable'
@@ -44,11 +45,16 @@ export function AdminUsersPage() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/50 bg-white/60 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent">
-            ECORIV <span className="text-dark-teal">CarbonOS</span>
-          </p>
+          <div className="leading-none">
+            <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent">
+              CarbonOS
+            </p>
+            <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-ink-muted uppercase">
+              by ECORIV
+            </p>
+          </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-dark-teal/70">{session.data?.displayName}</span>
+            <span className="text-sm text-ink-muted">{session.data?.displayName}</span>
             <Button
               variant="ghost"
               className="px-3 py-1.5 text-sm"
@@ -61,10 +67,12 @@ export function AdminUsersPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-10">
+        <AccessRequestsSection />
+
         <div className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="text-2xl">Users</h1>
-            <p className="mt-1 text-sm text-dark-teal/60">
+            <p className="mt-1 text-sm text-ink-muted">
               {usersQuery.data
                 ? `${usersQuery.data.length} team member${usersQuery.data.length === 1 ? '' : 's'}`
                 : 'Manage who can access CarbonOS'}

@@ -28,3 +28,6 @@ the source of truth for *how*.
 | #   | Spec                                                     | Status   |
 | --- | -------------------------------------------------------- | -------- |
 | 001 | [Admin user management](001-admin-user-management.md)    | Implemented |
+| 002 | [Access requests](002-access-requests.md)                | Implemented |
+| 003 | [Inventory accounting model](003-inventory-accounting-model.md) | Implemented |
+| 004 | [Organization access](004-organization-access.md)        | Implemented |

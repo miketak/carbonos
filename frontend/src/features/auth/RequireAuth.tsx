@@ -36,13 +36,13 @@ export function RequireAuth({ role, children }: RequireAuthProps) {
       <main className="flex min-h-screen items-center justify-center p-6">
         <GlassCard className="max-w-md p-8 text-center">
           <h1 className="mb-2 text-xl">Access denied</h1>
-          <p className="text-dark-teal/70">
+          <p className="text-ink-muted">
             You do not have permission to view this page. Contact an administrator if you believe
             this is a mistake.
           </p>
           <Link
             to="/app"
-            className="mt-6 inline-block rounded-lg bg-teal px-5 py-2 font-semibold text-white transition-colors duration-150 hover:bg-bright-teal"
+            className="mt-6 inline-block rounded-lg bg-teal-deep px-5 py-2 font-semibold text-white transition-colors duration-150 hover:bg-dark-teal"
           >
             Back to home
           </Link>

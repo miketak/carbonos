@@ -103,16 +103,4 @@ public class Facility {
 		this.controlled = controlled;
 	}
 
-	/**
-	 * Fraction of this facility's emissions the organization accounts for
-	 * under the given consolidation approach: the equity share for
-	 * {@link ConsolidationApproach#EQUITY_SHARE}, all or nothing for the
-	 * control approaches.
-	 */
-	BigDecimal consolidationWeight(ConsolidationApproach approach) {
-		if (approach == ConsolidationApproach.EQUITY_SHARE) {
-			return equitySharePercent.movePointLeft(2);
-		}
-		return controlled ? BigDecimal.ONE : BigDecimal.ZERO;
-	}
 }

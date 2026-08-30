@@ -26,6 +26,23 @@ function readCookie(name: string): string | undefined {
     ?.slice(name.length + 1)
 }
 
+let csrfBootstrap: Promise<unknown> | undefined
+
+/**
+ * The backend enforces CSRF even on public POSTs, and the XSRF cookie only
+ * exists after some API response has set it. On a fresh browser the very
+ * first mutation (login, request access) would 403 — so fetch any endpoint
+ * once to seed the cookie.
+ */
+async function ensureCsrfCookie(): Promise<void> {
+  if (readCookie('XSRF-TOKEN')) return
+  csrfBootstrap ??= fetch(`${API_URL}/api/auth/me`, { credentials: 'include' }).catch(
+    () => undefined,
+  )
+  await csrfBootstrap
+  csrfBootstrap = undefined
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method ?? 'GET').toUpperCase()
   // FormData bodies must let the browser set multipart/form-data with its boundary
@@ -34,6 +51,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   )
   new Headers(init?.headers).forEach((value, key) => headers.set(key, value))
   if (method !== 'GET' && method !== 'HEAD') {
+    await ensureCsrfCookie()
     const csrfToken = readCookie('XSRF-TOKEN')
     if (csrfToken) headers.set('X-XSRF-TOKEN', decodeURIComponent(csrfToken))
   }
@@ -49,7 +67,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(response.status, problem)
   }
 
-  if (response.status === 204) {
+  // 202 (accepted) responses carry no body either
+  if (response.status === 204 || response.status === 202) {
     return undefined as T
   }
   return (await response.json()) as T

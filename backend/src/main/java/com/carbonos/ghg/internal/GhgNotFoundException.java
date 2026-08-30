@@ -32,4 +32,16 @@ class GhgNotFoundException extends ErrorResponseException {
 	static GhgNotFoundException run(UUID id) {
 		return new GhgNotFoundException("Run", id);
 	}
+
+	static GhgNotFoundException inventory(UUID id) {
+		return new GhgNotFoundException("Inventory", id);
+	}
+
+	static GhgNotFoundException assignment(UUID id) {
+		return new GhgNotFoundException("Assignment", id);
+	}
+
+	static GhgNotFoundException boundaryTreatment(UUID id) {
+		return new GhgNotFoundException("Boundary treatment", id);
+	}
 }

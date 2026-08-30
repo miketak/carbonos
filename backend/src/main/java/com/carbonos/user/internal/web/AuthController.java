@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.carbonos.user.internal.UserRepository;
 import com.carbonos.user.internal.UserService;
-import com.carbonos.user.internal.security.AuthenticatedUser;
+import com.carbonos.user.AuthenticatedUser;
 import com.carbonos.user.internal.web.dto.LoginRequest;
 import com.carbonos.user.internal.web.dto.UserResponse;
 

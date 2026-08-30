@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.carbonos.user.internal.ProfileService;
-import com.carbonos.user.internal.security.AuthenticatedUser;
+import com.carbonos.user.AuthenticatedUser;
 import com.carbonos.user.internal.web.dto.ProfileResponse;
 import com.carbonos.user.internal.web.dto.UpdateProfileRequest;
 

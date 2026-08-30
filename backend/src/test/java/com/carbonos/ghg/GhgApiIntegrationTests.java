@@ -6,11 +6,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -24,22 +24,40 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.carbonos.TestcontainersConfiguration;
 import com.carbonos.ghg.internal.ActivityRecordRepository;
+import com.carbonos.ghg.internal.BoundaryTreatmentRepository;
 import com.carbonos.ghg.internal.FacilityRepository;
 import com.carbonos.ghg.internal.GhgRunRepository;
+import com.carbonos.ghg.internal.InventoryAssignmentRepository;
+import com.carbonos.ghg.internal.InventoryRepository;
 import com.carbonos.ghg.internal.OrganizationRepository;
-import com.carbonos.user.internal.security.AuthenticatedUser;
+import com.carbonos.user.AuthenticatedUser;
 import com.jayway.jsonpath.JsonPath;
 
+/** Spec 003: facts vs. views — inventories, boundaries, assignments, gates, runs. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 class GhgApiIntegrationTests {
+
+	// the seeded Diesel factor: SCOPE_1, litre, 2.66 kgCO2e/litre
+	private static final String DIESEL_FACTOR = "c4a1f001-0000-4000-8000-000000000003";
+	// the seeded Ghana grid electricity factor: SCOPE_2, kWh, 0.441 kgCO2e/kWh
+	private static final String GRID_FACTOR = "c4a1f001-0000-4000-8000-000000000006";
 
 	@Autowired
 	MockMvc mvc;
 
 	@Autowired
 	GhgRunRepository runs;
+
+	@Autowired
+	InventoryAssignmentRepository assignments;
+
+	@Autowired
+	BoundaryTreatmentRepository boundaryTreatments;
+
+	@Autowired
+	InventoryRepository inventories;
 
 	@Autowired
 	ActivityRecordRepository activities;
@@ -53,253 +71,480 @@ class GhgApiIntegrationTests {
 	@BeforeEach
 	void resetGhgData() {
 		runs.deleteAll();
+		assignments.deleteAll();
+		boundaryTreatments.deleteAll();
+		inventories.deleteAll();
 		activities.deleteAll();
 		facilities.deleteAll();
 		organizations.deleteAll();
 	}
 
+	// spec 004: data is tenant-scoped, so every call in a test acts as one stable owner
+	private final UUID ownerId = UUID.randomUUID();
+
 	RequestPostProcessor asMember() {
-		return user(new AuthenticatedUser(UUID.randomUUID(), "kojo@ecoriv.com", "irrelevant", "MEMBER", true));
+		return user(new AuthenticatedUser(ownerId, "kojo@ecoriv.com", "irrelevant", "MEMBER", true));
 	}
 
-	String createOrganization(String name, String approach) throws Exception {
+	RequestPostProcessor asOutsider() {
+		return user(new AuthenticatedUser(UUID.randomUUID(), "efua@ecoriv.com", "irrelevant", "MEMBER", true));
+	}
+
+	RequestPostProcessor asAdmin() {
+		return user(new AuthenticatedUser(UUID.randomUUID(), "ama@ecoriv.com", "irrelevant", "ADMIN", true));
+	}
+
+	// --- helpers ------------------------------------------------------------
+
+	String createOrganization(String name) throws Exception {
 		var result = mvc
 			.perform(post("/api/ghg/organizations").with(asMember()).with(csrf()).contentType("application/json")
 				.content("""
-						{"name": "%s", "consolidationApproach": "%s"}""".formatted(name, approach)))
+						{"name": "%s"}""".formatted(name)))
 			.andExpect(status().isCreated())
 			.andExpect(header().exists("Location"))
 			.andReturn();
 		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
 	}
 
-	String createFacility(String orgId, String name, String equityShare, boolean controlled) throws Exception {
+	String createFacility(String orgId, String name) throws Exception {
 		var result = mvc
 			.perform(post("/api/ghg/organizations/" + orgId + "/facilities").with(asMember()).with(csrf())
 				.contentType("application/json")
 				.content("""
-						{"name": "%s", "location": "Accra, Ghana",
-						 "equitySharePercent": %s, "controlled": %s}""".formatted(name, equityShare, controlled)))
+						{"name": "%s", "location": "Tema, Ghana", "equitySharePercent": 100, "controlled": true}"""
+					.formatted(name)))
 			.andExpect(status().isCreated())
 			.andReturn();
 		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
 	}
 
-	String factorIdByName(String name) throws Exception {
-		var body = mvc.perform(get("/api/ghg/emission-factors").with(asMember()))
-			.andExpect(status().isOk())
-			.andReturn()
-			.getResponse()
-			.getContentAsString();
-		return JsonPath.<java.util.List<String>>read(body, "$[?(@.name == '%s')].id".formatted(name)).getFirst();
-	}
-
-	void createActivity(String orgId, String facilityId, String factorId, String quantity, String date)
+	String createActivity(String orgId, String facilityId, String type, String quantity, String unit, String date)
 			throws Exception {
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
-			.contentType("application/json")
-			.content("""
-					{"facilityId": "%s", "emissionFactorId": "%s",
-					 "quantity": %s, "activityDate": "%s"}""".formatted(facilityId, factorId, quantity, date)))
-			.andExpect(status().isCreated());
-	}
-
-	BigDecimal decimalAt(String json, String path) {
-		return new BigDecimal(JsonPath.read(json, path).toString());
-	}
-
-	@Test
-	void fullWorkflowUnderEquityShareWeighsFacilitiesByOwnership() throws Exception {
-		var orgId = createOrganization("Ecoriv Holdings", "EQUITY_SHARE");
-		var owned = createFacility(orgId, "Accra HQ", "100", true);
-		var jointVenture = createFacility(orgId, "Tema JV plant", "40", false);
-
-		createActivity(orgId, owned, factorIdByName("Diesel"), "1000", "2026-03-15");
-		createActivity(orgId, jointVenture, factorIdByName("Grid electricity (Ghana)"), "2000", "2026-06-01");
-
-		var run = mvc
-			.perform(post("/api/ghg/organizations/" + orgId + "/runs").with(asMember()).with(csrf())
+		var result = mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
 				.contentType("application/json")
 				.content("""
-						{"label": "FY2026 inventory", "periodStart": "2026-01-01", "periodEnd": "2026-12-31"}"""))
+						{"facilityId": "%s", "activityType": "%s", "quantity": %s, "unit": "%s",
+						 "activityDate": "%s", "dataSource": "Fuel invoice", "evidenceRef": "INV-2938",
+						 "dataQuality": "MEASURED"}""".formatted(facilityId, type, quantity, unit, date)))
 			.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.run.activityCount").value(2))
-			.andExpect(jsonPath("$.lines.length()").value(2))
-			.andReturn()
-			.getResponse()
-			.getContentAsString();
-
-		// diesel: 1000 L x 2.66 x 100% = 2660; electricity: 2000 kWh x 0.441 x 40% = 352.8
-		assertThat(decimalAt(run, "$.run.scope1KgCo2e")).isEqualByComparingTo("2660");
-		assertThat(decimalAt(run, "$.run.scope2KgCo2e")).isEqualByComparingTo("352.8");
-		assertThat(decimalAt(run, "$.run.scope3KgCo2e")).isEqualByComparingTo("0");
-		assertThat(decimalAt(run, "$.run.totalKgCo2e")).isEqualByComparingTo("3012.8");
-
-		String runId = JsonPath.read(run, "$.run.id");
-		mvc.perform(get("/api/ghg/runs/" + runId).with(asMember()))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.run.label").value("FY2026 inventory"))
-			.andExpect(jsonPath("$.lines.length()").value(2));
-
-		mvc.perform(get("/api/ghg/organizations/" + orgId + "/runs").with(asMember()))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(1));
+			.andReturn();
+		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
 	}
 
-	@Test
-	void operationalControlCountsAllOrNothing() throws Exception {
-		var orgId = createOrganization("Control Corp", "OPERATIONAL_CONTROL");
-		var uncontrolled = createFacility(orgId, "Minority stake site", "40", false);
-		createActivity(orgId, uncontrolled, factorIdByName("Diesel"), "1000", "2026-03-15");
-
-		var run = mvc
-			.perform(post("/api/ghg/organizations/" + orgId + "/runs").with(asMember()).with(csrf())
+	String createInventory(String orgId, String name, String approach) throws Exception {
+		var result = mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
 				.contentType("application/json")
 				.content("""
-						{"label": "FY2026", "periodStart": "2026-01-01", "periodEnd": "2026-12-31"}"""))
+						{"name": "%s", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+						 "purpose": "Corporate reporting", "consolidationApproach": "%s"}"""
+					.formatted(name, approach)))
 			.andExpect(status().isCreated())
-			.andReturn()
-			.getResponse()
-			.getContentAsString();
-
-		assertThat(decimalAt(run, "$.run.totalKgCo2e")).isEqualByComparingTo("0");
-		assertThat(decimalAt(run, "$.lines[0].weight")).isEqualByComparingTo("0");
+			.andReturn();
+		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
 	}
 
-	@Test
-	void runOnlyIncludesActivitiesInsideThePeriod() throws Exception {
-		var orgId = createOrganization("Periodic Ltd", "OPERATIONAL_CONTROL");
-		var site = createFacility(orgId, "Site", "100", true);
-		var diesel = factorIdByName("Diesel");
-		createActivity(orgId, site, diesel, "100", "2025-12-31");
-		createActivity(orgId, site, diesel, "100", "2026-01-01");
-
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/runs").with(asMember()).with(csrf())
+	void putBoundary(String inventoryId, String facilityId, String ownership, boolean financial, boolean operational)
+			throws Exception {
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/" + facilityId).with(asMember())
+			.with(csrf())
 			.contentType("application/json")
 			.content("""
-					{"label": "FY2026", "periodStart": "2026-01-01", "periodEnd": "2026-12-31"}"""))
-			.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.run.activityCount").value(1));
+					{"ownershipPercent": %s, "financialControl": %s, "operationalControl": %s}"""
+				.formatted(ownership, financial, operational)))
+			.andExpect(status().isOk());
 	}
 
-	@Test
-	void runsAreImmutableSnapshots() throws Exception {
-		var orgId = createOrganization("Snapshot SA", "OPERATIONAL_CONTROL");
-		var site = createFacility(orgId, "Site", "100", true);
-		createActivity(orgId, site, factorIdByName("Diesel"), "100", "2026-02-01");
-
-		var run = mvc
-			.perform(post("/api/ghg/organizations/" + orgId + "/runs").with(asMember()).with(csrf())
-				.contentType("application/json")
-				.content("""
-						{"label": "Before edits", "periodStart": "2026-01-01", "periodEnd": "2026-12-31"}"""))
-			.andExpect(status().isCreated())
-			.andReturn()
-			.getResponse()
-			.getContentAsString();
-		String runId = JsonPath.read(run, "$.run.id");
-		String activityId = JsonPath.read(run, "$.lines[0].activityId");
-
-		mvc.perform(delete("/api/ghg/activities/" + activityId).with(asMember()).with(csrf()))
-			.andExpect(status().isNoContent());
-
-		var after = mvc.perform(get("/api/ghg/runs/" + runId).with(asMember()))
+	String syncAndGetAssignmentId(String inventoryId, String activityId) throws Exception {
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var listing = mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.lines.length()").value(1))
 			.andReturn()
 			.getResponse()
 			.getContentAsString();
-		assertThat(decimalAt(after, "$.run.totalKgCo2e")).isEqualByComparingTo("266");
+		java.util.List<String> ids = JsonPath.read(listing, "$[?(@.activityId == '" + activityId + "')].id");
+		return ids.getFirst();
 	}
 
-	@Test
-	void invalidPeriodIs422() throws Exception {
-		var orgId = createOrganization("Backwards Inc", "EQUITY_SHARE");
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/runs").with(asMember()).with(csrf())
+	void classify(String assignmentId, String factorId) throws Exception {
+		mvc.perform(put("/api/ghg/assignments/" + assignmentId + "/classify").with(asMember()).with(csrf())
 			.contentType("application/json")
 			.content("""
-					{"label": "FY2026", "periodStart": "2026-12-31", "periodEnd": "2026-01-01"}"""))
-			.andExpect(status().isUnprocessableContent())
-			.andExpect(jsonPath("$.errors.periodEnd").exists());
+					{"emissionFactorId": "%s"}""".formatted(factorId)))
+			.andExpect(status().isOk());
+	}
+
+	// --- facts --------------------------------------------------------------
+
+	@Test
+	void activityRecordsAreFactsWithoutAccountingTreatment() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		createActivity(orgId, facilityId, "Diesel consumption", "12500", "litre", "2025-03-15");
+
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].activityType").value("Diesel consumption"))
+			.andExpect(jsonPath("$[0].unit").value("litre"))
+			.andExpect(jsonPath("$[0].dataSource").value("Fuel invoice"))
+			.andExpect(jsonPath("$[0].evidenceRef").value("INV-2938"))
+			.andExpect(jsonPath("$[0].dataQuality").value("MEASURED"))
+			.andExpect(jsonPath("$[0].scope").doesNotExist());
 	}
 
 	@Test
-	void duplicateOrganizationIs409() throws Exception {
-		createOrganization("Ecoriv Holdings", "EQUITY_SHARE");
+	void duplicateOrganizationNamesAreRejected() throws Exception {
+		createOrganization("Ecoriv Holdings");
 		mvc.perform(post("/api/ghg/organizations").with(asMember()).with(csrf()).contentType("application/json")
 			.content("""
-					{"name": "ecoriv holdings", "consolidationApproach": "EQUITY_SHARE"}"""))
-			.andExpect(status().isConflict())
-			.andExpect(jsonPath("$.title").value("Duplicate organization"));
+					{"name": "ecoriv holdings"}"""))
+			.andExpect(status().isConflict());
+	}
+
+	// --- inventories and boundary ------------------------------------------
+
+	@Test
+	void multipleInventoriesMayCoverTheSamePeriod() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		createInventory(orgId, "2025 Corporate Inventory", "OPERATIONAL_CONTROL");
+		createInventory(orgId, "2025 Equity-Share Inventory", "EQUITY_SHARE");
+
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(2));
 	}
 
 	@Test
-	void invalidFacilityIs422WithFieldErrors() throws Exception {
-		var orgId = createOrganization("Validation SA", "EQUITY_SHARE");
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/facilities").with(asMember()).with(csrf())
-			.contentType("application/json")
-			.content("""
-					{"name": "", "location": "", "equitySharePercent": 150, "controlled": true}"""))
-			.andExpect(status().isUnprocessableContent())
-			.andExpect(jsonPath("$.errors.name").exists())
-			.andExpect(jsonPath("$.errors.location").exists())
-			.andExpect(jsonPath("$.errors.equitySharePercent").exists());
+	void boundaryDerivesAccountingShareFromTheApproach() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var equityInventory = createInventory(orgId, "Equity view", "EQUITY_SHARE");
+		putBoundary(equityInventory, facilityId, "40", false, true);
+
+		mvc.perform(get("/api/ghg/inventories/" + equityInventory + "/boundary").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].inBoundary").value(true))
+			.andExpect(jsonPath("$[0].accountingShare").value(0.40));
+
+		var controlInventory = createInventory(orgId, "Control view", "OPERATIONAL_CONTROL");
+		putBoundary(controlInventory, facilityId, "40", false, true);
+		mvc.perform(get("/api/ghg/inventories/" + controlInventory + "/boundary").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].accountingShare").value(1));
 	}
 
-	@Test
-	void activityAgainstAnotherOrganizationsFacilityIs404() throws Exception {
-		var orgId = createOrganization("Org A", "EQUITY_SHARE");
-		var otherOrgId = createOrganization("Org B", "EQUITY_SHARE");
-		var foreignFacility = createFacility(otherOrgId, "B site", "100", true);
-
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
-			.contentType("application/json")
-			.content("""
-					{"facilityId": "%s", "emissionFactorId": "%s",
-					 "quantity": 10, "activityDate": "2026-01-01"}"""
-				.formatted(foreignFacility, factorIdByName("Diesel"))))
-			.andExpect(status().isNotFound());
-	}
+	// --- assignments ---------------------------------------------------------
 
 	@Test
-	void unknownOrganizationIs404() throws Exception {
-		mvc.perform(get("/api/ghg/organizations/" + UUID.randomUUID()).with(asMember()))
-			.andExpect(status().isNotFound());
-	}
+	void syncAutoExcludesOutsidePeriodAndBoundaryWithDocumentedReasons() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var inPlant = createFacility(orgId, "Tema Plant");
+		var outPlant = createFacility(orgId, "Kumasi Plant");
+		var inActivity = createActivity(orgId, inPlant, "Diesel consumption", "100", "litre", "2025-03-15");
+		var lateActivity = createActivity(orgId, inPlant, "Diesel consumption", "50", "litre", "2026-02-01");
+		var strayActivity = createActivity(orgId, outPlant, "Diesel consumption", "70", "litre", "2025-05-01");
 
-	@Test
-	void anonymousIs401() throws Exception {
-		mvc.perform(get("/api/ghg/organizations")).andExpect(status().isUnauthorized());
-	}
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, inPlant, "100", true, true);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.created").value(3));
 
-	@Test
-	void seededFactorLibraryCoversAllThreeScopes() throws Exception {
-		var body = mvc.perform(get("/api/ghg/emission-factors").with(asMember()))
+		var listing = mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
 			.andExpect(status().isOk())
 			.andReturn()
 			.getResponse()
 			.getContentAsString();
-		assertThat(JsonPath.<java.util.List<String>>read(body, "$[*].scope"))
-			.contains("SCOPE_1", "SCOPE_2", "SCOPE_3");
+		assertThat(JsonPath.<java.util.List<Boolean>>read(listing,
+				"$[?(@.activityId == '" + inActivity + "')].included").getFirst()).isTrue();
+		assertThat(JsonPath.<java.util.List<String>>read(listing,
+				"$[?(@.activityId == '" + lateActivity + "')].exclusionReason").getFirst())
+			.isEqualTo("OUTSIDE_PERIOD");
+		assertThat(JsonPath.<java.util.List<String>>read(listing,
+				"$[?(@.activityId == '" + strayActivity + "')].exclusionReason").getFirst())
+			.isEqualTo("OUTSIDE_BOUNDARY");
 	}
 
 	@Test
-	void deletingAnOrganizationCascades() throws Exception {
-		var orgId = createOrganization("Ephemeral GmbH", "OPERATIONAL_CONTROL");
-		var site = createFacility(orgId, "Site", "100", true);
-		createActivity(orgId, site, factorIdByName("Diesel"), "10", "2026-01-15");
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/runs").with(asMember()).with(csrf())
+	void classificationDerivesScopeAndCategoryWithoutTouchingTheFact() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "100", "litre", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		var assignmentId = syncAndGetAssignmentId(inventoryId, activityId);
+
+		mvc.perform(put("/api/ghg/assignments/" + assignmentId + "/classify").with(asMember()).with(csrf())
 			.contentType("application/json")
 			.content("""
-					{"label": "FY2026", "periodStart": "2026-01-01", "periodEnd": "2026-12-31"}"""))
+					{"emissionFactorId": "%s"}""".formatted(DIESEL_FACTOR)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.scope").value("SCOPE_1"))
+			.andExpect(jsonPath("$.category").value("MOBILE_COMBUSTION"));
+
+		// invariant 2: the underlying fact is unchanged
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asMember()))
+			.andExpect(jsonPath("$[0].scope").doesNotExist())
+			.andExpect(jsonPath("$[0].activityType").value("Diesel consumption"));
+	}
+
+	// --- validation gates ----------------------------------------------------
+
+	@Test
+	void validationBlocksUnclassifiedIncludedActivitiesAndUnitMismatches() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Electricity", "500", "kWh", "2025-06-01");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+
+		// empty boundary + unreviewed data
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.ready").value(false))
+			.andExpect(jsonPath("$.gates[0].status").value("BLOCKED"));
+
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		var assignmentId = syncAndGetAssignmentId(inventoryId, activityId);
+
+		// included but unclassified
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(false))
+			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"));
+
+		// wrong-unit factor: Diesel expects litres, the fact is in kWh
+		classify(assignmentId, DIESEL_FACTOR);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(false))
+			.andExpect(jsonPath("$.gates[3].status").value("BLOCKED"));
+
+		// matching factor clears every gate
+		classify(assignmentId, GRID_FACTOR);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(true));
+	}
+
+	@Test
+	void runCreationIsRefusedWhileValidationBlocks() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"label": "Run 001"}"""))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.title").value("Validation failing"));
+	}
+
+	// --- runs -----------------------------------------------------------------
+
+	@Test
+	void runSnapshotsTheViewAndCanBeMarkedFinal() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Equity View", "EQUITY_SHARE");
+		putBoundary(inventoryId, facilityId, "40", false, false);
+		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
+
+		// 1000 L x 2.66 kg/L x 40% = 1064 kg
+		var result = mvc
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+				.contentType("application/json")
+				.content("""
+						{"label": "Run 001"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(1064.0))
+			.andExpect(jsonPath("$.run.scope1KgCo2e").value(1064.0))
+			.andExpect(jsonPath("$.lines[0].weight").value(0.40))
+			.andExpect(jsonPath("$.lines[0].factorName").value("Diesel"))
+			.andReturn();
+		String runId = JsonPath.read(result.getResponse().getContentAsString(), "$.run.id");
+
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.finalRunId").value(runId));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()))
+			.andExpect(jsonPath("$[0].isFinal").value(true));
+
+		mvc.perform(delete("/api/ghg/runs/" + runId).with(asMember()).with(csrf()))
+			.andExpect(status().isNoContent());
+		assertThat(inventories.findById(UUID.fromString(inventoryId)).orElseThrow().getFinalRunId()).isNull();
+	}
+
+	@Test
+	void twoInventoriesAccountTheSameFactDifferently() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
+
+		var corporate = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(corporate, facilityId, "40", false, true);
+		classify(syncAndGetAssignmentId(corporate, activityId), DIESEL_FACTOR);
+
+		var equity = createInventory(orgId, "2025 Equity", "EQUITY_SHARE");
+		putBoundary(equity, facilityId, "40", false, true);
+		classify(syncAndGetAssignmentId(equity, activityId), DIESEL_FACTOR);
+
+		// operational control: 100% -> 2660 kg; equity share: 40% -> 1064 kg
+		mvc.perform(post("/api/ghg/inventories/" + corporate + "/runs").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Run 001"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2660.0));
+		mvc.perform(post("/api/ghg/inventories/" + equity + "/runs").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Run 001"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(1064.0));
+
+		// the physical fact remains 1000 L in both cases
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asMember()))
+			.andExpect(jsonPath("$[0].quantity").value(1000.0));
+	}
+
+	// --- spec 004: tenant isolation (AUTH-01) --------------------------------
+
+	@Test
+	void organizationsAreInvisibleToNonOwners() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
+		var runResult = mvc
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"label": "Run 001"}"""))
+			.andExpect(status().isCreated())
+			.andReturn();
+		String runId = JsonPath.read(runResult.getResponse().getContentAsString(), "$.run.id");
+
+		// an unrelated member sees nothing and can touch nothing — always 404, never 403
+		mvc.perform(get("/api/ghg/organizations").with(asOutsider()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(0));
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asOutsider())).andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asOutsider()))
+			.andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asOutsider())).andExpect(status().isNotFound());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asOutsider()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Stranger run"}"""))
+			.andExpect(status().isNotFound());
+		mvc.perform(delete("/api/ghg/runs/" + runId).with(asOutsider()).with(csrf()))
+			.andExpect(status().isNotFound());
+
+		// platform admins retain oversight
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asAdmin())).andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/runs/" + runId).with(asAdmin())).andExpect(status().isOk());
+	}
+
+	// --- audit-trail guards (TRACE-01/02) ------------------------------------
+
+	@Test
+	void factsAndFacilitiesReferencedByHistoryCannotBeDeleted() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Run 001"}"""))
 			.andExpect(status().isCreated());
 
-		mvc.perform(delete("/api/ghg/organizations/" + orgId).with(asMember()).with(csrf()))
-			.andExpect(status().isNoContent());
+		mvc.perform(delete("/api/ghg/activities/" + activityId).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.title").value("Operation not allowed"));
+		mvc.perform(delete("/api/ghg/facilities/" + facilityId).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
+	}
 
-		assertThat(organizations.count()).isZero();
-		assertThat(facilities.count()).isZero();
-		assertThat(activities.count()).isZero();
-		assertThat(runs.count()).isZero();
+	// --- fact correction (CORRECT-01) ----------------------------------------
+
+	@Test
+	void factsAreCorrectedInPlaceWithoutRewritingRuns() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
+		var runResult = mvc
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"label": "Run 001"}"""))
+			.andExpect(status().isCreated())
+			.andReturn();
+		String runId = JsonPath.read(runResult.getResponse().getContentAsString(), "$.run.id");
+
+		mvc.perform(put("/api/ghg/activities/" + activityId).with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"facilityId": "%s", "activityType": "Diesel consumption", "quantity": 1200,
+					 "unit": "litre", "activityDate": "2025-03-15", "evidenceRef": "INV-2938-corrected",
+					 "dataQuality": "MEASURED"}""".formatted(facilityId)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.quantity").value(1200.0))
+			.andExpect(jsonPath("$.evidenceRef").value("INV-2938-corrected"));
+
+		// the past run is a snapshot: still the original 1000 L x 2.66
+		mvc.perform(get("/api/ghg/runs/" + runId).with(asMember()))
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2660.0));
+	}
+
+	// --- stale exclusions (RECON-01) -----------------------------------------
+
+	@Test
+	void reviewReinstatesAutoExclusionsWhoseReasonNoLongerHolds() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "900", "litre", "2024-11-20");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.created").value(1));
+
+		// widen the period so the 2024 fact is now covered; the stale exclusion is flagged...
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId).with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"name": "2025 Corporate", "periodStart": "2024-01-01", "periodEnd": "2025-12-31",
+					 "consolidationApproach": "OPERATIONAL_CONTROL"}"""))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[1].status").value("WARNINGS"));
+
+		// ...and re-running review reinstates it
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.updated").value(1));
+		var listing = mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		assertThat(JsonPath.<java.util.List<Boolean>>read(listing,
+				"$[?(@.activityId == '" + activityId + "')].included").getFirst()).isTrue();
+	}
+
+	// --- date plausibility (PLAUS-01) ----------------------------------------
+
+	@Test
+	void futureDatedFactsAreRejected() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"facilityId": "%s", "activityType": "Time travel diesel", "quantity": 10,
+					 "unit": "litre", "activityDate": "2091-01-01", "dataQuality": "MEASURED"}"""
+				.formatted(facilityId)))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.activityDate").exists());
 	}
 }

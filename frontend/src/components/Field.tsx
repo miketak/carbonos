@@ -2,7 +2,7 @@ import { useId } from 'react'
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
 
 const controlClasses =
-  'w-full rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-dark-teal transition-colors duration-150 placeholder:text-dark-teal/40 focus:border-bright-teal focus:ring-2 focus:ring-bright-teal/40 focus:outline-none disabled:opacity-50'
+  'w-full rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-dark-teal transition-colors duration-150 placeholder:text-ink-muted focus:border-bright-teal focus:ring-2 focus:ring-bright-teal/40 focus:outline-none disabled:opacity-50'
 
 interface FieldShellProps {
   label: string
@@ -19,7 +19,7 @@ function FieldShell({ label, error, hint, htmlFor, children }: FieldShellProps) 
         {label}
       </label>
       {children}
-      {hint && !error && <p className="text-xs text-dark-teal/60">{hint}</p>}
+      {hint && !error && <p className="text-xs text-ink-muted">{hint}</p>}
       {error && (
         <p role="alert" className="text-xs font-medium text-red-600">
           {error}

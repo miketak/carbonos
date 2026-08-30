@@ -63,17 +63,19 @@ public class GhgRunLine {
 	protected GhgRunLine() {
 	}
 
-	GhgRunLine(GhgRun run, ActivityRecord activity, BigDecimal weight, BigDecimal kgCo2e) {
+	GhgRunLine(GhgRun run, InventoryAssignment assignment, BigDecimal weight, BigDecimal kgCo2e) {
+		var activity = assignment.getActivity();
+		var factor = assignment.getEmissionFactor();
 		this.id = UUID.randomUUID();
 		this.run = run;
 		this.activityId = activity.getId();
 		this.facilityName = activity.getFacility().getName();
-		this.factorName = activity.getEmissionFactor().getName();
-		this.scope = activity.getEmissionFactor().getScope();
-		this.category = activity.getEmissionFactor().getCategory();
+		this.factorName = factor.getName();
+		this.scope = assignment.getScope();
+		this.category = assignment.getCategory();
 		this.quantity = activity.getQuantity();
-		this.unit = activity.getEmissionFactor().getUnit();
-		this.kgCo2ePerUnit = activity.getEmissionFactor().getKgCo2ePerUnit();
+		this.unit = activity.getUnit();
+		this.kgCo2ePerUnit = factor.getKgCo2ePerUnit();
 		this.weight = weight;
 		this.kgCo2e = kgCo2e;
 	}

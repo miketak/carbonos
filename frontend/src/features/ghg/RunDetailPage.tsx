@@ -1,28 +1,33 @@
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import type { CSSProperties } from 'react'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { AnimatedCo2e } from './components/AnimatedCo2e'
 import { ApproachBadge } from './components/badges'
+import { Breadcrumb } from './components/Breadcrumb'
 import { RunLinesTable } from './components/RunLinesTable'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
-import { useOrganizationQuery, useRunQuery } from './useGhg'
+import { useInventoryQuery, useRunQuery } from './useGhg'
 
 /** One run read as the inventory report: period, totals by scope, snapshot lines. */
 export function RunDetailPage() {
-  const { organizationId = '', runId = '' } = useParams()
-  const organization = useOrganizationQuery(organizationId).data
+  const { organizationId = '', inventoryId = '', runId = '' } = useParams()
+  const inventory = useInventoryQuery(inventoryId).data
   const runQuery = useRunQuery(runId)
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link
-          to={`/app/ghg/${organizationId}/runs`}
-          className="text-sm font-medium text-teal hover:text-bright-teal"
-        >
-          ← All runs
-        </Link>
+        <Breadcrumb
+          items={[
+            { label: 'Inventories', to: `/app/ghg/${organizationId}/inventories` },
+            {
+              label: inventory?.name ?? 'Inventory',
+              to: `/app/ghg/${organizationId}/inventories/${inventoryId}`,
+            },
+            { label: runQuery.data?.run.label ?? 'Run' },
+          ]}
+        />
 
         {runQuery.isPending && (
           <div aria-label="Loading report" className="mt-3 flex flex-col gap-4">
@@ -33,8 +38,8 @@ export function RunDetailPage() {
         {runQuery.isError && (
           <GlassCard className="mt-4 p-8 text-center">
             <h1 className="text-lg">Report not found</h1>
-            <p className="mt-1 text-sm text-dark-teal/60">
-              This run may have been deleted. Head back to the list to pick another.
+            <p className="mt-1 text-sm text-ink-muted">
+              This run may have been deleted. Head back to the inventory to pick another.
             </p>
           </GlassCard>
         )}
@@ -42,13 +47,18 @@ export function RunDetailPage() {
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <h1 className="text-2xl">{runQuery.data.run.label}</h1>
             <ApproachBadge approach={runQuery.data.run.consolidationApproach} />
+            {runQuery.data.run.isFinal && (
+              <span className="rounded-full bg-accent-green/25 px-2.5 py-0.5 text-xs font-bold text-dark-teal">
+                FINAL
+              </span>
+            )}
           </div>
         )}
         {runQuery.data && (
-          <p className="mt-1 text-sm text-dark-teal/60">
-            {organization?.name} · {runQuery.data.run.periodStart} → {runQuery.data.run.periodEnd} ·{' '}
-            {runQuery.data.run.activityCount} activit
-            {runQuery.data.run.activityCount === 1 ? 'y' : 'ies'}
+          <p className="mt-1 text-sm text-ink-muted">
+            {inventory?.name} · {runQuery.data.run.periodStart} → {runQuery.data.run.periodEnd} ·{' '}
+            {runQuery.data.run.activityCount} line
+            {runQuery.data.run.activityCount === 1 ? '' : 's'}
           </p>
         )}
       </div>
@@ -56,7 +66,7 @@ export function RunDetailPage() {
       {runQuery.data && (
         <>
           <GlassCard className="animate-fade-up p-6">
-            <p className="text-sm text-dark-teal/60">Total emissions</p>
+            <p className="text-sm text-ink-muted">Total emissions</p>
             <AnimatedCo2e
               kg={runQuery.data.run.totalKgCo2e}
               className="mt-1 block text-3xl font-bold text-dark-teal"

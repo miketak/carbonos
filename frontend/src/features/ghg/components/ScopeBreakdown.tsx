@@ -3,7 +3,7 @@ import type { GhgScope, Run } from '../api'
 
 const scopeBarStyles: Record<GhgScope, string> = {
   SCOPE_1: 'bg-dark-teal',
-  SCOPE_2: 'bg-teal',
+  SCOPE_2: 'bg-teal-deep',
   SCOPE_3: 'bg-accent-green',
 }
 
@@ -19,7 +19,7 @@ export function ScopeBreakdown({ run }: { run: Run }) {
     <div className="flex flex-col gap-2">
       {scopes.map(({ scope, kg }) => (
         <div key={scope} className="flex items-center gap-3 text-sm">
-          <span className="w-16 shrink-0 text-dark-teal/70">{scopeLabels[scope]}</span>
+          <span className="w-16 shrink-0 text-ink-muted">{scopeLabels[scope]}</span>
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-teal/10">
             <div
               className={`animate-bar-grow h-full rounded-full ${scopeBarStyles[scope]}`}
@@ -31,7 +31,7 @@ export function ScopeBreakdown({ run }: { run: Run }) {
               }}
             />
           </div>
-          <span className="w-28 shrink-0 text-right whitespace-nowrap text-dark-teal/80">
+          <span className="w-28 shrink-0 text-right whitespace-nowrap text-ink-muted">
             {formatCo2e(kg)}
           </span>
         </div>

@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../../../components/Button'
-import { InputField, SelectField } from '../../../components/Field'
+import { InputField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
-import { approachLabels } from '../format'
 import { useCreateOrganization, useUpdateOrganization } from '../useGhg'
-import type { ConsolidationApproach, Organization } from '../api'
+import type { Organization } from '../api'
 
 interface OrganizationFormModalProps {
   organization?: Organization
@@ -14,7 +13,7 @@ interface OrganizationFormModalProps {
   onSaved: (message: string) => void
 }
 
-/** Create or edit a reporting organization. */
+/** Create or edit a reporting organization. Accounting choices live on its inventories. */
 export function OrganizationFormModal({
   organization,
   onClose,
@@ -25,16 +24,13 @@ export function OrganizationFormModal({
   const mutation = organization ? update : create
 
   const [name, setName] = useState(organization?.name ?? '')
-  const [approach, setApproach] = useState<ConsolidationApproach>(
-    organization?.consolidationApproach ?? 'OPERATIONAL_CONTROL',
-  )
 
   const errors = fieldErrors(mutation.error)
   const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    const input = { name, consolidationApproach: approach }
+    const input = { name }
     const handlers = {
       onSuccess: () => onSaved(`${name.trim()} ${organization ? 'updated' : 'created'}.`),
     }
@@ -53,19 +49,6 @@ export function OrganizationFormModal({
           placeholder="Ecoriv Holdings"
           required
         />
-        <SelectField
-          label="Consolidation approach"
-          value={approach}
-          onChange={(event) => setApproach(event.target.value as ConsolidationApproach)}
-          error={errors?.consolidationApproach}
-          hint="How facility emissions roll up: by equity share, or all-or-nothing under control."
-        >
-          {Object.entries(approachLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </SelectField>
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">
             {generalError}

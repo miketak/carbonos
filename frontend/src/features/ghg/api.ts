@@ -2,18 +2,28 @@ import { api } from '../../lib/api'
 
 export type ConsolidationApproach = 'EQUITY_SHARE' | 'FINANCIAL_CONTROL' | 'OPERATIONAL_CONTROL'
 export type GhgScope = 'SCOPE_1' | 'SCOPE_2' | 'SCOPE_3'
+export type DataQuality = 'MEASURED' | 'ESTIMATED' | 'CALCULATED'
+export type ExclusionReason =
+  | 'OUTSIDE_PERIOD'
+  | 'OUTSIDE_BOUNDARY'
+  | 'NON_GHG'
+  | 'DUPLICATE'
+  | 'NOT_APPLICABLE'
+  | 'METHODOLOGY'
+  | 'OTHER'
+export type ValidationGate = 'BOUNDARY' | 'COMPLETENESS' | 'CLASSIFICATION' | 'EMISSION_FACTOR'
+export type GateStatus = 'PASSED' | 'WARNINGS' | 'BLOCKED'
+export type FindingSeverity = 'ERROR' | 'WARNING' | 'INFO'
 
 export interface Organization {
   id: string
   name: string
-  consolidationApproach: ConsolidationApproach
   facilityCount: number
   createdAt: string
 }
 
 export interface OrganizationInput {
   name: string
-  consolidationApproach: ConsolidationApproach
 }
 
 export interface Facility {
@@ -42,31 +52,112 @@ export interface EmissionFactor {
   source: string
 }
 
+/** An organizational fact — no scope, category, or factor (spec 003). */
 export interface Activity {
   id: string
   facilityId: string
   facilityName: string
-  emissionFactorId: string
-  factorName: string
-  scope: GhgScope
-  category: string
+  activityType: string
   quantity: number
   unit: string
   activityDate: string
+  dataSource: string | null
+  evidenceRef: string | null
+  dataQuality: DataQuality
   note: string | null
-  unweightedKgCo2e: number
 }
 
 export interface ActivityInput {
   facilityId: string
-  emissionFactorId: string
+  activityType: string
   quantity: number
+  unit: string
   activityDate: string
+  dataSource?: string
+  evidenceRef?: string
+  dataQuality: DataQuality
   note?: string
+}
+
+export interface Inventory {
+  id: string
+  organizationId: string
+  name: string
+  periodStart: string
+  periodEnd: string
+  purpose: string | null
+  baseYear: number | null
+  consolidationApproach: ConsolidationApproach
+  finalRunId: string | null
+  createdAt: string
+}
+
+export interface InventoryInput {
+  name: string
+  periodStart: string
+  periodEnd: string
+  purpose?: string
+  baseYear?: number
+  consolidationApproach: ConsolidationApproach
+}
+
+export interface BoundaryEntry {
+  facilityId: string
+  facilityName: string
+  location: string
+  inBoundary: boolean
+  ownershipPercent: number | null
+  financialControl: boolean | null
+  operationalControl: boolean | null
+  accountingShare: number | null
+}
+
+export interface BoundaryTreatmentInput {
+  ownershipPercent: number
+  financialControl: boolean
+  operationalControl: boolean
+}
+
+/** The fact plus this inventory's accounting decision about it. */
+export interface Assignment {
+  id: string
+  activityId: string
+  facilityId: string
+  facilityName: string
+  activityType: string
+  quantity: number
+  unit: string
+  activityDate: string
+  dataQuality: DataQuality
+  evidenceRef: string | null
+  included: boolean
+  exclusionReason: ExclusionReason | null
+  classified: boolean
+  scope: GhgScope | null
+  category: string | null
+  emissionFactorId: string | null
+  factorName: string | null
+}
+
+export interface ValidationFinding {
+  severity: FindingSeverity
+  message: string
+}
+
+export interface GateResult {
+  gate: ValidationGate
+  status: GateStatus
+  findings: ValidationFinding[]
+}
+
+export interface ValidationReport {
+  ready: boolean
+  gates: GateResult[]
 }
 
 export interface Run {
   id: string
+  inventoryId: string
   label: string
   periodStart: string
   periodEnd: string
@@ -76,6 +167,7 @@ export interface Run {
   scope1KgCo2e: number
   scope2KgCo2e: number
   scope3KgCo2e: number
+  isFinal: boolean
   createdAt: string
 }
 
@@ -98,11 +190,7 @@ export interface RunDetail {
   lines: RunLine[]
 }
 
-export interface RunInput {
-  label: string
-  periodStart: string
-  periodEnd: string
-}
+// --- organizations ---------------------------------------------------------
 
 export function listOrganizations(): Promise<Organization[]> {
   return api<Organization[]>('/api/ghg/organizations')
@@ -130,6 +218,8 @@ export function deleteOrganization(id: string): Promise<void> {
   return api<void>(`/api/ghg/organizations/${id}`, { method: 'DELETE' })
 }
 
+// --- facilities -------------------------------------------------------------
+
 export function listFacilities(organizationId: string): Promise<Facility[]> {
   return api<Facility[]>(`/api/ghg/organizations/${organizationId}/facilities`)
 }
@@ -152,9 +242,13 @@ export function deleteFacility(id: string): Promise<void> {
   return api<void>(`/api/ghg/facilities/${id}`, { method: 'DELETE' })
 }
 
+// --- emission factors --------------------------------------------------------
+
 export function listEmissionFactors(): Promise<EmissionFactor[]> {
   return api<EmissionFactor[]>('/api/ghg/emission-factors')
 }
+
+// --- activity facts ----------------------------------------------------------
 
 export function listActivities(organizationId: string): Promise<Activity[]> {
   return api<Activity[]>(`/api/ghg/organizations/${organizationId}/activities`)
@@ -167,23 +261,127 @@ export function createActivity(organizationId: string, input: ActivityInput): Pr
   })
 }
 
+/** In-place correction (CORRECT-01): past runs are snapshots and stay untouched. */
+export function updateActivity(id: string, input: ActivityInput): Promise<Activity> {
+  return api<Activity>(`/api/ghg/activities/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
 export function deleteActivity(id: string): Promise<void> {
   return api<void>(`/api/ghg/activities/${id}`, { method: 'DELETE' })
 }
 
-export function listRuns(organizationId: string): Promise<Run[]> {
-  return api<Run[]>(`/api/ghg/organizations/${organizationId}/runs`)
+// --- inventories --------------------------------------------------------------
+
+export function listInventories(organizationId: string): Promise<Inventory[]> {
+  return api<Inventory[]>(`/api/ghg/organizations/${organizationId}/inventories`)
 }
 
-export function executeRun(organizationId: string, input: RunInput): Promise<RunDetail> {
-  return api<RunDetail>(`/api/ghg/organizations/${organizationId}/runs`, {
+export function getInventory(id: string): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/inventories/${id}`)
+}
+
+export function createInventory(organizationId: string, input: InventoryInput): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/organizations/${organizationId}/inventories`, {
     method: 'POST',
     body: JSON.stringify(input),
   })
 }
 
+export function updateInventory(id: string, input: InventoryInput): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/inventories/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteInventory(id: string): Promise<void> {
+  return api<void>(`/api/ghg/inventories/${id}`, { method: 'DELETE' })
+}
+
+// --- boundary ------------------------------------------------------------------
+
+export function getBoundary(inventoryId: string): Promise<BoundaryEntry[]> {
+  return api<BoundaryEntry[]>(`/api/ghg/inventories/${inventoryId}/boundary`)
+}
+
+export function setBoundaryTreatment(
+  inventoryId: string,
+  facilityId: string,
+  input: BoundaryTreatmentInput,
+): Promise<BoundaryEntry> {
+  return api<BoundaryEntry>(`/api/ghg/inventories/${inventoryId}/boundary/${facilityId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function removeBoundaryTreatment(inventoryId: string, facilityId: string): Promise<void> {
+  return api<void>(`/api/ghg/inventories/${inventoryId}/boundary/${facilityId}`, {
+    method: 'DELETE',
+  })
+}
+
+// --- assignments ----------------------------------------------------------------
+
+export function listAssignments(inventoryId: string): Promise<Assignment[]> {
+  return api<Assignment[]>(`/api/ghg/inventories/${inventoryId}/assignments`)
+}
+
+export function syncAssignments(
+  inventoryId: string,
+): Promise<{ created: number; updated: number }> {
+  return api<{ created: number; updated: number }>(
+    `/api/ghg/inventories/${inventoryId}/assignments/sync`,
+    { method: 'POST' },
+  )
+}
+
+export function classifyAssignment(id: string, emissionFactorId: string): Promise<Assignment> {
+  return api<Assignment>(`/api/ghg/assignments/${id}/classify`, {
+    method: 'PUT',
+    body: JSON.stringify({ emissionFactorId }),
+  })
+}
+
+export function excludeAssignment(id: string, reason: ExclusionReason): Promise<Assignment> {
+  return api<Assignment>(`/api/ghg/assignments/${id}/exclude`, {
+    method: 'PUT',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function includeAssignment(id: string): Promise<Assignment> {
+  return api<Assignment>(`/api/ghg/assignments/${id}/include`, { method: 'PUT' })
+}
+
+// --- validation ------------------------------------------------------------------
+
+export function getValidation(inventoryId: string): Promise<ValidationReport> {
+  return api<ValidationReport>(`/api/ghg/inventories/${inventoryId}/validation`)
+}
+
+// --- runs ------------------------------------------------------------------------
+
+export function listRuns(inventoryId: string): Promise<Run[]> {
+  return api<Run[]>(`/api/ghg/inventories/${inventoryId}/runs`)
+}
+
+export function executeRun(inventoryId: string, label: string): Promise<RunDetail> {
+  return api<RunDetail>(`/api/ghg/inventories/${inventoryId}/runs`, {
+    method: 'POST',
+    body: JSON.stringify({ label }),
+  })
+}
+
 export function getRun(id: string): Promise<RunDetail> {
   return api<RunDetail>(`/api/ghg/runs/${id}`)
+}
+
+export function finalizeRun(id: string): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/runs/${id}/finalize`, { method: 'POST' })
 }
 
 export function deleteRun(id: string): Promise<void> {

@@ -44,10 +44,13 @@ export function LoginPage() {
       <GlassCard className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
           <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-2xl font-bold text-transparent">
-            ECORIV
+            CarbonOS
           </p>
-          <h1 className="mt-1 text-xl">Sign in to CarbonOS</h1>
-          <p className="mt-1 text-sm text-dark-teal/60">Measure. Certify. Sustain.</p>
+          <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-ink-muted uppercase">
+            by ECORIV
+          </p>
+          <h1 className="mt-2 text-xl">Sign in</h1>
+          <p className="mt-1 text-sm text-ink-muted">Measure. Certify. Sustain.</p>
         </div>
         <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
           <InputField

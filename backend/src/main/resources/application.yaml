@@ -28,8 +28,22 @@ spring:
         schema-initialization:
           enabled: false
       republish-outstanding-events-on-restart: true
+  mail:
+    # Any SMTP provider; local dev and tests use Mailpit (compose.yaml)
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      "[mail.smtp.auth]": ${MAIL_SMTP_AUTH:false}
+      "[mail.smtp.starttls.enable]": ${MAIL_SMTP_STARTTLS:false}
 
 carbonos:
+  mail:
+    from: ${MAIL_FROM:CarbonOS <no-reply@ecoriv.com>}
+  app:
+    # Where emailed links point (the SPA's public URL)
+    base-url: ${APP_BASE_URL:http://localhost:5173}
   storage:
     # Any S3-compatible endpoint (Cloudflare R2, Railway bucket, MinIO).
     endpoint: ${STORAGE_ENDPOINT}

@@ -17,7 +17,7 @@ export function TopFacilities({ runId }: { runId: string }) {
   return (
     <GlassCard className="p-6">
       <h2 className="text-lg">Top facilities by emissions</h2>
-      <p className="text-sm text-dark-teal/60">From the latest run.</p>
+      <p className="text-sm text-ink-muted">From the latest run.</p>
 
       {runQuery.isPending && (
         <div aria-label="Loading facility emissions" className="mt-4">
@@ -25,22 +25,22 @@ export function TopFacilities({ runId }: { runId: string }) {
         </div>
       )}
       {runQuery.data && ranked.length === 0 && (
-        <p className="mt-4 text-sm text-dark-teal/60">No facility emissions in the latest run.</p>
+        <p className="mt-4 text-sm text-ink-muted">No facility emissions in the latest run.</p>
       )}
       {ranked.length > 0 && (
         <div className="mt-4 flex flex-col gap-2">
           {ranked.map(([name, kg]) => (
             <div key={name} className="flex items-center gap-3 text-sm">
-              <span className="w-32 shrink-0 truncate text-dark-teal/70" title={name}>
+              <span className="w-32 shrink-0 truncate text-ink-muted" title={name}>
                 {name}
               </span>
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-teal/10">
                 <div
-                  className="animate-bar-grow h-full rounded-full bg-teal"
+                  className="animate-bar-grow h-full rounded-full bg-teal-deep"
                   style={{ width: max > 0 ? `${Math.max((kg / max) * 100, 2)}%` : '0%' }}
                 />
               </div>
-              <span className="w-28 shrink-0 text-right whitespace-nowrap text-dark-teal/80">
+              <span className="w-28 shrink-0 text-right whitespace-nowrap text-ink-muted">
                 {formatCo2e(kg)}
               </span>
             </div>

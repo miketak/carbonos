@@ -16,32 +16,33 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.carbonos.ghg.internal.GhgService;
+import com.carbonos.ghg.internal.InventoryService;
+import com.carbonos.ghg.internal.web.dto.InventoryResponse;
 import com.carbonos.ghg.internal.web.dto.RunDetailResponse;
 import com.carbonos.ghg.internal.web.dto.RunRequest;
 import com.carbonos.ghg.internal.web.dto.RunResponse;
 
 import jakarta.validation.Valid;
 
+/** Calculation runs: immutable snapshots of an inventory view (spec 003). */
 @RestController
 @RequestMapping("/api/ghg")
 class RunController {
 
-	private final GhgService ghgService;
+	private final InventoryService inventoryService;
 
-	RunController(GhgService ghgService) {
-		this.ghgService = ghgService;
+	RunController(InventoryService inventoryService) {
+		this.inventoryService = inventoryService;
 	}
 
-	@GetMapping("/organizations/{organizationId}/runs")
-	List<RunResponse> list(@PathVariable UUID organizationId) {
-		return ghgService.listRuns(organizationId).stream().map(RunResponse::from).toList();
+	@GetMapping("/inventories/{inventoryId}/runs")
+	List<RunResponse> list(@PathVariable UUID inventoryId) {
+		return inventoryService.listRuns(inventoryId).stream().map(RunResponse::from).toList();
 	}
 
-	@PostMapping("/organizations/{organizationId}/runs")
-	ResponseEntity<RunDetailResponse> execute(@PathVariable UUID organizationId,
-			@Valid @RequestBody RunRequest body) {
-		var run = ghgService.executeRun(organizationId, body.label(), body.periodStart(), body.periodEnd());
+	@PostMapping("/inventories/{inventoryId}/runs")
+	ResponseEntity<RunDetailResponse> execute(@PathVariable UUID inventoryId, @Valid @RequestBody RunRequest body) {
+		var run = inventoryService.executeRun(inventoryId, body.label());
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/ghg/runs/{id}")
 			.buildAndExpand(run.getId()).toUri();
 		return ResponseEntity.created(location).body(RunDetailResponse.from(run));
@@ -49,12 +50,17 @@ class RunController {
 
 	@GetMapping("/runs/{id}")
 	RunDetailResponse get(@PathVariable UUID id) {
-		return RunDetailResponse.from(ghgService.getRun(id));
+		return RunDetailResponse.from(inventoryService.getRun(id));
+	}
+
+	@PostMapping("/runs/{id}/finalize")
+	InventoryResponse finalizeRun(@PathVariable UUID id) {
+		return InventoryResponse.from(inventoryService.finalizeRun(id));
 	}
 
 	@DeleteMapping("/runs/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	void delete(@PathVariable UUID id) {
-		ghgService.deleteRun(id);
+		inventoryService.deleteRun(id);
 	}
 }
