@@ -11,7 +11,7 @@ interface ConfirmDeleteDialogProps {
 export function ConfirmDeleteDialog({ user, onConfirm, onClose }: ConfirmDeleteDialogProps) {
   return (
     <Modal title={`Delete ${user.displayName}?`} onClose={onClose}>
-      <p className="text-sm text-dark-teal/70">
+      <p className="text-sm text-ink-muted">
         This permanently removes <strong>{user.email}</strong>. If you only want to block access,
         disable the account instead.
       </p>

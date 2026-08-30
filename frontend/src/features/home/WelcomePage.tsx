@@ -14,11 +14,16 @@ export function WelcomePage() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/50 bg-white/60 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent">
-            ECORIV <span className="text-dark-teal">CarbonOS</span>
-          </p>
+          <div className="leading-none">
+            <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent">
+              CarbonOS
+            </p>
+            <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-ink-muted uppercase">
+              by ECORIV
+            </p>
+          </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-dark-teal/70">{user?.displayName}</span>
+            <span className="text-sm text-ink-muted">{user?.displayName}</span>
             <Button
               variant="ghost"
               className="px-3 py-1.5 text-sm"
@@ -36,27 +41,27 @@ export function WelcomePage() {
             Ecoriv
           </p>
           <h1 className="mt-2 text-2xl">Welcome, {user?.displayName}</h1>
-          <p className="mt-3 text-dark-teal/70">
+          <p className="mt-3 text-ink-muted">
             Measure. Certify. Sustain. Set up your reporting organizations and run your first GHG
             inventory.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/app/ghg"
-              className="inline-block rounded-lg bg-teal px-6 py-2.5 font-semibold text-white transition-colors duration-150 hover:bg-bright-teal"
+              className="inline-block rounded-lg bg-teal-deep px-6 py-2.5 font-semibold text-white transition-colors duration-150 hover:bg-dark-teal"
             >
               GHG accounting
             </Link>
             <Link
               to="/app/profile"
-              className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-teal transition-colors duration-150 hover:bg-teal/10"
+              className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-link transition-colors duration-150 hover:bg-teal/10"
             >
               Edit profile
             </Link>
             {user?.role === 'ADMIN' && (
               <Link
                 to="/admin/users"
-                className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-teal transition-colors duration-150 hover:bg-teal/10"
+                className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-link transition-colors duration-150 hover:bg-teal/10"
               >
                 Manage users
               </Link>

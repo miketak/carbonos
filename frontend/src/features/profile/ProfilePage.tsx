@@ -72,11 +72,16 @@ export function ProfilePage() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/50 bg-white/60 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent">
-            ECORIV <span className="text-dark-teal">CarbonOS</span>
-          </p>
+          <div className="leading-none">
+            <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent">
+              CarbonOS
+            </p>
+            <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-ink-muted uppercase">
+              by ECORIV
+            </p>
+          </div>
           <div className="flex items-center gap-3">
-            <Link to="/app" className="text-sm text-dark-teal/70 hover:text-dark-teal">
+            <Link to="/app" className="text-sm text-ink-muted hover:text-dark-teal">
               Home
             </Link>
             <Button
@@ -112,12 +117,12 @@ export function ProfilePage() {
                   <img
                     src={avatarUrl}
                     alt="Profile picture"
-                    className="size-20 rounded-full border border-white/60 object-cover"
+                    className="size-20 rounded-full object-cover ring-2 ring-white shadow-[0_2px_12px_rgba(9,168,149,0.28)]"
                   />
                 ) : (
                   <div
                     aria-hidden
-                    className="flex size-20 items-center justify-center rounded-full bg-teal/15 text-2xl font-bold text-teal"
+                    className="flex size-20 items-center justify-center rounded-full bg-teal/15 text-2xl font-bold text-link ring-2 ring-white shadow-[0_2px_12px_rgba(9,168,149,0.28)]"
                   >
                     {profile.displayName.charAt(0).toUpperCase()}
                   </div>
@@ -131,7 +136,7 @@ export function ProfilePage() {
                   >
                     {profile.hasAvatar ? 'Change picture' : 'Upload picture'}
                   </Button>
-                  <p className="text-xs text-dark-teal/60">PNG, JPEG, or WebP · up to 5 MB</p>
+                  <p className="text-xs text-ink-muted">PNG, JPEG, or WebP · up to 5 MB</p>
                   {fieldErrors(avatarUpload.error)?.file && (
                     <p role="alert" className="text-xs font-medium text-red-600">
                       {fieldErrors(avatarUpload.error)?.file}
@@ -163,7 +168,7 @@ export function ProfilePage() {
               </form>
 
               <section className="mt-8 border-t border-teal/10 pt-6">
-                <h2 className="text-sm font-semibold tracking-wide text-dark-teal/80 uppercase">
+                <h2 className="text-sm font-semibold tracking-wide text-ink-muted uppercase">
                   Resume
                 </h2>
                 <div className="mt-3 flex items-center justify-between gap-4">
@@ -171,12 +176,12 @@ export function ProfilePage() {
                     <a
                       href="/api/profile/resume"
                       download={profile.resumeFilename ?? undefined}
-                      className="truncate text-sm font-medium text-teal hover:text-bright-teal"
+                      className="truncate text-sm font-medium text-link hover:text-link"
                     >
                       {profile.resumeFilename ?? 'Download resume'}
                     </a>
                   ) : (
-                    <p className="text-sm text-dark-teal/60">No resume uploaded</p>
+                    <p className="text-sm text-ink-muted">No resume uploaded</p>
                   )}
                   <Button
                     variant="ghost"
@@ -187,7 +192,7 @@ export function ProfilePage() {
                     {profile.hasResume ? 'Replace' : 'Upload'}
                   </Button>
                 </div>
-                <p className="mt-1.5 text-xs text-dark-teal/60">PDF or PSD · up to 50 MB</p>
+                <p className="mt-1.5 text-xs text-ink-muted">PDF or PSD · up to 50 MB</p>
                 {fieldErrors(resumeUpload.error)?.file && (
                   <p role="alert" className="mt-1 text-xs font-medium text-red-600">
                     {fieldErrors(resumeUpload.error)?.file}
