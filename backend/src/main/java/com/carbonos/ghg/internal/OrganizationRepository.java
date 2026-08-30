@@ -10,4 +10,6 @@ public interface OrganizationRepository extends JpaRepository<Organization, UUID
 	boolean existsByNameIgnoreCase(String name);
 
 	List<Organization> findAllByOrderByCreatedAtAsc();
+
+	List<Organization> findAllByOwnerUserIdOrderByCreatedAtAsc(UUID ownerUserId);
 }

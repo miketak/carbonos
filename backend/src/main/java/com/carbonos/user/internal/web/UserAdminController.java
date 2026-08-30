@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.user.internal.UserService;
-import com.carbonos.user.internal.security.AuthenticatedUser;
+import com.carbonos.user.AuthenticatedUser;
 import com.carbonos.user.internal.web.dto.CreateUserRequest;
 import com.carbonos.user.internal.web.dto.UpdateUserRequest;
 import com.carbonos.user.internal.web.dto.UserResponse;

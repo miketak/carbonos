@@ -1,4 +1,4 @@
-package com.carbonos.user.internal.security;
+package com.carbonos.user;
 
 import java.util.Collection;
 import java.util.List;

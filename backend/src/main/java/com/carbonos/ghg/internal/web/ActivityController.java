@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -40,11 +41,19 @@ class ActivityController {
 	@PostMapping("/organizations/{organizationId}/activities")
 	ResponseEntity<ActivityResponse> create(@PathVariable UUID organizationId,
 			@Valid @RequestBody CreateActivityRequest body) {
-		var activity = ghgService.createActivity(organizationId, body.facilityId(), body.emissionFactorId(),
-				body.quantity(), body.activityDate(), body.note());
+		var activity = ghgService.createActivity(organizationId, body.facilityId(), body.activityType(),
+				body.quantity(), body.unit(), body.activityDate(), body.dataSource(), body.evidenceRef(),
+				body.dataQuality(), body.note());
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/ghg/activities/{id}")
 			.buildAndExpand(activity.getId()).toUri();
 		return ResponseEntity.created(location).body(ActivityResponse.from(activity));
+	}
+
+	@PutMapping("/activities/{id}")
+	ActivityResponse update(@PathVariable UUID id, @Valid @RequestBody CreateActivityRequest body) {
+		return ActivityResponse.from(ghgService.updateActivity(id, body.facilityId(), body.activityType(),
+				body.quantity(), body.unit(), body.activityDate(), body.dataSource(), body.evidenceRef(),
+				body.dataQuality(), body.note()));
 	}
 
 	@DeleteMapping("/activities/{id}")

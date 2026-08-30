@@ -5,13 +5,13 @@ import type { RunLine } from '../api'
 /** The per-activity snapshot lines of a run, weight and CO₂e included. */
 export function RunLinesTable({ lines }: { lines: RunLine[] }) {
   if (lines.length === 0) {
-    return <p className="text-sm text-dark-teal/60">No activity fell inside this run's period.</p>
+    return <p className="text-sm text-ink-muted">No activity fell inside this run's period.</p>
   }
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-teal/10 text-xs text-dark-teal/60 uppercase">
+          <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
             <th className="px-3 py-2 font-semibold">Facility</th>
             <th className="px-3 py-2 font-semibold">Source</th>
             <th className="px-3 py-2 font-semibold">Scope</th>
@@ -27,9 +27,7 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
               <td className="px-3 py-2">{line.facilityName}</td>
               <td className="px-3 py-2">
                 <span className="font-medium">{line.factorName}</span>
-                <span className="block text-xs text-dark-teal/60">
-                  {categoryLabel(line.category)}
-                </span>
+                <span className="block text-xs text-ink-muted">{categoryLabel(line.category)}</span>
               </td>
               <td className="px-3 py-2">
                 <ScopeBadge scope={line.scope} />

@@ -9,13 +9,18 @@ import type { Organization } from './api'
 const sections = [
   { to: '.', label: 'Overview', end: true, icon: 'M3 10.5 12 3l9 7.5M5 9.5V21h5v-6h4v6h5V9.5' },
   {
-    to: 'boundary',
-    label: 'Boundary',
+    to: 'facilities',
+    label: 'Facilities',
     end: false,
     icon: 'M4 21h16M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M14 9h4a1 1 0 0 1 1 1v11M9 8h1M9 12h1M9 16h1',
   },
   { to: 'activity', label: 'Activity data', end: false, icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
-  { to: 'runs', label: 'Runs', end: false, icon: 'M3 21h18M7 21v-8M12 21V7M17 21v-5' },
+  {
+    to: 'inventories',
+    label: 'Inventories',
+    end: false,
+    icon: 'm12 2-10 5 10 5 10-5-10-5M2 17l10 5 10-5M2 12l10 5 10-5',
+  },
   {
     to: 'factors',
     label: 'Emission factors',
@@ -112,7 +117,7 @@ export function OrganizationLayout() {
             type="button"
             onClick={toggleCollapsed}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="absolute top-3 -right-3 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-teal/20 bg-white text-dark-teal/70 shadow-sm transition-colors duration-150 hover:bg-teal hover:text-white md:flex"
+            className="absolute top-3 -right-3 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-teal/20 bg-white text-ink-muted shadow-sm transition-colors duration-150 hover:bg-teal-deep hover:text-white md:flex"
           >
             <svg
               viewBox="0 0 24 24"
@@ -135,7 +140,7 @@ export function OrganizationLayout() {
               {activeIndex >= 0 && (
                 <span
                   aria-hidden="true"
-                  className="absolute left-0 hidden h-9 w-full rounded-lg bg-teal transition-transform duration-200 ease-out md:block"
+                  className="absolute left-0 hidden h-9 w-full rounded-lg bg-teal-deep transition-transform duration-200 ease-out md:block"
                   style={{ transform: `translateY(${pillOffset(activeIndex)}px)` }}
                 />
               )}
@@ -148,8 +153,8 @@ export function OrganizationLayout() {
                     className={({ isActive }) =>
                       `relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-150 ${
                         isActive
-                          ? 'bg-teal text-white md:bg-transparent'
-                          : 'text-dark-teal/80 hover:bg-teal/10'
+                          ? 'bg-teal-deep text-white md:bg-transparent'
+                          : 'text-ink-muted hover:bg-teal/10'
                       } ${collapsed ? 'md:justify-center md:px-2' : ''}`
                     }
                   >
@@ -167,7 +172,7 @@ export function OrganizationLayout() {
               <Link
                 to="/app/ghg"
                 title={collapsed ? 'All organizations' : undefined}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap text-teal transition-colors duration-150 hover:bg-teal/10 hover:text-bright-teal ${
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap text-link transition-colors duration-150 hover:bg-teal/10 hover:text-link ${
                   collapsed ? 'md:justify-center md:px-2' : ''
                 }`}
               >
@@ -188,7 +193,7 @@ export function OrganizationLayout() {
           {organizationQuery.isError && (
             <GlassCard className="p-8 text-center">
               <h1 className="text-lg">Organization not found</h1>
-              <p className="mt-1 text-sm text-dark-teal/60">
+              <p className="mt-1 text-sm text-ink-muted">
                 It may have been deleted. Head back to the list to pick another.
               </p>
             </GlassCard>
@@ -222,7 +227,7 @@ function OrgSwitcher({
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-teal"
+        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-link"
       >
         <path d="M4 21h16M6 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M14 9h4a1 1 0 0 1 1 1v11M9 8h1M9 12h1M9 16h1" />
       </svg>
@@ -253,7 +258,7 @@ function OrgSwitcher({
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-dark-teal/50"
+        className="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted"
       >
         <path d="m6 9 6 6 6-6" />
       </svg>

@@ -1,31 +1,59 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  classifyAssignment,
   createActivity,
   createFacility,
+  createInventory,
   createOrganization,
   deleteActivity,
   deleteFacility,
+  deleteInventory,
   deleteOrganization,
   deleteRun,
+  excludeAssignment,
   executeRun,
+  finalizeRun,
+  getBoundary,
+  getInventory,
   getOrganization,
   getRun,
+  getValidation,
+  includeAssignment,
   listActivities,
+  listAssignments,
   listEmissionFactors,
   listFacilities,
+  listInventories,
   listOrganizations,
   listRuns,
+  removeBoundaryTreatment,
+  setBoundaryTreatment,
+  syncAssignments,
+  updateActivity,
   updateFacility,
+  updateInventory,
   updateOrganization,
 } from './api'
-import type { ActivityInput, FacilityInput, OrganizationInput, RunInput } from './api'
+import type {
+  ActivityInput,
+  BoundaryTreatmentInput,
+  ExclusionReason,
+  FacilityInput,
+  InventoryInput,
+  OrganizationInput,
+} from './api'
 
 export const organizationsKey = ['ghg', 'organizations'] as const
 export const factorsKey = ['ghg', 'emission-factors'] as const
 export const organizationKey = (id: string) => ['ghg', 'organization', id] as const
 export const facilitiesKey = (orgId: string) => ['ghg', 'facilities', orgId] as const
 export const activitiesKey = (orgId: string) => ['ghg', 'activities', orgId] as const
-export const runsKey = (orgId: string) => ['ghg', 'runs', orgId] as const
+export const inventoriesKey = (orgId: string) => ['ghg', 'inventories', orgId] as const
+export const inventoryKey = (id: string) => ['ghg', 'inventory', id] as const
+export const boundaryKey = (inventoryId: string) => ['ghg', 'boundary', inventoryId] as const
+export const assignmentsKey = (inventoryId: string) => ['ghg', 'assignments', inventoryId] as const
+export const validationKey = (inventoryId: string) => ['ghg', 'validation', inventoryId] as const
+export const runsKey = (inventoryId: string) => ['ghg', 'runs', inventoryId] as const
 export const runKey = (id: string) => ['ghg', 'run', id] as const
 
 export function useOrganizationsQuery() {
@@ -49,13 +77,41 @@ export function useActivitiesQuery(orgId: string) {
   return useQuery({ queryKey: activitiesKey(orgId), queryFn: () => listActivities(orgId) })
 }
 
-export function useRunsQuery(orgId: string) {
-  return useQuery({ queryKey: runsKey(orgId), queryFn: () => listRuns(orgId) })
+export function useInventoriesQuery(orgId: string) {
+  return useQuery({ queryKey: inventoriesKey(orgId), queryFn: () => listInventories(orgId) })
+}
+
+export function useInventoryQuery(id: string) {
+  return useQuery({ queryKey: inventoryKey(id), queryFn: () => getInventory(id) })
+}
+
+export function useBoundaryQuery(inventoryId: string) {
+  return useQuery({ queryKey: boundaryKey(inventoryId), queryFn: () => getBoundary(inventoryId) })
+}
+
+export function useAssignmentsQuery(inventoryId: string) {
+  return useQuery({
+    queryKey: assignmentsKey(inventoryId),
+    queryFn: () => listAssignments(inventoryId),
+  })
+}
+
+export function useValidationQuery(inventoryId: string) {
+  return useQuery({
+    queryKey: validationKey(inventoryId),
+    queryFn: () => getValidation(inventoryId),
+  })
+}
+
+export function useRunsQuery(inventoryId: string) {
+  return useQuery({ queryKey: runsKey(inventoryId), queryFn: () => listRuns(inventoryId) })
 }
 
 export function useRunQuery(id: string) {
   return useQuery({ queryKey: runKey(id), queryFn: () => getRun(id) })
 }
+
+// --- organizations ----------------------------------------------------------
 
 export function useCreateOrganization() {
   const queryClient = useQueryClient()
@@ -84,6 +140,8 @@ export function useDeleteOrganization() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationsKey }),
   })
 }
+
+// --- facilities --------------------------------------------------------------
 
 export function useCreateFacility(orgId: string) {
   const queryClient = useQueryClient()
@@ -119,10 +177,20 @@ export function useDeleteFacility(orgId: string) {
   })
 }
 
+// --- activity facts ----------------------------------------------------------
+
 export function useCreateActivity(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ActivityInput) => createActivity(orgId, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) }),
+  })
+}
+
+export function useUpdateActivity(orgId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: ActivityInput }) => updateActivity(id, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) }),
   })
 }
@@ -135,21 +203,123 @@ export function useDeleteActivity(orgId: string) {
   })
 }
 
-export function useExecuteRun(orgId: string) {
+// --- inventories --------------------------------------------------------------
+
+export function useCreateInventory(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: RunInput) => executeRun(orgId, input),
-    onSuccess: (detail) => {
-      queryClient.setQueryData(runKey(detail.run.id), detail)
-      void queryClient.invalidateQueries({ queryKey: runsKey(orgId) })
+    mutationFn: (input: InventoryInput) => createInventory(orgId, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: inventoriesKey(orgId) }),
+  })
+}
+
+export function useUpdateInventory(orgId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: InventoryInput }) =>
+      updateInventory(id, input),
+    onSuccess: (_data, { id }) => {
+      void queryClient.invalidateQueries({ queryKey: inventoriesKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: inventoryKey(id) })
+      void queryClient.invalidateQueries({ queryKey: validationKey(id) })
+      void queryClient.invalidateQueries({ queryKey: boundaryKey(id) })
     },
   })
 }
 
-export function useDeleteRun(orgId: string) {
+export function useDeleteInventory(orgId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteInventory(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: inventoriesKey(orgId) }),
+  })
+}
+
+// --- boundary + assignments: every change re-runs the validation gates --------
+
+function useInventoryScopedMutation<TArgs, TResult>(
+  inventoryId: string,
+  mutationFn: (args: TArgs) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: boundaryKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: assignmentsKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
+    },
+  })
+}
+
+export function useSetBoundaryTreatment(inventoryId: string) {
+  return useInventoryScopedMutation(
+    inventoryId,
+    ({ facilityId, input }: { facilityId: string; input: BoundaryTreatmentInput }) =>
+      setBoundaryTreatment(inventoryId, facilityId, input),
+  )
+}
+
+export function useRemoveBoundaryTreatment(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, (facilityId: string) =>
+    removeBoundaryTreatment(inventoryId, facilityId),
+  )
+}
+
+export function useSyncAssignments(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, () => syncAssignments(inventoryId))
+}
+
+export function useClassifyAssignment(inventoryId: string) {
+  return useInventoryScopedMutation(
+    inventoryId,
+    ({ id, emissionFactorId }: { id: string; emissionFactorId: string }) =>
+      classifyAssignment(id, emissionFactorId),
+  )
+}
+
+export function useExcludeAssignment(inventoryId: string) {
+  return useInventoryScopedMutation(
+    inventoryId,
+    ({ id, reason }: { id: string; reason: ExclusionReason }) => excludeAssignment(id, reason),
+  )
+}
+
+export function useIncludeAssignment(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, (id: string) => includeAssignment(id))
+}
+
+// --- runs ----------------------------------------------------------------------
+
+export function useExecuteRun(inventoryId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (label: string) => executeRun(inventoryId, label),
+    onSuccess: (detail) => {
+      queryClient.setQueryData(runKey(detail.run.id), detail)
+      void queryClient.invalidateQueries({ queryKey: runsKey(inventoryId) })
+    },
+  })
+}
+
+export function useFinalizeRun(inventoryId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (runId: string) => finalizeRun(runId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: runsKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
+    },
+  })
+}
+
+export function useDeleteRun(inventoryId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteRun(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: runsKey(orgId) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: runsKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
+    },
   })
 }

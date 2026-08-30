@@ -6,6 +6,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.carbonos.user.AuthenticatedUser;
 import com.carbonos.user.internal.UserRepository;
 import com.carbonos.user.internal.UserStatus;
 

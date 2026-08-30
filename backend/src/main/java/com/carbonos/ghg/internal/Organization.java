@@ -8,8 +8,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -23,9 +21,8 @@ public class Organization {
 	@Column(nullable = false, unique = true, length = 120)
 	private String name;
 
-	@Enumerated(EnumType.STRING)
-	@Column(name = "consolidation_approach", nullable = false, length = 30)
-	private ConsolidationApproach consolidationApproach;
+	@Column(name = "owner_user_id")
+	private UUID ownerUserId;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
@@ -38,10 +35,10 @@ public class Organization {
 	protected Organization() {
 	}
 
-	Organization(String name, ConsolidationApproach consolidationApproach) {
+	Organization(String name, UUID ownerUserId) {
 		this.id = UUID.randomUUID();
 		this.name = name;
-		this.consolidationApproach = consolidationApproach;
+		this.ownerUserId = ownerUserId;
 	}
 
 	public UUID getId() {
@@ -52,8 +49,8 @@ public class Organization {
 		return name;
 	}
 
-	public ConsolidationApproach getConsolidationApproach() {
-		return consolidationApproach;
+	public UUID getOwnerUserId() {
+		return ownerUserId;
 	}
 
 	public Instant getCreatedAt() {
@@ -68,7 +65,4 @@ public class Organization {
 		this.name = name;
 	}
 
-	void setConsolidationApproach(ConsolidationApproach consolidationApproach) {
-		this.consolidationApproach = consolidationApproach;
-	}
 }

@@ -13,7 +13,7 @@ export function EmissionFactorsPage() {
     <section>
       <div className="mb-3">
         <h1 className="text-xl">Emission factors</h1>
-        <p className="text-sm text-dark-teal/60">
+        <p className="text-sm text-ink-muted">
           The factor library activity records draw from. Seeded and read-only.
         </p>
       </div>
@@ -28,7 +28,7 @@ export function EmissionFactorsPage() {
         {factors && (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-teal/10 text-xs text-dark-teal/60 uppercase">
+              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Factor</th>
                 <th className="px-4 py-3 font-semibold">Scope</th>
                 <th className="px-4 py-3 font-semibold">Category</th>
@@ -43,11 +43,11 @@ export function EmissionFactorsPage() {
                   <td className="px-4 py-3">
                     <ScopeBadge scope={factor.scope} />
                   </td>
-                  <td className="px-4 py-3 text-dark-teal/70">{categoryLabel(factor.category)}</td>
+                  <td className="px-4 py-3 text-ink-muted">{categoryLabel(factor.category)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     {factor.kgCo2ePerUnit} kg CO₂e/{factor.unit}
                   </td>
-                  <td className="px-4 py-3 text-dark-teal/70">{factor.source}</td>
+                  <td className="px-4 py-3 text-ink-muted">{factor.source}</td>
                 </tr>
               ))}
             </tbody>
