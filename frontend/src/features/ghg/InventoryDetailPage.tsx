@@ -26,9 +26,11 @@ import {
   useRunsQuery,
   useSetBoundaryTreatment,
   useSyncAssignments,
+  useUnitsQuery,
   useValidationQuery,
 } from './useGhg'
-import type { Assignment, BoundaryEntry, ExclusionReason } from './api'
+import type { Assignment, BoundaryEntry, EmissionFactor, ExclusionReason, Unit } from './api'
+import { convertQuantity, DIMENSION_LABELS, unitDimension } from './units'
 
 const exclusionLabels: Record<ExclusionReason, string> = {
   OUTSIDE_PERIOD: 'Outside reporting period',
@@ -141,35 +143,72 @@ function StatusPills({
   )
 }
 
+/** The "10,000 US-gallon → 37,854.12 litre × 2.66 kg CO₂e/litre" line, or null when no conversion applies. */
+function conversionPreview(
+  units: Unit[],
+  assignment: Assignment,
+  factor: EmissionFactor,
+): string | null {
+  if (factor.unit.toLowerCase() === assignment.unit.toLowerCase()) return null
+  const converted = convertQuantity(units, assignment.quantity, assignment.unit, factor.unit)
+  if (converted === null) return null
+  const shown = converted.toLocaleString(undefined, { maximumFractionDigits: 4 })
+  return `${assignment.quantity.toLocaleString()} ${assignment.unit} → ${shown} ${factor.unit} × ${factor.kgCo2ePerUnit} kg CO₂e/${factor.unit}`
+}
+
 function ClassifySelect({
   assignment,
   factors,
+  units,
   onClassify,
 }: {
   assignment: Assignment
-  factors: { id: string; name: string; unit: string }[]
+  factors: EmissionFactor[]
+  units: Unit[]
   onClassify: (factorId: string) => void
 }) {
-  // CLASS-01: only factors whose unit matches the fact are offered
-  const compatible = factors.filter(
-    (factor) => factor.unit.toLowerCase() === assignment.unit.toLowerCase(),
+  // CLASS-01, widened for conversion: offer factors whose unit shares the fact's
+  // dimension (convertible). For a custom/unrecognized unit, fall back to an
+  // exact-string match — those never auto-convert.
+  const dimension = unitDimension(units, assignment.unit)
+  const compatible = factors.filter((factor) =>
+    dimension !== null
+      ? factor.dimension === dimension
+      : factor.unit.toLowerCase() === assignment.unit.toLowerCase(),
   )
-  const options = compatible.length > 0 ? compatible : factors
+  const selected = factors.find((factor) => factor.id === assignment.emissionFactorId)
+  // keep the current classification visible even if it no longer matches
+  const options =
+    selected && !compatible.some((factor) => factor.id === selected.id)
+      ? [selected, ...compatible]
+      : compatible
+  const preview = selected ? conversionPreview(units, assignment, selected) : null
+
   return (
-    // DR-04: wide enough not to truncate the factor + unit; teal border marks it as the primary action
-    <select
-      aria-label={`Classify ${assignment.activityType}`}
-      value={assignment.emissionFactorId ?? ''}
-      onChange={(event) => event.target.value && onClassify(event.target.value)}
-      className="w-full rounded-lg border border-teal/40 bg-white/70 px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-teal focus:outline-none md:w-72"
-    >
-      <option value="">Select emission factor…</option>
-      {options.map((factor) => (
-        <option key={factor.id} value={factor.id}>
-          {factor.name} (/{factor.unit})
-        </option>
-      ))}
-    </select>
+    <div className="flex flex-col gap-1 md:w-72">
+      {/* DR-04: wide enough not to truncate the factor + unit; teal border marks it as the primary action */}
+      <select
+        aria-label={`Classify ${assignment.activityType}`}
+        value={assignment.emissionFactorId ?? ''}
+        onChange={(event) => event.target.value && onClassify(event.target.value)}
+        className="w-full rounded-lg border border-teal/40 bg-white/70 px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-teal focus:outline-none"
+      >
+        <option value="">Select emission factor…</option>
+        {options.map((factor) => (
+          <option key={factor.id} value={factor.id}>
+            {factor.name} (/{factor.unit})
+          </option>
+        ))}
+      </select>
+      {options.length === 0 && (
+        <p className="text-xs text-ink-muted">
+          No factor matches {assignment.unit}
+          {dimension ? ` (${DIMENSION_LABELS[dimension].toLowerCase()})` : ''} — add a matching
+          factor or record it in a compatible unit.
+        </p>
+      )}
+      {preview && <p className="text-xs text-ink-muted tabular-nums">{preview}</p>}
+    </div>
   )
 }
 
@@ -507,6 +546,7 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
 function AssignmentsSection({ inventoryId }: { inventoryId: string }) {
   const assignmentsQuery = useAssignmentsQuery(inventoryId)
   const factorsQuery = useEmissionFactorsQuery()
+  const unitsQuery = useUnitsQuery()
   const sync = useSyncAssignments(inventoryId)
   const classify = useClassifyAssignment(inventoryId)
   const exclude = useExcludeAssignment(inventoryId)
@@ -515,6 +555,7 @@ function AssignmentsSection({ inventoryId }: { inventoryId: string }) {
 
   const assignments = assignmentsQuery.data
   const factors = factorsQuery.data ?? []
+  const units = unitsQuery.data ?? []
 
   return (
     <GlassCard className="p-6">
@@ -581,6 +622,7 @@ function AssignmentsSection({ inventoryId }: { inventoryId: string }) {
                     key={assignment.id}
                     assignment={assignment}
                     factors={factors}
+                    units={units}
                     onClassify={(emissionFactorId) =>
                       classify.mutate(
                         { id: assignment.id, emissionFactorId },
@@ -639,6 +681,7 @@ function AssignmentsSection({ inventoryId }: { inventoryId: string }) {
                     <ClassifySelect
                       assignment={assignment}
                       factors={factors}
+                      units={units}
                       onClassify={(emissionFactorId) =>
                         classify.mutate(
                           { id: assignment.id, emissionFactorId },
@@ -677,12 +720,14 @@ function AssignmentsSection({ inventoryId }: { inventoryId: string }) {
 function AssignmentRow({
   assignment,
   factors,
+  units,
   onClassify,
   onExclude,
   onInclude,
 }: {
   assignment: Assignment
-  factors: { id: string; name: string; unit: string }[]
+  factors: EmissionFactor[]
+  units: Unit[]
   onClassify: (factorId: string) => void
   onExclude: (reason: ExclusionReason) => void
   onInclude: () => void
@@ -701,7 +746,12 @@ function AssignmentRow({
       </td>
       <td className="px-3 py-2">
         {assignment.included ? (
-          <ClassifySelect assignment={assignment} factors={factors} onClassify={onClassify} />
+          <ClassifySelect
+            assignment={assignment}
+            factors={factors}
+            units={units}
+            onClassify={onClassify}
+          />
         ) : (
           <span className="text-xs text-ink-muted">—</span>
         )}

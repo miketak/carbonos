@@ -12,6 +12,7 @@ export type ExclusionReason =
   | 'METHODOLOGY'
   | 'OTHER'
 export type ValidationGate = 'BOUNDARY' | 'COMPLETENESS' | 'CLASSIFICATION' | 'EMISSION_FACTOR'
+export type Dimension = 'ENERGY' | 'VOLUME' | 'MASS' | 'DISTANCE' | 'PASSENGER_DISTANCE'
 export type GateStatus = 'PASSED' | 'WARNINGS' | 'BLOCKED'
 export type FindingSeverity = 'ERROR' | 'WARNING' | 'INFO'
 
@@ -48,8 +49,19 @@ export interface EmissionFactor {
   scope: GhgScope
   category: string
   unit: string
+  /** The unit's physical dimension, or null if the unit is unrecognized. */
+  dimension: Dimension | null
   kgCo2ePerUnit: number
   source: string
+}
+
+/** A convertible unit for the activity-entry picker and conversion previews. */
+export interface Unit {
+  code: string
+  label: string
+  dimension: Dimension
+  /** The unit's size in its dimension's canonical base unit. */
+  toCanonical: number
 }
 
 /** An organizational fact — no scope, category, or factor (spec 003). */
@@ -178,8 +190,13 @@ export interface RunLine {
   factorName: string
   scope: GhgScope
   category: string
+  /** The original recorded quantity and unit (the fact). */
   quantity: number
   unit: string
+  /** The factor's unit and the quantity converted into it (what was multiplied). */
+  factorUnit: string
+  convertedQuantity: number
+  conversionFactor: number
   kgCo2ePerUnit: number
   weight: number
   kgCo2e: number
@@ -246,6 +263,12 @@ export function deleteFacility(id: string): Promise<void> {
 
 export function listEmissionFactors(): Promise<EmissionFactor[]> {
   return api<EmissionFactor[]>('/api/ghg/emission-factors')
+}
+
+// --- units -------------------------------------------------------------------
+
+export function listUnits(): Promise<Unit[]> {
+  return api<Unit[]>('/api/ghg/units')
 }
 
 // --- activity facts ----------------------------------------------------------

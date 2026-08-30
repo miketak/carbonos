@@ -23,6 +23,7 @@ import {
   listAssignments,
   listEmissionFactors,
   listFacilities,
+  listUnits,
   listInventories,
   listOrganizations,
   listRuns,
@@ -45,6 +46,7 @@ import type {
 
 export const organizationsKey = ['ghg', 'organizations'] as const
 export const factorsKey = ['ghg', 'emission-factors'] as const
+export const unitsKey = ['ghg', 'units'] as const
 export const organizationKey = (id: string) => ['ghg', 'organization', id] as const
 export const facilitiesKey = (orgId: string) => ['ghg', 'facilities', orgId] as const
 export const activitiesKey = (orgId: string) => ['ghg', 'activities', orgId] as const
@@ -67,6 +69,11 @@ export function useOrganizationQuery(id: string) {
 export function useEmissionFactorsQuery() {
   // the factor library is seeded and read-only, so cache it for the session
   return useQuery({ queryKey: factorsKey, queryFn: listEmissionFactors, staleTime: Infinity })
+}
+
+export function useUnitsQuery() {
+  // the unit registry is static, so cache it for the session
+  return useQuery({ queryKey: unitsKey, queryFn: listUnits, staleTime: Infinity })
 }
 
 export function useFacilitiesQuery(orgId: string) {

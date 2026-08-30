@@ -51,6 +51,15 @@ public class GhgRunLine {
 	@Column(nullable = false, length = 30)
 	private String unit;
 
+	@Column(name = "factor_unit", nullable = false, length = 30)
+	private String factorUnit;
+
+	@Column(name = "converted_quantity", nullable = false, precision = 20, scale = 6)
+	private BigDecimal convertedQuantity;
+
+	@Column(name = "conversion_factor", nullable = false, precision = 20, scale = 10)
+	private BigDecimal conversionFactor;
+
 	@Column(name = "kg_co2e_per_unit", nullable = false, precision = 12, scale = 6)
 	private BigDecimal kgCo2ePerUnit;
 
@@ -63,7 +72,8 @@ public class GhgRunLine {
 	protected GhgRunLine() {
 	}
 
-	GhgRunLine(GhgRun run, InventoryAssignment assignment, BigDecimal weight, BigDecimal kgCo2e) {
+	GhgRunLine(GhgRun run, InventoryAssignment assignment, BigDecimal convertedQuantity, BigDecimal conversionFactor,
+			BigDecimal weight, BigDecimal kgCo2e) {
 		var activity = assignment.getActivity();
 		var factor = assignment.getEmissionFactor();
 		this.id = UUID.randomUUID();
@@ -75,6 +85,9 @@ public class GhgRunLine {
 		this.category = assignment.getCategory();
 		this.quantity = activity.getQuantity();
 		this.unit = activity.getUnit();
+		this.factorUnit = factor.getUnit();
+		this.convertedQuantity = convertedQuantity;
+		this.conversionFactor = conversionFactor;
 		this.kgCo2ePerUnit = factor.getKgCo2ePerUnit();
 		this.weight = weight;
 		this.kgCo2e = kgCo2e;
@@ -110,6 +123,18 @@ public class GhgRunLine {
 
 	public String getUnit() {
 		return unit;
+	}
+
+	public String getFactorUnit() {
+		return factorUnit;
+	}
+
+	public BigDecimal getConvertedQuantity() {
+		return convertedQuantity;
+	}
+
+	public BigDecimal getConversionFactor() {
+		return conversionFactor;
 	}
 
 	public BigDecimal getKgCo2ePerUnit() {

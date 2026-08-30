@@ -32,11 +32,18 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
               <td className="px-3 py-2">
                 <ScopeBadge scope={line.scope} />
               </td>
-              <td className="px-3 py-2 whitespace-nowrap">
+              <td className="px-3 py-2 whitespace-nowrap tabular-nums">
                 {line.quantity.toLocaleString()} {line.unit}
+                {line.unit.toLowerCase() !== line.factorUnit.toLowerCase() && (
+                  <span className="block text-xs text-ink-muted">
+                    →{' '}
+                    {line.convertedQuantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}{' '}
+                    {line.factorUnit}
+                  </span>
+                )}
               </td>
               <td className="px-3 py-2 whitespace-nowrap">
-                {line.kgCo2ePerUnit} kg/{line.unit}
+                {line.kgCo2ePerUnit} kg/{line.factorUnit}
               </td>
               <td className="px-3 py-2">{(line.weight * 100).toFixed(0)}%</td>
               <td className="px-3 py-2 whitespace-nowrap font-medium">{formatCo2e(line.kgCo2e)}</td>
