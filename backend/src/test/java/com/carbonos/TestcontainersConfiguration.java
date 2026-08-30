@@ -4,6 +4,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.DynamicPropertyRegistrar;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -20,6 +21,20 @@ public class TestcontainersConfiguration {
 	@Bean
 	MinIOContainer minioContainer() {
 		return new MinIOContainer(DockerImageName.parse("minio/minio:RELEASE.2025-04-22T22-12-26Z"));
+	}
+
+	@Bean
+	GenericContainer<?> mailpitContainer() {
+		return new GenericContainer<>(DockerImageName.parse("axllent/mailpit:v1.24")).withExposedPorts(1025, 8025);
+	}
+
+	// No @ServiceConnection support for Mailpit — map the SMTP properties by hand.
+	@Bean
+	DynamicPropertyRegistrar mailProperties(GenericContainer<?> mailpitContainer) {
+		return registry -> {
+			registry.add("spring.mail.host", mailpitContainer::getHost);
+			registry.add("spring.mail.port", () -> mailpitContainer.getMappedPort(1025));
+		};
 	}
 
 	// No @ServiceConnection support for MinIO — map the storage properties by hand.

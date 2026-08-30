@@ -31,3 +31,27 @@ export function updateUser(id: string, input: UpdateUserInput): Promise<User> {
 export function deleteUser(id: string): Promise<void> {
   return api<void>(`/api/admin/users/${id}`, { method: 'DELETE' })
 }
+
+export type AccessRequestStatus = 'PENDING' | 'APPROVED' | 'DENIED' | 'COMPLETED'
+
+export interface AccessRequest {
+  id: string
+  email: string
+  displayName: string
+  company: string | null
+  status: AccessRequestStatus
+  createdAt: string
+  decidedAt: string | null
+}
+
+export function listAccessRequests(): Promise<AccessRequest[]> {
+  return api<AccessRequest[]>('/api/admin/access-requests')
+}
+
+export function approveAccessRequest(id: string): Promise<AccessRequest> {
+  return api<AccessRequest>(`/api/admin/access-requests/${id}/approve`, { method: 'POST' })
+}
+
+export function denyAccessRequest(id: string): Promise<AccessRequest> {
+  return api<AccessRequest>(`/api/admin/access-requests/${id}/deny`, { method: 'POST' })
+}
