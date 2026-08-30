@@ -37,12 +37,13 @@ public class InventoryService {
 	private final GhgRunRepository runs;
 	private final ApplicationEventPublisher events;
 	private final GhgAccess access;
+	private final UnitConverter units;
 
 	InventoryService(OrganizationRepository organizations, FacilityRepository facilities,
 			ActivityRecordRepository activities, EmissionFactorRepository emissionFactors,
 			InventoryRepository inventories, BoundaryTreatmentRepository boundaryTreatments,
 			InventoryAssignmentRepository assignments, GhgRunRepository runs, ApplicationEventPublisher events,
-			GhgAccess access) {
+			GhgAccess access, UnitConverter units) {
 		this.organizations = organizations;
 		this.facilities = facilities;
 		this.activities = activities;
@@ -53,6 +54,7 @@ public class InventoryService {
 		this.runs = runs;
 		this.events = events;
 		this.access = access;
+		this.units = units;
 	}
 
 	// --- inventories --------------------------------------------------------
@@ -315,13 +317,17 @@ public class InventoryService {
 
 		var factorFindings = new ArrayList<Finding>();
 		for (var assignment : included) {
-			if (assignment.isClassified()
-					&& !assignment.getEmissionFactor().getUnit().equalsIgnoreCase(assignment.getActivity().getUnit())) {
+			if (!assignment.isClassified()) {
+				continue;
+			}
+			var activityUnit = assignment.getActivity().getUnit();
+			var factorUnit = assignment.getEmissionFactor().getUnit();
+			if (!isReconcilable(activityUnit, factorUnit)) {
 				factorFindings.add(new Finding(Severity.ERROR,
-						"'" + assignment.getActivity().getActivityType() + "' is recorded in "
-								+ assignment.getActivity().getUnit() + " but its factor '"
-								+ assignment.getEmissionFactor().getName() + "' expects "
-								+ assignment.getEmissionFactor().getUnit() + " — no conversion is configured."));
+						"'" + assignment.getActivity().getActivityType() + "' is recorded in " + describeUnit(activityUnit)
+								+ " but its factor '" + assignment.getEmissionFactor().getName() + "' is per "
+								+ describeUnit(factorUnit) + " — no conversion between them. Record it in a unit "
+								+ "compatible with " + factorUnit + ", or choose a factor in " + activityUnit + "."));
 			}
 		}
 
@@ -373,12 +379,16 @@ public class InventoryService {
 				continue;
 			}
 			var share = shares.getOrDefault(assignment.getActivity().getFacility().getId(), BigDecimal.ZERO);
-			var kgCo2e = assignment.getActivity()
-				.getQuantity()
-				.multiply(assignment.getEmissionFactor().getKgCo2ePerUnit())
+			var quantity = assignment.getActivity().getQuantity();
+			var activityUnit = assignment.getActivity().getUnit();
+			var factorUnit = assignment.getEmissionFactor().getUnit();
+			var convertsDimensionally = units.canConvert(activityUnit, factorUnit);
+			var conversionFactor = convertsDimensionally ? units.ratio(activityUnit, factorUnit) : BigDecimal.ONE;
+			var convertedQuantity = convertsDimensionally ? units.convert(quantity, activityUnit, factorUnit) : quantity;
+			var kgCo2e = convertedQuantity.multiply(assignment.getEmissionFactor().getKgCo2ePerUnit())
 				.multiply(share)
 				.setScale(3, RoundingMode.HALF_UP);
-			run.addLine(new GhgRunLine(run, assignment, share, kgCo2e));
+			run.addLine(new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, share, kgCo2e));
 		}
 		run = runs.save(run);
 		events.publishEvent(new GhgRunCompleted(run.getId(), inventoryId, run.getTotalKgCo2e()));
@@ -410,6 +420,21 @@ public class InventoryService {
 			.orElseThrow(() -> GhgNotFoundException.assignment(id));
 		access.check(assignment.getInventory().getOrganization());
 		return assignment;
+	}
+
+	/**
+	 * Whether an activity's unit can drive its factor: a dimensional conversion
+	 * exists, or (for custom/unrecognized units) the two strings match exactly.
+	 */
+	private boolean isReconcilable(String activityUnit, String factorUnit) {
+		return units.canConvert(activityUnit, factorUnit) || activityUnit.equalsIgnoreCase(factorUnit);
+	}
+
+	/** A unit with its dimension for error messages, e.g. "kg (mass)" or "widgets (unrecognized)". */
+	private String describeUnit(String unit) {
+		return units.dimensionOf(unit)
+			.map(dimension -> unit + " (" + dimension.name().toLowerCase().replace('_', ' ') + ")")
+			.orElse(unit + " (unrecognized)");
 	}
 
 	private void requireOrganization(UUID organizationId) {

@@ -25,11 +25,13 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import com.carbonos.TestcontainersConfiguration;
 import com.carbonos.ghg.internal.ActivityRecordRepository;
 import com.carbonos.ghg.internal.BoundaryTreatmentRepository;
+import com.carbonos.ghg.internal.EmissionFactorRepository;
 import com.carbonos.ghg.internal.FacilityRepository;
 import com.carbonos.ghg.internal.GhgRunRepository;
 import com.carbonos.ghg.internal.InventoryAssignmentRepository;
 import com.carbonos.ghg.internal.InventoryRepository;
 import com.carbonos.ghg.internal.OrganizationRepository;
+import com.carbonos.ghg.internal.UnitConverter;
 import com.carbonos.user.AuthenticatedUser;
 import com.jayway.jsonpath.JsonPath;
 
@@ -67,6 +69,12 @@ class GhgApiIntegrationTests {
 
 	@Autowired
 	OrganizationRepository organizations;
+
+	@Autowired
+	EmissionFactorRepository emissionFactors;
+
+	@Autowired
+	UnitConverter unitConverter;
 
 	@BeforeEach
 	void resetGhgData() {
@@ -404,6 +412,58 @@ class GhgApiIntegrationTests {
 		// the physical fact remains 1000 L in both cases
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asMember()))
 			.andExpect(jsonPath("$[0].quantity").value(1000.0));
+	}
+
+	// --- unit conversion (spec 005) ------------------------------------------
+
+	@Test
+	void everySeededFactorUnitIsAConvertibleUnit() {
+		assertThat(emissionFactors.findAllByOrderByScopeAscNameAsc()).allSatisfy(factor -> assertThat(
+				unitConverter.dimensionOf(factor.getUnit()))
+			.as("factor '%s' unit '%s' must be a registered unit", factor.getName(), factor.getUnit())
+			.isPresent());
+	}
+
+	@Test
+	void anActivityIsConvertedIntoTheFactorsUnitBeforeCalculating() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		// diesel metered in US gallons; the seeded Diesel factor is per litre
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "10000", "US-gallon", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
+
+		// 10,000 US-gal x 3.785411784 = 37,854.11784 L x 2.66 x 100% = 100,691.953 kg (HALF_UP)
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Run 001"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(100691.953))
+			// the line snapshots both the original fact and the converted quantity
+			.andExpect(jsonPath("$.lines[0].unit").value("US-gallon"))
+			.andExpect(jsonPath("$.lines[0].quantity").value(10000.0))
+			.andExpect(jsonPath("$.lines[0].factorUnit").value("litre"))
+			.andExpect(jsonPath("$.lines[0].convertedQuantity").value(37854.11784));
+	}
+
+	@Test
+	void crossDimensionUnitsCannotBeReconciledAndBlockTheRun() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		// diesel recorded in kg (mass) against a per-litre (volume) factor — no conversion
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "800", "kg", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
+
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(false))
+			.andExpect(jsonPath("$.gates[3].status").value("BLOCKED"));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Run 001"}"""))
+			.andExpect(status().isConflict());
 	}
 
 	// --- spec 004: tenant isolation (AUTH-01) --------------------------------

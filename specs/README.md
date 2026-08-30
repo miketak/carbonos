@@ -31,3 +31,4 @@ the source of truth for *how*.
 | 002 | [Access requests](002-access-requests.md)                | Implemented |
 | 003 | [Inventory accounting model](003-inventory-accounting-model.md) | Implemented |
 | 004 | [Organization access](004-organization-access.md)        | Implemented |
+| 005 | [Unit conversion](005-unit-conversion.md)                | Implemented |
