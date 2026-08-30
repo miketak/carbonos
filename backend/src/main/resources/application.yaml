@@ -73,3 +73,9 @@ management:
     health:
       probes:
         enabled: true
+  health:
+    # SMTP reachability must not gate the deploy healthcheck: mail is
+    # best-effort (approval/denial notices), and staging/prod have no SMTP
+    # host by default. Sending still surfaces its own errors when it runs.
+    mail:
+      enabled: false
