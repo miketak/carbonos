@@ -5,8 +5,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Backend base URL baked in at build time (Railway exposes service variables to Docker builds)
-ARG VITE_API_URL
+# API base URL baked in at build time. Leave EMPTY (the default) so the SPA
+# calls a relative /api and nginx proxies it same-origin — session and CSRF
+# cookies are SameSite=Lax and do not survive a cross-origin API.
+ARG VITE_API_URL=
 ENV VITE_API_URL=$VITE_API_URL
 
 COPY . .
@@ -20,4 +22,7 @@ COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 
 ENV PORT=8080
+# Where nginx proxies /api to — Railway private networking; the hostname
+# resolves to the same-environment backend in both staging and production.
+ENV BACKEND_INTERNAL_URL=http://backend.railway.internal:8080
 EXPOSE 8080
