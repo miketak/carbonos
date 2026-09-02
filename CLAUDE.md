@@ -5,13 +5,13 @@ deployed to Railway. Specs live in `specs/`.
 
 ## Architecture rules (enforced)
 
-**Backend — modular monolith via Spring Modulith.**
+**Backend: modular monolith via Spring Modulith.**
 
 - Each business capability is one top-level package under `com.carbonos`
   (= one Spring Modulith module), e.g. `com.carbonos.contact`.
 - A module's public API lives in its root package (or a `@NamedInterface`);
   implementation details go in `internal/` sub-packages. Other modules must
-  never import another module's internals — `ModularityTests` fails the build
+  never import another module's internals; `ModularityTests` fails the build
   if they do. Never weaken or delete that test to make a build pass.
 - Cross-module communication prefers **application events**
   (`ApplicationEventPublisher` + `@ApplicationModuleListener`) over direct
@@ -24,7 +24,7 @@ deployed to Railway. Specs live in `specs/`.
   `backend/src/main/resources/db/migration`. Never edit an applied migration;
   add a new one. Hibernate `ddl-auto` stays `validate`.
 
-**Frontend — feature-sliced React.**
+**Frontend: feature-sliced React.**
 
 - `src/features/<name>/` mirrors backend modules; a feature owns its pages,
   components, and queries. `src/components/` is shared UI only; `src/lib/` is
@@ -37,7 +37,7 @@ deployed to Railway. Specs live in `specs/`.
 
 1. **Spec first.** Non-trivial features start as a spec in `specs/` (copy
    `specs/TEMPLATE.md`, add it to the index in `specs/README.md`). Do not
-   implement from a `Draft` spec — get it to `Approved` first.
+   implement from a `Draft` spec; get it to `Approved` first.
 2. **Implement against the spec.** If reality diverges from the spec, update
    the spec in the same PR.
 3. **Verify before declaring done** (Definition of Done):
@@ -67,13 +67,23 @@ Java 25 (Temurin) is installed via SDKMAN; non-login shells may need
 `source "$HOME/.sdkman/bin/sdkman-init.sh"` before `./mvnw` works.
 
 Makefile shortcuts (repo root): `make dev-up` / `make dev-down` (whole dev
-environment in a tmux "dev-console" window — or a "carbonos" session when
-outside tmux — backend on top, Postgres logs bottom-left, Vite bottom-right),
+environment in a tmux "dev-console" window, or a "carbonos" session when
+outside tmux: backend on top, Postgres logs bottom-left, Vite bottom-right),
 `make db-up`, `make backend`, `make frontend`,
 `make verify` (full DoD), and `make admin EMAIL=.. PASSWORD=.. [NAME=..]` to
 create or password-reset a local admin user. The backend also seeds an initial
 admin at startup when `CARBONOS_ADMIN_EMAIL` and `CARBONOS_ADMIN_PASSWORD` are
 set (idempotent; the canonical mechanism for Railway).
+
+## Writing style
+
+- **No em-dashes (`—`) in anything we write:** prose, specs, QA procedures,
+  commit messages, PR descriptions, code comments, and UI copy. Use a colon,
+  a semicolon, a comma, parentheses, or a full stop instead. En-dashes in
+  numeric ranges (`2-3 hours`, `F1-F10`) are fine.
+- The exception is text quoted verbatim from somewhere else, e.g. a product
+  string a QA script tells a tester to look for. Don't silently alter a quote
+  to satisfy the rule; quote the clause before the dash, or describe the rest.
 
 ## Git & releases
 
@@ -90,4 +100,4 @@ set (idempotent; the canonical mechanism for Railway).
 
 Spring Boot 4.1.x / Spring Modulith 2.1.x / Java 25 / React 19 / Vite 8 /
 Node 22 / PostgreSQL 17. Boot 4 renamed starters (`spring-boot-starter-webmvc`,
-per-starter test artifacts) — don't "fix" them back to Boot 3 names.
+per-starter test artifacts), so don't "fix" them back to Boot 3 names.
