@@ -8,7 +8,7 @@ import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail } from '../../lib/api'
-import { ApproachBadge } from './components/badges'
+import { ApproachBadge, BoundaryStatusBadge } from './components/badges'
 import { approachLabels } from './format'
 import { useCreateInventory, useDeleteInventory, useInventoriesQuery } from './useGhg'
 import type { ConsolidationApproach, Inventory } from './api'
@@ -114,11 +114,14 @@ function InventoryCard({
         {inventory.periodStart} → {inventory.periodEnd}
         {inventory.purpose ? ` · ${inventory.purpose}` : ''}
       </p>
-      {inventory.finalRunId && (
-        <span className="mt-2 inline-block w-fit rounded-full bg-accent-green/25 px-2.5 py-0.5 text-xs font-bold text-dark-teal">
-          FINAL RUN DESIGNATED
-        </span>
-      )}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <BoundaryStatusBadge inventory={inventory} />
+        {inventory.finalRunId && (
+          <span className="inline-block rounded-full bg-accent-green/25 px-2.5 py-0.5 text-xs font-bold text-dark-teal">
+            FINAL RUN DESIGNATED
+          </span>
+        )}
+      </div>
       <div className="mt-4 flex gap-2">
         <Link
           to={inventory.id}

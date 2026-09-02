@@ -3,6 +3,7 @@ package com.carbonos.ghg.internal;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -120,7 +121,8 @@ public class BoundaryVersion {
 		return frozenAt;
 	}
 
+	/** Alphabetical by facility, whether freshly built or loaded, so every reader sees the same order. */
 	public List<BoundaryVersionEntry> getEntries() {
-		return List.copyOf(entries);
+		return entries.stream().sorted(Comparator.comparing(BoundaryVersionEntry::getFacilityName)).toList();
 	}
 }

@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
-import { ApproachBadge, ScopeBadge } from './components/badges'
+import { ApproachBadge, BoundaryStatusBadge, ScopeBadge } from './components/badges'
 import { BoundaryVersionPanel } from './components/BoundaryVersionPanel'
 import { Breadcrumb } from './components/Breadcrumb'
 import { PreflightPanel } from './components/PreflightPanel'
@@ -103,22 +103,6 @@ function OwnershipInput({
       onBlur={(event) => onUpdate(Number(event.target.value))}
       className="w-20 rounded-lg border border-teal/20 bg-white/70 px-2 py-1 text-sm focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60"
     />
-  )
-}
-
-/** The boundary's lifecycle state, in the pre-flight panel's instrument idiom (spec 007). */
-function BoundaryStatusChip({ inventory }: { inventory: Inventory }) {
-  const frozen = inventory.boundaryStatus === 'FROZEN'
-  return (
-    <span
-      className={`rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold tracking-widest ${
-        frozen
-          ? 'border-teal/40 bg-teal/10 text-link'
-          : 'border-amber-300 bg-amber-50 text-amber-700'
-      }`}
-    >
-      {frozen ? `BOUNDARY FROZEN v${inventory.currentBoundaryVersionNo}` : 'BOUNDARY DRAFT'}
-    </span>
   )
 }
 
@@ -356,7 +340,7 @@ export function InventoryDetailPage() {
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl">{inventory.name}</h1>
           <ApproachBadge approach={inventory.consolidationApproach} />
-          <BoundaryStatusChip inventory={inventory} />
+          <BoundaryStatusBadge inventory={inventory} />
         </div>
         <p className="mt-1 text-sm text-ink-muted">
           {inventory.periodStart} → {inventory.periodEnd}

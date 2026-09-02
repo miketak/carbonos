@@ -169,7 +169,7 @@ back deliberately so section E can exercise reconciliation.
 
 | # | Step | Expected result | Verdict | Notes |
 | --- | --- | --- | --- | --- |
-| D1 | Sidebar → **Inventories** → **New inventory**. Name `2025 Corporate Inventory`, period `2025-01-01` → `2025-12-31`, purpose `Corporate reporting`, approach **Operational control** | Created; card shows the approach badge and `2025-01-01 → 2025-12-31 · Corporate reporting`. Open it | ☐ P ☐ F | |
+| D1 | Sidebar → **Inventories** → **New inventory**. Name `2025 Corporate Inventory`, period `2025-01-01` → `2025-12-31`, purpose `Corporate reporting`, approach **Operational control** | Created; card shows the approach badge, a **BOUNDARY DRAFT** chip and `2025-01-01 → 2025-12-31 · Corporate reporting`. Open it | ☐ P ☐ F | |
 | D2 | Read the header, then scroll to **Pre-flight checks** before touching anything | Beside the approach badge a chip reads **BOUNDARY DRAFT**. Pre-flight badge reads **LAUNCH ON HOLD**; Reporting boundary is **HOLD**, reading "The organizational boundary is empty" | ☐ P ☐ F | |
 | D3 | In **Organizational boundary**, tick **S1** into the boundary | Row saves. **Ownership % is 100, both control boxes are ticked**, regardless of the facility's own equity share. See known gap 1 | ☐ P ☐ F | |
 | D4 | Tick **S4** and **S5** in | All three show an accounting share of **100%** under operational control | ☐ P ☐ F | |
@@ -300,7 +300,7 @@ too. Only *future* runs see the correction.
 | J8 | Delete **Run 002** | It disappears; the inventory no longer reports a designated final run, and Run 001 is *not* auto-promoted | ☐ P ☐ F | |
 | J9 | Re-designate **Run 001** as final | The FINAL pill returns to Run 001 | ☐ P ☐ F | |
 | J10 | In inventory A, click **Reopen as draft** | Toast "Boundary reopened as a draft." Chip reads **BOUNDARY DRAFT**; the inputs are editable again; pre-flight is back on **HOLD** for the draft error; Version history still lists v1 | ☐ P ☐ F | |
-| J11 | Change S2's ownership to `50`, then **Freeze boundary** and confirm | Toast "Boundary frozen as v2." Chip reads **BOUNDARY FROZEN v2**. Version history lists v2 above v1. Expand each: v2 shows Tarkwa at 50%, v1 still shows it at 40%. Versions are never rewritten | ☐ P ☐ F | |
+| J11 | Change S2's ownership to `50`, then **Freeze boundary** and confirm | Toast "Boundary frozen as v2." Chip reads **BOUNDARY FROZEN v2**, and so does the inventory's card back on the Inventories list. Version history lists v2 above v1. Expand each: v2 shows Tarkwa at 50%, v1 still shows it at 40%. Versions are never rewritten | ☐ P ☐ F | |
 | J12 | Open **Run 001** again | Still **35,426.44 t**, and its **Boundary version 1** card still shows Tarkwa at 40%. A later freeze changes nothing a verifier has already been shown | ☐ P ☐ F | |
 
 ---
