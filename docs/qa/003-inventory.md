@@ -5,12 +5,14 @@ Manual test script for the GHG accounting workflow of
 admin-created account of [spec 001](../../specs/001-admin-user-management.md)
 and covering the tenant isolation of
 [spec 004](../../specs/004-organization-access.md) and the unit conversion of
-[spec 005](../../specs/005-unit-conversion.md) and the boundary freeze and
-versioning of [spec 007](../../specs/007-boundary-freeze-and-versioning.md),
-exercised on **staging**.
+[spec 005](../../specs/005-unit-conversion.md) the facility control
+facts of [spec 006](../../specs/006-facility-control-facts.md) and the boundary
+freeze and versioning of
+[spec 007](../../specs/007-boundary-freeze-and-versioning.md), exercised on
+**staging**.
 Run it top to bottom. The scenario is cumulative, and later sections depend on
 state built earlier. Tick a verdict and leave a note on every row.
-102 cases, estimated about 3 hours. It is self-contained: no other QA
+104 cases, estimated about 3 hours. It is self-contained: no other QA
 procedure has to be run first.
 
 **When to run:** before tagging a production release, and after any change to
@@ -54,13 +56,16 @@ materially different totals without a single activity record being edited.
 
 ### Facilities (organizational facts)
 
-| Ref | Name | Location | Equity share % | Controlled |
-| --- | --- | --- | --- | --- |
-| S1 | Obuasi Ridge Open Pit | Obuasi, Ghana | 100 | ✓ |
-| S2 | Tarkwa Processing Plant | Tarkwa, Ghana | 40 | ✓ (JV, Sankofa operates) |
-| S3 | Takoradi Port Loadout | Takoradi, Ghana | 30 | ✗ (JV, partner operates) |
-| S4 | Accra Corporate Office | Accra, Ghana | 100 | ✓ |
-| S5 | Nkran Exploration Camp | Ashanti Region, Ghana | 100 | ✓ |
+| Ref | Name | Location | Equity share % | Financial control | Operational control |
+| --- | --- | --- | --- | --- | --- |
+| S1 | Obuasi Ridge Open Pit | Obuasi, Ghana | 100 | ✓ | ✓ |
+| S2 | Tarkwa Processing Plant | Tarkwa, Ghana | 40 | ✗ | ✓ (JV, Sankofa operates) |
+| S3 | Takoradi Port Loadout | Takoradi, Ghana | 30 | ✗ | ✗ (JV, partner operates) |
+| S4 | Accra Corporate Office | Accra, Ghana | 100 | ✓ | ✓ |
+| S5 | Nkran Exploration Camp | Ashanti Region, Ghana | 100 | ✓ | ✓ |
+
+These are the facility's *facts*. Each inventory's boundary starts from them
+(spec 006) and may override them for that inventory alone.
 
 ### Activity records (organizational facts)
 
@@ -103,7 +108,7 @@ period.
 | R8 | Waste to landfill (/tonne) |
 | R9 | Water supply (/m3) |
 | R10 | Diesel (/litre) |
-| R11 | *none exists*; excluded as **Not applicable** |
+| R11 | *none exists*; excluded as **Methodology exclusion** |
 | R12 | *none*; auto-excluded, outside the period |
 
 ---
@@ -142,8 +147,8 @@ prove in section K that they cannot see it.
 | B2 | **New organization** → name `Sankofa Gold plc` → **Create organization** | Card appears reading "0 facilities in the boundary". Click **Open** | ☐ P ☐ F | |
 | B3 | On the Overview page, read the setup checklist | Card "From facts to a final inventory" with four steps; only "Add your facilities" offers a CTA | ☐ P ☐ F | |
 | B4 | Sidebar → **Facilities** → **Add facility**. Try equity share `150`, then `-1` | Both refused (field is min 0, max 100); nothing saved | ☐ P ☐ F | |
-| B5 | Add all five facilities from the facilities table above | Table lists five rows with the right location, equity share and Controlled state. S3 is the only unchecked one | ☐ P ☐ F | |
-| B6 | Read the stat chips above the table | Facilities **5**, Controlled **4 of 5**, Avg ownership **74%** | ☐ P ☐ F | |
+| B5 | Add all five facilities from the facilities table above | Table lists five rows with the right location, equity share, Financial ctrl and Operational ctrl. S2 is the only row with financial control off and operational on; S3 has both off | ☐ P ☐ F | |
+| B6 | Read the stat chips above the table | Facilities **5**, Operationally controlled **4 of 5**, Avg ownership **74%** | ☐ P ☐ F | |
 | B7 | Return to **Overview** | "Add your facilities" is ticked off; the CTA has moved to "Record activity data" | ☐ P ☐ F | |
 
 ---
@@ -171,7 +176,7 @@ back deliberately so section E can exercise reconciliation.
 | --- | --- | --- | --- | --- |
 | D1 | Sidebar → **Inventories** → **New inventory**. Name `2025 Corporate Inventory`, period `2025-01-01` → `2025-12-31`, purpose `Corporate reporting`, approach **Operational control** | Created; card shows the approach badge, a **BOUNDARY DRAFT** chip and `2025-01-01 → 2025-12-31 · Corporate reporting`. Open it | ☐ P ☐ F | |
 | D2 | Read the header, then scroll to **Pre-flight checks** before touching anything | Beside the approach badge a chip reads **BOUNDARY DRAFT**. Pre-flight badge reads **LAUNCH ON HOLD**; Reporting boundary is **HOLD**, reading "The organizational boundary is empty" | ☐ P ☐ F | |
-| D3 | In **Organizational boundary**, tick **S1** into the boundary | Row saves. **Ownership % is 100, both control boxes are ticked**, regardless of the facility's own equity share. See known gap 1 | ☐ P ☐ F | |
+| D3 | In **Organizational boundary**, tick **S1** into the boundary | Row saves already filled in: ownership **100**, both control boxes ticked, copied from the facility record with nothing typed | ☐ P ☐ F | |
 | D4 | Tick **S4** and **S5** in | All three show an accounting share of **100%** under operational control | ☐ P ☐ F | |
 | D5 | Re-read Pre-flight checks | Reporting boundary is still **HOLD**, but the finding has changed to "The organizational boundary is a draft. Freeze it to enable a run." Activity data completeness now warns that **12 organizational activity records have not been reviewed** and tells you to run "Review activity data" | ☐ P ☐ F | |
 
@@ -185,8 +190,8 @@ back deliberately so section E can exercise reconciliation.
 | E2 | Find R12 (`Haul fleet diesel (Q1)`, 2026-02-28) | Status `Excluded · Outside reporting period`, auto-excluded with no user input | ☐ P ☐ F | |
 | E3 | Find R2, R6 (S2) and R10 (S3) | All three `Excluded · Outside boundary`, because their facilities are not in this inventory's boundary | ☐ P ☐ F | |
 | E4 | Confirm the facts were not touched: open **Activity data** in another tab | All twelve records unchanged. Exclusion is a property of the *view*, never of the fact | ☐ P ☐ F | |
-| E5 | Back in the inventory, tick **S2** into the boundary and set ownership `40`, financial control **off**, operational control **on** | Saves on blur. Accounting share shows **100%**: operational control is on, so the equity % is irrelevant under this approach | ☐ P ☐ F | |
-| E6 | Tick **S3** in: ownership `30`, financial control **off**, operational control **off** | Accounting share shows **0%** | ☐ P ☐ F | |
+| E5 | Back in the inventory, tick **S2** into the boundary | It arrives prefilled at ownership **40**, financial control **off**, operational control **on**, straight from the facility record. Accounting share shows **100%**: operational control is on, so the equity % is irrelevant under this approach | ☐ P ☐ F | |
+| E6 | Tick **S3** in | Prefilled at ownership **30** with both controls **off**. Accounting share shows **0%** | ☐ P ☐ F | |
 | E7 | Read Pre-flight checks | Reporting boundary is **HOLD** with two findings: the draft error, and the warning "Takoradi Port Loadout has a 0% accounting share under operational control". Completeness warns that three records are excluded "for a reason that no longer holds" | ☐ P ☐ F | |
 | E8 | Click **Review activity data** again | Toast "3 stale decisions refreshed." R2, R6 and R10 flip back to included-and-unclassified. R12 stays excluded, since it is still outside the period | ☐ P ☐ F | |
 | E9 | Click **Review activity data** a third time | Toast "All activity records are already reviewed." Nothing changes | ☐ P ☐ F | |
@@ -206,7 +211,7 @@ back deliberately so section E can exercise reconciliation.
 | F7 | Look at R11 (`tonne ANFO`) before classifying it | Note under the dropdown, beginning "No factor matches tonne ANFO". The dropdown falls back to offering **all** factors | ☐ P ☐ F | |
 | F8 | Classify R11 with **Waste to landfill (/tonne)** anyway | Emission factors gate turns **HOLD**, reporting that "'ANFO explosives consumed' is recorded in tonne ANFO (unrecognized) but its factor 'Waste to landfill' is per tonne (mass)", so no conversion between them exists. A custom unit never auto-converts, even to a same-word unit | ☐ P ☐ F | |
 | F9 | On R11 click **Exclude…** and read the menu | Seven reasons: Outside reporting period, Outside boundary, Non-GHG activity, Duplicate, Not applicable, Methodology exclusion, Other documented reason | ☐ P ☐ F | |
-| F10 | Exclude R11 as **Not applicable** | Status `Excluded · Not applicable`; the Emission factors gate returns to **PASS** | ☐ P ☐ F | |
+| F10 | Exclude R11 as **Methodology exclusion** | Status `Excluded · Methodology exclusion`; the Emission factors gate returns to **PASS**. Explosives detonation is a real scope 1 process emission the seeded library cannot classify, so the honest reason is a methodology limit, not that it does not apply | ☐ P ☐ F | |
 
 ---
 
@@ -268,11 +273,11 @@ records consolidated a second way.
 | # | Step | Expected result | Verdict | Notes |
 | --- | --- | --- | --- | --- |
 | I1 | **Inventories** → **New inventory**. Name `2025 Equity Share Inventory`, same period, purpose `JV partner reporting`, approach **Equity share** | Created alongside inventory A. Overlapping periods are allowed by design | ☐ P ☐ F | |
-| I2 | Tick all five facilities into the boundary; set S2 ownership `40`, S3 ownership `30`, leave S1/S4/S5 at 100 | Accounting shares read **100% / 40% / 30% / 100% / 100%**. The same boundary numbers now produce different shares because the approach changed | ☐ P ☐ F | |
+| I2 | Tick all five facilities into the boundary | Every treatment prefills from its facility: shares read **100% / 40% / 30% / 100% / 100%** with nothing typed. The same facts now produce different shares because the approach changed | ☐ P ☐ F | |
 | I3 | Read Pre-flight checks | Reporting boundary is **HOLD** for the draft error alone: **no** 0%-share warning this time, because Takoradi contributes 30% under equity share | ☐ P ☐ F | |
 | I4 | Click **Review activity data** | Toast "12 new records under review." Inventory A's decisions are not inherited; every assignment starts fresh | ☐ P ☐ F | |
 | I5 | Confirm R12's status | `Excluded · Outside reporting period`. Nothing else auto-excludes, because all five facilities are in the boundary | ☐ P ☐ F | |
-| I6 | Classify R1–R10 per the classification table; exclude R11 as **Not applicable**; then **Freeze boundary** and confirm | Toast "Boundary frozen as v1." (each inventory numbers its own versions). Badge turns **READY TO LAUNCH** | ☐ P ☐ F | |
+| I6 | Classify R1–R10 per the classification table; exclude R11 as **Methodology exclusion**; then **Freeze boundary** and confirm | Toast "Boundary frozen as v1." (each inventory numbers its own versions). Badge turns **READY TO LAUNCH** | ☐ P ☐ F | |
 | I7 | Launch `Run 001` | Total **22,784.35 t CO₂e**, split as the table above | ☐ P ☐ F | |
 | I8 | Compare the R2 line against inventory A's | `48,500 MWh → 48,500,000 kWh`, identical factor, but weight **40%** and line total **8,555.4 t** instead of 21,388.5 t | ☐ P ☐ F | |
 | I9 | Compare the R10 line | Weight **30%**, line total **247.38 t CO₂e**, up from zero in inventory A | ☐ P ☐ F | |
@@ -300,8 +305,10 @@ too. Only *future* runs see the correction.
 | J8 | Delete **Run 002** | It disappears; the inventory no longer reports a designated final run, and Run 001 is *not* auto-promoted | ☐ P ☐ F | |
 | J9 | Re-designate **Run 001** as final | The FINAL pill returns to Run 001 | ☐ P ☐ F | |
 | J10 | In inventory A, click **Reopen as draft** | Toast "Boundary reopened as a draft." Chip reads **BOUNDARY DRAFT**; the inputs are editable again; pre-flight is back on **HOLD** for the draft error; Version history still lists v1 | ☐ P ☐ F | |
-| J11 | Change S2's ownership to `50`, then **Freeze boundary** and confirm | Toast "Boundary frozen as v2." Chip reads **BOUNDARY FROZEN v2**, and so does the inventory's card back on the Inventories list. Version history lists v2 above v1. Expand each: v2 shows Tarkwa at 50%, v1 still shows it at 40%. Versions are never rewritten | ☐ P ☐ F | |
+| J11 | Change S2's ownership to `50`, then **Freeze boundary** and confirm | Toast "Boundary frozen as v2." Chip reads **BOUNDARY FROZEN v2**, and so does the inventory's card back on the Inventories list. Version history lists v2 above v1. Expand each: v2 shows Tarkwa at 50%, v1 still shows it at 40%. Versions are never rewritten. Reporting boundary now also warns "Tarkwa Processing Plant's treatment (50%, financial no, operational yes) differs from the facility record (40%, financial no, operational yes). Review the boundary.": the treatment and the fact disagree, and the gate says so | ☐ P ☐ F | |
 | J12 | Open **Run 001** again | Still **35,426.44 t**, and its **Boundary version 1** card still shows Tarkwa at 40%. A later freeze changes nothing a verifier has already been shown | ☐ P ☐ F | |
+| J13 | Sidebar → **Facilities** → **Edit** S2, set equity share to `50`, **Save changes**. Return to inventory A | The drift warning is gone: fact and treatment agree again. Nothing else moved: still FROZEN v2, both versions unchanged, Run 001 untouched. Editing a facility never rewrites a boundary | ☐ P ☐ F | |
+| J14 | Edit S2 back to `40` | The drift warning returns, naming 50% against 40%. Leave it: it is a true statement about this inventory | ☐ P ☐ F | |
 
 ---
 
@@ -370,24 +377,17 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 **Known gaps and non-goals** (do not report as bugs):
 
-1. **Boundary prefill (D3).** Spec 003 says a treatment is prefilled from the
-   facility's org-level defaults; the app actually enters every facility at
-   100% with both controls on, so S2 (40%) and S3 (30%) must be corrected by
-   hand. Draft spec 006 exists to fix this, so record the behavior rather
-   than filing it.
-2. A facility carries a single **Controlled** flag, not separate financial and
-   operational control (also spec 006).
-3. **Base year** is accepted by the API but has no field on the new-inventory
+1. **Base year** is accepted by the API but has no field on the new-inventory
    form.
-4. **Editing an inventory** (name, period, purpose, approach) is API-only:
+2. **Editing an inventory** (name, period, purpose, approach) is API-only:
    there is no Edit button. Delete and recreate.
-5. **No password self-service** (spec 001 non-goal). The temporary password
+3. **No password self-service** (spec 001 non-goal). The temporary password
    an admin sets in A6 is the account's password for good: there is no change,
    reset, or forced-rotation flow, and creating a user sends no email.
-6. Spec 003 v1 non-goals: no report export (CSV/PDF), no evidence *file* upload
+4. Spec 003 v1 non-goals: no report export (CSV/PDF), no evidence *file* upload
    (string reference only), no multi-gas breakdown, no base-year
    recalculation, no activity-record versioning, no per-assignment share
    overrides, and no conversion/methodology/GWP/duplicate gates.
-7. The **emission-factor library is seed-only**. A new factor needs a
+5. The **emission-factor library is seed-only**. A new factor needs a
    migration, which is why ANFO (F7–F10) has no factor. The seeded values are
    explicitly approximate pending a curated library.

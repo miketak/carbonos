@@ -29,12 +29,14 @@ export interface OrganizationInput {
   name: string
 }
 
+/** The facility's approach-independent ownership and control facts (spec 006). */
 export interface Facility {
   id: string
   name: string
   location: string
   equitySharePercent: number
-  controlled: boolean
+  financialControl: boolean
+  operationalControl: boolean
   createdAt: string
 }
 
@@ -42,7 +44,8 @@ export interface FacilityInput {
   name: string
   location: string
   equitySharePercent: number
-  controlled: boolean
+  financialControl: boolean
+  operationalControl: boolean
 }
 
 export interface EmissionFactor {
@@ -129,10 +132,15 @@ export interface BoundaryEntry {
   accountingShare: number | null
 }
 
+/**
+ * Every field is optional (spec 006): on creation an absent field is prefilled
+ * from the facility's facts, so `{}` adds a facility exactly as its record
+ * describes it; on update an absent field keeps its current value.
+ */
 export interface BoundaryTreatmentInput {
-  ownershipPercent: number
-  financialControl: boolean
-  operationalControl: boolean
+  ownershipPercent?: number
+  financialControl?: boolean
+  operationalControl?: boolean
 }
 
 /** One freeze of the boundary, without its entries (spec 007). */

@@ -13,5 +13,6 @@ public record FacilityRequest( //
 		@NotBlank @Size(max = 120) String name, //
 		@NotBlank @Size(max = 120) String location, //
 		@NotNull @DecimalMin("0") @DecimalMax("100") @Digits(integer = 3, fraction = 2) BigDecimal equitySharePercent, //
-		@NotNull Boolean controlled) {
+		@NotNull Boolean financialControl, //
+		@NotNull Boolean operationalControl) {
 }

@@ -121,12 +121,18 @@ class GhgApiIntegrationTests {
 	}
 
 	String createFacility(String orgId, String name) throws Exception {
+		return createFacility(orgId, name, "100", true, true);
+	}
+
+	String createFacility(String orgId, String name, String equity, boolean financial, boolean operational)
+			throws Exception {
 		var result = mvc
 			.perform(post("/api/ghg/organizations/" + orgId + "/facilities").with(asMember()).with(csrf())
 				.contentType("application/json")
 				.content("""
-						{"name": "%s", "location": "Tema, Ghana", "equitySharePercent": 100, "controlled": true}"""
-					.formatted(name)))
+						{"name": "%s", "location": "Tema, Ghana", "equitySharePercent": %s,
+						 "financialControl": %s, "operationalControl": %s}"""
+					.formatted(name, equity, financial, operational)))
 			.andExpect(status().isCreated())
 			.andReturn();
 		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
@@ -748,7 +754,8 @@ class GhgApiIntegrationTests {
 		mvc.perform(put("/api/ghg/facilities/" + facilityId).with(asMember()).with(csrf())
 			.contentType("application/json")
 			.content("""
-					{"name": "Tema Refinery", "location": "Tema, Ghana", "equitySharePercent": 100, "controlled": true}"""))
+					{"name": "Tema Refinery", "location": "Tema, Ghana", "equitySharePercent": 100,
+					 "financialControl": true, "operationalControl": true}"""))
 			.andExpect(status().isOk());
 		mvc.perform(get("/api/ghg/boundary-versions/" + versionId).with(asMember()))
 			.andExpect(status().isOk())
@@ -760,5 +767,78 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isNotFound());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/reopen").with(asOutsider()).with(csrf()))
 			.andExpect(status().isNotFound());
+	}
+
+	// --- facility control facts and boundary prefill (spec 006) --------------
+
+	@Test
+	void tickingAFacilityInPrefillsItsTreatmentFromTheFacilityFacts() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		// Tema JV: 40% owned, operated by us, not financially controlled
+		var jv = createFacility(orgId, "Tema JV", "40", false, true);
+		var equity = createInventory(orgId, "Equity view", "EQUITY_SHARE");
+		var operational = createInventory(orgId, "Operational view", "OPERATIONAL_CONTROL");
+		var financial = createInventory(orgId, "Financial view", "FINANCIAL_CONTROL");
+
+		// an empty body copies the facility's facts into the treatment
+		for (var inventoryId : java.util.List.of(equity, operational, financial)) {
+			mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/" + jv).with(asMember()).with(csrf())
+				.contentType("application/json").content("{}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.ownershipPercent").value(40.0))
+				.andExpect(jsonPath("$.financialControl").value(false))
+				.andExpect(jsonPath("$.operationalControl").value(true));
+		}
+		// and each approach derives its own share from the same facts
+		mvc.perform(get("/api/ghg/inventories/" + equity + "/boundary").with(asMember()))
+			.andExpect(jsonPath("$[0].accountingShare").value(0.40));
+		mvc.perform(get("/api/ghg/inventories/" + operational + "/boundary").with(asMember()))
+			.andExpect(jsonPath("$[0].accountingShare").value(1));
+		mvc.perform(get("/api/ghg/inventories/" + financial + "/boundary").with(asMember()))
+			.andExpect(jsonPath("$[0].accountingShare").value(0));
+
+		// an explicit value overrides the facts, and a later partial update keeps the rest
+		putBoundary(equity, jv, "35", false, true);
+		mvc.perform(put("/api/ghg/inventories/" + equity + "/boundary/" + jv).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"financialControl": true}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.ownershipPercent").value(35.0))
+			.andExpect(jsonPath("$.financialControl").value(true))
+			.andExpect(jsonPath("$.operationalControl").value(true));
+	}
+
+	@Test
+	void editingTheFacilityFlagsDriftWithoutTouchingTreatmentsOrVersions() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var jv = createFacility(orgId, "Tema JV", "40", false, true);
+		var inventoryId = createInventory(orgId, "Equity view", "EQUITY_SHARE");
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/" + jv).with(asMember()).with(csrf())
+			.contentType("application/json").content("{}")).andExpect(status().isOk());
+		freezeBoundary(inventoryId);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[0].status").value("PASSED"));
+
+		// the group buys more of the JV: the fact changes, the frozen decision does not
+		mvc.perform(put("/api/ghg/facilities/" + jv).with(asMember()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "Tema JV", "location": "Tema, Ghana", "equitySharePercent": 45,
+					 "financialControl": false, "operationalControl": true}"""))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[0].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[0].findings[0].message").value(
+					"Tema JV's treatment (40%, financial no, operational yes) differs from the facility record "
+							+ "(45%, financial no, operational yes). Review the boundary."));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary").with(asMember()))
+			.andExpect(jsonPath("$[0].ownershipPercent").value(40.0));
+		var versions = mvc
+			.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary/versions").with(asMember()))
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		String versionId = JsonPath.read(versions, "$[0].id");
+		mvc.perform(get("/api/ghg/boundary-versions/" + versionId).with(asMember()))
+			.andExpect(jsonPath("$.entries[0].ownershipPercent").value(40.0));
 	}
 }

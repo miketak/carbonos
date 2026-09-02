@@ -109,9 +109,13 @@ public class InventoryService {
 		return boundaryTreatments.findAllByInventoryId(inventoryId);
 	}
 
-	/** Adds the facility to the boundary, or updates its treatment if present. Draft boundaries only. */
+	/**
+	 * Adds the facility to the boundary, or updates its treatment if present.
+	 * Draft boundaries only. Null arguments are prefilled from the facility's
+	 * facts on creation and left unchanged on update (spec 006).
+	 */
 	public BoundaryTreatment setBoundaryTreatment(UUID inventoryId, UUID facilityId, BigDecimal ownershipPercent,
-			boolean financialControl, boolean operationalControl) {
+			Boolean financialControl, Boolean operationalControl) {
 		var inventory = get(inventoryId);
 		requireDraft(inventory);
 		var facility = facilities.findById(facilityId).orElseThrow(() -> GhgNotFoundException.facility(facilityId));
@@ -119,10 +123,14 @@ public class InventoryService {
 			throw GhgNotFoundException.facility(facilityId);
 		}
 		return boundaryTreatments.findByInventoryIdAndFacilityId(inventoryId, facilityId).map(existing -> {
-			existing.update(ownershipPercent, financialControl, operationalControl);
+			existing.update(ownershipPercent != null ? ownershipPercent : existing.getOwnershipPercent(),
+					financialControl != null ? financialControl : existing.isFinancialControl(),
+					operationalControl != null ? operationalControl : existing.isOperationalControl());
 			return existing;
-		}).orElseGet(() -> boundaryTreatments
-			.save(new BoundaryTreatment(inventory, facility, ownershipPercent, financialControl, operationalControl)));
+		}).orElseGet(() -> boundaryTreatments.save(new BoundaryTreatment(inventory, facility,
+				ownershipPercent != null ? ownershipPercent : facility.getEquitySharePercent(),
+				financialControl != null ? financialControl : facility.isFinancialControl(),
+				operationalControl != null ? operationalControl : facility.isOperationalControl())));
 	}
 
 	public void removeBoundaryTreatment(UUID inventoryId, UUID facilityId) {
@@ -318,6 +326,21 @@ public class InventoryService {
 								+ approach.name().toLowerCase().replace('_', ' ') + " — it contributes nothing."));
 			}
 		}
+		for (var treatment : boundary) {
+			var facility = treatment.getFacility();
+			var drifted = treatment.getOwnershipPercent().compareTo(facility.getEquitySharePercent()) != 0
+					|| treatment.isFinancialControl() != facility.isFinancialControl()
+					|| treatment.isOperationalControl() != facility.isOperationalControl();
+			if (drifted) {
+				// spec 006: the treatment is a decision and stays put; the accountant reconciles
+				boundaryFindings.add(new Finding(Severity.WARNING, facility.getName() + "'s treatment ("
+						+ describeFacts(treatment.getOwnershipPercent(), treatment.isFinancialControl(),
+								treatment.isOperationalControl())
+						+ ") differs from the facility record (" + describeFacts(facility.getEquitySharePercent(),
+								facility.isFinancialControl(), facility.isOperationalControl())
+						+ "). Review the boundary."));
+			}
+		}
 		for (var assignment : included) {
 			var facilityId = assignment.getActivity().getFacility().getId();
 			if (boundary.stream().noneMatch(treatment -> treatment.getFacility().getId().equals(facilityId))) {
@@ -496,6 +519,13 @@ public class InventoryService {
 	 */
 	private boolean isReconcilable(String activityUnit, String factorUnit) {
 		return units.canConvert(activityUnit, factorUnit) || activityUnit.equalsIgnoreCase(factorUnit);
+	}
+
+	/** Ownership and control facts for messages, e.g. "40%, financial no, operational yes". */
+	private static String describeFacts(BigDecimal ownershipPercent, boolean financialControl,
+			boolean operationalControl) {
+		return ownershipPercent.stripTrailingZeros().toPlainString() + "%, financial "
+				+ (financialControl ? "yes" : "no") + ", operational " + (operationalControl ? "yes" : "no");
 	}
 
 	/** A unit with its dimension for error messages, e.g. "kg (mass)" or "widgets (unrecognized)". */

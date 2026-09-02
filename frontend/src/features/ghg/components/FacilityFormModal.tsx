@@ -14,7 +14,7 @@ interface FacilityFormModalProps {
   onSaved: (message: string) => void
 }
 
-/** Create or edit a facility inside the organizational boundary. */
+/** Create or edit a facility: the organization's ownership and control facts about a site (spec 006). */
 export function FacilityFormModal({
   organizationId,
   facility,
@@ -30,7 +30,8 @@ export function FacilityFormModal({
   const [equityShare, setEquityShare] = useState(
     facility ? String(facility.equitySharePercent) : '100',
   )
-  const [controlled, setControlled] = useState(facility?.controlled ?? true)
+  const [financialControl, setFinancialControl] = useState(facility?.financialControl ?? true)
+  const [operationalControl, setOperationalControl] = useState(facility?.operationalControl ?? true)
 
   const errors = fieldErrors(mutation.error)
   const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
@@ -41,10 +42,11 @@ export function FacilityFormModal({
       name,
       location,
       equitySharePercent: Number(equityShare),
-      controlled,
+      financialControl,
+      operationalControl,
     }
     const handlers = {
-      onSuccess: () => onSaved(`${name.trim()} ${facility ? 'updated' : 'added to the boundary'}.`),
+      onSuccess: () => onSaved(`${name.trim()} ${facility ? 'updated' : 'added'}.`),
     }
     if (facility) update.mutate({ id: facility.id, input }, handlers)
     else create.mutate(input, handlers)
@@ -78,18 +80,34 @@ export function FacilityFormModal({
           value={equityShare}
           onChange={(event) => setEquityShare(event.target.value)}
           error={errors?.equitySharePercent}
-          hint="Ownership percentage; used when the approach is equity share."
+          hint="Economic interest in the site; used when the approach is equity share."
           required
         />
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input
-            type="checkbox"
-            checked={controlled}
-            onChange={(event) => setControlled(event.target.checked)}
-            className="size-4 accent-teal"
-          />
-          Under the organization's control
-        </label>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-medium">Control</legend>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={financialControl}
+              onChange={(event) => setFinancialControl(event.target.checked)}
+              className="size-4 accent-teal"
+            />
+            Financial control
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={operationalControl}
+              onChange={(event) => setOperationalControl(event.target.checked)}
+              className="size-4 accent-teal"
+            />
+            Operational control
+          </label>
+          <p className="text-xs text-ink-muted">
+            The GHG Protocol's two control tests. Each inventory's boundary starts from these facts
+            and may override them; editing them here never changes an existing boundary.
+          </p>
+        </fieldset>
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">
             {generalError}

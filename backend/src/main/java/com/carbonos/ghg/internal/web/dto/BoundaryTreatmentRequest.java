@@ -4,10 +4,15 @@ import java.math.BigDecimal;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
 
+/**
+ * Every field is optional (spec 006): when the treatment is being created, an
+ * absent field is prefilled from the facility's facts, so {@code {}} adds a
+ * facility exactly as its record describes it; when it already exists, an
+ * absent field keeps its current value.
+ */
 public record BoundaryTreatmentRequest( //
-		@NotNull @DecimalMin("0.00") @DecimalMax("100.00") BigDecimal ownershipPercent, //
-		boolean financialControl, //
-		boolean operationalControl) {
+		@DecimalMin("0.00") @DecimalMax("100.00") BigDecimal ownershipPercent, //
+		Boolean financialControl, //
+		Boolean operationalControl) {
 }

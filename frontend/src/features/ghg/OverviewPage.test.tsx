@@ -20,7 +20,8 @@ const facility: Facility = {
   name: 'Tema Plant',
   location: 'Tema',
   equitySharePercent: 100,
-  controlled: true,
+  financialControl: true,
+  operationalControl: true,
   createdAt: '2026-08-01T00:00:00Z',
 }
 

@@ -126,6 +126,42 @@ organizationId). Still no consumers.
   version rather than from live treatments, then cites it. Treatments and the
   consolidation approach are read-only while frozen (409).
 
+## Conformance with the GHG Protocol Corporate Standard
+
+A review on 2026-09-02 against the Corporate Standard (revised edition, with
+the Scope 2 Guidance and the NF3 amendment) recorded what this model can and
+cannot yet express. None of these change v1 behaviour; each names the spec that
+will close it.
+
+- **Scope is derived from the emission factor.** Under the Standard, scope
+  depends on the reporter's relationship to the source: diesel in an owned haul
+  fleet is scope 1, the same diesel in a contractor's fleet is scope 3. Spec 009.
+- **The share rule cannot express Chapter 3, Table 1 in full.** Joint financial
+  control accounts at equity share under the financial-control approach;
+  associates contribute nothing under either control approach; fixed-asset
+  investments contribute nothing even under equity share. The model needs the
+  relationship type, not only three facts. Spec 010.
+- **Partial-year ownership** must be accounted from the transaction date and
+  the base year recalculated (Chapter 5), not approximated by scaling a share.
+  Spec 010.
+- **`ActivityCategory` lacks PROCESS_EMISSIONS**, the fourth kind of scope 1
+  source. A mine's explosives are the obvious casualty. Spec 009.
+- **Exclusions are never snapshotted into a run**, though Chapter 9 requires
+  reporting them with justification and Chapter 10 verifiers audit
+  completeness. Spec 008.
+- **The inventory has no lifecycle of its own.** A run can be final while the
+  boundary is reopened and re-frozen (spec 007 open question), and a
+  zero-share facility is recorded as a boundary member rather than as outside
+  the boundary under that approach. Spec 008.
+- **One CO2e figure per scope.** The Standard reports each of seven gases and
+  biogenic CO2 separately, and Scope 2 both location-based and market-based;
+  the operational boundary (which scope 3 categories are covered) is not
+  declared anywhere. Spec 011.
+- "Ownership/equity %" conflates legal ownership with economic interest
+  (Chapter 3: economic substance overrides legal form), and leased assets have
+  no treatment even though their scope depends on the approach. Specs 010
+  and 009.
+
 ## Non-goals (v1)
 
 Activity-record versioning (edits are in-place for now); conversion,

@@ -96,19 +96,21 @@ public class GhgService {
 	}
 
 	public Facility createFacility(UUID organizationId, String name, String location, BigDecimal equitySharePercent,
-			boolean controlled) {
+			boolean financialControl, boolean operationalControl) {
 		var organization = getOrganization(organizationId);
 		return facilities.save(new Facility(organization, name.trim(), location.trim(), equitySharePercent,
-				controlled));
+				financialControl, operationalControl));
 	}
 
+	/** Edits the facility's facts only. Existing boundary treatments are decisions and stay as they are (spec 006). */
 	public Facility updateFacility(UUID id, String name, String location, BigDecimal equitySharePercent,
-			boolean controlled) {
+			boolean financialControl, boolean operationalControl) {
 		var facility = getFacility(id);
 		facility.setName(name.trim());
 		facility.setLocation(location.trim());
 		facility.setEquitySharePercent(equitySharePercent);
-		facility.setControlled(controlled);
+		facility.setFinancialControl(financialControl);
+		facility.setOperationalControl(operationalControl);
 		return facility;
 	}
 

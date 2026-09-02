@@ -28,6 +28,7 @@ import {
   listRuns,
   listUnits,
   reopenBoundary,
+  setBoundaryTreatment,
   syncAssignments,
 } from './api'
 
@@ -163,6 +164,7 @@ beforeEach(() => {
   vi.mocked(getBoundaryVersion).mockReset()
   vi.mocked(freezeBoundary).mockReset()
   vi.mocked(reopenBoundary).mockReset()
+  vi.mocked(setBoundaryTreatment).mockReset()
   vi.mocked(getInventory).mockResolvedValue(inventory)
   vi.mocked(getBoundary).mockResolvedValue(boundary)
   vi.mocked(listAssignments).mockResolvedValue([unclassified])
@@ -365,4 +367,20 @@ test('reopening a frozen boundary calls the API and confirms', async () => {
   await user.click(await screen.findByRole('button', { name: /reopen as draft/i }))
   await waitFor(() => expect(reopenBoundary).toHaveBeenCalledWith('inv-1'))
   expect(await screen.findByText(/boundary reopened as a draft/i)).toBeInTheDocument()
+})
+
+test('ticking a facility in sends an empty treatment so the server prefills from its facts', async () => {
+  const user = userEvent.setup()
+  vi.mocked(setBoundaryTreatment).mockResolvedValue({
+    ...boundary[1],
+    inBoundary: true,
+    ownershipPercent: 40,
+    financialControl: false,
+    operationalControl: true,
+    accountingShare: 0.4,
+  })
+  renderPage()
+
+  await user.click((await screen.findAllByLabelText('Kumasi Plant in boundary'))[0])
+  await waitFor(() => expect(setBoundaryTreatment).toHaveBeenCalledWith('inv-1', 'fac-2', {}))
 })

@@ -66,7 +66,9 @@ records the corrected boundary. A run launched before the reopen still cites v1.
 
 Per facility in the boundary: the facility id, its **name and location copied at
 freeze time**, ownership percent, financial control, operational control, and
-the accounting share derived from the inventory's approach. Names are
+the accounting share derived from the inventory's approach. Those three facts
+are whatever the treatment held when frozen, typically prefilled from the
+facility record (spec 006) and possibly overridden for this inventory. Names are
 denormalized for the same reason run lines denormalize them: a facility with no
 activity records can still be deleted, and the version must stay readable.
 
@@ -164,8 +166,10 @@ None. Everything stays inside the `ghg` module. `GhgRunCompleted` is unchanged.
 - **Diffing two versions.** The history lists versions and shows each in full;
   a side-by-side comparison is a later addition and needs no schema change.
 - **Effective-dated treatments.** A version is cut when a human freezes it, not
-  on a business-time axis. Partial-year ownership stays a per-inventory
-  override, as in spec 003.
+  on a business-time axis. Note that a per-inventory percentage override is
+  *not* a correct substitute for mid-period acquisitions or divestments:
+  Chapter 5 of the Standard accounts from the transaction date and recalculates
+  the base year. Date-bounded membership is spec 010.
 - **Reverting to an earlier version.** Reopening gives a draft seeded from the
   current treatments, not from an arbitrary past version.
 - **Approval workflow.** Anyone who can edit the inventory can freeze and
@@ -188,4 +192,10 @@ None. Everything stays inside the `ghg` module. `GhgRunCompleted` is unchanged.
 
 ## Open questions
 
-None blocking.
+- **Freeze and final runs do not interact.** A run can be designated final,
+  then the boundary reopened, changed and re-frozen. The final run still cites
+  the version it used, so traceability holds, but the inventory's current
+  boundary now differs from its final report's. The Standard frames the
+  boundary as a declaration for a reporting period, which suggests the
+  lifecycle ultimately belongs on the inventory (draft, final, published) with
+  the boundary freeze as one of its gates. Deferred to spec 008.
