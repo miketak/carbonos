@@ -196,7 +196,7 @@ back deliberately so section E can exercise reconciliation.
 | # | Step | Expected result | Verdict | Notes |
 | --- | --- | --- | --- | --- |
 | F1 | Read Pre-flight checks | Classification is **HOLD**, one error per unclassified record, e.g. "'Haul fleet diesel' (Obuasi Ridge Open Pit, 2025-06-30) is unclassified" | ☐ P ☐ F | |
-| F2 | Open R1's **Classify** dropdown | Only the five *volume-dimension* factors are offered (Natural gas, LPG, Diesel, Petrol, Water supply). The filter is by dimension, not by exact unit: not one of them is per US-gallon. No energy, mass or distance factor appears | ☐ P ☐ F | |
+| F2 | Open R1's **Classify** dropdown | Only the five *volume-dimension* factors are offered, in this order: Diesel, LPG, Natural gas, Petrol, Water supply. The filter is by dimension, not by exact unit: not one of them is per US-gallon. No energy, mass or distance factor appears | ☐ P ☐ F | |
 | F3 | Choose **Diesel (/litre)** for R1 | Preview reads `1,250,000 US-gallon → 4,731,764.73 litre × 2.66 kg CO₂e/litre`. Status becomes `Included` with a Scope 1 badge | ☐ P ☐ F | |
 | F4 | Classify R2 with **Grid electricity (Ghana) (/kWh)** | Preview reads `48,500 MWh → 48,500,000 kWh × 0.441 kg CO₂e/kWh`; Scope 2 badge | ☐ P ☐ F | |
 | F5 | Classify R8 with **Waste to landfill (/tonne)** | Preview reads `640 short-ton → 580.5982 tonne × 446.2 kg CO₂e/tonne`; Scope 3 badge | ☐ P ☐ F | |
