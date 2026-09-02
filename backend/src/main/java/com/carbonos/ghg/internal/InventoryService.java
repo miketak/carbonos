@@ -112,7 +112,7 @@ public class InventoryService {
 	/**
 	 * Adds the facility to the boundary, or updates its treatment if present.
 	 * Draft boundaries only. Null arguments are prefilled from the facility's
-	 * facts on creation and left unchanged on update (spec 006).
+	 * facts on creation and left unchanged on update (spec 007).
 	 */
 	public BoundaryTreatment setBoundaryTreatment(UUID inventoryId, UUID facilityId, BigDecimal ownershipPercent,
 			Boolean financialControl, Boolean operationalControl) {
@@ -332,7 +332,7 @@ public class InventoryService {
 					|| treatment.isFinancialControl() != facility.isFinancialControl()
 					|| treatment.isOperationalControl() != facility.isOperationalControl();
 			if (drifted) {
-				// spec 006: the treatment is a decision and stays put; the accountant reconciles
+				// spec 007: the treatment is a decision and stays put; the accountant reconciles
 				boundaryFindings.add(new Finding(Severity.WARNING, facility.getName() + "'s treatment ("
 						+ describeFacts(treatment.getOwnershipPercent(), treatment.isFinancialControl(),
 								treatment.isOperationalControl())

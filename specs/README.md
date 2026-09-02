@@ -32,8 +32,8 @@ the source of truth for *how*.
 | 003 | [Inventory accounting model](003-inventory-accounting-model.md) | Implemented |
 | 004 | [Organization access](004-organization-access.md)        | Implemented |
 | 005 | [Unit conversion](005-unit-conversion.md)                | Implemented |
-| 006 | [Facility control facts and boundary prefill](006-facility-control-facts.md) | Implemented |
-| 007 | [Boundary freeze and versioning](007-boundary-freeze-and-versioning.md) | Implemented |
+| 006 | [Facility control facts and boundary prefill](006-facility-control-facts.md) | Superseded |
+| 007 | [Organizational boundary: control facts, prefill, freeze and versioning](007-boundary-freeze-and-versioning.md) | Implemented |
 | 008 | [Inventory lifecycle and complete run snapshots](008-inventory-lifecycle.md) | Draft |
 | 009 | [Scope as an accounting decision](009-scope-as-accounting-decision.md) | Draft |
 | 010 | [Organizational boundary: legal entities, Table 1, and changes over time](010-organizational-boundary-model.md) | Draft |

@@ -102,7 +102,7 @@ public class GhgService {
 				financialControl, operationalControl));
 	}
 
-	/** Edits the facility's facts only. Existing boundary treatments are decisions and stay as they are (spec 006). */
+	/** Edits the facility's facts only. Existing boundary treatments are decisions and stay as they are (spec 007). */
 	public Facility updateFacility(UUID id, String name, String location, BigDecimal equitySharePercent,
 			boolean financialControl, boolean operationalControl) {
 		var facility = getFacility(id);

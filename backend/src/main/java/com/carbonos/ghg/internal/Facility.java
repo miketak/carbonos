@@ -35,7 +35,7 @@ public class Facility {
 	@Column(name = "equity_share_percent", nullable = false, precision = 5, scale = 2)
 	private BigDecimal equitySharePercent;
 
-	// the approach-independent control facts of the corporate structure (spec 006)
+	// the approach-independent control facts of the corporate structure (spec 007)
 	@Column(name = "financial_control", nullable = false)
 	private boolean financialControl;
 

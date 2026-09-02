@@ -5,9 +5,8 @@ Manual test script for the GHG accounting workflow of
 admin-created account of [spec 001](../../specs/001-admin-user-management.md)
 and covering the tenant isolation of
 [spec 004](../../specs/004-organization-access.md) and the unit conversion of
-[spec 005](../../specs/005-unit-conversion.md) the facility control
-facts of [spec 006](../../specs/006-facility-control-facts.md) and the boundary
-freeze and versioning of
+[spec 005](../../specs/005-unit-conversion.md) and the organizational boundary
+(control facts, prefill, freeze and versioning) of
 [spec 007](../../specs/007-boundary-freeze-and-versioning.md), exercised on
 **staging**.
 Run it top to bottom. The scenario is cumulative, and later sections depend on
@@ -65,7 +64,7 @@ materially different totals without a single activity record being edited.
 | S5 | Nkran Exploration Camp | Ashanti Region, Ghana | 100 | ✓ | ✓ |
 
 These are the facility's *facts*. Each inventory's boundary starts from them
-(spec 006) and may override them for that inventory alone.
+(spec 007) and may override them for that inventory alone.
 
 ### Activity records (organizational facts)
 

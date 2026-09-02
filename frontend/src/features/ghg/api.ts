@@ -29,7 +29,7 @@ export interface OrganizationInput {
   name: string
 }
 
-/** The facility's approach-independent ownership and control facts (spec 006). */
+/** The facility's approach-independent ownership and control facts (spec 007). */
 export interface Facility {
   id: string
   name: string
@@ -133,7 +133,7 @@ export interface BoundaryEntry {
 }
 
 /**
- * Every field is optional (spec 006): on creation an absent field is prefilled
+ * Every field is optional (spec 007): on creation an absent field is prefilled
  * from the facility's facts, so `{}` adds a facility exactly as its record
  * describes it; on update an absent field keeps its current value.
  */

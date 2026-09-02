@@ -6,7 +6,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 
 /**
- * Every field is optional (spec 006): when the treatment is being created, an
+ * Every field is optional (spec 007): when the treatment is being created, an
  * absent field is prefilled from the facility's facts, so {@code {}} adds a
  * facility exactly as its record describes it; when it already exists, an
  * absent field keeps its current value.

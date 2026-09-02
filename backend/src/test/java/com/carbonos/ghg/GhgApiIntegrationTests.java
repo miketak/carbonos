@@ -769,7 +769,7 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isNotFound());
 	}
 
-	// --- facility control facts and boundary prefill (spec 006) --------------
+	// --- facility control facts and boundary prefill (spec 007) --------------
 
 	@Test
 	void tickingAFacilityInPrefillsItsTreatmentFromTheFacilityFacts() throws Exception {
