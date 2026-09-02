@@ -3,33 +3,45 @@ import type { CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
+import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
 import { ApproachBadge, ScopeBadge } from './components/badges'
+import { BoundaryVersionPanel } from './components/BoundaryVersionPanel'
 import { Breadcrumb } from './components/Breadcrumb'
 import { PreflightPanel } from './components/PreflightPanel'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
-import { formatCo2e } from './format'
+import { describeFreeze, formatCo2e } from './format'
 import {
   useAssignmentsQuery,
   useBoundaryQuery,
+  useBoundaryVersionsQuery,
   useClassifyAssignment,
   useDeleteRun,
   useEmissionFactorsQuery,
   useExcludeAssignment,
   useExecuteRun,
   useFinalizeRun,
+  useFreezeBoundary,
   useIncludeAssignment,
   useInventoryQuery,
   useRemoveBoundaryTreatment,
+  useReopenBoundary,
   useRunsQuery,
   useSetBoundaryTreatment,
   useSyncAssignments,
   useUnitsQuery,
   useValidationQuery,
 } from './useGhg'
-import type { Assignment, BoundaryEntry, EmissionFactor, ExclusionReason, Unit } from './api'
+import type {
+  Assignment,
+  BoundaryEntry,
+  EmissionFactor,
+  ExclusionReason,
+  Inventory,
+  Unit,
+} from './api'
 import { convertQuantity, DIMENSION_LABELS, unitDimension } from './units'
 
 const exclusionLabels: Record<ExclusionReason, string> = {
@@ -49,10 +61,12 @@ const exclusionLabels: Record<ExclusionReason, string> = {
 function TapCheckbox({
   label,
   checked,
+  disabled = false,
   onChange,
 }: {
   label: string
   checked: boolean
+  disabled?: boolean
   onChange: (checked: boolean) => void
 }) {
   return (
@@ -61,8 +75,9 @@ function TapCheckbox({
         type="checkbox"
         aria-label={label}
         checked={checked}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        className="h-5 w-5 accent-teal-deep"
+        className="h-5 w-5 accent-teal-deep disabled:cursor-not-allowed disabled:opacity-60"
       />
     </label>
   )
@@ -70,9 +85,11 @@ function TapCheckbox({
 
 function OwnershipInput({
   entry,
+  disabled = false,
   onUpdate,
 }: {
   entry: BoundaryEntry
+  disabled?: boolean
   onUpdate: (value: number) => void
 }) {
   return (
@@ -82,9 +99,26 @@ function OwnershipInput({
       max={100}
       aria-label={`${entry.facilityName} ownership percent`}
       defaultValue={entry.ownershipPercent ?? 100}
+      disabled={disabled}
       onBlur={(event) => onUpdate(Number(event.target.value))}
-      className="w-20 rounded-lg border border-teal/20 bg-white/70 px-2 py-1 text-sm focus:ring-2 focus:ring-teal focus:outline-none"
+      className="w-20 rounded-lg border border-teal/20 bg-white/70 px-2 py-1 text-sm focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60"
     />
+  )
+}
+
+/** The boundary's lifecycle state, in the pre-flight panel's instrument idiom (spec 007). */
+function BoundaryStatusChip({ inventory }: { inventory: Inventory }) {
+  const frozen = inventory.boundaryStatus === 'FROZEN'
+  return (
+    <span
+      className={`rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold tracking-widest ${
+        frozen
+          ? 'border-teal/40 bg-teal/10 text-link'
+          : 'border-amber-300 bg-amber-50 text-amber-700'
+      }`}
+    >
+      {frozen ? `BOUNDARY FROZEN v${inventory.currentBoundaryVersionNo}` : 'BOUNDARY DRAFT'}
+    </span>
   )
 }
 
@@ -322,6 +356,7 @@ export function InventoryDetailPage() {
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl">{inventory.name}</h1>
           <ApproachBadge approach={inventory.consolidationApproach} />
+          <BoundaryStatusChip inventory={inventory} />
         </div>
         <p className="mt-1 text-sm text-ink-muted">
           {inventory.periodStart} → {inventory.periodEnd}
@@ -330,7 +365,7 @@ export function InventoryDetailPage() {
       </div>
 
       <div className="animate-fade-up" style={{ '--stagger': 1 } as CSSProperties}>
-        <BoundarySection inventoryId={inventoryId} />
+        <BoundarySection inventory={inventory} />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
         <AssignmentsSection inventoryId={inventoryId} />
@@ -344,39 +379,50 @@ export function InventoryDetailPage() {
 
 // --- boundary ---------------------------------------------------------------
 
-function BoundarySection({ inventoryId }: { inventoryId: string }) {
+function BoundarySection({ inventory }: { inventory: Inventory }) {
+  const inventoryId = inventory.id
+  const frozen = inventory.boundaryStatus === 'FROZEN'
   const boundaryQuery = useBoundaryQuery(inventoryId)
   const setTreatment = useSetBoundaryTreatment(inventoryId)
   const removeTreatment = useRemoveBoundaryTreatment(inventoryId)
+  const freeze = useFreezeBoundary(inventoryId)
+  const reopen = useReopenBoundary(inventoryId)
   const toast = useToast()
+  const [confirmingFreeze, setConfirmingFreeze] = useState(false)
+  // bumped when a write is rejected, so the uncontrolled ownership inputs remount to the server value
+  const [revision, setRevision] = useState(0)
+
+  const onWriteError = (error: unknown) => {
+    setRevision((value) => value + 1)
+    toast(problemDetail(error) ?? 'Could not update boundary.', 'error')
+  }
 
   const toggle = (entry: BoundaryEntry) => {
     if (entry.inBoundary) {
-      removeTreatment.mutate(entry.facilityId, {
-        onError: (error) => toast(problemDetail(error) ?? 'Could not update boundary.', 'error'),
-      })
+      removeTreatment.mutate(entry.facilityId, { onError: onWriteError })
     } else {
       setTreatment.mutate(
         {
           facilityId: entry.facilityId,
           input: { ownershipPercent: 100, financialControl: true, operationalControl: true },
         },
-        {
-          onError: (error) => toast(problemDetail(error) ?? 'Could not update boundary.', 'error'),
-        },
+        { onError: onWriteError },
       )
     }
   }
 
   const updateOwnership = (entry: BoundaryEntry, ownershipPercent: number) => {
-    setTreatment.mutate({
-      facilityId: entry.facilityId,
-      input: {
-        ownershipPercent,
-        financialControl: entry.financialControl ?? false,
-        operationalControl: entry.operationalControl ?? false,
+    setTreatment.mutate(
+      {
+        facilityId: entry.facilityId,
+        input: {
+          ownershipPercent,
+          financialControl: entry.financialControl ?? false,
+          operationalControl: entry.operationalControl ?? false,
+        },
       },
-    })
+      { onError: onWriteError },
+    )
   }
 
   const updateControl = (
@@ -384,24 +430,91 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
     field: 'financialControl' | 'operationalControl',
     value: boolean,
   ) => {
-    setTreatment.mutate({
-      facilityId: entry.facilityId,
-      input: {
-        ownershipPercent: entry.ownershipPercent ?? 100,
-        financialControl: field === 'financialControl' ? value : (entry.financialControl ?? false),
-        operationalControl:
-          field === 'operationalControl' ? value : (entry.operationalControl ?? false),
+    setTreatment.mutate(
+      {
+        facilityId: entry.facilityId,
+        input: {
+          ownershipPercent: entry.ownershipPercent ?? 100,
+          financialControl:
+            field === 'financialControl' ? value : (entry.financialControl ?? false),
+          operationalControl:
+            field === 'operationalControl' ? value : (entry.operationalControl ?? false),
+        },
       },
-    })
+      { onError: onWriteError },
+    )
   }
+
+  const inBoundaryCount = boundaryQuery.data?.filter((entry) => entry.inBoundary).length ?? 0
 
   return (
     <GlassCard className="p-6">
-      <h2 className="text-xl">Organizational boundary</h2>
-      <p className="text-sm text-ink-muted">
-        Which facilities this view accounts for, and how much of each. The accounting share follows
-        the consolidation approach.
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-xl">Organizational boundary</h2>
+          <p className="text-sm text-ink-muted">
+            Which facilities this view accounts for, and how much of each. The accounting share
+            follows the consolidation approach.
+          </p>
+        </div>
+        {frozen ? (
+          <Button
+            variant="ghost"
+            className="px-4 py-1.5 text-sm"
+            busy={reopen.isPending}
+            onClick={() =>
+              reopen.mutate(undefined, {
+                onSuccess: () => toast('Boundary reopened as a draft.'),
+                onError: (error) =>
+                  toast(problemDetail(error) ?? 'Could not reopen the boundary.', 'error'),
+              })
+            }
+          >
+            Reopen as draft
+          </Button>
+        ) : (
+          <Button
+            className="px-4 py-1.5 text-sm"
+            disabled={inBoundaryCount === 0}
+            title={inBoundaryCount === 0 ? 'Add at least one facility first' : undefined}
+            onClick={() => setConfirmingFreeze(true)}
+          >
+            Freeze boundary
+          </Button>
+        )}
+      </div>
+      <p className="mt-2 text-sm">
+        {frozen ? (
+          <span className="text-ink-muted">
+            Frozen as version {inventory.currentBoundaryVersionNo}. Treatments are read-only; reopen
+            the boundary as a draft to change them.
+          </span>
+        ) : (
+          <span className="text-amber-700">
+            Draft. Runs are blocked until the boundary is frozen, which records a version a verifier
+            can trace every run back to.
+          </span>
+        )}
       </p>
+      {confirmingFreeze && (
+        <FreezeBoundaryModal
+          facilityCount={inBoundaryCount}
+          busy={freeze.isPending}
+          onClose={() => setConfirmingFreeze(false)}
+          onConfirm={() =>
+            freeze.mutate(undefined, {
+              onSuccess: (version) => {
+                setConfirmingFreeze(false)
+                toast(`Boundary frozen as v${version.version.versionNo}.`)
+              },
+              onError: (error) => {
+                setConfirmingFreeze(false)
+                toast(problemDetail(error) ?? 'Could not freeze the boundary.', 'error')
+              },
+            })
+          }
+        />
+      )}
       {boundaryQuery.isPending && (
         <div aria-label="Loading boundary" className="mt-4">
           <Skeleton className="h-16" />
@@ -434,6 +547,7 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
                     <TapCheckbox
                       label={`${entry.facilityName} in boundary`}
                       checked={entry.inBoundary}
+                      disabled={frozen}
                       onChange={() => toggle(entry)}
                     />
                   </td>
@@ -446,7 +560,9 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
                   <td className="px-3 py-2">
                     {entry.inBoundary ? (
                       <OwnershipInput
+                        key={`${entry.facilityId}:${entry.ownershipPercent}:${revision}`}
                         entry={entry}
+                        disabled={frozen}
                         onUpdate={(value) => updateOwnership(entry, value)}
                       />
                     ) : (
@@ -458,6 +574,7 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
                       <TapCheckbox
                         label={`${entry.facilityName} financial control`}
                         checked={entry.financialControl ?? false}
+                        disabled={frozen}
                         onChange={(value) => updateControl(entry, 'financialControl', value)}
                       />
                     ) : (
@@ -469,6 +586,7 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
                       <TapCheckbox
                         label={`${entry.facilityName} operational control`}
                         checked={entry.operationalControl ?? false}
+                        disabled={frozen}
                         onChange={(value) => updateControl(entry, 'operationalControl', value)}
                       />
                     ) : (
@@ -494,6 +612,7 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
                 <TapCheckbox
                   label={`${entry.facilityName} in boundary`}
                   checked={entry.inBoundary}
+                  disabled={frozen}
                   onChange={() => toggle(entry)}
                 />
                 <div className="min-w-0 flex-1">
@@ -511,7 +630,9 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
                   <label className="flex items-center gap-2">
                     <span className="text-ink-muted">Ownership %</span>
                     <OwnershipInput
+                      key={`${entry.facilityId}:${entry.ownershipPercent}:${revision}`}
                       entry={entry}
+                      disabled={frozen}
                       onUpdate={(value) => updateOwnership(entry, value)}
                     />
                   </label>
@@ -519,6 +640,7 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
                     <TapCheckbox
                       label={`${entry.facilityName} financial control`}
                       checked={entry.financialControl ?? false}
+                      disabled={frozen}
                       onChange={(value) => updateControl(entry, 'financialControl', value)}
                     />
                     <span className="text-ink-muted">Financial</span>
@@ -527,6 +649,7 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
                     <TapCheckbox
                       label={`${entry.facilityName} operational control`}
                       checked={entry.operationalControl ?? false}
+                      disabled={frozen}
                       onChange={(value) => updateControl(entry, 'operationalControl', value)}
                     />
                     <span className="text-ink-muted">Operational</span>
@@ -537,7 +660,76 @@ function BoundarySection({ inventoryId }: { inventoryId: string }) {
           ))}
         </ul>
       )}
+
+      <BoundaryHistory inventoryId={inventoryId} />
     </GlassCard>
+  )
+}
+
+/**
+ * Freezing is the one irreversible-feeling act on this page (the version it
+ * cuts is permanent), so it asks first. Composed from Modal + Buttons: the
+ * codebase has no confirm primitive yet.
+ */
+function FreezeBoundaryModal({
+  facilityCount,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  facilityCount: number
+  busy: boolean
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <Modal title="Freeze the boundary?" onClose={onClose}>
+      <p className="text-sm text-ink-muted">
+        This records an immutable version of the {facilityCount}{' '}
+        {facilityCount === 1 ? 'facility' : 'facilities'} currently in the boundary, with their
+        accounting shares, and makes the treatments read-only. Calculation runs will cite this
+        version. You can reopen the boundary later; the version is kept.
+      </p>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="button" busy={busy} onClick={onConfirm}>
+          Freeze boundary
+        </Button>
+      </div>
+    </Modal>
+  )
+}
+
+/** Every version ever frozen, newest first; each expands to the boundary it recorded. */
+function BoundaryHistory({ inventoryId }: { inventoryId: string }) {
+  const versionsQuery = useBoundaryVersionsQuery(inventoryId)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const versions = versionsQuery.data ?? []
+
+  if (versions.length === 0) return null
+  return (
+    <div className="mt-6 border-t border-teal/10 pt-4">
+      <h3 className="text-sm font-semibold">Version history</h3>
+      <ul className="mt-2 flex flex-col gap-2">
+        {versions.map((version) => (
+          <li key={version.id}>
+            <button
+              type="button"
+              aria-expanded={openId === version.id}
+              onClick={() => setOpenId(openId === version.id ? null : version.id)}
+              className="w-full rounded-lg px-2 py-1 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
+            >
+              <span className="font-mono font-semibold">v{version.versionNo}</span> ·{' '}
+              {describeFreeze(version)} · {version.facilityCount}{' '}
+              {version.facilityCount === 1 ? 'facility' : 'facilities'}
+            </button>
+            {openId === version.id && <BoundaryVersionPanel versionId={version.id} />}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

@@ -32,3 +32,4 @@ the source of truth for *how*.
 | 003 | [Inventory accounting model](003-inventory-accounting-model.md) | Implemented |
 | 004 | [Organization access](004-organization-access.md)        | Implemented |
 | 005 | [Unit conversion](005-unit-conversion.md)                | Implemented |
+| 007 | [Boundary freeze and versioning](007-boundary-freeze-and-versioning.md) | Implemented |

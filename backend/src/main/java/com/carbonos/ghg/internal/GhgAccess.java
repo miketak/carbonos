@@ -24,6 +24,15 @@ public class GhgAccess {
 		return principal.getId();
 	}
 
+	/** The current session's email, snapshotted onto audit records such as boundary versions. */
+	String currentUserEmail() {
+		var principal = principal();
+		if (principal == null) {
+			throw new IllegalStateException("No authenticated user in context");
+		}
+		return principal.getUsername();
+	}
+
 	void check(Organization organization) {
 		var principal = principal();
 		if (principal != null && (isAdmin(principal) || principal.getId().equals(organization.getOwnerUserId()))) {

@@ -34,6 +34,9 @@ const inventory: Inventory = {
   baseYear: null,
   consolidationApproach: 'OPERATIONAL_CONTROL',
   finalRunId: 'run-1',
+  boundaryStatus: 'FROZEN',
+  currentBoundaryVersionId: 'bv-1',
+  currentBoundaryVersionNo: 1,
   createdAt: '2026-08-29T00:00:00Z',
 }
 
@@ -50,6 +53,8 @@ const run: Run = {
   scope2KgCo2e: 352.8,
   scope3KgCo2e: 0,
   isFinal: true,
+  boundaryVersionId: 'bv-1',
+  boundaryVersionNo: 1,
   createdAt: '2026-08-29T00:00:00Z',
 }
 

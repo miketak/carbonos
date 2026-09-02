@@ -44,4 +44,8 @@ class GhgNotFoundException extends ErrorResponseException {
 	static GhgNotFoundException boundaryTreatment(UUID id) {
 		return new GhgNotFoundException("Boundary treatment", id);
 	}
+
+	static GhgNotFoundException boundaryVersion(UUID id) {
+		return new GhgNotFoundException("Boundary version", id);
+	}
 }

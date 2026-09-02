@@ -120,6 +120,11 @@ organizationId). Still no consumers.
 - **CLASS-01** (UI): the classification picker offers only factors whose unit
   matches the fact (all factors shown only when none match).
 - Tenant isolation is spec 004.
+- **Spec 007** gives the boundary a DRAFT/FROZEN lifecycle. A draft boundary
+  is a BOUNDARY-gate ERROR; freezing cuts an immutable, numbered
+  `BoundaryVersion`, and a run computes its accounting shares from that
+  version rather than from live treatments, then cites it. Treatments and the
+  consolidation approach are read-only while frozen (409).
 
 ## Non-goals (v1)
 

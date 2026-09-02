@@ -55,6 +55,17 @@ public class Inventory {
 	@Column(name = "final_run_id")
 	private UUID finalRunId;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "boundary_status", nullable = false, length = 20)
+	private BoundaryStatus boundaryStatus;
+
+	// plain columns, like finalRunId, so responses never lazy-load (spec 007)
+	@Column(name = "current_boundary_version_id")
+	private UUID currentBoundaryVersionId;
+
+	@Column(name = "current_boundary_version_no")
+	private Integer currentBoundaryVersionNo;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -76,6 +87,7 @@ public class Inventory {
 		this.purpose = purpose;
 		this.baseYear = baseYear;
 		this.consolidationApproach = consolidationApproach;
+		this.boundaryStatus = BoundaryStatus.DRAFT;
 	}
 
 	public UUID getId() {
@@ -114,6 +126,22 @@ public class Inventory {
 		return finalRunId;
 	}
 
+	public BoundaryStatus getBoundaryStatus() {
+		return boundaryStatus;
+	}
+
+	public boolean isBoundaryFrozen() {
+		return boundaryStatus == BoundaryStatus.FROZEN;
+	}
+
+	public UUID getCurrentBoundaryVersionId() {
+		return currentBoundaryVersionId;
+	}
+
+	public Integer getCurrentBoundaryVersionNo() {
+		return currentBoundaryVersionNo;
+	}
+
 	public Instant getCreatedAt() {
 		return createdAt;
 	}
@@ -130,6 +158,18 @@ public class Inventory {
 
 	void setFinalRunId(UUID finalRunId) {
 		this.finalRunId = finalRunId;
+	}
+
+	/** Records a freshly cut version as the boundary's current one and freezes it. */
+	void freezeBoundary(BoundaryVersion version) {
+		this.boundaryStatus = BoundaryStatus.FROZEN;
+		this.currentBoundaryVersionId = version.getId();
+		this.currentBoundaryVersionNo = version.getVersionNo();
+	}
+
+	/** Reopens the boundary for editing. The latest version is kept for reference. */
+	void reopenBoundary() {
+		this.boundaryStatus = BoundaryStatus.DRAFT;
 	}
 
 	boolean covers(LocalDate date) {

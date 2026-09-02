@@ -15,6 +15,8 @@ export type ValidationGate = 'BOUNDARY' | 'COMPLETENESS' | 'CLASSIFICATION' | 'E
 export type Dimension = 'ENERGY' | 'VOLUME' | 'MASS' | 'DISTANCE' | 'PASSENGER_DISTANCE'
 export type GateStatus = 'PASSED' | 'WARNINGS' | 'BLOCKED'
 export type FindingSeverity = 'ERROR' | 'WARNING' | 'INFO'
+/** Lifecycle of an inventory's boundary (spec 007): a draft blocks runs, freezing cuts a version. */
+export type BoundaryStatus = 'DRAFT' | 'FROZEN'
 
 export interface Organization {
   id: string
@@ -101,6 +103,9 @@ export interface Inventory {
   baseYear: number | null
   consolidationApproach: ConsolidationApproach
   finalRunId: string | null
+  boundaryStatus: BoundaryStatus
+  currentBoundaryVersionId: string | null
+  currentBoundaryVersionNo: number | null
   createdAt: string
 }
 
@@ -128,6 +133,34 @@ export interface BoundaryTreatmentInput {
   ownershipPercent: number
   financialControl: boolean
   operationalControl: boolean
+}
+
+/** One freeze of the boundary, without its entries (spec 007). */
+export interface BoundaryVersionSummary {
+  id: string
+  versionNo: number
+  consolidationApproach: ConsolidationApproach
+  facilityCount: number
+  frozenByUserId: string | null
+  /** The freezer's email as it was at the time; null for versions reconstructed by migration. */
+  frozenBy: string | null
+  frozenAt: string
+}
+
+/** A facility exactly as a boundary version recorded it, name copied at freeze time. */
+export interface BoundaryVersionEntry {
+  facilityId: string
+  facilityName: string
+  location: string
+  ownershipPercent: number
+  financialControl: boolean
+  operationalControl: boolean
+  accountingShare: number
+}
+
+export interface BoundaryVersion {
+  version: BoundaryVersionSummary
+  entries: BoundaryVersionEntry[]
 }
 
 /** The fact plus this inventory's accounting decision about it. */
@@ -180,6 +213,9 @@ export interface Run {
   scope2KgCo2e: number
   scope3KgCo2e: number
   isFinal: boolean
+  /** The boundary version the shares came from; null for runs older than spec 007. */
+  boundaryVersionId: string | null
+  boundaryVersionNo: number | null
   createdAt: string
 }
 
@@ -345,6 +381,28 @@ export function removeBoundaryTreatment(inventoryId: string, facilityId: string)
   return api<void>(`/api/ghg/inventories/${inventoryId}/boundary/${facilityId}`, {
     method: 'DELETE',
   })
+}
+
+// --- boundary lifecycle (spec 007) -----------------------------------------------
+
+export function freezeBoundary(inventoryId: string): Promise<BoundaryVersion> {
+  return api<BoundaryVersion>(`/api/ghg/inventories/${inventoryId}/boundary/freeze`, {
+    method: 'POST',
+  })
+}
+
+export function reopenBoundary(inventoryId: string): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/inventories/${inventoryId}/boundary/reopen`, {
+    method: 'POST',
+  })
+}
+
+export function listBoundaryVersions(inventoryId: string): Promise<BoundaryVersionSummary[]> {
+  return api<BoundaryVersionSummary[]>(`/api/ghg/inventories/${inventoryId}/boundary/versions`)
+}
+
+export function getBoundaryVersion(id: string): Promise<BoundaryVersion> {
+  return api<BoundaryVersion>(`/api/ghg/boundary-versions/${id}`)
 }
 
 // --- assignments ----------------------------------------------------------------

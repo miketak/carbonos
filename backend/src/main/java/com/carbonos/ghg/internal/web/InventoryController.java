@@ -24,6 +24,8 @@ import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.web.dto.AssignmentResponse;
 import com.carbonos.ghg.internal.web.dto.BoundaryEntryResponse;
 import com.carbonos.ghg.internal.web.dto.BoundaryTreatmentRequest;
+import com.carbonos.ghg.internal.web.dto.BoundaryVersionResponse;
+import com.carbonos.ghg.internal.web.dto.BoundaryVersionSummaryResponse;
 import com.carbonos.ghg.internal.web.dto.ClassifyRequest;
 import com.carbonos.ghg.internal.web.dto.ExcludeRequest;
 import com.carbonos.ghg.internal.web.dto.InventoryRequest;
@@ -108,6 +110,28 @@ class InventoryController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	void removeTreatment(@PathVariable UUID id, @PathVariable UUID facilityId) {
 		inventoryService.removeBoundaryTreatment(id, facilityId);
+	}
+
+	// --- boundary lifecycle (spec 007) --------------------------------------
+
+	@PostMapping("/inventories/{id}/boundary/freeze")
+	BoundaryVersionResponse freeze(@PathVariable UUID id) {
+		return BoundaryVersionResponse.from(inventoryService.freezeBoundary(id));
+	}
+
+	@PostMapping("/inventories/{id}/boundary/reopen")
+	InventoryResponse reopen(@PathVariable UUID id) {
+		return InventoryResponse.from(inventoryService.reopenBoundary(id));
+	}
+
+	@GetMapping("/inventories/{id}/boundary/versions")
+	List<BoundaryVersionSummaryResponse> boundaryVersions(@PathVariable UUID id) {
+		return inventoryService.listBoundaryVersions(id).stream().map(BoundaryVersionSummaryResponse::from).toList();
+	}
+
+	@GetMapping("/boundary-versions/{id}")
+	BoundaryVersionResponse boundaryVersion(@PathVariable UUID id) {
+		return BoundaryVersionResponse.from(inventoryService.getBoundaryVersion(id));
 	}
 
 	// --- assignments --------------------------------------------------------

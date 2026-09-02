@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import com.carbonos.TestcontainersConfiguration;
 import com.carbonos.ghg.internal.ActivityRecordRepository;
 import com.carbonos.ghg.internal.BoundaryTreatmentRepository;
+import com.carbonos.ghg.internal.BoundaryVersionRepository;
 import com.carbonos.ghg.internal.EmissionFactorRepository;
 import com.carbonos.ghg.internal.FacilityRepository;
 import com.carbonos.ghg.internal.GhgRunRepository;
@@ -59,6 +60,9 @@ class GhgApiIntegrationTests {
 	BoundaryTreatmentRepository boundaryTreatments;
 
 	@Autowired
+	BoundaryVersionRepository boundaryVersions;
+
+	@Autowired
 	InventoryRepository inventories;
 
 	@Autowired
@@ -81,6 +85,7 @@ class GhgApiIntegrationTests {
 		runs.deleteAll();
 		assignments.deleteAll();
 		boundaryTreatments.deleteAll();
+		boundaryVersions.deleteAll();
 		inventories.deleteAll();
 		activities.deleteAll();
 		facilities.deleteAll();
@@ -162,6 +167,11 @@ class GhgApiIntegrationTests {
 			.content("""
 					{"ownershipPercent": %s, "financialControl": %s, "operationalControl": %s}"""
 				.formatted(ownership, financial, operational)))
+			.andExpect(status().isOk());
+	}
+
+	void freezeBoundary(String inventoryId) throws Exception {
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/freeze").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 	}
 
@@ -315,6 +325,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.gates[0].status").value("BLOCKED"));
 
 		putBoundary(inventoryId, facilityId, "100", true, true);
+		freezeBoundary(inventoryId);
 		var assignmentId = syncAndGetAssignmentId(inventoryId, activityId);
 
 		// included but unclassified
@@ -356,6 +367,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Equity View", "EQUITY_SHARE");
 		putBoundary(inventoryId, facilityId, "40", false, false);
+		freezeBoundary(inventoryId);
 		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
 
 		// 1000 L x 2.66 kg/L x 40% = 1064 kg
@@ -391,10 +403,12 @@ class GhgApiIntegrationTests {
 
 		var corporate = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(corporate, facilityId, "40", false, true);
+		freezeBoundary(corporate);
 		classify(syncAndGetAssignmentId(corporate, activityId), DIESEL_FACTOR);
 
 		var equity = createInventory(orgId, "2025 Equity", "EQUITY_SHARE");
 		putBoundary(equity, facilityId, "40", false, true);
+		freezeBoundary(equity);
 		classify(syncAndGetAssignmentId(equity, activityId), DIESEL_FACTOR);
 
 		// operational control: 100% -> 2660 kg; equity share: 40% -> 1064 kg
@@ -432,6 +446,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "10000", "US-gallon", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId, "100", true, true);
+		freezeBoundary(inventoryId);
 		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
 
 		// 10,000 US-gal x 3.785411784 = 37,854.11784 L x 2.66 x 100% = 100,691.953 kg (HALF_UP)
@@ -475,6 +490,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId, "100", true, true);
+		freezeBoundary(inventoryId);
 		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
 		var runResult = mvc
 			.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
@@ -513,6 +529,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId, "100", true, true);
+		freezeBoundary(inventoryId);
 		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -535,6 +552,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId, "100", true, true);
+		freezeBoundary(inventoryId);
 		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
 		var runResult = mvc
 			.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
@@ -606,5 +624,141 @@ class GhgApiIntegrationTests {
 				.formatted(facilityId)))
 			.andExpect(status().is(422))
 			.andExpect(jsonPath("$.errors.activityDate").exists());
+	}
+
+	// --- boundary lifecycle (spec 007) --------------------------------------
+
+	@Test
+	void draftBoundaryBlocksTheRunUntilFrozen() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Equity View", "EQUITY_SHARE");
+		putBoundary(inventoryId, facilityId, "40", false, false);
+		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
+
+		// everything else is green, but the boundary is still a draft
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
+			.andExpect(jsonPath("$.boundaryStatus").value("DRAFT"))
+			.andExpect(jsonPath("$.currentBoundaryVersionNo").doesNotExist());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(false))
+			.andExpect(jsonPath("$.gates[0].status").value("BLOCKED"))
+			.andExpect(jsonPath("$.gates[0].findings[0].message")
+				.value("The organizational boundary is a draft. Freeze it to enable a run."));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Too early"}"""))
+			.andExpect(status().isConflict());
+
+		// freezing cuts v1 with the treatment, its derived share, and who froze it
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.version.versionNo").value(1))
+			.andExpect(jsonPath("$.version.facilityCount").value(1))
+			.andExpect(jsonPath("$.version.frozenBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.entries[0].facilityName").value("Tema Plant"))
+			.andExpect(jsonPath("$.entries[0].ownershipPercent").value(40.0))
+			.andExpect(jsonPath("$.entries[0].accountingShare").value(0.40));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
+			.andExpect(jsonPath("$.boundaryStatus").value("FROZEN"))
+			.andExpect(jsonPath("$.currentBoundaryVersionNo").value(1));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(true));
+
+		// the run computes from, and cites, that version
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Run 001"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(1064.0))
+			.andExpect(jsonPath("$.run.boundaryVersionNo").value(1))
+			.andExpect(jsonPath("$.run.boundaryVersionId").exists());
+	}
+
+	@Test
+	void frozenBoundaryRefusesEditsUntilReopened() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var otherId = createFacility(orgId, "Kumasi Plant");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		freezeBoundary(inventoryId);
+
+		// every write to the boundary, and to the approach it derives from, is refused
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/" + otherId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"ownershipPercent": 100, "financialControl": true, "operationalControl": true}"""))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.title").value("Operation not allowed"));
+		mvc.perform(delete("/api/ghg/inventories/" + inventoryId + "/boundary/" + facilityId).with(asMember())
+			.with(csrf()))
+			.andExpect(status().isConflict());
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "2025 Corporate", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+					 "consolidationApproach": "EQUITY_SHARE"}"""))
+			.andExpect(status().isConflict());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
+
+		// reopening restores editing and keeps the pointer to v1
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/reopen").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.boundaryStatus").value("DRAFT"))
+			.andExpect(jsonPath("$.currentBoundaryVersionNo").value(1));
+		putBoundary(inventoryId, otherId, "40", false, true);
+
+		// re-freezing cuts v2; v1 is untouched and the history lists newest first
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.version.versionNo").value(2))
+			.andExpect(jsonPath("$.version.facilityCount").value(2));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary/versions").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(2))
+			.andExpect(jsonPath("$[0].versionNo").value(2))
+			.andExpect(jsonPath("$[1].versionNo").value(1))
+			.andExpect(jsonPath("$[1].facilityCount").value(1));
+	}
+
+	@Test
+	void freezingAnEmptyBoundaryIsRefused() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.title").value("Operation not allowed"));
+	}
+
+	@Test
+	void boundaryVersionOutlivesFacilityChangesAndStaysTenantScoped() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId, "100", true, true);
+		var freeze = mvc
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andReturn();
+		String versionId = JsonPath.read(freeze.getResponse().getContentAsString(), "$.version.id");
+
+		// rename the facility: the version still carries the name it was frozen with
+		mvc.perform(put("/api/ghg/facilities/" + facilityId).with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"name": "Tema Refinery", "location": "Tema, Ghana", "equitySharePercent": 100, "controlled": true}"""))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/boundary-versions/" + versionId).with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.entries[0].facilityName").value("Tema Plant"))
+			.andExpect(jsonPath("$.entries[0].accountingShare").value(1));
+
+		// spec 004: an outsider cannot see the version exists, nor freeze the boundary
+		mvc.perform(get("/api/ghg/boundary-versions/" + versionId).with(asOutsider()))
+			.andExpect(status().isNotFound());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/reopen").with(asOutsider()).with(csrf()))
+			.andExpect(status().isNotFound());
 	}
 }
