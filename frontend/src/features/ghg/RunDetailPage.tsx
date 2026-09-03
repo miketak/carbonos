@@ -83,7 +83,7 @@ export function RunDetailPage() {
                 <h2 className="text-lg">Boundary version {runQuery.data.run.boundaryVersionNo}</h2>
                 <p className="text-sm text-ink-muted">
                   The organizational boundary this run computed its accounting shares from, exactly
-                  as it stood when frozen (spec 007).
+                  as it stood when frozen (spec 03).
                 </p>
                 <BoundaryVersionPanel versionId={runQuery.data.run.boundaryVersionId} />
               </>

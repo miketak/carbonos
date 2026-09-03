@@ -19,7 +19,7 @@ import com.carbonos.ghg.internal.Validation.Report;
 import com.carbonos.ghg.internal.Validation.Severity;
 
 /**
- * The accounting-view side of spec 003: inventories, their boundaries and
+ * The accounting-view side of spec 05: inventories, their boundaries and
  * activity assignments, the pre-run validation gates, and calculation runs.
  * Nothing here ever mutates an {@link ActivityRecord} (invariant 2).
  */
@@ -89,7 +89,7 @@ public class InventoryService {
 		requirePeriod(periodStart, periodEnd);
 		var inventory = get(id);
 		if (inventory.isBoundaryFrozen() && approach != inventory.getConsolidationApproach()) {
-			// the frozen version's shares derive from the approach (spec 007)
+			// the frozen version's shares derive from the approach (spec 03)
 			throw new GhgRuleViolationException("The consolidation approach cannot change while the boundary is "
 					+ "frozen. Reopen the boundary as a draft first.");
 		}
@@ -112,7 +112,7 @@ public class InventoryService {
 	/**
 	 * Adds the facility to the boundary, or updates its treatment if present.
 	 * Draft boundaries only. Null arguments are prefilled from the facility's
-	 * facts on creation and left unchanged on update (spec 007).
+	 * facts on creation and left unchanged on update (spec 03).
 	 */
 	public BoundaryTreatment setBoundaryTreatment(UUID inventoryId, UUID facilityId, BigDecimal ownershipPercent,
 			Boolean financialControl, Boolean operationalControl) {
@@ -140,7 +140,7 @@ public class InventoryService {
 		boundaryTreatments.delete(treatment);
 	}
 
-	// --- boundary lifecycle (spec 007) --------------------------------------
+	// --- boundary lifecycle (spec 03) --------------------------------------
 
 	/**
 	 * Freezes the boundary: cuts an immutable, numbered version from the current
@@ -332,7 +332,7 @@ public class InventoryService {
 					|| treatment.isFinancialControl() != facility.isFinancialControl()
 					|| treatment.isOperationalControl() != facility.isOperationalControl();
 			if (drifted) {
-				// spec 007: the treatment is a decision and stays put; the accountant reconciles
+				// spec 03: the treatment is a decision and stays put; the accountant reconciles
 				boundaryFindings.add(new Finding(Severity.WARNING, facility.getName() + "'s treatment ("
 						+ describeFacts(treatment.getOwnershipPercent(), treatment.isFinancialControl(),
 								treatment.isOperationalControl())
@@ -446,7 +446,7 @@ public class InventoryService {
 	/**
 	 * Validates the inventory view and, if no gate blocks, snapshots it into
 	 * an immutable run: quantity x factor x accounting share per included
-	 * assignment (spec 003, invariant 3).
+	 * assignment (spec 05, invariant 3).
 	 */
 	public GhgRun executeRun(UUID inventoryId, String label) {
 		var inventory = get(inventoryId);
@@ -461,7 +461,7 @@ public class InventoryService {
 		}
 		// the gate guarantees a frozen boundary, so shares come from its version,
 		// never from live treatments: the arithmetic and the cited version cannot
-		// disagree (spec 007)
+		// disagree (spec 03)
 		var version = boundaryVersions.findWithEntriesById(inventory.getCurrentBoundaryVersionId())
 			.orElseThrow(() -> GhgNotFoundException.boundaryVersion(inventory.getCurrentBoundaryVersionId()));
 		var run = new GhgRun(inventory, label.trim());

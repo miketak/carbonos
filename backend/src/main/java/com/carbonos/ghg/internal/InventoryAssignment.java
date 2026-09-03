@@ -20,7 +20,7 @@ import jakarta.persistence.Table;
  * One inventory's accounting decision about one activity record: included or
  * excluded (with a documented reason), and — when included — its
  * classification (scope, category, emission factor). The underlying activity
- * record is never modified (spec 003, invariant 2).
+ * record is never modified (spec 05, invariant 2).
  */
 @Entity
 @Table(name = "ghg_assignments")

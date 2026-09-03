@@ -92,7 +92,7 @@ class GhgApiIntegrationTests {
 		organizations.deleteAll();
 	}
 
-	// spec 004: data is tenant-scoped, so every call in a test acts as one stable owner
+	// spec 01: data is tenant-scoped, so every call in a test acts as one stable owner
 	private final UUID ownerId = UUID.randomUUID();
 
 	RequestPostProcessor asMember() {
@@ -434,7 +434,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[0].quantity").value(1000.0));
 	}
 
-	// --- unit conversion (spec 005) ------------------------------------------
+	// --- unit conversion (spec 05) ------------------------------------------
 
 	@Test
 	void everySeededFactorUnitIsAConvertibleUnit() {
@@ -487,7 +487,7 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isConflict());
 	}
 
-	// --- spec 004: tenant isolation (AUTH-01) --------------------------------
+	// --- spec 01: tenant isolation (AUTH-01) --------------------------------
 
 	@Test
 	void organizationsAreInvisibleToNonOwners() throws Exception {
@@ -632,7 +632,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.errors.activityDate").exists());
 	}
 
-	// --- boundary lifecycle (spec 007) --------------------------------------
+	// --- boundary lifecycle (spec 03) --------------------------------------
 
 	@Test
 	void draftBoundaryBlocksTheRunUntilFrozen() throws Exception {
@@ -762,14 +762,14 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.entries[0].facilityName").value("Tema Plant"))
 			.andExpect(jsonPath("$.entries[0].accountingShare").value(1));
 
-		// spec 004: an outsider cannot see the version exists, nor freeze the boundary
+		// spec 01: an outsider cannot see the version exists, nor freeze the boundary
 		mvc.perform(get("/api/ghg/boundary-versions/" + versionId).with(asOutsider()))
 			.andExpect(status().isNotFound());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/boundary/reopen").with(asOutsider()).with(csrf()))
 			.andExpect(status().isNotFound());
 	}
 
-	// --- facility control facts and boundary prefill (spec 007) --------------
+	// --- facility control facts and boundary prefill (spec 03) --------------
 
 	@Test
 	void tickingAFacilityInPrefillsItsTreatmentFromTheFacilityFacts() throws Exception {

@@ -24,7 +24,7 @@ import jakarta.persistence.Table;
 
 /**
  * An immutable, reproducible snapshot of one inventory's accounting view at
- * the moment it was calculated (spec 003, invariant 3). Lines denormalize
+ * the moment it was calculated (spec 05, invariant 3). Lines denormalize
  * every input, so later edits to facts, boundary, or classification never
  * rewrite a past run. Recalculation creates a new run.
  */
@@ -67,7 +67,7 @@ public class GhgRun {
 	@Column(name = "scope3_kg_co2e", nullable = false, precision = 18, scale = 3)
 	private BigDecimal scope3KgCo2e;
 
-	// the boundary version the shares came from; null for runs older than spec 007
+	// the boundary version the shares came from; null for runs older than spec 03
 	@Column(name = "boundary_version_id")
 	private UUID boundaryVersionId;
 

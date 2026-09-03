@@ -279,7 +279,7 @@ test('launch is enabled when every gate passes', async () => {
   expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeEnabled()
 })
 
-// --- boundary lifecycle (spec 007) ------------------------------------------
+// --- boundary lifecycle (spec 03) ------------------------------------------
 
 test('a draft boundary is flagged, blocks the run, and freezes after confirming', async () => {
   const user = userEvent.setup()

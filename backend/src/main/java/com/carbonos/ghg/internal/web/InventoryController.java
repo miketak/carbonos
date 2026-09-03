@@ -34,7 +34,7 @@ import com.carbonos.ghg.internal.web.dto.ValidationReportResponse;
 
 import jakarta.validation.Valid;
 
-/** Accounting views (spec 003): inventories, boundaries, assignments, validation. */
+/** Accounting views (spec 05): inventories, boundaries, assignments, validation. */
 @RestController
 @RequestMapping("/api/ghg")
 class InventoryController {
@@ -112,7 +112,7 @@ class InventoryController {
 		inventoryService.removeBoundaryTreatment(id, facilityId);
 	}
 
-	// --- boundary lifecycle (spec 007) --------------------------------------
+	// --- boundary lifecycle (spec 03) --------------------------------------
 
 	@PostMapping("/inventories/{id}/boundary/freeze")
 	BoundaryVersionResponse freeze(@PathVariable UUID id) {

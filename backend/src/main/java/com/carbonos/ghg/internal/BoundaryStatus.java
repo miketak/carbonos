@@ -1,7 +1,7 @@
 package com.carbonos.ghg.internal;
 
 /**
- * Lifecycle of an inventory's organizational boundary (spec 007). A DRAFT
+ * Lifecycle of an inventory's organizational boundary (spec 03). A DRAFT
  * boundary is editable and blocks calculation runs; freezing cuts an immutable
  * {@link BoundaryVersion} and makes the treatments read-only.
  */

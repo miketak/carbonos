@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import com.carbonos.user.AuthenticatedUser;
 
 /**
- * Tenant isolation (AUTH-01, spec 004): an organization and everything nested
+ * Tenant isolation (AUTH-01, spec 01): an organization and everything nested
  * under it is visible only to its owner and platform ADMINs. Denials are 404s
  * so outsiders cannot even confirm an id exists.
  */

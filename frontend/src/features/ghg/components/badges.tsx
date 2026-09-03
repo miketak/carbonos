@@ -25,7 +25,7 @@ export function ApproachBadge({ approach }: { approach: ConsolidationApproach })
   )
 }
 
-/** The boundary's lifecycle state (spec 007), in the pre-flight panel's instrument idiom. */
+/** The boundary's lifecycle state (spec 03), in the pre-flight panel's instrument idiom. */
 export function BoundaryStatusBadge({
   inventory,
 }: {

@@ -25,7 +25,7 @@ import jakarta.persistence.Table;
 
 /**
  * An immutable snapshot of one inventory's organizational boundary at the
- * moment it was frozen (spec 007). Every freeze cuts a new, numbered version;
+ * moment it was frozen (spec 03). Every freeze cuts a new, numbered version;
  * runs cite the version they computed from. Entries copy facility names so the
  * record outlives later renames and deletions.
  */

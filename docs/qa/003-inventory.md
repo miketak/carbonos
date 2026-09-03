@@ -1,14 +1,14 @@
 # QA procedure: GHG inventory (boundary → calculated inventory)
 
-Manual test script for the GHG accounting workflow of
-[spec 003](../../specs/003-inventory-accounting-model.md), starting from the
-admin-created account of [spec 001](../../specs/001-admin-user-management.md)
-and covering the tenant isolation of
-[spec 004](../../specs/004-organization-access.md) and the unit conversion of
-[spec 005](../../specs/005-unit-conversion.md) and the organizational boundary
-(control facts, prefill, freeze and versioning) of
-[spec 007](../../specs/007-boundary-freeze-and-versioning.md), exercised on
-**staging**.
+Manual test script for the GHG accounting workflow, exercised on **staging**:
+getting in ([spec 01](../../specs/01-identity-and-access.md)), describing the
+organization and its facts ([spec 02](../../specs/02-organization-and-facts.md)),
+drawing and freezing the organizational boundary
+([spec 03](../../specs/03-organizational-boundary.md)), classifying
+([spec 04](../../specs/04-operational-boundary-and-classification.md)),
+clearing the gates and calculating
+([spec 05](../../specs/05-inventories-and-calculation.md)), and reading the
+report ([spec 07](../../specs/07-reporting-and-verification.md)).
 Run it top to bottom. The scenario is cumulative, and later sections depend on
 state built earlier. Tick a verdict and leave a note on every row.
 104 cases, estimated about 3 hours. It is self-contained: no other QA
@@ -64,7 +64,7 @@ materially different totals without a single activity record being edited.
 | S5 | Nkran Exploration Camp | Ashanti Region, Ghana | 100 | ✓ | ✓ |
 
 These are the facility's *facts*. Each inventory's boundary starts from them
-(spec 007) and may override them for that inventory alone.
+(spec 03) and may override them for that inventory alone.
 
 ### Activity records (organizational facts)
 
@@ -311,7 +311,7 @@ too. Only *future* runs see the correction.
 
 ---
 
-## K. Tenant isolation (spec 004)
+## K. Tenant isolation (spec 01)
 
 Copy inventory A's URL out of the analyst's private window first, then work
 in the normal window, which A9 left signed out.
@@ -380,7 +380,7 @@ Verdict: ☐ pass ☐ fail. Notes:
    form.
 2. **Editing an inventory** (name, period, purpose, approach) is API-only:
    there is no Edit button. Delete and recreate.
-3. **No password self-service** (spec 001 non-goal). The temporary password
+3. **No password self-service** (spec 01 non-goal). The temporary password
    an admin sets in A6 is the account's password for good: there is no change,
    reset, or forced-rotation flow, and creating a user sends no email.
 4. Spec 003 v1 non-goals: no report export (CSV/PDF), no evidence *file* upload

@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The organizational-facts side of spec 003: organizations, facilities, the
+ * The organizational-facts side of spec 02: organizations, facilities, the
  * emission-factor library, and activity records. Accounting views live in
  * {@link InventoryService}. Every entry is tenant-checked via
- * {@link GhgAccess} (spec 004).
+ * {@link GhgAccess} (spec 01).
  */
 @Service
 @Transactional
@@ -102,7 +102,7 @@ public class GhgService {
 				financialControl, operationalControl));
 	}
 
-	/** Edits the facility's facts only. Existing boundary treatments are decisions and stay as they are (spec 007). */
+	/** Edits the facility's facts only. Existing boundary treatments are decisions and stay as they are (spec 03). */
 	public Facility updateFacility(UUID id, String name, String location, BigDecimal equitySharePercent,
 			boolean financialControl, boolean operationalControl) {
 		var facility = getFacility(id);

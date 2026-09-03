@@ -284,7 +284,7 @@ function useInventoryScopedMutation<TArgs, TResult>(
   })
 }
 
-// --- boundary lifecycle (spec 007) --------------------------------------------
+// --- boundary lifecycle (spec 03) --------------------------------------------
 
 export function useFreezeBoundary(inventoryId: string) {
   const queryClient = useQueryClient()

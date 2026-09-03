@@ -385,7 +385,7 @@ function BoundarySection({ inventory }: { inventory: Inventory }) {
     if (entry.inBoundary) {
       removeTreatment.mutate(entry.facilityId, { onError: onWriteError })
     } else {
-      // an empty treatment is prefilled server-side from the facility's facts (spec 007)
+      // an empty treatment is prefilled server-side from the facility's facts (spec 03)
       setTreatment.mutate({ facilityId: entry.facilityId, input: {} }, { onError: onWriteError })
     }
   }

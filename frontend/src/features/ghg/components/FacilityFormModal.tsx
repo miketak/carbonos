@@ -14,7 +14,7 @@ interface FacilityFormModalProps {
   onSaved: (message: string) => void
 }
 
-/** Create or edit a facility: the organization's ownership and control facts about a site (spec 007). */
+/** Create or edit a facility: the organization's ownership and control facts about a site (spec 03). */
 export function FacilityFormModal({
   organizationId,
   facility,

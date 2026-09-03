@@ -2,7 +2,7 @@ package com.carbonos.ghg.internal;
 
 import java.util.List;
 
-/** The pre-run validation gates and their findings (spec 003). */
+/** The pre-run validation gates and their findings (spec 05). */
 public final class Validation {
 
 	public enum Gate {

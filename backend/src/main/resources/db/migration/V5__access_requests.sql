@@ -1,5 +1,5 @@
 -- Self-service registration: visitors request access, admins decide, approved
--- requests carry a single-use password-setup token (spec 002).
+-- requests carry a single-use password-setup token (spec 01.1).
 CREATE TABLE access_requests (
     id               uuid PRIMARY KEY,
     email            varchar(320) NOT NULL,

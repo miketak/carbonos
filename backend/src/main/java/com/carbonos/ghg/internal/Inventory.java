@@ -20,7 +20,7 @@ import jakarta.persistence.Table;
 /**
  * A GHG inventory: an accounting view over the organization's activity facts.
  * It owns the reporting period, consolidation approach, boundary treatments,
- * and activity assignments — never the facts themselves (spec 003).
+ * and activity assignments — never the facts themselves (spec 05).
  */
 @Entity
 @Table(name = "ghg_inventories")
@@ -59,7 +59,7 @@ public class Inventory {
 	@Column(name = "boundary_status", nullable = false, length = 20)
 	private BoundaryStatus boundaryStatus;
 
-	// plain columns, like finalRunId, so responses never lazy-load (spec 007)
+	// plain columns, like finalRunId, so responses never lazy-load (spec 03)
 	@Column(name = "current_boundary_version_id")
 	private UUID currentBoundaryVersionId;
 

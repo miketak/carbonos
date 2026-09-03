@@ -15,7 +15,7 @@ export type ValidationGate = 'BOUNDARY' | 'COMPLETENESS' | 'CLASSIFICATION' | 'E
 export type Dimension = 'ENERGY' | 'VOLUME' | 'MASS' | 'DISTANCE' | 'PASSENGER_DISTANCE'
 export type GateStatus = 'PASSED' | 'WARNINGS' | 'BLOCKED'
 export type FindingSeverity = 'ERROR' | 'WARNING' | 'INFO'
-/** Lifecycle of an inventory's boundary (spec 007): a draft blocks runs, freezing cuts a version. */
+/** Lifecycle of an inventory's boundary (spec 03): a draft blocks runs, freezing cuts a version. */
 export type BoundaryStatus = 'DRAFT' | 'FROZEN'
 
 export interface Organization {
@@ -29,7 +29,7 @@ export interface OrganizationInput {
   name: string
 }
 
-/** The facility's approach-independent ownership and control facts (spec 007). */
+/** The facility's approach-independent ownership and control facts (spec 03). */
 export interface Facility {
   id: string
   name: string
@@ -69,7 +69,7 @@ export interface Unit {
   toCanonical: number
 }
 
-/** An organizational fact — no scope, category, or factor (spec 003). */
+/** An organizational fact — no scope, category, or factor (spec 05). */
 export interface Activity {
   id: string
   facilityId: string
@@ -133,7 +133,7 @@ export interface BoundaryEntry {
 }
 
 /**
- * Every field is optional (spec 007): on creation an absent field is prefilled
+ * Every field is optional (spec 03): on creation an absent field is prefilled
  * from the facility's facts, so `{}` adds a facility exactly as its record
  * describes it; on update an absent field keeps its current value.
  */
@@ -143,7 +143,7 @@ export interface BoundaryTreatmentInput {
   operationalControl?: boolean
 }
 
-/** One freeze of the boundary, without its entries (spec 007). */
+/** One freeze of the boundary, without its entries (spec 03). */
 export interface BoundaryVersionSummary {
   id: string
   versionNo: number
@@ -221,7 +221,7 @@ export interface Run {
   scope2KgCo2e: number
   scope3KgCo2e: number
   isFinal: boolean
-  /** The boundary version the shares came from; null for runs older than spec 007. */
+  /** The boundary version the shares came from; null for runs older than spec 03. */
   boundaryVersionId: string | null
   boundaryVersionNo: number | null
   createdAt: string
@@ -391,7 +391,7 @@ export function removeBoundaryTreatment(inventoryId: string, facilityId: string)
   })
 }
 
-// --- boundary lifecycle (spec 007) -----------------------------------------------
+// --- boundary lifecycle (spec 03) -----------------------------------------------
 
 export function freezeBoundary(inventoryId: string): Promise<BoundaryVersion> {
   return api<BoundaryVersion>(`/api/ghg/inventories/${inventoryId}/boundary/freeze`, {
