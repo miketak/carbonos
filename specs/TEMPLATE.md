@@ -1,37 +1,35 @@
-# NNN — Feature Name
+# NN: Title (or NN.M for a sub-spec of chapter NN)
 
 - **Status**: Draft
-- **Owner**: <who decides>
+- **Protocol**: which chapter(s) of the Corporate Standard this implements
+- **Owner**: who decides
 - **Created**: YYYY-MM-DD
-- **Backend module(s)**: <e.g. `contact`>
-- **Frontend feature(s)**: <e.g. `src/features/contact`>
+- **Modules**: backend module(s) and frontend feature(s)
 
-## Problem / Motivation
+## Problem
 
-What user or business problem does this solve? Why now?
+What the Standard requires, what the product does today, and the gap.
 
-## Behavior
+## Behaviour
 
-The feature described from the outside: user flows, states, and rules.
-Use concrete scenarios ("Given / When / Then" where it helps).
+The feature from the outside: states, rules, flows. Use Given / When / Then
+for the cases that matter.
 
-## API contract
+## API
 
-Endpoints, request/response shapes, and error cases (RFC 9457 problem details).
+Endpoints, request and response shapes, error cases (RFC 9457 problem
+details).
 
 ## Data
 
-New tables/columns (each schema change ships as a Flyway migration) and
-lifecycle/retention notes.
+Tables and columns; every schema change is a Flyway migration.
 
 ## Events
 
-Domain events this feature publishes or consumes across module boundaries.
+Domain events published or consumed across module boundaries.
 
-## Non-goals
+## Verification
 
-What this spec deliberately does NOT cover.
+The automated tests that prove it, and any manual QA procedure.
 
-## Open questions
-
-Unresolved decisions that block approval.
+## Non-goals and open questions

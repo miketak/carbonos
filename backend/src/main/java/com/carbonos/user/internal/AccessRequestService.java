@@ -16,7 +16,7 @@ import com.carbonos.user.AccessRequestApproved;
 import com.carbonos.user.AccessRequestDenied;
 
 /**
- * The self-service registration loop (spec 002): visitors submit requests,
+ * The self-service registration loop (spec 01.1): visitors submit requests,
  * admins decide, approved requests carry a single-use 7-day setup token that
  * turns into an ACTIVE MEMBER account when the password is set.
  */

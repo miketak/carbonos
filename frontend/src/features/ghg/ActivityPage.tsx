@@ -12,7 +12,7 @@ import type { Activity } from './api'
 /**
  * The organizational data layer: facts about what happened, independent of any
  * inventory. Scope, factors, and accounting treatment are decided per
- * inventory — never here (spec 003).
+ * inventory — never here (spec 02).
  */
 export function ActivityPage() {
   const { organizationId = '' } = useParams()

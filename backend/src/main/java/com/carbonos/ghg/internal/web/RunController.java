@@ -24,7 +24,7 @@ import com.carbonos.ghg.internal.web.dto.RunResponse;
 
 import jakarta.validation.Valid;
 
-/** Calculation runs: immutable snapshots of an inventory view (spec 003). */
+/** Calculation runs: immutable snapshots of an inventory view (spec 05). */
 @RestController
 @RequestMapping("/api/ghg")
 class RunController {

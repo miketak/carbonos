@@ -4,6 +4,7 @@ import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { AnimatedCo2e } from './components/AnimatedCo2e'
 import { ApproachBadge } from './components/badges'
+import { BoundaryVersionPanel } from './components/BoundaryVersionPanel'
 import { Breadcrumb } from './components/Breadcrumb'
 import { RunLinesTable } from './components/RunLinesTable'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
@@ -77,6 +78,27 @@ export function RunDetailPage() {
           </GlassCard>
 
           <GlassCard className="animate-fade-up p-6" style={{ '--stagger': 2 } as CSSProperties}>
+            {runQuery.data.run.boundaryVersionId ? (
+              <>
+                <h2 className="text-lg">Boundary version {runQuery.data.run.boundaryVersionNo}</h2>
+                <p className="text-sm text-ink-muted">
+                  The organizational boundary this run computed its accounting shares from, exactly
+                  as it stood when frozen (spec 03).
+                </p>
+                <BoundaryVersionPanel versionId={runQuery.data.run.boundaryVersionId} />
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg">Boundary version</h2>
+                <p className="text-sm text-ink-muted">
+                  This run predates boundary versioning and cites no boundary version. Each of its
+                  lines still records the accounting share it used.
+                </p>
+              </>
+            )}
+          </GlassCard>
+
+          <GlassCard className="animate-fade-up p-6" style={{ '--stagger': 3 } as CSSProperties}>
             <h2 className="mb-4 text-lg">Snapshot lines</h2>
             <RunLinesTable lines={runQuery.data.lines} />
           </GlassCard>

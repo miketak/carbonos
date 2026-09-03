@@ -19,7 +19,7 @@ import com.carbonos.ghg.internal.Validation.Report;
 import com.carbonos.ghg.internal.Validation.Severity;
 
 /**
- * The accounting-view side of spec 003: inventories, their boundaries and
+ * The accounting-view side of spec 05: inventories, their boundaries and
  * activity assignments, the pre-run validation gates, and calculation runs.
  * Nothing here ever mutates an {@link ActivityRecord} (invariant 2).
  */
@@ -33,6 +33,7 @@ public class InventoryService {
 	private final EmissionFactorRepository emissionFactors;
 	private final InventoryRepository inventories;
 	private final BoundaryTreatmentRepository boundaryTreatments;
+	private final BoundaryVersionRepository boundaryVersions;
 	private final InventoryAssignmentRepository assignments;
 	private final GhgRunRepository runs;
 	private final ApplicationEventPublisher events;
@@ -42,14 +43,15 @@ public class InventoryService {
 	InventoryService(OrganizationRepository organizations, FacilityRepository facilities,
 			ActivityRecordRepository activities, EmissionFactorRepository emissionFactors,
 			InventoryRepository inventories, BoundaryTreatmentRepository boundaryTreatments,
-			InventoryAssignmentRepository assignments, GhgRunRepository runs, ApplicationEventPublisher events,
-			GhgAccess access, UnitConverter units) {
+			BoundaryVersionRepository boundaryVersions, InventoryAssignmentRepository assignments,
+			GhgRunRepository runs, ApplicationEventPublisher events, GhgAccess access, UnitConverter units) {
 		this.organizations = organizations;
 		this.facilities = facilities;
 		this.activities = activities;
 		this.emissionFactors = emissionFactors;
 		this.inventories = inventories;
 		this.boundaryTreatments = boundaryTreatments;
+		this.boundaryVersions = boundaryVersions;
 		this.assignments = assignments;
 		this.runs = runs;
 		this.events = events;
@@ -86,6 +88,11 @@ public class InventoryService {
 			Integer baseYear, ConsolidationApproach approach) {
 		requirePeriod(periodStart, periodEnd);
 		var inventory = get(id);
+		if (inventory.isBoundaryFrozen() && approach != inventory.getConsolidationApproach()) {
+			// the frozen version's shares derive from the approach (spec 03)
+			throw new GhgRuleViolationException("The consolidation approach cannot change while the boundary is "
+					+ "frozen. Reopen the boundary as a draft first.");
+		}
 		inventory.update(name.trim(), periodStart, periodEnd, trimToNull(purpose), baseYear, approach);
 		return inventory;
 	}
@@ -102,26 +109,91 @@ public class InventoryService {
 		return boundaryTreatments.findAllByInventoryId(inventoryId);
 	}
 
-	/** Adds the facility to the boundary, or updates its treatment if present. */
+	/**
+	 * Adds the facility to the boundary, or updates its treatment if present.
+	 * Draft boundaries only. Null arguments are prefilled from the facility's
+	 * facts on creation and left unchanged on update (spec 03).
+	 */
 	public BoundaryTreatment setBoundaryTreatment(UUID inventoryId, UUID facilityId, BigDecimal ownershipPercent,
-			boolean financialControl, boolean operationalControl) {
+			Boolean financialControl, Boolean operationalControl) {
 		var inventory = get(inventoryId);
+		requireDraft(inventory);
 		var facility = facilities.findById(facilityId).orElseThrow(() -> GhgNotFoundException.facility(facilityId));
 		if (!facility.getOrganization().getId().equals(inventory.getOrganization().getId())) {
 			throw GhgNotFoundException.facility(facilityId);
 		}
 		return boundaryTreatments.findByInventoryIdAndFacilityId(inventoryId, facilityId).map(existing -> {
-			existing.update(ownershipPercent, financialControl, operationalControl);
+			existing.update(ownershipPercent != null ? ownershipPercent : existing.getOwnershipPercent(),
+					financialControl != null ? financialControl : existing.isFinancialControl(),
+					operationalControl != null ? operationalControl : existing.isOperationalControl());
 			return existing;
-		}).orElseGet(() -> boundaryTreatments
-			.save(new BoundaryTreatment(inventory, facility, ownershipPercent, financialControl, operationalControl)));
+		}).orElseGet(() -> boundaryTreatments.save(new BoundaryTreatment(inventory, facility,
+				ownershipPercent != null ? ownershipPercent : facility.getEquitySharePercent(),
+				financialControl != null ? financialControl : facility.isFinancialControl(),
+				operationalControl != null ? operationalControl : facility.isOperationalControl())));
 	}
 
 	public void removeBoundaryTreatment(UUID inventoryId, UUID facilityId) {
-		get(inventoryId);
+		requireDraft(get(inventoryId));
 		var treatment = boundaryTreatments.findByInventoryIdAndFacilityId(inventoryId, facilityId)
 			.orElseThrow(() -> GhgNotFoundException.facility(facilityId));
 		boundaryTreatments.delete(treatment);
+	}
+
+	// --- boundary lifecycle (spec 03) --------------------------------------
+
+	/**
+	 * Freezes the boundary: cuts an immutable, numbered version from the current
+	 * treatments and makes them read-only. Every freeze cuts a new version, even
+	 * an unchanged one, so the history is one row per deliberate act.
+	 */
+	public BoundaryVersion freezeBoundary(UUID inventoryId) {
+		var inventory = get(inventoryId);
+		if (inventory.isBoundaryFrozen()) {
+			throw new GhgRuleViolationException("The boundary is already frozen.");
+		}
+		var treatments = boundaryTreatments.findAllByInventoryId(inventoryId);
+		if (treatments.isEmpty()) {
+			throw new GhgRuleViolationException(
+					"The organizational boundary is empty. Add at least one facility before freezing it.");
+		}
+		var nextNo = boundaryVersions.findTopByInventoryIdOrderByVersionNoDesc(inventoryId)
+			.map(latest -> latest.getVersionNo() + 1)
+			.orElse(1);
+		var version = boundaryVersions.save(new BoundaryVersion(inventory, nextNo, treatments,
+				access.currentUserId(), access.currentUserEmail()));
+		inventory.freezeBoundary(version);
+		return version;
+	}
+
+	/** Reopens a frozen boundary for editing. Versions already cut are untouched. */
+	public Inventory reopenBoundary(UUID inventoryId) {
+		var inventory = get(inventoryId);
+		if (!inventory.isBoundaryFrozen()) {
+			throw new GhgRuleViolationException("The boundary is already a draft.");
+		}
+		inventory.reopenBoundary();
+		return inventory;
+	}
+
+	@Transactional(readOnly = true)
+	public List<BoundaryVersion> listBoundaryVersions(UUID inventoryId) {
+		get(inventoryId);
+		return boundaryVersions.findAllByInventoryIdOrderByVersionNoDesc(inventoryId);
+	}
+
+	@Transactional(readOnly = true)
+	public BoundaryVersion getBoundaryVersion(UUID versionId) {
+		var version = boundaryVersions.findWithEntriesById(versionId)
+			.orElseThrow(() -> GhgNotFoundException.boundaryVersion(versionId));
+		access.check(version.getInventory().getOrganization());
+		return version;
+	}
+
+	private static void requireDraft(Inventory inventory) {
+		if (inventory.isBoundaryFrozen()) {
+			throw new GhgRuleViolationException("The boundary is frozen. Reopen it as a draft to change it.");
+		}
 	}
 
 	// --- activity assignments (the view over the facts) ---------------------
@@ -242,12 +314,31 @@ public class InventoryService {
 			boundaryFindings.add(new Finding(Severity.ERROR,
 					"The organizational boundary is empty — add at least one facility."));
 		}
+		else if (!inventory.isBoundaryFrozen()) {
+			boundaryFindings.add(new Finding(Severity.ERROR,
+					"The organizational boundary is a draft. Freeze it to enable a run."));
+		}
 		var approach = inventory.getConsolidationApproach();
 		for (var treatment : boundary) {
 			if (treatment.accountingShare(approach).signum() == 0) {
 				boundaryFindings.add(new Finding(Severity.WARNING,
 						treatment.getFacility().getName() + " has a 0% accounting share under "
 								+ approach.name().toLowerCase().replace('_', ' ') + " — it contributes nothing."));
+			}
+		}
+		for (var treatment : boundary) {
+			var facility = treatment.getFacility();
+			var drifted = treatment.getOwnershipPercent().compareTo(facility.getEquitySharePercent()) != 0
+					|| treatment.isFinancialControl() != facility.isFinancialControl()
+					|| treatment.isOperationalControl() != facility.isOperationalControl();
+			if (drifted) {
+				// spec 03: the treatment is a decision and stays put; the accountant reconciles
+				boundaryFindings.add(new Finding(Severity.WARNING, facility.getName() + "'s treatment ("
+						+ describeFacts(treatment.getOwnershipPercent(), treatment.isFinancialControl(),
+								treatment.isOperationalControl())
+						+ ") differs from the facility record (" + describeFacts(facility.getEquitySharePercent(),
+								facility.isFinancialControl(), facility.isOperationalControl())
+						+ "). Review the boundary."));
 			}
 		}
 		for (var assignment : included) {
@@ -355,7 +446,7 @@ public class InventoryService {
 	/**
 	 * Validates the inventory view and, if no gate blocks, snapshots it into
 	 * an immutable run: quantity x factor x accounting share per included
-	 * assignment (spec 003, invariant 3).
+	 * assignment (spec 05, invariant 3).
 	 */
 	public GhgRun executeRun(UUID inventoryId, String label) {
 		var inventory = get(inventoryId);
@@ -368,17 +459,17 @@ public class InventoryService {
 				.count();
 			throw new ValidationBlockedException(errorCount);
 		}
-		var shares = new java.util.HashMap<UUID, BigDecimal>();
-		for (var treatment : boundaryTreatments.findAllByInventoryId(inventoryId)) {
-			shares.put(treatment.getFacility().getId(),
-					treatment.accountingShare(inventory.getConsolidationApproach()));
-		}
+		// the gate guarantees a frozen boundary, so shares come from its version,
+		// never from live treatments: the arithmetic and the cited version cannot
+		// disagree (spec 03)
+		var version = boundaryVersions.findWithEntriesById(inventory.getCurrentBoundaryVersionId())
+			.orElseThrow(() -> GhgNotFoundException.boundaryVersion(inventory.getCurrentBoundaryVersionId()));
 		var run = new GhgRun(inventory, label.trim());
 		for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
 			if (!assignment.isIncluded()) {
 				continue;
 			}
-			var share = shares.getOrDefault(assignment.getActivity().getFacility().getId(), BigDecimal.ZERO);
+			var share = version.shareOf(assignment.getActivity().getFacility().getId()).orElse(BigDecimal.ZERO);
 			var quantity = assignment.getActivity().getQuantity();
 			var activityUnit = assignment.getActivity().getUnit();
 			var factorUnit = assignment.getEmissionFactor().getUnit();
@@ -428,6 +519,13 @@ public class InventoryService {
 	 */
 	private boolean isReconcilable(String activityUnit, String factorUnit) {
 		return units.canConvert(activityUnit, factorUnit) || activityUnit.equalsIgnoreCase(factorUnit);
+	}
+
+	/** Ownership and control facts for messages, e.g. "40%, financial no, operational yes". */
+	private static String describeFacts(BigDecimal ownershipPercent, boolean financialControl,
+			boolean operationalControl) {
+		return ownershipPercent.stripTrailingZeros().toPlainString() + "%, financial "
+				+ (financialControl ? "yes" : "no") + ", operational " + (operationalControl ? "yes" : "no");
 	}
 
 	/** A unit with its dimension for error messages, e.g. "kg (mass)" or "widgets (unrecognized)". */

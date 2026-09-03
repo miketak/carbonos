@@ -1,4 +1,4 @@
-import type { ConsolidationApproach, GhgScope } from './api'
+import type { BoundaryVersionSummary, ConsolidationApproach, GhgScope } from './api'
 
 /** kg below one tonne, tonnes above — inventories are usually read in tCO2e. */
 export function formatCo2e(kg: number): string {
@@ -24,4 +24,10 @@ export const approachLabels: Record<ConsolidationApproach, string> = {
 export function categoryLabel(category: string): string {
   const words = category.toLowerCase().replaceAll('_', ' ')
   return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+/** "frozen 02/09/2026, 10:14 by ama@ecoriv.test", or without the "by" for versions migrated in. */
+export function describeFreeze(version: BoundaryVersionSummary): string {
+  const when = new Date(version.frozenAt).toLocaleString()
+  return version.frozenBy ? `frozen ${when} by ${version.frozenBy}` : `frozen ${when}`
 }
