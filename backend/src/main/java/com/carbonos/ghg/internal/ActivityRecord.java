@@ -20,7 +20,7 @@ import jakarta.persistence.Table;
 /**
  * An organizational fact: something that happened at a facility. Carries no
  * scope, category, factor, or accounting treatment — inventories decide those
- * separately via {@link InventoryAssignment} (spec 003, invariant 1).
+ * separately via {@link InventoryAssignment} (spec 02, invariant 1).
  */
 @Entity
 @Table(name = "ghg_activities")

@@ -1,21 +1,34 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { InventoryDetailPage } from './InventoryDetailPage'
-import type { Assignment, BoundaryEntry, Inventory, Unit, ValidationReport } from './api'
+import type {
+  Assignment,
+  BoundaryEntry,
+  BoundaryVersion,
+  BoundaryVersionSummary,
+  Inventory,
+  Unit,
+  ValidationReport,
+} from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
 import {
   classifyAssignment,
+  freezeBoundary,
   getBoundary,
+  getBoundaryVersion,
   getInventory,
   getValidation,
   listAssignments,
+  listBoundaryVersions,
   listEmissionFactors,
   listRuns,
   listUnits,
+  reopenBoundary,
+  setBoundaryTreatment,
   syncAssignments,
 } from './api'
 
@@ -36,7 +49,37 @@ const inventory: Inventory = {
   baseYear: null,
   consolidationApproach: 'EQUITY_SHARE',
   finalRunId: null,
+  boundaryStatus: 'DRAFT',
+  currentBoundaryVersionId: null,
+  currentBoundaryVersionNo: null,
   createdAt: '2026-08-29T00:00:00Z',
+}
+
+const v1: BoundaryVersionSummary = {
+  id: 'bv-1',
+  versionNo: 1,
+  consolidationApproach: 'EQUITY_SHARE',
+  facilityCount: 1,
+  frozenByUserId: 'user-1',
+  frozenBy: 'ama@ecoriv.test',
+  frozenAt: '2026-09-01T10:00:00Z',
+}
+
+const v2: BoundaryVersionSummary = { ...v1, id: 'bv-2', versionNo: 2, facilityCount: 2 }
+
+const v1Full: BoundaryVersion = {
+  version: v1,
+  entries: [
+    {
+      facilityId: 'fac-1',
+      facilityName: 'Tema Plant',
+      location: 'Tema',
+      ownershipPercent: 40,
+      financialControl: false,
+      operationalControl: true,
+      accountingShare: 0.4,
+    },
+  ],
 }
 
 const boundary: BoundaryEntry[] = [
@@ -117,11 +160,18 @@ beforeEach(() => {
   vi.mocked(listUnits).mockReset()
   vi.mocked(syncAssignments).mockReset()
   vi.mocked(classifyAssignment).mockReset()
+  vi.mocked(listBoundaryVersions).mockReset()
+  vi.mocked(getBoundaryVersion).mockReset()
+  vi.mocked(freezeBoundary).mockReset()
+  vi.mocked(reopenBoundary).mockReset()
+  vi.mocked(setBoundaryTreatment).mockReset()
   vi.mocked(getInventory).mockResolvedValue(inventory)
   vi.mocked(getBoundary).mockResolvedValue(boundary)
   vi.mocked(listAssignments).mockResolvedValue([unclassified])
   vi.mocked(getValidation).mockResolvedValue(blockedReport)
   vi.mocked(listRuns).mockResolvedValue([])
+  vi.mocked(listBoundaryVersions).mockResolvedValue([])
+  vi.mocked(getBoundaryVersion).mockResolvedValue(v1Full)
   vi.mocked(listUnits).mockResolvedValue(units)
   vi.mocked(listEmissionFactors).mockResolvedValue([
     {
@@ -227,4 +277,110 @@ test('launch is enabled when every gate passes', async () => {
 
   expect(await screen.findByText('READY TO LAUNCH')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeEnabled()
+})
+
+// --- boundary lifecycle (spec 03) ------------------------------------------
+
+test('a draft boundary is flagged, blocks the run, and freezes after confirming', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getValidation).mockResolvedValue({
+    ready: false,
+    gates: [
+      {
+        gate: 'BOUNDARY',
+        status: 'BLOCKED',
+        findings: [
+          {
+            severity: 'ERROR',
+            message: 'The organizational boundary is a draft. Freeze it to enable a run.',
+          },
+        ],
+      },
+      { gate: 'COMPLETENESS', status: 'PASSED', findings: [] },
+      { gate: 'CLASSIFICATION', status: 'PASSED', findings: [] },
+      { gate: 'EMISSION_FACTOR', status: 'PASSED', findings: [] },
+    ],
+  })
+  vi.mocked(freezeBoundary).mockResolvedValue(v1Full)
+  renderPage()
+
+  expect(await screen.findByText('BOUNDARY DRAFT')).toBeInTheDocument()
+  expect(await screen.findByText(/boundary is a draft\. Freeze it/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeDisabled()
+
+  // the section's button opens a confirm dialog; the dialog's button does the freeze
+  await user.click(await screen.findByRole('button', { name: /freeze boundary/i }))
+  const dialog = await screen.findByRole('dialog', { name: /freeze the boundary/i })
+  expect(within(dialog).getByText(/1 facility currently in the boundary/)).toBeInTheDocument()
+  await user.click(within(dialog).getByRole('button', { name: /freeze boundary/i }))
+
+  await waitFor(() => expect(freezeBoundary).toHaveBeenCalledWith('inv-1'))
+  expect(await screen.findByText(/boundary frozen as v1/i)).toBeInTheDocument()
+})
+
+test('a frozen boundary is read-only, offers reopen, and lists its versions', async () => {
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    boundaryStatus: 'FROZEN',
+    currentBoundaryVersionId: 'bv-2',
+    currentBoundaryVersionNo: 2,
+  })
+  vi.mocked(listBoundaryVersions).mockResolvedValue([v2, v1])
+  renderPage()
+
+  expect(await screen.findByText('BOUNDARY FROZEN v2')).toBeInTheDocument()
+  expect((await screen.findAllByLabelText('Tema Plant in boundary'))[0]).toBeDisabled()
+  expect(screen.getAllByLabelText('Tema Plant ownership percent')[0]).toBeDisabled()
+  expect(screen.getAllByLabelText('Tema Plant financial control')[0]).toBeDisabled()
+  expect(screen.getByRole('button', { name: /reopen as draft/i })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /freeze boundary/i })).not.toBeInTheDocument()
+
+  // history: newest first, each naming who froze it and how many facilities it held
+  const history = await screen.findAllByRole('button', { name: /^v\d · frozen/ })
+  expect(history[0]).toHaveTextContent(/^v2 · frozen .* by ama@ecoriv\.test · 2 facilities$/)
+  expect(history[1]).toHaveTextContent(/^v1 · frozen .* by ama@ecoriv\.test · 1 facility$/)
+})
+
+test('expanding a version loads the boundary it recorded', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listBoundaryVersions).mockResolvedValue([v1])
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /^v1 · frozen/ }))
+  await waitFor(() => expect(getBoundaryVersion).toHaveBeenCalledWith('bv-1'))
+  // the entry table adds a third "Tema Plant" (desktop row, mobile card, version entry)
+  expect((await screen.findAllByText('Tema Plant')).length).toBeGreaterThanOrEqual(3)
+  expect(screen.getByText(/Version 1 · Equity share · frozen/)).toBeInTheDocument()
+})
+
+test('reopening a frozen boundary calls the API and confirms', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    boundaryStatus: 'FROZEN',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  vi.mocked(reopenBoundary).mockResolvedValue(inventory)
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /reopen as draft/i }))
+  await waitFor(() => expect(reopenBoundary).toHaveBeenCalledWith('inv-1'))
+  expect(await screen.findByText(/boundary reopened as a draft/i)).toBeInTheDocument()
+})
+
+test('ticking a facility in sends an empty treatment so the server prefills from its facts', async () => {
+  const user = userEvent.setup()
+  vi.mocked(setBoundaryTreatment).mockResolvedValue({
+    ...boundary[1],
+    inBoundary: true,
+    ownershipPercent: 40,
+    financialControl: false,
+    operationalControl: true,
+    accountingShare: 0.4,
+  })
+  renderPage()
+
+  await user.click((await screen.findAllByLabelText('Kumasi Plant in boundary'))[0])
+  await waitFor(() => expect(setBoundaryTreatment).toHaveBeenCalledWith('inv-1', 'fac-2', {}))
 })

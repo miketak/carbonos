@@ -35,8 +35,12 @@ public class Facility {
 	@Column(name = "equity_share_percent", nullable = false, precision = 5, scale = 2)
 	private BigDecimal equitySharePercent;
 
-	@Column(nullable = false)
-	private boolean controlled;
+	// the approach-independent control facts of the corporate structure (spec 03)
+	@Column(name = "financial_control", nullable = false)
+	private boolean financialControl;
+
+	@Column(name = "operational_control", nullable = false)
+	private boolean operationalControl;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
@@ -50,13 +54,14 @@ public class Facility {
 	}
 
 	Facility(Organization organization, String name, String location, BigDecimal equitySharePercent,
-			boolean controlled) {
+			boolean financialControl, boolean operationalControl) {
 		this.id = UUID.randomUUID();
 		this.organization = organization;
 		this.name = name;
 		this.location = location;
 		this.equitySharePercent = equitySharePercent;
-		this.controlled = controlled;
+		this.financialControl = financialControl;
+		this.operationalControl = operationalControl;
 	}
 
 	public UUID getId() {
@@ -79,8 +84,12 @@ public class Facility {
 		return equitySharePercent;
 	}
 
-	public boolean isControlled() {
-		return controlled;
+	public boolean isFinancialControl() {
+		return financialControl;
+	}
+
+	public boolean isOperationalControl() {
+		return operationalControl;
 	}
 
 	public Instant getCreatedAt() {
@@ -99,8 +108,12 @@ public class Facility {
 		this.equitySharePercent = equitySharePercent;
 	}
 
-	void setControlled(boolean controlled) {
-		this.controlled = controlled;
+	void setFinancialControl(boolean financialControl) {
+		this.financialControl = financialControl;
+	}
+
+	void setOperationalControl(boolean operationalControl) {
+		this.operationalControl = operationalControl;
 	}
 
 }

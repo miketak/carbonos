@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import com.carbonos.user.AccessRequestApproved;
 import com.carbonos.user.AccessRequestDenied;
 
-/** Turns access-request decisions into plain-text emails (spec 002). */
+/** Turns access-request decisions into plain-text emails (spec 01.1). */
 @Component
 class AccessRequestEmails {
 

@@ -1,7 +1,7 @@
 # QA procedure — Signup (access request → account)
 
 Manual test script for the self-service registration flow of
-[spec 002](../../specs/002-access-requests.md), exercised on **staging**. Run
+[spec 01.1](../../specs/01.1-access-requests.md), exercised on **staging**. Run
 it top to bottom; each case has steps, an expected result, and a verdict box.
 18 cases, estimated 45–60 min.
 
@@ -197,7 +197,7 @@ Verdict: ☐ pass ☐ fail — notes:
 | Cases failed | |
 | Follow-up issues filed | |
 
-**Known non-goals** (do not report as bugs — see spec 002): no rate limiting /
+**Known non-goals** (do not report as bugs — see spec 01.1): no rate limiting /
 CAPTCHA on the public form, plain-text emails, no admin notification on new
 requests, no password reset for existing users. Token expiry is not testable
 on staging (see prerequisites).

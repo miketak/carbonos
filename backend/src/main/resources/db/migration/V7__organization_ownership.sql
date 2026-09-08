@@ -1,4 +1,4 @@
--- AUTH-01 (spec 004): tenant isolation. Every GHG organization is owned by the
+-- AUTH-01 (spec 01): tenant isolation. Every GHG organization is owned by the
 -- user who created it; only the owner and platform ADMINs may touch it or
 -- anything nested under it. Loose reference (no FK) so user lifecycle stays
 -- decoupled; an org with no living owner is ADMIN-only.

@@ -36,8 +36,8 @@ export function FacilitiesPage() {
         <div>
           <h1 className="text-xl">Facilities</h1>
           <p className="text-sm text-ink-muted">
-            The organization's sites. Ownership and control here are defaults — each inventory sets
-            its own boundary treatment.
+            The organization's sites. Ownership and control here are facts: each inventory's
+            boundary starts from them and may override them.
           </p>
         </div>
         <Button className="px-4 py-1.5 text-sm" onClick={() => setDialog({ kind: 'create' })}>
@@ -49,8 +49,8 @@ export function FacilitiesPage() {
         <div className="mb-4 grid gap-3 sm:grid-cols-3">
           <StatChip label="Facilities" value={facilities.length.toLocaleString()} />
           <StatChip
-            label="Controlled"
-            value={`${facilities.filter((facility) => facility.controlled).length} of ${facilities.length}`}
+            label="Operationally controlled"
+            value={`${facilities.filter((facility) => facility.operationalControl).length} of ${facilities.length}`}
           />
           <StatChip
             label="Avg ownership"
@@ -84,7 +84,8 @@ export function FacilitiesPage() {
                 <th className="px-4 py-3 font-semibold">Facility</th>
                 <th className="px-4 py-3 font-semibold">Location</th>
                 <th className="px-4 py-3 font-semibold">Equity share</th>
-                <th className="px-4 py-3 font-semibold">Controlled</th>
+                <th className="px-4 py-3 font-semibold">Financial ctrl</th>
+                <th className="px-4 py-3 font-semibold">Operational ctrl</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -94,7 +95,8 @@ export function FacilitiesPage() {
                   <td className="px-4 py-3 font-medium">{facility.name}</td>
                   <td className="px-4 py-3 text-ink-muted">{facility.location}</td>
                   <td className="px-4 py-3">{facility.equitySharePercent}%</td>
-                  <td className="px-4 py-3">{facility.controlled ? 'Yes' : 'No'}</td>
+                  <td className="px-4 py-3">{facility.financialControl ? 'Yes' : 'No'}</td>
+                  <td className="px-4 py-3">{facility.operationalControl ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <Button
                       variant="ghost"

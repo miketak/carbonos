@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import com.carbonos.user.AuthenticatedUser;
 
 /**
- * Tenant isolation (AUTH-01, spec 004): an organization and everything nested
+ * Tenant isolation (AUTH-01, spec 01): an organization and everything nested
  * under it is visible only to its owner and platform ADMINs. Denials are 404s
  * so outsiders cannot even confirm an id exists.
  */
@@ -22,6 +22,15 @@ public class GhgAccess {
 			throw new IllegalStateException("No authenticated user in context");
 		}
 		return principal.getId();
+	}
+
+	/** The current session's email, snapshotted onto audit records such as boundary versions. */
+	String currentUserEmail() {
+		var principal = principal();
+		if (principal == null) {
+			throw new IllegalStateException("No authenticated user in context");
+		}
+		return principal.getUsername();
 	}
 
 	void check(Organization organization) {

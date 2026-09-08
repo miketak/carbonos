@@ -14,7 +14,7 @@ import com.carbonos.user.internal.AccessRequestService;
 import com.carbonos.user.AuthenticatedUser;
 import com.carbonos.user.internal.web.dto.AccessRequestResponse;
 
-/** The admin queue of spec 002: list requests, approve or deny. */
+/** The admin queue of spec 01.1: list requests, approve or deny. */
 @RestController
 @RequestMapping("/api/admin/access-requests")
 class AccessRequestAdminController {

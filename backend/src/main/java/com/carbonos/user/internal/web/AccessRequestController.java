@@ -24,7 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
-/** The public side of spec 002: submit a request, then set the password from the emailed link. */
+/** The public side of spec 01.1: submit a request, then set the password from the emailed link. */
 @RestController
 @RequestMapping("/api/access-requests")
 class AccessRequestController {

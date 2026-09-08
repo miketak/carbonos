@@ -13,7 +13,9 @@ import {
   excludeAssignment,
   executeRun,
   finalizeRun,
+  freezeBoundary,
   getBoundary,
+  getBoundaryVersion,
   getInventory,
   getOrganization,
   getRun,
@@ -21,6 +23,7 @@ import {
   includeAssignment,
   listActivities,
   listAssignments,
+  listBoundaryVersions,
   listEmissionFactors,
   listFacilities,
   listUnits,
@@ -28,6 +31,7 @@ import {
   listOrganizations,
   listRuns,
   removeBoundaryTreatment,
+  reopenBoundary,
   setBoundaryTreatment,
   syncAssignments,
   updateActivity,
@@ -53,6 +57,9 @@ export const activitiesKey = (orgId: string) => ['ghg', 'activities', orgId] as 
 export const inventoriesKey = (orgId: string) => ['ghg', 'inventories', orgId] as const
 export const inventoryKey = (id: string) => ['ghg', 'inventory', id] as const
 export const boundaryKey = (inventoryId: string) => ['ghg', 'boundary', inventoryId] as const
+export const boundaryVersionsKey = (inventoryId: string) =>
+  ['ghg', 'boundary-versions', inventoryId] as const
+export const boundaryVersionKey = (id: string) => ['ghg', 'boundary-version', id] as const
 export const assignmentsKey = (inventoryId: string) => ['ghg', 'assignments', inventoryId] as const
 export const validationKey = (inventoryId: string) => ['ghg', 'validation', inventoryId] as const
 export const runsKey = (inventoryId: string) => ['ghg', 'runs', inventoryId] as const
@@ -94,6 +101,22 @@ export function useInventoryQuery(id: string) {
 
 export function useBoundaryQuery(inventoryId: string) {
   return useQuery({ queryKey: boundaryKey(inventoryId), queryFn: () => getBoundary(inventoryId) })
+}
+
+export function useBoundaryVersionsQuery(inventoryId: string) {
+  return useQuery({
+    queryKey: boundaryVersionsKey(inventoryId),
+    queryFn: () => listBoundaryVersions(inventoryId),
+  })
+}
+
+export function useBoundaryVersionQuery(id: string) {
+  // a version is immutable once cut, so cache it for the session
+  return useQuery({
+    queryKey: boundaryVersionKey(id),
+    queryFn: () => getBoundaryVersion(id),
+    staleTime: Infinity,
+  })
 }
 
 export function useAssignmentsQuery(inventoryId: string) {
@@ -254,6 +277,34 @@ function useInventoryScopedMutation<TArgs, TResult>(
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boundaryKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: assignmentsKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
+      // the inventory carries the boundary status, which the header renders
+      void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
+    },
+  })
+}
+
+// --- boundary lifecycle (spec 03) --------------------------------------------
+
+export function useFreezeBoundary(inventoryId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => freezeBoundary(inventoryId),
+    onSuccess: (version) => {
+      queryClient.setQueryData(boundaryVersionKey(version.version.id), version)
+      void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: boundaryVersionsKey(inventoryId) })
+    },
+  })
+}
+
+export function useReopenBoundary(inventoryId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => reopenBoundary(inventoryId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
     },
   })

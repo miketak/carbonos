@@ -10,7 +10,7 @@ import {
 } from '../useAccessRequests'
 import type { AccessRequest } from '../api'
 
-/** The admin queue of spec 002: pending access requests with approve/deny. */
+/** The admin queue of spec 01.1: pending access requests with approve/deny. */
 export function AccessRequestsSection() {
   const requestsQuery = useAccessRequestsQuery()
   const approve = useApproveAccessRequest()
