@@ -25,22 +25,30 @@ export function ApproachBadge({ approach }: { approach: ConsolidationApproach })
   )
 }
 
-/** The boundary's lifecycle state (spec 03), in the pre-flight panel's instrument idiom. */
-export function BoundaryStatusBadge({
+const statusStyles: Record<Inventory['status'], string> = {
+  DRAFT: 'border-amber-300 bg-amber-50 text-amber-700',
+  FROZEN: 'border-teal/40 bg-teal/10 text-link',
+  FINAL: 'border-teal/40 bg-accent-green/25 text-dark-teal',
+  PUBLISHED: 'border-dark-teal/40 bg-dark-teal text-white',
+}
+
+/** The inventory's lifecycle state (spec 05.1), in the pre-flight panel's instrument idiom. */
+export function InventoryStatusBadge({
   inventory,
 }: {
-  inventory: Pick<Inventory, 'boundaryStatus' | 'currentBoundaryVersionNo'>
+  inventory: Pick<Inventory, 'status' | 'currentBoundaryVersionNo' | 'supersededById'>
 }) {
-  const frozen = inventory.boundaryStatus === 'FROZEN'
+  const label =
+    inventory.status === 'DRAFT'
+      ? 'DRAFT'
+      : inventory.status === 'PUBLISHED' && inventory.supersededById
+        ? 'PUBLISHED · SUPERSEDED'
+        : `${inventory.status} · BOUNDARY v${inventory.currentBoundaryVersionNo}`
   return (
     <span
-      className={`inline-block rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold tracking-widest whitespace-nowrap ${
-        frozen
-          ? 'border-teal/40 bg-teal/10 text-link'
-          : 'border-amber-300 bg-amber-50 text-amber-700'
-      }`}
+      className={`inline-block rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold tracking-widest whitespace-nowrap ${statusStyles[inventory.status]}`}
     >
-      {frozen ? `BOUNDARY FROZEN v${inventory.currentBoundaryVersionNo}` : 'BOUNDARY DRAFT'}
+      {label}
     </span>
   )
 }

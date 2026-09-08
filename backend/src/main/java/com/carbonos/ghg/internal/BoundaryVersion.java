@@ -2,6 +2,7 @@ package com.carbonos.ghg.internal;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -20,14 +21,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 /**
  * An immutable snapshot of one inventory's organizational boundary at the
  * moment it was frozen (spec 03). Every freeze cuts a new, numbered version;
- * runs cite the version they computed from. Entries copy facility names so the
- * record outlives later renames and deletions.
+ * runs cite the version they computed from. Entries copy entity and facility
+ * names so the record outlives later renames and deletions. An entity whose
+ * share is zero under the approach is recorded as excluded, with the reason,
+ * rather than as a member contributing nothing (spec 05.1).
  */
 @Entity
 @Table(name = "ghg_boundary_versions")
@@ -47,6 +49,9 @@ public class BoundaryVersion {
 	@Column(name = "consolidation_approach", nullable = false, length = 30)
 	private ConsolidationApproach consolidationApproach;
 
+	@Column(name = "entity_count", nullable = false)
+	private int entityCount;
+
 	@Column(name = "facility_count", nullable = false)
 	private int facilityCount;
 
@@ -61,7 +66,6 @@ public class BoundaryVersion {
 	private Instant frozenAt;
 
 	@OneToMany(mappedBy = "version", cascade = CascadeType.ALL, orphanRemoval = true)
-	@OrderBy("facilityName ASC")
 	private List<BoundaryVersionEntry> entries = new ArrayList<>();
 
 	protected BoundaryVersion() {
@@ -78,15 +82,36 @@ public class BoundaryVersion {
 		for (var treatment : treatments) {
 			entries.add(new BoundaryVersionEntry(this, treatment, consolidationApproach));
 		}
-		this.facilityCount = entries.size();
+		this.entityCount = (int) entries.stream().filter(entry -> !entry.isExcluded()).count();
+		this.facilityCount = entries.stream()
+			.filter(entry -> !entry.isExcluded())
+			.mapToInt(entry -> entry.getFacilities().size())
+			.sum();
 	}
 
-	/** The share this version recorded for a facility, or empty if it was outside the boundary. */
-	public Optional<BigDecimal> shareOf(UUID facilityId) {
+	/**
+	 * The share this version recorded for a facility on a date, or empty if the
+	 * facility was outside the boundary: not recorded, recorded as excluded, or
+	 * outside its entity's membership window.
+	 */
+	public Optional<BigDecimal> shareOf(UUID facilityId, LocalDate date) {
 		return entries.stream()
-			.filter(entry -> entry.getFacilityId().equals(facilityId))
+			.filter(entry -> !entry.isExcluded() && entry.holds(facilityId) && entry.covers(date))
 			.map(BoundaryVersionEntry::getAccountingShare)
 			.findFirst();
+	}
+
+	/** Every facility id a version recorded as a member (excluded entries aside). */
+	public List<UUID> memberFacilityIds() {
+		return entries.stream()
+			.filter(entry -> !entry.isExcluded())
+			.flatMap(entry -> entry.getFacilities().stream())
+			.map(BoundaryVersionFacility::getFacilityId)
+			.toList();
+	}
+
+	public Optional<BoundaryVersionEntry> entryHolding(UUID facilityId) {
+		return entries.stream().filter(entry -> entry.holds(facilityId)).findFirst();
 	}
 
 	public UUID getId() {
@@ -105,6 +130,10 @@ public class BoundaryVersion {
 		return consolidationApproach;
 	}
 
+	public int getEntityCount() {
+		return entityCount;
+	}
+
 	public int getFacilityCount() {
 		return facilityCount;
 	}
@@ -121,8 +150,8 @@ public class BoundaryVersion {
 		return frozenAt;
 	}
 
-	/** Alphabetical by facility, whether freshly built or loaded, so every reader sees the same order. */
+	/** Alphabetical by entity, whether freshly built or loaded, so every reader sees the same order. */
 	public List<BoundaryVersionEntry> getEntries() {
-		return entries.stream().sorted(Comparator.comparing(BoundaryVersionEntry::getFacilityName)).toList();
+		return entries.stream().sorted(Comparator.comparing(BoundaryVersionEntry::getEntityName)).toList();
 	}
 }

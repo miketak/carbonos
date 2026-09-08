@@ -1,6 +1,5 @@
 package com.carbonos.ghg.internal;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -15,6 +14,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+/**
+ * A site the organization reports on. Ownership and control facts live on
+ * the facility's {@link LegalEntity} (spec 03.1), so a facility is only a
+ * name, a location and the entity it belongs to.
+ */
 @Entity
 @Table(name = "ghg_facilities")
 public class Facility {
@@ -26,21 +30,15 @@ public class Facility {
 	@JoinColumn(name = "organization_id", nullable = false)
 	private Organization organization;
 
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "entity_id", nullable = false)
+	private LegalEntity entity;
+
 	@Column(nullable = false, length = 120)
 	private String name;
 
 	@Column(nullable = false, length = 120)
 	private String location;
-
-	@Column(name = "equity_share_percent", nullable = false, precision = 5, scale = 2)
-	private BigDecimal equitySharePercent;
-
-	// the approach-independent control facts of the corporate structure (spec 03)
-	@Column(name = "financial_control", nullable = false)
-	private boolean financialControl;
-
-	@Column(name = "operational_control", nullable = false)
-	private boolean operationalControl;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
@@ -53,15 +51,12 @@ public class Facility {
 	protected Facility() {
 	}
 
-	Facility(Organization organization, String name, String location, BigDecimal equitySharePercent,
-			boolean financialControl, boolean operationalControl) {
+	Facility(Organization organization, LegalEntity entity, String name, String location) {
 		this.id = UUID.randomUUID();
 		this.organization = organization;
+		this.entity = entity;
 		this.name = name;
 		this.location = location;
-		this.equitySharePercent = equitySharePercent;
-		this.financialControl = financialControl;
-		this.operationalControl = operationalControl;
 	}
 
 	public UUID getId() {
@@ -72,6 +67,10 @@ public class Facility {
 		return organization;
 	}
 
+	public LegalEntity getEntity() {
+		return entity;
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -80,40 +79,13 @@ public class Facility {
 		return location;
 	}
 
-	public BigDecimal getEquitySharePercent() {
-		return equitySharePercent;
-	}
-
-	public boolean isFinancialControl() {
-		return financialControl;
-	}
-
-	public boolean isOperationalControl() {
-		return operationalControl;
-	}
-
 	public Instant getCreatedAt() {
 		return createdAt;
 	}
 
-	void setName(String name) {
+	void update(LegalEntity entity, String name, String location) {
+		this.entity = entity;
 		this.name = name;
-	}
-
-	void setLocation(String location) {
 		this.location = location;
 	}
-
-	void setEquitySharePercent(BigDecimal equitySharePercent) {
-		this.equitySharePercent = equitySharePercent;
-	}
-
-	void setFinancialControl(boolean financialControl) {
-		this.financialControl = financialControl;
-	}
-
-	void setOperationalControl(boolean operationalControl) {
-		this.operationalControl = operationalControl;
-	}
-
 }

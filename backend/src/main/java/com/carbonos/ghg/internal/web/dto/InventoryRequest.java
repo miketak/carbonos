@@ -3,6 +3,7 @@ package com.carbonos.ghg.internal.web.dto;
 import java.time.LocalDate;
 
 import com.carbonos.ghg.internal.ConsolidationApproach;
+import com.carbonos.ghg.internal.GwpSet;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -16,5 +17,6 @@ public record InventoryRequest( //
 		@NotNull LocalDate periodEnd, //
 		@Size(max = 255) String purpose, //
 		@Min(1990) @Max(2100) Integer baseYear, //
-		@NotNull ConsolidationApproach consolidationApproach) {
+		@NotNull ConsolidationApproach consolidationApproach, //
+		GwpSet gwpSet) {
 }

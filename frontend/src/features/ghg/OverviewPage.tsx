@@ -70,8 +70,9 @@ function SetupChecklist({
 }) {
   const steps = [
     {
-      title: 'Add your facilities',
-      detail: 'The sites where things happen — organizational facts, shared by every view.',
+      title: 'Add your legal entities and facilities',
+      detail:
+        'Which structures you consolidate, and the sites under each. Facts shared by every view.',
       done: facilityCount > 0,
       to: 'facilities',
       cta: 'Add facilities',

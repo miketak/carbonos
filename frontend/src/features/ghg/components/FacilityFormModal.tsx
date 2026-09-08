@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../../../components/Button'
-import { InputField } from '../../../components/Field'
+import { InputField, SelectField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
-import { useCreateFacility, useUpdateFacility } from '../useGhg'
+import { relationshipShortLabels } from '../format'
+import { useCreateFacility, useEntitiesQuery, useUpdateFacility } from '../useGhg'
 import type { Facility } from '../api'
 
 interface FacilityFormModalProps {
@@ -14,7 +15,7 @@ interface FacilityFormModalProps {
   onSaved: (message: string) => void
 }
 
-/** Create or edit a facility: the organization's ownership and control facts about a site (spec 03). */
+/** Create or edit a facility: a site under one of the organization's legal entities (spec 03.1). */
 export function FacilityFormModal({
   organizationId,
   facility,
@@ -23,28 +24,24 @@ export function FacilityFormModal({
 }: FacilityFormModalProps) {
   const create = useCreateFacility(organizationId)
   const update = useUpdateFacility(organizationId)
+  const entitiesQuery = useEntitiesQuery(organizationId)
   const mutation = facility ? update : create
 
   const [name, setName] = useState(facility?.name ?? '')
   const [location, setLocation] = useState(facility?.location ?? '')
-  const [equityShare, setEquityShare] = useState(
-    facility ? String(facility.equitySharePercent) : '100',
-  )
-  const [financialControl, setFinancialControl] = useState(facility?.financialControl ?? true)
-  const [operationalControl, setOperationalControl] = useState(facility?.operationalControl ?? true)
+  // '' means "not chosen yet": the reporting company once the entities load
+  const [entityId, setEntityId] = useState(facility?.entityId ?? '')
+
+  const entities = entitiesQuery.data ?? []
+  const reportingCompany = entities.find((entity) => entity.reportingCompany)
+  const selectedEntityId = entityId || reportingCompany?.id || ''
 
   const errors = fieldErrors(mutation.error)
   const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    const input = {
-      name,
-      location,
-      equitySharePercent: Number(equityShare),
-      financialControl,
-      operationalControl,
-    }
+    const input = { name, location, entityId: selectedEntityId || undefined }
     const handlers = {
       onSuccess: () => onSaved(`${name.trim()} ${facility ? 'updated' : 'added'}.`),
     }
@@ -71,43 +68,19 @@ export function FacilityFormModal({
           placeholder="Accra, Ghana"
           required
         />
-        <InputField
-          label="Equity share (%)"
-          type="number"
-          min="0"
-          max="100"
-          step="0.01"
-          value={equityShare}
-          onChange={(event) => setEquityShare(event.target.value)}
-          error={errors?.equitySharePercent}
-          hint="Economic interest in the site; used when the approach is equity share."
-          required
-        />
-        <fieldset className="flex flex-col gap-2">
-          <legend className="text-sm font-medium">Control</legend>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={financialControl}
-              onChange={(event) => setFinancialControl(event.target.checked)}
-              className="size-4 accent-teal"
-            />
-            Financial control
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={operationalControl}
-              onChange={(event) => setOperationalControl(event.target.checked)}
-              className="size-4 accent-teal"
-            />
-            Operational control
-          </label>
-          <p className="text-xs text-ink-muted">
-            The GHG Protocol's two control tests. Each inventory's boundary starts from these facts
-            and may override them; editing them here never changes an existing boundary.
-          </p>
-        </fieldset>
+        <SelectField
+          label="Legal entity"
+          value={selectedEntityId}
+          onChange={(event) => setEntityId(event.target.value)}
+          error={errors?.entityId}
+          hint="Ownership and control facts live on the entity. Add entities under Legal entities."
+        >
+          {entities.map((entity) => (
+            <option key={entity.id} value={entity.id}>
+              {entity.name} ({relationshipShortLabels[entity.relationshipType]})
+            </option>
+          ))}
+        </SelectField>
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">
             {generalError}

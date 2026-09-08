@@ -9,9 +9,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BoundaryTreatmentRepository extends JpaRepository<BoundaryTreatment, UUID> {
 
-	@EntityGraph(attributePaths = "facility")
+	// the entity and the included facilities render with each treatment and
+	// feed version cutting; fetch them eagerly because open-in-view is off
+	@EntityGraph(attributePaths = { "entity", "facilities", "facilities.facility" })
 	List<BoundaryTreatment> findAllByInventoryId(UUID inventoryId);
 
-	Optional<BoundaryTreatment> findByInventoryIdAndFacilityId(UUID inventoryId, UUID facilityId);
-
+	@EntityGraph(attributePaths = { "entity", "facilities", "facilities.facility" })
+	Optional<BoundaryTreatment> findByInventoryIdAndEntityId(UUID inventoryId, UUID entityId);
 }

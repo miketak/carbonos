@@ -8,10 +8,10 @@ import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail } from '../../lib/api'
-import { ApproachBadge, BoundaryStatusBadge } from './components/badges'
+import { ApproachBadge, InventoryStatusBadge } from './components/badges'
 import { approachLabels } from './format'
 import { useCreateInventory, useDeleteInventory, useInventoriesQuery } from './useGhg'
-import type { ConsolidationApproach, Inventory } from './api'
+import type { ConsolidationApproach, GwpSet, Inventory } from './api'
 
 /**
  * The accounting views: each inventory selects, classifies, and applies
@@ -115,11 +115,9 @@ function InventoryCard({
         {inventory.purpose ? ` · ${inventory.purpose}` : ''}
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <BoundaryStatusBadge inventory={inventory} />
-        {inventory.finalRunId && (
-          <span className="inline-block rounded-full bg-accent-green/25 px-2.5 py-0.5 text-xs font-bold text-dark-teal">
-            FINAL RUN DESIGNATED
-          </span>
+        <InventoryStatusBadge inventory={inventory} />
+        {inventory.supersededById && (
+          <span className="text-xs text-ink-muted">Superseded by a correction</span>
         )}
       </div>
       <div className="mt-4 flex gap-2">
@@ -129,13 +127,15 @@ function InventoryCard({
         >
           Open
         </Link>
-        <Button
-          variant="ghost"
-          className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-          onClick={onDelete}
-        >
-          Delete
-        </Button>
+        {inventory.status !== 'PUBLISHED' && (
+          <Button
+            variant="ghost"
+            className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+            onClick={onDelete}
+          >
+            Delete
+          </Button>
+        )}
       </div>
     </GlassCard>
   )
@@ -157,6 +157,7 @@ function InventoryFormModal({
   const [periodEnd, setPeriodEnd] = useState(`${year}-12-31`)
   const [purpose, setPurpose] = useState('')
   const [approach, setApproach] = useState<ConsolidationApproach>('OPERATIONAL_CONTROL')
+  const [gwpSet, setGwpSet] = useState<GwpSet>('AR5')
 
   const errors = fieldErrors(create.error)
   const generalError = create.isError && !errors ? problemDetail(create.error) : undefined
@@ -170,6 +171,7 @@ function InventoryFormModal({
         periodEnd,
         purpose: purpose.trim() === '' ? undefined : purpose,
         consolidationApproach: approach,
+        gwpSet,
       },
       { onSuccess: (inventory) => onSaved(`${inventory.name} created.`) },
     )
@@ -222,6 +224,15 @@ function InventoryFormModal({
               {label}
             </option>
           ))}
+        </SelectField>
+        <SelectField
+          label="GWP set"
+          value={gwpSet}
+          onChange={(event) => setGwpSet(event.target.value as GwpSet)}
+          hint="The IPCC 100-year global warming potentials the report converts each gas with (spec 07.1)."
+        >
+          <option value="AR5">AR5 (default)</option>
+          <option value="AR6">AR6</option>
         </SelectField>
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">

@@ -6,6 +6,7 @@ const gateLabels: Record<GateResult['gate'], string> = {
   COMPLETENESS: 'Activity data completeness',
   CLASSIFICATION: 'Classification',
   EMISSION_FACTOR: 'Emission factors',
+  BASE_YEAR: 'Base year',
 }
 
 const statusStyles: Record<GateStatus, { ring: string; label: string; text: string }> = {

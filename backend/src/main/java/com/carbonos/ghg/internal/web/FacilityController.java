@@ -41,18 +41,17 @@ class FacilityController {
 	@PostMapping("/organizations/{organizationId}/facilities")
 	ResponseEntity<FacilityResponse> create(@PathVariable UUID organizationId,
 			@Valid @RequestBody FacilityRequest body) {
-		var facility = ghgService.createFacility(organizationId, body.name(), body.location(),
-				body.equitySharePercent(), body.financialControl(), body.operationalControl());
-		URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/ghg/facilities/{id}")
-			.buildAndExpand(facility.getId()).toUri();
+		var facility = ghgService.createFacility(organizationId, body.entityId(), body.name(), body.location());
+		URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+			.path("/api/ghg/facilities/{id}")
+			.buildAndExpand(facility.getId())
+			.toUri();
 		return ResponseEntity.created(location).body(FacilityResponse.from(facility));
 	}
 
 	@PutMapping("/facilities/{id}")
 	FacilityResponse update(@PathVariable UUID id, @Valid @RequestBody FacilityRequest body) {
-		return FacilityResponse
-			.from(ghgService.updateFacility(id, body.name(), body.location(), body.equitySharePercent(),
-					body.financialControl(), body.operationalControl()));
+		return FacilityResponse.from(ghgService.updateFacility(id, body.entityId(), body.name(), body.location()));
 	}
 
 	@DeleteMapping("/facilities/{id}")

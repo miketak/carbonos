@@ -16,4 +16,7 @@ public interface GhgRunRepository extends JpaRepository<GhgRun, UUID> {
 
 	@EntityGraph(attributePaths = { "lines", "inventory" })
 	Optional<GhgRun> findWithLinesById(UUID id);
+
+	@EntityGraph(attributePaths = { "exclusions", "inventory" })
+	Optional<GhgRun> findWithExclusionsById(UUID id);
 }

@@ -17,6 +17,10 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Organization", id);
 	}
 
+	static GhgNotFoundException entity(UUID id) {
+		return new GhgNotFoundException("Legal entity", id);
+	}
+
 	static GhgNotFoundException facility(UUID id) {
 		return new GhgNotFoundException("Facility", id);
 	}
@@ -47,5 +51,17 @@ class GhgNotFoundException extends ErrorResponseException {
 
 	static GhgNotFoundException boundaryVersion(UUID id) {
 		return new GhgNotFoundException("Boundary version", id);
+	}
+
+	static GhgNotFoundException baseYear(UUID organizationId) {
+		return new GhgNotFoundException("Base year", organizationId);
+	}
+
+	static GhgNotFoundException recalculation(UUID id) {
+		return new GhgNotFoundException("Recalculation", id);
+	}
+
+	static GhgNotFoundException marketFactor(UUID id) {
+		return new GhgNotFoundException("Market factor", id);
 	}
 }
