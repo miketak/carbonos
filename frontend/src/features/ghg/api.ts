@@ -55,7 +55,6 @@ export type ActivityCategory =
   | 'DOWNSTREAM_LEASED_ASSETS'
   | 'FRANCHISES'
   | 'INVESTMENTS'
-  | 'WATER_SUPPLY'
 
 export interface Organization {
   id: string

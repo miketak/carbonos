@@ -18,9 +18,7 @@ public enum ActivityCategory {
 	// scope 3, downstream (categories 9 to 15)
 	DOWNSTREAM_TRANSPORT(Scope.SCOPE_3), PROCESSING_SOLD_PRODUCTS(Scope.SCOPE_3), USE_SOLD_PRODUCTS(Scope.SCOPE_3),
 	END_OF_LIFE_SOLD_PRODUCTS(Scope.SCOPE_3), DOWNSTREAM_LEASED_ASSETS(Scope.SCOPE_3), FRANCHISES(Scope.SCOPE_3),
-	INVESTMENTS(Scope.SCOPE_3),
-	// a pre-existing seeded category, kept for the water-supply factor (purchased goods in the Scope 3 Standard)
-	WATER_SUPPLY(Scope.SCOPE_3);
+	INVESTMENTS(Scope.SCOPE_3);
 
 	private final Scope scope;
 

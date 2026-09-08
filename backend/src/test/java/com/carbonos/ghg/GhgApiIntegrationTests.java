@@ -413,6 +413,15 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.facilities[?(@.facilityId == '" + plant + "')].inBoundary").value(true))
 			.andExpect(jsonPath("$.facilities[?(@.facilityId == '" + depot + "')].inBoundary").value(true));
+		// a version reads back one entry per entity, however many facilities sit beneath it
+		var frozen = body(mvc
+			.perform(post("/api/ghg/inventories/" + whole + "/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.entries.length()").value(1))
+			.andExpect(jsonPath("$.entries[0].facilities.length()").value(2)));
+		mvc.perform(get("/api/ghg/boundary-versions/" + JsonPath.read(frozen, "$.version.id")).with(asMember()))
+			.andExpect(jsonPath("$.entries.length()").value(1))
+			.andExpect(jsonPath("$.entries[0].facilities.length()").value(2));
 		// an override on an existing treatment leaves the facility subset alone
 		mvc.perform(put("/api/ghg/inventories/" + operational + "/boundary/entities/" + jv).with(asMember())
 			.with(csrf()).contentType("application/json").content("{}"))
@@ -551,6 +560,16 @@ class GhgApiIntegrationTests {
 			.getFirst()).isEqualTo("OUTSIDE_BOUNDARY");
 		assertThat(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + strayActivity + "')].exclusionDetail")
 			.getFirst()).isEqualTo("facility not in the boundary");
+
+		// re-including and excluding by hand for the same reason keeps the detail
+		String late = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + lateActivity + "')].id").getFirst();
+		mvc.perform(put("/api/ghg/assignments/" + late + "/include").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(put("/api/ghg/assignments/" + late + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "OUTSIDE_PERIOD"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.exclusionDetail").value("reporting period 2025-01-01 to 2025-12-31"));
 	}
 
 	// --- scope as an accounting decision (spec 04.1) -----------------------------

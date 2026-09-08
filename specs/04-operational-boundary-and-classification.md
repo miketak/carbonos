@@ -25,7 +25,7 @@ that turns its quantity into CO2e.
 | --- | --- | --- |
 | 1 | Direct emissions from sources the company owns or controls | STATIONARY_COMBUSTION, MOBILE_COMBUSTION, PROCESS_EMISSIONS, FUGITIVE_EMISSIONS |
 | 2 | Indirect emissions from the generation of purchased electricity, heat and steam consumed by the company | PURCHASED_ELECTRICITY, PURCHASED_HEAT_STEAM |
-| 3 | Other indirect emissions, a consequence of the company's activities but from sources it does not own or control | The Scope 3 Standard's fifteen categories, from PURCHASED_GOODS_SERVICES to INVESTMENTS, plus WATER_SUPPLY for the seeded factor |
+| 3 | Other indirect emissions, a consequence of the company's activities but from sources it does not own or control | The Scope 3 Standard's fifteen categories, from PURCHASED_GOODS_SERVICES to INVESTMENTS (the seeded water-supply factor is a purchased good) |
 
 Each category belongs to exactly one scope (spec 04.1).
 

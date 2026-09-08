@@ -134,7 +134,6 @@ export const categories: { category: ActivityCategory; scope: GhgScope; label: s
   { category: 'DOWNSTREAM_LEASED_ASSETS', scope: 'SCOPE_3', label: '13. Downstream leased assets' },
   { category: 'FRANCHISES', scope: 'SCOPE_3', label: '14. Franchises' },
   { category: 'INVESTMENTS', scope: 'SCOPE_3', label: '15. Investments' },
-  { category: 'WATER_SUPPLY', scope: 'SCOPE_3', label: 'Water supply (purchased goods)' },
 ]
 
 const categoryIndex = new Map(categories.map((entry) => [entry.category, entry]))

@@ -533,10 +533,26 @@ public class InventoryService {
 		return assignment;
 	}
 
+	/**
+	 * A manual exclusion. When the reason is one review would give (outside the
+	 * period or the boundary), the detail is computed the same way, so the
+	 * report reads alike whoever excluded the record.
+	 */
 	public InventoryAssignment exclude(UUID assignmentId, ExclusionReason reason) {
 		var assignment = getAssignment(assignmentId);
-		requireEditable(assignment.getInventory());
-		assignment.exclude(reason, null);
+		var inventory = assignment.getInventory();
+		requireEditable(inventory);
+		String detail = null;
+		var activity = assignment.getActivity();
+		if (reason == ExclusionReason.OUTSIDE_PERIOD && !inventory.covers(activity.getActivityDate())) {
+			detail = "reporting period " + inventory.getPeriodStart() + " to " + inventory.getPeriodEnd();
+		}
+		else if (reason == ExclusionReason.OUTSIDE_BOUNDARY) {
+			var membership = membership(boundaryTreatments.findAllByInventoryId(inventory.getId()),
+					inventory.getConsolidationApproach(), activity.getFacility().getId(), activity.getActivityDate());
+			detail = membership.member() ? null : membership.detail();
+		}
+		assignment.exclude(reason, detail);
 		return assignment;
 	}
 

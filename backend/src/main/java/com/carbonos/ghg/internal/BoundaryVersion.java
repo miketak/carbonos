@@ -3,10 +3,11 @@ package com.carbonos.ghg.internal;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -65,8 +66,10 @@ public class BoundaryVersion {
 	@Column(name = "frozen_at", nullable = false, updatable = false)
 	private Instant frozenAt;
 
+	// a Set: the version is read with its entries and their facilities in one
+	// join-fetch, and a bag would repeat each entry once per facility
 	@OneToMany(mappedBy = "version", cascade = CascadeType.ALL, orphanRemoval = true)
-	private List<BoundaryVersionEntry> entries = new ArrayList<>();
+	private Set<BoundaryVersionEntry> entries = new LinkedHashSet<>();
 
 	protected BoundaryVersion() {
 	}

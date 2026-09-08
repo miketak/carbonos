@@ -453,8 +453,12 @@ test('a frozen inventory is read-only, offers reopen, and lists its versions', a
 
   // history: newest first, each naming who froze it and how many facilities it held
   const history = await screen.findAllByRole('button', { name: /^v\d · frozen/ })
-  expect(history[0]).toHaveTextContent(/^v2 · frozen .* by ama@ecoriv\.test · 2 facilities$/)
-  expect(history[1]).toHaveTextContent(/^v1 · frozen .* by ama@ecoriv\.test · 1 facility$/)
+  expect(history[0]).toHaveTextContent(
+    /^v2 · frozen .* by ama@ecoriv\.test · 1 entity, 2 facilities$/,
+  )
+  expect(history[1]).toHaveTextContent(
+    /^v1 · frozen .* by ama@ecoriv\.test · 1 entity, 1 facility$/,
+  )
 })
 
 test('expanding a version loads the boundary it recorded', async () => {

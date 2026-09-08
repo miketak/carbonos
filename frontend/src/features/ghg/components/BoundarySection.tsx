@@ -262,7 +262,8 @@ function BoundaryHistory({ inventoryId }: { inventoryId: string }) {
               className="w-full rounded-lg px-2 py-1 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
             >
               <span className="font-mono font-semibold">v{version.versionNo}</span> ·{' '}
-              {describeFreeze(version)} · {version.facilityCount}{' '}
+              {describeFreeze(version)} · {version.entityCount}{' '}
+              {version.entityCount === 1 ? 'entity' : 'entities'}, {version.facilityCount}{' '}
               {version.facilityCount === 1 ? 'facility' : 'facilities'}
             </button>
             {openId === version.id && <BoundaryVersionPanel versionId={version.id} />}

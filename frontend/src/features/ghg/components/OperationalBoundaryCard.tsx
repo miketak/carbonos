@@ -18,7 +18,7 @@ export function OperationalBoundaryCard({ inventory }: { inventory: Inventory })
   const toast = useToast()
   const [selected, setSelected] = useState<ActivityCategory[]>(inventory.scope3Categories)
   const [rationale, setRationale] = useState(inventory.scope3ExclusionsRationale ?? '')
-  const scope3 = categoriesForScope('SCOPE_3').filter((entry) => entry.category !== 'WATER_SUPPLY')
+  const scope3 = categoriesForScope('SCOPE_3')
 
   const toggle = (category: ActivityCategory, checked: boolean) =>
     setSelected((current) =>
