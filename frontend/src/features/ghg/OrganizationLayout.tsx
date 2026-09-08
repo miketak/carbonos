@@ -9,6 +9,12 @@ import type { Organization } from './api'
 const sections = [
   { to: '.', label: 'Overview', end: true, icon: 'M3 10.5 12 3l9 7.5M5 9.5V21h5v-6h4v6h5V9.5' },
   {
+    to: 'entities',
+    label: 'Legal entities',
+    end: false,
+    icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4M9 10h1M14 10h1M9 14h1M14 14h1',
+  },
+  {
     to: 'facilities',
     label: 'Facilities',
     end: false,
@@ -22,6 +28,12 @@ const sections = [
     icon: 'm12 2-10 5 10 5 10-5-10-5M2 17l10 5 10-5M2 12l10 5 10-5',
   },
   {
+    to: 'base-year',
+    label: 'Base year',
+    end: false,
+    icon: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM9 16l2 2 4-4',
+  },
+  {
     to: 'factors',
     label: 'Emission factors',
     end: false,
@@ -31,8 +43,8 @@ const sections = [
 
 const collapseKey = 'ghg.sidebar'
 
-/* dividers group the nav: Overview | the GHG flow (Boundary → Activity → Runs) | reference */
-const dividerAfter = new Set([0, 3])
+/* dividers group the nav: Overview | the GHG flow (entities, facilities, activity, inventories, base year) | reference */
+const dividerAfter = new Set([0, 5])
 
 /* pill position: 36px rows + 6px flex gap; each divider adds 1px + one extra gap */
 function pillOffset(index: number): number {

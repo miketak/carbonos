@@ -10,26 +10,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The organizational-facts side of spec 02: organizations, facilities, the
- * emission-factor library, and activity records. Accounting views live in
- * {@link InventoryService}. Every entry is tenant-checked via
- * {@link GhgAccess} (spec 01).
+ * The organizational-facts side of spec 02 and spec 03.1: organizations,
+ * their legal entities and facilities, the emission-factor library, and
+ * activity records. Accounting views live in {@link InventoryService}. Every
+ * entry is tenant-checked via {@link GhgAccess} (spec 01).
  */
 @Service
 @Transactional
 public class GhgService {
 
 	private final OrganizationRepository organizations;
+	private final LegalEntityRepository entities;
 	private final FacilityRepository facilities;
 	private final EmissionFactorRepository emissionFactors;
 	private final ActivityRecordRepository activities;
 	private final GhgRunLineRepository runLines;
 	private final GhgAccess access;
 
-	GhgService(OrganizationRepository organizations, FacilityRepository facilities,
+	GhgService(OrganizationRepository organizations, LegalEntityRepository entities, FacilityRepository facilities,
 			EmissionFactorRepository emissionFactors, ActivityRecordRepository activities,
 			GhgRunLineRepository runLines, GhgAccess access) {
 		this.organizations = organizations;
+		this.entities = entities;
 		this.facilities = facilities;
 		this.emissionFactors = emissionFactors;
 		this.activities = activities;
@@ -54,18 +56,23 @@ public class GhgService {
 		return organization;
 	}
 
+	/** Creates the organization and its own legal entity, the wholly owned reporting company (spec 03.1). */
 	public Organization createOrganization(String name) {
 		var trimmed = name.trim();
 		if (organizations.existsByNameIgnoreCase(trimmed)) {
 			throw new DuplicateOrganizationException(trimmed);
 		}
+		Organization organization;
 		try {
-			return organizations.saveAndFlush(new Organization(trimmed, access.currentUserId()));
+			organization = organizations.saveAndFlush(new Organization(trimmed, access.currentUserId()));
 		}
 		catch (DataIntegrityViolationException ex) {
 			// unique-constraint race between the existence check and the insert
 			throw new DuplicateOrganizationException(trimmed);
 		}
+		entities.save(new LegalEntity(organization, trimmed, RelationshipType.WHOLLY_OWNED, new BigDecimal("100.00"),
+				new BigDecimal("100.00"), true, true));
+		return organization;
 	}
 
 	public Organization updateOrganization(UUID id, String name) {
@@ -74,6 +81,10 @@ public class GhgService {
 		if (!trimmed.equalsIgnoreCase(organization.getName()) && organizations.existsByNameIgnoreCase(trimmed)) {
 			throw new DuplicateOrganizationException(trimmed);
 		}
+		// the reporting company's entity follows the organization's name unless it was renamed by hand
+		entities.findByOrganizationIdAndReportingCompanyTrue(id)
+			.filter(own -> own.getName().equals(organization.getName()))
+			.ifPresent(own -> own.setName(trimmed));
 		organization.setName(trimmed);
 		return organization;
 	}
@@ -87,6 +98,65 @@ public class GhgService {
 		return facilities.countByOrganizationId(organizationId);
 	}
 
+	// --- legal entities (spec 03.1) ------------------------------------------
+
+	@Transactional(readOnly = true)
+	public List<LegalEntity> listEntities(UUID organizationId) {
+		getOrganization(organizationId);
+		return entities.findAllByOrganizationIdOrderByReportingCompanyDescCreatedAtAsc(organizationId);
+	}
+
+	@Transactional(readOnly = true)
+	public LegalEntity getEntity(UUID id) {
+		var entity = entities.findById(id).orElseThrow(() -> GhgNotFoundException.entity(id));
+		access.check(entity.getOrganization());
+		return entity;
+	}
+
+	public LegalEntity createEntity(UUID organizationId, String name, RelationshipType relationshipType,
+			BigDecimal economicInterestPercent, BigDecimal legalOwnershipPercent, boolean operatedByCompany) {
+		var organization = getOrganization(organizationId);
+		var trimmed = name.trim();
+		if (entities.existsByOrganizationIdAndNameIgnoreCase(organizationId, trimmed)) {
+			throw new GhgRuleViolationException("An entity named '" + trimmed + "' already exists.");
+		}
+		return entities.save(new LegalEntity(organization, trimmed, relationshipType, economicInterestPercent,
+				legalOwnershipPercent, operatedByCompany, false));
+	}
+
+	/**
+	 * Edits the entity's facts only. Existing boundary treatments are decisions
+	 * and stay as they are (spec 03); the BOUNDARY gate reports the drift.
+	 */
+	public LegalEntity updateEntity(UUID id, String name, RelationshipType relationshipType,
+			BigDecimal economicInterestPercent, BigDecimal legalOwnershipPercent, boolean operatedByCompany) {
+		var entity = getEntity(id);
+		var trimmed = name.trim();
+		if (entity.isReportingCompany() && (relationshipType != RelationshipType.WHOLLY_OWNED
+				|| economicInterestPercent.compareTo(new BigDecimal("100")) != 0 || !operatedByCompany)) {
+			throw new GhgRuleViolationException("The reporting company is a wholly owned operation by definition. "
+					+ "Record other structures as separate entities.");
+		}
+		if (!trimmed.equalsIgnoreCase(entity.getName())
+				&& entities.existsByOrganizationIdAndNameIgnoreCase(entity.getOrganization().getId(), trimmed)) {
+			throw new GhgRuleViolationException("An entity named '" + trimmed + "' already exists.");
+		}
+		entity.update(trimmed, relationshipType, economicInterestPercent, legalOwnershipPercent, operatedByCompany);
+		return entity;
+	}
+
+	public void deleteEntity(UUID id) {
+		var entity = getEntity(id);
+		if (entity.isReportingCompany()) {
+			throw new GhgRuleViolationException("The reporting company cannot be deleted.");
+		}
+		if (facilities.existsByEntityId(id)) {
+			throw new GhgRuleViolationException("'" + entity.getName()
+					+ "' still has facilities. Move them to another entity before deleting it.");
+		}
+		entities.delete(entity);
+	}
+
 	// --- facilities ---------------------------------------------------------
 
 	@Transactional(readOnly = true)
@@ -95,31 +165,26 @@ public class GhgService {
 		return facilities.findAllByOrganizationIdOrderByCreatedAtAsc(organizationId);
 	}
 
-	public Facility createFacility(UUID organizationId, String name, String location, BigDecimal equitySharePercent,
-			boolean financialControl, boolean operationalControl) {
+	/** Adds a facility under an entity; without one it belongs to the reporting company (spec 03.1). */
+	public Facility createFacility(UUID organizationId, UUID entityId, String name, String location) {
 		var organization = getOrganization(organizationId);
-		return facilities.save(new Facility(organization, name.trim(), location.trim(), equitySharePercent,
-				financialControl, operationalControl));
+		var entity = requireEntityInOrganization(entityId, organizationId);
+		return facilities.save(new Facility(organization, entity, name.trim(), location.trim()));
 	}
 
-	/** Edits the facility's facts only. Existing boundary treatments are decisions and stay as they are (spec 03). */
-	public Facility updateFacility(UUID id, String name, String location, BigDecimal equitySharePercent,
-			boolean financialControl, boolean operationalControl) {
+	public Facility updateFacility(UUID id, UUID entityId, String name, String location) {
 		var facility = getFacility(id);
-		facility.setName(name.trim());
-		facility.setLocation(location.trim());
-		facility.setEquitySharePercent(equitySharePercent);
-		facility.setFinancialControl(financialControl);
-		facility.setOperationalControl(operationalControl);
+		var entity = requireEntityInOrganization(entityId, facility.getOrganization().getId());
+		facility.update(entity, name.trim(), location.trim());
 		return facility;
 	}
 
-	/** TRACE-02: a facility with recorded facts is history — it cannot be deleted. */
+	/** TRACE-02: a facility with recorded facts is history; it cannot be deleted. */
 	public void deleteFacility(UUID id) {
 		var facility = getFacility(id);
 		if (activities.existsByFacilityId(id)) {
 			throw new GhgRuleViolationException(
-					"'" + facility.getName() + "' has recorded activity data. Facts are the audit trail — "
+					"'" + facility.getName() + "' has recorded activity data. Facts are the audit trail: "
 							+ "remove or reassign its activity records before deleting the facility.");
 		}
 		facilities.delete(facility);
@@ -129,7 +194,7 @@ public class GhgService {
 
 	@Transactional(readOnly = true)
 	public List<EmissionFactor> listEmissionFactors() {
-		return emissionFactors.findAllByOrderByScopeAscNameAsc();
+		return emissionFactors.findAllByOrderByDefaultScopeAscNameAsc();
 	}
 
 	// --- activity data (organizational facts) -------------------------------
@@ -165,13 +230,13 @@ public class GhgService {
 		return activity;
 	}
 
-	/** TRACE-01: a fact referenced by a calculation run is audit trail — it cannot be deleted. */
+	/** TRACE-01: a fact referenced by a calculation run is audit trail; it cannot be deleted. */
 	public void deleteActivity(UUID id) {
 		var activity = getActivity(id);
 		if (runLines.existsByActivityId(id)) {
 			throw new GhgRuleViolationException(
 					"This record has been calculated into one or more runs. Reported results must stay "
-							+ "traceable to their source — correct the record instead of deleting it.");
+							+ "traceable to their source: correct the record instead of deleting it.");
 		}
 		activities.delete(activity);
 	}
@@ -196,6 +261,18 @@ public class GhgService {
 			throw GhgNotFoundException.facility(facilityId);
 		}
 		return facility;
+	}
+
+	private LegalEntity requireEntityInOrganization(UUID entityId, UUID organizationId) {
+		if (entityId == null) {
+			return entities.findByOrganizationIdAndReportingCompanyTrue(organizationId)
+				.orElseThrow(() -> new IllegalStateException("Organization " + organizationId + " has no own entity"));
+		}
+		var entity = entities.findById(entityId).orElseThrow(() -> GhgNotFoundException.entity(entityId));
+		if (!entity.getOrganization().getId().equals(organizationId)) {
+			throw GhgNotFoundException.entity(entityId);
+		}
+		return entity;
 	}
 
 	private static String trimToNull(String value) {

@@ -6,7 +6,8 @@ import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
 import { FacilityFormModal } from './components/FacilityFormModal'
-import { useDeleteFacility, useFacilitiesQuery } from './useGhg'
+import { relationshipShortLabels } from './format'
+import { useDeleteFacility, useEntitiesQuery, useFacilitiesQuery } from './useGhg'
 import type { Facility } from './api'
 
 type Dialog = { kind: 'create' } | { kind: 'edit'; facility: Facility } | null
@@ -20,15 +21,17 @@ function StatChip({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** The organization's facilities: org-level facts with default ownership/control. */
+/** The organization's facilities: sites, each under a legal entity that carries the facts (spec 03.1). */
 export function FacilitiesPage() {
   const { organizationId = '' } = useParams()
   const facilitiesQuery = useFacilitiesQuery(organizationId)
+  const entitiesQuery = useEntitiesQuery(organizationId)
   const deleteFacility = useDeleteFacility(organizationId)
   const toast = useToast()
   const [dialog, setDialog] = useState<Dialog>(null)
 
   const facilities = facilitiesQuery.data
+  const entityCount = entitiesQuery.data?.length ?? 0
 
   return (
     <section>
@@ -36,8 +39,8 @@ export function FacilitiesPage() {
         <div>
           <h1 className="text-xl">Facilities</h1>
           <p className="text-sm text-ink-muted">
-            The organization's sites. Ownership and control here are facts: each inventory's
-            boundary starts from them and may override them.
+            The organization's sites. Each belongs to a legal entity, whose relationship sets the
+            accounting share every inventory starts from.
           </p>
         </div>
         <Button className="px-4 py-1.5 text-sm" onClick={() => setDialog({ kind: 'create' })}>
@@ -49,15 +52,12 @@ export function FacilitiesPage() {
         <div className="mb-4 grid gap-3 sm:grid-cols-3">
           <StatChip label="Facilities" value={facilities.length.toLocaleString()} />
           <StatChip
-            label="Operationally controlled"
-            value={`${facilities.filter((facility) => facility.operationalControl).length} of ${facilities.length}`}
+            label="Legal entities represented"
+            value={`${new Set(facilities.map((facility) => facility.entityId)).size} of ${entityCount}`}
           />
           <StatChip
-            label="Avg ownership"
-            value={`${Math.round(
-              facilities.reduce((sum, facility) => sum + facility.equitySharePercent, 0) /
-                facilities.length,
-            )}%`}
+            label="Wholly owned"
+            value={`${facilities.filter((facility) => facility.relationshipType === 'WHOLLY_OWNED').length} of ${facilities.length}`}
           />
         </div>
       )}
@@ -83,9 +83,7 @@ export function FacilitiesPage() {
               <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Facility</th>
                 <th className="px-4 py-3 font-semibold">Location</th>
-                <th className="px-4 py-3 font-semibold">Equity share</th>
-                <th className="px-4 py-3 font-semibold">Financial ctrl</th>
-                <th className="px-4 py-3 font-semibold">Operational ctrl</th>
+                <th className="px-4 py-3 font-semibold">Legal entity</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -94,9 +92,12 @@ export function FacilitiesPage() {
                 <tr key={facility.id} className="border-b border-teal/5 last:border-0">
                   <td className="px-4 py-3 font-medium">{facility.name}</td>
                   <td className="px-4 py-3 text-ink-muted">{facility.location}</td>
-                  <td className="px-4 py-3">{facility.equitySharePercent}%</td>
-                  <td className="px-4 py-3">{facility.financialControl ? 'Yes' : 'No'}</td>
-                  <td className="px-4 py-3">{facility.operationalControl ? 'Yes' : 'No'}</td>
+                  <td className="px-4 py-3">
+                    {facility.entityName}
+                    <span className="block text-xs text-ink-muted">
+                      {relationshipShortLabels[facility.relationshipType]}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <Button
                       variant="ghost"

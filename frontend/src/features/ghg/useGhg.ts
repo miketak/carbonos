@@ -1,11 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   classifyAssignment,
+  clearBaseYear,
   createActivity,
+  createEntity,
   createFacility,
   createInventory,
   createOrganization,
+  decideRecalculation,
   deleteActivity,
+  deleteEntity,
   deleteFacility,
   deleteInventory,
   deleteOrganization,
@@ -13,11 +17,13 @@ import {
   excludeAssignment,
   executeRun,
   finalizeRun,
-  freezeBoundary,
+  freezeInventory,
+  getBaseYear,
   getBoundary,
   getBoundaryVersion,
   getInventory,
   getOrganization,
+  getReport,
   getRun,
   getValidation,
   includeAssignment,
@@ -25,45 +31,68 @@ import {
   listAssignments,
   listBoundaryVersions,
   listEmissionFactors,
+  listEntities,
   listFacilities,
-  listUnits,
   listInventories,
+  listMarketFactors,
   listOrganizations,
   listRuns,
+  listUnits,
+  publishInventory,
   removeBoundaryTreatment,
-  reopenBoundary,
+  removeEntityTreatment,
+  removeMarketFactor,
+  reopenInventory,
+  setBaseYear,
   setBoundaryTreatment,
+  setEntityTreatment,
+  setMarketFactor,
+  setOperationalBoundary,
+  supersedeInventory,
   syncAssignments,
   updateActivity,
+  updateEntity,
   updateFacility,
   updateInventory,
   updateOrganization,
+  withdrawFinal,
 } from './api'
 import type {
   ActivityInput,
+  BaseYearInput,
   BoundaryTreatmentInput,
+  ClassifyInput,
+  EntityInput,
   ExclusionReason,
   FacilityInput,
   InventoryInput,
+  MarketFactorInput,
+  OperationalBoundaryInput,
   OrganizationInput,
+  RecalculationDecisionInput,
 } from './api'
 
 export const organizationsKey = ['ghg', 'organizations'] as const
 export const factorsKey = ['ghg', 'emission-factors'] as const
 export const unitsKey = ['ghg', 'units'] as const
 export const organizationKey = (id: string) => ['ghg', 'organization', id] as const
+export const entitiesKey = (orgId: string) => ['ghg', 'entities', orgId] as const
 export const facilitiesKey = (orgId: string) => ['ghg', 'facilities', orgId] as const
 export const activitiesKey = (orgId: string) => ['ghg', 'activities', orgId] as const
 export const inventoriesKey = (orgId: string) => ['ghg', 'inventories', orgId] as const
+export const baseYearKey = (orgId: string) => ['ghg', 'base-year', orgId] as const
 export const inventoryKey = (id: string) => ['ghg', 'inventory', id] as const
 export const boundaryKey = (inventoryId: string) => ['ghg', 'boundary', inventoryId] as const
 export const boundaryVersionsKey = (inventoryId: string) =>
   ['ghg', 'boundary-versions', inventoryId] as const
 export const boundaryVersionKey = (id: string) => ['ghg', 'boundary-version', id] as const
+export const marketFactorsKey = (inventoryId: string) =>
+  ['ghg', 'market-factors', inventoryId] as const
 export const assignmentsKey = (inventoryId: string) => ['ghg', 'assignments', inventoryId] as const
 export const validationKey = (inventoryId: string) => ['ghg', 'validation', inventoryId] as const
 export const runsKey = (inventoryId: string) => ['ghg', 'runs', inventoryId] as const
 export const runKey = (id: string) => ['ghg', 'run', id] as const
+export const reportKey = (runId: string) => ['ghg', 'report', runId] as const
 
 export function useOrganizationsQuery() {
   return useQuery({ queryKey: organizationsKey, queryFn: listOrganizations })
@@ -83,6 +112,10 @@ export function useUnitsQuery() {
   return useQuery({ queryKey: unitsKey, queryFn: listUnits, staleTime: Infinity })
 }
 
+export function useEntitiesQuery(orgId: string) {
+  return useQuery({ queryKey: entitiesKey(orgId), queryFn: () => listEntities(orgId) })
+}
+
 export function useFacilitiesQuery(orgId: string) {
   return useQuery({ queryKey: facilitiesKey(orgId), queryFn: () => listFacilities(orgId) })
 }
@@ -93,6 +126,10 @@ export function useActivitiesQuery(orgId: string) {
 
 export function useInventoriesQuery(orgId: string) {
   return useQuery({ queryKey: inventoriesKey(orgId), queryFn: () => listInventories(orgId) })
+}
+
+export function useBaseYearQuery(orgId: string) {
+  return useQuery({ queryKey: baseYearKey(orgId), queryFn: () => getBaseYear(orgId) })
 }
 
 export function useInventoryQuery(id: string) {
@@ -119,6 +156,13 @@ export function useBoundaryVersionQuery(id: string) {
   })
 }
 
+export function useMarketFactorsQuery(inventoryId: string) {
+  return useQuery({
+    queryKey: marketFactorsKey(inventoryId),
+    queryFn: () => listMarketFactors(inventoryId),
+  })
+}
+
 export function useAssignmentsQuery(inventoryId: string) {
   return useQuery({
     queryKey: assignmentsKey(inventoryId),
@@ -141,6 +185,10 @@ export function useRunQuery(id: string) {
   return useQuery({ queryKey: runKey(id), queryFn: () => getRun(id) })
 }
 
+export function useReportQuery(runId: string) {
+  return useQuery({ queryKey: reportKey(runId), queryFn: () => getReport(runId) })
+}
+
 // --- organizations ----------------------------------------------------------
 
 export function useCreateOrganization() {
@@ -159,6 +207,7 @@ export function useUpdateOrganization() {
     onSuccess: (_data, { id }) => {
       void queryClient.invalidateQueries({ queryKey: organizationsKey })
       void queryClient.invalidateQueries({ queryKey: organizationKey(id) })
+      void queryClient.invalidateQueries({ queryKey: entitiesKey(id) })
     },
   })
 }
@@ -169,6 +218,37 @@ export function useDeleteOrganization() {
     mutationFn: (id: string) => deleteOrganization(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationsKey }),
   })
+}
+
+// --- legal entities (spec 03.1) -----------------------------------------------
+
+function useEntityMutation<TArgs, TResult>(
+  orgId: string,
+  mutationFn: (args: TArgs) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: entitiesKey(orgId) })
+      // facilities render their entity's name and relationship
+      void queryClient.invalidateQueries({ queryKey: facilitiesKey(orgId) })
+    },
+  })
+}
+
+export function useCreateEntity(orgId: string) {
+  return useEntityMutation(orgId, (input: EntityInput) => createEntity(orgId, input))
+}
+
+export function useUpdateEntity(orgId: string) {
+  return useEntityMutation(orgId, ({ id, input }: { id: string; input: EntityInput }) =>
+    updateEntity(id, input),
+  )
+}
+
+export function useDeleteEntity(orgId: string) {
+  return useEntityMutation(orgId, (id: string) => deleteEntity(id))
 }
 
 // --- facilities --------------------------------------------------------------
@@ -265,6 +345,14 @@ export function useDeleteInventory(orgId: string) {
   })
 }
 
+export function useSetOperationalBoundary(inventoryId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: OperationalBoundaryInput) => setOperationalBoundary(inventoryId, input),
+    onSuccess: (inventory) => queryClient.setQueryData(inventoryKey(inventoryId), inventory),
+  })
+}
+
 // --- boundary + assignments: every change re-runs the validation gates --------
 
 function useInventoryScopedMutation<TArgs, TResult>(
@@ -278,36 +366,60 @@ function useInventoryScopedMutation<TArgs, TResult>(
       void queryClient.invalidateQueries({ queryKey: boundaryKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: assignmentsKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
-      // the inventory carries the boundary status, which the header renders
+      void queryClient.invalidateQueries({ queryKey: marketFactorsKey(inventoryId) })
+      // the inventory carries the lifecycle status, which the header renders
       void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
     },
   })
 }
 
-// --- boundary lifecycle (spec 03) --------------------------------------------
+// --- inventory lifecycle (spec 05.1) --------------------------------------------
 
-export function useFreezeBoundary(inventoryId: string) {
+export function useFreezeInventory(inventoryId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => freezeBoundary(inventoryId),
+    mutationFn: () => freezeInventory(inventoryId),
     onSuccess: (version) => {
       queryClient.setQueryData(boundaryVersionKey(version.version.id), version)
       void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: boundaryVersionsKey(inventoryId) })
+      // a freeze may flag the organization's base year (spec 06)
+      void queryClient.invalidateQueries({ queryKey: ['ghg', 'base-year'] })
     },
   })
 }
 
-export function useReopenBoundary(inventoryId: string) {
+function useLifecycleMutation<TArgs, TResult>(
+  inventoryId: string,
+  mutationFn: (args: TArgs) => Promise<TResult>,
+) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => reopenBoundary(inventoryId),
+    mutationFn,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: runsKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: ['ghg', 'inventories'] })
     },
   })
+}
+
+export function useReopenInventory(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, () => reopenInventory(inventoryId))
+}
+
+export function useWithdrawFinal(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, () => withdrawFinal(inventoryId))
+}
+
+export function usePublishInventory(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, () => publishInventory(inventoryId))
+}
+
+export function useSupersedeInventory(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, (name?: string) => supersedeInventory(inventoryId, name))
 }
 
 export function useSetBoundaryTreatment(inventoryId: string) {
@@ -324,6 +436,34 @@ export function useRemoveBoundaryTreatment(inventoryId: string) {
   )
 }
 
+export function useSetEntityTreatment(inventoryId: string) {
+  return useInventoryScopedMutation(
+    inventoryId,
+    ({ entityId, input }: { entityId: string; input: BoundaryTreatmentInput }) =>
+      setEntityTreatment(inventoryId, entityId, input),
+  )
+}
+
+export function useRemoveEntityTreatment(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, (entityId: string) =>
+    removeEntityTreatment(inventoryId, entityId),
+  )
+}
+
+export function useSetMarketFactor(inventoryId: string) {
+  return useInventoryScopedMutation(
+    inventoryId,
+    ({ facilityId, input }: { facilityId: string; input: MarketFactorInput }) =>
+      setMarketFactor(inventoryId, facilityId, input),
+  )
+}
+
+export function useRemoveMarketFactor(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, (facilityId: string) =>
+    removeMarketFactor(inventoryId, facilityId),
+  )
+}
+
 export function useSyncAssignments(inventoryId: string) {
   return useInventoryScopedMutation(inventoryId, () => syncAssignments(inventoryId))
 }
@@ -331,8 +471,7 @@ export function useSyncAssignments(inventoryId: string) {
 export function useClassifyAssignment(inventoryId: string) {
   return useInventoryScopedMutation(
     inventoryId,
-    ({ id, emissionFactorId }: { id: string; emissionFactorId: string }) =>
-      classifyAssignment(id, emissionFactorId),
+    ({ id, input }: { id: string; input: ClassifyInput }) => classifyAssignment(id, input),
   )
 }
 
@@ -361,23 +500,39 @@ export function useExecuteRun(inventoryId: string) {
 }
 
 export function useFinalizeRun(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, (runId: string) => finalizeRun(runId))
+}
+
+export function useDeleteRun(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, (id: string) => deleteRun(id))
+}
+
+// --- base year (spec 06) ----------------------------------------------------------
+
+function useBaseYearMutation<TArgs>(orgId: string, mutationFn: (args: TArgs) => Promise<unknown>) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (runId: string) => finalizeRun(runId),
+    mutationFn,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: runsKey(inventoryId) })
-      void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: baseYearKey(orgId) })
+      // the BASE_YEAR gate of every inventory reads the flags
+      void queryClient.invalidateQueries({ queryKey: ['ghg', 'validation'] })
     },
   })
 }
 
-export function useDeleteRun(inventoryId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => deleteRun(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: runsKey(inventoryId) })
-      void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
-    },
-  })
+export function useSetBaseYear(orgId: string) {
+  return useBaseYearMutation(orgId, (input: BaseYearInput) => setBaseYear(orgId, input))
+}
+
+export function useClearBaseYear(orgId: string) {
+  return useBaseYearMutation(orgId, () => clearBaseYear(orgId))
+}
+
+export function useDecideRecalculation(orgId: string) {
+  return useBaseYearMutation(
+    orgId,
+    ({ recalculationId, input }: { recalculationId: string; input: RecalculationDecisionInput }) =>
+      decideRecalculation(orgId, recalculationId, input),
+  )
 }

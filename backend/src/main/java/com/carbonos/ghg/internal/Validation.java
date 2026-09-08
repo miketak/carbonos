@@ -2,32 +2,25 @@ package com.carbonos.ghg.internal;
 
 import java.util.List;
 
-/** The pre-run validation gates and their findings (spec 05). */
+/** The pre-run validation gates and their findings (spec 05, spec 06). */
 public final class Validation {
 
 	public enum Gate {
-
-		BOUNDARY, COMPLETENESS, CLASSIFICATION, EMISSION_FACTOR
-
+		BOUNDARY, COMPLETENESS, CLASSIFICATION, EMISSION_FACTOR, BASE_YEAR
 	}
 
 	public enum Severity {
-
 		ERROR, WARNING, INFO
-
 	}
 
 	public enum GateStatus {
-
 		PASSED, WARNINGS, BLOCKED
-
 	}
 
 	public record Finding(Severity severity, String message) {
 	}
 
 	public record GateResult(Gate gate, List<Finding> findings) {
-
 		public GateStatus status() {
 			if (findings.stream().anyMatch(finding -> finding.severity() == Severity.ERROR)) {
 				return GateStatus.BLOCKED;
@@ -40,7 +33,6 @@ public final class Validation {
 	}
 
 	public record Report(List<GateResult> gates) {
-
 		public boolean ready() {
 			return gates.stream().noneMatch(gate -> gate.status() == GateStatus.BLOCKED);
 		}

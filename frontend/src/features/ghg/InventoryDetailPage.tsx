@@ -1,309 +1,37 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
-import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
-import { ApproachBadge, BoundaryStatusBadge, ScopeBadge } from './components/badges'
-import { BoundaryVersionPanel } from './components/BoundaryVersionPanel'
+import { AssignmentsSection } from './components/AssignmentsSection'
+import { ApproachBadge, InventoryStatusBadge } from './components/badges'
+import { BoundarySection } from './components/BoundarySection'
 import { Breadcrumb } from './components/Breadcrumb'
+import { LifecycleBar } from './components/LifecycleBar'
+import { MarketFactorsCard } from './components/MarketFactorsCard'
+import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
 import { PreflightPanel } from './components/PreflightPanel'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
-import { describeFreeze, formatCo2e } from './format'
+import { formatCo2e } from './format'
 import {
-  useAssignmentsQuery,
   useBoundaryQuery,
-  useBoundaryVersionsQuery,
-  useClassifyAssignment,
   useDeleteRun,
-  useEmissionFactorsQuery,
-  useExcludeAssignment,
   useExecuteRun,
   useFinalizeRun,
-  useFreezeBoundary,
-  useIncludeAssignment,
   useInventoryQuery,
-  useRemoveBoundaryTreatment,
-  useReopenBoundary,
   useRunsQuery,
-  useSetBoundaryTreatment,
-  useSyncAssignments,
-  useUnitsQuery,
   useValidationQuery,
 } from './useGhg'
-import type {
-  Assignment,
-  BoundaryEntry,
-  EmissionFactor,
-  ExclusionReason,
-  Inventory,
-  Unit,
-} from './api'
-import { convertQuantity, DIMENSION_LABELS, unitDimension } from './units'
+import type { Inventory } from './api'
 
-const exclusionLabels: Record<ExclusionReason, string> = {
-  OUTSIDE_PERIOD: 'Outside reporting period',
-  OUTSIDE_BOUNDARY: 'Outside boundary',
-  NON_GHG: 'Non-GHG activity',
-  DUPLICATE: 'Duplicate',
-  NOT_APPLICABLE: 'Not applicable',
-  METHODOLOGY: 'Methodology exclusion',
-  OTHER: 'Other documented reason',
-}
-
-/**
- * A checkbox with a generous tap area (DR-02, WCAG 2.5.8): 40px on touch, ≥28px
- * on desktop, around a 20px control — well above the 24px minimum either way.
- */
-function TapCheckbox({
-  label,
-  checked,
-  disabled = false,
-  onChange,
-}: {
-  label: string
-  checked: boolean
-  disabled?: boolean
-  onChange: (checked: boolean) => void
-}) {
-  return (
-    <label className="inline-flex h-10 w-10 cursor-pointer items-center justify-center md:h-7 md:w-7">
-      <input
-        type="checkbox"
-        aria-label={label}
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
-        className="h-5 w-5 accent-teal-deep disabled:cursor-not-allowed disabled:opacity-60"
-      />
-    </label>
-  )
-}
-
-function OwnershipInput({
-  entry,
-  disabled = false,
-  onUpdate,
-}: {
-  entry: BoundaryEntry
-  disabled?: boolean
-  onUpdate: (value: number) => void
-}) {
-  return (
-    <input
-      type="number"
-      min={0}
-      max={100}
-      aria-label={`${entry.facilityName} ownership percent`}
-      defaultValue={entry.ownershipPercent ?? 100}
-      disabled={disabled}
-      onBlur={(event) => onUpdate(Number(event.target.value))}
-      className="w-20 rounded-lg border border-teal/20 bg-white/70 px-2 py-1 text-sm focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60"
-    />
-  )
-}
-
-function AccountingShare({ entry }: { entry: BoundaryEntry }) {
-  return (
-    <span className="font-mono font-semibold">
-      {entry.accountingShare !== null ? `${Math.round(entry.accountingShare * 100)}%` : '—'}
-    </span>
-  )
-}
-
-/**
- * This inventory's decision about one fact, as pill(s). When excluded, the pill
- * is removable — the ✕ re-includes the fact (DR-03), mirroring how exclusion is
- * captured, so the decision and its reversal are both visible.
- */
-function StatusPills({
-  assignment,
-  onInclude,
-}: {
-  assignment: Assignment
-  onInclude?: () => void
-}) {
-  if (!assignment.included) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 py-0.5 pr-1 pl-2.5 text-xs font-semibold text-slate-600">
-        Excluded · {assignment.exclusionReason ? exclusionLabels[assignment.exclusionReason] : ''}
-        {onInclude && (
-          <button
-            type="button"
-            onClick={onInclude}
-            aria-label={`Re-include ${assignment.activityType}`}
-            title="Re-include"
-            className="flex size-5 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-300 hover:text-slate-700"
-          >
-            ✕
-          </button>
-        )}
-      </span>
-    )
-  }
-  if (assignment.classified) {
-    return (
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block rounded-full bg-teal/15 px-2.5 py-0.5 text-xs font-semibold text-dark-teal">
-          Included
-        </span>
-        {assignment.scope && <ScopeBadge scope={assignment.scope} />}
-      </span>
-    )
-  }
-  return (
-    <span className="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-      Unclassified
-    </span>
-  )
-}
-
-/** The "10,000 US-gallon → 37,854.12 litre × 2.66 kg CO₂e/litre" line, or null when no conversion applies. */
-function conversionPreview(
-  units: Unit[],
-  assignment: Assignment,
-  factor: EmissionFactor,
-): string | null {
-  if (factor.unit.toLowerCase() === assignment.unit.toLowerCase()) return null
-  const converted = convertQuantity(units, assignment.quantity, assignment.unit, factor.unit)
-  if (converted === null) return null
-  const shown = converted.toLocaleString(undefined, { maximumFractionDigits: 4 })
-  return `${assignment.quantity.toLocaleString()} ${assignment.unit} → ${shown} ${factor.unit} × ${factor.kgCo2ePerUnit} kg CO₂e/${factor.unit}`
-}
-
-function ClassifySelect({
-  assignment,
-  factors,
-  units,
-  onClassify,
-}: {
-  assignment: Assignment
-  factors: EmissionFactor[]
-  units: Unit[]
-  onClassify: (factorId: string) => void
-}) {
-  // CLASS-01, widened for conversion: offer factors whose unit shares the fact's
-  // dimension (convertible). For a custom/unrecognized unit, fall back to an
-  // exact-string match — those never auto-convert.
-  const dimension = unitDimension(units, assignment.unit)
-  const compatible = factors.filter((factor) =>
-    dimension !== null
-      ? factor.dimension === dimension
-      : factor.unit.toLowerCase() === assignment.unit.toLowerCase(),
-  )
-  const selected = factors.find((factor) => factor.id === assignment.emissionFactorId)
-  // keep the current classification visible even if it no longer matches
-  const options =
-    selected && !compatible.some((factor) => factor.id === selected.id)
-      ? [selected, ...compatible]
-      : compatible
-  const preview = selected ? conversionPreview(units, assignment, selected) : null
-
-  return (
-    <div className="flex flex-col gap-1 md:w-72">
-      {/* DR-04: wide enough not to truncate the factor + unit; teal border marks it as the primary action */}
-      <select
-        aria-label={`Classify ${assignment.activityType}`}
-        value={assignment.emissionFactorId ?? ''}
-        onChange={(event) => event.target.value && onClassify(event.target.value)}
-        className="w-full rounded-lg border border-teal/40 bg-white/70 px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-teal focus:outline-none"
-      >
-        <option value="">Select emission factor…</option>
-        {options.map((factor) => (
-          <option key={factor.id} value={factor.id}>
-            {factor.name} (/{factor.unit})
-          </option>
-        ))}
-      </select>
-      {options.length === 0 && (
-        <p className="text-xs text-ink-muted">
-          No factor matches {assignment.unit}
-          {dimension ? ` (${DIMENSION_LABELS[dimension].toLowerCase()})` : ''} — add a matching
-          factor or record it in a compatible unit.
-        </p>
-      )}
-      {preview && <p className="text-xs text-ink-muted tabular-nums">{preview}</p>}
-    </div>
-  )
-}
-
-/**
- * DR-03: exclusion is a deliberate button-and-popover, not a disguised dropdown.
- * The button opens a small menu to capture the required reason; nothing changes
- * until a reason is chosen. Renders nothing once excluded (the removable status
- * chip owns the reversal).
- */
-function ExcludeMenu({
-  assignment,
-  onExclude,
-}: {
-  assignment: Assignment
-  onExclude: (reason: ExclusionReason) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onDown = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
-    }
-    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setOpen(false)
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
-  return (
-    <div ref={ref} className="relative inline-block text-left">
-      <Button
-        variant="ghost"
-        className="px-2.5 py-1 text-xs"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        Exclude…
-      </Button>
-      {open && (
-        <div
-          role="menu"
-          aria-label={`Exclude ${assignment.activityType} — choose a reason`}
-          className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-xl border border-teal/15 bg-white shadow-[0_8px_28px_rgba(9,168,149,0.18)]"
-        >
-          <p className="border-b border-teal/10 px-3 py-2 text-xs font-semibold text-ink-muted">
-            Exclude — reason
-          </p>
-          {Object.entries(exclusionLabels).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false)
-                onExclude(value as ExclusionReason)
-              }}
-              className="block w-full px-3 py-2 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/** One inventory's workspace: boundary, activity view, pre-flight gates, runs. */
+/** One inventory's workspace: lifecycle, boundary, declaration, activity view, instruments, runs. */
 export function InventoryDetailPage() {
   const { organizationId = '', inventoryId = '' } = useParams()
   const inventoryQuery = useInventoryQuery(inventoryId)
+  const boundaryQuery = useBoundaryQuery(inventoryId)
 
   if (inventoryQuery.isPending) {
     return (
@@ -328,6 +56,12 @@ export function InventoryDetailPage() {
   }
 
   const inventory = inventoryQuery.data
+  const editable = inventory.status === 'DRAFT'
+  const inBoundaryCount =
+    boundaryQuery.data?.reduce(
+      (count, entity) => count + entity.facilities.filter((facility) => facility.inBoundary).length,
+      0,
+    ) ?? 0
   return (
     <div className="flex flex-col gap-8">
       <div className="animate-fade-up">
@@ -340,609 +74,58 @@ export function InventoryDetailPage() {
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl">{inventory.name}</h1>
           <ApproachBadge approach={inventory.consolidationApproach} />
-          <BoundaryStatusBadge inventory={inventory} />
+          <InventoryStatusBadge inventory={inventory} />
+          <span className="inline-block rounded-full border border-teal/20 px-2.5 py-0.5 font-mono text-xs font-bold tracking-widest whitespace-nowrap text-ink-muted">
+            GWP {inventory.gwpSet}
+          </span>
         </div>
         <p className="mt-1 text-sm text-ink-muted">
           {inventory.periodStart} → {inventory.periodEnd}
           {inventory.purpose ? ` · ${inventory.purpose}` : ''}
         </p>
+        {inventory.supersededById && (
+          <p className="mt-1 text-sm">
+            <Link
+              to={`../${inventory.supersededById}`}
+              relative="path"
+              className="font-semibold text-link"
+            >
+              Superseded by a correction
+            </Link>
+          </p>
+        )}
       </div>
 
       <div className="animate-fade-up" style={{ '--stagger': 1 } as CSSProperties}>
-        <BoundarySection inventory={inventory} />
+        <LifecycleBar inventory={inventory} inBoundaryCount={inBoundaryCount} />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
-        <AssignmentsSection inventoryId={inventoryId} />
+        <BoundarySection inventory={inventory} />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 3 } as CSSProperties}>
-        <LaunchSection inventoryId={inventoryId} finalRunId={inventory.finalRunId} />
+        <OperationalBoundaryCard key={inventory.status} inventory={inventory} />
       </div>
-    </div>
-  )
-}
-
-// --- boundary ---------------------------------------------------------------
-
-function BoundarySection({ inventory }: { inventory: Inventory }) {
-  const inventoryId = inventory.id
-  const frozen = inventory.boundaryStatus === 'FROZEN'
-  const boundaryQuery = useBoundaryQuery(inventoryId)
-  const setTreatment = useSetBoundaryTreatment(inventoryId)
-  const removeTreatment = useRemoveBoundaryTreatment(inventoryId)
-  const freeze = useFreezeBoundary(inventoryId)
-  const reopen = useReopenBoundary(inventoryId)
-  const toast = useToast()
-  const [confirmingFreeze, setConfirmingFreeze] = useState(false)
-  // bumped when a write is rejected, so the uncontrolled ownership inputs remount to the server value
-  const [revision, setRevision] = useState(0)
-
-  const onWriteError = (error: unknown) => {
-    setRevision((value) => value + 1)
-    toast(problemDetail(error) ?? 'Could not update boundary.', 'error')
-  }
-
-  const toggle = (entry: BoundaryEntry) => {
-    if (entry.inBoundary) {
-      removeTreatment.mutate(entry.facilityId, { onError: onWriteError })
-    } else {
-      // an empty treatment is prefilled server-side from the facility's facts (spec 03)
-      setTreatment.mutate({ facilityId: entry.facilityId, input: {} }, { onError: onWriteError })
-    }
-  }
-
-  const updateOwnership = (entry: BoundaryEntry, ownershipPercent: number) => {
-    setTreatment.mutate(
-      {
-        facilityId: entry.facilityId,
-        input: {
-          ownershipPercent,
-          financialControl: entry.financialControl ?? false,
-          operationalControl: entry.operationalControl ?? false,
-        },
-      },
-      { onError: onWriteError },
-    )
-  }
-
-  const updateControl = (
-    entry: BoundaryEntry,
-    field: 'financialControl' | 'operationalControl',
-    value: boolean,
-  ) => {
-    setTreatment.mutate(
-      {
-        facilityId: entry.facilityId,
-        input: {
-          ownershipPercent: entry.ownershipPercent ?? 100,
-          financialControl:
-            field === 'financialControl' ? value : (entry.financialControl ?? false),
-          operationalControl:
-            field === 'operationalControl' ? value : (entry.operationalControl ?? false),
-        },
-      },
-      { onError: onWriteError },
-    )
-  }
-
-  const inBoundaryCount = boundaryQuery.data?.filter((entry) => entry.inBoundary).length ?? 0
-
-  return (
-    <GlassCard className="p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl">Organizational boundary</h2>
-          <p className="text-sm text-ink-muted">
-            Which facilities this view accounts for, and how much of each. The accounting share
-            follows the consolidation approach.
-          </p>
-        </div>
-        {frozen ? (
-          <Button
-            variant="ghost"
-            className="px-4 py-1.5 text-sm"
-            busy={reopen.isPending}
-            onClick={() =>
-              reopen.mutate(undefined, {
-                onSuccess: () => toast('Boundary reopened as a draft.'),
-                onError: (error) =>
-                  toast(problemDetail(error) ?? 'Could not reopen the boundary.', 'error'),
-              })
-            }
-          >
-            Reopen as draft
-          </Button>
-        ) : (
-          <Button
-            className="px-4 py-1.5 text-sm"
-            disabled={inBoundaryCount === 0}
-            title={inBoundaryCount === 0 ? 'Add at least one facility first' : undefined}
-            onClick={() => setConfirmingFreeze(true)}
-          >
-            Freeze boundary
-          </Button>
-        )}
+      <div className="animate-fade-up" style={{ '--stagger': 4 } as CSSProperties}>
+        <AssignmentsSection inventoryId={inventoryId} editable={editable} />
       </div>
-      <p className="mt-2 text-sm">
-        {frozen ? (
-          <span className="text-ink-muted">
-            Frozen as version {inventory.currentBoundaryVersionNo}. Treatments are read-only; reopen
-            the boundary as a draft to change them.
-          </span>
-        ) : (
-          <span className="text-amber-700">
-            Draft. Runs are blocked until the boundary is frozen, which records a version a verifier
-            can trace every run back to.
-          </span>
-        )}
-      </p>
-      {confirmingFreeze && (
-        <FreezeBoundaryModal
-          facilityCount={inBoundaryCount}
-          busy={freeze.isPending}
-          onClose={() => setConfirmingFreeze(false)}
-          onConfirm={() =>
-            freeze.mutate(undefined, {
-              onSuccess: (version) => {
-                setConfirmingFreeze(false)
-                toast(`Boundary frozen as v${version.version.versionNo}.`)
-              },
-              onError: (error) => {
-                setConfirmingFreeze(false)
-                toast(problemDetail(error) ?? 'Could not freeze the boundary.', 'error')
-              },
-            })
-          }
+      <div className="animate-fade-up" style={{ '--stagger': 5 } as CSSProperties}>
+        <MarketFactorsCard
+          organizationId={organizationId}
+          inventoryId={inventoryId}
+          editable={editable}
         />
-      )}
-      {boundaryQuery.isPending && (
-        <div aria-label="Loading boundary" className="mt-4">
-          <Skeleton className="h-16" />
-        </div>
-      )}
-      {boundaryQuery.data && boundaryQuery.data.length === 0 && (
-        <p className="mt-4 text-sm text-ink-muted">
-          The organization has no facilities yet — add them under Facilities first.
-        </p>
-      )}
-
-      {/* desktop: table */}
-      {boundaryQuery.data && boundaryQuery.data.length > 0 && (
-        <div className="mt-4 hidden overflow-x-auto md:block">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-3 py-2 font-semibold">In boundary</th>
-                <th className="px-3 py-2 font-semibold">Facility</th>
-                <th className="px-3 py-2 font-semibold">Ownership %</th>
-                <th className="px-3 py-2 font-semibold">Financial ctrl</th>
-                <th className="px-3 py-2 font-semibold">Operational ctrl</th>
-                <th className="px-3 py-2 font-semibold">Accounting share</th>
-              </tr>
-            </thead>
-            <tbody>
-              {boundaryQuery.data.map((entry) => (
-                <tr key={entry.facilityId} className="border-b border-teal/5 last:border-0">
-                  <td className="px-3 py-1">
-                    <TapCheckbox
-                      label={`${entry.facilityName} in boundary`}
-                      checked={entry.inBoundary}
-                      disabled={frozen}
-                      onChange={() => toggle(entry)}
-                    />
-                  </td>
-                  <td className="px-3 py-2 font-medium">
-                    {entry.facilityName}
-                    <span className="block text-xs font-normal text-ink-muted">
-                      {entry.location}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    {entry.inBoundary ? (
-                      <OwnershipInput
-                        key={`${entry.facilityId}:${entry.ownershipPercent}:${revision}`}
-                        entry={entry}
-                        disabled={frozen}
-                        onUpdate={(value) => updateOwnership(entry, value)}
-                      />
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="px-3 py-1">
-                    {entry.inBoundary ? (
-                      <TapCheckbox
-                        label={`${entry.facilityName} financial control`}
-                        checked={entry.financialControl ?? false}
-                        disabled={frozen}
-                        onChange={(value) => updateControl(entry, 'financialControl', value)}
-                      />
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="px-3 py-1">
-                    {entry.inBoundary ? (
-                      <TapCheckbox
-                        label={`${entry.facilityName} operational control`}
-                        checked={entry.operationalControl ?? false}
-                        disabled={frozen}
-                        onChange={(value) => updateControl(entry, 'operationalControl', value)}
-                      />
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
-                    <AccountingShare entry={entry} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* mobile: one card per facility */}
-      {boundaryQuery.data && boundaryQuery.data.length > 0 && (
-        <ul className="mt-4 flex flex-col gap-3 md:hidden">
-          {boundaryQuery.data.map((entry) => (
-            <li key={entry.facilityId} className="rounded-xl border border-teal/10 bg-white/40 p-3">
-              <div className="flex items-center gap-2">
-                <TapCheckbox
-                  label={`${entry.facilityName} in boundary`}
-                  checked={entry.inBoundary}
-                  disabled={frozen}
-                  onChange={() => toggle(entry)}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium">{entry.facilityName}</p>
-                  <p className="truncate text-xs text-ink-muted">{entry.location}</p>
-                </div>
-                {entry.inBoundary && (
-                  <span className="text-xs text-ink-muted">
-                    share <AccountingShare entry={entry} />
-                  </span>
-                )}
-              </div>
-              {entry.inBoundary && (
-                <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 pl-12 text-sm">
-                  <label className="flex items-center gap-2">
-                    <span className="text-ink-muted">Ownership %</span>
-                    <OwnershipInput
-                      key={`${entry.facilityId}:${entry.ownershipPercent}:${revision}`}
-                      entry={entry}
-                      disabled={frozen}
-                      onUpdate={(value) => updateOwnership(entry, value)}
-                    />
-                  </label>
-                  <span className="flex items-center gap-1">
-                    <TapCheckbox
-                      label={`${entry.facilityName} financial control`}
-                      checked={entry.financialControl ?? false}
-                      disabled={frozen}
-                      onChange={(value) => updateControl(entry, 'financialControl', value)}
-                    />
-                    <span className="text-ink-muted">Financial</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <TapCheckbox
-                      label={`${entry.facilityName} operational control`}
-                      checked={entry.operationalControl ?? false}
-                      disabled={frozen}
-                      onChange={(value) => updateControl(entry, 'operationalControl', value)}
-                    />
-                    <span className="text-ink-muted">Operational</span>
-                  </span>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <BoundaryHistory inventoryId={inventoryId} />
-    </GlassCard>
-  )
-}
-
-/**
- * Freezing is the one irreversible-feeling act on this page (the version it
- * cuts is permanent), so it asks first. Composed from Modal + Buttons: the
- * codebase has no confirm primitive yet.
- */
-function FreezeBoundaryModal({
-  facilityCount,
-  busy,
-  onClose,
-  onConfirm,
-}: {
-  facilityCount: number
-  busy: boolean
-  onClose: () => void
-  onConfirm: () => void
-}) {
-  return (
-    <Modal title="Freeze the boundary?" onClose={onClose}>
-      <p className="text-sm text-ink-muted">
-        This records an immutable version of the {facilityCount}{' '}
-        {facilityCount === 1 ? 'facility' : 'facilities'} currently in the boundary, with their
-        accounting shares, and makes the treatments read-only. Calculation runs will cite this
-        version. You can reopen the boundary later; the version is kept.
-      </p>
-      <div className="mt-4 flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="button" busy={busy} onClick={onConfirm}>
-          Freeze boundary
-        </Button>
       </div>
-    </Modal>
-  )
-}
-
-/** Every version ever frozen, newest first; each expands to the boundary it recorded. */
-function BoundaryHistory({ inventoryId }: { inventoryId: string }) {
-  const versionsQuery = useBoundaryVersionsQuery(inventoryId)
-  const [openId, setOpenId] = useState<string | null>(null)
-  const versions = versionsQuery.data ?? []
-
-  if (versions.length === 0) return null
-  return (
-    <div className="mt-6 border-t border-teal/10 pt-4">
-      <h3 className="text-sm font-semibold">Version history</h3>
-      <ul className="mt-2 flex flex-col gap-2">
-        {versions.map((version) => (
-          <li key={version.id}>
-            <button
-              type="button"
-              aria-expanded={openId === version.id}
-              onClick={() => setOpenId(openId === version.id ? null : version.id)}
-              className="w-full rounded-lg px-2 py-1 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
-            >
-              <span className="font-mono font-semibold">v{version.versionNo}</span> ·{' '}
-              {describeFreeze(version)} · {version.facilityCount}{' '}
-              {version.facilityCount === 1 ? 'facility' : 'facilities'}
-            </button>
-            {openId === version.id && <BoundaryVersionPanel versionId={version.id} />}
-          </li>
-        ))}
-      </ul>
+      <div className="animate-fade-up" style={{ '--stagger': 6 } as CSSProperties}>
+        <LaunchSection inventory={inventory} />
+      </div>
     </div>
-  )
-}
-
-// --- assignments ------------------------------------------------------------
-
-function AssignmentsSection({ inventoryId }: { inventoryId: string }) {
-  const assignmentsQuery = useAssignmentsQuery(inventoryId)
-  const factorsQuery = useEmissionFactorsQuery()
-  const unitsQuery = useUnitsQuery()
-  const sync = useSyncAssignments(inventoryId)
-  const classify = useClassifyAssignment(inventoryId)
-  const exclude = useExcludeAssignment(inventoryId)
-  const include = useIncludeAssignment(inventoryId)
-  const toast = useToast()
-
-  const assignments = assignmentsQuery.data
-  const factors = factorsQuery.data ?? []
-  const units = unitsQuery.data ?? []
-
-  return (
-    <GlassCard className="p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl">Activity view</h2>
-          <p className="text-sm text-ink-muted">
-            This inventory's accounting decisions about the facts. The records themselves are never
-            modified.
-          </p>
-        </div>
-        <Button
-          className="px-4 py-1.5 text-sm"
-          busy={sync.isPending}
-          onClick={() =>
-            sync.mutate(undefined, {
-              onSuccess: ({ created, updated }) => {
-                const parts = []
-                if (created > 0)
-                  parts.push(`${created} new record${created === 1 ? '' : 's'} under review`)
-                if (updated > 0)
-                  parts.push(`${updated} stale decision${updated === 1 ? '' : 's'} refreshed`)
-                toast(
-                  parts.length === 0
-                    ? 'All activity records are already reviewed.'
-                    : parts.join(' · ') + '.',
-                )
-              },
-              onError: (error) => toast(problemDetail(error) ?? 'Could not sync.', 'error'),
-            })
-          }
-        >
-          Review activity data
-        </Button>
-      </div>
-
-      {assignmentsQuery.isPending && (
-        <div aria-label="Loading assignments" className="mt-4">
-          <Skeleton className="h-16" />
-        </div>
-      )}
-      {assignments?.length === 0 && (
-        <p className="mt-4 text-sm text-ink-muted">
-          Nothing under review yet — hit "Review activity data" to pull in the organization's
-          records.
-        </p>
-      )}
-      {assignments && assignments.length > 0 && (
-        <>
-          {/* desktop: table */}
-          <div className="mt-4 hidden overflow-x-auto md:block">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                  <th className="px-3 py-2 font-semibold">Fact</th>
-                  <th className="px-3 py-2 font-semibold">Status</th>
-                  <th className="px-3 py-2 font-semibold">Classification</th>
-                  <th className="px-3 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {assignments.map((assignment) => (
-                  <AssignmentRow
-                    key={assignment.id}
-                    assignment={assignment}
-                    factors={factors}
-                    units={units}
-                    onClassify={(emissionFactorId) =>
-                      classify.mutate(
-                        { id: assignment.id, emissionFactorId },
-                        {
-                          onError: (error) =>
-                            toast(problemDetail(error) ?? 'Could not classify.', 'error'),
-                        },
-                      )
-                    }
-                    onExclude={(reason) =>
-                      exclude.mutate(
-                        { id: assignment.id, reason },
-                        {
-                          onError: (error) =>
-                            toast(problemDetail(error) ?? 'Could not exclude.', 'error'),
-                        },
-                      )
-                    }
-                    onInclude={() =>
-                      include.mutate(assignment.id, {
-                        onError: (error) =>
-                          toast(problemDetail(error) ?? 'Could not include.', 'error'),
-                      })
-                    }
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* mobile: one card per fact */}
-          <ul className="mt-4 flex flex-col gap-3 md:hidden">
-            {assignments.map((assignment) => (
-              <li
-                key={assignment.id}
-                className="flex flex-col gap-2 rounded-xl border border-teal/10 bg-white/40 p-3"
-              >
-                <div>
-                  <p className="font-medium">{assignment.activityType}</p>
-                  <p className="text-xs text-ink-muted">
-                    {assignment.facilityName} · {assignment.quantity.toLocaleString()}{' '}
-                    {assignment.unit} · {assignment.activityDate}
-                  </p>
-                </div>
-                <StatusPills
-                  assignment={assignment}
-                  onInclude={() =>
-                    include.mutate(assignment.id, {
-                      onError: (error) =>
-                        toast(problemDetail(error) ?? 'Could not include.', 'error'),
-                    })
-                  }
-                />
-                {assignment.included && (
-                  <>
-                    <ClassifySelect
-                      assignment={assignment}
-                      factors={factors}
-                      units={units}
-                      onClassify={(emissionFactorId) =>
-                        classify.mutate(
-                          { id: assignment.id, emissionFactorId },
-                          {
-                            onError: (error) =>
-                              toast(problemDetail(error) ?? 'Could not classify.', 'error'),
-                          },
-                        )
-                      }
-                    />
-                    <div>
-                      <ExcludeMenu
-                        assignment={assignment}
-                        onExclude={(reason) =>
-                          exclude.mutate(
-                            { id: assignment.id, reason },
-                            {
-                              onError: (error) =>
-                                toast(problemDetail(error) ?? 'Could not exclude.', 'error'),
-                            },
-                          )
-                        }
-                      />
-                    </div>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </GlassCard>
-  )
-}
-
-function AssignmentRow({
-  assignment,
-  factors,
-  units,
-  onClassify,
-  onExclude,
-  onInclude,
-}: {
-  assignment: Assignment
-  factors: EmissionFactor[]
-  units: Unit[]
-  onClassify: (factorId: string) => void
-  onExclude: (reason: ExclusionReason) => void
-  onInclude: () => void
-}) {
-  return (
-    <tr className="border-b border-teal/5 last:border-0">
-      <td className="px-3 py-2">
-        <span className="font-medium">{assignment.activityType}</span>
-        <span className="block text-xs text-ink-muted">
-          {assignment.facilityName} · {assignment.quantity.toLocaleString()} {assignment.unit} ·{' '}
-          {assignment.activityDate}
-        </span>
-      </td>
-      <td className="px-3 py-2">
-        <StatusPills assignment={assignment} onInclude={onInclude} />
-      </td>
-      <td className="px-3 py-2">
-        {assignment.included ? (
-          <ClassifySelect
-            assignment={assignment}
-            factors={factors}
-            units={units}
-            onClassify={onClassify}
-          />
-        ) : (
-          <span className="text-xs text-ink-muted">—</span>
-        )}
-      </td>
-      <td className="px-3 py-2 text-right whitespace-nowrap">
-        {assignment.included && <ExcludeMenu assignment={assignment} onExclude={onExclude} />}
-      </td>
-    </tr>
   )
 }
 
 // --- launch + runs -----------------------------------------------------------
 
-function LaunchSection({
-  inventoryId,
-  finalRunId,
-}: {
-  inventoryId: string
-  finalRunId: string | null
-}) {
+function LaunchSection({ inventory }: { inventory: Inventory }) {
+  const inventoryId = inventory.id
   const validationQuery = useValidationQuery(inventoryId)
   const runsQuery = useRunsQuery(inventoryId)
   const execute = useExecuteRun(inventoryId)
@@ -955,6 +138,8 @@ function LaunchSection({
   )
 
   const report = validationQuery.data
+  const canDesignate = inventory.status === 'FROZEN' || inventory.status === 'FINAL'
+  const canDelete = inventory.status !== 'PUBLISHED'
 
   return (
     <div className="grid items-start gap-6 xl:grid-cols-2">
@@ -970,7 +155,7 @@ function LaunchSection({
             className="min-w-40 flex-1 rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-teal focus:outline-none"
           />
           <Button
-            disabled={!report?.ready}
+            disabled={!report?.ready || inventory.status === 'PUBLISHED'}
             busy={execute.isPending}
             title={report?.ready ? undefined : 'Resolve the blocking findings first'}
             onClick={() =>
@@ -991,7 +176,8 @@ function LaunchSection({
       <GlassCard className="p-6">
         <h2 className="text-xl">Calculation runs</h2>
         <p className="text-sm text-ink-muted">
-          Immutable snapshots of this view. Recalculation creates a new run; earlier runs are kept.
+          Immutable snapshots of this view, lines and exclusions alike. Recalculation creates a new
+          run; earlier runs are kept.
         </p>
         {runsQuery.isPending && (
           <div aria-label="Loading runs" className="mt-4">
@@ -1009,14 +195,14 @@ function LaunchSection({
                   <Link to={`runs/${run.id}`} className="font-semibold hover:text-link">
                     {run.label}
                   </Link>
-                  {run.id === finalRunId && (
+                  {run.id === inventory.finalRunId && (
                     <span className="ml-2 rounded-full bg-accent-green/25 px-2 py-0.5 text-xs font-bold text-dark-teal">
                       FINAL
                     </span>
                   )}
                   <span className="block text-xs text-ink-muted">
                     {new Date(run.createdAt).toLocaleString()} · {run.activityCount} line
-                    {run.activityCount === 1 ? '' : 's'}
+                    {run.activityCount === 1 ? '' : 's'} · boundary v{run.boundaryVersionNo ?? '?'}
                   </span>
                 </div>
                 <span className="font-bold text-dark-teal">{formatCo2e(run.totalKgCo2e)}</span>
@@ -1025,7 +211,7 @@ function LaunchSection({
                 <ScopeBreakdown run={run} />
               </div>
               <div className="mt-2 flex gap-2">
-                {run.id !== finalRunId && (
+                {run.id !== inventory.finalRunId && canDesignate && (
                   <Button
                     variant="ghost"
                     className="px-2 py-1 text-xs"
@@ -1040,19 +226,21 @@ function LaunchSection({
                     Mark as final
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                  onClick={() =>
-                    deleteRun.mutate(run.id, {
-                      onSuccess: () => toast(`${run.label} deleted.`),
-                      onError: (error) =>
-                        toast(problemDetail(error) ?? 'Could not delete the run.', 'error'),
-                    })
-                  }
-                >
-                  Delete
-                </Button>
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                    onClick={() =>
+                      deleteRun.mutate(run.id, {
+                        onSuccess: () => toast(`${run.label} deleted.`),
+                        onError: (error) =>
+                          toast(problemDetail(error) ?? 'Could not delete the run.', 'error'),
+                      })
+                    }
+                  >
+                    Delete
+                  </Button>
+                )}
               </div>
             </li>
           ))}

@@ -3,7 +3,7 @@ import { approachLabels, describeFreeze } from '../format'
 import { useBoundaryVersionQuery } from '../useGhg'
 import { BoundaryVersionEntries } from './BoundaryVersionEntries'
 
-/** One boundary version in full, loaded on demand: who froze it, when, and every facility it held. */
+/** One boundary version in full, loaded on demand: who froze it, when, and every entity it held. */
 export function BoundaryVersionPanel({ versionId }: { versionId: string }) {
   const query = useBoundaryVersionQuery(versionId)
 
@@ -22,7 +22,9 @@ export function BoundaryVersionPanel({ versionId }: { versionId: string }) {
     <div className="mt-2 rounded-xl border border-teal/10 bg-white/40 p-3">
       <p className="text-xs text-ink-muted">
         Version {version.versionNo} · {approachLabels[version.consolidationApproach]} ·{' '}
-        {describeFreeze(version)}
+        {describeFreeze(version)} · {version.entityCount}{' '}
+        {version.entityCount === 1 ? 'entity' : 'entities'}, {version.facilityCount}{' '}
+        {version.facilityCount === 1 ? 'facility' : 'facilities'}
       </p>
       <BoundaryVersionEntries entries={entries} />
     </div>

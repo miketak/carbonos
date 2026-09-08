@@ -2,7 +2,10 @@ package com.carbonos.ghg.internal;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -18,9 +21,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
- * A GHG inventory: an accounting view over the organization's activity facts.
- * It owns the reporting period, consolidation approach, boundary treatments,
- * and activity assignments — never the facts themselves (spec 05).
+ * A GHG inventory: an accounting view over the organization's activity facts
+ * for one reporting period under one consolidation approach. It owns the
+ * boundary treatments and activity assignments, never the facts themselves
+ * (spec 05), and has one lifecycle covering both halves (spec 05.1).
  */
 @Entity
 @Table(name = "ghg_inventories")
@@ -52,12 +56,29 @@ public class Inventory {
 	@Column(name = "consolidation_approach", nullable = false, length = 30)
 	private ConsolidationApproach consolidationApproach;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "gwp_set", nullable = false, length = 5)
+	private GwpSet gwpSet;
+
+	// the operational boundary declaration (spec 07.1): scope 3 categories covered, as a comma list
+	@Column(name = "scope3_categories")
+	private String scope3Categories;
+
+	@Column(name = "scope3_exclusions_rationale", length = 1000)
+	private String scope3ExclusionsRationale;
+
 	@Column(name = "final_run_id")
 	private UUID finalRunId;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "boundary_status", nullable = false, length = 20)
-	private BoundaryStatus boundaryStatus;
+	@Column(nullable = false, length = 20)
+	private InventoryStatus status;
+
+	@Column(name = "superseded_by_id")
+	private UUID supersededById;
+
+	@Column(name = "published_at")
+	private Instant publishedAt;
 
 	// plain columns, like finalRunId, so responses never lazy-load (spec 03)
 	@Column(name = "current_boundary_version_id")
@@ -78,7 +99,7 @@ public class Inventory {
 	}
 
 	Inventory(Organization organization, String name, LocalDate periodStart, LocalDate periodEnd, String purpose,
-			Integer baseYear, ConsolidationApproach consolidationApproach) {
+			Integer baseYear, ConsolidationApproach consolidationApproach, GwpSet gwpSet) {
 		this.id = UUID.randomUUID();
 		this.organization = organization;
 		this.name = name;
@@ -87,7 +108,8 @@ public class Inventory {
 		this.purpose = purpose;
 		this.baseYear = baseYear;
 		this.consolidationApproach = consolidationApproach;
-		this.boundaryStatus = BoundaryStatus.DRAFT;
+		this.gwpSet = gwpSet;
+		this.status = InventoryStatus.DRAFT;
 	}
 
 	public UUID getId() {
@@ -122,16 +144,39 @@ public class Inventory {
 		return consolidationApproach;
 	}
 
+	public GwpSet getGwpSet() {
+		return gwpSet;
+	}
+
+	public List<ActivityCategory> getScope3Categories() {
+		if (scope3Categories == null || scope3Categories.isBlank()) {
+			return List.of();
+		}
+		return Arrays.stream(scope3Categories.split(",")).map(String::trim).map(ActivityCategory::valueOf).toList();
+	}
+
+	public String getScope3ExclusionsRationale() {
+		return scope3ExclusionsRationale;
+	}
+
 	public UUID getFinalRunId() {
 		return finalRunId;
 	}
 
-	public BoundaryStatus getBoundaryStatus() {
-		return boundaryStatus;
+	public InventoryStatus getStatus() {
+		return status;
 	}
 
-	public boolean isBoundaryFrozen() {
-		return boundaryStatus == BoundaryStatus.FROZEN;
+	public boolean isEditable() {
+		return status.isEditable();
+	}
+
+	public UUID getSupersededById() {
+		return supersededById;
+	}
+
+	public Instant getPublishedAt() {
+		return publishedAt;
 	}
 
 	public UUID getCurrentBoundaryVersionId() {
@@ -147,29 +192,51 @@ public class Inventory {
 	}
 
 	void update(String name, LocalDate periodStart, LocalDate periodEnd, String purpose, Integer baseYear,
-			ConsolidationApproach consolidationApproach) {
+			ConsolidationApproach consolidationApproach, GwpSet gwpSet) {
 		this.name = name;
 		this.periodStart = periodStart;
 		this.periodEnd = periodEnd;
 		this.purpose = purpose;
 		this.baseYear = baseYear;
 		this.consolidationApproach = consolidationApproach;
+		this.gwpSet = gwpSet;
 	}
 
-	void setFinalRunId(UUID finalRunId) {
-		this.finalRunId = finalRunId;
+	void setOperationalBoundary(List<ActivityCategory> scope3Categories, String exclusionsRationale) {
+		this.scope3Categories = scope3Categories.isEmpty() ? null
+				: scope3Categories.stream().distinct().map(Enum::name).collect(Collectors.joining(","));
+		this.scope3ExclusionsRationale = exclusionsRationale;
 	}
 
-	/** Records a freshly cut version as the boundary's current one and freezes it. */
-	void freezeBoundary(BoundaryVersion version) {
-		this.boundaryStatus = BoundaryStatus.FROZEN;
+	/** Records a freshly cut version as the current one and freezes both halves of the view. */
+	void freeze(BoundaryVersion version) {
+		this.status = InventoryStatus.FROZEN;
 		this.currentBoundaryVersionId = version.getId();
 		this.currentBoundaryVersionNo = version.getVersionNo();
 	}
 
-	/** Reopens the boundary for editing. The latest version is kept for reference. */
-	void reopenBoundary() {
-		this.boundaryStatus = BoundaryStatus.DRAFT;
+	/** Reopens the inventory for editing. The latest version is kept for reference. */
+	void reopen() {
+		this.status = InventoryStatus.DRAFT;
+	}
+
+	void designateFinal(UUID runId) {
+		this.finalRunId = runId;
+		this.status = InventoryStatus.FINAL;
+	}
+
+	void withdrawFinal() {
+		this.finalRunId = null;
+		this.status = InventoryStatus.FROZEN;
+	}
+
+	void publish() {
+		this.status = InventoryStatus.PUBLISHED;
+		this.publishedAt = Instant.now();
+	}
+
+	void markSupersededBy(Inventory successor) {
+		this.supersededById = successor.getId();
 	}
 
 	boolean covers(LocalDate date) {

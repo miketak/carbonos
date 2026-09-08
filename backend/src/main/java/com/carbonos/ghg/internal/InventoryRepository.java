@@ -8,5 +8,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
 
 	List<Inventory> findAllByOrganizationIdOrderByCreatedAtDesc(UUID organizationId);
-
 }

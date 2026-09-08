@@ -16,20 +16,20 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 01.1 | [Access requests](01.1-access-requests.md) | | Implemented |
 | 02 | [Organization and facts](02-organization-and-facts.md) | Ch. 6, 7 | Implemented |
 | 03 | [Organizational boundary](03-organizational-boundary.md) | Ch. 3 | Implemented |
-| 03.1 | [Legal entities and Table 1](03.1-legal-entities-and-table-1.md) | Ch. 3 | Draft |
-| 03.2 | [Effective-dated membership](03.2-effective-dated-membership.md) | Ch. 3, 5 | Draft |
+| 03.1 | [Legal entities and Table 1](03.1-legal-entities-and-table-1.md) | Ch. 3 | Implemented |
+| 03.2 | [Effective-dated membership](03.2-effective-dated-membership.md) | Ch. 3, 5 | Implemented |
 | 04 | [Operational boundary and classification](04-operational-boundary-and-classification.md) | Ch. 4 | Implemented |
-| 04.1 | [Scope as an accounting decision](04.1-scope-as-accounting-decision.md) | Ch. 4, App. F | Draft |
+| 04.1 | [Scope as an accounting decision](04.1-scope-as-accounting-decision.md) | Ch. 4, App. F | Implemented |
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
-| 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Draft |
-| 06 | [Tracking emissions over time](06-tracking-emissions-over-time.md) | Ch. 5 | Draft |
+| 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
+| 06 | [Tracking emissions over time](06-tracking-emissions-over-time.md) | Ch. 5 | Implemented |
 | 07 | [Reporting and verification](07-reporting-and-verification.md) | Ch. 9, 10 | Implemented |
-| 07.1 | [Reporting completeness](07.1-reporting-completeness.md) | Ch. 9 | Draft |
+| 07.1 | [Reporting completeness](07.1-reporting-completeness.md) | Ch. 9 | Implemented |
 
 A chapter spec (`NN`) describes one stage of the workflow as it is today. A
-sub-spec (`NN.M`) is a branch of that stage that deserves its own document,
-usually the planned next step. Chapters 8 (reductions) and 11 (targets) of the
-Standard have no spec yet.
+sub-spec (`NN.M`) is a branch of that stage that deserves its own document.
+Every spec listed is implemented as of 2026-09-08. Chapters 8 (reductions)
+and 11 (targets) of the Standard have no spec yet.
 
 ## Lifecycle
 

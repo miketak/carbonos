@@ -1,20 +1,30 @@
 package com.carbonos.ghg.internal;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 /**
- * One facility as a {@link BoundaryVersion} recorded it: the treatment plus
- * the accounting share derived from the version's approach, with the facility
- * name copied so the entry stays readable after the facility changes.
+ * One entity as a {@link BoundaryVersion} recorded it: the Table 1 facts, the
+ * derived share, the membership window, the facilities beneath it, and, when
+ * the share was zero, the fact that it stood outside the boundary under the
+ * approach. Names are copied so the entry stays readable after edits.
  */
 @Entity
 @Table(name = "ghg_boundary_version_entries")
@@ -27,26 +37,41 @@ public class BoundaryVersionEntry {
 	@JoinColumn(name = "boundary_version_id", nullable = false)
 	private BoundaryVersion version;
 
-	@Column(name = "facility_id", nullable = false)
-	private UUID facilityId;
+	@Column(name = "entity_id", nullable = false)
+	private UUID entityId;
 
-	@Column(name = "facility_name", nullable = false, length = 120)
-	private String facilityName;
+	@Column(name = "entity_name", nullable = false, length = 120)
+	private String entityName;
 
-	@Column(nullable = false, length = 120)
-	private String location;
+	@Enumerated(EnumType.STRING)
+	@Column(name = "relationship_type", nullable = false, length = 30)
+	private RelationshipType relationshipType;
 
-	@Column(name = "ownership_percent", nullable = false, precision = 5, scale = 2)
-	private BigDecimal ownershipPercent;
+	@Column(name = "economic_interest_percent", nullable = false, precision = 5, scale = 2)
+	private BigDecimal economicInterestPercent;
 
-	@Column(name = "financial_control", nullable = false)
-	private boolean financialControl;
-
-	@Column(name = "operational_control", nullable = false)
-	private boolean operationalControl;
+	@Column(name = "operated_by_company", nullable = false)
+	private boolean operatedByCompany;
 
 	@Column(name = "accounting_share", nullable = false, precision = 7, scale = 4)
 	private BigDecimal accountingShare;
+
+	@Column(name = "effective_from")
+	private LocalDate effectiveFrom;
+
+	@Column(name = "effective_to")
+	private LocalDate effectiveTo;
+
+	@Column(nullable = false)
+	private boolean excluded;
+
+	@Column(name = "exclusion_reason", length = 255)
+	private String exclusionReason;
+
+	// a Set, not a List: Hibernate cannot join-fetch two bags (entries and their
+	// facilities) in one query, and the version is read with both
+	@OneToMany(mappedBy = "entry", cascade = CascadeType.ALL, orphanRemoval = true)
+	private Set<BoundaryVersionFacility> facilities = new LinkedHashSet<>();
 
 	protected BoundaryVersionEntry() {
 	}
@@ -54,44 +79,77 @@ public class BoundaryVersionEntry {
 	BoundaryVersionEntry(BoundaryVersion version, BoundaryTreatment treatment, ConsolidationApproach approach) {
 		this.id = UUID.randomUUID();
 		this.version = version;
-		this.facilityId = treatment.getFacility().getId();
-		this.facilityName = treatment.getFacility().getName();
-		this.location = treatment.getFacility().getLocation();
-		this.ownershipPercent = treatment.getOwnershipPercent();
-		this.financialControl = treatment.isFinancialControl();
-		this.operationalControl = treatment.isOperationalControl();
+		this.entityId = treatment.getEntity().getId();
+		this.entityName = treatment.getEntity().getName();
+		this.relationshipType = treatment.getRelationshipType();
+		this.economicInterestPercent = treatment.getEconomicInterestPercent();
+		this.operatedByCompany = treatment.isOperatedByCompany();
 		this.accountingShare = treatment.accountingShare(approach);
+		this.effectiveFrom = treatment.getEffectiveFrom();
+		this.effectiveTo = treatment.getEffectiveTo();
+		this.excluded = accountingShare.signum() == 0;
+		this.exclusionReason = excluded ? "0% accounting share under "
+				+ approach.name().toLowerCase().replace('_', ' ') + ": outside the boundary under this approach"
+				: null;
+		for (var member : treatment.getFacilities()) {
+			facilities.add(new BoundaryVersionFacility(this, member.getFacility()));
+		}
+	}
+
+	boolean holds(UUID facilityId) {
+		return facilities.stream().anyMatch(facility -> facility.getFacilityId().equals(facilityId));
+	}
+
+	boolean covers(LocalDate date) {
+		return (effectiveFrom == null || !date.isBefore(effectiveFrom))
+				&& (effectiveTo == null || !date.isAfter(effectiveTo));
 	}
 
 	public UUID getId() {
 		return id;
 	}
 
-	public UUID getFacilityId() {
-		return facilityId;
+	public UUID getEntityId() {
+		return entityId;
 	}
 
-	public String getFacilityName() {
-		return facilityName;
+	public String getEntityName() {
+		return entityName;
 	}
 
-	public String getLocation() {
-		return location;
+	public RelationshipType getRelationshipType() {
+		return relationshipType;
 	}
 
-	public BigDecimal getOwnershipPercent() {
-		return ownershipPercent;
+	public BigDecimal getEconomicInterestPercent() {
+		return economicInterestPercent;
 	}
 
-	public boolean isFinancialControl() {
-		return financialControl;
-	}
-
-	public boolean isOperationalControl() {
-		return operationalControl;
+	public boolean isOperatedByCompany() {
+		return operatedByCompany;
 	}
 
 	public BigDecimal getAccountingShare() {
 		return accountingShare;
+	}
+
+	public LocalDate getEffectiveFrom() {
+		return effectiveFrom;
+	}
+
+	public LocalDate getEffectiveTo() {
+		return effectiveTo;
+	}
+
+	public boolean isExcluded() {
+		return excluded;
+	}
+
+	public String getExclusionReason() {
+		return exclusionReason;
+	}
+
+	public List<BoundaryVersionFacility> getFacilities() {
+		return facilities.stream().sorted(Comparator.comparing(BoundaryVersionFacility::getFacilityName)).toList();
 	}
 }

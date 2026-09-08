@@ -43,8 +43,10 @@ class RunController {
 	@PostMapping("/inventories/{inventoryId}/runs")
 	ResponseEntity<RunDetailResponse> execute(@PathVariable UUID inventoryId, @Valid @RequestBody RunRequest body) {
 		var run = inventoryService.executeRun(inventoryId, body.label());
-		URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/ghg/runs/{id}")
-			.buildAndExpand(run.getId()).toUri();
+		URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+			.path("/api/ghg/runs/{id}")
+			.buildAndExpand(run.getId())
+			.toUri();
 		return ResponseEntity.created(location).body(RunDetailResponse.from(run));
 	}
 
@@ -53,9 +55,11 @@ class RunController {
 		return RunDetailResponse.from(inventoryService.getRun(id));
 	}
 
+	/** Designates this run as its inventory's final run (spec 05.1); the inventory moves to FINAL. */
 	@PostMapping("/runs/{id}/finalize")
 	InventoryResponse finalizeRun(@PathVariable UUID id) {
-		return InventoryResponse.from(inventoryService.finalizeRun(id));
+		var run = inventoryService.getRun(id);
+		return InventoryResponse.from(inventoryService.designateFinal(run.getInventory().getId(), id));
 	}
 
 	@DeleteMapping("/runs/{id}")

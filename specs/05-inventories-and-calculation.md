@@ -5,7 +5,7 @@
   factor), Chapter 7 (inventory quality: validation before reporting)
 - **Owner**: Michael Takrama
 - **Created**: 2026-08-29 (views, gates, runs), 2026-08-30 (unit conversion);
-  merged 2026-09-02
+  merged 2026-09-02; lifecycle, gases and market-based scope 2 2026-09-08
 - **Modules**: `ghg`, `src/features/ghg` (inventories list, inventory detail:
   activity view, pre-flight checks, runs)
 
@@ -22,19 +22,24 @@ the run as an immutable snapshot.
 
 ### Inventories
 
-An inventory has a name, a reporting period, an optional purpose, an optional
-base year (a field only; spec 06), and a consolidation approach. Many per
-organization, overlapping periods allowed: the same facts viewed under
-different accounting contexts. A recalculation is a new run, never a new
-inventory. Editing an inventory is API-only today; the SPA deletes and
+An inventory has a name, a reporting period, an optional purpose, a
+consolidation approach, a reporting GWP set (AR5 by default; spec 07.1), an
+operational boundary declaration (spec 07.1) and a lifecycle: DRAFT, FROZEN,
+FINAL, PUBLISHED (spec 05.1). Many per organization, overlapping periods
+allowed: the same facts viewed under different accounting contexts. A
+recalculation is a new run, never a new inventory; a correction to a
+published inventory is a new inventory that supersedes it. Editing an
+inventory's name, period and approach is API-only today; the SPA deletes and
 recreates.
 
 ### Review activity data
 
-"Review activity data" generates one **assignment** per organizational
-activity record not yet reviewed: auto-excluded as `OUTSIDE_PERIOD` when the
-date falls outside the period, else `OUTSIDE_BOUNDARY` when the facility is
-not in the boundary, otherwise included and unclassified. The same action
+"Review activity data" (draft inventories only) generates one **assignment**
+per organizational activity record not yet reviewed: auto-excluded as
+`OUTSIDE_PERIOD` when the date falls outside the period, else
+`OUTSIDE_BOUNDARY` when the facility is not in the boundary, its entity's
+share is 0 under the approach, or the date is outside the membership window
+(each with a detail in words), otherwise included and unclassified. The same action
 re-evaluates earlier automatic exclusions and re-includes any whose reason no
 longer holds (a facility since added, a period since widened); manual
 exclusions are never touched. It returns `{created, updated}` and the
@@ -42,36 +47,45 @@ completeness gate warns until it has been run.
 
 ### Validation gates
 
-Four gates recompute live; a finding is ERROR (blocks the run), WARNING
+Five gates recompute live; a finding is ERROR (blocks the run), WARNING
 (visible, non-blocking) or INFO. A gate is BLOCKED with any error, WARNINGS with
 any warning, else PASSED; the inventory is ready when no gate is blocked.
 
 - **BOUNDARY** (spec 03): empty; draft; included activity outside the
-  boundary; 0% share; drift from facility facts.
+  boundary; 0% share; drift from entity facts; partial-period membership.
 - **COMPLETENESS**: N records not reviewed; an automatic exclusion whose reason
   no longer holds; an included activity dated outside the period (ERROR); an
   included activity with no evidence reference (WARNING); estimated or
   calculated data (INFO).
-- **CLASSIFICATION**: an included activity with no factor (ERROR).
+- **CLASSIFICATION**: an included activity with no factor (ERROR); a scope
+  incompatible with an inherent-scope factor (ERROR); a scope that departs
+  from the factor's default (WARNING) (spec 04.1).
 - **EMISSION_FACTOR**: an activity whose unit and factor unit are neither
-  dimensionally convertible nor identical (ERROR, naming both dimensions).
+  dimensionally convertible nor identical (ERROR, naming both dimensions); a
+  scope 2 record at a facility with a market-based factor that cannot convert
+  to kWh (WARNING).
+- **BASE_YEAR** (spec 06): an unresolved recalculation flag (ERROR above the
+  threshold, else WARNING).
 
 Given an inventory with all facts classified and the boundary frozen but one
 record lacking an evidence reference, the panel reads READY TO LAUNCH with
 Reporting boundary WARN, Activity data completeness WARN, Classification PASS,
-Emission factors PASS: warnings never block.
+Emission factors PASS, Base year PASS: warnings never block.
 
 ### Calculation
 
-A run is created with a label; the period and approach are the inventory's.
-Creation re-validates and refuses with 409 `Validation failing` on any error.
-Per included assignment:
+A run is created with a label; the period, approach and GWP set are the
+inventory's, which must be FROZEN or FINAL. Creation re-validates and refuses
+with 409 `Validation failing` on any error. Per included assignment:
 
 ```
-share             = the frozen boundary version's share for the facility (spec 03)
+share             = the frozen boundary version's share for the facility on the activity's date (spec 03)
 conversion factor = registry ratio(activity unit → factor unit), or 1 when identical
 converted qty     = quantity × conversion factor
+factor value      = Σ gas component × GWP(set), or the source CO2e when no split (spec 07.1)
 kg CO2e           = converted qty × factor value × share, HALF_UP to 3 dp
+kg per gas        = converted qty × gas component × share, HALF_UP to 3 dp (biogenic CO2 alike)
+market-based      = kWh × market factor × share for scope 2 lines at a facility with an instrument
 ```
 
 Conversion is dimensional only (spec 02's registry); a custom unit reconciles
@@ -79,35 +93,44 @@ only with an identical factor unit. The run line records the original quantity
 and unit, the factor's unit, the converted quantity and the conversion factor,
 so the report shows the full arithmetic
 (`1,250,000 US-gallon × 3.785411784 = 4,731,764.73 litre × 2.66 × 1.0000`).
-Totals accumulate per scope from the rounded lines.
+Totals accumulate per scope, per gas and for market-based scope 2 from the
+rounded lines. Every excluded assignment is snapshotted beside the lines with
+its reason (spec 05.1).
 
 Given the QA scenario, twelve facts, two inventories: under operational control
 the total is 35,426,443.114 kg; under equity share, from the same facts,
 22,784,347.114 kg. The difference is entirely the plant at 40% and the terminal
-at 30% versus 100% and 0%.
+at 30% versus 100% and 0% (under operational control the terminal's records
+are excluded as outside the boundary rather than carried at 0%).
 
 ### Runs as snapshots
 
-A run denormalizes facility name, activity type, factor name and value, scope,
-category, quantity and unit, factor unit, converted quantity, conversion
-factor, accounting share and kg CO2e per line, and cites the boundary version.
-Runs are listed newest first; one may be designated **final** for the
-inventory; deleting the final run clears the designation without promoting
-another. A fact corrected after a run leaves the run unchanged and shows in
-the next one.
+A run denormalizes facility id and name, activity type, factor name and
+value, scope, category, lease type, quantity and unit, factor unit, converted
+quantity, conversion factor, accounting share, kg CO2e, kg per gas, biogenic
+CO2 and the market-based figure per line, plus every exclusion, and cites the
+boundary version. Runs are listed newest first; one may be designated
+**final** for the inventory, which moves it to FINAL; deleting the final run
+withdraws the designation without promoting another. A fact corrected after
+a run leaves the run unchanged and shows in the next one.
 
 ## API
 
 - `GET|POST /organizations/{orgId}/inventories`, `GET|PUT|DELETE /inventories/{id}`
-  `{name, periodStart, periodEnd, purpose?, baseYear?, consolidationApproach}`;
-  422 when the period ends before it starts.
+  `{name, periodStart, periodEnd, purpose?, baseYear?, consolidationApproach,
+  gwpSet?}`; 422 when the period ends before it starts; 409 when the period,
+  approach or GWP set changes while frozen, or on any change once published.
+- Lifecycle: `POST /inventories/{id}/freeze|reopen|finalize|withdraw-final|publish|supersede`
+  (spec 05.1).
 - `GET /inventories/{id}/assignments`; `POST /inventories/{id}/assignments/sync`
-  → `{created, updated}`; classify / exclude / include (spec 04).
+  → `{created, updated}`; classify / exclude / include (spec 04). All 409
+  unless the inventory is a draft.
 - `GET /inventories/{id}/validation` → `{ready, gates:[{gate, status,
   findings:[{severity, message}]}]}`, gates in the fixed order BOUNDARY,
-  COMPLETENESS, CLASSIFICATION, EMISSION_FACTOR.
-- `GET|POST /inventories/{id}/runs` `{label}` (409 when blocked);
-  `GET|DELETE /runs/{id}`; `POST /runs/{id}/finalize`.
+  COMPLETENESS, CLASSIFICATION, EMISSION_FACTOR, BASE_YEAR.
+- `GET|POST /inventories/{id}/runs` `{label}` (409 when blocked or not
+  frozen); `GET|DELETE /runs/{id}` → `{run, lines, exclusions}`;
+  `POST /runs/{id}/finalize`; `GET /runs/{id}/report` (spec 07.1).
 
 ## Data
 
@@ -115,12 +138,15 @@ the next one.
 included, exclusion_reason CHECK, scope, category, factor), `ghg_runs`
 re-parented to inventories with `final_run_id`. `V8__unit_conversion.sql`:
 `factor_unit`, `converted_quantity`, `conversion_factor` on `ghg_run_lines`.
-`V9`: `boundary_version_id` and `_no` on runs (spec 03).
+`V9`: `boundary_version_id` and `_no` on runs (spec 03). `V12`: `status`,
+`ghg_run_exclusions`, `facility_id` on lines. `V13`: `lease_type`. `V15`:
+`gwp_set`, per-gas, biogenic and market-based columns on runs and lines.
 
 ## Events
 
-`GhgRunCompleted(runId, inventoryId, totalKgCo2e)` on every run. No consumer
-yet; it is the hook for reporting and notification modules.
+`GhgRunCompleted(runId, inventoryId, totalKgCo2e)` on every run and
+`InventoryPublished(inventoryId, runId)` on publication. No consumer yet;
+they are the hooks for reporting and notification modules.
 
 ## Verification
 
@@ -133,10 +159,7 @@ Frontend: pre-flight panel, launch gating, review toast, run list. Manual:
 
 ## Non-goals and open questions
 
-- The activity view is not frozen and exclusions are not snapshotted into a
-  run; the inventory has no lifecycle of its own: spec 05.1.
-- Assignment-level share overrides; conversion, methodology, GWP-set and
-  duplicate-detection gates; multi-gas breakdown (spec 07.1); base-year
-  recalculation (spec 06).
+- Assignment-level share overrides; conversion, methodology and
+  duplicate-detection gates.
 - A frozen inventory with nothing reviewed is launchable and yields an empty
-  run, since "unreviewed" is a warning by design; revisit under spec 05.1.
+  run, since "unreviewed" is a warning by design.

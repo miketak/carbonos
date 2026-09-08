@@ -25,8 +25,9 @@ import jakarta.persistence.Table;
 /**
  * An immutable, reproducible snapshot of one inventory's accounting view at
  * the moment it was calculated (spec 05, invariant 3). Lines denormalize
- * every input, so later edits to facts, boundary, or classification never
- * rewrite a past run. Recalculation creates a new run.
+ * every input, exclusions record what was left out and why (spec 05.1), so
+ * later edits to facts, boundary, or classification never rewrite a past run.
+ * Recalculation creates a new run.
  */
 @Entity
 @Table(name = "ghg_runs")
@@ -52,6 +53,10 @@ public class GhgRun {
 	@Column(name = "consolidation_approach", nullable = false, length = 30)
 	private ConsolidationApproach consolidationApproach;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "gwp_set", nullable = false, length = 5)
+	private GwpSet gwpSet;
+
 	@Column(name = "activity_count", nullable = false)
 	private int activityCount;
 
@@ -67,6 +72,34 @@ public class GhgRun {
 	@Column(name = "scope3_kg_co2e", nullable = false, precision = 18, scale = 3)
 	private BigDecimal scope3KgCo2e;
 
+	// scope 2 under the market-based method; null when no facility has an instrument
+	@Column(name = "scope2_market_based_kg_co2e", precision = 18, scale = 3)
+	private BigDecimal scope2MarketBasedKgCo2e;
+
+	@Column(name = "co2_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal co2Kg;
+
+	@Column(name = "ch4_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal ch4Kg;
+
+	@Column(name = "n2o_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal n2oKg;
+
+	@Column(name = "hfcs_kg_co2e", nullable = false, precision = 18, scale = 3)
+	private BigDecimal hfcsKgCo2e;
+
+	@Column(name = "pfcs_kg_co2e", nullable = false, precision = 18, scale = 3)
+	private BigDecimal pfcsKgCo2e;
+
+	@Column(name = "sf6_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal sf6Kg;
+
+	@Column(name = "nf3_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal nf3Kg;
+
+	@Column(name = "biogenic_co2_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal biogenicCo2Kg;
+
 	// the boundary version the shares came from; null for runs older than spec 03
 	@Column(name = "boundary_version_id")
 	private UUID boundaryVersionId;
@@ -78,6 +111,10 @@ public class GhgRun {
 	@OrderBy("kgCo2e DESC")
 	private List<GhgRunLine> lines = new ArrayList<>();
 
+	@OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OrderBy("exclusionReason ASC, activityDate ASC")
+	private List<GhgRunExclusion> exclusions = new ArrayList<>();
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -85,13 +122,14 @@ public class GhgRun {
 	protected GhgRun() {
 	}
 
-	GhgRun(Inventory inventory, String label) {
+	GhgRun(Inventory inventory, String label, boolean marketBasedReporting) {
 		this.id = UUID.randomUUID();
 		this.inventory = inventory;
 		this.label = label;
 		this.periodStart = inventory.getPeriodStart();
 		this.periodEnd = inventory.getPeriodEnd();
 		this.consolidationApproach = inventory.getConsolidationApproach();
+		this.gwpSet = inventory.getGwpSet();
 		this.boundaryVersionId = inventory.getCurrentBoundaryVersionId();
 		this.boundaryVersionNo = inventory.getCurrentBoundaryVersionNo();
 		this.activityCount = 0;
@@ -99,6 +137,15 @@ public class GhgRun {
 		this.scope1KgCo2e = BigDecimal.ZERO;
 		this.scope2KgCo2e = BigDecimal.ZERO;
 		this.scope3KgCo2e = BigDecimal.ZERO;
+		this.scope2MarketBasedKgCo2e = marketBasedReporting ? BigDecimal.ZERO : null;
+		this.co2Kg = BigDecimal.ZERO;
+		this.ch4Kg = BigDecimal.ZERO;
+		this.n2oKg = BigDecimal.ZERO;
+		this.hfcsKgCo2e = BigDecimal.ZERO;
+		this.pfcsKgCo2e = BigDecimal.ZERO;
+		this.sf6Kg = BigDecimal.ZERO;
+		this.nf3Kg = BigDecimal.ZERO;
+		this.biogenicCo2Kg = BigDecimal.ZERO;
 	}
 
 	void addLine(GhgRunLine line) {
@@ -107,9 +154,26 @@ public class GhgRun {
 		totalKgCo2e = totalKgCo2e.add(line.getKgCo2e());
 		switch (line.getScope()) {
 			case SCOPE_1 -> scope1KgCo2e = scope1KgCo2e.add(line.getKgCo2e());
-			case SCOPE_2 -> scope2KgCo2e = scope2KgCo2e.add(line.getKgCo2e());
+			case SCOPE_2 -> {
+				scope2KgCo2e = scope2KgCo2e.add(line.getKgCo2e());
+				if (scope2MarketBasedKgCo2e != null) {
+					scope2MarketBasedKgCo2e = scope2MarketBasedKgCo2e.add(line.marketOrLocationKgCo2e());
+				}
+			}
 			case SCOPE_3 -> scope3KgCo2e = scope3KgCo2e.add(line.getKgCo2e());
 		}
+		co2Kg = co2Kg.add(line.getCo2Kg());
+		ch4Kg = ch4Kg.add(line.getCh4Kg());
+		n2oKg = n2oKg.add(line.getN2oKg());
+		hfcsKgCo2e = hfcsKgCo2e.add(line.getHfcsKgCo2e());
+		pfcsKgCo2e = pfcsKgCo2e.add(line.getPfcsKgCo2e());
+		sf6Kg = sf6Kg.add(line.getSf6Kg());
+		nf3Kg = nf3Kg.add(line.getNf3Kg());
+		biogenicCo2Kg = biogenicCo2Kg.add(line.getBiogenicCo2Kg());
+	}
+
+	void addExclusion(GhgRunExclusion exclusion) {
+		exclusions.add(exclusion);
 	}
 
 	public UUID getId() {
@@ -136,6 +200,10 @@ public class GhgRun {
 		return consolidationApproach;
 	}
 
+	public GwpSet getGwpSet() {
+		return gwpSet;
+	}
+
 	public int getActivityCount() {
 		return activityCount;
 	}
@@ -156,6 +224,42 @@ public class GhgRun {
 		return scope3KgCo2e;
 	}
 
+	public BigDecimal getScope2MarketBasedKgCo2e() {
+		return scope2MarketBasedKgCo2e;
+	}
+
+	public BigDecimal getCo2Kg() {
+		return co2Kg;
+	}
+
+	public BigDecimal getCh4Kg() {
+		return ch4Kg;
+	}
+
+	public BigDecimal getN2oKg() {
+		return n2oKg;
+	}
+
+	public BigDecimal getHfcsKgCo2e() {
+		return hfcsKgCo2e;
+	}
+
+	public BigDecimal getPfcsKgCo2e() {
+		return pfcsKgCo2e;
+	}
+
+	public BigDecimal getSf6Kg() {
+		return sf6Kg;
+	}
+
+	public BigDecimal getNf3Kg() {
+		return nf3Kg;
+	}
+
+	public BigDecimal getBiogenicCo2Kg() {
+		return biogenicCo2Kg;
+	}
+
 	public UUID getBoundaryVersionId() {
 		return boundaryVersionId;
 	}
@@ -166,6 +270,10 @@ public class GhgRun {
 
 	public List<GhgRunLine> getLines() {
 		return List.copyOf(lines);
+	}
+
+	public List<GhgRunExclusion> getExclusions() {
+		return List.copyOf(exclusions);
 	}
 
 	public Instant getCreatedAt() {
