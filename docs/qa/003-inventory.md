@@ -315,7 +315,7 @@ records consolidated a second way.
 | I4 | Click **Review activity data** | Toast "12 new records under review." Inventory A's decisions are not inherited; every assignment starts fresh | ☐ P ☐ F | |
 | I5 | Confirm R12's status | `Excluded · Outside reporting period`. Nothing else auto-excludes, because all five facilities are in the boundary at a non-zero share | ☐ P ☐ F | |
 | I6 | Classify R1–R10 per the classification table; exclude R11 as **Methodology exclusion**; then **Freeze inventory** and confirm | Toast "Inventory frozen as boundary v1." (each inventory numbers its own versions). Badge turns **READY TO LAUNCH** | ☐ P ☐ F | |
-| I7 | Launch `Run 001`, then back on the inventory click **Mark as final** on it | Total **22,784.35 t CO₂e**, split as the table above; 10 lines; the inventory reads **FINAL · BOUNDARY v1** (section P designates it as the base year) | ☐ P ☐ F | |
+| I7 | Launch `Run 001`, then back on the inventory click **Mark as final** on it | Total **22,784.35 t CO₂e**, split as the table above; 10 lines; the inventory reads **FINAL · BOUNDARY v1** (section O designates it as the base year) | ☐ P ☐ F | |
 | I8 | Compare the R2 line against inventory A's | `48,500 MWh → 48,500,000 kWh`, identical factor, but weight **40%** and line total **8,555.4 t** instead of 21,388.5 t | ☐ P ☐ F | |
 | I9 | Compare the R10 line | Weight **30%**, line total **247.38 t CO₂e**, up from zero in inventory A | ☐ P ☐ F | |
 | I10 | Compare Scope 3 across the two runs | Identical, **977.41 t** in both, because every scope-3 fact sits at a wholly owned site | ☐ P ☐ F | |
@@ -346,7 +346,7 @@ too. Only *future* runs see the correction.
 | J11 | Change Tarkwa Gold JV Ltd's economic interest to `50` in the boundary, then **Freeze inventory** and confirm | Toast "Inventory frozen as boundary v2." Chip reads **FROZEN · BOUNDARY v2**, and so does the inventory's card back on the Inventories list. Version history lists v2 above v1. Expand each: v2 shows Tarkwa Gold JV Ltd at 50%, v1 still shows it at 40%. Versions are never rewritten. Reporting boundary now also warns "Tarkwa Gold JV Ltd's treatment (joint venture, 50%, operated) differs from the entity record (joint venture, 40%, operated). Review the boundary.": the treatment and the fact disagree, and the gate says so | ☐ P ☐ F | |
 | J12 | Open **Run 001** again | Still **35,426.44 t**, and its boundary card still shows Tarkwa Gold JV Ltd at 40%. A later freeze changes nothing a verifier has already been shown | ☐ P ☐ F | |
 | J13 | Sidebar → **Legal entities** → **Edit** Tarkwa Gold JV Ltd, set economic interest to `50`, save. Return to inventory A | The drift warning is gone: fact and treatment agree again. Nothing else moved: still FROZEN v2, both versions unchanged, Run 001 untouched. Editing an entity never rewrites a boundary | ☐ P ☐ F | |
-| J14 | Edit the entity back to `40`, then in inventory A **Mark as final** on Run 001 | The drift warning returns, naming 50% against 40%. Leave it: it is a true statement about this inventory. The chip reads **FINAL · BOUNDARY v2** again, ready for section O | ☐ P ☐ F | |
+| J14 | Edit the entity back to `40`, then in inventory A **Mark as final** on Run 001 | The drift warning returns, naming 50% against 40%. Leave it: it is a true statement about this inventory. The chip reads **FINAL · BOUNDARY v2** again, ready for section N | ☐ P ☐ F | |
 
 ---
 
@@ -421,7 +421,7 @@ Record the three extra facts first (R13, R14, R15 from the scenario).
 | M8 | Change R4's **lease type** to **Operating lease (leased in)** | Scope flips to **Scope 3**, category **8. Upstream leased assets**: under equity share an operating lease the company holds is scope 3 (Appendix F). Set it back to "Not a leased asset": scope 2 again | ☐ P ☐ F | |
 | M9 | In **Operational boundary declaration**, tick **Business travel**, **Waste generated in operations**, **Purchased goods and services**, write `Other scope 3 categories are immaterial for a single-mine group.` and **Save declaration** | Toast "Operational boundary declaration saved." | ☐ P ☐ F | |
 | M10 | In **Market-based scope 2 instruments**, add facility **S4**, instrument **Energy attribute certificate**, `0.05` kg CO₂e per kWh, source `Supplier REC 2025` | A row appears for Accra Corporate Office; toast "Instrument recorded for Accra Corporate Office." | ☐ P ☐ F | |
-| M11 | Read Pre-flight checks | Reporting boundary WARN (the partial-period membership), Completeness WARN, Classification WARN (R13's scope choice), Emission factors PASS, Base year PASS. Do **not** freeze yet: section P freezes this inventory | ☐ P ☐ F | |
+| M11 | Read Pre-flight checks | Reporting boundary WARN (the partial-period membership), Completeness WARN, Classification WARN (R13's scope choice), Emission factors PASS, Base year PASS. Do **not** freeze yet: section O freezes this inventory | ☐ P ☐ F | |
 
 ---
 
