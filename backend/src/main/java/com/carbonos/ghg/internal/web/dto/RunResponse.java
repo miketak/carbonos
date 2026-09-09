@@ -10,12 +10,13 @@ import com.carbonos.ghg.internal.GhgRun;
 import com.carbonos.ghg.internal.GwpSet;
 import com.carbonos.ghg.internal.Scope2MarketBasis;
 
-public record RunResponse(UUID id, UUID inventoryId, String label, LocalDate periodStart, LocalDate periodEnd,
+public record RunResponse(UUID id, UUID inventoryId, int runNo, String label, LocalDate periodStart,
+		LocalDate periodEnd,
 		ConsolidationApproach consolidationApproach, GwpSet gwpSet, int activityCount, BigDecimal totalKgCo2e,
 		BigDecimal scope1KgCo2e, BigDecimal scope2KgCo2e, BigDecimal scope3KgCo2e,
 		BigDecimal scope2MarketBasedKgCo2e, Scope2MarketBasis scope2MarketBasis, ByGas byGas,
-		BigDecimal biogenicCo2Kg, boolean isFinal,
-		UUID boundaryVersionId, Integer boundaryVersionNo, Instant createdAt) {
+		BigDecimal biogenicCo2Kg, boolean isFinal, boolean voided, Instant voidedAt, String voidedBy,
+		String voidReason, UUID boundaryVersionId, Integer boundaryVersionNo, Instant createdAt) {
 
 	/**
 	 * Totals per gas: kg of each gas, the fossil part of the methane, and for the
@@ -28,14 +29,15 @@ public record RunResponse(UUID id, UUID inventoryId, String label, LocalDate per
 
 	public static RunResponse from(GhgRun run) {
 		var inventory = run.getInventory();
-		return new RunResponse(run.getId(), inventory.getId(), run.getLabel(), run.getPeriodStart(),
+		return new RunResponse(run.getId(), inventory.getId(), run.getRunNo(), run.getLabel(), run.getPeriodStart(),
 				run.getPeriodEnd(), run.getConsolidationApproach(), run.getGwpSet(), run.getActivityCount(),
 				run.getTotalKgCo2e(), run.getScope1KgCo2e(), run.getScope2KgCo2e(), run.getScope3KgCo2e(),
 				run.getScope2MarketBasedKgCo2e(), run.getScope2MarketBasis(),
 				new ByGas(run.getCo2Kg(), run.getCh4Kg(), run.getCh4FossilKg(), run.getN2oKg(), run.getHfcsKg(),
 						run.getPfcsKg(),
 						run.getHfcsKgCo2e(), run.getPfcsKgCo2e(), run.getSf6Kg(), run.getNf3Kg()),
-				run.getBiogenicCo2Kg(), run.getId().equals(inventory.getFinalRunId()), run.getBoundaryVersionId(),
+				run.getBiogenicCo2Kg(), run.getId().equals(inventory.getFinalRunId()), run.isVoided(),
+				run.getVoidedAt(), run.getVoidedBy(), run.getVoidReason(), run.getBoundaryVersionId(),
 				run.getBoundaryVersionNo(), run.getCreatedAt());
 	}
 }

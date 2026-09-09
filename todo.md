@@ -27,7 +27,7 @@ Status summary (update as tickets close):
 
 | Priority | Tickets | Done |
 |---|---|---|
-| P0 | 9 | 2 |
+| P0 | 9 | 3 |
 | P1 | 13 | 0 |
 | P2 | 4 | 0 |
 
@@ -65,12 +65,12 @@ Status summary (update as tickets close):
 
 ## Theme 3: Runs, reports, and export
 
-- [ ] **T-05 (P0) Replace run deletion with voiding; never reuse run numbers**
+- [x] **T-05 (P0) Replace run deletion with voiding; never reuse run numbers**
   - Findings: F35
   - Problem: "Delete" on a run removes it instantly, with no confirmation, no undo, and no log entry, on an inventory whose page describes runs as immutable. The next run is numbered 001 again, so the history does not even show that a run existed. Delete remains available on a FINAL run until publication.
   - Standard: ISO 14064-1 section 8.3 (records) and the Corporate Standard transparency principle.
   - Done when: hard delete is gone; a run can be voided with a required reason and stays listed with its number and a VOIDED state; run numbers are never reused; FINAL runs cannot be voided without first withdrawing final status, with a reason.
-  - Spec: update 05 (lifecycle).
+  - Spec: 05.2 (run numbering and voiding), migration V22; 05 and 05.1 updated.
 
 - [ ] **T-06 (P0) Export: PDF report, CSV of snapshot lines, and a frozen boundary and factor set**
   - Findings: F38

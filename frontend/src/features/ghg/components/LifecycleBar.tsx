@@ -45,8 +45,9 @@ export function LifecycleBar({
   const supersede = useSupersedeInventory(inventoryId)
   const toast = useToast()
   const navigate = useNavigate()
-  const [dialog, setDialog] = useState<'freeze' | 'publish' | 'supersede' | null>(null)
+  const [dialog, setDialog] = useState<'freeze' | 'publish' | 'supersede' | 'withdraw' | null>(null)
   const [correctionName, setCorrectionName] = useState(`${inventory.name} (correction)`)
+  const [withdrawReason, setWithdrawReason] = useState('')
 
   const fail = (fallback: string) => (error: unknown) => {
     setDialog(null)
@@ -101,13 +102,10 @@ export function LifecycleBar({
               <Button
                 variant="ghost"
                 className="px-4 py-1.5 text-sm"
-                busy={withdraw.isPending}
-                onClick={() =>
-                  withdraw.mutate(undefined, {
-                    onSuccess: () => toast('Final designation withdrawn.'),
-                    onError: fail('Could not withdraw the designation.'),
-                  })
-                }
+                onClick={() => {
+                  setWithdrawReason('')
+                  setDialog('withdraw')
+                }}
               >
                 Withdraw final designation
               </Button>
@@ -151,6 +149,47 @@ export function LifecycleBar({
               }
             >
               Freeze inventory
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {dialog === 'withdraw' && (
+        <Modal title="Withdraw the final designation?" onClose={() => setDialog(null)}>
+          <p className="text-sm text-ink-muted">
+            The run stays on the record; the inventory returns to frozen. The withdrawal and your
+            reason are recorded in the inventory's history (spec 05.2).
+          </p>
+          <div className="mt-4">
+            <InputField
+              label="Reason"
+              placeholder="Why the final run must be replaced"
+              value={withdrawReason}
+              onChange={(event) => setWithdrawReason(event.target.value)}
+              minLength={5}
+              maxLength={500}
+              required
+            />
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={withdrawReason.trim().length < 5}
+              busy={withdraw.isPending}
+              onClick={() =>
+                withdraw.mutate(withdrawReason.trim(), {
+                  onSuccess: () => {
+                    setDialog(null)
+                    toast('Final designation withdrawn.')
+                  },
+                  onError: fail('Could not withdraw the designation.'),
+                })
+              }
+            >
+              Withdraw designation
             </Button>
           </div>
         </Modal>

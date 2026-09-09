@@ -27,6 +27,7 @@ import {
   getInventory,
   getValidation,
   listAssignments,
+  listAuditEvents,
   listBoundaryVersions,
   listEmissionFactors,
   listFacilities,
@@ -39,6 +40,7 @@ import {
   setBoundaryTreatment,
   setEntityTreatment,
   syncAssignments,
+  voidRun,
   withdrawFinal,
 } from './api'
 
@@ -239,6 +241,8 @@ beforeEach(() => {
   vi.mocked(listAssignments).mockReset().mockResolvedValue([unclassified])
   vi.mocked(getValidation).mockReset().mockResolvedValue(blockedReport)
   vi.mocked(listRuns).mockReset().mockResolvedValue([])
+  vi.mocked(listAuditEvents).mockReset().mockResolvedValue([])
+  vi.mocked(voidRun).mockReset()
   vi.mocked(listBoundaryVersions).mockReset().mockResolvedValue([])
   vi.mocked(getBoundaryVersion).mockReset().mockResolvedValue(v1Full)
   vi.mocked(listUnits).mockReset().mockResolvedValue(units)
@@ -563,6 +567,20 @@ test('a final inventory offers to withdraw the designation or publish', async ()
   expect(screen.getByRole('button', { name: /withdraw final designation/i })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /reopen as draft/i })).not.toBeInTheDocument()
 
+  // spec 05.2: withdrawing the designation needs a reason
+  await user.click(screen.getByRole('button', { name: /withdraw final designation/i }))
+  const withdrawDialog = await screen.findByRole('dialog', {
+    name: /withdraw the final designation/i,
+  })
+  expect(
+    within(withdrawDialog).getByRole('button', { name: /withdraw designation/i }),
+  ).toBeDisabled()
+  await user.type(within(withdrawDialog).getByLabelText(/reason/i), 'Boundary v1 omitted a camp')
+  await user.click(within(withdrawDialog).getByRole('button', { name: /withdraw designation/i }))
+  await waitFor(() =>
+    expect(withdrawFinal).toHaveBeenCalledWith('inv-1', 'Boundary v1 omitted a camp'),
+  )
+
   await user.click(screen.getByRole('button', { name: /^publish$/i }))
   const dialog = await screen.findByRole('dialog', { name: /publish the inventory/i })
   expect(within(dialog).getByText(/nothing on this inventory can change/)).toBeInTheDocument()
@@ -585,4 +603,89 @@ test('a published inventory is a record that offers a correction', async () => {
   expect(screen.getByRole('button', { name: /create correction/i })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /^publish$/i })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeDisabled()
+})
+
+test('a run is voided with a reason, never deleted, and keeps its number', async () => {
+  const user = userEvent.setup()
+  const run = {
+    id: 'run-1',
+    inventoryId: 'inv-1',
+    runNo: 1,
+    label: 'Run 001',
+    periodStart: '2025-01-01',
+    periodEnd: '2025-12-31',
+    consolidationApproach: 'EQUITY_SHARE' as const,
+    gwpSet: 'AR5' as const,
+    activityCount: 1,
+    totalKgCo2e: 2660,
+    scope1KgCo2e: 2660,
+    scope2KgCo2e: 0,
+    scope3KgCo2e: 0,
+    scope2MarketBasedKgCo2e: 0,
+    scope2MarketBasis: 'GRID_AVERAGE' as const,
+    byGas: {
+      co2Kg: 2630.7,
+      ch4Kg: 0.1,
+      ch4FossilKg: 0.1,
+      n2oKg: 0.1,
+      hfcsKg: 0,
+      pfcsKg: 0,
+      hfcsKgCo2e: 0,
+      pfcsKgCo2e: 0,
+      sf6Kg: 0,
+      nf3Kg: 0,
+    },
+    biogenicCo2Kg: 0,
+    isFinal: false,
+    voided: false,
+    voidedAt: null,
+    voidedBy: null,
+    voidReason: null,
+    boundaryVersionId: 'bv-1',
+    boundaryVersionNo: 1,
+    createdAt: '2026-09-02T10:00:00Z',
+  }
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'FROZEN',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  vi.mocked(listRuns).mockResolvedValue([
+    { ...run, id: 'run-2', runNo: 2, label: 'Run 002' },
+    {
+      ...run,
+      voided: true,
+      voidedAt: '2026-09-03T10:00:00Z',
+      voidedBy: 'kojo@ecoriv.test',
+      voidReason: 'Boundary v1 omitted the Nkran camp',
+    },
+  ])
+  vi.mocked(listAuditEvents).mockResolvedValue([
+    {
+      id: 'ev-1',
+      action: 'RUN_VOIDED',
+      runId: 'run-1',
+      runNo: 1,
+      actor: 'kojo@ecoriv.test',
+      reason: 'Boundary v1 omitted the Nkran camp',
+      at: '2026-09-03T10:00:00Z',
+    },
+  ])
+  vi.mocked(voidRun).mockResolvedValue({ ...run, id: 'run-2', runNo: 2, voided: true })
+  renderPage()
+
+  // the next label counts on from the highest number, voided runs included; no delete button anywhere
+  expect(await screen.findByLabelText('Run label')).toHaveValue('Run 003')
+  expect(screen.getByText('VOIDED')).toBeInTheDocument()
+  expect(screen.getByText(/Voided by kojo@ecoriv.test/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument()
+  expect(screen.getByText('Run voided')).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: /void…/i }))
+  const dialog = await screen.findByRole('dialog', { name: /void run 002/i })
+  expect(within(dialog).getByRole('button', { name: /void run/i })).toBeDisabled()
+  await user.type(within(dialog).getByLabelText(/reason/i), 'Duplicate of run 003')
+  await user.click(within(dialog).getByRole('button', { name: /void run/i }))
+  await waitFor(() => expect(voidRun).toHaveBeenCalledWith('run-2', 'Duplicate of run 003'))
 })

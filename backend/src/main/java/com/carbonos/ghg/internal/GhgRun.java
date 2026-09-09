@@ -43,6 +43,23 @@ public class GhgRun {
 	@Column(nullable = false, length = 120)
 	private String label;
 
+	// one more than the highest number the inventory ever issued; never reused (spec 05.2)
+	@Column(name = "run_no", nullable = false)
+	private int runNo;
+
+	// a voided run stays on the record with its number, its figures and the reason
+	@Column(name = "voided_at")
+	private Instant voidedAt;
+
+	@Column(name = "voided_by_user_id")
+	private UUID voidedByUserId;
+
+	@Column(name = "voided_by", length = 320)
+	private String voidedBy;
+
+	@Column(name = "void_reason", length = 500)
+	private String voidReason;
+
 	@Column(name = "period_start", nullable = false)
 	private LocalDate periodStart;
 
@@ -137,9 +154,10 @@ public class GhgRun {
 	protected GhgRun() {
 	}
 
-	GhgRun(Inventory inventory, String label) {
+	GhgRun(Inventory inventory, int runNo, String label) {
 		this.id = UUID.randomUUID();
 		this.inventory = inventory;
+		this.runNo = runNo;
 		this.label = label;
 		this.periodStart = inventory.getPeriodStart();
 		this.periodEnd = inventory.getPeriodEnd();
@@ -234,6 +252,38 @@ public class GhgRun {
 
 	public String getLabel() {
 		return label;
+	}
+
+	public int getRunNo() {
+		return runNo;
+	}
+
+	public boolean isVoided() {
+		return voidedAt != null;
+	}
+
+	public Instant getVoidedAt() {
+		return voidedAt;
+	}
+
+	public UUID getVoidedByUserId() {
+		return voidedByUserId;
+	}
+
+	public String getVoidedBy() {
+		return voidedBy;
+	}
+
+	public String getVoidReason() {
+		return voidReason;
+	}
+
+	/** Marks the run void (spec 05.2). The lines and totals stay as they were calculated. */
+	void markVoid(UUID actorUserId, String actor, String reason) {
+		this.voidedAt = Instant.now();
+		this.voidedByUserId = actorUserId;
+		this.voidedBy = actor;
+		this.voidReason = reason;
 	}
 
 	public LocalDate getPeriodStart() {

@@ -422,6 +422,8 @@ export interface ByGas {
 export interface Run {
   id: string
   inventoryId: string
+  /** Assigned by the server, never reused, voided runs included (spec 05.2). */
+  runNo: number
   label: string
   periodStart: string
   periodEnd: string
@@ -438,6 +440,11 @@ export interface Run {
   byGas: ByGas
   biogenicCo2Kg: number
   isFinal: boolean
+  /** A voided run stays on the record with its number, figures and reason (spec 05.2). */
+  voided: boolean
+  voidedAt: string | null
+  voidedBy: string | null
+  voidReason: string | null
   /** The boundary version the shares came from; null for runs older than spec 03. */
   boundaryVersionId: string | null
   boundaryVersionNo: number | null
@@ -490,6 +497,17 @@ export interface RunExclusion {
   activityDate: string
   exclusionReason: ExclusionReason
   exclusionDetail: string | null
+}
+
+/** One recorded act on an inventory (spec 05.2). */
+export interface AuditEvent {
+  id: string
+  action: 'RUN_VOIDED' | 'FINAL_WITHDRAWN'
+  runId: string | null
+  runNo: number | null
+  actor: string
+  reason: string
+  at: string
 }
 
 export interface RunDetail {
@@ -943,8 +961,16 @@ export function finalizeInventory(inventoryId: string, runId: string): Promise<I
   })
 }
 
-export function withdrawFinal(inventoryId: string): Promise<Inventory> {
-  return api<Inventory>(`/api/ghg/inventories/${inventoryId}/withdraw-final`, { method: 'POST' })
+/** Withdrawing a final designation is recorded with its reason (spec 05.2). */
+export function withdrawFinal(inventoryId: string, reason: string): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/inventories/${inventoryId}/withdraw-final`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function listAuditEvents(inventoryId: string): Promise<AuditEvent[]> {
+  return api<AuditEvent[]>(`/api/ghg/inventories/${inventoryId}/events`)
 }
 
 export function publishInventory(inventoryId: string): Promise<Inventory> {
@@ -1050,8 +1076,9 @@ export function finalizeRun(id: string): Promise<Inventory> {
   return api<Inventory>(`/api/ghg/runs/${id}/finalize`, { method: 'POST' })
 }
 
-export function deleteRun(id: string): Promise<void> {
-  return api<void>(`/api/ghg/runs/${id}`, { method: 'DELETE' })
+/** Voids a run with a reason; it stays on the record with its number (spec 05.2). */
+export function voidRun(id: string, reason: string): Promise<Run> {
+  return api<Run>(`/api/ghg/runs/${id}/void`, { method: 'POST', body: JSON.stringify({ reason }) })
 }
 
 export function getReport(runId: string): Promise<Report> {

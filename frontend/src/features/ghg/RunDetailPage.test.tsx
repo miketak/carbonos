@@ -223,6 +223,7 @@ const report: Report = {
   run: {
     id: 'run-1',
     inventoryId: 'inv-1',
+    runNo: 1,
     label: 'Run 001',
     periodStart: '2025-01-01',
     periodEnd: '2025-12-31',
@@ -249,6 +250,10 @@ const report: Report = {
     },
     biogenicCo2Kg: 18000,
     isFinal: false,
+    voided: false,
+    voidedAt: null,
+    voidedBy: null,
+    voidReason: null,
     boundaryVersionId: 'bv-1',
     boundaryVersionNo: 1,
     createdAt: '2026-08-29T00:00:00Z',

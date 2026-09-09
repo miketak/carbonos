@@ -2,7 +2,9 @@ import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
+import { InputField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
+import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
@@ -18,14 +20,15 @@ import { ScopeBreakdown } from './components/ScopeBreakdown'
 import { formatCo2e } from './format'
 import {
   useBoundaryQuery,
-  useDeleteRun,
+  useVoidRun,
+  useAuditEventsQuery,
   useExecuteRun,
   useFinalizeRun,
   useInventoryQuery,
   useRunsQuery,
   useValidationQuery,
 } from './useGhg'
-import type { Inventory } from './api'
+import type { AuditEvent, Inventory, Run } from './api'
 
 /** One inventory's workspace: lifecycle, boundary, declaration, activity view, instruments, runs. */
 export function InventoryDetailPage() {
@@ -126,16 +129,20 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
   const runsQuery = useRunsQuery(inventoryId)
   const execute = useExecuteRun(inventoryId)
   const finalize = useFinalizeRun(inventoryId)
-  const deleteRun = useDeleteRun(inventoryId)
+  const voidRun = useVoidRun(inventoryId)
+  const eventsQuery = useAuditEventsQuery(inventoryId)
   const toast = useToast()
   const navigate = useNavigate()
-  const [label, setLabel] = useState(
-    `Run ${String((runsQuery.data?.length ?? 0) + 1).padStart(3, '0')}`,
-  )
+  const nextRunNo = Math.max(0, ...(runsQuery.data?.map((run) => run.runNo) ?? [])) + 1
+  // null until the accountant types: the proposal follows the highest number issued so far
+  const [customLabel, setCustomLabel] = useState<string | null>(null)
+  const label = customLabel ?? `Run ${String(nextRunNo).padStart(3, '0')}`
+  const [voiding, setVoiding] = useState<Run | null>(null)
+  const [voidReason, setVoidReason] = useState('')
 
   const report = validationQuery.data
   const canDesignate = inventory.status === 'FROZEN' || inventory.status === 'FINAL'
-  const canDelete = inventory.status !== 'PUBLISHED'
+  const canVoid = inventory.status !== 'PUBLISHED'
 
   return (
     <div className="grid items-start gap-6 xl:grid-cols-2">
@@ -147,7 +154,7 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
           <input
             aria-label="Run label"
             value={label}
-            onChange={(event) => setLabel(event.target.value)}
+            onChange={(event) => setCustomLabel(event.target.value)}
             className="min-w-40 flex-1 rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-teal focus:outline-none"
           />
           <Button
@@ -173,7 +180,8 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
         <h2 className="text-xl">Calculation runs</h2>
         <p className="text-sm text-ink-muted">
           Immutable snapshots of this view, lines and exclusions alike. Recalculation creates a new
-          run; earlier runs are kept.
+          run; earlier runs are kept. A run is never deleted: it can be voided with a reason, and
+          its number is never reused.
         </p>
         {runsQuery.isPending && (
           <div aria-label="Loading runs" className="mt-4">
@@ -188,9 +196,20 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
             <li key={run.id} className="border-b border-teal/5 pb-4 last:border-0 last:pb-0">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <Link to={`runs/${run.id}`} className="font-semibold hover:text-link">
+                  <span className="mr-2 font-mono text-xs text-ink-muted">
+                    #{String(run.runNo).padStart(3, '0')}
+                  </span>
+                  <Link
+                    to={`runs/${run.id}`}
+                    className={`font-semibold hover:text-link ${run.voided ? 'line-through' : ''}`}
+                  >
                     {run.label}
                   </Link>
+                  {run.voided && (
+                    <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600">
+                      VOIDED
+                    </span>
+                  )}
                   {run.id === inventory.finalRunId && (
                     <span className="ml-2 rounded-full bg-accent-green/25 px-2 py-0.5 text-xs font-bold text-dark-teal">
                       FINAL
@@ -200,6 +219,13 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
                     {new Date(run.createdAt).toLocaleString()} · {run.activityCount} line
                     {run.activityCount === 1 ? '' : 's'} · boundary v{run.boundaryVersionNo ?? '?'}
                   </span>
+                  {run.voided && (
+                    <span className="block text-xs text-slate-600">
+                      Voided by {run.voidedBy ?? 'unknown'}
+                      {run.voidedAt ? ` on ${new Date(run.voidedAt).toLocaleString()}` : ''}:{' '}
+                      {run.voidReason}
+                    </span>
+                  )}
                 </div>
                 <span className="font-bold text-dark-teal">{formatCo2e(run.totalKgCo2e)}</span>
               </div>
@@ -207,7 +233,7 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
                 <ScopeBreakdown run={run} />
               </div>
               <div className="mt-2 flex gap-2">
-                {run.id !== inventory.finalRunId && canDesignate && (
+                {run.id !== inventory.finalRunId && canDesignate && !run.voided && (
                   <Button
                     variant="ghost"
                     className="px-2 py-1 text-xs"
@@ -222,26 +248,97 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
                     Mark as final
                   </Button>
                 )}
-                {canDelete && (
+                {canVoid && !run.voided && run.id !== inventory.finalRunId && (
                   <Button
                     variant="ghost"
                     className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                    onClick={() =>
-                      deleteRun.mutate(run.id, {
-                        onSuccess: () => toast(`${run.label} deleted.`),
-                        onError: (error) =>
-                          toast(problemDetail(error) ?? 'Could not delete the run.', 'error'),
-                      })
-                    }
+                    onClick={() => {
+                      setVoidReason('')
+                      setVoiding(run)
+                    }}
                   >
-                    Delete
+                    Void…
                   </Button>
                 )}
               </div>
             </li>
           ))}
         </ul>
+        <HistoryList events={eventsQuery.data ?? []} />
       </GlassCard>
+
+      {voiding && (
+        <Modal title={`Void ${voiding.label}?`} onClose={() => setVoiding(null)}>
+          <p className="text-sm text-ink-muted">
+            The run keeps its number, lines and totals on the record, marked VOIDED with your reason
+            and your name. Run numbers are never reused. This cannot be undone.
+          </p>
+          <div className="mt-4">
+            <InputField
+              label="Reason"
+              placeholder="Why this run must not be relied on"
+              value={voidReason}
+              onChange={(event) => setVoidReason(event.target.value)}
+              minLength={5}
+              maxLength={500}
+              required
+            />
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setVoiding(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={voidReason.trim().length < 5}
+              busy={voidRun.isPending}
+              onClick={() =>
+                voidRun.mutate(
+                  { id: voiding.id, reason: voidReason.trim() },
+                  {
+                    onSuccess: () => {
+                      toast(`${voiding.label} voided.`)
+                      setVoiding(null)
+                    },
+                    onError: (error) =>
+                      toast(problemDetail(error) ?? 'Could not void the run.', 'error'),
+                  },
+                )
+              }
+            >
+              Void run
+            </Button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+const actionLabels: Record<AuditEvent['action'], string> = {
+  RUN_VOIDED: 'Run voided',
+  FINAL_WITHDRAWN: 'Final designation withdrawn',
+}
+
+/** The recorded acts on the inventory (spec 05.2), newest first. */
+function HistoryList({ events }: { events: AuditEvent[] }) {
+  if (events.length === 0) return null
+  return (
+    <div className="mt-6 border-t border-teal/10 pt-4">
+      <h3 className="text-sm font-semibold">History</h3>
+      <ul className="mt-2 flex flex-col gap-2 text-sm">
+        {events.map((event) => (
+          <li key={event.id}>
+            <span className="font-medium">{actionLabels[event.action]}</span>
+            {event.runNo !== null && (
+              <span className="text-ink-muted"> · run #{String(event.runNo).padStart(3, '0')}</span>
+            )}
+            <span className="block text-xs text-ink-muted">
+              {event.actor}, {new Date(event.at).toLocaleString()}: {event.reason}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

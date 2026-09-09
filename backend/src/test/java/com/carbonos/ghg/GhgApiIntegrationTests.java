@@ -887,12 +887,76 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()))
 			.andExpect(jsonPath("$[0].isFinal").value(true));
 
-		// deleting the final run withdraws the designation without promoting another
-		mvc.perform(delete("/api/ghg/runs/" + runId).with(asMember()).with(csrf()))
-			.andExpect(status().isNoContent());
+		// a final run cannot be voided; withdrawing the designation needs a reason and leaves the run in place
+		mvc.perform(post("/api/ghg/runs/" + runId + "/void").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "Wrong boundary version"}"""))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Withdraw the designation")));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/withdraw-final").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "Boundary v1 omitted the Nkran camp"}"""))
+			.andExpect(status().isOk());
 		var inventory = inventories.findById(UUID.fromString(inventoryId)).orElseThrow();
 		assertThat(inventory.getFinalRunId()).isNull();
 		assertThat(inventory.getStatus()).isEqualTo(com.carbonos.ghg.internal.InventoryStatus.FROZEN);
+		mvc.perform(get("/api/ghg/runs/" + runId).with(asMember())).andExpect(status().isOk());
+	}
+
+	/** Audit finding F35 (T-05): runs are numbered for ever and voided with a reason, never deleted. */
+	@Test
+	void runsAreNumberedForeverAndVoidedWithAReasonInsteadOfDeleted() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		String first = runAndGetId(inventoryId, "Run 001");
+		String second = runAndGetId(inventoryId, "Run 002");
+		// hard delete is gone
+		mvc.perform(delete("/api/ghg/runs/" + first).with(asMember()).with(csrf()))
+			.andExpect(status().isMethodNotAllowed());
+		// a void needs a reason
+		mvc.perform(post("/api/ghg/runs/" + first + "/void").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": ""}"""))
+			.andExpect(status().is(422));
+		mvc.perform(post("/api/ghg/runs/" + first + "/void").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "Boundary v1 omitted the Nkran camp"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.runNo").value(1))
+			.andExpect(jsonPath("$.voided").value(true))
+			.andExpect(jsonPath("$.voidedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.voidReason").value("Boundary v1 omitted the Nkran camp"));
+		mvc.perform(post("/api/ghg/runs/" + first + "/void").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "Twice over"}"""))
+			.andExpect(status().isConflict());
+		// the voided run stays listed with its number and figures; the next number is never reused
+		String third = runAndGetId(inventoryId, "Run 003");
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(3))
+			.andExpect(jsonPath("$[?(@.id == '" + first + "')].runNo").value(1))
+			.andExpect(jsonPath("$[?(@.id == '" + first + "')].voided").value(true))
+			.andExpect(jsonPath("$[?(@.id == '" + first + "')].totalKgCo2e").value(2660.0))
+			.andExpect(jsonPath("$[?(@.id == '" + second + "')].runNo").value(2))
+			.andExpect(jsonPath("$[?(@.id == '" + third + "')].runNo").value(3));
+		mvc.perform(get("/api/ghg/runs/" + first + "/report").with(asMember()))
+			.andExpect(jsonPath("$.run.voided").value(true));
+		// a voided run cannot be designated final
+		mvc.perform(post("/api/ghg/runs/" + first + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
+		// the acts are on the record
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].action").value("RUN_VOIDED"))
+			.andExpect(jsonPath("$[0].runNo").value(1))
+			.andExpect(jsonPath("$[0].actor").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$[0].reason").value("Boundary v1 omitted the Nkran camp"));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asOutsider()))
+			.andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -1004,7 +1068,9 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"label": "Stranger run"}"""))
 			.andExpect(status().isNotFound());
-		mvc.perform(delete("/api/ghg/runs/" + runId).with(asOutsider()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + runId + "/void").with(asOutsider()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "Stranger void"}"""))
 			.andExpect(status().isNotFound());
 
 		// platform admins retain oversight
@@ -1348,10 +1414,15 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf()))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Withdraw the designation")));
-		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/withdraw-final").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/withdraw-final").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "The other site joins the boundary"}"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("FROZEN"))
 			.andExpect(jsonPath("$.finalRunId").doesNotExist());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("FINAL_WITHDRAWN"))
+			.andExpect(jsonPath("$[0].reason").value("The other site joins the boundary"));
 		reopen(inventoryId);
 		putBoundary(inventoryId, otherId);
 		freeze(inventoryId);
@@ -1368,12 +1439,16 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("PUBLISHED"))
 			.andExpect(jsonPath("$.publishedAt").exists());
-		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/withdraw-final").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/withdraw-final").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "Too late"}"""))
 			.andExpect(status().isConflict());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf()))
 			.andExpect(status().isConflict());
 		run(inventoryId, "Run 003").andExpect(status().isConflict());
-		mvc.perform(delete("/api/ghg/runs/" + secondRun).with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + runId + "/void").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "Published runs are a record"}"""))
 			.andExpect(status().isConflict());
 		mvc.perform(delete("/api/ghg/inventories/" + inventoryId).with(asMember()).with(csrf()))
 			.andExpect(status().isConflict());

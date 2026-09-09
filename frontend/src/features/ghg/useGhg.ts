@@ -15,7 +15,6 @@ import {
   deleteFacility,
   deleteInventory,
   deleteOrganization,
-  deleteRun,
   excludeAssignment,
   excludeEntity,
   excludeFacility,
@@ -33,6 +32,7 @@ import {
   includeAssignment,
   listActivities,
   listAssignments,
+  listAuditEvents,
   listBoundaryVersions,
   listEmissionFactors,
   listEntities,
@@ -61,6 +61,7 @@ import {
   updateFacility,
   updateInventory,
   updateOrganization,
+  voidRun,
   withdrawFinal,
 } from './api'
 import type {
@@ -100,6 +101,7 @@ export const marketFactorsKey = (inventoryId: string) =>
 export const assignmentsKey = (inventoryId: string) => ['ghg', 'assignments', inventoryId] as const
 export const validationKey = (inventoryId: string) => ['ghg', 'validation', inventoryId] as const
 export const runsKey = (inventoryId: string) => ['ghg', 'runs', inventoryId] as const
+export const auditEventsKey = (inventoryId: string) => ['ghg', 'events', inventoryId] as const
 export const runKey = (id: string) => ['ghg', 'run', id] as const
 export const reportKey = (runId: string) => ['ghg', 'report', runId] as const
 
@@ -410,6 +412,7 @@ function useLifecycleMutation<TArgs, TResult>(
       void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: runsKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: auditEventsKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: ['ghg', 'inventories'] })
     },
   })
@@ -420,7 +423,14 @@ export function useReopenInventory(inventoryId: string) {
 }
 
 export function useWithdrawFinal(inventoryId: string) {
-  return useLifecycleMutation(inventoryId, () => withdrawFinal(inventoryId))
+  return useLifecycleMutation(inventoryId, (reason: string) => withdrawFinal(inventoryId, reason))
+}
+
+export function useAuditEventsQuery(inventoryId: string) {
+  return useQuery({
+    queryKey: auditEventsKey(inventoryId),
+    queryFn: () => listAuditEvents(inventoryId),
+  })
 }
 
 export function usePublishInventory(inventoryId: string) {
@@ -548,8 +558,10 @@ export function useFinalizeRun(inventoryId: string) {
   return useLifecycleMutation(inventoryId, (runId: string) => finalizeRun(runId))
 }
 
-export function useDeleteRun(inventoryId: string) {
-  return useLifecycleMutation(inventoryId, (id: string) => deleteRun(id))
+export function useVoidRun(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, ({ id, reason }: { id: string; reason: string }) =>
+    voidRun(id, reason),
+  )
 }
 
 // --- base year (spec 06) ----------------------------------------------------------

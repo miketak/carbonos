@@ -113,8 +113,8 @@ value, scope, category, lease type, quantity and unit, factor unit, converted
 quantity, conversion factor, accounting share, kg CO2e, kg per gas, biogenic
 CO2 and the market-based figure per line, plus every exclusion, and cites the
 boundary version. Runs are listed newest first; one may be designated
-**final** for the inventory, which moves it to FINAL; deleting the final run
-withdraws the designation without promoting another. A fact corrected after
+**final** for the inventory, which moves it to FINAL. Runs are numbered and
+never deleted; a run is voided with a reason (spec 05.2). A fact corrected after
 a run leaves the run unchanged and shows in the next one.
 
 ## API
@@ -132,7 +132,7 @@ a run leaves the run unchanged and shows in the next one.
   findings:[{severity, message}]}]}`, gates in the fixed order BOUNDARY,
   COMPLETENESS, CLASSIFICATION, EMISSION_FACTOR, BASE_YEAR.
 - `GET|POST /inventories/{id}/runs` `{label}` (409 when blocked or not
-  frozen); `GET|DELETE /runs/{id}` → `{run, lines, exclusions}`;
+  frozen); `GET /runs/{id}` → `{run, lines, exclusions}`; `POST /runs/{id}/void` `{reason}` (spec 05.2);
   `POST /runs/{id}/finalize`; `GET /runs/{id}/report` (spec 07.1).
 
 ## Data
