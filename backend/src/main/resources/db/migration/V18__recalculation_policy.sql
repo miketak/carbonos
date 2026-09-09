@@ -23,6 +23,5 @@ SET cumulative_percent = (
     SELECT COALESCE(SUM(e.affected_percent), 0)
     FROM ghg_base_year_recalculations e
     WHERE e.base_year_id = r.base_year_id
-      AND e.created_at <= r.created_at
-      AND (e.id = r.id OR e.status <> 'RECALCULATED'))
+      AND (e.id = r.id OR (e.created_at < r.created_at AND e.status <> 'RECALCULATED')))
 WHERE r.affected_percent IS NOT NULL;
