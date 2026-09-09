@@ -18,32 +18,33 @@ produced, has to be reproducible. This spec covers the view, the review of
 facts into it, the validation gates, the calculation with unit conversion, and
 the run as an immutable snapshot.
 
-## Behaviour
+## Behavior
 
 ### Inventories
 
 An inventory has a name, a reporting period, an optional purpose, a
-consolidation approach, a reporting GWP set (AR5 by default; spec 07.1), an
-operational boundary declaration (spec 07.1) and a lifecycle: DRAFT, FROZEN,
+consolidation approach, a reporting set of global warming potentials (GWP;
+IPCC AR5 by default, spec 07.1), an operational boundary declaration (spec
+07.1) and a lifecycle: DRAFT, FROZEN,
 FINAL, PUBLISHED (spec 05.1). Many per organization, overlapping periods
 allowed: the same facts viewed under different accounting contexts. A
 recalculation is a new run, never a new inventory; a correction to a
 published inventory is a new inventory that supersedes it. Editing an
-inventory's name, period and approach is API-only today; the SPA deletes and
-recreates.
+inventory's name, period and approach is API-only today; the single-page app (SPA)
+deletes and recreates.
 
 ### Review activity data
 
-"Review activity data" (draft inventories only) generates one **assignment**
-per organizational activity record not yet reviewed: auto-excluded as
-`OUTSIDE_PERIOD` when the date falls outside the period, else
-`OUTSIDE_BOUNDARY` when the facility is not in the boundary, its entity's
-share is 0 under the approach, or the date is outside the membership window
-(each with a detail in words), otherwise included and unclassified. The same action
-re-evaluates earlier automatic exclusions and re-includes any whose reason no
-longer holds (a facility since added, a period since widened); manual
-exclusions are never touched. It returns `{created, updated}` and the
-completeness gate warns until it has been run.
+**Review activity data** (draft inventories only) generates one **assignment**
+per organizational activity record not yet reviewed. A record dated outside
+the period is auto-excluded as `OUTSIDE_PERIOD`. A record whose facility is
+not in the boundary, whose entity has a 0% share under the approach, or whose
+date is outside the membership window is auto-excluded as `OUTSIDE_BOUNDARY`,
+with the reason in words. Every other record is included and unclassified.
+The same action re-evaluates earlier automatic exclusions and re-includes any
+whose reason no longer holds, such as a facility since added or a period since
+widened. Manual exclusions are never touched. The action returns
+`{created, updated}`, and the completeness gate warns until it has been run.
 
 ### Validation gates
 
@@ -93,8 +94,10 @@ only with an identical factor unit. The run line records the original quantity
 and unit, the factor's unit, the converted quantity and the conversion factor,
 so the report shows the full arithmetic
 (`1,250,000 US-gallon × 3.785411784 = 4,731,764.73 litre × 2.66 × 1.0000`).
-Totals accumulate per scope, per gas and for market-based scope 2 from the
-rounded lines. Every excluded assignment is snapshotted beside the lines with
+Totals accumulate per scope, per gas, and for market-based scope 2 from the
+rounded lines. A factor's CO2e excludes biogenic CO2, as Chapter 4 requires:
+the biomass factor carries only its CH4 and N2O into scope 1 and its CO2 into
+the biogenic column (spec 07.1). Every excluded assignment is snapshotted beside the lines with
 its reason (spec 05.1).
 
 Given the QA scenario, twelve facts, two inventories: under operational control

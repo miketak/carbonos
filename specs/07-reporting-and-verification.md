@@ -17,24 +17,33 @@ whether the reported figures are free of material misstatement. This spec
 covers what CarbonOS reports today, how a reader traces a figure to its
 sources, and how a verifier can examine it.
 
-## Behaviour
+## Behavior
 
 ### The run report
 
-A run is read as the inventory report for its period, in the order Chapter
-9 lists the required elements (spec 07.1): the company and the **boundary
-version** the run computed from (its number, the approach, who froze it and
-when, and every entity in scope with its Table 1 facts, share, window and
-facilities, including entities that emitted nothing and those recorded as
-excluded); the operational boundary declaration; the period and the
-inventory's status; emissions by scope, with scope 2 location-based and
-market-based side by side where instruments exist; each of the seven gases;
-biogenic CO2 outside the scopes; the base year with its recalculation
-history; the methodology statement; the **exclusions** grouped by reason;
-and the **snapshot lines**: facility, source and category, scope, quantity
-with the conversion shown (`1,250,000 US-gallon → 4,731,764.73 litre`),
-factor, weight (the accounting share), and CO2e. A run older than versioning
-says so instead of citing a version.
+A run is read as the inventory report for its period, in the order Chapter 9
+lists the required elements (spec 07.1):
+
+1. The company and the **boundary version** the run computed from: its
+   number, the approach, who froze it and when, and every entity in scope
+   with its Table 1 facts, share, window, and facilities. Entities that
+   emitted nothing and entities recorded as excluded are listed too.
+2. The operational boundary declaration.
+3. The period and the inventory's status.
+4. Emissions by scope, with scope 2 location-based and market-based side by
+   side where instruments exist. The run total uses the location-based
+   figure.
+5. Each of the seven gases.
+6. Biogenic CO2, outside the scopes.
+7. The base year with its recalculation history.
+8. The methodology statement, including the sources of the factors used.
+9. The **exclusions**, grouped by reason.
+10. The **snapshot lines**: facility, source and category, scope, quantity
+    with the conversion shown (`1,250,000 US-gallon → 4,731,764.73 litre`),
+    factor, weight (the accounting share), and CO2e.
+
+A run older than versioning says so instead of citing a version. Figures are
+in kilograms; the Standard asks for metric tonnes (spec 07.2).
 
 The organization overview shows the headline of the latest final run: total,
 scope bars, top facilities.

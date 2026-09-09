@@ -18,7 +18,7 @@ data and asks that its quality be known (Chapter 7). This spec covers the
 *facts* side of the model, deliberately free of any accounting treatment: no
 scope, no factor, no boundary decision lives here.
 
-## Behaviour
+## Behavior
 
 ### Organizations
 
@@ -60,7 +60,7 @@ allowed"): facts referenced by history are the audit trail.
 ### Activity records
 
 An activity record is one quantity of one thing that happened at one facility:
-facility, activity type (free text, e.g. "Haul fleet diesel"), quantity, unit,
+facility, activity type (free text, for example "Haul fleet diesel"), quantity, unit,
 date, optional data source, optional evidence reference, data quality, optional
 note.
 
@@ -74,7 +74,7 @@ note.
   evidence reference as a WARNING, so completeness and accuracy (Chapter 7) are
   visible before a number is produced.
 - **Plausibility.** The activity date must be past or present (422 otherwise).
-- **Correction in place.** A fact is corrected via PUT with the same shape as
+- **Correction in place.** A fact is corrected with a PUT of the same shape as
   creation. Past runs are snapshots and stay unaffected; open inventories see
   the corrected fact and their gates re-evaluate. Full versioning of facts is
   a non-goal today.
@@ -96,8 +96,8 @@ unit carries aliases so `L`, `litre` and `litres` resolve to one unit.
 | DISTANCE | km | km, mile, m |
 | PASSENGER_DISTANCE | passenger-km | passenger-km, passenger-mile |
 
-Substance-specific conversions (natural gas m3 to kWh via calorific value,
-fuel volume to mass via density) are deliberately excluded; the accountant
+Substance-specific conversions (natural gas m3 to kWh by calorific value,
+fuel volume to mass by density) are deliberately excluded; the accountant
 chooses a factor already in that unit. Every seeded factor unit is registered;
 a test enforces it.
 
