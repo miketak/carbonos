@@ -69,6 +69,17 @@ public class EmissionFactor {
 	@Column(name = "biogenic_co2_kg_per_unit", nullable = false, precision = 12, scale = 6)
 	private BigDecimal biogenicCo2KgPerUnit;
 
+	// the mass of the HFC and PFC blends per unit, and the assessment report whose potentials
+	// the source applied to turn them into CO2e (spec 07.2, the 2013 amendment)
+	@Column(name = "hfcs_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	private BigDecimal hfcsKgPerUnit;
+
+	@Column(name = "pfcs_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	private BigDecimal pfcsKgPerUnit;
+
+	@Column(name = "blend_gwp_source", length = 20)
+	private String blendGwpSource;
+
 	@Column(nullable = false, length = 120)
 	private String source;
 
@@ -133,6 +144,19 @@ public class EmissionFactor {
 
 	public BigDecimal getBiogenicCo2KgPerUnit() {
 		return biogenicCo2KgPerUnit;
+	}
+
+	public BigDecimal getHfcsKgPerUnit() {
+		return hfcsKgPerUnit;
+	}
+
+	public BigDecimal getPfcsKgPerUnit() {
+		return pfcsKgPerUnit;
+	}
+
+	/** The IPCC assessment report behind the blend potentials, or null for a factor with no blend. */
+	public String getBlendGwpSource() {
+		return blendGwpSource;
 	}
 
 	public String getSource() {

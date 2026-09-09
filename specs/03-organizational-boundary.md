@@ -50,17 +50,18 @@ by Table 1 of the Standard:
 
 | Table 1 row (CarbonOS relationship type) | Equity share | Financial control | Operational control |
 | --- | --- | --- | --- |
-| Group company or subsidiary (`WHOLLY_OWNED`): the company has financial control, at any ownership percentage | economic interest | 100% | 100% if operated, else 0 |
+| Group company or subsidiary (`SUBSIDIARY`): the company has financial control, at any ownership percentage | economic interest | 100% | 100% if operated, else 0 |
 | Joint venture, partnership, or operation under joint financial control (`JOINT_VENTURE`) | economic interest | economic interest | 100% for the operator, else 0 |
-| The same row with the operated flag fixed to true (`NON_INCORPORATED_JV`, spec 03.3) | economic interest | economic interest | 100% |
 | Associate or affiliate: significant influence, no control (`ASSOCIATE`) | economic interest | 0 | 0 |
 | Fixed-asset investment: no significant influence (`FIXED_ASSET_INVESTMENT`) | 0 | 0 | 0 |
-| Franchise | Not modeled. The Standard excludes a franchise unless the franchiser holds equity rights or control (spec 03.3) | | |
+| Franchise (`FRANCHISE`): consolidated only where the franchiser holds equity rights or control (spec 03.3) | economic interest, 0 without equity rights | 100% if financially controlled, else 0 | 100% if operated, else 0 |
 
 Table 1 of the Standard has two columns, equity share and financial control.
 The operational-control column here comes from the text of Chapter 3: 100% of
 an operation the company or one of its subsidiaries operates, otherwise
-nothing. The share flows down to every facility of the entity. The boundary response
+nothing. The share flows down to every facility of the entity, and through
+the chain of parents: an entity held through another carries that parent's
+share under the same approach as well as its own (spec 03.3). The boundary response
 spells out the Table 1 row applied, so the accountant and the verifier read
 the same sentence.
 
@@ -160,7 +161,8 @@ All under `/api/ghg`, session-authenticated, tenant-scoped.
 - `PUT /inventories/{id}/boundary/{facilityId}` and
   `PUT /inventories/{id}/boundary/entities/{entityId}`
   `{relationshipType?, economicInterestPercent?, operatedByCompany?,
-  effectiveFrom?, effectiveTo?, clearWindow?}` → upsert with prefill;
+  controlledByCompany?, effectiveFrom?, effectiveTo?, clearWindow?}` → upsert
+  with prefill;
   `DELETE` removes the facility (and the entity when it was the last) or the
   entity. All 409 `Operation not allowed` unless the inventory is a draft.
 - `POST /inventories/{id}/freeze` → `BoundaryVersionResponse`; 409 when
@@ -188,6 +190,11 @@ All under `/api/ghg`, session-authenticated, tenant-scoped.
 - `V12__inventory_lifecycle.sql`: `effective_from`, `effective_to` on
   treatments and entries; `excluded`, `exclusion_reason` on entries;
   `boundary_status` folds into `ghg_inventories.status`.
+- `V17__table_1_completeness.sql` (spec 03.3): `controlled_by_company` on
+  treatments and entries; `effective_economic_interest_percent` and
+  `chain_names` on entries.
+- `V19__required_disclosures.sql` (spec 07.2): `ghg_boundary_exclusions` and
+  `ghg_boundary_version_exclusions`, the operations left out with a reason.
 
 ## Events
 
@@ -210,8 +217,5 @@ membership windows; zero-share entities recorded as excluded. Frontend:
 ## Non-goals and open questions
 
 - Diffing versions; reverting to an earlier version.
-- Consolidation at more than one level. Chapter 3 requires the chosen
-  approach to be applied at every level of the group. CarbonOS models one
-  layer, so an interest held through a subsidiary is entered as its product
-  (83% of 50% is 41.5%). Spec 03.3.
-- Franchises, the fifth row of Table 1. Spec 03.3.
+- Group structures are chains of parents (spec 03.3); an entity with several
+  parents is not modeled.

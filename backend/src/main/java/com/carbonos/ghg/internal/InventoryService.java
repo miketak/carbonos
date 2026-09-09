@@ -46,6 +46,7 @@ public class InventoryService {
 	private final InventoryRepository inventories;
 	private final BoundaryTreatmentRepository boundaryTreatments;
 	private final BoundaryVersionRepository boundaryVersions;
+	private final BoundaryExclusionRepository boundaryExclusions;
 	private final InventoryAssignmentRepository assignments;
 	private final MarketFactorRepository marketFactors;
 	private final GhgRunRepository runs;
@@ -58,8 +59,9 @@ public class InventoryService {
 			FacilityRepository facilities, ActivityRecordRepository activities,
 			EmissionFactorRepository emissionFactors, InventoryRepository inventories,
 			BoundaryTreatmentRepository boundaryTreatments, BoundaryVersionRepository boundaryVersions,
-			InventoryAssignmentRepository assignments, MarketFactorRepository marketFactors, GhgRunRepository runs,
-			BaseYearService baseYears, ApplicationEventPublisher events, GhgAccess access, UnitConverter units) {
+			BoundaryExclusionRepository boundaryExclusions, InventoryAssignmentRepository assignments,
+			MarketFactorRepository marketFactors, GhgRunRepository runs, BaseYearService baseYears,
+			ApplicationEventPublisher events, GhgAccess access, UnitConverter units) {
 		this.organizations = organizations;
 		this.entities = entities;
 		this.facilities = facilities;
@@ -68,6 +70,7 @@ public class InventoryService {
 		this.inventories = inventories;
 		this.boundaryTreatments = boundaryTreatments;
 		this.boundaryVersions = boundaryVersions;
+		this.boundaryExclusions = boundaryExclusions;
 		this.assignments = assignments;
 		this.marketFactors = marketFactors;
 		this.runs = runs;
@@ -157,10 +160,166 @@ public class InventoryService {
 
 	/** Explicit overrides for an entity's treatment; a null field prefills from the entity on creation and keeps its value on update. */
 	public record TreatmentInput(RelationshipType relationshipType, BigDecimal economicInterestPercent,
-			Boolean operatedByCompany, LocalDate effectiveFrom, LocalDate effectiveTo, boolean clearWindow) {
+			Boolean operatedByCompany, Boolean controlledByCompany, LocalDate effectiveFrom, LocalDate effectiveTo,
+			boolean clearWindow) {
 		static TreatmentInput none() {
-			return new TreatmentInput(null, null, null, null, null, false);
+			return new TreatmentInput(null, null, null, null, null, null, false);
 		}
+	}
+
+	/**
+	 * One entity as the boundary sees it, with the chain resolved inside the
+	 * transaction (spec 03.3) and any exclusion recorded for it or for its
+	 * facilities (spec 07.2).
+	 */
+	public record BoundaryEntityView(LegalEntity entity, List<Facility> facilities, BoundaryTreatment treatment,
+			EntityChain chain, BoundaryExclusion entityExclusion, Map<UUID, BoundaryExclusion> facilityExclusions) {
+	}
+
+	/**
+	 * Every entity of the organization with its facilities, its treatment in
+	 * this inventory if any, and the chain of parents resolved: a parent's
+	 * treatment where the parent is in the boundary, else the parent's facts.
+	 */
+	@Transactional(readOnly = true)
+	public List<BoundaryEntityView> boundaryView(UUID inventoryId) {
+		var inventory = get(inventoryId);
+		var organizationId = inventory.getOrganization().getId();
+		var treatments = boundaryTreatments.findAllByInventoryId(inventoryId)
+			.stream()
+			.collect(Collectors.toMap(treatment -> treatment.getEntity().getId(), Function.identity()));
+		var facilitiesByEntity = facilities.findAllByOrganizationIdOrderByCreatedAtAsc(organizationId)
+			.stream()
+			.collect(Collectors.groupingBy(facility -> facility.getEntity().getId()));
+		var exclusions = boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
+		var byEntity = exclusions.stream()
+			.filter(BoundaryExclusion::isWholeEntity)
+			.collect(Collectors.toMap(exclusion -> exclusion.getEntity().getId(), Function.identity()));
+		var byFacility = exclusions.stream()
+			.filter(exclusion -> !exclusion.isWholeEntity())
+			.collect(Collectors.toMap(exclusion -> exclusion.getFacility().getId(), Function.identity()));
+		return entities.findAllByOrganizationIdOrderByReportingCompanyDescCreatedAtAsc(organizationId)
+			.stream()
+			.map(entity -> new BoundaryEntityView(entity,
+					facilitiesByEntity.getOrDefault(entity.getId(), List.of()), treatments.get(entity.getId()),
+					chainOf(entity, inventory.getConsolidationApproach(), treatments), byEntity.get(entity.getId()),
+					byFacility))
+			.toList();
+	}
+
+	// --- boundary exclusions (spec 07.2) ---------------------------------------------
+
+	@Transactional(readOnly = true)
+	public List<BoundaryExclusion> boundaryExclusions(UUID inventoryId) {
+		get(inventoryId);
+		return boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
+	}
+
+	/** Records why a whole entity is left out of the boundary. Refused while the entity is in it. */
+	public BoundaryExclusion excludeEntity(UUID inventoryId, UUID entityId, ExclusionReason reason, String detail) {
+		var inventory = get(inventoryId);
+		requireEditable(inventory);
+		var entity = requireEntity(entityId, inventory);
+		if (boundaryTreatments.findByInventoryIdAndEntityId(inventoryId, entityId).isPresent()) {
+			throw new GhgRuleViolationException("'" + entity.getName()
+					+ "' is in the boundary. Remove it from the boundary before excluding it.");
+		}
+		return boundaryExclusions.findByInventoryIdAndEntityId(inventoryId, entityId).map(existing -> {
+			existing.update(reason, trimToNull(detail));
+			return existing;
+		}).orElseGet(() -> boundaryExclusions
+			.save(new BoundaryExclusion(inventory, entity, null, reason, trimToNull(detail))));
+	}
+
+	/** Records why one facility of a member entity is left out. Refused while the facility is in the boundary. */
+	public BoundaryExclusion excludeFacility(UUID inventoryId, UUID facilityId, ExclusionReason reason,
+			String detail) {
+		var inventory = get(inventoryId);
+		requireEditable(inventory);
+		var facility = requireFacility(facilityId, inventory);
+		var inBoundary = boundaryTreatments.findAllByInventoryId(inventoryId)
+			.stream()
+			.anyMatch(treatment -> treatment.includes(facilityId));
+		if (inBoundary) {
+			throw new GhgRuleViolationException("'" + facility.getName()
+					+ "' is in the boundary. Remove it from the boundary before excluding it.");
+		}
+		return boundaryExclusions.findByInventoryIdAndFacilityId(inventoryId, facilityId).map(existing -> {
+			existing.update(reason, trimToNull(detail));
+			return existing;
+		}).orElseGet(() -> boundaryExclusions
+			.save(new BoundaryExclusion(inventory, null, facility, reason, trimToNull(detail))));
+	}
+
+	public void clearEntityExclusion(UUID inventoryId, UUID entityId) {
+		requireEditable(get(inventoryId));
+		boundaryExclusions.delete(boundaryExclusions.findByInventoryIdAndEntityId(inventoryId, entityId)
+			.orElseThrow(() -> GhgNotFoundException.entity(entityId)));
+	}
+
+	public void clearFacilityExclusion(UUID inventoryId, UUID facilityId) {
+		requireEditable(get(inventoryId));
+		boundaryExclusions.delete(boundaryExclusions.findByInventoryIdAndFacilityId(inventoryId, facilityId)
+			.orElseThrow(() -> GhgNotFoundException.facility(facilityId)));
+	}
+
+	/** Ticking an operation in retires the exclusion that covered it: it is no longer left out. */
+	private void retireExclusionsCovering(UUID inventoryId, LegalEntity entity, Facility facility) {
+		boundaryExclusions.findByInventoryIdAndEntityId(inventoryId, entity.getId()).ifPresent(boundaryExclusions::delete);
+		if (facility != null) {
+			boundaryExclusions.findByInventoryIdAndFacilityId(inventoryId, facility.getId())
+				.ifPresent(boundaryExclusions::delete);
+		}
+	}
+
+	/**
+	 * Facilities of the organization neither in the boundary nor covered by an
+	 * exclusion: the undocumented omissions Chapter 9 does not allow.
+	 */
+	private List<Facility> undocumentedOmissions(UUID inventoryId, UUID organizationId,
+			List<BoundaryTreatment> treatments) {
+		var exclusions = boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
+		var excludedEntities = exclusions.stream()
+			.filter(BoundaryExclusion::isWholeEntity)
+			.map(exclusion -> exclusion.getEntity().getId())
+			.collect(Collectors.toSet());
+		var excludedFacilities = exclusions.stream()
+			.filter(exclusion -> !exclusion.isWholeEntity())
+			.map(exclusion -> exclusion.getFacility().getId())
+			.collect(Collectors.toSet());
+		return facilities.findAllByOrganizationIdOrderByCreatedAtAsc(organizationId)
+			.stream()
+			.filter(facility -> treatments.stream().noneMatch(treatment -> treatment.includes(facility.getId())))
+			.filter(facility -> !excludedEntities.contains(facility.getEntity().getId())
+					&& !excludedFacilities.contains(facility.getId()))
+			.toList();
+	}
+
+	/** The parents' contribution to an entity's share: each parent's treatment in this inventory when present, else its facts. */
+	static EntityChain chainOf(LegalEntity entity, ConsolidationApproach approach,
+			Map<UUID, BoundaryTreatment> treatments) {
+		var shareFactor = BigDecimal.ONE;
+		var interestFactor = BigDecimal.ONE;
+		var names = new ArrayList<String>();
+		for (var ancestor = entity.getParent(); ancestor != null; ancestor = ancestor.getParent()) {
+			var treatment = treatments.get(ancestor.getId());
+			shareFactor = shareFactor
+				.multiply(treatment != null ? treatment.ownShare(approach) : ancestor.ownShare(approach));
+			interestFactor = interestFactor.multiply((treatment != null ? treatment.getEconomicInterestPercent()
+					: ancestor.getEconomicInterestPercent()).movePointLeft(2));
+			names.add(ancestor.getName());
+		}
+		return names.isEmpty() ? EntityChain.DIRECT : new EntityChain(shareFactor, interestFactor, List.copyOf(names));
+	}
+
+	private static Map<UUID, BoundaryTreatment> byEntity(List<BoundaryTreatment> treatments) {
+		return treatments.stream().collect(Collectors.toMap(t -> t.getEntity().getId(), Function.identity()));
+	}
+
+	/** The share a treatment derives in this inventory, chain included. */
+	private static BigDecimal shareOf(BoundaryTreatment treatment, ConsolidationApproach approach,
+			Map<UUID, BoundaryTreatment> treatments) {
+		return treatment.accountingShare(approach, chainOf(treatment.getEntity(), approach, treatments).shareFactor());
 	}
 
 	/**
@@ -176,9 +335,13 @@ public class InventoryService {
 			facilities.findAllByOrganizationIdOrderByCreatedAtAsc(inventory.getOrganization().getId())
 				.stream()
 				.filter(facility -> facility.getEntity().getId().equals(entityId))
-				.forEach(created::includeFacility);
+				.forEach(facility -> {
+					created.includeFacility(facility);
+					retireExclusionsCovering(inventoryId, entity, facility);
+				});
 			return boundaryTreatments.save(created);
 		});
+		retireExclusionsCovering(inventoryId, entity, null);
 		apply(treatment, input);
 		return treatment;
 	}
@@ -203,6 +366,7 @@ public class InventoryService {
 		var treatment = boundaryTreatments.findByInventoryIdAndEntityId(inventoryId, entityId)
 			.orElseGet(() -> boundaryTreatments.save(new BoundaryTreatment(inventory, facility.getEntity())));
 		treatment.includeFacility(facility);
+		retireExclusionsCovering(inventoryId, facility.getEntity(), facility);
 		apply(treatment, input);
 		return treatment;
 	}
@@ -233,8 +397,9 @@ public class InventoryService {
 				input.relationshipType() != null ? input.relationshipType() : treatment.getRelationshipType(),
 				input.economicInterestPercent() != null ? input.economicInterestPercent()
 						: treatment.getEconomicInterestPercent(),
-				input.operatedByCompany() != null ? input.operatedByCompany() : treatment.isOperatedByCompany(), from,
-				to);
+				input.operatedByCompany() != null ? input.operatedByCompany() : treatment.isOperatedByCompany(),
+				input.controlledByCompany() != null ? input.controlledByCompany() : treatment.isControlledByCompany(),
+				from, to);
 	}
 
 	// --- inventory lifecycle (spec 05.1) --------------------------------------
@@ -259,8 +424,11 @@ public class InventoryService {
 		var previous = boundaryVersions.findTopByInventoryIdOrderByVersionNoDesc(inventoryId)
 			.flatMap(latest -> boundaryVersions.findWithEntriesById(latest.getId()));
 		var nextNo = previous.map(latest -> latest.getVersionNo() + 1).orElse(1);
+		var byEntity = byEntity(treatments);
 		var version = boundaryVersions.save(new BoundaryVersion(inventory, nextNo, treatments,
-				access.currentUserId(), access.currentUserEmail()));
+				treatment -> chainOf(treatment.getEntity(), inventory.getConsolidationApproach(), byEntity),
+				boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId), access.currentUserId(),
+				access.currentUserEmail()));
 		inventory.freeze(version);
 		baseYears.evaluateStructuralChange(inventory, version, previous);
 		return version;
@@ -338,13 +506,20 @@ public class InventoryService {
 		for (var treatment : boundaryTreatments.findAllByInventoryId(inventoryId)) {
 			var copy = new BoundaryTreatment(successor, treatment.getEntity());
 			copy.update(treatment.getRelationshipType(), treatment.getEconomicInterestPercent(),
-					treatment.isOperatedByCompany(), treatment.getEffectiveFrom(), treatment.getEffectiveTo());
+					treatment.isOperatedByCompany(), treatment.isControlledByCompany(), treatment.getEffectiveFrom(),
+					treatment.getEffectiveTo());
 			treatment.getFacilities().forEach(member -> copy.includeFacility(member.getFacility()));
 			boundaryTreatments.save(copy);
 		}
 		for (var factor : marketFactors.findAllByInventoryId(inventoryId)) {
 			marketFactors.save(new MarketFactor(successor, factor.getFacility(), factor.getInstrumentType(),
-					factor.getKgCo2ePerKwh(), factor.getSource()));
+					factor.getKgCo2ePerKwh(), factor.getSource(), factor.isMeetsQualityCriteria(),
+					factor.getQualityNotes()));
+		}
+		successor.setResidualMix(inventory.getResidualMixAvailable(), inventory.getResidualMixKgCo2ePerKwh());
+		for (var exclusion : boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
+			boundaryExclusions.save(new BoundaryExclusion(successor, exclusion.isWholeEntity() ? exclusion.getEntity() : null,
+					exclusion.getFacility(), exclusion.getReason(), exclusion.getDetail()));
 		}
 		inventory.markSupersededBy(successor);
 		return successor;
@@ -380,15 +555,26 @@ public class InventoryService {
 	}
 
 	public MarketFactor setMarketFactor(UUID inventoryId, UUID facilityId, MarketInstrument instrument,
-			BigDecimal kgCo2ePerKwh, String source) {
+			BigDecimal kgCo2ePerKwh, String source, boolean meetsQualityCriteria, String qualityNotes) {
 		var inventory = get(inventoryId);
 		requireEditable(inventory);
 		var facility = requireFacility(facilityId, inventory);
 		return marketFactors.findByInventoryIdAndFacilityId(inventoryId, facilityId).map(existing -> {
-			existing.update(instrument, kgCo2ePerKwh, source.trim());
+			existing.update(instrument, kgCo2ePerKwh, source.trim(), meetsQualityCriteria, trimToNull(qualityNotes));
 			return existing;
 		}).orElseGet(() -> marketFactors.save(new MarketFactor(inventory, facility, instrument, kgCo2ePerKwh,
-				source.trim())));
+				source.trim(), meetsQualityCriteria, trimToNull(qualityNotes))));
+	}
+
+	/** Whether an adjusted residual mix is available for the instruments' markets, and its factor when it is (spec 07.2). */
+	public Inventory setResidualMix(UUID inventoryId, boolean available, BigDecimal kgCo2ePerKwh) {
+		var inventory = get(inventoryId);
+		requireEditable(inventory);
+		if (available && kgCo2ePerKwh == null) {
+			throw new GhgRuleViolationException("A residual mix that is available needs its factor in kg CO2e per kWh.");
+		}
+		inventory.setResidualMix(available, kgCo2ePerKwh);
+		return inventory;
 	}
 
 	public void removeMarketFactor(UUID inventoryId, UUID facilityId) {
@@ -412,7 +598,7 @@ public class InventoryService {
 			return new Membership(false, "facility not in the boundary");
 		}
 		var treatment = holder.get();
-		if (treatment.accountingShare(approach).signum() == 0) {
+		if (shareOf(treatment, approach, byEntity(treatments)).signum() == 0) {
 			return new Membership(false, treatment.getEntity().getName() + ": 0% accounting share under "
 					+ approach.name().toLowerCase().replace('_', ' '));
 		}
@@ -577,6 +763,9 @@ public class InventoryService {
 			.collect(Collectors.toSet());
 		var orgActivities = activities
 			.findAllByFacilityOrganizationIdOrderByActivityDateDesc(inventory.getOrganization().getId());
+		var baseYear = baseYears.of(inventory.getOrganization().getId()).orElse(null);
+		var wholeYear = baseYear != null
+				&& baseYear.getStructuralChangeConvention() == StructuralChangeConvention.WHOLE_YEAR;
 		var instruments = marketFactors.findAllByInventoryId(inventoryId)
 			.stream()
 			.collect(Collectors.toMap(factor -> factor.getFacility().getId(), Function.identity()));
@@ -590,9 +779,10 @@ public class InventoryService {
 			boundaryFindings.add(new Finding(Severity.ERROR,
 					"The inventory is a draft. Freeze it to enable a run."));
 		}
+		var treatmentsByEntity = byEntity(treatments);
 		for (var treatment : treatments) {
 			var entity = treatment.getEntity();
-			if (treatment.accountingShare(approach).signum() == 0) {
+			if (shareOf(treatment, approach, treatmentsByEntity).signum() == 0) {
 				boundaryFindings.add(new Finding(Severity.WARNING, entity.getName()
 						+ " has a 0% accounting share under " + approach.name().toLowerCase().replace('_', ' ')
 						+ ": it is outside the boundary under this approach. Remove it, or leave it and the version "
@@ -600,7 +790,8 @@ public class InventoryService {
 			}
 			var drifted = treatment.getRelationshipType() != entity.getRelationshipType()
 					|| treatment.getEconomicInterestPercent().compareTo(entity.getEconomicInterestPercent()) != 0
-					|| treatment.isOperatedByCompany() != entity.isOperatedByCompany();
+					|| treatment.isOperatedByCompany() != entity.isOperatedByCompany()
+					|| treatment.isControlledByCompany() != entity.isControlledByCompany();
 			if (drifted) {
 				// spec 03: the treatment is a decision and stays put; the accountant reconciles
 				boundaryFindings.add(new Finding(Severity.WARNING, entity.getName() + "'s treatment ("
@@ -613,6 +804,12 @@ public class InventoryService {
 			if (treatment.isPartialWithin(inventory.getPeriodStart(), inventory.getPeriodEnd())) {
 				boundaryFindings.add(new Finding(Severity.WARNING, entity.getName() + " is a "
 						+ treatment.describeWindow() + ": a partial-period membership, accounted from that date."));
+				if (wholeYear) {
+					// spec 06.1: the policy says a mid-year change is accounted for the entire year
+					boundaryFindings.add(new Finding(Severity.WARNING, entity.getName()
+							+ " has a membership window, but the recalculation policy accounts structural changes "
+							+ "for the whole year. Include the full year of the operation, or change the convention."));
+				}
 			}
 		}
 		for (var assignment : included) {
@@ -624,6 +821,14 @@ public class InventoryService {
 						"Included activity '" + activity.getActivityType() + "' (" + activity.getFacility().getName()
 								+ ", " + activity.getActivityDate() + ") is outside the boundary ("
 								+ membership.detail() + "): exclude it or change the boundary."));
+			}
+		}
+		if (!treatments.isEmpty()) {
+			// spec 07.2: an operation left out of the boundary is an exclusion Chapter 9 requires a reason for
+			for (var omitted : undocumentedOmissions(inventoryId, inventory.getOrganization().getId(), treatments)) {
+				boundaryFindings.add(new Finding(Severity.ERROR, "'" + omitted.getName() + "' ("
+						+ omitted.getEntity().getName() + ") is neither in the boundary nor excluded with a reason. "
+						+ "Tick it in, or record why it is left out."));
 			}
 		}
 
@@ -714,6 +919,18 @@ public class InventoryService {
 						+ describeUnit(activityUnit) + ": the market-based figure falls back to location-based."));
 			}
 		}
+		if (!instruments.isEmpty() && inventory.getResidualMixAvailable() == null) {
+			factorFindings.add(new Finding(Severity.WARNING, "The inventory has contractual instruments but does not "
+					+ "say whether a residual mix is available. The Scope 2 Guidance requires the disclosure either way."));
+		}
+		for (var instrument : instruments.values()) {
+			if (!instrument.isMeetsQualityCriteria()) {
+				factorFindings.add(new Finding(Severity.WARNING, "The instrument for " + instrument.getFacility().getName()
+						+ " does not meet the Scope 2 Quality Criteria: the market-based figure falls back to "
+						+ (Boolean.TRUE.equals(inventory.getResidualMixAvailable()) ? "the residual mix."
+								: "location-based.")));
+			}
+		}
 
 		var baseYearFindings = new ArrayList<Finding>();
 		for (var flag : baseYears.unresolvedFlags(inventory.getOrganization().getId())) {
@@ -721,6 +938,21 @@ public class InventoryService {
 			var severity = flag.isAboveThreshold() && !ownBaseYear ? Severity.ERROR : Severity.WARNING;
 			baseYearFindings.add(new Finding(severity, "Base year flagged for recalculation (" + flag.getReason()
 					+ "). Record the decision under the organization's base year."));
+		}
+		if (baseYear != null && !baseYear.getInventory().getId().equals(inventoryId)
+				&& baseYear.getInventory().getGwpSet() != inventory.getGwpSet()) {
+			// the 2013 amendment: the same GWP values for the current period and the base year
+			baseYearFindings.add(new Finding(Severity.WARNING, "This inventory uses IPCC " + inventory.getGwpSet()
+					+ " potentials; the " + baseYear.year() + " base year uses IPCC "
+					+ baseYear.getInventory().getGwpSet()
+					+ ". The required-gases amendment recommends the same set for both."));
+		}
+		if (baseYear != null) {
+			for (var label : baseYears.recalculatedBasesWithWindows(baseYear)) {
+				baseYearFindings.add(new Finding(Severity.WARNING, "The recalculated base '" + label
+						+ "' carries a membership window, but the policy accounts structural changes for the whole "
+						+ "year. Recalculate the base for the entire year, or change the convention."));
+			}
 		}
 
 		return new Report(List.of(new GateResult(Gate.BOUNDARY, List.copyOf(boundaryFindings)),
@@ -803,13 +1035,31 @@ public class InventoryService {
 					round(convertedQuantity.multiply(factor.getPfcsKgCo2ePerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getSf6KgPerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getNf3KgPerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.getBiogenicCo2KgPerUnit()).multiply(share)));
+					round(convertedQuantity.multiply(factor.getBiogenicCo2KgPerUnit()).multiply(share)),
+					round(convertedQuantity.multiply(factor.getHfcsKgPerUnit()).multiply(share)),
+					round(convertedQuantity.multiply(factor.getPfcsKgPerUnit()).multiply(share)),
+					factor.getBlendGwpSource());
 			GhgRunLine.Market market = null;
 			var instrument = instruments.get(activity.getFacility().getId());
 			if (assignment.getScope() == Scope.SCOPE_2 && instrument != null && units.canConvert(activityUnit, KWH)) {
 				var kwh = units.convert(quantity, activityUnit, KWH);
-				market = new GhgRunLine.Market(round(kwh.multiply(instrument.getKgCo2ePerKwh()).multiply(share)),
-						instrument.getKgCo2ePerKwh(), instrument.getInstrumentType());
+				if (instrument.isMeetsQualityCriteria()) {
+					market = new GhgRunLine.Market(round(kwh.multiply(instrument.getKgCo2ePerKwh()).multiply(share)),
+							instrument.getKgCo2ePerKwh(), instrument.getInstrumentType(), null);
+				}
+				else if (Boolean.TRUE.equals(inventory.getResidualMixAvailable())
+						&& inventory.getResidualMixKgCo2ePerKwh() != null) {
+					// Scope 2 Guidance: an instrument that fails the Quality Criteria is replaced by other data
+					var residual = inventory.getResidualMixKgCo2ePerKwh();
+					market = new GhgRunLine.Market(round(kwh.multiply(residual).multiply(share)), residual,
+							MarketInstrument.RESIDUAL_MIX, "the facility's instrument does not meet the Scope 2 "
+									+ "Quality Criteria; the residual mix was applied instead");
+				}
+				else {
+					market = new GhgRunLine.Market(kgCo2e, null, instrument.getInstrumentType(),
+							"the facility's instrument does not meet the Scope 2 Quality Criteria and no residual "
+									+ "mix is available; the location-based figure stands");
+				}
 			}
 			run.addLine(new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, kgCo2e,
 					gases, market));

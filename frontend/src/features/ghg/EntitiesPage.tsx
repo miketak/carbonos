@@ -76,14 +76,31 @@ export function EntitiesPage() {
                   </td>
                   <td className="px-4 py-3 text-ink-muted">
                     {relationshipShortLabels[entity.relationshipType]}
+                    {entity.chain.length > 0 && (
+                      <span className="block text-xs">held through {entity.chain.join(' > ')}</span>
+                    )}
                   </td>
-                  <td className="px-4 py-3">{entity.economicInterestPercent}%</td>
+                  <td className="px-4 py-3">
+                    {entity.economicInterestPercent}%
+                    {entity.chain.length > 0 && (
+                      <span className="block text-xs text-ink-muted">
+                        {entity.effectiveEconomicInterestPercent}% through the chain
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-ink-muted">
                     {entity.legalOwnershipPercent === null
                       ? 'same'
                       : `${entity.legalOwnershipPercent}%`}
                   </td>
-                  <td className="px-4 py-3">{entity.operatedByCompany ? 'Yes' : 'No'}</td>
+                  <td className="px-4 py-3">
+                    {entity.operatedByCompany ? 'Yes' : 'No'}
+                    {entity.relationshipType === 'FRANCHISE' && (
+                      <span className="block text-xs text-ink-muted">
+                        {entity.controlledByCompany ? 'financially controlled' : 'not controlled'}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-mono font-semibold">
                     {percent(entity.equityShare)}
                   </td>

@@ -55,6 +55,10 @@ class GhgApiIntegrationTests {
 	private static final String ANFO_FACTOR = "c4a1f001-0000-4000-8000-000000000014";
 	// wood pellets: biomass, tonne, 14.99 CO2e from CH4 and N2O plus 1800 biogenic CO2
 	private static final String BIOMASS_FACTOR = "c4a1f001-0000-4000-8000-000000000016";
+	// refrigerant R-410A: an HFC blend, 1 kg of gas per kg leaked at 2,088 kg CO2e (IPCC AR5)
+	private static final String R410A_FACTOR = "c4a1f001-0000-4000-8000-000000000005";
+	// district cooling: scope 2, kWh, 0.12
+	private static final String COOLING_FACTOR = "c4a1f001-0000-4000-8000-000000000017";
 
 	@Autowired
 	MockMvc mvc;
@@ -219,6 +223,15 @@ class GhgApiIntegrationTests {
 			.content(json)).andExpect(status().isOk());
 	}
 
+	/** Records why a facility is left out of the boundary (spec 07.2). */
+	void excludeFacility(String inventoryId, String facilityId, String reason, String detail) throws Exception {
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/" + facilityId + "/exclude").with(asMember())
+			.with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"reason": "%s", "detail": "%s"}""".formatted(reason, detail))).andExpect(status().isOk());
+	}
+
 	void freeze(String inventoryId) throws Exception {
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
@@ -318,7 +331,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.length()").value(1))
 			.andExpect(jsonPath("$[0].name").value("Sankofa Gold plc"))
 			.andExpect(jsonPath("$[0].reportingCompany").value(true))
-			.andExpect(jsonPath("$[0].relationshipType").value("WHOLLY_OWNED"))
+			.andExpect(jsonPath("$[0].relationshipType").value("SUBSIDIARY"))
 			.andExpect(jsonPath("$[0].financialControlShare").value(1));
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/facilities").with(asMember()))
 			.andExpect(jsonPath("$[0].id").value(facilityId))
@@ -334,6 +347,124 @@ class GhgApiIntegrationTests {
 		mvc.perform(delete("/api/ghg/entities/" + jv).with(asMember()).with(csrf()))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("still has facilities")));
+	}
+
+	@Test
+	void retiredRelationshipNamesAreRefusedWithTheReplacementNamed() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/entities").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Old style", "relationshipType": "WHOLLY_OWNED", "economicInterestPercent": 100,
+					 "operatedByCompany": true}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("renamed SUBSIDIARY")));
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/entities").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Old style", "relationshipType": "NON_INCORPORATED_JV", "economicInterestPercent": 40,
+					 "operatedByCompany": true}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("JOINT_VENTURE")));
+		// control is a fact for franchises only; Table 1 settles it for every other row
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/entities").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Tema Associates", "relationshipType": "ASSOCIATE", "economicInterestPercent": 30,
+					 "operatedByCompany": false, "controlledByCompany": true}"""))
+			.andExpect(status().isConflict());
+	}
+
+	@Test
+	void aFranchiseIsConsolidatedOnlyWhereTheFranchiserHoldsRightsOrControl() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		// a franchised retail outlet: no equity rights, no control, not operated
+		var outlet = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/entities").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Sankofa Gold Shop Kumasi", "relationshipType": "FRANCHISE",
+						 "economicInterestPercent": 0, "operatedByCompany": false, "controlledByCompany": false}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.equityShare").value(0))
+			.andExpect(jsonPath("$.financialControlShare").value(0))
+			.andExpect(jsonPath("$.operationalControlShare").value(0)));
+		String outletId = JsonPath.read(outlet, "$.id");
+		var shop = createFacility(orgId, "Kumasi shop", outletId);
+		var shopPower = createActivity(orgId, shop, "Shop electricity", "100", "kWh", "2025-05-01");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		putBoundary(inventoryId, shop);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary").with(asMember()))
+			.andExpect(jsonPath("$[?(@.entityName == 'Sankofa Gold Shop Kumasi')].table1Row")
+				.value("franchise; operational control: 0% (not the operator)"));
+		// review treats it as any zero-share entity: outside the boundary under the approach
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		assertThat(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + shopPower + "')].exclusionReason")
+			.getFirst()).isEqualTo("OUTSIDE_BOUNDARY");
+		// a franchise the company financially controls is a 100% operation under financial control
+		mvc.perform(put("/api/ghg/entities/" + outletId).with(asMember()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "Sankofa Gold Shop Kumasi", "relationshipType": "FRANCHISE",
+					 "economicInterestPercent": 20, "operatedByCompany": false, "controlledByCompany": true}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.equityShare").value(0.2))
+			.andExpect(jsonPath("$.financialControlShare").value(1))
+			.andExpect(jsonPath("$.operationalControlShare").value(0));
+	}
+
+	/** The Standard's Holland Industries example: a 50% venture held by an 83% subsidiary. */
+	@Test
+	void anEntityHeldThroughAParentCarriesTheParentsShareAtEveryLevel() throws Exception {
+		var orgId = createOrganization("Holland Industries");
+		var hollandAmerica = createEntity(orgId, "Holland America", "SUBSIDIARY", "83", true);
+		var bgb = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/entities").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "BGB", "relationshipType": "JOINT_VENTURE", "economicInterestPercent": 50,
+						 "operatedByCompany": false, "parentEntityId": "%s"}""".formatted(hollandAmerica)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.parentEntityId").value(hollandAmerica))
+			.andExpect(jsonPath("$.effectiveEconomicInterestPercent").value(41.5))
+			.andExpect(jsonPath("$.chain[0]").value("Holland America"))
+			.andExpect(jsonPath("$.equityShare").value(0.415))
+			.andExpect(jsonPath("$.financialControlShare").value(0.5))
+			.andExpect(jsonPath("$.operationalControlShare").value(0)));
+		String bgbId = JsonPath.read(bgb, "$.id");
+		// a chain cannot loop, and a parent cannot be deleted while it holds other entities
+		mvc.perform(put("/api/ghg/entities/" + hollandAmerica).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Holland America", "relationshipType": "SUBSIDIARY", "economicInterestPercent": 83,
+					 "operatedByCompany": true, "parentEntityId": "%s"}""".formatted(bgbId)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("cannot loop")));
+		mvc.perform(delete("/api/ghg/entities/" + hollandAmerica).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
+		// the boundary shows the chain and the effective interest, and the version copies both
+		var plant = createFacility(orgId, "BGB plant", bgbId);
+		var diesel = createActivity(orgId, plant, "Plant diesel", "1000", "litre", "2025-03-15");
+		var equity = createInventory(orgId, "2025 Equity", "EQUITY_SHARE");
+		putBoundary(equity, plant);
+		var boundary = body(mvc.perform(get("/api/ghg/inventories/" + equity + "/boundary").with(asMember())));
+		assertThat(share(boundary, "BGB")).isEqualTo(0.415);
+		assertThat(JsonPath.<List<String>>read(boundary, "$[?(@.entityName == 'BGB')].table1Row").getFirst())
+			.endsWith("; held through Holland America");
+		assertThat(JsonPath.<List<Double>>read(boundary, "$[?(@.entityName == 'BGB')].effectiveEconomicInterestPercent")
+			.getFirst()).isEqualTo(41.5);
+		// 1000 L x 2.66 x 41.5% = 1103.9 kg
+		prepare(equity, diesel, DIESEL_FACTOR);
+		run(equity, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(1103.9))
+			.andExpect(jsonPath("$.lines[0].weight").value(0.415));
+		var versions = body(mvc.perform(get("/api/ghg/inventories/" + equity + "/boundary/versions").with(asMember())));
+		mvc.perform(get("/api/ghg/boundary-versions/" + JsonPath.read(versions, "$[0].id")).with(asMember()))
+			.andExpect(jsonPath("$.entries[?(@.entityName == 'BGB')].chain[0]").value("Holland America"))
+			.andExpect(jsonPath("$.entries[?(@.entityName == 'BGB')].effectiveEconomicInterestPercent").value(41.5))
+			.andExpect(jsonPath("$.entries[?(@.entityName == 'BGB')].accountingShare").value(0.415));
+		// under financial control the venture is 50% of the subsidiary's 100%
+		var financial = createInventory(orgId, "2025 Financial", "FINANCIAL_CONTROL");
+		putBoundary(financial, plant);
+		assertThat(share(body(mvc.perform(get("/api/ghg/inventories/" + financial + "/boundary").with(asMember()))),
+				"BGB")).isEqualTo(0.5);
 	}
 
 	@Test
@@ -361,6 +492,8 @@ class GhgApiIntegrationTests {
 			// the Table 1 row applied is spelled out for the verifier
 			assertThat(JsonPath.<List<String>>read(boundary, "$[?(@.entityName == 'Tarkwa Gold JV Ltd')].table1Row")
 				.getFirst()).startsWith("joint venture under joint financial control");
+			assertThat(JsonPath.<List<String>>read(boundary, "$[?(@.entityName == 'Sankofa Gold plc')].table1Row")
+				.getFirst()).startsWith("group company or subsidiary under financial control");
 		}
 	}
 
@@ -471,7 +604,7 @@ class GhgApiIntegrationTests {
 	void aMembershipWindowExcludesRecordsOutsideItAndIsRecordedInTheVersion() throws Exception {
 		var orgId = createOrganization("Sankofa Gold plc");
 		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
-		var port = createEntity(orgId, "Takoradi Port Co", "WHOLLY_OWNED", "100", true);
+		var port = createEntity(orgId, "Takoradi Port Co", "SUBSIDIARY", "100", true);
 		var terminal = createFacility(orgId, "Takoradi Port Loadout", port);
 		var january = createActivity(orgId, terminal, "Shiploader diesel", "1000", "litre", "2025-01-20");
 		var september = createActivity(orgId, terminal, "Shiploader diesel", "1000", "litre", "2025-09-30");
@@ -1198,6 +1331,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
+		excludeFacility(inventoryId, otherId, "NOT_APPLICABLE", "Mothballed all year");
 		prepare(inventoryId, activityId, DIESEL_FACTOR);
 		String runId = runAndGetId(inventoryId, "Run 001");
 
@@ -1268,7 +1402,7 @@ class GhgApiIntegrationTests {
 	void structuralChangesAreFlaggedAgainstTheBaseYearThreshold() throws Exception {
 		var orgId = createOrganization("Sankofa Gold plc");
 		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
-		var port = createEntity(orgId, "Takoradi Port Co", "WHOLLY_OWNED", "100", true);
+		var port = createEntity(orgId, "Takoradi Port Co", "SUBSIDIARY", "100", true);
 		var terminal = createFacility(orgId, "Takoradi Port Loadout", port);
 		var pitDiesel = createActivity(orgId, pit, "Haul fleet diesel", "10000", "litre", "2024-06-30");
 		var portDiesel = createActivity(orgId, terminal, "Shiploader diesel", "500", "litre", "2024-09-30");
@@ -1289,25 +1423,36 @@ class GhgApiIntegrationTests {
 
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
 			.andExpect(status().isNoContent());
+		// the retired trigger switches are refused: the Standard makes all three triggers mandatory
+		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"inventoryId": "%s", "thresholdPercent": 5, "reason": "First verifiable year",
+					 "triggers": {"structuralChanges": true, "methodologyChanges": false, "errorCorrections": true}}"""
+				.formatted(base)))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.triggers").exists());
 		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"inventoryId": "%s", "thresholdPercent": 5,
-					 "triggers": {"structuralChanges": true, "methodologyChanges": true, "errorCorrections": true}}"""
-				.formatted(base)))
+					 "reason": "First year with verifiable, metered data for every site"}""".formatted(base)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.year").value(2024))
+			.andExpect(jsonPath("$.reason").value("First year with verifiable, metered data for every site"))
+			.andExpect(jsonPath("$.structuralChangeConvention").value("TRANSACTION_DATE"))
 			.andExpect(jsonPath("$.baseRunId").value(baseRun))
 			.andExpect(jsonPath("$.recalculations.length()").value(0));
 
 		// 2025 without the terminal: a divestment worth 4.76%, below the 5% threshold, recalculation optional
 		var current = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(current, pit);
+		excludeFacility(current, terminal, "OTHER", "Divested 2025-01-01");
 		freeze(current);
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
 			.andExpect(jsonPath("$.recalculations.length()").value(1))
 			.andExpect(jsonPath("$.recalculations[0].status").value("FLAGGED"))
 			.andExpect(jsonPath("$.recalculations[0].aboveThreshold").value(false))
 			.andExpect(jsonPath("$.recalculations[0].affectedPercent").value(4.76))
+			.andExpect(jsonPath("$.recalculations[0].cumulativePercent").value(4.76))
 			.andExpect(jsonPath("$.recalculations[0].boundaryVersionNo").value(1))
 			.andExpect(jsonPath("$.recalculations[0].reason").value("structural change: Takoradi Port Loadout removed; "
 					+ "4.76% of base-year emissions, below the 5% threshold, recalculation optional"));
@@ -1319,19 +1464,21 @@ class GhgApiIntegrationTests {
 		// a tighter threshold makes the next candidate blocking: re-adding the terminal mid-year
 		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"inventoryId": "%s", "thresholdPercent": 3,
-					 "triggers": {"structuralChanges": true, "methodologyChanges": false, "errorCorrections": false}}"""
+					{"inventoryId": "%s", "thresholdPercent": 3, "reason": "First verifiable year"}"""
 				.formatted(base)))
 			.andExpect(status().isOk());
 		reopen(current);
 		putBoundary(current, terminal, """
 				{"effectiveFrom": "2025-07-01"}""");
 		freeze(current);
+		// the second change is weighed together with the first, still outstanding (Chapter 5: cumulative effect)
 		var baseYear = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
 			.andExpect(jsonPath("$.recalculations.length()").value(2))
 			.andExpect(jsonPath("$.recalculations[1].aboveThreshold").value(true))
-			.andExpect(jsonPath("$.recalculations[1].reason")
-				.value(org.hamcrest.Matchers.containsString("Takoradi Port Loadout added"))));
+			.andExpect(jsonPath("$.recalculations[1].cumulativePercent").value(9.52))
+			.andExpect(jsonPath("$.recalculations[1].reason").value("structural change: Takoradi Port Loadout added; "
+					+ "4.76% of base-year emissions on its own, 9.52% together with 1 earlier change since the "
+					+ "2024 base year, above the 3% threshold, recalculation required")));
 		mvc.perform(get("/api/ghg/inventories/" + current + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[4].status").value("BLOCKED"));
 
@@ -1359,12 +1506,128 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/inventories/" + current + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[4].status").value("PASSED"));
 
-		// the report shows the period against both base-year figures with the history
+		// the report shows the period against both base-year figures, the reason, the convention and the
+		// profile over time: the base year with its recalculated figure, then the current period
 		mvc.perform(get("/api/ghg/runs/" + wrongRun + "/report").with(asMember()))
 			.andExpect(jsonPath("$.baseYear.year").value(2024))
+			.andExpect(jsonPath("$.baseYear.reason").value("First verifiable year"))
+			.andExpect(jsonPath("$.baseYear.structuralChangeConvention").value("TRANSACTION_DATE"))
+			.andExpect(jsonPath("$.baseYear.gwpSetMatches").value(true))
 			.andExpect(jsonPath("$.baseYear.originalBase.totalKgCo2e").value(27930.0))
 			.andExpect(jsonPath("$.baseYear.recalculations.length()").value(2))
-			.andExpect(jsonPath("$.baseYear.recalculations[1].recalculatedBase.label").value("Base 2024, restated"));
+			.andExpect(jsonPath("$.baseYear.recalculations[1].recalculatedBase.label").value("Base 2024, restated"))
+			.andExpect(jsonPath("$.baseYear.profile.length()").value(2))
+			.andExpect(jsonPath("$.baseYear.profile[0].year").value(2024))
+			.andExpect(jsonPath("$.baseYear.profile[0].totalKgCo2e").value(27930.0))
+			.andExpect(jsonPath("$.baseYear.profile[0].recalculatedRunId").value(recalculated))
+			.andExpect(jsonPath("$.baseYear.profile[1].year").value(2025))
+			.andExpect(jsonPath("$.baseYear.profile[1].finalRunId").doesNotExist())
+			// the Scope 2 Guidance disclosures about the base year (spec 07.2)
+			.andExpect(jsonPath("$.emissions.totalMethod").value("LOCATION_BASED"))
+			.andExpect(jsonPath("$.emissions.baseYearScope2Method").value("LOCATION_BASED"))
+			.andExpect(jsonPath("$.emissions.baseYearMarketBasedIsProxy").value(true));
+		// a recalculation resets the running sum: the next candidate is weighed on its own
+		reopen(current);
+		mvc.perform(delete("/api/ghg/inventories/" + current + "/boundary/" + terminal).with(asMember()).with(csrf()))
+			.andExpect(status().isNoContent());
+		freeze(current);
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
+			.andExpect(jsonPath("$.recalculations.length()").value(3))
+			.andExpect(jsonPath("$.recalculations[2].cumulativePercent").value(4.76))
+			.andExpect(jsonPath("$.recalculations[2].reason")
+				.value(org.hamcrest.Matchers.endsWith("4.76% of base-year emissions, above the 3% threshold, "
+						+ "recalculation required")));
+	}
+
+	@Test
+	void methodologyChangesAndErrorCorrectionsAreRaisedByTheAccountantAndWeighedCumulatively() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var pitDiesel = createActivity(orgId, pit, "Haul fleet diesel", "10000", "litre", "2024-06-30");
+		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
+		putBoundary(base, pit);
+		prepare(base, pitDiesel, DIESEL_FACTOR);
+		mvc.perform(post("/api/ghg/runs/" + runAndGetId(base, "Base 2024") + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"inventoryId": "%s", "thresholdPercent": 5, "reason": "First verifiable year"}""".formatted(base)))
+			.andExpect(status().isOk());
+		var current = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(current, pit);
+		freeze(current);
+		// structural changes are detected, never raised by hand
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/base-year/recalculations").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"trigger": "STRUCTURAL_CHANGE", "reason": "Sold the camp", "affectedPercent": 2}"""))
+			.andExpect(status().isConflict());
+		// a supplier-specific grid factor replaces the national one: 3% on its own, below the threshold
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/base-year/recalculations").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"trigger": "METHODOLOGY_CHANGE", "reason": "Supplier-specific grid factor replaces the national average",
+					 "affectedPercent": 3}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.recalculations[0].triggerType").value("METHODOLOGY_CHANGE"))
+			.andExpect(jsonPath("$.recalculations[0].raisedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.recalculations[0].aboveThreshold").value(false))
+			.andExpect(jsonPath("$.recalculations[0].reason").value("methodology change: Supplier-specific grid factor "
+					+ "replaces the national average; 3% of base-year emissions, below the 5% threshold, "
+					+ "recalculation optional"));
+		mvc.perform(get("/api/ghg/inventories/" + current + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[4].status").value("WARNINGS"));
+		// a corrected meter reading worth 2.5%: 5.5% together with the outstanding methodology change
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/base-year/recalculations").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"trigger": "ERROR_CORRECTION", "reason": "Mill meter under-read by 2.5%", "affectedPercent": 2.5}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.recalculations[1].cumulativePercent").value(5.5))
+			.andExpect(jsonPath("$.recalculations[1].aboveThreshold").value(true))
+			.andExpect(jsonPath("$.recalculations[1].reason").value(org.hamcrest.Matchers.containsString(
+					"2.5% of base-year emissions on its own, 5.5% together with 1 earlier change since the 2024 base year")));
+		mvc.perform(get("/api/ghg/inventories/" + current + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[4].status").value("BLOCKED"));
+	}
+
+	@Test
+	void theBaseYearGateWarnsOnAGwpMismatchAndOnWindowsUnderTheWholeYearConvention() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var port = createEntity(orgId, "Takoradi Port Co", "SUBSIDIARY", "100", true);
+		var terminal = createFacility(orgId, "Takoradi Port Loadout", port);
+		var pitDiesel = createActivity(orgId, pit, "Haul fleet diesel", "10000", "litre", "2024-06-30");
+		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
+		putBoundary(base, pit);
+		excludeFacility(base, terminal, "NOT_APPLICABLE", "Acquired in 2025");
+		prepare(base, pitDiesel, DIESEL_FACTOR);
+		runAndGetId(base, "Base 2024");
+		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"inventoryId": "%s", "thresholdPercent": 5, "reason": "First verifiable year",
+					 "structuralChangeConvention": "WHOLE_YEAR"}""".formatted(base)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.structuralChangeConvention").value("WHOLE_YEAR"));
+		// an AR6 inventory against an AR5 base year: the amendment recommends the same set for both
+		var ar6 = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "2025 AR6", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+						 "consolidationApproach": "OPERATIONAL_CONTROL", "gwpSet": "AR6"}"""))
+			.andExpect(status().isCreated()));
+		String ar6Id = JsonPath.read(ar6, "$.id");
+		putBoundary(ar6Id, pit);
+		// a mid-year acquisition accounted from its date contradicts the whole-year convention
+		putBoundary(ar6Id, terminal, """
+				{"effectiveFrom": "2025-07-01"}""");
+		mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[4].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers
+					.containsString("This inventory uses IPCC AR6 potentials; the 2024 base year uses IPCC AR5"))))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers
+					.containsString("accounts structural changes for the whole year"))));
+		// the base-year inventory itself never warns about its own GWP set
+		mvc.perform(get("/api/ghg/inventories/" + base + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[4].status").value("PASSED"));
 	}
 
 	@Test
@@ -1375,13 +1638,12 @@ class GhgApiIntegrationTests {
 		var pitDiesel = createActivity(orgId, pit, "Haul fleet diesel", "10000", "litre", "2024-06-30");
 		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
 		putBoundary(base, pit);
+		excludeFacility(base, camp, "NOT_APPLICABLE", "Not yet built in 2024");
 		prepare(base, pitDiesel, DIESEL_FACTOR);
 		runAndGetId(base, "Base 2024");
 		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"inventoryId": "%s", "thresholdPercent": 5,
-					 "triggers": {"structuralChanges": true, "methodologyChanges": true, "errorCorrections": true}}"""
-				.formatted(base)))
+					{"inventoryId": "%s", "thresholdPercent": 5, "reason": "First verifiable year"}""".formatted(base)))
 			.andExpect(status().isOk());
 
 		var current = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
@@ -1464,9 +1726,20 @@ class GhgApiIntegrationTests {
 		// the plant buys certified renewable power: a market-based factor for that facility and period
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + plant).with(asMember())
 			.with(csrf()).contentType("application/json").content("""
-					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0.05, "source": "Supplier REC 2025"}"""))
+					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0.05, "source": "Supplier REC 2025",
+					 "meetsQualityCriteria": true}"""))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.facilityName").value("Tema Plant"));
+			.andExpect(jsonPath("$.facilityName").value("Tema Plant"))
+			.andExpect(jsonPath("$.meetsQualityCriteria").value(true));
+		// the Guidance requires the residual-mix disclosure either way; the gate says so until it is recorded
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].findings[?(@.severity == 'WARNING')].message").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.containsString("does not say whether a residual mix is available"))));
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/residual-mix").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"available": false}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.residualMixAvailable").value(false));
 		classify(syncAndGetAssignmentId(inventoryId, plantPower), GRID_FACTOR);
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + officePower + "')].id").getFirst(),
@@ -1485,14 +1758,200 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
 			.andExpect(jsonPath("$.emissions.scope2LocationBasedKgCo2e").value(882.0))
 			.andExpect(jsonPath("$.emissions.scope2MarketBasedKgCo2e").value(491.0))
-			.andExpect(jsonPath("$.emissions.marketInstruments[0].instrumentType").value("CERTIFICATE"));
-
+			.andExpect(jsonPath("$.emissions.scope2MarketBasedTCo2e").value(0.491))
+			.andExpect(jsonPath("$.emissions.totalTCo2e").value(0.882))
+			.andExpect(jsonPath("$.emissions.totalMethod").value("LOCATION_BASED"))
+			.andExpect(jsonPath("$.emissions.residualMixAvailable").value(false))
+			.andExpect(jsonPath("$.emissions.residualMixDisclosure")
+				.value(org.hamcrest.Matchers.containsString("may result in double counting")))
+			.andExpect(jsonPath("$.emissions.marketInstruments[0].instrumentType").value("CERTIFICATE"))
+			.andExpect(jsonPath("$.methodology.statement")
+				.value(org.hamcrest.Matchers.containsString("The inventory total uses the location-based figure")));
 		// with no instrument anywhere, the market-based figure is simply absent
 		var plain = createInventory(orgId, "2025 Plain", "OPERATIONAL_CONTROL");
 		putBoundary(plain, plant);
+		excludeFacility(plain, office, "NOT_APPLICABLE", "Office reported by the landlord");
 		prepare(plain, plantPower, GRID_FACTOR);
 		run(plain, "Run 001").andExpect(status().isCreated())
-			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").doesNotExist());
+			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").doesNotExist())
+			.andExpect(jsonPath("$.run.byGas.hfcsKg").value(0));
+	}
+
+	@Test
+	void anInstrumentThatFailsTheQualityCriteriaFallsBackAndTheReportSaysWhy() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var plant = createFacility(orgId, "Tema Plant");
+		var plantPower = createActivity(orgId, plant, "Mill grid electricity", "1000", "kWh", "2025-07-31");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		// a certificate sourced from another market fails criterion 5
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + plant).with(asMember())
+			.with(csrf()).contentType("application/json").content("""
+					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0, "source": "Nordic GO 2025",
+					 "meetsQualityCriteria": false, "qualityNotes": "Criterion 5: sourced from the Nordic market"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.qualityNotes").value("Criterion 5: sourced from the Nordic market"));
+		// a residual mix that is available needs its factor
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/residual-mix").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"available": true}"""))
+			.andExpect(status().isConflict());
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/residual-mix").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"available": true, "kgCo2ePerKwh": 0.35}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.residualMixKgCo2ePerKwh").value(0.35));
+		prepare(inventoryId, plantPower, GRID_FACTOR);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].findings[0].message")
+				.value(org.hamcrest.Matchers.containsString("falls back to the residual mix")));
+		// location-based 441; market-based at the residual mix: 1,000 x 0.35 = 350, with the reason on the line
+		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.scope2KgCo2e").value(441.0))
+			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").value(350.0))
+			.andExpect(jsonPath("$.lines[0].marketInstrument").value("RESIDUAL_MIX"))
+			.andExpect(jsonPath("$.lines[0].marketNote")
+				.value(org.hamcrest.Matchers.containsString("does not meet the Scope 2 Quality Criteria"))));
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(detail, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.emissions.residualMixDisclosure")
+				.value(org.hamcrest.Matchers.startsWith("An adjusted residual mix of 0.35")))
+			.andExpect(jsonPath("$.emissions.marketInstruments[0].meetsQualityCriteria").value(false))
+			.andExpect(jsonPath("$.methodology.statement")
+				.value(org.hamcrest.Matchers.containsString("1 instrument did not meet the Scope 2 Quality Criteria")));
+		// without a residual mix the location-based figure stands for that facility
+		reopen(inventoryId);
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/residual-mix").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"available": false}"""))
+			.andExpect(status().isOk());
+		freeze(inventoryId);
+		run(inventoryId, "Run 002").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").value(441.0))
+			.andExpect(jsonPath("$.lines[0].marketNote")
+				.value(org.hamcrest.Matchers.containsString("the location-based figure stands")));
+	}
+
+	@Test
+	void hfcBlendsReportTheirMassAndTheAssessmentReportsUsed() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var plant = createFacility(orgId, "Tema Plant");
+		var leak = createActivity(orgId, plant, "Chiller refrigerant top-up", "10", "kg", "2025-05-01");
+		var cooling = createActivity(orgId, plant, "District cooling", "1000", "kWh", "2025-06-01");
+		// under AR5 the blend's source and the inventory agree: one assessment report
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		classify(syncAndGetAssignmentId(inventoryId, leak), R410A_FACTOR);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + cooling + "')].id").getFirst(),
+				COOLING_FACTOR);
+		// purchased cooling is scope 2 (Chapter 4)
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityId == '" + cooling + "')].scope").value("SCOPE_2"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + cooling + "')].category").value("PURCHASED_COOLING"));
+		freeze(inventoryId);
+		// 10 kg x 2,088 = 20,880 kg CO2e of HFCs, 10 kg of gas; 1,000 kWh x 0.12 = 120 kg scope 2
+		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.byGas.hfcsKg").value(10.0))
+			.andExpect(jsonPath("$.run.byGas.hfcsKgCo2e").value(20880.0))
+			.andExpect(jsonPath("$.run.scope2KgCo2e").value(120.0))
+			.andExpect(jsonPath("$.lines[?(@.factorName == 'Refrigerant R-410A leakage')].blendGwpSource")
+				.value("AR5")));
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(detail, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.byGas[?(@.gas == 'HFCs')].kg").value(10.0))
+			.andExpect(jsonPath("$.byGas[?(@.gas == 'HFCs')].tonnes").value(0.01))
+			.andExpect(jsonPath("$.byGas[?(@.gas == 'HFCs')].tCo2e").value(20.88))
+			.andExpect(jsonPath("$.methodology.assessmentReports.length()").value(1))
+			.andExpect(jsonPath("$.methodology.multipleAssessmentReports").value(false));
+		// under AR6 the blend keeps its AR5 potentials, and the report says more than one report was used
+		var ar6 = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "2025 AR6", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+						 "consolidationApproach": "OPERATIONAL_CONTROL", "gwpSet": "AR6"}"""))
+			.andExpect(status().isCreated()));
+		String ar6Id = JsonPath.read(ar6, "$.id");
+		putBoundary(ar6Id, plant);
+		classify(syncAndGetAssignmentId(ar6Id, leak), R410A_FACTOR);
+		var ar6Listing = body(mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + cooling + "')].id").getFirst(),
+				COOLING_FACTOR);
+		freeze(ar6Id);
+		var ar6Detail = body(run(ar6Id, "Run 001").andExpect(status().isCreated()));
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(ar6Detail, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.methodology.assessmentReports[0]").value("AR6"))
+			.andExpect(jsonPath("$.methodology.assessmentReports[1]").value("AR5"))
+			.andExpect(jsonPath("$.methodology.multipleAssessmentReports").value(true))
+			.andExpect(jsonPath("$.methodology.statement")
+				.value(org.hamcrest.Matchers.containsString("More than one assessment report was used")));
+	}
+
+	@Test
+	void anOperationLeftOutOfTheBoundaryNeedsAReasonAndTheReportListsIt() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var camp = createFacility(orgId, "Nkran Exploration Camp");
+		var port = createEntity(orgId, "Takoradi Port Co", "ASSOCIATE", "30", false);
+		var terminal = createFacility(orgId, "Takoradi Port Loadout", port);
+		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		freeze(inventoryId);
+		// two operations are neither in the boundary nor excluded with a reason: the gate blocks the run
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(false))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'ERROR')].message")
+				.value(org.hamcrest.Matchers.hasItems(
+						org.hamcrest.Matchers.startsWith("'Nkran Exploration Camp' (Sankofa Gold plc) is neither"),
+						org.hamcrest.Matchers.startsWith("'Takoradi Port Loadout' (Takoradi Port Co) is neither"))));
+		run(inventoryId, "Too early").andExpect(status().isConflict());
+		reopen(inventoryId);
+		// a facility in the boundary cannot be excluded
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/" + pit + "/exclude").with(asMember())
+			.with(csrf()).contentType("application/json").content("""
+					{"reason": "OTHER"}"""))
+			.andExpect(status().isConflict());
+		excludeFacility(inventoryId, camp, "NOT_APPLICABLE", "Exploration only; no fuel or power in 2025");
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/entities/" + port + "/exclude").with(asMember())
+			.with(csrf()).contentType("application/json").content("""
+					{"reason": "METHODOLOGY", "detail": "Associate: no operational control"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.inBoundary").value(false))
+			.andExpect(jsonPath("$.exclusion.reason").value("METHODOLOGY"))
+			.andExpect(jsonPath("$.facilities[0].inBoundary").value(false));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary/exclusions").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2));
+		freeze(inventoryId);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[0].status").value("PASSED"));
+		// the version copies the exclusions and the report prints them beside the record exclusions
+		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated()));
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(detail, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.boundaryExclusions.length()").value(2))
+			.andExpect(jsonPath("$.boundaryExclusions[?(@.facilityName == 'Nkran Exploration Camp')].reason")
+				.value("NOT_APPLICABLE"))
+			.andExpect(jsonPath("$.boundaryExclusions[?(@.entityName == 'Takoradi Port Co')].detail")
+				.value("Associate: no operational control"))
+			.andExpect(jsonPath("$.company.boundaryVersion.exclusions.length()").value(2));
+		// ticking an operation in retires the exclusion that covered it
+		reopen(inventoryId);
+		putBoundary(inventoryId, camp);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary/exclusions").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].entityName").value("Takoradi Port Co"));
+		// a correction inherits the exclusions of the published inventory
+		freeze(inventoryId);
+		String finalRun = runAndGetId(inventoryId, "Run 002");
+		mvc.perform(post("/api/ghg/runs/" + finalRun + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var successor = body(mvc
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf()))
+			.andExpect(status().isCreated()));
+		mvc.perform(get("/api/ghg/inventories/" + JsonPath.read(successor, "$.id") + "/boundary/exclusions")
+			.with(asMember()))
+			.andExpect(jsonPath("$.length()").value(1));
 	}
 
 	@Test

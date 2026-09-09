@@ -109,11 +109,7 @@ export function InventoryDetailPage() {
         <AssignmentsSection inventoryId={inventoryId} editable={editable} />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 5 } as CSSProperties}>
-        <MarketFactorsCard
-          organizationId={organizationId}
-          inventoryId={inventoryId}
-          editable={editable}
-        />
+        <MarketFactorsCard organizationId={organizationId} inventory={inventory} />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 6 } as CSSProperties}>
         <LaunchSection inventory={inventory} />

@@ -12,10 +12,14 @@ import { createFacility, listEntities, listFacilities } from './api'
 const own: Entity = {
   id: 'ent-1',
   name: 'Sankofa Gold plc',
-  relationshipType: 'WHOLLY_OWNED',
+  relationshipType: 'SUBSIDIARY',
   economicInterestPercent: 100,
   legalOwnershipPercent: 100,
   operatedByCompany: true,
+  controlledByCompany: true,
+  parentEntityId: null,
+  effectiveEconomicInterestPercent: 100,
+  chain: [],
   reportingCompany: true,
   equityShare: 1,
   financialControlShare: 1,
@@ -41,7 +45,7 @@ const pit: Facility = {
   location: 'Obuasi, Ghana',
   entityId: own.id,
   entityName: own.name,
-  relationshipType: 'WHOLLY_OWNED',
+  relationshipType: 'SUBSIDIARY',
   createdAt: '2026-08-01T00:00:00Z',
 }
 

@@ -35,6 +35,7 @@ import {
   listUnits,
   publishInventory,
   reopenInventory,
+  excludeFacility,
   setBoundaryTreatment,
   setEntityTreatment,
   syncAssignments,
@@ -60,6 +61,8 @@ const inventory: Inventory = {
   gwpSet: 'AR5',
   scope3Categories: [],
   scope3ExclusionsRationale: null,
+  residualMixAvailable: null,
+  residualMixKgCo2ePerKwh: null,
   finalRunId: null,
   status: 'DRAFT',
   supersededById: null,
@@ -91,6 +94,9 @@ const v1Full: BoundaryVersion = {
       relationshipType: 'JOINT_VENTURE',
       economicInterestPercent: 40,
       operatedByCompany: true,
+      controlledByCompany: true,
+      effectiveEconomicInterestPercent: 40,
+      chain: [],
       accountingShare: 0.4,
       table1Row: 'joint venture under joint financial control; equity share: 40% economic interest',
       effectiveFrom: null,
@@ -100,6 +106,7 @@ const v1Full: BoundaryVersion = {
       facilities: [{ facilityId: 'fac-1', facilityName: 'Tema Plant', location: 'Tema' }],
     },
   ],
+  exclusions: [],
 }
 
 const boundary: BoundaryEntity[] = [
@@ -111,13 +118,29 @@ const boundary: BoundaryEntity[] = [
     relationshipType: 'JOINT_VENTURE',
     economicInterestPercent: 40,
     operatedByCompany: true,
+    controlledByCompany: true,
+    effectiveEconomicInterestPercent: 40,
+    chain: [],
     accountingShare: 0.4,
     table1Row: 'joint venture under joint financial control; equity share: 40% economic interest',
     effectiveFrom: null,
     effectiveTo: null,
+    exclusion: null,
     facilities: [
-      { facilityId: 'fac-1', facilityName: 'Tema Plant', location: 'Tema', inBoundary: true },
-      { facilityId: 'fac-2', facilityName: 'Tema Depot', location: 'Tema', inBoundary: false },
+      {
+        facilityId: 'fac-1',
+        facilityName: 'Tema Plant',
+        location: 'Tema',
+        inBoundary: true,
+        exclusion: null,
+      },
+      {
+        facilityId: 'fac-2',
+        facilityName: 'Tema Depot',
+        location: 'Tema',
+        inBoundary: false,
+        exclusion: null,
+      },
     ],
   },
   {
@@ -128,12 +151,22 @@ const boundary: BoundaryEntity[] = [
     relationshipType: null,
     economicInterestPercent: null,
     operatedByCompany: null,
+    controlledByCompany: null,
+    effectiveEconomicInterestPercent: 100,
+    chain: [],
     accountingShare: null,
     table1Row: null,
     effectiveFrom: null,
     effectiveTo: null,
+    exclusion: null,
     facilities: [
-      { facilityId: 'fac-3', facilityName: 'Kumasi Plant', location: 'Kumasi', inBoundary: false },
+      {
+        facilityId: 'fac-3',
+        facilityName: 'Kumasi Plant',
+        location: 'Kumasi',
+        inBoundary: false,
+        exclusion: null,
+      },
     ],
   },
 ]
@@ -219,6 +252,7 @@ beforeEach(() => {
   vi.mocked(publishInventory).mockReset()
   vi.mocked(setBoundaryTreatment).mockReset()
   vi.mocked(setEntityTreatment).mockReset()
+  vi.mocked(excludeFacility).mockReset()
   vi.mocked(listEmissionFactors)
     .mockReset()
     .mockResolvedValue([
@@ -231,9 +265,20 @@ beforeEach(() => {
         unit: 'litre',
         dimension: 'VOLUME',
         kgCo2ePerUnit: 2.66,
-        gases: { co2: 2.6307, ch4: 0.0001, n2o: 0.0001, hfcs: 0, pfcs: 0, sf6: 0, nf3: 0 },
+        gases: {
+          co2: 2.6307,
+          ch4: 0.0001,
+          n2o: 0.0001,
+          hfcs: 0,
+          pfcs: 0,
+          sf6: 0,
+          nf3: 0,
+          hfcsKg: 0,
+          pfcsKg: 0,
+        },
         biogenicCo2KgPerUnit: 0,
         gwpSet: 'AR5',
+        blendGwpSource: null,
         source: 'DEFRA 2025',
       },
     ])
@@ -282,6 +327,20 @@ test('ticking a facility in sends an empty treatment for its entity', async () =
 
   await user.click(await screen.findByLabelText('Tema Depot in boundary'))
   await waitFor(() => expect(setBoundaryTreatment).toHaveBeenCalledWith('inv-1', 'fac-2', {}))
+})
+
+test('a facility left out of the boundary records why (Chapter 9, spec 07.2)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(excludeFacility).mockResolvedValue(boundary[0])
+  renderPage()
+
+  await user.selectOptions(
+    await screen.findByLabelText('Tema Depot left out because'),
+    'NOT_APPLICABLE',
+  )
+  await waitFor(() =>
+    expect(excludeFacility).toHaveBeenCalledWith('inv-1', 'fac-2', { reason: 'NOT_APPLICABLE' }),
+  )
 })
 
 test('setting a membership window sends the effective date to the entity treatment', async () => {

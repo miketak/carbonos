@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -57,6 +58,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		problem.setTitle("File too large");
 		problem.setProperty("errors", Map.of("file", message));
 		return handleExceptionInternal(ex, problem, headers, HttpStatus.PAYLOAD_TOO_LARGE, request);
+	}
+
+	/**
+	 * A body that parses but cannot be bound, such as a retired enum value, is
+	 * a 422 whose detail says what was wrong (spec 03.3 names the replacement
+	 * for a retired relationship type). Malformed JSON stays a 400.
+	 */
+	@Override
+	protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+			HttpHeaders headers, org.springframework.http.HttpStatusCode status, WebRequest request) {
+		var cause = ex.getMostSpecificCause();
+		if (cause instanceof tools.jackson.core.exc.StreamReadException || cause.getMessage() == null) {
+			return super.handleHttpMessageNotReadable(ex, headers, status, request);
+		}
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, cause.getMessage());
+		problem.setTitle("Invalid request");
+		return handleExceptionInternal(ex, problem, headers, HttpStatus.UNPROCESSABLE_ENTITY, request);
 	}
 
 	@ExceptionHandler(Exception.class)

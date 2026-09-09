@@ -53,6 +53,16 @@ public class BoundaryVersionEntry {
 	@Column(name = "operated_by_company", nullable = false)
 	private boolean operatedByCompany;
 
+	@Column(name = "controlled_by_company", nullable = false)
+	private boolean controlledByCompany;
+
+	// the interest through the chain of parents, and the parents' names copied (spec 03.3)
+	@Column(name = "effective_economic_interest_percent", nullable = false, precision = 5, scale = 2)
+	private BigDecimal effectiveEconomicInterestPercent;
+
+	@Column(name = "chain_names", length = 1000)
+	private String chainNames;
+
 	@Column(name = "accounting_share", nullable = false, precision = 7, scale = 4)
 	private BigDecimal accountingShare;
 
@@ -76,7 +86,8 @@ public class BoundaryVersionEntry {
 	protected BoundaryVersionEntry() {
 	}
 
-	BoundaryVersionEntry(BoundaryVersion version, BoundaryTreatment treatment, ConsolidationApproach approach) {
+	BoundaryVersionEntry(BoundaryVersion version, BoundaryTreatment treatment, ConsolidationApproach approach,
+			EntityChain chain) {
 		this.id = UUID.randomUUID();
 		this.version = version;
 		this.entityId = treatment.getEntity().getId();
@@ -84,7 +95,10 @@ public class BoundaryVersionEntry {
 		this.relationshipType = treatment.getRelationshipType();
 		this.economicInterestPercent = treatment.getEconomicInterestPercent();
 		this.operatedByCompany = treatment.isOperatedByCompany();
-		this.accountingShare = treatment.accountingShare(approach);
+		this.controlledByCompany = treatment.isControlledByCompany();
+		this.effectiveEconomicInterestPercent = chain.effectiveInterestPercent(treatment.getEconomicInterestPercent());
+		this.chainNames = chain.names().isEmpty() ? null : String.join(" > ", chain.names());
+		this.accountingShare = treatment.accountingShare(approach, chain.shareFactor());
 		this.effectiveFrom = treatment.getEffectiveFrom();
 		this.effectiveTo = treatment.getEffectiveTo();
 		this.excluded = accountingShare.signum() == 0;
@@ -127,6 +141,19 @@ public class BoundaryVersionEntry {
 
 	public boolean isOperatedByCompany() {
 		return operatedByCompany;
+	}
+
+	public boolean isControlledByCompany() {
+		return controlledByCompany;
+	}
+
+	public BigDecimal getEffectiveEconomicInterestPercent() {
+		return effectiveEconomicInterestPercent;
+	}
+
+	/** The parents' names from the nearest parent up to the reporting company, as frozen. */
+	public List<String> getChain() {
+		return chainNames == null ? List.of() : List.of(chainNames.split(" > "));
 	}
 
 	public BigDecimal getAccountingShare() {

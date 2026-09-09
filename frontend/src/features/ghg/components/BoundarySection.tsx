@@ -4,10 +4,14 @@ import { GlassCard } from '../../../components/GlassCard'
 import { Skeleton } from '../../../components/Skeleton'
 import { useToast } from '../../../components/toast'
 import { problemDetail } from '../../../lib/api'
-import { approachLabels, describeFreeze, relationshipShortLabels } from '../format'
+import { approachLabels, describeFreeze, exclusionLabels, relationshipShortLabels } from '../format'
 import {
   useBoundaryQuery,
   useBoundaryVersionsQuery,
+  useClearEntityExclusion,
+  useClearFacilityExclusion,
+  useExcludeEntity,
+  useExcludeFacility,
   useRemoveBoundaryTreatment,
   useRemoveEntityTreatment,
   useSetBoundaryTreatment,
@@ -15,7 +19,14 @@ import {
 } from '../useGhg'
 import { BoundaryVersionPanel } from './BoundaryVersionPanel'
 import { TapCheckbox } from './TapCheckbox'
-import type { BoundaryEntity, BoundaryTreatmentInput, Inventory, RelationshipType } from '../api'
+import type {
+  BoundaryEntity,
+  BoundaryExclusion,
+  BoundaryTreatmentInput,
+  ExclusionReason,
+  Inventory,
+  RelationshipType,
+} from '../api'
 
 const dateInputClasses =
   'rounded-lg border border-teal/20 bg-white/70 px-2 py-1 text-sm focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60'
@@ -23,7 +34,8 @@ const dateInputClasses =
 /**
  * The organizational boundary by legal entity (spec 03.1): each entity's Table
  * 1 treatment, prefilled from its facts, the facilities included beneath it,
- * and the membership window (spec 03.2). Editable only while the inventory is
+ * the membership window (spec 03.2), and, for every operation left out, the
+ * reason Chapter 9 asks for (spec 07.2). Editable only while the inventory is
  * a draft (spec 05.1).
  */
 export function BoundarySection({ inventory }: { inventory: Inventory }) {
@@ -34,6 +46,10 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
   const removeEntity = useRemoveEntityTreatment(inventoryId)
   const setFacility = useSetBoundaryTreatment(inventoryId)
   const removeFacility = useRemoveBoundaryTreatment(inventoryId)
+  const excludeEntity = useExcludeEntity(inventoryId)
+  const clearEntityExclusion = useClearEntityExclusion(inventoryId)
+  const excludeFacility = useExcludeFacility(inventoryId)
+  const clearFacilityExclusion = useClearFacilityExclusion(inventoryId)
   const toast = useToast()
   // bumped when a write is rejected, so uncontrolled inputs remount to the server value
   const [revision, setRevision] = useState(0)
@@ -117,7 +133,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                   <span className="text-ink-muted">Relationship</span>
                   <select
                     aria-label={`${entity.entityName} relationship`}
-                    value={entity.relationshipType ?? 'WHOLLY_OWNED'}
+                    value={entity.relationshipType ?? 'SUBSIDIARY'}
                     disabled={!editable}
                     onChange={(event) =>
                       update(entity, { relationshipType: event.target.value as RelationshipType })
@@ -157,6 +173,23 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                   />
                   <span className="text-ink-muted">Operated by the company</span>
                 </span>
+                {entity.relationshipType === 'FRANCHISE' && (
+                  <span className="flex items-center gap-1">
+                    <TapCheckbox
+                      label={`${entity.entityName} financially controlled by the company`}
+                      checked={entity.controlledByCompany ?? false}
+                      disabled={!editable}
+                      onChange={(value) => update(entity, { controlledByCompany: value })}
+                    />
+                    <span className="text-ink-muted">Financially controlled</span>
+                  </span>
+                )}
+                {entity.chain.length > 0 && (
+                  <span className="text-xs text-ink-muted">
+                    held through {entity.chain.join(' > ')}:{' '}
+                    {entity.effectiveEconomicInterestPercent}% through the chain
+                  </span>
+                )}
               </div>
             )}
 
@@ -212,10 +245,29 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
               </p>
             )}
 
+            {!entity.inBoundary && entity.facilities.length > 0 && (
+              <div className="mt-2 pl-12">
+                <ExclusionControl
+                  label={`${entity.entityName} left out because`}
+                  exclusion={entity.exclusion}
+                  editable={editable}
+                  onExclude={(input) =>
+                    excludeEntity.mutate(
+                      { entityId: entity.entityId, input },
+                      { onError: onWriteError },
+                    )
+                  }
+                  onClear={() =>
+                    clearEntityExclusion.mutate(entity.entityId, { onError: onWriteError })
+                  }
+                />
+              </div>
+            )}
+
             {entity.facilities.length > 0 && (
               <ul className="mt-2 flex flex-col gap-1 pl-8">
                 {entity.facilities.map((facility) => (
-                  <li key={facility.facilityId} className="flex items-center gap-2">
+                  <li key={facility.facilityId} className="flex flex-wrap items-center gap-2">
                     <TapCheckbox
                       label={`${facility.facilityName} in boundary`}
                       checked={facility.inBoundary}
@@ -226,6 +278,29 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                       {facility.facilityName}
                       <span className="ml-2 text-xs text-ink-muted">{facility.location}</span>
                     </span>
+                    {!facility.inBoundary && entity.inBoundary && (
+                      <ExclusionControl
+                        label={`${facility.facilityName} left out because`}
+                        exclusion={facility.exclusion}
+                        editable={editable}
+                        onExclude={(input) =>
+                          excludeFacility.mutate(
+                            { facilityId: facility.facilityId, input },
+                            { onError: onWriteError },
+                          )
+                        }
+                        onClear={() =>
+                          clearFacilityExclusion.mutate(facility.facilityId, {
+                            onError: onWriteError,
+                          })
+                        }
+                      />
+                    )}
+                    {!facility.inBoundary && !entity.inBoundary && entity.exclusion && (
+                      <span className="text-xs text-ink-muted">
+                        left out with the entity: {exclusionLabels[entity.exclusion.reason]}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -239,6 +314,79 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
 
       <BoundaryHistory inventoryId={inventoryId} />
     </GlassCard>
+  )
+}
+
+/**
+ * Why an operation is left out of the boundary (spec 07.2): Chapter 9 requires
+ * every exclusion of a facility or operation to be reported with its reason,
+ * and the BOUNDARY gate holds the run until one is recorded.
+ */
+function ExclusionControl({
+  label,
+  exclusion,
+  editable,
+  onExclude,
+  onClear,
+}: {
+  label: string
+  exclusion: BoundaryExclusion | null
+  editable: boolean
+  onExclude: (input: { reason: ExclusionReason; detail?: string }) => void
+  onClear: () => void
+}) {
+  const [detail, setDetail] = useState(exclusion?.detail ?? '')
+  if (exclusion && !editable) {
+    return (
+      <span className="text-xs text-ink-muted">
+        left out: {exclusionLabels[exclusion.reason]}
+        {exclusion.detail ? ` · ${exclusion.detail}` : ''}
+      </span>
+    )
+  }
+  if (!editable) {
+    return <span className="text-xs text-amber-700">left out without a reason</span>
+  }
+  return (
+    <span className="flex flex-wrap items-center gap-1 text-xs">
+      <select
+        aria-label={label}
+        value={exclusion?.reason ?? ''}
+        onChange={(event) => {
+          if (event.target.value === '') onClear()
+          else
+            onExclude({
+              reason: event.target.value as ExclusionReason,
+              detail: detail.trim() === '' ? undefined : detail,
+            })
+        }}
+        className={dateInputClasses}
+      >
+        <option value="">{exclusion ? 'Clear the reason' : 'Why is it left out?'}</option>
+        {Object.entries(exclusionLabels)
+          .filter(([value]) => value !== 'OUTSIDE_PERIOD' && value !== 'OUTSIDE_BOUNDARY')
+          .map(([value, text]) => (
+            <option key={value} value={value}>
+              {text}
+            </option>
+          ))}
+      </select>
+      <input
+        aria-label={`${label} detail`}
+        value={detail}
+        placeholder="Detail for the verifier"
+        maxLength={500}
+        onChange={(event) => setDetail(event.target.value)}
+        onBlur={() => {
+          if (exclusion && (detail.trim() || '') !== (exclusion.detail ?? ''))
+            onExclude({
+              reason: exclusion.reason,
+              detail: detail.trim() === '' ? undefined : detail,
+            })
+        }}
+        className={`w-56 ${dateInputClasses}`}
+      />
+    </span>
   )
 }
 

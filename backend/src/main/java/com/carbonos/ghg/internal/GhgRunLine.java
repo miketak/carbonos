@@ -26,11 +26,11 @@ public class GhgRunLine {
 
 	/** Kilograms of each gas a line emits; HFCs and PFCs are kg CO2e of the blend. */
 	record Gases(BigDecimal co2, BigDecimal ch4, BigDecimal n2o, BigDecimal hfcs, BigDecimal pfcs, BigDecimal sf6,
-			BigDecimal nf3, BigDecimal biogenicCo2) {
+			BigDecimal nf3, BigDecimal biogenicCo2, BigDecimal hfcsKg, BigDecimal pfcsKg, String blendGwpSource) {
 	}
 
 	/** The market-based side of a scope 2 line, present only when the facility has an instrument. */
-	record Market(BigDecimal kgCo2e, BigDecimal factorKgCo2ePerKwh, MarketInstrument instrument) {
+	record Market(BigDecimal kgCo2e, BigDecimal factorKgCo2ePerKwh, MarketInstrument instrument, String note) {
 	}
 
 	@Id
@@ -112,6 +112,19 @@ public class GhgRunLine {
 	@Column(name = "biogenic_co2_kg", nullable = false, precision = 18, scale = 3)
 	private BigDecimal biogenicCo2Kg;
 
+	@Column(name = "hfcs_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal hfcsKg;
+
+	@Column(name = "pfcs_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal pfcsKg;
+
+	@Column(name = "blend_gwp_source", length = 20)
+	private String blendGwpSource;
+
+	// why the market-based figure is not the facility's instrument: it failed the Quality Criteria
+	@Column(name = "market_note", length = 255)
+	private String marketNote;
+
 	@Column(name = "market_based_kg_co2e", precision = 18, scale = 3)
 	private BigDecimal marketBasedKgCo2e;
 
@@ -154,10 +167,14 @@ public class GhgRunLine {
 		this.sf6Kg = gases.sf6();
 		this.nf3Kg = gases.nf3();
 		this.biogenicCo2Kg = gases.biogenicCo2();
+		this.hfcsKg = gases.hfcsKg();
+		this.pfcsKg = gases.pfcsKg();
+		this.blendGwpSource = gases.blendGwpSource();
 		if (market != null) {
 			this.marketBasedKgCo2e = market.kgCo2e();
 			this.marketFactorKgCo2ePerKwh = market.factorKgCo2ePerKwh();
 			this.marketInstrument = market.instrument();
+			this.marketNote = market.note();
 		}
 	}
 
@@ -270,6 +287,22 @@ public class GhgRunLine {
 	}
 
 	/** The scope 2 figure under the market-based method: the instrument's, or the location-based one where none exists. */
+	public BigDecimal getHfcsKg() {
+		return hfcsKg;
+	}
+
+	public BigDecimal getPfcsKg() {
+		return pfcsKg;
+	}
+
+	public String getBlendGwpSource() {
+		return blendGwpSource;
+	}
+
+	public String getMarketNote() {
+		return marketNote;
+	}
+
 	BigDecimal marketOrLocationKgCo2e() {
 		return marketBasedKgCo2e != null ? marketBasedKgCo2e : kgCo2e;
 	}

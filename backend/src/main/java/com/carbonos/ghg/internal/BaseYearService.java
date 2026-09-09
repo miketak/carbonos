@@ -13,11 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Base year and recalculation policy (spec 06, Chapter 5). A boundary version
- * that adds or removes facilities, or changes a membership window, is a
- * candidate structural change; its weight is measured against the base-year
- * run and recorded for the accountant to decide. Organic growth never flags,
- * and neither does a facility that did not exist in the base year.
+ * Base year and recalculation policy (spec 06, 06.1, Chapter 5). A boundary
+ * version that adds or removes facilities, or changes a membership window, is
+ * a candidate structural change; its weight is measured against the base-year
+ * run, on its own and together with the outstanding earlier changes, and
+ * recorded for the accountant to decide. Methodology changes and error
+ * corrections are raised by the accountant. Organic growth never flags, and
+ * neither does a facility that did not exist in the base year.
  */
 @Service
 @Transactional
@@ -49,9 +51,15 @@ public class BaseYearService {
 		return baseYears.findByOrganizationId(organizationId);
 	}
 
+	/** The organization's base year without a tenant check, for gates and reports that already passed one. */
+	@Transactional(readOnly = true)
+	Optional<BaseYear> of(UUID organizationId) {
+		return baseYears.findByOrganizationId(organizationId);
+	}
+
 	/** Designates (or re-designates) the base year and records the policy. */
-	public BaseYear set(UUID organizationId, UUID inventoryId, BigDecimal thresholdPercent, boolean triggerStructural,
-			boolean triggerMethodology, boolean triggerErrors) {
+	public BaseYear set(UUID organizationId, UUID inventoryId, BigDecimal thresholdPercent, String reason,
+			StructuralChangeConvention convention) {
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.check(organization);
@@ -59,11 +67,32 @@ public class BaseYearService {
 		if (!inventory.getOrganization().getId().equals(organizationId)) {
 			throw GhgNotFoundException.inventory(inventoryId);
 		}
+		var trimmedReason = reason.trim();
+		var effectiveConvention = convention == null ? StructuralChangeConvention.TRANSACTION_DATE : convention;
 		return baseYears.findByOrganizationId(organizationId).map(existing -> {
-			existing.update(inventory, thresholdPercent, triggerStructural, triggerMethodology, triggerErrors);
+			existing.update(inventory, thresholdPercent, trimmedReason, effectiveConvention);
 			return existing;
-		}).orElseGet(() -> baseYears.save(new BaseYear(organization, inventory, thresholdPercent, triggerStructural,
-				triggerMethodology, triggerErrors)));
+		}).orElseGet(() -> baseYears
+			.save(new BaseYear(organization, inventory, thresholdPercent, trimmedReason, effectiveConvention)));
+	}
+
+	/**
+	 * The accountant raises a methodology-change or error-correction candidate
+	 * (spec 06.1): the Standard makes both mandatory triggers, and neither can
+	 * be detected from the data. Structural changes are detected at freeze.
+	 */
+	public BaseYear raise(UUID organizationId, RecalculationTrigger trigger, String reason,
+			BigDecimal affectedPercent) {
+		var baseYear = find(organizationId).orElseThrow(() -> GhgNotFoundException.baseYear(organizationId));
+		if (trigger == RecalculationTrigger.STRUCTURAL_CHANGE) {
+			throw new GhgRuleViolationException(
+					"Structural changes are detected when an inventory is frozen. Freeze the inventory instead.");
+		}
+		var what = (trigger == RecalculationTrigger.METHODOLOGY_CHANGE ? "methodology change: "
+				: "error correction: ") + reason.trim();
+		baseYear.flag(trigger, what, null, null, affectedPercent.setScale(2, RoundingMode.HALF_UP),
+				access.currentUserEmail());
+		return baseYear;
 	}
 
 	public void clear(UUID organizationId) {
@@ -127,7 +156,7 @@ public class BaseYearService {
 		}
 		var baseYear = maybeBaseYear.get();
 		var baseInventory = baseYear.getInventory();
-		if (!baseYear.isTriggerStructural() || baseInventory.getId().equals(inventory.getId())) {
+		if (baseInventory.getId().equals(inventory.getId())) {
 			return;
 		}
 		var baseRunId = baseInventory.getFinalRunId() != null ? baseInventory.getFinalRunId()
@@ -161,12 +190,63 @@ public class BaseYearService {
 		}
 		var percent = affectedKg.multiply(new BigDecimal("100"))
 			.divide(baseRun.getTotalKgCo2e(), 2, RoundingMode.HALF_UP);
-		var above = percent.compareTo(baseYear.getThresholdPercent()) > 0;
-		var threshold = baseYear.getThresholdPercent().stripTrailingZeros().toPlainString();
-		var reason = "structural change: " + String.join(", ", changes.values()) + "; " + percent.stripTrailingZeros()
-			.toPlainString() + "% of base-year emissions, " + (above ? "above" : "below") + " the " + threshold
-				+ "% threshold, recalculation " + (above ? "required" : "optional");
-		baseYear.flag(RecalculationTrigger.STRUCTURAL_CHANGE, reason, inventory, version, percent);
+		baseYear.flag(RecalculationTrigger.STRUCTURAL_CHANGE, "structural change: " + String.join(", ", changes.values()),
+				inventory, version, percent, null);
+	}
+
+	/**
+	 * Recalculated base runs whose boundary version carries a membership
+	 * window: under the whole-year convention they contradict the policy (spec
+	 * 06.1). Empty under the transaction-date convention.
+	 */
+	@Transactional(readOnly = true)
+	List<String> recalculatedBasesWithWindows(BaseYear baseYear) {
+		if (baseYear.getStructuralChangeConvention() != StructuralChangeConvention.WHOLE_YEAR) {
+			return List.of();
+		}
+		return baseYear.getRecalculations()
+			.stream()
+			.filter(candidate -> candidate.getStatus() == RecalculationStatus.RECALCULATED
+					&& candidate.getRunId() != null)
+			.map(candidate -> runs.findById(candidate.getRunId()).orElse(null))
+			.filter(run -> run != null && run.getBoundaryVersionId() != null)
+			.filter(run -> boundaryVersions.findWithEntriesById(run.getBoundaryVersionId())
+				.map(version -> version.getEntries()
+					.stream()
+					.anyMatch(entry -> entry.getEffectiveFrom() != null || entry.getEffectiveTo() != null))
+				.orElse(false))
+			.map(GhgRun::getLabel)
+			.toList();
+	}
+
+	/** One inventory in the emissions profile over time (spec 06.1, Chapter 9). */
+	public record ProfileEntry(Inventory inventory, GhgRun finalRun, GhgRun recalculatedRun) {
+	}
+
+	/**
+	 * Every inventory of the organization whose period lies between the base
+	 * year and the reporting period, with its final run and, for the base-year
+	 * inventory, the latest recalculated base (spec 06.1).
+	 */
+	@Transactional(readOnly = true)
+	public List<ProfileEntry> profile(BaseYear baseYear, java.time.LocalDate reportingPeriodEnd) {
+		var baseInventory = baseYear.getInventory();
+		var recalculated = baseYear.getRecalculations()
+			.stream()
+			.filter(candidate -> candidate.getStatus() == RecalculationStatus.RECALCULATED
+					&& candidate.getRunId() != null)
+			.reduce((first, second) -> second)
+			.flatMap(candidate -> runs.findById(candidate.getRunId()))
+			.orElse(null);
+		return inventories.findAllByOrganizationIdOrderByCreatedAtDesc(baseYear.getOrganization().getId())
+			.stream()
+			.filter(inventory -> !inventory.getPeriodStart().isBefore(baseInventory.getPeriodStart())
+					&& !inventory.getPeriodEnd().isAfter(reportingPeriodEnd))
+			.sorted(java.util.Comparator.comparing(Inventory::getPeriodStart).thenComparing(Inventory::getCreatedAt))
+			.map(inventory -> new ProfileEntry(inventory,
+					inventory.getFinalRunId() == null ? null : runs.findById(inventory.getFinalRunId()).orElse(null),
+					inventory.getId().equals(baseInventory.getId()) ? recalculated : null))
+			.toList();
 	}
 
 	/** Facility id to a description of what changed between two versions. */

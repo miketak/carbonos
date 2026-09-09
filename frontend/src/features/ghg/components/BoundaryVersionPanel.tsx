@@ -1,5 +1,5 @@
 import { Skeleton } from '../../../components/Skeleton'
-import { approachLabels, describeFreeze } from '../format'
+import { approachLabels, describeFreeze, exclusionLabels } from '../format'
 import { useBoundaryVersionQuery } from '../useGhg'
 import { BoundaryVersionEntries } from './BoundaryVersionEntries'
 
@@ -17,7 +17,7 @@ export function BoundaryVersionPanel({ versionId }: { versionId: string }) {
   if (query.isError) {
     return <p className="mt-2 text-sm text-red-600">Could not load this boundary version.</p>
   }
-  const { version, entries } = query.data
+  const { version, entries, exclusions } = query.data
   return (
     <div className="mt-2 rounded-xl border border-teal/10 bg-white/40 p-3">
       <p className="text-xs text-ink-muted">
@@ -27,6 +27,17 @@ export function BoundaryVersionPanel({ versionId }: { versionId: string }) {
         {version.facilityCount === 1 ? 'facility' : 'facilities'}
       </p>
       <BoundaryVersionEntries entries={entries} />
+      {exclusions.length > 0 && (
+        <ul className="mt-2 flex flex-col gap-0.5 text-xs text-ink-muted">
+          {exclusions.map((exclusion) => (
+            <li key={`${exclusion.entityId}:${exclusion.facilityId ?? 'entity'}`}>
+              Left out: {exclusion.facilityName ?? `${exclusion.entityName} (whole entity)`} ·{' '}
+              {exclusionLabels[exclusion.reason]}
+              {exclusion.detail ? ` · ${exclusion.detail}` : ''}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

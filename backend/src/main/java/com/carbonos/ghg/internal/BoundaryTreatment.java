@@ -55,6 +55,10 @@ public class BoundaryTreatment {
 	@Column(name = "operated_by_company", nullable = false)
 	private boolean operatedByCompany;
 
+	// financial control of a franchise (spec 03.3); implied by every other row
+	@Column(name = "controlled_by_company", nullable = false)
+	private boolean controlledByCompany;
+
 	@Column(name = "effective_from")
 	private LocalDate effectiveFrom;
 
@@ -83,6 +87,7 @@ public class BoundaryTreatment {
 		this.relationshipType = entity.getRelationshipType();
 		this.economicInterestPercent = entity.getEconomicInterestPercent();
 		this.operatedByCompany = entity.isOperatedByCompany();
+		this.controlledByCompany = entity.isControlledByCompany();
 	}
 
 	public UUID getId() {
@@ -109,6 +114,10 @@ public class BoundaryTreatment {
 		return operatedByCompany;
 	}
 
+	public boolean isControlledByCompany() {
+		return controlledByCompany;
+	}
+
 	public LocalDate getEffectiveFrom() {
 		return effectiveFrom;
 	}
@@ -122,10 +131,11 @@ public class BoundaryTreatment {
 	}
 
 	void update(RelationshipType relationshipType, BigDecimal economicInterestPercent, boolean operatedByCompany,
-			LocalDate effectiveFrom, LocalDate effectiveTo) {
+			boolean controlledByCompany, LocalDate effectiveFrom, LocalDate effectiveTo) {
 		this.relationshipType = relationshipType;
 		this.economicInterestPercent = economicInterestPercent;
 		this.operatedByCompany = operatedByCompany;
+		this.controlledByCompany = controlledByCompany;
 		this.effectiveFrom = effectiveFrom;
 		this.effectiveTo = effectiveTo;
 	}
@@ -148,9 +158,19 @@ public class BoundaryTreatment {
 		facilities.removeIf(member -> member.getFacility().getId().equals(facilityId));
 	}
 
-	/** Fraction of the entity's emissions this inventory accounts for (Table 1). */
-	public BigDecimal accountingShare(ConsolidationApproach approach) {
-		return Table1.share(relationshipType, approach, economicInterestPercent, operatedByCompany);
+	/** This entity's own Table 1 row under the approach, before the chain of parents (spec 03.3). */
+	public BigDecimal ownShare(ConsolidationApproach approach) {
+		return Table1.share(relationshipType, approach, economicInterestPercent, operatedByCompany,
+				controlledByCompany);
+	}
+
+	/**
+	 * Fraction of the entity's emissions this inventory accounts for: the own
+	 * row times the chain factor, the product of the parents' shares under the
+	 * same approach as {@link InventoryService} resolves them.
+	 */
+	public BigDecimal accountingShare(ConsolidationApproach approach, BigDecimal chainFactor) {
+		return Table1.tidy(ownShare(approach).multiply(chainFactor));
 	}
 
 	/** Whether the membership window covers a date; an absent bound is unbounded. */

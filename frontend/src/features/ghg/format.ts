@@ -8,6 +8,7 @@ import type {
   LeaseType,
   MarketInstrument,
   RelationshipType,
+  StructuralChangeConvention,
 } from './api'
 
 /** kg below one tonne, tonnes above: inventories are usually read in tCO2e. */
@@ -16,6 +17,16 @@ export function formatCo2e(kg: number): string {
     return `${(kg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} t CO₂e`
   }
   return `${kg.toLocaleString(undefined, { maximumFractionDigits: 1 })} kg CO₂e`
+}
+
+/** Metric tonnes to three decimals, as Chapter 9 asks the report to state emissions (spec 07.2). */
+export function formatTonnes(tonnes: number): string {
+  return `${tonnes.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} t CO₂e`
+}
+
+/** Metric tonnes of a gas to three decimals. */
+export function formatTonnesOfGas(tonnes: number): string {
+  return `${tonnes.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} t`
 }
 
 /** Kilograms of a gas, in tonnes above one tonne. */
@@ -45,21 +56,21 @@ export const statusLabels: Record<InventoryStatus, string> = {
   PUBLISHED: 'Published',
 }
 
-/** Table 1's legal structures (spec 03.1). */
+/** The five rows of Table 1 (spec 03.1, 03.3). */
 export const relationshipLabels: Record<RelationshipType, string> = {
-  WHOLLY_OWNED: 'Wholly owned operation or subsidiary',
-  JOINT_VENTURE: 'Joint venture (joint financial control)',
-  NON_INCORPORATED_JV: 'Non-incorporated JV the company operates',
-  ASSOCIATE: 'Associate (significant influence, no control)',
+  SUBSIDIARY: 'Group company or subsidiary (financial control)',
+  JOINT_VENTURE: 'Joint venture, partnership or operation (joint financial control)',
+  ASSOCIATE: 'Associate or affiliate (significant influence, no control)',
   FIXED_ASSET_INVESTMENT: 'Fixed-asset investment (no significant influence)',
+  FRANCHISE: 'Franchise (consolidated only with equity rights or control)',
 }
 
 export const relationshipShortLabels: Record<RelationshipType, string> = {
-  WHOLLY_OWNED: 'Wholly owned',
+  SUBSIDIARY: 'Subsidiary',
   JOINT_VENTURE: 'Joint venture',
-  NON_INCORPORATED_JV: 'Non-incorporated JV',
   ASSOCIATE: 'Associate',
   FIXED_ASSET_INVESTMENT: 'Fixed-asset investment',
+  FRANCHISE: 'Franchise',
 }
 
 /** Appendix F lease types (spec 04.1). */
@@ -68,6 +79,11 @@ export const leaseLabels: Record<LeaseType, string> = {
   OPERATING_LEASE_IN: 'Operating lease (leased in)',
   FINANCE_LEASE_OUT: 'Finance lease (leased out)',
   OPERATING_LEASE_OUT: 'Operating lease (leased out)',
+}
+
+export const conventionLabels: Record<StructuralChangeConvention, string> = {
+  TRANSACTION_DATE: 'From the transaction date (membership windows)',
+  WHOLE_YEAR: 'For the whole year, as the Standard recommends',
 }
 
 export const instrumentLabels: Record<MarketInstrument, string> = {
@@ -95,6 +111,7 @@ export const categories: { category: ActivityCategory; scope: GhgScope; label: s
   { category: 'FUGITIVE_EMISSIONS', scope: 'SCOPE_1', label: 'Fugitive emissions' },
   { category: 'PURCHASED_ELECTRICITY', scope: 'SCOPE_2', label: 'Purchased electricity' },
   { category: 'PURCHASED_HEAT_STEAM', scope: 'SCOPE_2', label: 'Purchased heat and steam' },
+  { category: 'PURCHASED_COOLING', scope: 'SCOPE_2', label: 'Purchased cooling' },
   {
     category: 'PURCHASED_GOODS_SERVICES',
     scope: 'SCOPE_3',
