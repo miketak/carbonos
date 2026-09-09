@@ -13,8 +13,9 @@ import jakarta.persistence.Table;
 /**
  * A row of the seeded factor library; read-only at runtime. A factor suggests
  * a default scope and category (spec 04.1) and carries per-gas components
- * (spec 07.1): kg of CO2, CH4, N2O, SF6 and NF3 per unit, kg CO2e of HFC and
- * PFC blends per unit, and biogenic CO2 reported outside the scopes.
+ * (spec 07.1): kg of CO2, CH4, N2O, SF6 and NF3 per unit, the mass and
+ * composition of HFC and PFC blends per unit (spec 07.2), whether its methane
+ * is fossil or biogenic, and biogenic CO2 reported outside the scopes.
  */
 @Entity
 @Table(name = "ghg_emission_factors")
@@ -79,6 +80,16 @@ public class EmissionFactor {
 
 	@Column(name = "blend_gwp_source", length = 20)
 	private String blendGwpSource;
+
+	// the blend's mass composition by species (spec 07.2, T-04); when recorded, CO2e follows the
+	// inventory's GWP set instead of the source's
+	@Column(name = "blend_composition", length = 255)
+	private String blendComposition;
+
+	// whether the methane is of fossil origin (fuel combustion, venting) or biogenic (landfill,
+	// biomass): AR6 gives them different potentials
+	@Column(name = "ch4_fossil", nullable = false)
+	private boolean ch4Fossil;
 
 	@Column(nullable = false, length = 120)
 	private String source;
@@ -154,9 +165,60 @@ public class EmissionFactor {
 		return pfcsKgPerUnit;
 	}
 
-	/** The IPCC assessment report behind the blend potentials, or null for a factor with no blend. */
+	/** The IPCC assessment report the source applied to the blend, or null for a factor with no blend. */
 	public String getBlendGwpSource() {
 		return blendGwpSource;
+	}
+
+	/** The blend's stored composition, or null when none is recorded. */
+	public String getBlendComposition() {
+		return blendComposition;
+	}
+
+	/** "50% HFC-32, 50% HFC-125", or null when no composition is recorded. */
+	public String describeBlend() {
+		var composition = BlendComposition.parse(blendComposition);
+		return composition == null ? null : composition.describe();
+	}
+
+	public boolean isCh4Fossil() {
+		return ch4Fossil;
+	}
+
+	/** Whether the blend converts with the inventory's set: a composition exists and the set knows every species. */
+	public boolean blendConvertsWith(GwpSet gwp) {
+		var composition = BlendComposition.parse(blendComposition);
+		return composition != null && composition.kgCo2ePerKg(gwp) != null;
+	}
+
+	/** kg CO2e of HFCs per unit under the set: from the composition when recorded, else the source's figure. */
+	public BigDecimal hfcsKgCo2ePerUnit(GwpSet gwp) {
+		return blendKgCo2e(gwp, hfcsKgPerUnit, hfcsKgCo2ePerUnit);
+	}
+
+	/** kg CO2e of PFCs per unit under the set: from the composition when recorded, else the source's figure. */
+	public BigDecimal pfcsKgCo2ePerUnit(GwpSet gwp) {
+		return blendKgCo2e(gwp, pfcsKgPerUnit, pfcsKgCo2ePerUnit);
+	}
+
+	private BigDecimal blendKgCo2e(GwpSet gwp, BigDecimal massPerUnit, BigDecimal sourceCo2e) {
+		if (massPerUnit.signum() == 0) {
+			return sourceCo2e;
+		}
+		var composition = BlendComposition.parse(blendComposition);
+		var perKg = composition == null ? null : composition.kgCo2ePerKg(gwp);
+		return perKg == null ? sourceCo2e : massPerUnit.multiply(perKg);
+	}
+
+	/**
+	 * The assessment report behind the blend's CO2e on a run: the run's own set
+	 * when the composition converts with it, else the source's report.
+	 */
+	public String blendGwpSourceFor(GwpSet gwp) {
+		if (hfcsKgPerUnit.signum() == 0 && pfcsKgPerUnit.signum() == 0) {
+			return null;
+		}
+		return blendConvertsWith(gwp) ? gwp.name() : blendGwpSource;
 	}
 
 	public String getSource() {
@@ -178,12 +240,12 @@ public class EmissionFactor {
 		if (!hasGasSplit()) {
 			return kgCo2ePerUnit;
 		}
-		return co2KgPerUnit.add(ch4KgPerUnit.multiply(gwp.ch4()))
+		return co2KgPerUnit.add(ch4KgPerUnit.multiply(gwp.ch4(ch4Fossil)))
 			.add(n2oKgPerUnit.multiply(gwp.n2o()))
 			.add(sf6KgPerUnit.multiply(gwp.sf6()))
 			.add(nf3KgPerUnit.multiply(gwp.nf3()))
-			.add(hfcsKgCo2ePerUnit)
-			.add(pfcsKgCo2ePerUnit);
+			.add(hfcsKgCo2ePerUnit(gwp))
+			.add(pfcsKgCo2ePerUnit(gwp));
 	}
 
 	/** Whether this factor may be used in a scope, given its default and whether the physics is scope-agnostic. */

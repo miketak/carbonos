@@ -21,7 +21,8 @@ public record RunLineResponse(UUID id, UUID activityId, UUID facilityId, String 
 				line.getFactorName(), line.getScope(), line.getCategory(), line.getLeaseType(), line.getQuantity(),
 				line.getUnit(), line.getFactorUnit(), line.getConvertedQuantity(), line.getConversionFactor(),
 				line.getKgCo2ePerUnit(), line.getWeight(), line.getKgCo2e(),
-				new RunResponse.ByGas(line.getCo2Kg(), line.getCh4Kg(), line.getN2oKg(), line.getHfcsKg(),
+				new RunResponse.ByGas(line.getCo2Kg(), line.getCh4Kg(),
+						line.isCh4Fossil() ? line.getCh4Kg() : BigDecimal.ZERO, line.getN2oKg(), line.getHfcsKg(),
 						line.getPfcsKg(), line.getHfcsKgCo2e(), line.getPfcsKgCo2e(), line.getSf6Kg(), line.getNf3Kg()),
 				line.getBiogenicCo2Kg(), line.getBlendGwpSource(), line.getMarketBasedKgCo2e(),
 				line.getMarketFactorKgCo2ePerKwh(), line.getMarketInstrument(), line.getMarketNote());

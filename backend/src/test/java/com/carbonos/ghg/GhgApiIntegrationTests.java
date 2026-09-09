@@ -55,7 +55,7 @@ class GhgApiIntegrationTests {
 	private static final String ANFO_FACTOR = "c4a1f001-0000-4000-8000-000000000014";
 	// wood pellets: biomass, tonne, 14.99 CO2e from CH4 and N2O plus 1800 biogenic CO2
 	private static final String BIOMASS_FACTOR = "c4a1f001-0000-4000-8000-000000000016";
-	// refrigerant R-410A: an HFC blend, 1 kg of gas per kg leaked at 2,088 kg CO2e (IPCC AR5)
+	// refrigerant R-410A: an HFC blend, 50% HFC-32 and 50% HFC-125 by mass: 1,923.5 kg CO2e/kg under AR5, 2,255.5 under AR6
 	private static final String R410A_FACTOR = "c4a1f001-0000-4000-8000-000000000005";
 	// district cooling: scope 2, kWh, 0.12
 	private static final String COOLING_FACTOR = "c4a1f001-0000-4000-8000-000000000017";
@@ -1849,20 +1849,20 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[?(@.activityId == '" + cooling + "')].scope").value("SCOPE_2"))
 			.andExpect(jsonPath("$[?(@.activityId == '" + cooling + "')].category").value("PURCHASED_COOLING"));
 		freeze(inventoryId);
-		// 10 kg x 2,088 = 20,880 kg CO2e of HFCs, 10 kg of gas; 1,000 kWh x 0.12 = 120 kg scope 2
+		// 10 kg x 1,923.5 = 19,235 kg CO2e of HFCs, 10 kg of gas; 1,000 kWh x 0.12 = 120 kg scope 2
 		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated())
 			.andExpect(jsonPath("$.run.byGas.hfcsKg").value(10.0))
-			.andExpect(jsonPath("$.run.byGas.hfcsKgCo2e").value(20880.0))
+			.andExpect(jsonPath("$.run.byGas.hfcsKgCo2e").value(19235.0))
 			.andExpect(jsonPath("$.run.scope2KgCo2e").value(120.0))
 			.andExpect(jsonPath("$.lines[?(@.factorName == 'Refrigerant R-410A leakage')].blendGwpSource")
 				.value("AR5")));
 		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(detail, "$.run.id") + "/report").with(asMember()))
 			.andExpect(jsonPath("$.byGas[?(@.gas == 'HFCs')].kg").value(10.0))
 			.andExpect(jsonPath("$.byGas[?(@.gas == 'HFCs')].tonnes").value(0.01))
-			.andExpect(jsonPath("$.byGas[?(@.gas == 'HFCs')].tCo2e").value(20.88))
+			.andExpect(jsonPath("$.byGas[?(@.gas == 'HFCs')].tCo2e").value(19.235))
 			.andExpect(jsonPath("$.methodology.assessmentReports.length()").value(1))
 			.andExpect(jsonPath("$.methodology.multipleAssessmentReports").value(false));
-		// under AR6 the blend keeps its AR5 potentials, and the report says more than one report was used
+		// under AR6 the blend converts from its composition with AR6 potentials (771 and 3,740): one report
 		var ar6 = body(mvc
 			.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
 				.contentType("application/json").content("""
@@ -1876,13 +1876,79 @@ class GhgApiIntegrationTests {
 		classify(JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + cooling + "')].id").getFirst(),
 				COOLING_FACTOR);
 		freeze(ar6Id);
-		var ar6Detail = body(run(ar6Id, "Run 001").andExpect(status().isCreated()));
+		var ar6Detail = body(run(ar6Id, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.byGas.hfcsKgCo2e").value(22555.0))
+			.andExpect(jsonPath("$.lines[?(@.factorName == 'Refrigerant R-410A leakage')].blendGwpSource")
+				.value("AR6")));
 		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(ar6Detail, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.methodology.assessmentReports.length()").value(1))
 			.andExpect(jsonPath("$.methodology.assessmentReports[0]").value("AR6"))
-			.andExpect(jsonPath("$.methodology.assessmentReports[1]").value("AR5"))
-			.andExpect(jsonPath("$.methodology.multipleAssessmentReports").value(true))
+			.andExpect(jsonPath("$.methodology.multipleAssessmentReports").value(false))
 			.andExpect(jsonPath("$.methodology.statement")
-				.value(org.hamcrest.Matchers.containsString("More than one assessment report was used")));
+				.value(org.hamcrest.Matchers.containsString("converted from their component gases")));
+	}
+
+	/** Audit findings F18 and F37 (T-04): the refrigerant GWP and the fossil methane potential under AR6. */
+	@Test
+	void refrigerantBlendsFollowTheInventorysGwpSetAndFossilMethaneUsesAr6sFossilPotential() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var topUp = createActivity(orgId, plant, "R-410A top-up, plant chillers", "85", "kg", "2025-08-01");
+		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
+		var waste = createActivity(orgId, plant, "Camp waste to landfill", "1", "tonne", "2025-08-01");
+		// the library states the composition and the AR5 basis of the seeded figure
+		mvc.perform(get("/api/ghg/emission-factors").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + R410A_FACTOR + "')].kgCo2ePerUnit").value(1923.5))
+			.andExpect(jsonPath("$[?(@.id == '" + R410A_FACTOR + "')].blendComposition").value("50% HFC-32, 50% HFC-125"))
+			.andExpect(jsonPath("$[?(@.id == '" + R410A_FACTOR + "')].ch4Fossil").value(true))
+			.andExpect(jsonPath("$[?(@.id == '" + DIESEL_FACTOR + "')].ch4Fossil").value(true))
+			.andExpect(jsonPath("$[?(@.id == '" + LANDFILL_FACTOR + "')].ch4Fossil").value(false));
+		// AR5: 85 kg x (0.5 x 677 + 0.5 x 3,170) = 85 x 1,923.5 = 163,497.5 kg, about 163.5 t
+		var ar5 = createInventory(orgId, "FY2025 AR5", "OPERATIONAL_CONTROL");
+		putBoundary(ar5, plant);
+		classify(syncAndGetAssignmentId(ar5, topUp), R410A_FACTOR);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + ar5 + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + diesel + "')].id").getFirst(),
+				DIESEL_FACTOR);
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + waste + "')].id").getFirst(),
+				LANDFILL_FACTOR);
+		freeze(ar5);
+		run(ar5, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + topUp + "')].kgCo2e").value(163497.5))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + topUp + "')].kgCo2ePerUnit").value(1923.5))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + diesel + "')].kgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + waste + "')].kgCo2e").value(446.2));
+		// AR6: 85 x (0.5 x 771 + 0.5 x 3,740) = 85 x 2,255.5 = 191,717.5 kg; diesel's fossil methane at 29.8
+		// (2.6307 + 0.0001 x 29.8 + 0.0001 x 273 = 2.66098 per litre); landfill methane is biogenic, at 27.9
+		var ar6 = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "FY2025 AR6", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+						 "consolidationApproach": "OPERATIONAL_CONTROL", "gwpSet": "AR6"}"""))
+			.andExpect(status().isCreated()));
+		String ar6Id = JsonPath.read(ar6, "$.id");
+		putBoundary(ar6Id, plant);
+		classify(syncAndGetAssignmentId(ar6Id, topUp), R410A_FACTOR);
+		var ar6Listing = body(mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + diesel + "')].id").getFirst(),
+				DIESEL_FACTOR);
+		classify(JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + waste + "')].id").getFirst(),
+				LANDFILL_FACTOR);
+		freeze(ar6Id);
+		var detail = body(run(ar6Id, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + topUp + "')].kgCo2e").value(191717.5))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + topUp + "')].kgCo2ePerUnit").value(2255.5))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + diesel + "')].kgCo2ePerUnit").value(2.66098))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + diesel + "')].kgCo2e").value(2660.98))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + waste + "')].kgCo2e").value(444.65))
+			.andExpect(jsonPath("$.run.byGas.ch4Kg").value(15.6))
+			.andExpect(jsonPath("$.run.byGas.ch4FossilKg").value(0.1)));
+		// the by-gas table applies each potential to the methane of its origin: 0.1 x 29.8 + 15.5 x 27.9
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(detail, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.byGas[?(@.gas == 'CH4')].kgCo2e").value(435.43))
+			.andExpect(jsonPath("$.byGas[?(@.gas == 'HFCs')].kgCo2e").value(191717.5))
+			.andExpect(jsonPath("$.methodology.statement")
+				.value(org.hamcrest.Matchers.containsString("fossil origin is converted at 29.8")));
 	}
 
 	@Test

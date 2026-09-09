@@ -279,6 +279,8 @@ beforeEach(() => {
         biogenicCo2KgPerUnit: 0,
         gwpSet: 'AR5',
         blendGwpSource: null,
+        blendComposition: null,
+        ch4Fossil: true,
         source: 'DEFRA 2025',
       },
     ])

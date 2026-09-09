@@ -26,7 +26,8 @@ public class GhgRunLine {
 
 	/** Kilograms of each gas a line emits; HFCs and PFCs are kg CO2e of the blend. */
 	record Gases(BigDecimal co2, BigDecimal ch4, BigDecimal n2o, BigDecimal hfcs, BigDecimal pfcs, BigDecimal sf6,
-			BigDecimal nf3, BigDecimal biogenicCo2, BigDecimal hfcsKg, BigDecimal pfcsKg, String blendGwpSource) {
+			BigDecimal nf3, BigDecimal biogenicCo2, BigDecimal hfcsKg, BigDecimal pfcsKg, String blendGwpSource,
+			boolean ch4Fossil) {
 	}
 
 	/** The market-based side of a scope 2 line, present only when the facility has an instrument. */
@@ -121,6 +122,10 @@ public class GhgRunLine {
 	@Column(name = "blend_gwp_source", length = 20)
 	private String blendGwpSource;
 
+	// whether the line's methane is fossil (AR6: 29.8) or biogenic (AR6: 27.9)
+	@Column(name = "ch4_fossil", nullable = false)
+	private boolean ch4Fossil;
+
 	// why the market-based figure is not the facility's instrument: it failed the Quality Criteria
 	@Column(name = "market_note", length = 255)
 	private String marketNote;
@@ -170,6 +175,7 @@ public class GhgRunLine {
 		this.hfcsKg = gases.hfcsKg();
 		this.pfcsKg = gases.pfcsKg();
 		this.blendGwpSource = gases.blendGwpSource();
+		this.ch4Fossil = gases.ch4Fossil();
 		if (market != null) {
 			this.marketBasedKgCo2e = market.kgCo2e();
 			this.marketFactorKgCo2ePerKwh = market.factorKgCo2ePerKwh();
@@ -297,6 +303,15 @@ public class GhgRunLine {
 
 	public String getBlendGwpSource() {
 		return blendGwpSource;
+	}
+
+	public boolean isCh4Fossil() {
+		return ch4Fossil;
+	}
+
+	/** The line's methane in CO2e under a set, on its own origin (fossil or biogenic). */
+	public BigDecimal ch4KgCo2e(GwpSet gwp) {
+		return ch4Kg.multiply(gwp.ch4(ch4Fossil));
 	}
 
 	public String getMarketNote() {

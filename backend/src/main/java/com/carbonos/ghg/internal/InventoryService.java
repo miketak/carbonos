@@ -1031,14 +1031,14 @@ public class InventoryService {
 			var gases = new GhgRunLine.Gases(round(convertedQuantity.multiply(factor.getCo2KgPerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getCh4KgPerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getN2oKgPerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.getHfcsKgCo2ePerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.getPfcsKgCo2ePerUnit()).multiply(share)),
+					round(convertedQuantity.multiply(factor.hfcsKgCo2ePerUnit(gwp)).multiply(share)),
+					round(convertedQuantity.multiply(factor.pfcsKgCo2ePerUnit(gwp)).multiply(share)),
 					round(convertedQuantity.multiply(factor.getSf6KgPerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getNf3KgPerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getBiogenicCo2KgPerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getHfcsKgPerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getPfcsKgPerUnit()).multiply(share)),
-					factor.getBlendGwpSource());
+					factor.blendGwpSourceFor(gwp), factor.isCh4Fossil());
 			GhgRunLine.Market market = null;
 			var instrument = instruments.get(activity.getFacility().getId());
 			if (assignment.getScope() == Scope.SCOPE_2 && instrument != null && units.canConvert(activityUnit, KWH)) {

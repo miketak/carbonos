@@ -65,6 +65,7 @@ const run: Run = {
   byGas: {
     co2Kg: 3012.8,
     ch4Kg: 0,
+    ch4FossilKg: 0,
     n2oKg: 0,
     hfcsKg: 0,
     pfcsKg: 0,

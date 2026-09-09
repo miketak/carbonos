@@ -82,6 +82,10 @@ public class GhgRun {
 	@Column(name = "ch4_kg", nullable = false, precision = 18, scale = 3)
 	private BigDecimal ch4Kg;
 
+	// the fossil-origin part of ch4Kg, so the by-gas table can apply AR6's two methane potentials
+	@Column(name = "ch4_fossil_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal ch4FossilKg;
+
 	@Column(name = "n2o_kg", nullable = false, precision = 18, scale = 3)
 	private BigDecimal n2oKg;
 
@@ -146,6 +150,7 @@ public class GhgRun {
 		this.scope2MarketBasedKgCo2e = marketBasedReporting ? BigDecimal.ZERO : null;
 		this.co2Kg = BigDecimal.ZERO;
 		this.ch4Kg = BigDecimal.ZERO;
+		this.ch4FossilKg = BigDecimal.ZERO;
 		this.n2oKg = BigDecimal.ZERO;
 		this.hfcsKgCo2e = BigDecimal.ZERO;
 		this.pfcsKgCo2e = BigDecimal.ZERO;
@@ -172,6 +177,9 @@ public class GhgRun {
 		}
 		co2Kg = co2Kg.add(line.getCo2Kg());
 		ch4Kg = ch4Kg.add(line.getCh4Kg());
+		if (line.isCh4Fossil()) {
+			ch4FossilKg = ch4FossilKg.add(line.getCh4Kg());
+		}
 		n2oKg = n2oKg.add(line.getN2oKg());
 		hfcsKgCo2e = hfcsKgCo2e.add(line.getHfcsKgCo2e());
 		pfcsKgCo2e = pfcsKgCo2e.add(line.getPfcsKgCo2e());
@@ -263,6 +271,15 @@ public class GhgRun {
 
 	public BigDecimal getCh4Kg() {
 		return ch4Kg;
+	}
+
+	public BigDecimal getCh4FossilKg() {
+		return ch4FossilKg;
+	}
+
+	/** CH4 in CO2e under the run's set: fossil and biogenic methane at their own potentials. */
+	public BigDecimal ch4KgCo2e() {
+		return ch4FossilKg.multiply(gwpSet.ch4(true)).add(ch4Kg.subtract(ch4FossilKg).multiply(gwpSet.ch4(false)));
 	}
 
 	public BigDecimal getN2oKg() {
