@@ -503,6 +503,10 @@ export interface RunLine {
   entityId: string | null
   entityName: string | null
   country: string | null
+  /** The record's own description, its evidence reference and the factor id (spec 07.5). */
+  activityType: string | null
+  evidenceRef: string | null
+  factorId: string | null
   factorName: string
   scope: GhgScope
   category: ActivityCategory

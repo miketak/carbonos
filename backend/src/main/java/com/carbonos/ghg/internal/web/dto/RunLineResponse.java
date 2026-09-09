@@ -12,7 +12,7 @@ import com.carbonos.ghg.internal.Scope;
 import com.carbonos.ghg.internal.Scope2MarketBasis;
 
 public record RunLineResponse(UUID id, UUID activityId, UUID facilityId, String facilityName, UUID entityId,
-		String entityName, String country, String factorName,
+		String entityName, String country, String activityType, String evidenceRef, UUID factorId, String factorName,
 		Scope scope, ActivityCategory category, LeaseType leaseType, BigDecimal quantity, String unit,
 		String factorUnit, BigDecimal convertedQuantity, BigDecimal conversionFactor, BigDecimal kgCo2ePerUnit,
 		BigDecimal weight, LocalDate periodStart, LocalDate periodEnd, long periodDays, long coveredDays,
@@ -23,7 +23,8 @@ public record RunLineResponse(UUID id, UUID activityId, UUID facilityId, String 
 
 	public static RunLineResponse from(GhgRunLine line) {
 		return new RunLineResponse(line.getId(), line.getActivityId(), line.getFacilityId(), line.getFacilityName(),
-				line.getEntityId(), line.getEntityName(), line.getCountry(), line.getFactorName(), line.getScope(), line.getCategory(), line.getLeaseType(), line.getQuantity(),
+				line.getEntityId(), line.getEntityName(), line.getCountry(), line.getActivityType(),
+				line.getEvidenceRef(), line.getFactorId(), line.getFactorName(), line.getScope(), line.getCategory(), line.getLeaseType(), line.getQuantity(),
 				line.getUnit(), line.getFactorUnit(), line.getConvertedQuantity(), line.getConversionFactor(),
 				line.getKgCo2ePerUnit(), line.getWeight(), line.getPeriodStart(), line.getPeriodEnd(),
 				line.getPeriodDays(), line.getCoveredDays(), line.getPeriodShare(), line.getPeriodNote(),

@@ -32,6 +32,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 07.2 | [Required disclosures](07.2-required-disclosures.md) | Ch. 4, 9, Scope 2 Guidance, 2013 amendment | Implemented |
 | 07.3 | [Scope 2 instrument coverage and dual reporting](07.3-scope-2-instrument-coverage.md) | Scope 2 Guidance Ch. 4, 6, 7 | Implemented |
 | 07.4 | [Report tables, factor table and report metadata](07.4-report-tables-factors-and-metadata.md) | Ch. 9, 10 | Implemented |
+| 07.5 | [Report export](07.5-report-export.md) | Ch. 9, 10 | Implemented |
 
 A chapter spec (`NN`) describes one stage of the workflow as it is today. A
 sub-spec (`NN.M`) is a branch of that stage that deserves its own document.

@@ -26,8 +26,16 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
             <tr key={line.id} className="border-b border-teal/5 last:border-0">
               <td className="px-3 py-2">{line.facilityName}</td>
               <td className="px-3 py-2">
-                <span className="font-medium">{line.factorName}</span>
-                <span className="block text-xs text-ink-muted">{categoryLabel(line.category)}</span>
+                {line.activityType && (
+                  <span className="block font-medium">{line.activityType}</span>
+                )}
+                <span className={line.activityType ? 'text-xs text-ink-muted' : 'font-medium'}>
+                  {line.factorName}
+                </span>
+                <span className="block text-xs text-ink-muted">
+                  {categoryLabel(line.category)}
+                  {line.evidenceRef ? ` · ${line.evidenceRef}` : ''}
+                </span>
                 {line.leaseType && (
                   <span className="block text-xs text-ink-muted">
                     {leaseLabels[line.leaseType]}

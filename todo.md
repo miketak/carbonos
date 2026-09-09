@@ -27,7 +27,7 @@ Status summary (update as tickets close):
 
 | Priority | Tickets | Done |
 |---|---|---|
-| P0 | 9 | 5 |
+| P0 | 9 | 6 |
 | P1 | 13 | 0 |
 | P2 | 4 | 0 |
 
@@ -72,12 +72,12 @@ Status summary (update as tickets close):
   - Done when: hard delete is gone; a run can be voided with a required reason and stays listed with its number and a VOIDED state; run numbers are never reused; FINAL runs cannot be voided without first withdrawing final status, with a reason.
   - Spec: 05.2 (run numbering and voiding), migration V22; 05 and 05.1 updated.
 
-- [ ] **T-06 (P0) Export: PDF report, CSV of snapshot lines, and a frozen boundary and factor set**
+- [x] **T-06 (P0) Export: PDF report, CSV of snapshot lines, and a frozen boundary and factor set**
   - Findings: F38
   - Problem: the run page has no export. The report cannot leave the browser except by copy and paste. Board packs, lender covenants, and Ghana EPA submissions need a document; verifiers need a calculation file to re-perform a sample.
   - Standard: ISO 14064-3 (re-performance of a sample); Corporate Standard chapter 9 (the report is the deliverable).
   - Done when: a run offers a PDF following the chapter 9 structure (with the tables from T-08), a CSV or XLSX of snapshot lines carrying record ID, evidence reference, factor ID, factor version, quantity, converted quantity, share, and result, and a JSON of the frozen boundary version and factor set; exports are identical for the same run on repeated download.
-  - Spec: none yet.
+  - Spec: 07.5 (report export), migration V25.
 
 - [x] **T-07 (P0) Activity records carry a period, with cut-off and pro-rating**
   - Findings: F9, F24

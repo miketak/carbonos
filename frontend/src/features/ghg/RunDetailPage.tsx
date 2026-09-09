@@ -126,6 +126,23 @@ export function RunDetailPage() {
               {report.period.periodEnd} · {report.run.activityCount} line
               {report.run.activityCount === 1 ? '' : 's'}
             </p>
+            <nav aria-label="Downloads" className="mt-2 flex flex-wrap gap-2 text-sm">
+              {[
+                ['PDF report', `/api/ghg/runs/${runId}/report.pdf`],
+                ['Lines (CSV)', `/api/ghg/runs/${runId}/lines.csv`],
+                ['Exclusions (CSV)', `/api/ghg/runs/${runId}/exclusions.csv`],
+                ['Frozen inputs (JSON)', `/api/ghg/runs/${runId}/inputs.json`],
+              ].map(([label, href]) => (
+                <a
+                  key={href}
+                  href={href}
+                  download
+                  className="rounded-lg border border-teal/30 bg-white/60 px-3 py-1 font-semibold text-dark-teal hover:bg-teal/10"
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
           </>
         )}
       </div>
