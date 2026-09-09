@@ -23,6 +23,17 @@ factors, the residual mix, the criteria or the scope 2 arithmetic.
 
 ## A. Recording instruments
 
+### A0. A negative factor is refused inline
+
+1. On the instruments card, type -0.1 in **kg CO2e per kWh**, a source,
+   and 20,000 MWh covered. Add.
+
+**Expected result:** the form stays put, with "kg CO₂e per kWh must be 0
+or more." under the factor; nothing is recorded and no toast appears. Clear
+the factor.
+
+Verdict: ☐ pass ☐ fail. Notes:
+
 ### A1. An instrument with a criterion unanswered is not applied
 
 1. On the instruments card, add for S2: certificate, 0 kg CO2e/kWh,
@@ -32,8 +43,8 @@ factors, the residual mix, the criteria or the scope 2 arithmetic.
 2. Read the pre-flight.
 
 **Expected result:** the row reads "Not applied: 1 unanswered" with the
-eight outcomes listed. The EMISSION_FACTOR gate warns that 1 of the eight
-criteria is not yet answered and the market-based figure falls back.
+eight outcomes listed. The **Emission factors** gate warns "1 of the eight
+criteria not yet answered" and says the market-based figure falls back.
 
 Verdict: ☐ pass ☐ fail. Notes:
 

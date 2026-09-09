@@ -73,8 +73,11 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Enter `Newcomer-pass-2026` twice and submit.
 2. In the normal window, refresh the Users list.
 
-**Expected result:** the Newcomer lands in the app signed in. The Users
-list now shows the account ACTIVE and the request COMPLETED.
+**Expected result:** the Newcomer lands in the app signed in. The loader
+that plays after sign-in shows the wordmark, a progress bar and "Loading
+your workspace"; it makes no claim about verifying or calibrating
+anything, and a click skips it. The Users list now shows the account
+ACTIVE and the request COMPLETED.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -83,8 +86,8 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Open the emailed link again in a fresh tab.
 2. Open `/set-password?token=` followed by 64 zeros.
 
-**Expected result:** both show the same "invalid or expired" state with a
-way back to the landing page.
+**Expected result:** both show the same "This link is invalid or has
+expired." state with a way back to the landing page.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -131,7 +134,7 @@ Verdict: ☐ pass ☐ fail. Notes:
 2. Add `nobody@example.test`.
 
 **Expected result:** the two members appear with their roles. The unknown
-address is refused with a message that the account does not exist. Adding
+address is refused with "Account nobody@example.test was not found." Adding
 the Analyst a second time is refused as already a member.
 
 Verdict: ☐ pass ☐ fail. Notes:

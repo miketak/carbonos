@@ -166,8 +166,9 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Open the report of the voided run 002 and its PDF.
 
-**Expected result:** a VOIDED banner with the reason on the page and on
-every PDF page; the figures are still shown.
+**Expected result:** a VOIDED banner with the reason on the page. The PDF
+prints the reason once on its first page and "VOIDED: this run must not
+be relied on" on every page; the figures are still shown.
 
 Verdict: ☐ pass ☐ fail. Notes:
 

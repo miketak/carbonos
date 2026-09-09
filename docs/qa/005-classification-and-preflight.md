@@ -93,7 +93,7 @@ Verdict: ☐ pass ☐ fail. Notes:
    scope 3, category purchased goods and services.
 2. Open the pre-flight.
 
-**Expected result:** the CLASSIFICATION gate blocks until a justification
+**Expected result:** the **Classification** gate blocks until a justification
 of at least 10 characters is recorded; after "Fleet operated by a
 contractor from May" it is silent.
 
@@ -150,7 +150,7 @@ Verdict: ☐ pass ☐ fail. Notes:
    procedure 2 (F3), read the gate, then approve the factor under
    **Emission factors** and read the gate again.
 
-**Expected result:** EMISSION_FACTOR blocks with "not approved"; after
+**Expected result:** **Emission factors** blocks with "not approved"; after
 approval it passes. Re-classify R6 with the imported R-407C factor for
 procedure 7.
 
@@ -215,7 +215,7 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 ### D3. Twelve-month expectation
 
-1. Read the BOUNDARY gate.
+1. Read the **Reporting boundary** gate.
 
 **Expected result:** no twelve-month warning for a calendar-year period;
 the 18-month inventory of procedure 4 (if kept) warns.
@@ -227,7 +227,7 @@ Verdict: ☐ pass ☐ fail. Notes:
 ### E1. A declared category without lines warns
 
 1. In the declaration card, declare **15. Investments** and save.
-2. Read the CLASSIFICATION gate.
+2. Read the **Classification** gate.
 
 **Expected result:** a warning that investments is declared but no record
 is classified into it, and another that purchased goods and services has

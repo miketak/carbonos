@@ -38,6 +38,17 @@ today, and the end cannot precede the start.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
+### A1a. A quantity of zero and an uncertainty above 100 are refused inline
+
+1. Open the record form again. Type 0 in **Quantity** and 150 in
+   **Uncertainty, ± % (optional)**. Save.
+
+**Expected result:** the form stays open with "Quantity must be greater
+than 0." under the quantity and "Uncertainty must be between 0 and 100."
+under the uncertainty. No record is created. Cancel.
+
+Verdict: ☐ pass ☐ fail. Notes:
+
 ### A2. The tier follows the method when left blank
 
 1. Record: S5, stream Camp LPG, "Camp LPG", 18000 litre, 2025-04-30,

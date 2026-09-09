@@ -74,8 +74,9 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Open the inventory's activity view.
 
-**Expected result:** the page says the view shows records as published; R2
-still shows 48,500 MWh with "Changed since publication: quantity".
+**Expected result:** R2's row still shows 48,500 MWh and carries the
+badge "Changed since publication: quantity"; the published run's report
+(procedure 7) is where the page says it reads exactly as published.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -83,10 +84,14 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 ### C1. A correction needs a reason and inherits the view
 
-1. As the Analyst, click **Create correction**; try with an empty reason;
-   then enter "Mill electricity understated by 1,500 MWh" and create.
+1. As the Analyst, scroll the page so the lifecycle bar sits just under
+   the sticky page header, then click **Create correction** with the
+   mouse (not the keyboard).
+2. Try with an empty reason; then enter "Mill electricity understated by
+   1,500 MWh" and create.
 
-**Expected result:** the button stays disabled without a reason of at
+**Expected result:** the first click opens the dialog; the header does not
+swallow it. The button stays disabled without a reason of at
 least 10 characters. The correction opens as a draft: its boundary,
 instruments, declaration and every classification and exclusion are
 inherited (each marked "inherited"), and the page says how many decisions
@@ -100,7 +105,8 @@ Verdict: ☐ pass ☐ fail. Notes:
    freeze, launch a run and open its report.
 
 **Expected result:** a **Correction of 2025 Operational** block with the
-reason, "0 lines added, 0 removed, 1 changed" and the change in t CO2e
+reason, "Against the published run: 0 lines added, 0 removed, 1 changed"
+and the change in t CO2e
 (1,500,000 × 0.441 = 661,500 kg more).
 
 Verdict: ☐ pass ☐ fail. Notes:
