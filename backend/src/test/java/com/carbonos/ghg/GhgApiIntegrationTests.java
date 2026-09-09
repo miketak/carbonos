@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -2442,5 +2443,74 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/runs/" + restated + "/report").with(asMember()))
 			.andExpect(jsonPath("$.header.version").value(2))
 			.andExpect(jsonPath("$.header.supersedes[0]").value("FY2025"));
+	}
+
+	/** Audit finding F38 (T-06): the report as a PDF, the lines as CSV, and the frozen inputs as JSON. */
+	@Test
+	void aRunExportsAPdfACsvAndItsFrozenInputs() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
+		var power = createActivity(orgId, plant, "Mill grid electricity", "1000", "kWh", "2025-08-01");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + plant).with(asMember())
+			.with(csrf()).contentType("application/json").content("""
+					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0.05, "source": "Supplier REC 2025",
+					 "meetsQualityCriteria": true, "coveredKwh": 400}"""))
+			.andExpect(status().isOk());
+		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + power + "')].id").getFirst(),
+				GRID_FACTOR);
+		freeze(inventoryId);
+		String runId = runAndGetId(inventoryId, "Run 001");
+
+		// the PDF: a document with the organization and the period in its name
+		var pdf = mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Type", "application/pdf"))
+			.andExpect(header().string("Content-Disposition",
+					org.hamcrest.Matchers.containsString("asante-gold-resources-2025-run-1.pdf")))
+			.andReturn()
+			.getResponse()
+			.getContentAsByteArray();
+		assertThat(new String(pdf, 0, 5, java.nio.charset.StandardCharsets.ISO_8859_1)).isEqualTo("%PDF-");
+		assertThat(pdf.length).isGreaterThan(2000);
+
+		// the calculation file: a header row, then one row per line with record id, evidence and factor id
+		var csv = body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/csv"))));
+		var rows = csv.split("\r\n");
+		assertThat(rows[0]).startsWith("line_id,record_id,facility_id,facility,legal_entity,country,activity_type,evidence_ref,"
+				+ "period_start,period_end,scope,category,lease_type,quantity,unit,factor_id,factor,factor_unit,"
+				+ "converted_quantity,conversion_factor,kg_co2e_per_unit,gwp_set,accounting_share,period_days,"
+				+ "covered_days,period_share,kg_co2e,");
+		assertThat(rows).hasSize(3);
+		var dieselRow = java.util.Arrays.stream(rows).filter(row -> row.contains("Genset diesel")).findFirst().orElseThrow();
+		assertThat(dieselRow).contains("," + diesel + ",").contains(",INV-2938,").contains("," + DIESEL_FACTOR + ",")
+			.contains(",2660,").contains(",AR5,");
+		// byte-identical on a second download
+		assertThat(body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember())))).isEqualTo(csv);
+		mvc.perform(get("/api/ghg/runs/" + runId + "/exclusions.csv").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(content().string(org.hamcrest.Matchers.startsWith("record_id,facility,activity_type,")));
+
+		// the frozen inputs: the boundary version, the factor set and the instrument as recorded
+		var inputs = body(mvc.perform(get("/api/ghg/runs/" + runId + "/inputs.json").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.runNo").value(1))
+			.andExpect(jsonPath("$.gwpSet").value("AR5"))
+			.andExpect(jsonPath("$.boundaryVersion.version.versionNo").value(1))
+			.andExpect(jsonPath("$.boundaryVersion.entries[0].entityName").value("Asante Gold Resources"))
+			.andExpect(jsonPath("$.factors.length()").value(2))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].kgCo2ePerUnit").value(2.66))
+			.andExpect(jsonPath("$.instruments[0].coveredKwh").value(400))
+			.andExpect(jsonPath("$.residualMixAvailable").doesNotExist()));
+		assertThat(body(mvc.perform(get("/api/ghg/runs/" + runId + "/inputs.json").with(asMember())))).isEqualTo(inputs);
+		// tenant-scoped like the report
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asOutsider())).andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asOutsider())).andExpect(status().isNotFound());
 	}
 }

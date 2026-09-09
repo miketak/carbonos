@@ -189,6 +189,9 @@ const report: Report = {
       entityId: null,
       entityName: null,
       country: null,
+      activityType: 'Diesel consumption',
+      evidenceRef: 'INV-2938',
+      factorId: 'f-1',
       factorName: 'Diesel',
       scope: 'SCOPE_1',
       category: 'MOBILE_COMBUSTION',
@@ -548,4 +551,22 @@ test('opens with the header block and prints the breakdown and factor tables', a
   expect(within(factors).getByText('Diesel').closest('tr')).toHaveTextContent(/2\.66 \/ litre/)
   expect(within(factors).getByText(/CH₄ 0\.0001 \(fossil\)/)).toBeInTheDocument()
   expect(within(factors).getByText('DEFRA 2025')).toBeInTheDocument()
+})
+
+test('offers the report as a PDF, the lines and exclusions as CSV, and the frozen inputs as JSON', async () => {
+  renderRunDetailPage()
+
+  const downloads = await screen.findByRole('navigation', { name: 'Downloads' })
+  expect(within(downloads).getByRole('link', { name: 'PDF report' })).toHaveAttribute(
+    'href',
+    '/api/ghg/runs/run-1/report.pdf',
+  )
+  expect(within(downloads).getByRole('link', { name: 'Lines (CSV)' })).toHaveAttribute(
+    'href',
+    '/api/ghg/runs/run-1/lines.csv',
+  )
+  expect(within(downloads).getByRole('link', { name: 'Frozen inputs (JSON)' })).toHaveAttribute(
+    'href',
+    '/api/ghg/runs/run-1/inputs.json',
+  )
 })

@@ -73,6 +73,17 @@ public class GhgRunLine {
 	@Column(name = "factor_name", nullable = false, length = 120)
 	private String factorName;
 
+	// the record's own description, its evidence reference and the factor's id, so the calculation
+	// file traces a line to the primary document without the live tables (spec 07.5)
+	@Column(name = "activity_type", length = 120)
+	private String activityType;
+
+	@Column(name = "evidence_ref", length = 150)
+	private String evidenceRef;
+
+	@Column(name = "factor_id")
+	private UUID factorId;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 10)
 	private Scope scope;
@@ -208,6 +219,9 @@ public class GhgRunLine {
 		this.entityName = activity.getFacility().getEntity().getName();
 		this.country = activity.getFacility().getCountry();
 		this.factorName = factor.getName();
+		this.activityType = activity.getActivityType();
+		this.evidenceRef = activity.getEvidenceRef();
+		this.factorId = factor.getId();
 		this.scope = assignment.getScope();
 		this.category = assignment.getCategory();
 		this.leaseType = assignment.getLeaseType();
@@ -279,6 +293,18 @@ public class GhgRunLine {
 
 	public String getFactorName() {
 		return factorName;
+	}
+
+	public String getActivityType() {
+		return activityType;
+	}
+
+	public String getEvidenceRef() {
+		return evidenceRef;
+	}
+
+	public UUID getFactorId() {
+		return factorId;
 	}
 
 	public Scope getScope() {
