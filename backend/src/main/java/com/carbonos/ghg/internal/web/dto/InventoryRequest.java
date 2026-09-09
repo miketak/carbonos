@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import com.carbonos.ghg.internal.ConsolidationApproach;
 import com.carbonos.ghg.internal.GwpSet;
+import com.carbonos.ghg.internal.StraddleTreatment;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -18,5 +19,6 @@ public record InventoryRequest( //
 		@Size(max = 255) String purpose, //
 		@Min(1990) @Max(2100) Integer baseYear, //
 		@NotNull ConsolidationApproach consolidationApproach, //
-		GwpSet gwpSet) {
+		GwpSet gwpSet, //
+		StraddleTreatment straddleTreatment) {
 }

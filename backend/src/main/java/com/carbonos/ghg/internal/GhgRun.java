@@ -144,7 +144,7 @@ public class GhgRun {
 	private List<GhgRunLine> lines = new ArrayList<>();
 
 	@OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true)
-	@OrderBy("exclusionReason ASC, activityDate ASC")
+	@OrderBy("exclusionReason ASC, periodEnd ASC")
 	private List<GhgRunExclusion> exclusions = new ArrayList<>();
 
 	@CreationTimestamp

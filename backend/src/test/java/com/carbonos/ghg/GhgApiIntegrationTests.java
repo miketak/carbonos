@@ -187,8 +187,9 @@ class GhgApiIntegrationTests {
 				.contentType("application/json")
 				.content("""
 						{"facilityId": "%s", "activityType": "%s", "quantity": %s, "unit": "%s",
-						 "activityDate": "%s", "dataSource": "Fuel invoice", "evidenceRef": "INV-2938",
-						 "dataQuality": "MEASURED"}""".formatted(facilityId, type, quantity, unit, date)))
+						 "periodStart": "%s", "periodEnd": "%s", "dataSource": "Fuel invoice",
+						 "evidenceRef": "INV-2938", "dataQuality": "MEASURED"}"""
+					.formatted(facilityId, type, quantity, unit, date, date)))
 			.andExpect(status().isCreated())
 			.andReturn();
 		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
@@ -1113,7 +1114,7 @@ class GhgApiIntegrationTests {
 			.contentType("application/json")
 			.content("""
 					{"facilityId": "%s", "activityType": "Diesel consumption", "quantity": 1200,
-					 "unit": "litre", "activityDate": "2025-03-15", "evidenceRef": "INV-2938-corrected",
+					 "unit": "litre", "periodStart": "2025-03-15", "periodEnd": "2025-03-15", "evidenceRef": "INV-2938-corrected",
 					 "dataQuality": "MEASURED"}""".formatted(facilityId)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.quantity").value(1200.0))
@@ -1164,10 +1165,10 @@ class GhgApiIntegrationTests {
 			.contentType("application/json")
 			.content("""
 					{"facilityId": "%s", "activityType": "Time travel diesel", "quantity": 10,
-					 "unit": "litre", "activityDate": "2091-01-01", "dataQuality": "MEASURED"}"""
+					 "unit": "litre", "periodStart": "2091-01-01", "periodEnd": "2091-01-01", "dataQuality": "MEASURED"}"""
 				.formatted(facilityId)))
 			.andExpect(status().is(422))
-			.andExpect(jsonPath("$.errors.activityDate").exists());
+			.andExpect(jsonPath("$.errors.periodStart").exists());
 	}
 
 	// --- inventory lifecycle (spec 05.1) --------------------------------------
@@ -2233,5 +2234,105 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.methodology.statement")
 				.value(org.hamcrest.Matchers.containsString("Table 1")))
 			.andExpect(jsonPath("$.lines.length()").value(1));
+	}
+
+	/** A record covering a period (spec 04.2). */
+	String createPeriodActivity(String orgId, String facilityId, String type, String quantity, String unit,
+			String start, String end) throws Exception {
+		var result = mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+				.contentType("application/json")
+				.content("""
+						{"facilityId": "%s", "activityType": "%s", "quantity": %s, "unit": "%s",
+						 "periodStart": "%s", "periodEnd": "%s", "evidenceRef": "INV-1", "dataQuality": "MEASURED"}"""
+					.formatted(facilityId, type, quantity, unit, start, end)))
+			.andExpect(status().isCreated())
+			.andReturn();
+		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+	}
+
+	/** Audit findings F9 and F24 (T-07): periods, cut-off, pro-rating, coverage and period labels. */
+	@Test
+	void aRecordStraddlingTheMembershipWindowIsProRatedOrBlocked() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var tarkwa = createEntity(orgId, "Tarkwa Mine Ltd", "SUBSIDIARY", "100", true);
+		var pit = createFacility(orgId, "Tarkwa Pit", tarkwa);
+		// a period end before its start is refused
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"facilityId": "%s", "activityType": "Backwards", "quantity": 1, "unit": "litre",
+					 "periodStart": "2025-12-31", "periodEnd": "2025-01-01", "dataQuality": "MEASURED"}""".formatted(pit)))
+			.andExpect(status().is(422));
+		// the annual diesel total, and a meter read straddling year-end
+		var annual = createPeriodActivity(orgId, pit, "Haul fleet diesel", "100000", "litre", "2025-01-01", "2025-12-31");
+		var straddle = createPeriodActivity(orgId, pit, "Camp LPG", "1000", "litre", "2025-12-16", "2026-01-15");
+		var before = createPeriodActivity(orgId, pit, "Pre-acquisition diesel", "500", "litre", "2025-03-01", "2025-03-31");
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + annual + "')].periodStart").value("2025-01-01"))
+			.andExpect(jsonPath("$[?(@.id == '" + annual + "')].periodEnd").value("2025-12-31"));
+		// an 18-month inventory is allowed but warned about; the label is a fiscal year
+		var odd = createInventory(orgId, "Long period", "OPERATIONAL_CONTROL", "2025-01-01", "2026-06-30");
+		mvc.perform(get("/api/ghg/inventories/" + odd).with(asMember()))
+			.andExpect(jsonPath("$.periodLabel").value("FY2025/26"))
+			.andExpect(jsonPath("$.straddleTreatment").value("PRO_RATE"));
+		mvc.perform(get("/api/ghg/inventories/" + odd + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'WARNING')].message").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.containsString("is not twelve months (18 months)"))));
+		// Tarkwa acquired on 1 July 2025
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
+			.andExpect(jsonPath("$.periodLabel").value("2025"));
+		putBoundary(inventoryId, pit, """
+				{"effectiveFrom": "2025-07-01"}""");
+		// review: the March record is wholly before the window (excluded); the annual and year-end records overlap
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityId == '" + before + "')].exclusionReason").value("OUTSIDE_BOUNDARY"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + annual + "')].included").value(true))
+			.andExpect(jsonPath("$[?(@.activityId == '" + straddle + "')].included").value(true)));
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + annual + "')].id").getFirst(),
+				DIESEL_FACTOR);
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + straddle + "')].id").getFirst(),
+				DIESEL_FACTOR);
+		// coverage: diesel every month from the annual record; LPG in December only
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/coverage").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2))
+			.andExpect(jsonPath("$[?(@.activityType == 'Haul fleet diesel')].coveredMonths.length()").value(12))
+			.andExpect(jsonPath("$[?(@.activityType == 'Camp LPG')].coveredMonths[0]").value("2025-12"))
+			.andExpect(jsonPath("$[?(@.activityType == 'Camp LPG')].months.length()").value(12));
+		freeze(inventoryId);
+		// the gate warns about both straddling records
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(true))
+			.andExpect(jsonPath("$.gates[1].findings[?(@.severity == 'WARNING')].message").value(org.hamcrest.Matchers
+				.hasItems(org.hamcrest.Matchers.containsString("184 of 365 days fall inside the reporting period and "
+						+ "the membership window: the run pro-rates it to 50.41%"),
+						org.hamcrest.Matchers.containsString("16 of 31 days"))));
+		// annual: 100,000 x 184/365 = 50,410.959 litre x 2.66 = 134,093.151 kg; year-end read: 1,000 x 16/31 x 2.66
+		run(inventoryId, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + annual + "')].periodShare").value(0.50411))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + annual + "')].coveredDays").value(184))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + annual + "')].periodDays").value(365))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + annual + "')].kgCo2e").value(134093.26))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + annual + "')].periodNote").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.startsWith("pro-rated: 184 of 365 days"))))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + straddle + "')].kgCo2e").value(1372.903))
+			.andExpect(jsonPath("$.exclusions[0].periodStart").value("2025-03-01"))
+			.andExpect(jsonPath("$.exclusions[0].periodEnd").value("2025-03-31"));
+		// under BLOCK the same records block the run until split or excluded
+		reopen(inventoryId);
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "FY2025", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+					 "consolidationApproach": "OPERATIONAL_CONTROL", "straddleTreatment": "BLOCK"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.straddleTreatment").value("BLOCK"));
+		freeze(inventoryId);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(false))
+			.andExpect(jsonPath("$.gates[1].findings[?(@.severity == 'ERROR')].message").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.containsString("split the record at the cut-off or exclude it"))));
+		run(inventoryId, "Blocked").andExpect(status().isConflict());
 	}
 }

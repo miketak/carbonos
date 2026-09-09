@@ -13,7 +13,8 @@ import com.carbonos.ghg.internal.Scope;
 
 /** The fact (activity fields) plus this inventory's accounting decision about it. */
 public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, String facilityName,
-		String activityType, BigDecimal quantity, String unit, LocalDate activityDate, DataQuality dataQuality,
+		String activityType, BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd,
+		DataQuality dataQuality,
 		String evidenceRef, boolean included, ExclusionReason exclusionReason, String exclusionDetail,
 		boolean classified, Scope scope, ActivityCategory category, LeaseType leaseType, UUID emissionFactorId,
 		String factorName) {
@@ -23,7 +24,8 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 		var factor = assignment.getEmissionFactor();
 		return new AssignmentResponse(assignment.getId(), activity.getId(), activity.getFacility().getId(),
 				activity.getFacility().getName(), activity.getActivityType(), activity.getQuantity(),
-				activity.getUnit(), activity.getActivityDate(), activity.getDataQuality(), activity.getEvidenceRef(),
+				activity.getUnit(), activity.getPeriodStart(), activity.getPeriodEnd(), activity.getDataQuality(),
+				activity.getEvidenceRef(),
 				assignment.isIncluded(), assignment.getExclusionReason(), assignment.getExclusionDetail(),
 				assignment.isClassified(), assignment.getScope(), assignment.getCategory(),
 				assignment.getLeaseType(), factor == null ? null : factor.getId(),

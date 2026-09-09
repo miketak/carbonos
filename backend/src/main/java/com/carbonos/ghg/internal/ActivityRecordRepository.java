@@ -11,7 +11,7 @@ public interface ActivityRecordRepository extends JpaRepository<ActivityRecord, 
 	// facility is rendered with each activity; fetch it eagerly because
 	// open-in-view is off and mapping happens outside the transaction
 	@EntityGraph(attributePaths = "facility")
-	List<ActivityRecord> findAllByFacilityOrganizationIdOrderByActivityDateDesc(UUID organizationId);
+	List<ActivityRecord> findAllByFacilityOrganizationIdOrderByPeriodEndDesc(UUID organizationId);
 
 	boolean existsByFacilityId(UUID facilityId);
 

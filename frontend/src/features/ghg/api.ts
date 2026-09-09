@@ -29,6 +29,8 @@ export type RelationshipType =
 export type LeaseType =
   'FINANCE_LEASE_IN' | 'OPERATING_LEASE_IN' | 'FINANCE_LEASE_OUT' | 'OPERATING_LEASE_OUT'
 export type GwpSet = 'AR5' | 'AR6'
+/** What an inventory does with a record straddling its period or a membership window (spec 04.2). */
+export type StraddleTreatment = 'PRO_RATE' | 'BLOCK'
 export type MarketInstrument = 'SUPPLIER_SPECIFIC' | 'CONTRACT' | 'CERTIFICATE' | 'RESIDUAL_MIX'
 /** What a run's market-based scope 2 figure rests on (spec 07.3). */
 export type Scope2MarketBasis = 'INSTRUMENTS' | 'RESIDUAL_MIX' | 'GRID_AVERAGE'
@@ -180,7 +182,9 @@ export interface Activity {
   activityType: string
   quantity: number
   unit: string
-  activityDate: string
+  /** The period the quantity was consumed or emitted over; a reading is a one-day period (spec 04.2). */
+  periodStart: string
+  periodEnd: string
   dataSource: string | null
   evidenceRef: string | null
   dataQuality: DataQuality
@@ -192,7 +196,8 @@ export interface ActivityInput {
   activityType: string
   quantity: number
   unit: string
-  activityDate: string
+  periodStart: string
+  periodEnd: string
   dataSource?: string
   evidenceRef?: string
   dataQuality: DataQuality
@@ -209,6 +214,9 @@ export interface Inventory {
   baseYear: number | null
   consolidationApproach: ConsolidationApproach
   gwpSet: GwpSet
+  straddleTreatment: StraddleTreatment
+  /** "2025", or "FY2025/26" when the period crosses a year end (spec 04.2). */
+  periodLabel: string
   /** The operational boundary declaration (spec 07.1). */
   scope3Categories: ActivityCategory[]
   scope3ExclusionsRationale: string | null
@@ -232,6 +240,7 @@ export interface InventoryInput {
   baseYear?: number
   consolidationApproach: ConsolidationApproach
   gwpSet?: GwpSet
+  straddleTreatment?: StraddleTreatment
 }
 
 export interface OperationalBoundaryInput {
@@ -365,7 +374,8 @@ export interface Assignment {
   activityType: string
   quantity: number
   unit: string
-  activityDate: string
+  periodStart: string
+  periodEnd: string
   dataQuality: DataQuality
   evidenceRef: string | null
   included: boolean
@@ -469,6 +479,13 @@ export interface RunLine {
   conversionFactor: number
   kgCo2ePerUnit: number
   weight: number
+  /** The record's period and the pro-rating the run applied (spec 04.2). */
+  periodStart: string
+  periodEnd: string
+  periodDays: number
+  coveredDays: number
+  periodShare: number
+  periodNote: string | null
   kgCo2e: number
   byGas: ByGas
   biogenicCo2Kg: number
@@ -494,7 +511,8 @@ export interface RunExclusion {
   activityType: string
   quantity: number
   unit: string
-  activityDate: string
+  periodStart: string
+  periodEnd: string
   exclusionReason: ExclusionReason
   exclusionDetail: string | null
 }
@@ -508,6 +526,15 @@ export interface AuditEvent {
   actor: string
   reason: string
   at: string
+}
+
+/** Which months of the inventory period have data, per facility and activity type (spec 04.2). */
+export interface CoverageRow {
+  facilityId: string
+  facilityName: string
+  activityType: string
+  months: string[]
+  coveredMonths: string[]
 }
 
 export interface RunDetail {
@@ -620,6 +647,7 @@ export interface ProfileEntry {
   inventoryId: string
   name: string
   year: number
+  periodLabel: string
   periodStart: string
   periodEnd: string
   status: InventoryStatus
@@ -678,6 +706,7 @@ export interface Report {
   biogenicCo2T: number
   baseYear: {
     year: number
+    periodLabel: string
     inventoryName: string
     inventoryId: string
     thresholdPercent: number
@@ -1046,6 +1075,10 @@ export function excludeAssignment(id: string, reason: ExclusionReason): Promise<
 
 export function includeAssignment(id: string): Promise<Assignment> {
   return api<Assignment>(`/api/ghg/assignments/${id}/include`, { method: 'PUT' })
+}
+
+export function listCoverage(inventoryId: string): Promise<CoverageRow[]> {
+  return api<CoverageRow[]>(`/api/ghg/inventories/${inventoryId}/coverage`)
 }
 
 // --- validation ------------------------------------------------------------------

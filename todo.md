@@ -27,7 +27,7 @@ Status summary (update as tickets close):
 
 | Priority | Tickets | Done |
 |---|---|---|
-| P0 | 9 | 3 |
+| P0 | 9 | 4 |
 | P1 | 13 | 0 |
 | P2 | 4 | 0 |
 
@@ -79,12 +79,12 @@ Status summary (update as tickets close):
   - Done when: a run offers a PDF following the chapter 9 structure (with the tables from T-08), a CSV or XLSX of snapshot lines carrying record ID, evidence reference, factor ID, factor version, quantity, converted quantity, share, and result, and a JSON of the frozen boundary version and factor set; exports are identical for the same run on repeated download.
   - Spec: none yet.
 
-- [ ] **T-07 (P0) Activity records carry a period, with cut-off and pro-rating**
+- [x] **T-07 (P0) Activity records carry a period, with cut-off and pro-rating**
   - Findings: F9, F24
   - Problem: a record has one date. Annual totals dated 31 December are included 100% even when the entity joined the boundary on 1 July; a record dated 2024-11-15 silently falls out of the FY2025 view; meter reads straddling year-end, quarterly invoices, and mid-year acquisitions cannot be represented. An 18-month inventory was created without any warning and fiscal years are not supported (the base-year page labels by calendar year only).
   - Standard: Corporate Standard chapter 5 and chapter 7 (data attributable to the reporting period, pro-rated across structural changes). Verifiers test period cut-off first.
   - Done when: records have a period start and end; a record that straddles a membership window or the inventory period is either pro-rated (with the rule printed on the line) or blocked at pre-flight, per an explicit setting; the activity view shows period coverage per facility per stream (which months have data); creating an inventory whose period is not 12 months warns; fiscal-year labels are supported.
-  - Spec: update 03.2 (windows) and 04 (activity data).
+  - Spec: 04.2 (activity periods, cut-off and pro-rating), migration V23; 02 and 05 updated.
 
 - [ ] **T-08 (P0) Report tables, factor table, and report metadata**
   - Findings: F39, F40, F43, F44

@@ -157,6 +157,11 @@ public class MarketFactor {
 		return periodEnd != null ? periodEnd : inventory.getPeriodEnd();
 	}
 
+	/** Whether a record's period overlaps the instrument's (spec 04.2). */
+	public boolean overlaps(LocalDate start, LocalDate end, Inventory inventory) {
+		return !end.isBefore(effectiveStart(inventory)) && !start.isAfter(effectiveEnd(inventory));
+	}
+
 	/** Whether a line dated on this day falls inside the instrument's period. */
 	public boolean covers(LocalDate date, Inventory inventory) {
 		return !date.isBefore(effectiveStart(inventory)) && !date.isAfter(effectiveEnd(inventory));

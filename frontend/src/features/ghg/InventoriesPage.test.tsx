@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { InventoriesPage } from './InventoriesPage'
@@ -18,6 +19,8 @@ const draft: Inventory = {
   baseYear: null,
   consolidationApproach: 'OPERATIONAL_CONTROL',
   gwpSet: 'AR5',
+  straddleTreatment: 'PRO_RATE',
+  periodLabel: '2025',
   scope3Categories: [],
   scope3ExclusionsRationale: null,
   residualMixAvailable: null,
@@ -72,4 +75,30 @@ test('every card shows its lifecycle state, so the list shows what can run or ch
   expect(screen.getByText('Superseded by a correction')).toBeInTheDocument()
   // a published inventory is a record: no delete button on its card
   expect(screen.getAllByRole('button', { name: /^delete$/i })).toHaveLength(2)
+})
+
+test('the new-inventory form warns when the period is not twelve months and names a fiscal year', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<InventoriesPage />, {
+    route: '/app/ghg/org-1/inventories',
+    path: '/app/ghg/:organizationId/inventories',
+  })
+  await user.click(await screen.findByRole('button', { name: /new inventory/i }))
+  const dialog = await screen.findByRole('dialog', { name: /new inventory/i })
+
+  // the default is the calendar year: no warning
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+  const start = screen.getByLabelText(/period start/i)
+  const end = screen.getByLabelText(/period end/i)
+  await user.clear(start)
+  await user.type(start, '2025-01-01')
+  await user.clear(end)
+  await user.type(end, '2026-06-30')
+  expect(await screen.findByRole('status')).toHaveTextContent(/18 months/)
+
+  await user.clear(start)
+  await user.type(start, '2025-07-01')
+  expect(await screen.findByRole('status')).toHaveTextContent(/FY2025\/26/)
+  expect(dialog).toBeInTheDocument()
 })

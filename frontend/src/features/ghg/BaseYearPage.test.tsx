@@ -26,6 +26,8 @@ const inventory: Inventory = {
   baseYear: null,
   consolidationApproach: 'OPERATIONAL_CONTROL',
   gwpSet: 'AR5',
+  straddleTreatment: 'PRO_RATE',
+  periodLabel: '2025',
   scope3Categories: [],
   scope3ExclusionsRationale: null,
   residualMixAvailable: null,

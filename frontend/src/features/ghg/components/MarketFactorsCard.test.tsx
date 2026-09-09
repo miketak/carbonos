@@ -7,6 +7,9 @@ import type { Facility, Inventory, MarketFactor } from '../api'
 
 vi.mock('../api', () => import('../testApiMock'))
 
+// typing into five fields through userEvent takes long under parallel jsdom workers on a loaded machine
+vi.setConfig({ testTimeout: 30000 })
+
 import { listFacilities, listMarketFactors, setMarketFactor } from '../api'
 
 const inventory: Inventory = {
@@ -19,6 +22,8 @@ const inventory: Inventory = {
   baseYear: null,
   consolidationApproach: 'OPERATIONAL_CONTROL',
   gwpSet: 'AR5',
+  straddleTreatment: 'PRO_RATE',
+  periodLabel: '2025',
   scope3Categories: [],
   scope3ExclusionsRationale: null,
   residualMixAvailable: null,

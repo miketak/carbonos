@@ -38,7 +38,8 @@ export function ActivityFormModal({
   const [activityType, setActivityType] = useState(activity?.activityType ?? '')
   const [quantity, setQuantity] = useState(activity ? String(activity.quantity) : '')
   const [unit, setUnit] = useState(activity?.unit ?? '')
-  const [activityDate, setActivityDate] = useState(activity?.activityDate ?? '')
+  const [periodStart, setPeriodStart] = useState(activity?.periodStart ?? '')
+  const [periodEnd, setPeriodEnd] = useState(activity?.periodEnd ?? '')
   const [dataSource, setDataSource] = useState(activity?.dataSource ?? '')
   const [evidenceRef, setEvidenceRef] = useState(activity?.evidenceRef ?? '')
   const [dataQuality, setDataQuality] = useState<DataQuality>(activity?.dataQuality ?? 'MEASURED')
@@ -54,7 +55,8 @@ export function ActivityFormModal({
       activityType,
       quantity: Number(quantity),
       unit,
-      activityDate,
+      periodStart,
+      periodEnd: periodEnd === '' ? periodStart : periodEnd,
       dataSource: dataSource.trim() === '' ? undefined : dataSource,
       evidenceRef: evidenceRef.trim() === '' ? undefined : evidenceRef,
       dataQuality,
@@ -110,15 +112,28 @@ export function ActivityFormModal({
             loading={unitsQuery.isPending}
           />
         </div>
-        <InputField
-          label="Date"
-          type="date"
-          max={new Date().toISOString().slice(0, 10)}
-          value={activityDate}
-          onChange={(event) => setActivityDate(event.target.value)}
-          error={errors?.activityDate}
-          required
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <InputField
+            label="Period start"
+            type="date"
+            max={new Date().toISOString().slice(0, 10)}
+            value={periodStart}
+            onChange={(event) => setPeriodStart(event.target.value)}
+            error={errors?.periodStart}
+            hint="The period the quantity covers, not the invoice date."
+            required
+          />
+          <InputField
+            label="Period end"
+            type="date"
+            min={periodStart || undefined}
+            max={new Date().toISOString().slice(0, 10)}
+            value={periodEnd}
+            onChange={(event) => setPeriodEnd(event.target.value)}
+            error={errors?.periodEnd}
+            hint="Same as the start for a single reading."
+          />
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <InputField
             label="Data source (optional)"

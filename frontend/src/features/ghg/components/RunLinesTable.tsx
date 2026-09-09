@@ -1,4 +1,4 @@
-import { categoryLabel, formatCo2e, leaseLabels } from '../format'
+import { categoryLabel, formatCo2e, formatPeriod, leaseLabels } from '../format'
 import { ScopeBadge } from './badges'
 import type { RunLine } from '../api'
 
@@ -39,6 +39,9 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
               </td>
               <td className="px-3 py-2 whitespace-nowrap tabular-nums">
                 {line.quantity.toLocaleString()} {line.unit}
+                <span className="block text-xs text-ink-muted">
+                  {formatPeriod(line.periodStart, line.periodEnd)}
+                </span>
                 {line.unit.toLowerCase() !== line.factorUnit.toLowerCase() && (
                   <span className="block text-xs text-ink-muted">
                     →{' '}
@@ -50,7 +53,14 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
               <td className="px-3 py-2 whitespace-nowrap">
                 {line.kgCo2ePerUnit} kg/{line.factorUnit}
               </td>
-              <td className="px-3 py-2">{(line.weight * 100).toFixed(0)}%</td>
+              <td className="px-3 py-2">
+                {(line.weight * 100).toFixed(0)}%
+                {line.periodNote && (
+                  <span className="block text-xs font-normal text-amber-700">
+                    {line.periodNote}
+                  </span>
+                )}
+              </td>
               <td className="px-3 py-2 whitespace-nowrap font-medium">
                 {formatCo2e(line.kgCo2e)}
                 {line.marketBasedKgCo2e !== null && (

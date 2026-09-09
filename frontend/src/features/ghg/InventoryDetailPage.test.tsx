@@ -27,6 +27,7 @@ import {
   getInventory,
   getValidation,
   listAssignments,
+  listCoverage,
   listAuditEvents,
   listBoundaryVersions,
   listEmissionFactors,
@@ -61,6 +62,8 @@ const inventory: Inventory = {
   baseYear: null,
   consolidationApproach: 'EQUITY_SHARE',
   gwpSet: 'AR5',
+  straddleTreatment: 'PRO_RATE',
+  periodLabel: '2025',
   scope3Categories: [],
   scope3ExclusionsRationale: null,
   residualMixAvailable: null,
@@ -181,7 +184,8 @@ const unclassified: Assignment = {
   activityType: 'Diesel consumption',
   quantity: 12500,
   unit: 'litre',
-  activityDate: '2025-03-15',
+  periodStart: '2025-03-15',
+  periodEnd: '2025-03-15',
   dataQuality: 'MEASURED',
   evidenceRef: 'INV-2938',
   included: true,
@@ -239,6 +243,7 @@ beforeEach(() => {
   vi.mocked(getInventory).mockReset().mockResolvedValue(inventory)
   vi.mocked(getBoundary).mockReset().mockResolvedValue(boundary)
   vi.mocked(listAssignments).mockReset().mockResolvedValue([unclassified])
+  vi.mocked(listCoverage).mockReset().mockResolvedValue([])
   vi.mocked(getValidation).mockReset().mockResolvedValue(blockedReport)
   vi.mocked(listRuns).mockReset().mockResolvedValue([])
   vi.mocked(listAuditEvents).mockReset().mockResolvedValue([])
@@ -688,4 +693,23 @@ test('a run is voided with a reason, never deleted, and keeps its number', async
   await user.type(within(dialog).getByLabelText(/reason/i), 'Duplicate of run 003')
   await user.click(within(dialog).getByRole('button', { name: /void run/i }))
   await waitFor(() => expect(voidRun).toHaveBeenCalledWith('run-2', 'Duplicate of run 003'))
+})
+
+test('shows which months of the period have data per facility and activity', async () => {
+  vi.mocked(getInventory).mockResolvedValue(inventory)
+  vi.mocked(listAssignments).mockResolvedValue([unclassified])
+  vi.mocked(listCoverage).mockResolvedValue([
+    {
+      facilityId: 'fac-1',
+      facilityName: 'Tema Plant',
+      activityType: 'Diesel consumption',
+      months: ['2025-01', '2025-02', '2025-03'],
+      coveredMonths: ['2025-03'],
+    },
+  ])
+  renderPage()
+
+  const matrix = await screen.findByRole('table', { name: 'Period coverage' })
+  expect(within(matrix).getByTitle('Diesel consumption, 2025-03: data')).toHaveTextContent('●')
+  expect(within(matrix).getByTitle('Diesel consumption, 2025-01: no data')).toHaveTextContent('○')
 })

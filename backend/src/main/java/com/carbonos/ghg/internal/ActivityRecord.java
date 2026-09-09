@@ -42,8 +42,12 @@ public class ActivityRecord {
 	@Column(nullable = false, length = 30)
 	private String unit;
 
-	@Column(name = "activity_date", nullable = false)
-	private LocalDate activityDate;
+	// the period the quantity was consumed or emitted over (spec 04.2); a reading is a one-day period
+	@Column(name = "period_start", nullable = false)
+	private LocalDate periodStart;
+
+	@Column(name = "period_end", nullable = false)
+	private LocalDate periodEnd;
 
 	@Column(name = "data_source", length = 120)
 	private String dataSource;
@@ -65,14 +69,15 @@ public class ActivityRecord {
 	protected ActivityRecord() {
 	}
 
-	ActivityRecord(Facility facility, String activityType, BigDecimal quantity, String unit, LocalDate activityDate,
-			String dataSource, String evidenceRef, DataQuality dataQuality, String note) {
+	ActivityRecord(Facility facility, String activityType, BigDecimal quantity, String unit, LocalDate periodStart,
+			LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality, String note) {
 		this.id = UUID.randomUUID();
 		this.facility = facility;
 		this.activityType = activityType;
 		this.quantity = quantity;
 		this.unit = unit;
-		this.activityDate = activityDate;
+		this.periodStart = periodStart;
+		this.periodEnd = periodEnd;
 		this.dataSource = dataSource;
 		this.evidenceRef = evidenceRef;
 		this.dataQuality = dataQuality;
@@ -99,8 +104,16 @@ public class ActivityRecord {
 		return unit;
 	}
 
-	public LocalDate getActivityDate() {
-		return activityDate;
+	public LocalDate getPeriodStart() {
+		return periodStart;
+	}
+
+	public LocalDate getPeriodEnd() {
+		return periodEnd;
+	}
+
+	DatePeriod period() {
+		return new DatePeriod(periodStart, periodEnd);
 	}
 
 	public String getDataSource() {
@@ -124,13 +137,14 @@ public class ActivityRecord {
 	}
 
 	/** In-place correction (CORRECT-01); runs snapshot, so history is unaffected. */
-	void update(Facility facility, String activityType, BigDecimal quantity, String unit, LocalDate activityDate,
-			String dataSource, String evidenceRef, DataQuality dataQuality, String note) {
+	void update(Facility facility, String activityType, BigDecimal quantity, String unit, LocalDate periodStart,
+			LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality, String note) {
 		this.facility = facility;
 		this.activityType = activityType;
 		this.quantity = quantity;
 		this.unit = unit;
-		this.activityDate = activityDate;
+		this.periodStart = periodStart;
+		this.periodEnd = periodEnd;
 		this.dataSource = dataSource;
 		this.evidenceRef = evidenceRef;
 		this.dataQuality = dataQuality;

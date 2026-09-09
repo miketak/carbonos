@@ -76,6 +76,11 @@ public class Inventory {
 	@Column(name = "residual_mix_kg_co2e_per_kwh", precision = 12, scale = 6)
 	private BigDecimal residualMixKgCo2ePerKwh;
 
+	// what to do with a record that straddles the period or a membership window (spec 04.2)
+	@Enumerated(EnumType.STRING)
+	@Column(name = "straddle_treatment", nullable = false, length = 10)
+	private StraddleTreatment straddleTreatment;
+
 	@Column(name = "final_run_id")
 	private UUID finalRunId;
 
@@ -108,7 +113,8 @@ public class Inventory {
 	}
 
 	Inventory(Organization organization, String name, LocalDate periodStart, LocalDate periodEnd, String purpose,
-			Integer baseYear, ConsolidationApproach consolidationApproach, GwpSet gwpSet) {
+			Integer baseYear, ConsolidationApproach consolidationApproach, GwpSet gwpSet,
+			StraddleTreatment straddleTreatment) {
 		this.id = UUID.randomUUID();
 		this.organization = organization;
 		this.name = name;
@@ -118,7 +124,39 @@ public class Inventory {
 		this.baseYear = baseYear;
 		this.consolidationApproach = consolidationApproach;
 		this.gwpSet = gwpSet;
+		this.straddleTreatment = straddleTreatment;
 		this.status = InventoryStatus.DRAFT;
+	}
+
+	public StraddleTreatment getStraddleTreatment() {
+		return straddleTreatment;
+	}
+
+	void setStraddleTreatment(StraddleTreatment straddleTreatment) {
+		this.straddleTreatment = straddleTreatment;
+	}
+
+	/** "2025" for a period inside one calendar year, else a fiscal-year label such as "FY2025/26" (spec 04.2). */
+	public String periodLabel() {
+		if (periodStart.getYear() == periodEnd.getYear()) {
+			return String.valueOf(periodStart.getYear());
+		}
+		return "FY" + periodStart.getYear() + "/" + String.format("%02d", periodEnd.getYear() % 100);
+	}
+
+	/** Whole months in the period, or -1 when it is not a whole number of months. */
+	public long months() {
+		var monthsBetween = java.time.temporal.ChronoUnit.MONTHS.between(periodStart, periodEnd.plusDays(1));
+		return periodStart.plusMonths(monthsBetween).equals(periodEnd.plusDays(1)) ? monthsBetween : -1;
+	}
+
+	/** Whether a record's period overlaps the reporting period at all (spec 04.2). */
+	boolean overlaps(LocalDate start, LocalDate end) {
+		return !end.isBefore(periodStart) && !start.isAfter(periodEnd);
+	}
+
+	DatePeriod period() {
+		return new DatePeriod(periodStart, periodEnd);
 	}
 
 	public UUID getId() {

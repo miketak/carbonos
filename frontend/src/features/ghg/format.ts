@@ -87,6 +87,11 @@ export const conventionLabels: Record<StructuralChangeConvention, string> = {
   WHOLE_YEAR: 'For the whole year, as the Standard recommends',
 }
 
+/** "2025-03-15" for a one-day record, else "2025-01-01 → 2025-12-31" (spec 04.2). */
+export function formatPeriod(start: string, end: string): string {
+  return start === end ? start : `${start} → ${end}`
+}
+
 export const marketBasisLabels: Record<Scope2MarketBasis, string> = {
   INSTRUMENTS:
     'contractual instruments applied to the kWh they cover; the balance at the residual mix or grid average',
