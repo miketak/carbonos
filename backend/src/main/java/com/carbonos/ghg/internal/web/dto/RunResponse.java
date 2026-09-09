@@ -8,11 +8,13 @@ import java.util.UUID;
 import com.carbonos.ghg.internal.ConsolidationApproach;
 import com.carbonos.ghg.internal.GhgRun;
 import com.carbonos.ghg.internal.GwpSet;
+import com.carbonos.ghg.internal.Scope2MarketBasis;
 
 public record RunResponse(UUID id, UUID inventoryId, String label, LocalDate periodStart, LocalDate periodEnd,
 		ConsolidationApproach consolidationApproach, GwpSet gwpSet, int activityCount, BigDecimal totalKgCo2e,
 		BigDecimal scope1KgCo2e, BigDecimal scope2KgCo2e, BigDecimal scope3KgCo2e,
-		BigDecimal scope2MarketBasedKgCo2e, ByGas byGas, BigDecimal biogenicCo2Kg, boolean isFinal,
+		BigDecimal scope2MarketBasedKgCo2e, Scope2MarketBasis scope2MarketBasis, ByGas byGas,
+		BigDecimal biogenicCo2Kg, boolean isFinal,
 		UUID boundaryVersionId, Integer boundaryVersionNo, Instant createdAt) {
 
 	/**
@@ -29,7 +31,7 @@ public record RunResponse(UUID id, UUID inventoryId, String label, LocalDate per
 		return new RunResponse(run.getId(), inventory.getId(), run.getLabel(), run.getPeriodStart(),
 				run.getPeriodEnd(), run.getConsolidationApproach(), run.getGwpSet(), run.getActivityCount(),
 				run.getTotalKgCo2e(), run.getScope1KgCo2e(), run.getScope2KgCo2e(), run.getScope3KgCo2e(),
-				run.getScope2MarketBasedKgCo2e(),
+				run.getScope2MarketBasedKgCo2e(), run.getScope2MarketBasis(),
 				new ByGas(run.getCo2Kg(), run.getCh4Kg(), run.getCh4FossilKg(), run.getN2oKg(), run.getHfcsKg(),
 						run.getPfcsKg(),
 						run.getHfcsKgCo2e(), run.getPfcsKgCo2e(), run.getSf6Kg(), run.getNf3Kg()),

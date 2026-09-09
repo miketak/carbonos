@@ -43,6 +43,9 @@ export function MarketFactorsCard({
   const [source, setSource] = useState('')
   const [meetsCriteria, setMeetsCriteria] = useState(true)
   const [qualityNotes, setQualityNotes] = useState('')
+  const [coveredMwh, setCoveredMwh] = useState('')
+  const [periodStart, setPeriodStart] = useState('')
+  const [periodEnd, setPeriodEnd] = useState('')
 
   const chosenFacility = facilityId || facilities[0]?.id || ''
 
@@ -58,6 +61,9 @@ export function MarketFactorsCard({
           source,
           meetsQualityCriteria: meetsCriteria,
           qualityNotes: qualityNotes.trim() === '' ? undefined : qualityNotes,
+          coveredKwh: Number(coveredMwh) * 1000,
+          periodStart: periodStart === '' ? undefined : periodStart,
+          periodEnd: periodEnd === '' ? undefined : periodEnd,
         },
       },
       {
@@ -65,6 +71,9 @@ export function MarketFactorsCard({
           setFactor('')
           setSource('')
           setQualityNotes('')
+          setCoveredMwh('')
+          setPeriodStart('')
+          setPeriodEnd('')
           toast(`Instrument recorded for ${saved.facilityName}.`)
         },
         onError: (error) =>
@@ -77,9 +86,10 @@ export function MarketFactorsCard({
     <GlassCard className="p-6">
       <h2 className="text-xl">Market-based scope 2 instruments</h2>
       <p className="text-sm text-ink-muted">
-        When any facility has a contractual instrument, the report shows scope 2 location-based and
-        market-based side by side. An instrument that does not meet the Scope 2 Quality Criteria is
-        replaced by the residual mix, or by the location-based figure when none is available.
+        Every run reports scope 2 location-based and market-based side by side. An instrument
+        applies to the megawatt-hours it covers over its period; the balance, and every facility
+        without an instrument, takes the residual mix, or the grid average when none is published.
+        An instrument that does not meet the Scope 2 Quality Criteria is not applied.
       </p>
       {factorsQuery.data && factorsQuery.data.length > 0 && (
         <div className="mt-4 overflow-x-auto">
@@ -89,6 +99,7 @@ export function MarketFactorsCard({
                 <th className="px-3 py-2 font-semibold">Facility</th>
                 <th className="px-3 py-2 font-semibold">Instrument</th>
                 <th className="px-3 py-2 font-semibold">kg CO₂e/kWh</th>
+                <th className="px-3 py-2 font-semibold">Covers</th>
                 <th className="px-3 py-2 font-semibold">Source</th>
                 <th className="px-3 py-2 font-semibold">Quality criteria</th>
                 <th className="px-3 py-2" />
@@ -100,6 +111,17 @@ export function MarketFactorsCard({
                   <td className="px-3 py-2 font-medium">{entry.facilityName}</td>
                   <td className="px-3 py-2">{instrumentLabels[entry.instrumentType]}</td>
                   <td className="px-3 py-2 tabular-nums">{entry.kgCo2ePerKwh}</td>
+                  <td className="px-3 py-2 text-ink-muted tabular-nums">
+                    {entry.coveredKwh === null
+                      ? 'every kWh'
+                      : `${(entry.coveredKwh / 1000).toLocaleString()} MWh`}
+                    {(entry.periodStart || entry.periodEnd) && (
+                      <span className="block text-xs">
+                        {entry.periodStart ?? inventory.periodStart} →{' '}
+                        {entry.periodEnd ?? inventory.periodEnd}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-ink-muted">{entry.source}</td>
                   <td className="px-3 py-2">
                     {entry.meetsQualityCriteria ? 'Met' : 'Not met'}
@@ -132,7 +154,8 @@ export function MarketFactorsCard({
       )}
       {factorsQuery.data?.length === 0 && (
         <p className="mt-4 text-sm text-ink-muted">
-          No instruments recorded: scope 2 is reported location-based only.
+          No instruments recorded: the market-based figure uses the residual mix, or the grid
+          average where none is published, and the report says so.
         </p>
       )}
       {editable && facilities.length > 0 && (
@@ -175,6 +198,30 @@ export function MarketFactorsCard({
             onChange={(event) => setSource(event.target.value)}
             required
           />
+          <InputField
+            label="Covered quantity (MWh)"
+            type="number"
+            min="0.001"
+            step="0.001"
+            value={coveredMwh}
+            onChange={(event) => setCoveredMwh(event.target.value)}
+            hint="The megawatt-hours the instrument covers; the balance takes the residual mix or grid average."
+            required
+          />
+          <InputField
+            label="Covers from (optional)"
+            type="date"
+            value={periodStart}
+            onChange={(event) => setPeriodStart(event.target.value)}
+            hint={`Defaults to ${inventory.periodStart}`}
+          />
+          <InputField
+            label="Covers to (optional)"
+            type="date"
+            value={periodEnd}
+            onChange={(event) => setPeriodEnd(event.target.value)}
+            hint={`Defaults to ${inventory.periodEnd}`}
+          />
           <label className="flex items-center gap-2 text-sm md:col-span-2">
             <input
               type="checkbox"
@@ -200,9 +247,7 @@ export function MarketFactorsCard({
           </div>
         </form>
       )}
-      {(factorsQuery.data?.length ?? 0) > 0 && (
-        <ResidualMix inventory={inventory} editable={editable} />
-      )}
+      <ResidualMix inventory={inventory} editable={editable} />
     </GlassCard>
   )
 }
@@ -242,7 +287,7 @@ function ResidualMix({ inventory, editable }: { inventory: Inventory; editable: 
         value={available}
         disabled={!editable}
         onChange={(event) => setAvailable(event.target.value)}
-        hint="The Guidance requires the disclosure either way: an absent residual mix may mean double counting between consumers."
+        hint="Every run reports market-based, so the Guidance requires this disclosure either way: an absent residual mix may mean double counting between consumers."
       >
         <option value="">Not yet stated</option>
         <option value="true">Yes, an adjusted residual mix is published</option>

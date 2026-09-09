@@ -17,6 +17,7 @@ import {
   formatTonnes,
   formatTonnesOfGas,
   instrumentLabels,
+  marketBasisLabels,
   scopeLabels,
 } from './format'
 import { useReportQuery } from './useGhg'
@@ -241,14 +242,12 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
                 {formatTonnes(emissions.scope2LocationBasedTCo2e)}
               </td>
             </tr>
-            {emissions.scope2MarketBasedTCo2e !== null && (
-              <tr className="border-b border-teal/5">
-                <td className="py-1.5">{scopeLabels.SCOPE_2}, market-based</td>
-                <td className="py-1.5 text-right tabular-nums">
-                  {formatTonnes(emissions.scope2MarketBasedTCo2e)}
-                </td>
-              </tr>
-            )}
+            <tr className="border-b border-teal/5">
+              <td className="py-1.5">{scopeLabels.SCOPE_2}, market-based</td>
+              <td className="py-1.5 text-right tabular-nums">
+                {formatTonnes(emissions.scope2MarketBasedTCo2e)}
+              </td>
+            </tr>
             <tr className="border-b border-teal/5">
               <td className="py-1.5">{scopeLabels.SCOPE_3}</td>
               <td className="py-1.5 text-right tabular-nums">
@@ -265,46 +264,61 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         </table>
         <p className="mt-2 text-xs text-ink-muted">
           Figures in metric tonnes to three decimals; each line below keeps its kilograms. The total
-          uses the location-based scope 2 figure.
-          {emissions.baseYearScope2Method === 'LOCATION_BASED' &&
-            ' The base year reports scope 2 location-based only, which stands as a proxy for its market-based figure.'}
-          {emissions.baseYearScope2Method === 'DUAL' && ' The base year reports scope 2 both ways.'}
+          uses the location-based scope 2 figure. Market-based basis:{' '}
+          {marketBasisLabels[emissions.scope2MarketBasis]}.
+          {emissions.baseYearMarketBasedIsProxy === true &&
+            ' The base year held no instrument: its market-based figure is the grid average standing as a proxy.'}
+          {emissions.baseYearMarketBasedIsProxy === false &&
+            ' The base year reports scope 2 both ways.'}
         </p>
-        {emissions.scope2MarketBasedKgCo2e !== null && emissions.marketInstruments.length > 0 && (
-          <div className="mt-3">
-            <p className="text-xs font-semibold text-ink-muted uppercase">
-              Contractual instruments
-            </p>
-            <ul className="mt-1 flex flex-col gap-1 text-sm">
-              {emissions.marketInstruments.map((instrument) => (
-                <li key={instrument.id}>
-                  <span className="font-medium">{instrument.facilityName}</span>
-                  <span className="text-ink-muted">
-                    {' '}
-                    · {instrumentLabels[instrument.instrumentType]} · {instrument.kgCo2ePerKwh} kg
-                    CO₂e/kWh · {instrument.source}
-                    {instrument.meetsQualityCriteria
-                      ? ' · meets the Scope 2 Quality Criteria'
-                      : ' · does not meet the Scope 2 Quality Criteria'}
-                    {instrument.qualityNotes ? `: ${instrument.qualityNotes}` : ''}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {failingInstruments.length > 0 && (
-              <p className="mt-1 text-xs text-amber-700">
-                {failingInstruments.length === 1
-                  ? 'One instrument'
-                  : `${failingInstruments.length} instruments`}{' '}
-                did not meet the criteria and {failingInstruments.length === 1 ? 'was' : 'were'}{' '}
-                replaced as the lines state.
+        <div className="mt-3">
+          {emissions.marketInstruments.length > 0 && (
+            <>
+              <p className="text-xs font-semibold text-ink-muted uppercase">
+                Contractual instruments
               </p>
-            )}
-            {emissions.residualMixDisclosure && (
-              <p className="mt-1 text-xs text-ink-muted">{emissions.residualMixDisclosure}</p>
-            )}
-          </div>
-        )}
+              <ul className="mt-1 flex flex-col gap-1 text-sm">
+                {emissions.marketInstruments.map((instrument) => (
+                  <li key={instrument.id}>
+                    <span className="font-medium">{instrument.facilityName}</span>
+                    <span className="text-ink-muted">
+                      {' '}
+                      · {instrumentLabels[instrument.instrumentType]} · {instrument.kgCo2ePerKwh} kg
+                      CO₂e/kWh
+                      {instrument.coveredKwh !== null
+                        ? ` · covers ${(instrument.coveredKwh / 1000).toLocaleString()} MWh`
+                        : ' · covers every kWh'}
+                      {instrument.periodStart || instrument.periodEnd
+                        ? ` (${instrument.periodStart ?? 'period start'} to ${instrument.periodEnd ?? 'period end'})`
+                        : ''}{' '}
+                      · {instrument.source}
+                      {instrument.meetsQualityCriteria
+                        ? ' · meets the Scope 2 Quality Criteria'
+                        : ' · does not meet the Scope 2 Quality Criteria'}
+                      {instrument.qualityNotes ? `: ${instrument.qualityNotes}` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {emissions.marketInstruments.length === 0 && (
+            <p className="text-xs text-ink-muted">
+              No contractual instruments were held; the market-based figure is still reported, as
+              the Scope 2 Guidance requires of any company in a market with instruments.
+            </p>
+          )}
+          {failingInstruments.length > 0 && (
+            <p className="mt-1 text-xs text-amber-700">
+              {failingInstruments.length === 1
+                ? 'One instrument'
+                : `${failingInstruments.length} instruments`}{' '}
+              did not meet the criteria and {failingInstruments.length === 1 ? 'was' : 'were'} not
+              applied, as the lines state.
+            </p>
+          )}
+          <p className="mt-1 text-xs text-ink-muted">{emissions.residualMixDisclosure}</p>
+        </div>
       </Section>
 
       <Section number={5} title="Emissions by gas" stagger={5}>

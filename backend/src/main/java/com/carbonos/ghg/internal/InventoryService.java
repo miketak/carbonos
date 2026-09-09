@@ -1,8 +1,12 @@
 package com.carbonos.ghg.internal;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -514,7 +518,7 @@ public class InventoryService {
 		for (var factor : marketFactors.findAllByInventoryId(inventoryId)) {
 			marketFactors.save(new MarketFactor(successor, factor.getFacility(), factor.getInstrumentType(),
 					factor.getKgCo2ePerKwh(), factor.getSource(), factor.isMeetsQualityCriteria(),
-					factor.getQualityNotes()));
+					factor.getQualityNotes(), factor.coverage()));
 		}
 		successor.setResidualMix(inventory.getResidualMixAvailable(), inventory.getResidualMixKgCo2ePerKwh());
 		for (var exclusion : boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
@@ -554,16 +558,26 @@ public class InventoryService {
 		return marketFactors.findAllByInventoryId(inventoryId);
 	}
 
+	/**
+	 * Records the instrument for a facility: its factor, its Quality Criteria
+	 * assessment (spec 07.2) and the kWh and period it covers (spec 07.3).
+	 */
 	public MarketFactor setMarketFactor(UUID inventoryId, UUID facilityId, MarketInstrument instrument,
-			BigDecimal kgCo2ePerKwh, String source, boolean meetsQualityCriteria, String qualityNotes) {
+			BigDecimal kgCo2ePerKwh, String source, boolean meetsQualityCriteria, String qualityNotes,
+			MarketFactor.Coverage coverage) {
 		var inventory = get(inventoryId);
 		requireEditable(inventory);
 		var facility = requireFacility(facilityId, inventory);
+		if (coverage.periodStart() != null && coverage.periodEnd() != null
+				&& coverage.periodEnd().isBefore(coverage.periodStart())) {
+			throw new InvalidPeriodException();
+		}
 		return marketFactors.findByInventoryIdAndFacilityId(inventoryId, facilityId).map(existing -> {
-			existing.update(instrument, kgCo2ePerKwh, source.trim(), meetsQualityCriteria, trimToNull(qualityNotes));
+			existing.update(instrument, kgCo2ePerKwh, source.trim(), meetsQualityCriteria, trimToNull(qualityNotes),
+					coverage);
 			return existing;
 		}).orElseGet(() -> marketFactors.save(new MarketFactor(inventory, facility, instrument, kgCo2ePerKwh,
-				source.trim(), meetsQualityCriteria, trimToNull(qualityNotes))));
+				source.trim(), meetsQualityCriteria, trimToNull(qualityNotes), coverage)));
 	}
 
 	/** Whether an adjusted residual mix is available for the instruments' markets, and its factor when it is (spec 07.2). */
@@ -919,9 +933,11 @@ public class InventoryService {
 						+ describeUnit(activityUnit) + ": the market-based figure falls back to location-based."));
 			}
 		}
-		if (!instruments.isEmpty() && inventory.getResidualMixAvailable() == null) {
-			factorFindings.add(new Finding(Severity.WARNING, "The inventory has contractual instruments but does not "
-					+ "say whether a residual mix is available. The Scope 2 Guidance requires the disclosure either way."));
+		if (inventory.getResidualMixAvailable() == null) {
+			// spec 07.3: every run reports market-based, so the Guidance's residual-mix disclosure is always due
+			factorFindings.add(new Finding(Severity.WARNING, "The inventory does not say whether a residual mix is "
+					+ "available. Every run reports scope 2 market-based, and the Scope 2 Guidance requires the "
+					+ "disclosure either way; until it is recorded, uncovered electricity is priced at the grid average."));
 		}
 		for (var instrument : instruments.values()) {
 			if (!instrument.isMeetsQualityCriteria()) {
@@ -929,6 +945,29 @@ public class InventoryService {
 						+ " does not meet the Scope 2 Quality Criteria: the market-based figure falls back to "
 						+ (Boolean.TRUE.equals(inventory.getResidualMixAvailable()) ? "the residual mix."
 								: "location-based.")));
+			}
+			if (instrument.getPeriodStart() != null && instrument.getPeriodStart().isBefore(inventory.getPeriodStart())
+					|| instrument.getPeriodEnd() != null && instrument.getPeriodEnd().isAfter(inventory.getPeriodEnd())) {
+				factorFindings.add(new Finding(Severity.WARNING, "The instrument for " + instrument.getFacility().getName()
+						+ " covers " + instrument.effectiveStart(inventory) + " to " + instrument.effectiveEnd(inventory)
+						+ ", which reaches outside the reporting period; only the part inside it applies."));
+			}
+			if (instrument.getCoveredKwh() != null) {
+				var electricity = included.stream()
+					.filter(assignment -> assignment.getScope() == Scope.SCOPE_2
+							&& assignment.getCategory() == ActivityCategory.PURCHASED_ELECTRICITY)
+					.filter(assignment -> assignment.getActivity().getFacility().getId().equals(instrument.getFacility().getId()))
+					.filter(assignment -> instrument.covers(assignment.getActivity().getActivityDate(), inventory))
+					.filter(assignment -> units.canConvert(assignment.getActivity().getUnit(), KWH))
+					.map(assignment -> units.convert(assignment.getActivity().getQuantity(),
+							assignment.getActivity().getUnit(), KWH))
+					.reduce(BigDecimal.ZERO, BigDecimal::add);
+				if (instrument.getCoveredKwh().compareTo(electricity) > 0) {
+					factorFindings.add(new Finding(Severity.WARNING, "The instrument for "
+							+ instrument.getFacility().getName() + " covers " + kwh(instrument.getCoveredKwh())
+							+ " kWh but the facility's scope 2 electricity in its period is " + kwh(electricity)
+							+ " kWh: the excess covers nothing."));
+				}
 			}
 		}
 
@@ -1010,8 +1049,17 @@ public class InventoryService {
 			.stream()
 			.collect(Collectors.toMap(factor -> factor.getFacility().getId(), Function.identity()));
 		var gwp = inventory.getGwpSet();
-		var run = new GhgRun(inventory, label.trim(), !instruments.isEmpty());
-		for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
+		var run = new GhgRun(inventory, label.trim());
+		// spec 07.3: each instrument is applied to the kWh it covers, line by line, until used up
+		var remainingCoverage = new HashMap<UUID, BigDecimal>();
+		instruments.forEach((facilityId, instrument) -> remainingCoverage.put(facilityId, instrument.getCoveredKwh()));
+		// in date order, so an instrument is consumed chronologically (spec 07.3)
+		var ordered = assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)
+			.stream()
+			.sorted(java.util.Comparator.comparing((InventoryAssignment a) -> a.getActivity().getActivityDate())
+				.thenComparing(a -> a.getActivity().getCreatedAt()))
+			.toList();
+		for (var assignment : ordered) {
 			if (!assignment.isIncluded()) {
 				run.addExclusion(new GhgRunExclusion(run, assignment));
 				continue;
@@ -1040,26 +1088,9 @@ public class InventoryService {
 					round(convertedQuantity.multiply(factor.getPfcsKgPerUnit()).multiply(share)),
 					factor.blendGwpSourceFor(gwp), factor.isCh4Fossil());
 			GhgRunLine.Market market = null;
-			var instrument = instruments.get(activity.getFacility().getId());
-			if (assignment.getScope() == Scope.SCOPE_2 && instrument != null && units.canConvert(activityUnit, KWH)) {
-				var kwh = units.convert(quantity, activityUnit, KWH);
-				if (instrument.isMeetsQualityCriteria()) {
-					market = new GhgRunLine.Market(round(kwh.multiply(instrument.getKgCo2ePerKwh()).multiply(share)),
-							instrument.getKgCo2ePerKwh(), instrument.getInstrumentType(), null);
-				}
-				else if (Boolean.TRUE.equals(inventory.getResidualMixAvailable())
-						&& inventory.getResidualMixKgCo2ePerKwh() != null) {
-					// Scope 2 Guidance: an instrument that fails the Quality Criteria is replaced by other data
-					var residual = inventory.getResidualMixKgCo2ePerKwh();
-					market = new GhgRunLine.Market(round(kwh.multiply(residual).multiply(share)), residual,
-							MarketInstrument.RESIDUAL_MIX, "the facility's instrument does not meet the Scope 2 "
-									+ "Quality Criteria; the residual mix was applied instead");
-				}
-				else {
-					market = new GhgRunLine.Market(kgCo2e, null, instrument.getInstrumentType(),
-							"the facility's instrument does not meet the Scope 2 Quality Criteria and no residual "
-									+ "mix is available; the location-based figure stands");
-				}
+			if (assignment.getScope() == Scope.SCOPE_2) {
+				market = marketBased(inventory, assignment, instruments.get(activity.getFacility().getId()),
+						remainingCoverage, convertedQuantity, perUnit, share, kgCo2e);
 			}
 			run.addLine(new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, kgCo2e,
 					gases, market));
@@ -1080,6 +1111,98 @@ public class InventoryService {
 			inventories.findById(inventory.getId()).ifPresent(Inventory::withdrawFinal);
 		}
 		runs.delete(run);
+	}
+
+	// --- market-based scope 2 (spec 07.3) --------------------------------------
+
+	/**
+	 * The market-based side of a scope 2 line: the facility's instrument applied
+	 * to the kWh it still covers, the balance at the residual mix or the grid
+	 * average (the line's own location-based factor), and a note that prints
+	 * the split. Purchased heat, steam and cooling, and lines that do not
+	 * convert to kWh, keep their location-based figure.
+	 */
+	private GhgRunLine.Market marketBased(Inventory inventory, InventoryAssignment assignment, MarketFactor instrument,
+			Map<UUID, BigDecimal> remainingCoverage, BigDecimal convertedQuantity, BigDecimal perUnit, BigDecimal share,
+			BigDecimal locationKgCo2e) {
+		var activity = assignment.getActivity();
+		if (assignment.getCategory() != ActivityCategory.PURCHASED_ELECTRICITY) {
+			return new GhgRunLine.Market(locationKgCo2e, null, null, "no contractual instrument applies to "
+					+ assignment.getCategory().name().toLowerCase().replace('_', ' ')
+					+ "; the location-based figure stands", BigDecimal.ZERO, BigDecimal.ZERO, null, null);
+		}
+		if (!units.canConvert(activity.getUnit(), KWH)) {
+			return new GhgRunLine.Market(locationKgCo2e, null, null, "recorded in " + activity.getUnit()
+					+ ", which does not convert to kWh; the location-based figure stands", BigDecimal.ZERO,
+					BigDecimal.ZERO, null, null);
+		}
+		var kwh = units.convert(activity.getQuantity(), activity.getUnit(), KWH);
+		var locationPerKwh = kwh.signum() == 0 ? BigDecimal.ZERO
+				: convertedQuantity.multiply(perUnit).divide(kwh, MathContext.DECIMAL64);
+		var covered = BigDecimal.ZERO;
+		BigDecimal instrumentFactor = null;
+		MarketInstrument applied = null;
+		var parts = new ArrayList<String>();
+		if (instrument == null) {
+			parts.add("no contractual instrument");
+		}
+		else if (!instrument.covers(activity.getActivityDate(), inventory)) {
+			parts.add("the facility's instrument covers " + instrument.effectiveStart(inventory) + " to "
+					+ instrument.effectiveEnd(inventory) + ", not this record's date");
+		}
+		else if (!instrument.isMeetsQualityCriteria()) {
+			// Scope 2 Guidance: an instrument that fails the Quality Criteria is replaced by other data
+			parts.add("the facility's instrument does not meet the Scope 2 Quality Criteria and was not applied");
+		}
+		else {
+			var facilityId = activity.getFacility().getId();
+			var left = remainingCoverage.get(facilityId);
+			covered = left == null ? kwh : kwh.min(left.max(BigDecimal.ZERO));
+			if (left != null) {
+				remainingCoverage.put(facilityId, left.subtract(covered));
+			}
+			if (covered.signum() > 0) {
+				instrumentFactor = instrument.getKgCo2ePerKwh();
+				applied = instrument.getInstrumentType();
+				parts.add(kwh(covered) + " kWh at " + plain(instrumentFactor) + " kg/kWh ("
+						+ instrument.getInstrumentType().name().toLowerCase().replace('_', ' ') + ")");
+			}
+			else {
+				parts.add("the facility's instrument is used up by earlier records");
+			}
+		}
+		var balance = kwh.subtract(covered);
+		var residualAvailable = Boolean.TRUE.equals(inventory.getResidualMixAvailable())
+				&& inventory.getResidualMixKgCo2ePerKwh() != null;
+		var balanceFactor = residualAvailable ? inventory.getResidualMixKgCo2ePerKwh() : locationPerKwh;
+		Scope2MarketBasis basis = null;
+		if (balance.signum() > 0) {
+			basis = residualAvailable ? Scope2MarketBasis.RESIDUAL_MIX : Scope2MarketBasis.GRID_AVERAGE;
+			parts.add(kwh(balance) + " kWh at " + plain(balanceFactor) + " kg/kWh (" + (residualAvailable
+					? "residual mix"
+					: "grid average: the location-based figure stands, " + (inventory.getResidualMixAvailable() == null
+							? "residual-mix availability not stated" : "no residual mix is available"))
+					+ ")");
+		}
+		var kgCo2e = round(covered.multiply(instrumentFactor == null ? BigDecimal.ZERO : instrumentFactor)
+			.add(balance.multiply(balanceFactor))
+			.multiply(share));
+		var reported = applied != null ? applied
+				: basis == Scope2MarketBasis.RESIDUAL_MIX ? MarketInstrument.RESIDUAL_MIX : null;
+		var factorShown = instrumentFactor != null ? instrumentFactor : balance.signum() > 0 ? balanceFactor : null;
+		return new GhgRunLine.Market(kgCo2e, factorShown, reported, String.join("; ", parts), covered, balance,
+				balance.signum() > 0 ? balanceFactor : null, basis);
+	}
+
+	private static final DecimalFormat KWH_FORMAT = new DecimalFormat("#,##0.###",
+			DecimalFormatSymbols.getInstance(Locale.ROOT));
+
+	private static String kwh(BigDecimal value) {
+		return KWH_FORMAT.format(value);
+	}
+
+	private static String plain(BigDecimal value) {
+		return value.stripTrailingZeros().toPlainString();
 	}
 
 	// --- helpers -------------------------------------------------------------

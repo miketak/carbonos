@@ -8,13 +8,15 @@ import com.carbonos.ghg.internal.GhgRunLine;
 import com.carbonos.ghg.internal.LeaseType;
 import com.carbonos.ghg.internal.MarketInstrument;
 import com.carbonos.ghg.internal.Scope;
+import com.carbonos.ghg.internal.Scope2MarketBasis;
 
 public record RunLineResponse(UUID id, UUID activityId, UUID facilityId, String facilityName, String factorName,
 		Scope scope, ActivityCategory category, LeaseType leaseType, BigDecimal quantity, String unit,
 		String factorUnit, BigDecimal convertedQuantity, BigDecimal conversionFactor, BigDecimal kgCo2ePerUnit,
 		BigDecimal weight, BigDecimal kgCo2e, RunResponse.ByGas byGas, BigDecimal biogenicCo2Kg, String blendGwpSource,
 		BigDecimal marketBasedKgCo2e, BigDecimal marketFactorKgCo2ePerKwh, MarketInstrument marketInstrument,
-		String marketNote) {
+		String marketNote, BigDecimal marketCoveredKwh, BigDecimal marketBalanceKwh,
+		BigDecimal marketBalanceKgCo2ePerKwh, Scope2MarketBasis marketBalanceBasis) {
 
 	public static RunLineResponse from(GhgRunLine line) {
 		return new RunLineResponse(line.getId(), line.getActivityId(), line.getFacilityId(), line.getFacilityName(),
@@ -25,6 +27,8 @@ public record RunLineResponse(UUID id, UUID activityId, UUID facilityId, String 
 						line.isCh4Fossil() ? line.getCh4Kg() : BigDecimal.ZERO, line.getN2oKg(), line.getHfcsKg(),
 						line.getPfcsKg(), line.getHfcsKgCo2e(), line.getPfcsKgCo2e(), line.getSf6Kg(), line.getNf3Kg()),
 				line.getBiogenicCo2Kg(), line.getBlendGwpSource(), line.getMarketBasedKgCo2e(),
-				line.getMarketFactorKgCo2ePerKwh(), line.getMarketInstrument(), line.getMarketNote());
+				line.getMarketFactorKgCo2ePerKwh(), line.getMarketInstrument(), line.getMarketNote(),
+				line.getMarketCoveredKwh(), line.getMarketBalanceKwh(), line.getMarketBalanceKgCo2ePerKwh(),
+				line.getMarketBalanceBasis());
 	}
 }

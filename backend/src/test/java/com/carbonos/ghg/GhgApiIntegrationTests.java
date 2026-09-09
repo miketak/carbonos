@@ -1524,7 +1524,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.baseYear.profile[1].finalRunId").doesNotExist())
 			// the Scope 2 Guidance disclosures about the base year (spec 07.2)
 			.andExpect(jsonPath("$.emissions.totalMethod").value("LOCATION_BASED"))
-			.andExpect(jsonPath("$.emissions.baseYearScope2Method").value("LOCATION_BASED"))
+			.andExpect(jsonPath("$.emissions.baseYearScope2Method").value("DUAL"))
 			.andExpect(jsonPath("$.emissions.baseYearMarketBasedIsProxy").value(true));
 		// a recalculation resets the running sum: the next candidate is weighed on its own
 		reopen(current);
@@ -1727,7 +1727,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + plant).with(asMember())
 			.with(csrf()).contentType("application/json").content("""
 					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0.05, "source": "Supplier REC 2025",
-					 "meetsQualityCriteria": true}"""))
+					 "meetsQualityCriteria": true, "coveredKwh": 1000}"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.facilityName").value("Tema Plant"))
 			.andExpect(jsonPath("$.meetsQualityCriteria").value(true));
@@ -1752,8 +1752,11 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").value(491.0))
 			.andExpect(jsonPath("$.lines[?(@.facilityName == 'Tema Plant')].marketBasedKgCo2e").value(50.0))
 			.andExpect(jsonPath("$.lines[?(@.facilityName == 'Tema Plant')].marketInstrument").value("CERTIFICATE"))
-			.andExpect(jsonPath("$.lines[?(@.facilityName == 'Accra Office')].marketBasedKgCo2e")
-				.value(org.hamcrest.Matchers.contains(org.hamcrest.Matchers.nullValue()))));
+			// the office has no instrument: its market-based figure is the grid average, and the line says so
+			.andExpect(jsonPath("$.lines[?(@.facilityName == 'Accra Office')].marketBasedKgCo2e").value(441.0))
+			.andExpect(jsonPath("$.lines[?(@.facilityName == 'Accra Office')].marketNote").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.startsWith("no contractual instrument; 1,000 kWh at 0.441 kg/kWh"))))
+			.andExpect(jsonPath("$.run.scope2MarketBasis").value("INSTRUMENTS")));
 		String runId = JsonPath.read(detail, "$.run.id");
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
 			.andExpect(jsonPath("$.emissions.scope2LocationBasedKgCo2e").value(882.0))
@@ -1767,14 +1770,111 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.emissions.marketInstruments[0].instrumentType").value("CERTIFICATE"))
 			.andExpect(jsonPath("$.methodology.statement")
 				.value(org.hamcrest.Matchers.containsString("The inventory total uses the location-based figure")));
-		// with no instrument anywhere, the market-based figure is simply absent
+		// with no instrument anywhere, the market-based figure is still reported: the grid average stands in
+		// (spec 07.3), the line says so, and the report prints both totals with the basis
 		var plain = createInventory(orgId, "2025 Plain", "OPERATIONAL_CONTROL");
 		putBoundary(plain, plant);
 		excludeFacility(plain, office, "NOT_APPLICABLE", "Office reported by the landlord");
 		prepare(plain, plantPower, GRID_FACTOR);
-		run(plain, "Run 001").andExpect(status().isCreated())
-			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").doesNotExist())
-			.andExpect(jsonPath("$.run.byGas.hfcsKg").value(0));
+		var plainDetail = body(run(plain, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").value(441.0))
+			.andExpect(jsonPath("$.run.scope2MarketBasis").value("GRID_AVERAGE"))
+			.andExpect(jsonPath("$.lines[0].marketBasedKgCo2e").value(441.0))
+			.andExpect(jsonPath("$.lines[0].marketBalanceKwh").value(1000.0))
+			.andExpect(jsonPath("$.lines[0].marketBalanceBasis").value("GRID_AVERAGE"))
+			.andExpect(jsonPath("$.lines[0].marketNote").value(org.hamcrest.Matchers.startsWith("no contractual instrument; 1,000 kWh at 0.441 kg/kWh (grid average")))
+			.andExpect(jsonPath("$.run.byGas.hfcsKg").value(0)));
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(plainDetail, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.emissions.scope2MarketBasedTCo2e").value(0.441))
+			.andExpect(jsonPath("$.emissions.scope2MarketBasis").value("GRID_AVERAGE"))
+			.andExpect(jsonPath("$.emissions.residualMixDisclosure")
+				.value(org.hamcrest.Matchers.startsWith("The inventory does not state whether")))
+			.andExpect(jsonPath("$.methodology.statement").value(org.hamcrest.Matchers
+				.containsString("No contractual instrument was applied and no residual mix is available")));
+	}
+
+	/** Audit finding F31 (T-01): the Obuom PPA covers 20,000 MWh of 46,500 MWh; the balance takes the grid average. */
+	@Test
+	void anInstrumentAppliesToTheKwhItCoversAndTheBalanceTakesTheResidualMixOrGridAverage() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		// two meter reads in the activity view's order: 30,000 MWh then 16,500 MWh, plus one outside the PPA's period
+		var firstHalf = createActivity(orgId, plant, "Grid electricity, Jan-Jun", "30000", "MWh", "2025-06-30");
+		var secondHalf = createActivity(orgId, plant, "Grid electricity, Jul-Dec", "16500", "MWh", "2025-12-31");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		// a PPA at 0 kg/kWh covering 20,000 MWh; the end must not precede the start
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + plant).with(asMember())
+			.with(csrf()).contentType("application/json").content("""
+					{"instrumentType": "CONTRACT", "kgCo2ePerKwh": 0, "source": "Obuom solar PPA 2025",
+					 "meetsQualityCriteria": true, "coveredKwh": 20000000,
+					 "periodStart": "2025-12-31", "periodEnd": "2025-01-01"}"""))
+			.andExpect(status().is(422));
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + plant).with(asMember())
+			.with(csrf()).contentType("application/json").content("""
+					{"instrumentType": "CONTRACT", "kgCo2ePerKwh": 0, "source": "Obuom solar PPA 2025",
+					 "meetsQualityCriteria": true, "coveredKwh": 20000000}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.coveredKwh").value(20000000))
+			.andExpect(jsonPath("$.periodStart").doesNotExist());
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/residual-mix").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"available": false}"""))
+			.andExpect(status().isOk());
+		classify(syncAndGetAssignmentId(inventoryId, firstHalf), GRID_FACTOR);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + secondHalf + "')].id").getFirst(),
+				GRID_FACTOR);
+		freeze(inventoryId);
+		// location-based: 46,500,000 kWh x 0.441 = 20,506,500 kg. Market-based: the first read is covered for
+		// 20,000,000 of its 30,000,000 kWh, the rest and the second read take the grid average:
+		// 26,500,000 x 0.441 = 11,686,500 kg (11,686.5 t), not the 0 the audit found
+		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.scope2KgCo2e").value(20506500.0))
+			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").value(11686500.0))
+			.andExpect(jsonPath("$.run.scope2MarketBasis").value("INSTRUMENTS"))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + firstHalf + "')].marketCoveredKwh").value(20000000.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + firstHalf + "')].marketBalanceKwh").value(10000000.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + firstHalf + "')].marketBasedKgCo2e").value(4410000.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + firstHalf + "')].marketNote")
+				.value("20,000,000 kWh at 0 kg/kWh (contract); 10,000,000 kWh at 0.441 kg/kWh (grid average: the "
+						+ "location-based figure stands, no residual mix is available)"))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + secondHalf + "')].marketCoveredKwh").value(0.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + secondHalf + "')].marketBasedKgCo2e").value(7276500.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + secondHalf + "')].marketNote").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.startsWith("the facility's instrument is used up by earlier records")))));
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(detail, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.emissions.scope2MarketBasedTCo2e").value(11686.5))
+			.andExpect(jsonPath("$.emissions.scope2LocationBasedTCo2e").value(20506.5))
+			.andExpect(jsonPath("$.emissions.marketInstruments[0].coveredKwh").value(20000000))
+			.andExpect(jsonPath("$.methodology.statement").value(org.hamcrest.Matchers
+				.containsString("prices the balance at the grid average, since no residual mix is available")));
+		// with a residual mix of 0.5 the balance is priced at it: 26,500,000 x 0.5 = 13,250,000 kg
+		reopen(inventoryId);
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/residual-mix").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"available": true, "kgCo2ePerKwh": 0.5}"""))
+			.andExpect(status().isOk());
+		// an instrument limited to the second half of the year covers only the second read, and one covering more
+		// than the facility used in that period is flagged
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + plant).with(asMember())
+			.with(csrf()).contentType("application/json").content("""
+					{"instrumentType": "CONTRACT", "kgCo2ePerKwh": 0, "source": "Obuom solar PPA 2025",
+					 "meetsQualityCriteria": true, "coveredKwh": 20000000, "periodStart": "2025-07-01"}"""))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].findings[?(@.severity == 'WARNING')].message").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.containsString("covers 20,000,000 kWh but the facility's scope 2 "
+						+ "electricity in its period is 16,500,000 kWh"))));
+		freeze(inventoryId);
+		// first read: 30,000,000 x 0.5 = 15,000,000; second read: 16,500,000 covered at 0
+		run(inventoryId, "Run 002").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").value(15000000.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + firstHalf + "')].marketBalanceBasis").value("RESIDUAL_MIX"))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + firstHalf + "')].marketNote").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.startsWith("the facility's instrument covers 2025-07-01 to 2025-12-31"))))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + secondHalf + "')].marketCoveredKwh").value(16500000.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + secondHalf + "')].marketBasedKgCo2e").value(0.0));
 	}
 
 	@Test
@@ -1788,7 +1888,8 @@ class GhgApiIntegrationTests {
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + plant).with(asMember())
 			.with(csrf()).contentType("application/json").content("""
 					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0, "source": "Nordic GO 2025",
-					 "meetsQualityCriteria": false, "qualityNotes": "Criterion 5: sourced from the Nordic market"}"""))
+					 "meetsQualityCriteria": false, "qualityNotes": "Criterion 5: sourced from the Nordic market",
+					 "coveredKwh": 1000}"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.qualityNotes").value("Criterion 5: sourced from the Nordic market"));
 		// a residual mix that is available needs its factor

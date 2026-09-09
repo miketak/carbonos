@@ -30,8 +30,13 @@ public class GhgRunLine {
 			boolean ch4Fossil) {
 	}
 
-	/** The market-based side of a scope 2 line, present only when the facility has an instrument. */
-	record Market(BigDecimal kgCo2e, BigDecimal factorKgCo2ePerKwh, MarketInstrument instrument, String note) {
+	/**
+	 * The market-based side of a scope 2 line (spec 07.3): the kWh an instrument
+	 * covered at its factor, the balance at the residual mix or the grid
+	 * average, and the note that prints the split.
+	 */
+	record Market(BigDecimal kgCo2e, BigDecimal factorKgCo2ePerKwh, MarketInstrument instrument, String note,
+			BigDecimal coveredKwh, BigDecimal balanceKwh, BigDecimal balanceKgCo2ePerKwh, Scope2MarketBasis balanceBasis) {
 	}
 
 	@Id
@@ -140,6 +145,19 @@ public class GhgRunLine {
 	@Column(name = "market_instrument", length = 30)
 	private MarketInstrument marketInstrument;
 
+	@Column(name = "market_covered_kwh", precision = 18, scale = 3)
+	private BigDecimal marketCoveredKwh;
+
+	@Column(name = "market_balance_kwh", precision = 18, scale = 3)
+	private BigDecimal marketBalanceKwh;
+
+	@Column(name = "market_balance_kg_co2e_per_kwh", precision = 12, scale = 6)
+	private BigDecimal marketBalanceKgCo2ePerKwh;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "market_balance_basis", length = 20)
+	private Scope2MarketBasis marketBalanceBasis;
+
 	protected GhgRunLine() {
 	}
 
@@ -181,6 +199,10 @@ public class GhgRunLine {
 			this.marketFactorKgCo2ePerKwh = market.factorKgCo2ePerKwh();
 			this.marketInstrument = market.instrument();
 			this.marketNote = market.note();
+			this.marketCoveredKwh = market.coveredKwh();
+			this.marketBalanceKwh = market.balanceKwh();
+			this.marketBalanceKgCo2ePerKwh = market.balanceKgCo2ePerKwh();
+			this.marketBalanceBasis = market.balanceBasis();
 		}
 	}
 
@@ -316,6 +338,27 @@ public class GhgRunLine {
 
 	public String getMarketNote() {
 		return marketNote;
+	}
+
+	public BigDecimal getMarketCoveredKwh() {
+		return marketCoveredKwh;
+	}
+
+	public BigDecimal getMarketBalanceKwh() {
+		return marketBalanceKwh;
+	}
+
+	public BigDecimal getMarketBalanceKgCo2ePerKwh() {
+		return marketBalanceKgCo2ePerKwh;
+	}
+
+	public Scope2MarketBasis getMarketBalanceBasis() {
+		return marketBalanceBasis;
+	}
+
+	/** Whether a contractual instrument covered any of this line's kWh. */
+	boolean instrumentApplied() {
+		return marketCoveredKwh != null && marketCoveredKwh.signum() > 0;
 	}
 
 	BigDecimal marketOrLocationKgCo2e() {

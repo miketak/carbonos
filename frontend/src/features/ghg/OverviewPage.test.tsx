@@ -61,7 +61,8 @@ const run: Run = {
   scope1KgCo2e: 2660,
   scope2KgCo2e: 352.8,
   scope3KgCo2e: 0,
-  scope2MarketBasedKgCo2e: null,
+  scope2MarketBasedKgCo2e: 1000,
+  scope2MarketBasis: 'GRID_AVERAGE',
   byGas: {
     co2Kg: 3012.8,
     ch4Kg: 0,

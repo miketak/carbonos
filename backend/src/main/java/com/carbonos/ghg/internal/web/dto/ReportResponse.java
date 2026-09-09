@@ -22,6 +22,7 @@ import com.carbonos.ghg.internal.MarketFactor;
 import com.carbonos.ghg.internal.Organization;
 import com.carbonos.ghg.internal.RecalculationStatus;
 import com.carbonos.ghg.internal.Scope;
+import com.carbonos.ghg.internal.Scope2MarketBasis;
 import com.carbonos.ghg.internal.StructuralChangeConvention;
 
 /**
@@ -61,9 +62,10 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 	public record Emissions(BigDecimal scope1KgCo2e, BigDecimal scope2LocationBasedKgCo2e,
 			BigDecimal scope2MarketBasedKgCo2e, BigDecimal scope3KgCo2e, BigDecimal totalKgCo2e,
 			BigDecimal scope1TCo2e, BigDecimal scope2LocationBasedTCo2e, BigDecimal scope2MarketBasedTCo2e,
-			BigDecimal scope3TCo2e, BigDecimal totalTCo2e, String totalMethod, String baseYearScope2Method,
-			Boolean baseYearMarketBasedIsProxy, Boolean residualMixAvailable, BigDecimal residualMixKgCo2ePerKwh,
-			String residualMixDisclosure, List<MarketFactorResponse> marketInstruments) {
+			BigDecimal scope3TCo2e, BigDecimal totalTCo2e, String totalMethod, Scope2MarketBasis scope2MarketBasis,
+			String baseYearScope2Method, Boolean baseYearMarketBasedIsProxy, Boolean residualMixAvailable,
+			BigDecimal residualMixKgCo2ePerKwh, String residualMixDisclosure,
+			List<MarketFactorResponse> marketInstruments) {
 	}
 
 	/** One of the seven gases: mass of the gas and CO2e, in kilograms and in tonnes. */
@@ -128,20 +130,32 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 								+ "the CO2e its source stated under IPCC " + String.join(" and ", blendReports) + ".");
 		var failing = marketFactors.stream().filter(factor -> !factor.isMeetsQualityCriteria()).toList();
 		var residualMixAvailable = inventory.getResidualMixAvailable();
-		var residualMixDisclosure = run.getScope2MarketBasedKgCo2e() == null ? null
-				: Boolean.TRUE.equals(residualMixAvailable)
+		var residualMixDisclosure = residualMixAvailable == null
+				? "The inventory does not state whether an adjusted residual mix is available for its markets; "
+						+ "electricity no instrument covers is priced at the grid average (the location-based factor)."
+				: residualMixAvailable
 						? "An adjusted residual mix of " + inventory.getResidualMixKgCo2ePerKwh()
 								+ " kg CO2e per kWh was available for the markets the instruments sit in."
 						: "An adjusted emission factor (residual mix) is not available or has not been estimated to "
 								+ "account for voluntary purchases in the markets the instruments sit in. This may "
 								+ "result in double counting between electricity consumers.";
-		var scope2Methods = run.getScope2MarketBasedKgCo2e() == null ? "Scope 2 is reported location-based only."
-				: "Scope 2 is reported location-based and market-based, each labeled, using the contractual "
-						+ "instruments listed" + (failing.isEmpty() ? "."
-								: "; " + failing.size() + " instrument" + (failing.size() == 1 ? "" : "s")
-										+ " did not meet the Scope 2 Quality Criteria and " + (failing.size() == 1
-												? "was" : "were") + " replaced as the lines state.")
-						+ " The inventory total uses the location-based figure.";
+		var basis = switch (run.getScope2MarketBasis()) {
+			case INSTRUMENTS -> "The market-based figure applies the contractual instruments listed to the "
+					+ "kilowatt-hours they cover and prices the balance at "
+					+ (Boolean.TRUE.equals(residualMixAvailable) ? "the residual mix."
+							: "the grid average, since no residual mix is available.");
+			case RESIDUAL_MIX -> "No contractual instrument was applied; the market-based figure prices every "
+					+ "kilowatt-hour at the residual mix.";
+			case GRID_AVERAGE -> "No contractual instrument was applied and no residual mix is available; the "
+					+ "market-based figure equals the location-based figure, the grid average, as the Scope 2 "
+					+ "Guidance allows.";
+		};
+		var failingClause = failing.isEmpty() ? ""
+				: " " + failing.size() + " instrument" + (failing.size() == 1 ? "" : "s")
+						+ " did not meet the Scope 2 Quality Criteria and " + (failing.size() == 1 ? "was" : "were")
+						+ " not applied, as the lines state.";
+		var scope2Methods = "Scope 2 is reported location-based and market-based, each labeled (Scope 2 Guidance, "
+				+ "chapter 4). " + basis + failingClause + " The inventory total uses the location-based figure.";
 		var statement = "Emissions were calculated as activity data multiplied by an emission factor and the "
 				+ "accounting share of the facility's legal entity under the " + describe(run.getConsolidationApproach())
 				+ " approach (GHG Protocol Corporate Standard, Chapter 3, Table 1), applied at every level of the "
@@ -149,9 +163,9 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				+ "only. " + potentials + " " + scope2Methods
 				+ " Figures are stated in metric tonnes, with kilograms retained on every line."
 				+ " Biogenic CO2 is reported outside the scopes.";
-		var baseYearScope2Method = baseRun == null ? null
-				: baseRun.getScope2MarketBasedKgCo2e() == null ? "LOCATION_BASED" : "DUAL";
-		var baseYearProxy = baseRun == null ? null : baseRun.getScope2MarketBasedKgCo2e() == null;
+		// every run reports both methods (spec 07.3); a base year on the grid-average basis is a location-based proxy
+		var baseYearScope2Method = baseRun == null ? null : "DUAL";
+		var baseYearProxy = baseRun == null ? null : baseRun.getScope2MarketBasis() == Scope2MarketBasis.GRID_AVERAGE;
 		BaseYearSection baseYearSection = null;
 		if (baseYear != null) {
 			var recalculations = new ArrayList<Recalculation>();
@@ -186,7 +200,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 						run.getScope3KgCo2e(), run.getTotalKgCo2e(), tonnes(run.getScope1KgCo2e()),
 						tonnes(run.getScope2KgCo2e()), tonnes(run.getScope2MarketBasedKgCo2e()),
 						tonnes(run.getScope3KgCo2e()), tonnes(run.getTotalKgCo2e()), "LOCATION_BASED",
-						baseYearScope2Method, baseYearProxy, residualMixAvailable,
+						run.getScope2MarketBasis(), baseYearScope2Method, baseYearProxy, residualMixAvailable,
 						inventory.getResidualMixKgCo2ePerKwh(), residualMixDisclosure,
 						marketFactors.stream().map(MarketFactorResponse::from).toList()),
 				byGas, run.getBiogenicCo2Kg(), tonnes(run.getBiogenicCo2Kg()), baseYearSection,

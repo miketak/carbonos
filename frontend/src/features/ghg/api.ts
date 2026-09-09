@@ -30,6 +30,8 @@ export type LeaseType =
   'FINANCE_LEASE_IN' | 'OPERATING_LEASE_IN' | 'FINANCE_LEASE_OUT' | 'OPERATING_LEASE_OUT'
 export type GwpSet = 'AR5' | 'AR6'
 export type MarketInstrument = 'SUPPLIER_SPECIFIC' | 'CONTRACT' | 'CERTIFICATE' | 'RESIDUAL_MIX'
+/** What a run's market-based scope 2 figure rests on (spec 07.3). */
+export type Scope2MarketBasis = 'INSTRUMENTS' | 'RESIDUAL_MIX' | 'GRID_AVERAGE'
 export type RecalculationStatus = 'FLAGGED' | 'RECALCULATED' | 'DECLINED'
 export type RecalculationTrigger = 'STRUCTURAL_CHANGE' | 'METHODOLOGY_CHANGE' | 'ERROR_CORRECTION'
 /** How a mid-year structural change is accounted (spec 06.1): from its date, or for the whole year. */
@@ -430,8 +432,9 @@ export interface Run {
   scope1KgCo2e: number
   scope2KgCo2e: number
   scope3KgCo2e: number
-  /** Scope 2 under the market-based method; null when no facility has an instrument. */
-  scope2MarketBasedKgCo2e: number | null
+  /** Scope 2 under the market-based method, reported on every run (spec 07.3). */
+  scope2MarketBasedKgCo2e: number
+  scope2MarketBasis: Scope2MarketBasis
   byGas: ByGas
   biogenicCo2Kg: number
   isFinal: boolean
@@ -467,8 +470,13 @@ export interface RunLine {
   marketBasedKgCo2e: number | null
   marketFactorKgCo2ePerKwh: number | null
   marketInstrument: MarketInstrument | null
-  /** Why the market-based figure is not the facility's instrument (spec 07.2). */
+  /** How the market-based figure was built: the split between instrument and balance (spec 07.3). */
   marketNote: string | null
+  /** The kWh the facility's instrument covered on this line, and the balance priced at the residual mix or grid average. */
+  marketCoveredKwh: number | null
+  marketBalanceKwh: number | null
+  marketBalanceKgCo2ePerKwh: number | null
+  marketBalanceBasis: Scope2MarketBasis | null
 }
 
 /** An assignment a run left out, with the activity's facts and the documented reason (spec 05.1). */
@@ -501,6 +509,10 @@ export interface MarketFactor {
   /** Whether the instrument meets the eight Scope 2 Quality Criteria (spec 07.2). */
   meetsQualityCriteria: boolean
   qualityNotes: string | null
+  /** The kWh the instrument covers (null on rows older than spec 07.3, which cover every kWh) and its period. */
+  coveredKwh: number | null
+  periodStart: string | null
+  periodEnd: string | null
 }
 
 export interface MarketFactorInput {
@@ -509,6 +521,9 @@ export interface MarketFactorInput {
   source: string
   meetsQualityCriteria: boolean
   qualityNotes?: string
+  coveredKwh: number
+  periodStart?: string
+  periodEnd?: string
 }
 
 export interface ResidualMixInput {
@@ -620,22 +635,23 @@ export interface Report {
   emissions: {
     scope1KgCo2e: number
     scope2LocationBasedKgCo2e: number
-    scope2MarketBasedKgCo2e: number | null
+    scope2MarketBasedKgCo2e: number
     scope3KgCo2e: number
     totalKgCo2e: number
     /** The same figures in metric tonnes, as Chapter 9 asks (spec 07.2). */
     scope1TCo2e: number
     scope2LocationBasedTCo2e: number
-    scope2MarketBasedTCo2e: number | null
+    scope2MarketBasedTCo2e: number
     scope3TCo2e: number
     totalTCo2e: number
-    /** The Scope 2 Guidance disclosures (spec 07.2). */
+    /** The Scope 2 Guidance disclosures (spec 07.2, 07.3). */
     totalMethod: 'LOCATION_BASED'
+    scope2MarketBasis: Scope2MarketBasis
     baseYearScope2Method: 'LOCATION_BASED' | 'DUAL' | null
     baseYearMarketBasedIsProxy: boolean | null
     residualMixAvailable: boolean | null
     residualMixKgCo2ePerKwh: number | null
-    residualMixDisclosure: string | null
+    residualMixDisclosure: string
     marketInstruments: MarketFactor[]
   }
   /** Mass of each gas and its CO2e under the run's GWP set, in kilograms and in tonnes. */

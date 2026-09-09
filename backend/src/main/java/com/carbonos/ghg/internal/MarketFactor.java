@@ -2,6 +2,7 @@ package com.carbonos.ghg.internal;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -20,7 +21,9 @@ import jakarta.persistence.Table;
 /**
  * A market-based scope 2 factor for one facility in one inventory (the Scope
  * 2 Guidance, spec 07.1): the contractual instrument behind the electricity
- * the facility bought, in kg CO2e per kWh.
+ * the facility bought, in kg CO2e per kWh, the quantity it covers and the
+ * period it covers (spec 07.3). The balance takes the residual mix or the
+ * grid average.
  */
 @Entity
 @Table(name = "ghg_market_factors")
@@ -55,6 +58,17 @@ public class MarketFactor {
 	@Column(name = "quality_notes", length = 500)
 	private String qualityNotes;
 
+	// the kWh the instrument covers; null on rows older than spec 07.3, which cover every kWh
+	@Column(name = "covered_kwh", precision = 18, scale = 3)
+	private BigDecimal coveredKwh;
+
+	// the period the instrument covers; null bounds default to the inventory's period
+	@Column(name = "period_start")
+	private LocalDate periodStart;
+
+	@Column(name = "period_end")
+	private LocalDate periodEnd;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -66,8 +80,12 @@ public class MarketFactor {
 	protected MarketFactor() {
 	}
 
+	/** The coverage of an instrument: the kWh it covers (null covers every kWh) and its period (null bounds follow the inventory). */
+	public record Coverage(BigDecimal coveredKwh, LocalDate periodStart, LocalDate periodEnd) {
+	}
+
 	MarketFactor(Inventory inventory, Facility facility, MarketInstrument instrumentType, BigDecimal kgCo2ePerKwh,
-			String source, boolean meetsQualityCriteria, String qualityNotes) {
+			String source, boolean meetsQualityCriteria, String qualityNotes, Coverage coverage) {
 		this.id = UUID.randomUUID();
 		this.inventory = inventory;
 		this.facility = facility;
@@ -76,6 +94,9 @@ public class MarketFactor {
 		this.source = source;
 		this.meetsQualityCriteria = meetsQualityCriteria;
 		this.qualityNotes = qualityNotes;
+		this.coveredKwh = coverage.coveredKwh();
+		this.periodStart = coverage.periodStart();
+		this.periodEnd = coverage.periodEnd();
 	}
 
 	public UUID getId() {
@@ -110,12 +131,46 @@ public class MarketFactor {
 		return qualityNotes;
 	}
 
+	public BigDecimal getCoveredKwh() {
+		return coveredKwh;
+	}
+
+	public LocalDate getPeriodStart() {
+		return periodStart;
+	}
+
+	public LocalDate getPeriodEnd() {
+		return periodEnd;
+	}
+
+	public Coverage coverage() {
+		return new Coverage(coveredKwh, periodStart, periodEnd);
+	}
+
+	/** The first day the instrument covers: its own, or the inventory's. */
+	public LocalDate effectiveStart(Inventory inventory) {
+		return periodStart != null ? periodStart : inventory.getPeriodStart();
+	}
+
+	/** The last day the instrument covers: its own, or the inventory's. */
+	public LocalDate effectiveEnd(Inventory inventory) {
+		return periodEnd != null ? periodEnd : inventory.getPeriodEnd();
+	}
+
+	/** Whether a line dated on this day falls inside the instrument's period. */
+	public boolean covers(LocalDate date, Inventory inventory) {
+		return !date.isBefore(effectiveStart(inventory)) && !date.isAfter(effectiveEnd(inventory));
+	}
+
 	void update(MarketInstrument instrumentType, BigDecimal kgCo2ePerKwh, String source, boolean meetsQualityCriteria,
-			String qualityNotes) {
+			String qualityNotes, Coverage coverage) {
 		this.instrumentType = instrumentType;
 		this.kgCo2ePerKwh = kgCo2ePerKwh;
 		this.source = source;
 		this.meetsQualityCriteria = meetsQualityCriteria;
 		this.qualityNotes = qualityNotes;
+		this.coveredKwh = coverage.coveredKwh();
+		this.periodStart = coverage.periodStart();
+		this.periodEnd = coverage.periodEnd();
 	}
 }

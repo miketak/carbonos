@@ -56,6 +56,7 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
                 {line.marketBasedKgCo2e !== null && (
                   <span className="block text-xs font-normal text-ink-muted">
                     market-based: {formatCo2e(line.marketBasedKgCo2e)}
+                    {line.marketNote ? ` (${line.marketNote})` : ''}
                   </span>
                 )}
               </td>
