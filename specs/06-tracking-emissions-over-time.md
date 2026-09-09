@@ -46,9 +46,12 @@ optional `baseYear` integer on the inventory connected to nothing.
   reason and the triggering version, or `DECLINED` with a note. Earlier runs
   are kept, so the original and recalculated base years are both readable.
 - The BASE_YEAR validation gate lists unresolved flags on every inventory of
-  the organization: an ERROR when the flag is above the threshold (except on
-  the base-year inventory itself, whose run is how a recalculation is made),
-  otherwise a WARNING.
+  the organization. A flag above the threshold is an ERROR only on the
+  inventories that report against the base year: the same consolidation
+  approach and a later period. The base-year inventory itself (whose run is
+  how a recalculation is made), views under another approach and earlier
+  periods get a WARNING that says why they are not held. Below the threshold
+  every inventory gets a WARNING.
 - The report (spec 07.1) shows the current period against the base year with
   the recalculation history.
 

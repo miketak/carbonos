@@ -86,7 +86,7 @@ public class ReportAssembler {
 					.filter(r -> r.getRunId() != null)
 					.collect(java.util.stream.Collectors.toMap(r -> r.getRunId(),
 							r -> inventoryService.getRun(r.getRunId()), (a, b) -> a));
-		var profile = baseYear == null ? List.<BaseYearService.ProfileEntry>of()
+		var profile = baseYear == null ? new BaseYearService.Profile(List.of(), List.of())
 				: baseYearService.profile(baseYear, run.getPeriodEnd());
 		var successor = inventory.getSupersededById() == null ? null
 				: inventoryService.get(inventory.getSupersededById());

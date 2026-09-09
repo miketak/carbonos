@@ -174,6 +174,17 @@ public final class ReportPdf {
 					}
 					document.add(profile);
 				}
+				if (b.otherViews() != null && !b.otherViews().isEmpty()) {
+					document.add(new Paragraph("Other views of the same periods, not comparable with the base year "
+							+ "(a different consolidation approach or GWP set):", BODY));
+					var others = table(4, 18, 40, 22, 20);
+					head(others, "Period", "Inventory", "Approach / GWP", "Final run (t CO2e)");
+					for (var p : b.otherViews()) {
+						row(others, p.periodLabel(), p.name(), p.consolidationApproach() + " / " + p.gwpSet(),
+								p.totalKgCo2e() == null ? "not yet final" : tonnes(p.totalKgCo2e().movePointLeft(3)));
+					}
+					document.add(others);
+				}
 			}
 
 			heading(document, "8. Methodology and emission factors");

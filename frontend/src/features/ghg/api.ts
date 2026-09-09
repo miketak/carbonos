@@ -1098,6 +1098,8 @@ export interface ProfileEntry {
   totalKgCo2e: number | null
   recalculatedRunId: string | null
   recalculatedTotalKgCo2e: number | null
+  consolidationApproach: ConsolidationApproach
+  gwpSet: GwpSet
 }
 
 /** The inventory report for one run, in the order Chapter 9 lists its elements (spec 07.1). */
@@ -1160,8 +1162,10 @@ export interface Report {
     gwpSetMatches: boolean
     originalBase: RunFigure | null
     recalculations: { decision: Recalculation; recalculatedBase: RunFigure | null }[]
-    /** Every inventory between the base year and the reporting period (spec 06.1). */
+    /** The years of the base year's series: the same approach and GWP set (spec 06.1). */
     profile: ProfileEntry[]
+    /** Inventories over the same periods under another approach or GWP set; absent on older snapshots. */
+    otherViews?: ProfileEntry[]
   } | null
   methodology: {
     gwpSet: GwpSet

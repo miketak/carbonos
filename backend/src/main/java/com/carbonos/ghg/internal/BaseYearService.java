@@ -269,13 +269,41 @@ public class BaseYearService {
 	public record ProfileEntry(Inventory inventory, GhgRun finalRun, GhgRun recalculatedRun) {
 	}
 
+	/** The emissions profile over time, split into the years that compare with the base year and other views. */
+	public record Profile(List<ProfileEntry> comparable, List<ProfileEntry> otherViews) {
+	}
+
+	/**
+	 * Whether an inventory reports against the base year: the same consolidation
+	 * approach and a later period. Only such inventories are held by a pending
+	 * recalculation; other views and earlier periods are warned (spec 06.1).
+	 */
+	public static boolean reportsAgainst(BaseYear baseYear, Inventory inventory) {
+		var base = baseYear.getInventory();
+		return inventory.getConsolidationApproach() == base.getConsolidationApproach()
+				&& inventory.getPeriodStart().isAfter(base.getPeriodStart());
+	}
+
+	/** Why an inventory does not report against the base year, for the gate's wording. */
+	public static String whyNotAgainst(BaseYear baseYear, Inventory inventory) {
+		var base = baseYear.getInventory();
+		if (inventory.getConsolidationApproach() != base.getConsolidationApproach()) {
+			var view = inventory.getConsolidationApproach().name().toLowerCase().replace('_', ' ');
+			return "it is " + (view.startsWith("e") ? "an " : "a ") + view + " view and the base year is "
+					+ base.getConsolidationApproach().name().toLowerCase().replace('_', ' ');
+		}
+		return "its period does not follow the " + baseYear.year() + " base year";
+	}
+
 	/**
 	 * Every inventory of the organization whose period lies between the base
 	 * year and the reporting period, with its final run and, for the base-year
-	 * inventory, the latest recalculated base (spec 06.1).
+	 * inventory, the latest recalculated base (spec 06.1). Inventories under
+	 * another consolidation approach or GWP set are not years of the same
+	 * series; they are listed apart as other views.
 	 */
 	@Transactional(readOnly = true)
-	public List<ProfileEntry> profile(BaseYear baseYear, java.time.LocalDate reportingPeriodEnd) {
+	public Profile profile(BaseYear baseYear, java.time.LocalDate reportingPeriodEnd) {
 		var baseInventory = baseYear.getInventory();
 		var recalculated = baseYear.getRecalculations()
 			.stream()
@@ -284,7 +312,7 @@ public class BaseYearService {
 			.reduce((first, second) -> second)
 			.flatMap(candidate -> runs.findById(candidate.getRunId()))
 			.orElse(null);
-		return inventories.findAllByOrganizationIdOrderByCreatedAtDesc(baseYear.getOrganization().getId())
+		var entries = inventories.findAllByOrganizationIdOrderByCreatedAtDesc(baseYear.getOrganization().getId())
 			.stream()
 			.filter(inventory -> !inventory.getPeriodStart().isBefore(baseInventory.getPeriodStart())
 					&& !inventory.getPeriodEnd().isAfter(reportingPeriodEnd))
@@ -293,6 +321,12 @@ public class BaseYearService {
 					inventory.getFinalRunId() == null ? null : runs.findById(inventory.getFinalRunId()).orElse(null),
 					inventory.getId().equals(baseInventory.getId()) ? recalculated : null))
 			.toList();
+		var comparable = entries.stream()
+			.filter(entry -> entry.inventory().getConsolidationApproach() == baseInventory.getConsolidationApproach()
+					&& entry.inventory().getGwpSet() == baseInventory.getGwpSet())
+			.toList();
+		var others = entries.stream().filter(entry -> !comparable.contains(entry)).toList();
+		return new Profile(comparable, others);
 	}
 
 	/** Facility id to a description of what changed between two versions. */

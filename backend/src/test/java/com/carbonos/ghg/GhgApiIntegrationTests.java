@@ -1730,6 +1730,19 @@ class GhgApiIntegrationTests {
 					+ "2024 base year, above the 3% threshold, recalculation required")));
 		mvc.perform(get("/api/ghg/inventories/" + current + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[4].status").value("BLOCKED"));
+		// the hold applies to inventories that report against the base year: an equity-share view and an
+		// earlier period are told, not stopped (ticket T-23)
+		var equityView = createInventory(orgId, "2025 Equity view", "EQUITY_SHARE");
+		var earlier = createInventory(orgId, "2023 Corporate", "OPERATIONAL_CONTROL", "2023-01-01", "2023-12-31");
+		createInventory(orgId, "2024 Equity view", "EQUITY_SHARE", "2024-01-01", "2024-12-31");
+		mvc.perform(get("/api/ghg/inventories/" + equityView + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[4].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[4].findings[*].message").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers
+				.containsString("not held because it is an equity share view and the base year is operational control"))));
+		mvc.perform(get("/api/ghg/inventories/" + earlier + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[4].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[4].findings[*].message").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers
+				.containsString("not held because its period does not follow the 2024 base year"))));
 
 		// decisions: declining the first, recalculating the base for the second with a run of the base year
 		String first = JsonPath.read(baseYear, "$.recalculations[0].id");
@@ -1771,6 +1784,12 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.baseYear.profile[0].recalculatedRunId").value(recalculated))
 			.andExpect(jsonPath("$.baseYear.profile[1].year").value(2025))
 			.andExpect(jsonPath("$.baseYear.profile[1].finalRunId").doesNotExist())
+			// the equity-share views of 2024 and 2025 are not years of the series; they are listed apart
+			.andExpect(jsonPath("$.baseYear.otherViews.length()").value(2))
+			.andExpect(jsonPath("$.baseYear.otherViews[*].consolidationApproach")
+				.value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("EQUITY_SHARE"))))
+			.andExpect(jsonPath("$.baseYear.otherViews[*].name")
+				.value(org.hamcrest.Matchers.containsInAnyOrder("2024 Equity view", "2025 Equity view")))
 			// the Scope 2 Guidance disclosures about the base year (spec 07.2)
 			.andExpect(jsonPath("$.emissions.totalMethod").value("LOCATION_BASED"))
 			.andExpect(jsonPath("$.emissions.baseYearScope2Method").value("DUAL"))
