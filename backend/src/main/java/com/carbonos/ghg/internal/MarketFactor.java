@@ -58,6 +58,21 @@ public class MarketFactor {
 	@Column(name = "quality_notes", length = 500)
 	private String qualityNotes;
 
+	// spec 07.6: the certificate behind the instrument and the eight criteria answered one at a time
+	@Column(name = "certificate_id", length = 120)
+	private String certificateId;
+
+	@Column(length = 120)
+	private String registry;
+
+	private Integer vintage;
+
+	@Column(name = "retirement_date")
+	private LocalDate retirementDate;
+
+	@Column(name = "criteria_answers", nullable = false, length = 8)
+	private String criteriaAnswers;
+
 	// the kWh the instrument covers; null on rows older than spec 07.3, which cover every kWh
 	@Column(name = "covered_kwh", precision = 18, scale = 3)
 	private BigDecimal coveredKwh;
@@ -84,19 +99,83 @@ public class MarketFactor {
 	public record Coverage(BigDecimal coveredKwh, LocalDate periodStart, LocalDate periodEnd) {
 	}
 
+	/** The certificate details and the eight answers (spec 07.6); a null answer is unanswered. */
+	public record Quality(java.util.List<Boolean> criteria, String certificateId, String registry, Integer vintage,
+			LocalDate retirementDate) {
+		/** Every criterion met, as a legacy "meets the criteria" flag said. */
+		public static Quality allMet() {
+			return new Quality(java.util.Collections.nCopies(Scope2Criterion.values().length, Boolean.TRUE), null,
+					null, null, null);
+		}
+
+		public static Quality unanswered() {
+			return new Quality(java.util.Collections.nCopies(Scope2Criterion.values().length, (Boolean) null), null,
+					null, null, null);
+		}
+	}
+
 	MarketFactor(Inventory inventory, Facility facility, MarketInstrument instrumentType, BigDecimal kgCo2ePerKwh,
 			String source, boolean meetsQualityCriteria, String qualityNotes, Coverage coverage) {
+		this(inventory, facility, instrumentType, kgCo2ePerKwh, source, qualityNotes, coverage,
+				meetsQualityCriteria ? Quality.allMet() : Quality.unanswered());
+	}
+
+	MarketFactor(Inventory inventory, Facility facility, MarketInstrument instrumentType, BigDecimal kgCo2ePerKwh,
+			String source, String qualityNotes, Coverage coverage, Quality quality) {
 		this.id = UUID.randomUUID();
 		this.inventory = inventory;
 		this.facility = facility;
 		this.instrumentType = instrumentType;
 		this.kgCo2ePerKwh = kgCo2ePerKwh;
 		this.source = source;
-		this.meetsQualityCriteria = meetsQualityCriteria;
 		this.qualityNotes = qualityNotes;
 		this.coveredKwh = coverage.coveredKwh();
 		this.periodStart = coverage.periodStart();
 		this.periodEnd = coverage.periodEnd();
+		applyQuality(quality);
+	}
+
+	private void applyQuality(Quality quality) {
+		this.criteriaAnswers = Scope2Criterion.encode(quality.criteria());
+		this.meetsQualityCriteria = criteriaAnswers.chars().allMatch(c -> c == 'Y');
+		this.certificateId = quality.certificateId();
+		this.registry = quality.registry();
+		this.vintage = quality.vintage();
+		this.retirementDate = quality.retirementDate();
+	}
+
+	public java.util.List<Scope2Criterion.Answer> criteriaAnswers() {
+		return Scope2Criterion.decode(criteriaAnswers);
+	}
+
+	public long unansweredCount() {
+		return criteriaAnswers().stream().filter(a -> a == Scope2Criterion.Answer.UNANSWERED).count();
+	}
+
+	public long notMetCount() {
+		return criteriaAnswers().stream().filter(a -> a == Scope2Criterion.Answer.NOT_MET).count();
+	}
+
+	public String getCertificateId() {
+		return certificateId;
+	}
+
+	public String getRegistry() {
+		return registry;
+	}
+
+	public Integer getVintage() {
+		return vintage;
+	}
+
+	public LocalDate getRetirementDate() {
+		return retirementDate;
+	}
+
+	public Quality quality() {
+		return new Quality(criteriaAnswers().stream()
+			.map(a -> a == Scope2Criterion.Answer.UNANSWERED ? null : Boolean.valueOf(a == Scope2Criterion.Answer.MET))
+			.toList(), certificateId, registry, vintage, retirementDate);
 	}
 
 	public UUID getId() {
@@ -167,15 +246,15 @@ public class MarketFactor {
 		return !date.isBefore(effectiveStart(inventory)) && !date.isAfter(effectiveEnd(inventory));
 	}
 
-	void update(MarketInstrument instrumentType, BigDecimal kgCo2ePerKwh, String source, boolean meetsQualityCriteria,
-			String qualityNotes, Coverage coverage) {
+	void update(MarketInstrument instrumentType, BigDecimal kgCo2ePerKwh, String source, String qualityNotes,
+			Coverage coverage, Quality quality) {
 		this.instrumentType = instrumentType;
 		this.kgCo2ePerKwh = kgCo2ePerKwh;
 		this.source = source;
-		this.meetsQualityCriteria = meetsQualityCriteria;
 		this.qualityNotes = qualityNotes;
 		this.coveredKwh = coverage.coveredKwh();
 		this.periodStart = coverage.periodStart();
 		this.periodEnd = coverage.periodEnd();
+		applyQuality(quality);
 	}
 }

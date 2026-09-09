@@ -753,7 +753,11 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.scopeJustification").value(org.hamcrest.Matchers.startsWith("Contractor-owned")));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
-			.andExpect(jsonPath("$.gates[2].status").value("PASSED"));
+			// the scope 3 line warns that its category is not declared as covered (spec 07.6); nothing blocks
+			.andExpect(jsonPath("$.gates[2].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'ERROR')]").isEmpty())
+			.andExpect(jsonPath("$.gates[2].findings[*].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("does not list it as covered"))));
 
 		freeze(inventoryId);
 		run(inventoryId, "Run 001").andExpect(status().isCreated())
@@ -887,7 +891,11 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.proxy").value(true));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
-			.andExpect(jsonPath("$.gates[2].status").value("PASSED"));
+			// the scope 3 line warns that its category is not declared as covered (spec 07.6); nothing blocks
+			.andExpect(jsonPath("$.gates[2].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'ERROR')]").isEmpty())
+			.andExpect(jsonPath("$.gates[2].findings[*].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("does not list it as covered"))));
 		freeze(inventoryId);
 		// the lines carry the record's own description, the stream, the reasons and the proxy flag
 		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated())
@@ -939,7 +947,11 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.category").value("UPSTREAM_LEASED_ASSETS"));
 		// a lease type derived the scope: no justification is needed and the gate is silent (spec 04.3)
 		mvc.perform(get("/api/ghg/inventories/" + equity + "/validation").with(asMember()))
-			.andExpect(jsonPath("$.gates[2].status").value("PASSED"));
+			// the scope 3 line warns that its category is not declared as covered (spec 07.6); nothing blocks
+			.andExpect(jsonPath("$.gates[2].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'ERROR')]").isEmpty())
+			.andExpect(jsonPath("$.gates[2].findings[*].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("does not list it as covered"))));
 	}
 
 	@Test
@@ -3633,5 +3645,99 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[0].changedSincePublication[0]").value("quantity"));
 		mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember()))
 			.andExpect(content().string(org.hamcrest.Matchers.containsString(",1000,")));
+	}
+	// --- Scope 2 criteria per instrument and the scope 3 cross-check (spec 07.6) -------------
+
+	@Test
+	void instrumentsAnswerEachQualityCriterionAndTheDeclarationIsCrossChecked() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var power = createActivity(orgId, pit, "Grid electricity", "10000", "kWh", "2025-06-30");
+		var flights = createActivity(orgId, pit, "Staff flights", "5000", "passenger-km", "2025-05-10");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		classify(syncAndGetAssignmentId(inventoryId, power), GRID_FACTOR);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		String flightsAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + flights + "')].id").getFirst();
+		// business travel: the seeded flight factor
+		var factors = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		String flightFactor = JsonPath.<List<String>>read(factors,
+				"$[?(@.defaultCategory == 'BUSINESS_TRAVEL' && @.unit == 'passenger-km' && @.approved == true)].id").getFirst();
+		classify(flightsAssignment, flightFactor);
+
+		// an instrument with one criterion unanswered is not applied, and the gate counts it
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + pit).with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0, "source": "I-REC(E) Ghana 2025",
+					 "criteria": [true, true, null, true, true, true, true, true], "certificateId": "IREC-GH-2025-0417",
+					 "registry": "I-TRACK", "vintage": 2025, "coveredKwh": 10000}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.meetsQualityCriteria").value(false))
+			.andExpect(jsonPath("$.unansweredCount").value(1))
+			.andExpect(jsonPath("$.criteria[2].code").value("RETIRED_FOR_COMPANY"))
+			.andExpect(jsonPath("$.criteria[2].answer").value("UNANSWERED"))
+			.andExpect(jsonPath("$.certificateId").value("IREC-GH-2025-0417"));
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + pit).with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0, "source": "I-REC(E) Ghana 2025",
+					 "criteria": [true, true], "coveredKwh": 10000}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.criteria").exists());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("1 of the eight criteria not yet answered"))));
+
+		// the declaration: business travel has lines but is not declared; investments declared with no lines
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/operational-boundary").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"scope3Categories": ["INVESTMENTS"]}"""))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.hasItems(
+						org.hamcrest.Matchers.containsString("investments is declared as covered but no included record"),
+						org.hamcrest.Matchers.containsString("business travel but the declaration does not list it"))));
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/operational-boundary").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"scope3Categories": ["INVESTMENTS", "BUSINESS_TRAVEL"],
+					 "notQuantified": [{"category": "INVESTMENTS", "reason": "short"}]}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.notQuantified").exists());
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/operational-boundary").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"scope3Categories": ["INVESTMENTS", "BUSINESS_TRAVEL"],
+					 "notQuantified": [{"category": "INVESTMENTS", "reason": "the associate reports its own inventory; equity share quantified from its 2025 report"}]}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.scope3NotQuantified[0].category").value("INVESTMENTS"));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.message =~ /.*declared as covered.*/)]").isEmpty())
+			.andExpect(jsonPath("$.gates[2].findings[?(@.message =~ /.*does not list it.*/)]").isEmpty());
+
+		// every criterion met: the instrument applies, and the report lists the outcomes and the declaration table
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + pit).with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0, "source": "I-REC(E) Ghana 2025",
+					 "criteria": [true, true, true, true, true, true, true, true], "certificateId": "IREC-GH-2025-0417",
+					 "registry": "I-TRACK", "vintage": 2025, "retirementDate": "2026-01-15", "coveredKwh": 10000}"""))
+			.andExpect(jsonPath("$.meetsQualityCriteria").value(true))
+			.andExpect(jsonPath("$.unansweredCount").value(0));
+		freeze(inventoryId);
+		var preflight = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember())));
+		assertThat(JsonPath.<Boolean>read(preflight, "$.ready")).as(preflight).isTrue();
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.emissions.scope2MarketBasedKgCo2e").value(0.0))
+			.andExpect(jsonPath("$.emissions.marketInstruments[0].criteria.length()").value(8))
+			.andExpect(jsonPath("$.emissions.marketInstruments[0].retirementDate").value("2026-01-15"))
+			.andExpect(jsonPath("$.byScope3Category[?(@.category == 'INVESTMENTS')].lineCount").value(0))
+			.andExpect(jsonPath("$.byScope3Category[?(@.category == 'INVESTMENTS')].notQuantifiedReason")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("the associate reports"))))
+			.andExpect(jsonPath("$.byScope3Category[?(@.category == 'BUSINESS_TRAVEL')].declared").value(true))
+			.andExpect(jsonPath("$.byScope3Category[?(@.category == 'BUSINESS_TRAVEL')].lineCount").value(1))
+			.andExpect(jsonPath("$.operationalBoundary.notQuantified[0].category").value("INVESTMENTS"));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember())).andExpect(status().isOk());
 	}
 }

@@ -215,6 +215,12 @@ public class InventoryService {
 	/** The operational boundary declaration (spec 07.1): which scope 3 categories are covered and why others are not. */
 	public Inventory setOperationalBoundary(UUID id, List<ActivityCategory> scope3Categories,
 			String exclusionsRationale) {
+		return setOperationalBoundary(id, scope3Categories, exclusionsRationale, List.of());
+	}
+
+	/** With the categories declared but not quantified this year and why (spec 07.6). */
+	public Inventory setOperationalBoundary(UUID id, List<ActivityCategory> scope3Categories,
+			String exclusionsRationale, List<Inventory.NotQuantified> notQuantified) {
 		var inventory = get(id);
 		requireEditable(inventory);
 		for (var category : scope3Categories) {
@@ -222,7 +228,20 @@ public class InventoryService {
 				throw new GhgRuleViolationException(category + " is not a scope 3 category.");
 			}
 		}
+		for (var entry : notQuantified) {
+			if (!scope3Categories.contains(entry.category())) {
+				throw new GhgRuleViolationException(entry.category() + " is not declared as covered; only a declared "
+						+ "category can be marked as not quantified.");
+			}
+			if (trimToNull(entry.reason()) == null || entry.reason().trim().length() < 10) {
+				throw new GhgFieldException("notQuantified", "Say why " + entry.category() + " is not quantified "
+						+ "(at least 10 characters).");
+			}
+		}
 		inventory.setOperationalBoundary(scope3Categories, trimToNull(exclusionsRationale));
+		inventory.setScope3NotQuantified(notQuantified.stream()
+			.map(entry -> new Inventory.NotQuantified(entry.category(), entry.reason().trim()))
+			.toList());
 		return inventory;
 	}
 
@@ -831,6 +850,14 @@ public class InventoryService {
 	public MarketFactor setMarketFactor(UUID inventoryId, UUID facilityId, MarketInstrument instrument,
 			BigDecimal kgCo2ePerKwh, String source, boolean meetsQualityCriteria, String qualityNotes,
 			MarketFactor.Coverage coverage) {
+		return setMarketFactor(inventoryId, facilityId, instrument, kgCo2ePerKwh, source, qualityNotes, coverage,
+				meetsQualityCriteria ? MarketFactor.Quality.allMet() : MarketFactor.Quality.unanswered());
+	}
+
+	/** With the eight criteria answered one at a time and the certificate details (spec 07.6). */
+	public MarketFactor setMarketFactor(UUID inventoryId, UUID facilityId, MarketInstrument instrument,
+			BigDecimal kgCo2ePerKwh, String source, String qualityNotes, MarketFactor.Coverage coverage,
+			MarketFactor.Quality quality) {
 		var inventory = get(inventoryId);
 		requireEditable(inventory);
 		var facility = requireFacility(facilityId, inventory);
@@ -838,12 +865,17 @@ public class InventoryService {
 				&& coverage.periodEnd().isBefore(coverage.periodStart())) {
 			throw new InvalidPeriodException();
 		}
+		if (quality.criteria() != null && quality.criteria().size() != Scope2Criterion.values().length) {
+			throw new GhgFieldException("criteria", "Answer each of the eight Scope 2 Quality Criteria (a null "
+					+ "answer is 'not yet answered').");
+		}
+		var cleaned = new MarketFactor.Quality(quality.criteria(), trimToNull(quality.certificateId()),
+				trimToNull(quality.registry()), quality.vintage(), quality.retirementDate());
 		return marketFactors.findByInventoryIdAndFacilityId(inventoryId, facilityId).map(existing -> {
-			existing.update(instrument, kgCo2ePerKwh, source.trim(), meetsQualityCriteria, trimToNull(qualityNotes),
-					coverage);
+			existing.update(instrument, kgCo2ePerKwh, source.trim(), trimToNull(qualityNotes), coverage, cleaned);
 			return existing;
 		}).orElseGet(() -> marketFactors.save(new MarketFactor(inventory, facility, instrument, kgCo2ePerKwh,
-				source.trim(), meetsQualityCriteria, trimToNull(qualityNotes), coverage)));
+				source.trim(), trimToNull(qualityNotes), coverage, cleaned)));
 	}
 
 	/** Whether an adjusted residual mix is available for the instruments' markets, and its factor when it is (spec 07.2). */
@@ -1420,6 +1452,32 @@ public class InventoryService {
 			}
 		}
 
+		// spec 07.6: a declared scope 3 category with no lines, and lines in a category not declared
+		var declared = new java.util.LinkedHashSet<>(inventory.getScope3Categories());
+		var notQuantified = inventory.getScope3NotQuantified()
+			.stream()
+			.map(Inventory.NotQuantified::category)
+			.collect(Collectors.toSet());
+		var quantified = included.stream()
+			.filter(assignment -> assignment.getScope() == Scope.SCOPE_3 && assignment.getCategory() != null)
+			.map(InventoryAssignment::getCategory)
+			.collect(Collectors.toSet());
+		for (var category : declared) {
+			if (!quantified.contains(category) && !notQuantified.contains(category)) {
+				classificationFindings.add(new Finding(Severity.WARNING, "Scope 3 " + categoryName(category)
+						+ " is declared as covered but no included record is classified into it: a reader takes "
+						+ "'covered' to mean quantified. Classify records into it, or say in the declaration why it is "
+						+ "not quantified this year."));
+			}
+		}
+		for (var category : quantified) {
+			if (!declared.contains(category)) {
+				classificationFindings.add(new Finding(Severity.WARNING, "Records are classified into scope 3 "
+						+ categoryName(category) + " but the declaration does not list it as covered. Declare it, or "
+						+ "reclassify the records."));
+			}
+		}
+
 		var factorFindings = new ArrayList<Finding>();
 		var co2eOnlyNamed = new java.util.HashSet<UUID>();
 		for (var assignment : included) {
@@ -1483,8 +1541,14 @@ public class InventoryService {
 		}
 		for (var instrument : instruments.values()) {
 			if (!instrument.isMeetsQualityCriteria()) {
+				// spec 07.6: say which criteria fail or are unanswered
+				var unanswered = instrument.unansweredCount();
+				var notMet = instrument.notMetCount();
+				var why = notMet > 0 && unanswered > 0 ? notMet + " criteria not met and " + unanswered + " unanswered"
+						: notMet > 0 ? notMet + " of the eight criteria not met"
+								: unanswered + " of the eight criteria not yet answered";
 				factorFindings.add(new Finding(Severity.WARNING, "The instrument for " + instrument.getFacility().getName()
-						+ " does not meet the Scope 2 Quality Criteria: the market-based figure falls back to "
+						+ " does not meet the Scope 2 Quality Criteria (" + why + "): the market-based figure falls back to "
 						+ (Boolean.TRUE.equals(inventory.getResidualMixAvailable()) ? "the residual mix."
 								: "location-based.")));
 			}
@@ -1922,6 +1986,10 @@ public class InventoryService {
 
 	private static String scopeName(Scope scope) {
 		return scope.name().toLowerCase().replace('_', ' ');
+	}
+
+	private static String categoryName(ActivityCategory category) {
+		return category.name().toLowerCase().replace('_', ' ');
 	}
 
 	/** A unit with its dimension for error messages, e.g. "kg (mass)" or "widgets (unrecognized)". */

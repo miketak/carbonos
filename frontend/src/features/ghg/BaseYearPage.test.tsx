@@ -39,6 +39,7 @@ const inventory: Inventory = {
   uncertaintyStatement: null,
   scope3Categories: [],
   scope3ExclusionsRationale: null,
+  scope3NotQuantified: [],
   residualMixAvailable: null,
   residualMixKgCo2ePerKwh: null,
   finalRunId: 'run-base',

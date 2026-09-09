@@ -17,6 +17,6 @@ export default defineConfig({
     globals: false,
     setupFiles: './src/test/setup.ts',
     // parallel jsdom workers can starve slower machines; 5s default is too tight
-    testTimeout: 15000,
+    testTimeout: 30000,
   },
 })

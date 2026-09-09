@@ -106,8 +106,13 @@ class InventoryController {
 
 	@PutMapping("/inventories/{id}/operational-boundary")
 	InventoryResponse operationalBoundary(@PathVariable UUID id, @Valid @RequestBody OperationalBoundaryRequest body) {
-		return InventoryResponse
-			.from(inventoryService.setOperationalBoundary(id, body.scope3Categories(), body.exclusionsRationale()));
+		return InventoryResponse.from(inventoryService.setOperationalBoundary(id, body.scope3Categories(),
+				body.exclusionsRationale(), body.notQuantified() == null ? java.util.List.of()
+						: body.notQuantified()
+							.stream()
+							.map(entry -> new com.carbonos.ghg.internal.Inventory.NotQuantified(entry.category(),
+									entry.reason()))
+							.toList()));
 	}
 
 	// --- boundary (spec 03.1, 03.2) -------------------------------------------
@@ -283,7 +288,7 @@ class InventoryController {
 	MarketFactorResponse setMarketFactor(@PathVariable UUID id, @PathVariable UUID facilityId,
 			@Valid @RequestBody MarketFactorRequest body) {
 		return MarketFactorResponse.from(inventoryService.setMarketFactor(id, facilityId, body.instrumentType(),
-				body.kgCo2ePerKwh(), body.source(), body.meetsQualityCriteria(), body.qualityNotes(), body.coverage()));
+				body.kgCo2ePerKwh(), body.source(), body.qualityNotes(), body.coverage(), body.quality()));
 	}
 
 	/** Whether a residual mix is available for the instruments' markets (spec 07.2). */

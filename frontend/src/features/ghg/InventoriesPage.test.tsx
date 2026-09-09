@@ -32,6 +32,7 @@ const draft: Inventory = {
   uncertaintyStatement: null,
   scope3Categories: [],
   scope3ExclusionsRationale: null,
+  scope3NotQuantified: [],
   residualMixAvailable: null,
   residualMixKgCo2ePerKwh: null,
   finalRunId: null,

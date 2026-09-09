@@ -263,19 +263,38 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
           ))}
         </div>
         <p className="mt-3 text-sm font-medium">Scope 3 categories declared</p>
-        {operationalBoundary.scope3Categories.length === 0 ? (
-          <p className="text-sm text-ink-muted">No scope 3 categories declared.</p>
+        {report.byScope3Category.length === 0 ? (
+          <p className="text-sm text-ink-muted">No scope 3 categories declared or reported.</p>
         ) : (
-          <ul className="mt-1 flex flex-wrap gap-2 text-sm">
-            {operationalBoundary.scope3Categories.map((category) => (
-              <li key={category} className="rounded-full bg-teal/10 px-2.5 py-0.5 text-dark-teal">
-                {categoryLabel(category)}
-              </li>
-            ))}
-          </ul>
+          <table aria-label="Scope 3 declaration" className="mt-1 w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+                <th className="py-1.5 pr-3 font-semibold">Category</th>
+                <th className="py-1.5 pr-3 font-semibold">Declared</th>
+                <th className="py-1.5 pr-3 text-right font-semibold">Lines</th>
+                <th className="py-1.5 text-right font-semibold">t CO₂e</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.byScope3Category.map((row) => (
+                <tr key={row.category} className="border-b border-teal/5 last:border-0">
+                  <td className="py-1.5 pr-3">{categoryLabel(row.category)}</td>
+                  <td className="py-1.5 pr-3 text-ink-muted">
+                    {row.declared ? 'yes' : 'no: reported, not declared'}
+                  </td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums">{row.lineCount}</td>
+                  <td className="py-1.5 text-right tabular-nums">
+                    {row.lineCount === 0
+                      ? `declared, not quantified: ${row.notQuantifiedReason ?? 'no reason recorded'}`
+                      : formatTonnes(row.tCo2e)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
         {undeclared.length > 0 && (
-          <p className="mt-2 text-sm text-ink-muted">
+          <p className="mt-2 text-sm text-amber-700">
             Reported this run but not declared:{' '}
             {undeclared.map((category) => categoryLabel(category)).join(', ')}.
           </p>
@@ -389,10 +408,46 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
                         : ''}{' '}
                       · {instrument.source}
                       {instrument.meetsQualityCriteria
-                        ? ' · meets the Scope 2 Quality Criteria'
-                        : ' · does not meet the Scope 2 Quality Criteria'}
+                        ? ' · meets every Scope 2 Quality Criterion'
+                        : ` · not applied: ${instrument.notMetCount} criteria not met, ${instrument.unansweredCount} unanswered`}
                       {instrument.qualityNotes ? `: ${instrument.qualityNotes}` : ''}
                     </span>
+                    <span className="block text-xs text-ink-muted">
+                      {[
+                        instrument.certificateId ? `certificate ${instrument.certificateId}` : null,
+                        instrument.registry ? `registry ${instrument.registry}` : null,
+                        instrument.vintage ? `vintage ${instrument.vintage}` : null,
+                        instrument.retirementDate ? `retired ${instrument.retirementDate}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'no certificate details recorded'}
+                    </span>
+                    <ol
+                      aria-label={`${instrument.facilityName} criteria`}
+                      className="mt-0.5 grid gap-x-3 text-xs text-ink-muted md:grid-cols-2"
+                    >
+                      {instrument.criteria.map((criterion, index) => (
+                        <li key={criterion.code}>
+                          <span
+                            className={
+                              criterion.answer === 'MET'
+                                ? 'text-dark-teal'
+                                : criterion.answer === 'NOT_MET'
+                                  ? 'text-red-600'
+                                  : 'text-amber-700'
+                            }
+                          >
+                            {index + 1}.{' '}
+                            {criterion.answer === 'MET'
+                              ? 'met'
+                              : criterion.answer === 'NOT_MET'
+                                ? 'not met'
+                                : 'unanswered'}
+                          </span>{' '}
+                          {criterion.title}
+                        </li>
+                      ))}
+                    </ol>
                   </li>
                 ))}
               </ul>

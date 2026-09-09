@@ -18,6 +18,11 @@ export function OperationalBoundaryCard({ inventory }: { inventory: Inventory })
   const toast = useToast()
   const [selected, setSelected] = useState<ActivityCategory[]>(inventory.scope3Categories)
   const [rationale, setRationale] = useState(inventory.scope3ExclusionsRationale ?? '')
+  const [notQuantified, setNotQuantified] = useState<Partial<Record<ActivityCategory, string>>>(
+    Object.fromEntries(
+      inventory.scope3NotQuantified.map((entry) => [entry.category, entry.reason]),
+    ),
+  )
   const scope3 = categoriesForScope('SCOPE_3')
 
   const toggle = (category: ActivityCategory, checked: boolean) =>
@@ -30,23 +35,40 @@ export function OperationalBoundaryCard({ inventory }: { inventory: Inventory })
       <h2 className="text-xl">Operational boundary declaration</h2>
       <p className="text-sm text-ink-muted">
         Scope 1 and scope 2 are always covered. Declare which scope 3 categories this inventory
-        covers and why the others are excluded; the report prints this declaration.
+        covers and why the others are excluded; the report prints this declaration beside each
+        category's total. A declared category with no lines needs a reason, or the pre-flight warns:
+        a reader takes "covered" to mean quantified.
       </p>
       <fieldset className="mt-4">
         <legend className="text-sm font-medium">Scope 3 categories covered</legend>
         <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {scope3.map((entry) => (
-            <label key={entry.category} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                aria-label={entry.label}
-                checked={selected.includes(entry.category)}
-                disabled={!editable}
-                onChange={(event) => toggle(entry.category, event.target.checked)}
-                className="size-4 accent-teal"
-              />
-              {entry.label}
-            </label>
+            <div key={entry.category} className="flex flex-col gap-1">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  aria-label={entry.label}
+                  checked={selected.includes(entry.category)}
+                  disabled={!editable}
+                  onChange={(event) => toggle(entry.category, event.target.checked)}
+                  className="size-4 accent-teal"
+                />
+                {entry.label}
+              </label>
+              {selected.includes(entry.category) && (
+                <input
+                  aria-label={`${entry.label}: why not quantified this year`}
+                  placeholder="Not quantified this year because…"
+                  value={notQuantified[entry.category] ?? ''}
+                  disabled={!editable}
+                  maxLength={500}
+                  onChange={(event) =>
+                    setNotQuantified({ ...notQuantified, [entry.category]: event.target.value })
+                  }
+                  className="ml-6 rounded-lg border border-teal/20 bg-white/70 px-2 py-1 text-xs focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60"
+                />
+              )}
+            </div>
           ))}
         </div>
       </fieldset>
@@ -72,6 +94,12 @@ export function OperationalBoundaryCard({ inventory }: { inventory: Inventory })
                 {
                   scope3Categories: selected,
                   exclusionsRationale: rationale.trim() === '' ? undefined : rationale,
+                  notQuantified: selected
+                    .filter((category) => (notQuantified[category] ?? '').trim() !== '')
+                    .map((category) => ({
+                      category,
+                      reason: (notQuantified[category] ?? '').trim(),
+                    })),
                 },
                 {
                   onSuccess: () => toast('Operational boundary declaration saved.'),

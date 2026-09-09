@@ -80,6 +80,7 @@ const report: Report = {
     scope3Categories: ['BUSINESS_TRAVEL'],
     scope3CategoriesReported: [],
     exclusionsRationale: 'Other scope 3 categories are immaterial.',
+    notQuantified: [],
   },
   period: {
     periodStart: '2025-01-01',
@@ -118,6 +119,22 @@ const report: Report = {
         source: 'Supplier REC 2025',
         meetsQualityCriteria: true,
         qualityNotes: null,
+        criteria: [
+          'CONVEYS_ATTRIBUTE',
+          'UNIQUE_CLAIM',
+          'RETIRED_FOR_COMPANY',
+          'VINTAGE_MATCHES',
+          'SAME_MARKET',
+          'SUPPLIER_FACTOR_NET',
+          'RESIDUAL_MIX_FOR_BALANCE',
+          'DOCUMENTED',
+        ].map((code) => ({ code, title: code, answer: 'MET' as const })),
+        unansweredCount: 0,
+        notMetCount: 0,
+        certificateId: 'IREC-GH-2025-0417',
+        registry: 'I-TRACK',
+        vintage: 2025,
+        retirementDate: '2026-01-15',
         coveredKwh: 1000,
         periodStart: null,
         periodEnd: null,
@@ -268,7 +285,24 @@ const report: Report = {
     assuranceProvider: 'Verify Ghana Ltd',
     assuranceStatement: 'VG-2026-014',
   },
-  byScope3Category: [],
+  byScope3Category: [
+    {
+      category: 'BUSINESS_TRAVEL',
+      kgCo2e: 900,
+      tCo2e: 0.9,
+      lineCount: 1,
+      declared: true,
+      notQuantifiedReason: null,
+    },
+    {
+      category: 'INVESTMENTS',
+      kgCo2e: 0,
+      tCo2e: 0,
+      lineCount: 0,
+      declared: true,
+      notQuantifiedReason: 'the associate reports its own inventory',
+    },
+  ],
   byFacility: [
     {
       id: 'fac-1',
@@ -444,7 +478,7 @@ test('reports scope 2 market-based beside location-based, each gas, and biogenic
     '0.491 t CO₂e',
   )
   expect(within(scopes).getByText(/Energy attribute certificate/)).toBeInTheDocument()
-  expect(within(scopes).getByText(/meets the Scope 2 Quality Criteria/)).toBeInTheDocument()
+  expect(within(scopes).getByText(/meets every Scope 2 Quality Criterion/)).toBeInTheDocument()
   expect(within(scopes).getByText(/The total uses the location-based scope 2/)).toBeInTheDocument()
   // the Scope 2 Guidance's residual-mix disclosure
   expect(within(scopes).getByText(/may result in double counting/)).toBeInTheDocument()
@@ -482,7 +516,7 @@ test('names every assessment report when a blend kept another one', async () => 
 test('prints the operational boundary declaration and the exclusions grouped by reason', async () => {
   renderRunDetailPage()
 
-  expect(await screen.findByText('6. Business travel')).toBeInTheDocument()
+  expect((await screen.findAllByText('6. Business travel'))[0]).toBeInTheDocument()
   expect(screen.getByText(/Other scope 3 categories are immaterial/)).toBeInTheDocument()
 
   const exclusions = screen.getByRole('heading', { name: /^09exclusions$/i }).closest('div')!
@@ -681,5 +715,22 @@ test('a published run reads as published and lists what came after; a correction
   expect(screen.getByText('camp LPG was material after all')).toBeInTheDocument()
   expect(
     screen.getByText(/1 line added, 0 removed, 0 changed; \+1\.33 t CO₂e in total/),
+  ).toBeInTheDocument()
+})
+
+test("prints the declaration as a table and each instrument's criteria outcomes (spec 07.6)", async () => {
+  renderRunDetailPage()
+
+  const declaration = await screen.findByRole('table', { name: 'Scope 3 declaration' })
+  expect(within(declaration).getByText('15. Investments')).toBeInTheDocument()
+  expect(
+    within(declaration).getByText(
+      /declared, not quantified: the associate reports its own inventory/,
+    ),
+  ).toBeInTheDocument()
+  const criteria = screen.getByRole('list', { name: 'Tema Plant criteria' })
+  expect(within(criteria).getAllByText(/^\d\. met$/)).toHaveLength(8)
+  expect(
+    screen.getByText(/certificate IREC-GH-2025-0417 · registry I-TRACK · vintage 2025/),
   ).toBeInTheDocument()
 })

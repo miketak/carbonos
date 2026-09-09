@@ -478,6 +478,8 @@ export interface Inventory {
   /** The operational boundary declaration (spec 07.1). */
   scope3Categories: ActivityCategory[]
   scope3ExclusionsRationale: string | null
+  /** Declared categories not quantified this year, and why (spec 07.6). */
+  scope3NotQuantified: { category: ActivityCategory; reason: string }[]
   /** Scope 2 Guidance (spec 07.2): whether a residual mix is available, and its factor when it is. */
   residualMixAvailable: boolean | null
   residualMixKgCo2ePerKwh: number | null
@@ -535,6 +537,8 @@ export interface ReportMetadataInput {
 export interface OperationalBoundaryInput {
   scope3Categories: ActivityCategory[]
   exclusionsRationale?: string
+  /** Declared categories not quantified this year, and why (spec 07.6). */
+  notQuantified?: { category: ActivityCategory; reason: string }[]
 }
 
 /** Why an operation is left out of the boundary (spec 07.2). */
@@ -958,6 +962,13 @@ export interface RunDetail {
   exclusions: RunExclusion[]
 }
 
+/** One Scope 2 Quality Criterion and the instrument's answer to it (spec 07.6). */
+export interface CriterionAnswer {
+  code: string
+  title: string
+  answer: 'MET' | 'NOT_MET' | 'UNANSWERED'
+}
+
 /** A market-based scope 2 factor for one facility in one inventory (spec 07.1). */
 export interface MarketFactor {
   id: string
@@ -966,9 +977,17 @@ export interface MarketFactor {
   instrumentType: MarketInstrument
   kgCo2ePerKwh: number
   source: string
-  /** Whether the instrument meets the eight Scope 2 Quality Criteria (spec 07.2). */
+  /** Whether every one of the eight Scope 2 Quality Criteria is met (spec 07.2, 07.6). */
   meetsQualityCriteria: boolean
   qualityNotes: string | null
+  /** The eight criteria answered one at a time, and the certificate behind the instrument (spec 07.6). */
+  criteria: CriterionAnswer[]
+  unansweredCount: number
+  notMetCount: number
+  certificateId: string | null
+  registry: string | null
+  vintage: number | null
+  retirementDate: string | null
   /** The kWh the instrument covers (null on rows older than spec 07.3, which cover every kWh) and its period. */
   coveredKwh: number | null
   periodStart: string | null
@@ -979,7 +998,12 @@ export interface MarketFactorInput {
   instrumentType: MarketInstrument
   kgCo2ePerKwh: number
   source: string
-  meetsQualityCriteria: boolean
+  /** Eight answers, null for unanswered (spec 07.6); met only when all eight are true. */
+  criteria: (boolean | null)[]
+  certificateId?: string
+  registry?: string
+  vintage?: number
+  retirementDate?: string
   qualityNotes?: string
   coveredKwh: number
   periodStart?: string
@@ -1088,6 +1112,7 @@ export interface Report {
     scope3Categories: ActivityCategory[]
     scope3CategoriesReported: ActivityCategory[]
     exclusionsRationale: string | null
+    notQuantified: { category: ActivityCategory; reason: string }[]
   }
   period: {
     periodStart: string
@@ -1154,11 +1179,14 @@ export interface Report {
   run: Run
   /** The header block (spec 07.4). */
   header: ReportHeader
+  /** Every declared category and every category with lines (spec 07.6). */
   byScope3Category: {
     category: ActivityCategory
     kgCo2e: number
     tCo2e: number
     lineCount: number
+    declared: boolean
+    notQuantifiedReason: string | null
   }[]
   byFacility: Breakdown[]
   byEntity: Breakdown[]

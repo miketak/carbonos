@@ -45,6 +45,7 @@ import {
   excludeFacility,
   setBoundaryTreatment,
   setEntityTreatment,
+  setOperationalBoundary,
   syncAssignments,
   voidRun,
   withdrawFinal,
@@ -105,6 +106,7 @@ const inventory: Inventory = {
   uncertaintyStatement: null,
   scope3Categories: [],
   scope3ExclusionsRationale: null,
+  scope3NotQuantified: [],
   residualMixAvailable: null,
   residualMixKgCo2ePerKwh: null,
   finalRunId: null,
@@ -350,6 +352,7 @@ beforeEach(() => {
   vi.mocked(supersedeInventory).mockReset()
   vi.mocked(setBoundaryTreatment).mockReset()
   vi.mocked(setEntityTreatment).mockReset()
+  vi.mocked(setOperationalBoundary).mockReset()
   vi.mocked(excludeFacility).mockReset()
   vi.mocked(listEmissionFactors)
     .mockReset()
@@ -1102,6 +1105,29 @@ test('a correction asks for its reason and the page names what an inventory inhe
     expect(supersedeInventory).toHaveBeenCalledWith('inv-1', {
       name: '2025 Corporate Inventory (correction)',
       reason: 'camp LPG was material after all',
+    }),
+  )
+})
+
+test('a declared category can say why it is not quantified this year (spec 07.6)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(setOperationalBoundary).mockResolvedValue(inventory)
+  renderPage()
+
+  await user.click(await screen.findByLabelText('15. Investments'))
+  await user.type(
+    screen.getByLabelText('15. Investments: why not quantified this year'),
+    'the associate reports its own inventory',
+  )
+  await user.click(screen.getByRole('button', { name: /save declaration/i }))
+
+  await waitFor(() =>
+    expect(setOperationalBoundary).toHaveBeenCalledWith('inv-1', {
+      scope3Categories: ['INVESTMENTS'],
+      exclusionsRationale: undefined,
+      notQuantified: [
+        { category: 'INVESTMENTS', reason: 'the associate reports its own inventory' },
+      ],
     }),
   )
 })
