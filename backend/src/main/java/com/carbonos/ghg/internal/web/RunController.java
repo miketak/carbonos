@@ -4,20 +4,18 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.web.dto.InventoryResponse;
+import com.carbonos.ghg.internal.web.dto.ReasonRequest;
 import com.carbonos.ghg.internal.web.dto.RunDetailResponse;
 import com.carbonos.ghg.internal.web.dto.RunRequest;
 import com.carbonos.ghg.internal.web.dto.RunResponse;
@@ -62,9 +60,9 @@ class RunController {
 		return InventoryResponse.from(inventoryService.designateFinal(run.getInventory().getId(), id));
 	}
 
-	@DeleteMapping("/runs/{id}")
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	void delete(@PathVariable UUID id) {
-		inventoryService.deleteRun(id);
+	/** Voids the run with a reason (spec 05.2); it stays on the record with its number. */
+	@PostMapping("/runs/{id}/void")
+	RunResponse voidRun(@PathVariable UUID id, @Valid @RequestBody ReasonRequest body) {
+		return RunResponse.from(inventoryService.voidRun(id, body.reason()));
 	}
 }

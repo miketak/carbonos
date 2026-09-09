@@ -54,6 +54,7 @@ public class InventoryService {
 	private final InventoryAssignmentRepository assignments;
 	private final MarketFactorRepository marketFactors;
 	private final GhgRunRepository runs;
+	private final GhgAuditEventRepository auditEvents;
 	private final BaseYearService baseYears;
 	private final ApplicationEventPublisher events;
 	private final GhgAccess access;
@@ -64,8 +65,8 @@ public class InventoryService {
 			EmissionFactorRepository emissionFactors, InventoryRepository inventories,
 			BoundaryTreatmentRepository boundaryTreatments, BoundaryVersionRepository boundaryVersions,
 			BoundaryExclusionRepository boundaryExclusions, InventoryAssignmentRepository assignments,
-			MarketFactorRepository marketFactors, GhgRunRepository runs, BaseYearService baseYears,
-			ApplicationEventPublisher events, GhgAccess access, UnitConverter units) {
+			MarketFactorRepository marketFactors, GhgRunRepository runs, GhgAuditEventRepository auditEvents,
+			BaseYearService baseYears, ApplicationEventPublisher events, GhgAccess access, UnitConverter units) {
 		this.organizations = organizations;
 		this.entities = entities;
 		this.facilities = facilities;
@@ -78,6 +79,7 @@ public class InventoryService {
 		this.assignments = assignments;
 		this.marketFactors = marketFactors;
 		this.runs = runs;
+		this.auditEvents = auditEvents;
 		this.baseYears = baseYears;
 		this.events = events;
 		this.access = access;
@@ -465,17 +467,31 @@ public class InventoryService {
 		if (!run.getInventory().getId().equals(inventoryId)) {
 			throw GhgNotFoundException.run(runId);
 		}
+		if (run.isVoided()) {
+			throw new GhgRuleViolationException("Run " + run.getRunNo() + " is voided and cannot be designated final.");
+		}
 		inventory.designateFinal(runId);
 		return inventory;
 	}
 
-	public Inventory withdrawFinal(UUID inventoryId) {
+	/** Withdraws the final designation; the reason is recorded as an audit event (spec 05.2). */
+	public Inventory withdrawFinal(UUID inventoryId, String reason) {
 		var inventory = get(inventoryId);
 		if (inventory.getStatus() != InventoryStatus.FINAL) {
 			throw new GhgRuleViolationException("No run is designated final.");
 		}
+		var run = runs.findById(inventory.getFinalRunId()).orElse(null);
 		inventory.withdrawFinal();
+		auditEvents.save(new GhgAuditEvent(inventoryId, run, GhgAuditEvent.Action.FINAL_WITHDRAWN,
+				access.currentUserId(), access.currentUserEmail(), reason.trim()));
 		return inventory;
+	}
+
+	/** The recorded acts on an inventory, newest first (spec 05.2). */
+	@Transactional(readOnly = true)
+	public List<GhgAuditEvent> events(UUID inventoryId) {
+		get(inventoryId);
+		return auditEvents.findAllByInventoryIdOrderByCreatedAtDesc(inventoryId);
 	}
 
 	/** Issues the report: the inventory becomes a record and nothing on it may change afterwards. */
@@ -1049,7 +1065,9 @@ public class InventoryService {
 			.stream()
 			.collect(Collectors.toMap(factor -> factor.getFacility().getId(), Function.identity()));
 		var gwp = inventory.getGwpSet();
-		var run = new GhgRun(inventory, label.trim());
+		// spec 05.2: one more than the highest number ever issued, voided runs included
+		var runNo = runs.findTopByInventoryIdOrderByRunNoDesc(inventoryId).map(last -> last.getRunNo() + 1).orElse(1);
+		var run = new GhgRun(inventory, runNo, label.trim());
 		// spec 07.3: each instrument is applied to the kWh it covers, line by line, until used up
 		var remainingCoverage = new HashMap<UUID, BigDecimal>();
 		instruments.forEach((facilityId, instrument) -> remainingCoverage.put(facilityId, instrument.getCoveredKwh()));
@@ -1100,17 +1118,28 @@ public class InventoryService {
 		return run;
 	}
 
-	public void deleteRun(UUID id) {
+	/**
+	 * Voids a run with a reason (spec 05.2). The run keeps its number, lines
+	 * and totals; nothing is deleted. A final run must have its designation
+	 * withdrawn first, and a published inventory's runs are a record.
+	 */
+	public GhgRun voidRun(UUID id, String reason) {
 		var run = getRun(id);
 		var inventory = run.getInventory();
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
-			throw new GhgRuleViolationException("A published inventory's runs are a record and cannot be deleted.");
+			throw new GhgRuleViolationException("A published inventory's runs are a record and cannot be voided.");
 		}
 		if (id.equals(inventory.getFinalRunId())) {
-			// deleting the final run withdraws the designation without promoting another
-			inventories.findById(inventory.getId()).ifPresent(Inventory::withdrawFinal);
+			throw new GhgRuleViolationException("Run " + run.getRunNo()
+					+ " is designated final. Withdraw the designation, with a reason, before voiding it.");
 		}
-		runs.delete(run);
+		if (run.isVoided()) {
+			throw new GhgRuleViolationException("Run " + run.getRunNo() + " is already voided.");
+		}
+		run.markVoid(access.currentUserId(), access.currentUserEmail(), reason.trim());
+		auditEvents.save(new GhgAuditEvent(inventory.getId(), run, GhgAuditEvent.Action.RUN_VOIDED,
+				access.currentUserId(), access.currentUserEmail(), reason.trim()));
+		return run;
 	}
 
 	// --- market-based scope 2 (spec 07.3) --------------------------------------

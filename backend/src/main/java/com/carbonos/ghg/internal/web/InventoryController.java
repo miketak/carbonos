@@ -21,6 +21,7 @@ import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.Inventory;
 import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.web.dto.AssignmentResponse;
+import com.carbonos.ghg.internal.web.dto.AuditEventResponse;
 import com.carbonos.ghg.internal.web.dto.BoundaryEntityResponse;
 import com.carbonos.ghg.internal.web.dto.BoundaryExclusionRequest;
 import com.carbonos.ghg.internal.web.dto.BoundaryExclusionResponse;
@@ -35,6 +36,7 @@ import com.carbonos.ghg.internal.web.dto.InventoryResponse;
 import com.carbonos.ghg.internal.web.dto.MarketFactorRequest;
 import com.carbonos.ghg.internal.web.dto.MarketFactorResponse;
 import com.carbonos.ghg.internal.web.dto.OperationalBoundaryRequest;
+import com.carbonos.ghg.internal.web.dto.ReasonRequest;
 import com.carbonos.ghg.internal.web.dto.ResidualMixRequest;
 import com.carbonos.ghg.internal.web.dto.SupersedeRequest;
 import com.carbonos.ghg.internal.web.dto.ValidationReportResponse;
@@ -209,8 +211,14 @@ class InventoryController {
 	}
 
 	@PostMapping("/inventories/{id}/withdraw-final")
-	InventoryResponse withdrawFinal(@PathVariable UUID id) {
-		return InventoryResponse.from(inventoryService.withdrawFinal(id));
+	InventoryResponse withdrawFinal(@PathVariable UUID id, @Valid @RequestBody ReasonRequest body) {
+		return InventoryResponse.from(inventoryService.withdrawFinal(id, body.reason()));
+	}
+
+	/** The recorded acts on the inventory, newest first (spec 05.2). */
+	@GetMapping("/inventories/{id}/events")
+	List<AuditEventResponse> events(@PathVariable UUID id) {
+		return inventoryService.events(id).stream().map(AuditEventResponse::from).toList();
 	}
 
 	@PostMapping("/inventories/{id}/publish")

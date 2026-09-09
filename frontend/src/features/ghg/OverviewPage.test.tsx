@@ -51,6 +51,7 @@ const inventory: Inventory = {
 const run: Run = {
   id: 'run-1',
   inventoryId: 'inv-1',
+  runNo: 1,
   label: 'Run 004',
   periodStart: '2025-01-01',
   periodEnd: '2025-12-31',
@@ -77,6 +78,10 @@ const run: Run = {
   },
   biogenicCo2Kg: 0,
   isFinal: true,
+  voided: false,
+  voidedAt: null,
+  voidedBy: null,
+  voidReason: null,
   boundaryVersionId: 'bv-1',
   boundaryVersionNo: 1,
   createdAt: '2026-08-29T00:00:00Z',

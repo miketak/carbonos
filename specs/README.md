@@ -23,6 +23,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 04.1 | [Scope as an accounting decision](04.1-scope-as-accounting-decision.md) | Ch. 4, App. F | Implemented |
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
+| 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |
 | 06 | [Tracking emissions over time](06-tracking-emissions-over-time.md) | Ch. 5 | Implemented |
 | 06.1 | [Recalculation policy conformance](06.1-recalculation-policy-conformance.md) | Ch. 5, 9 | Implemented |
 | 07 | [Reporting and verification](07-reporting-and-verification.md) | Ch. 9, 10 | Implemented |

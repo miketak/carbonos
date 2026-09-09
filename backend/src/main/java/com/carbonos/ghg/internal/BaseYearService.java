@@ -125,6 +125,9 @@ public class BaseYearService {
 				throw new GhgRuleViolationException("The recalculated base must be a run of the base-year inventory '"
 						+ baseYear.getInventory().getName() + "'.");
 			}
+			if (run.isVoided()) {
+				throw new GhgRuleViolationException("Run " + run.getRunNo() + " is voided and cannot be the recalculated base.");
+			}
 		}
 		recalculation.decide(decision, decision == RecalculationStatus.RECALCULATED ? runId : null, trimToNull(note),
 				access.currentUserEmail());

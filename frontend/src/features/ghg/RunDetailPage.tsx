@@ -100,8 +100,18 @@ export function RunDetailPage() {
         {report && (
           <>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl">{report.run.label}</h1>
+              <span className="font-mono text-sm text-ink-muted">
+                #{String(report.run.runNo).padStart(3, '0')}
+              </span>
+              <h1 className={`text-2xl ${report.run.voided ? 'line-through' : ''}`}>
+                {report.run.label}
+              </h1>
               <ApproachBadge approach={report.run.consolidationApproach} />
+              {report.run.voided && (
+                <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                  VOIDED
+                </span>
+              )}
               {report.run.isFinal && (
                 <span className="rounded-full bg-accent-green/25 px-2.5 py-0.5 text-xs font-bold text-dark-teal">
                   FINAL
@@ -117,6 +127,14 @@ export function RunDetailPage() {
         )}
       </div>
 
+      {report?.run.voided && (
+        <GlassCard role="alert" className="border border-slate-300 bg-slate-100/70 p-4 text-sm">
+          <span className="font-semibold">This run is voided</span> and must not be relied on.
+          Voided by {report.run.voidedBy ?? 'unknown'}
+          {report.run.voidedAt ? ` on ${new Date(report.run.voidedAt).toLocaleString()}` : ''}:{' '}
+          {report.run.voidReason}. The figures are kept on the record as calculated.
+        </GlassCard>
+      )}
       {report && <ReportBody report={report} organizationId={organizationId} />}
     </div>
   )
