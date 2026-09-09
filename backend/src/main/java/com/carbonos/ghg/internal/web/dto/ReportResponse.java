@@ -41,7 +41,54 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		List<RunExclusionResponse> exclusions, List<RunLineResponse> lines, RunResponse run, Header header,
 		List<CategoryFigure> byScope3Category, List<Breakdown> byFacility, List<Breakdown> byEntity,
 		List<Breakdown> byCountry, List<FactorRow> factors, List<Intensity> intensity,
-		List<ExclusionSummary> exclusionSummary, DataQualitySection dataQuality) {
+		List<ExclusionSummary> exclusionSummary, DataQualitySection dataQuality, SincePublication sincePublication,
+		Correction correction) {
+
+	/** What happened after publication (spec 05.3): later acts, later inventories, facts that changed. */
+	public record SincePublication(List<AuditEventResponse> events, List<LaterInventory> laterInventories,
+			List<ChangedRecord> changedRecords) {
+	}
+
+	public record LaterInventory(UUID id, String name, String periodLabel, InventoryStatus status) {
+	}
+
+	public record ChangedRecord(UUID activityId, String activityType, String field, String was, String now) {
+	}
+
+	/** What a correction restates and how its lines differ from the published run (spec 05.3). */
+	public record Correction(UUID ofInventoryId, String ofName, String reason, UUID publishedRunId, int addedLines,
+			int removedLines, int changedLines, BigDecimal deltaKgCo2e, BigDecimal deltaTCo2e) {
+	}
+
+	/** The same report with the blocks that describe what came after (spec 05.3). */
+	public ReportResponse withAfter(SincePublication sincePublication, Correction correction) {
+		return new ReportResponse(company, operationalBoundary, period, emissions, byGas, biogenicCo2Kg, biogenicCo2T,
+				baseYear, methodology, boundaryExclusions, exclusions, lines, run, header, byScope3Category, byFacility,
+				byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality, sincePublication, correction);
+	}
+
+	/**
+	 * The same report pointing at the inventory that superseded it. Lineage is not part of the frozen figures: a
+	 * published record keeps its numbers but always names the correction that replaced it (spec 05.3).
+	 */
+	public ReportResponse withSupersededBy(UUID supersededById, String supersededBy) {
+		var p = period == null ? null
+				: new Period(period.periodStart(), period.periodEnd(), period.inventoryName(), period.status(),
+						period.publishedAt(), supersededById);
+		if (header == null) {
+			return new ReportResponse(company, operationalBoundary, p, emissions, byGas, biogenicCo2Kg, biogenicCo2T,
+					baseYear, methodology, boundaryExclusions, exclusions, lines, run, header, byScope3Category,
+					byFacility, byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality, sincePublication,
+					correction);
+		}
+		var h = new Header(header.organizationName(), header.address(), header.contact(), header.periodLabel(),
+				header.periodStart(), header.periodEnd(), header.preparedBy(), header.preparedAt(), header.approvedBy(),
+				header.publishedBy(), header.publishedAt(), header.version(), header.supersedes(), supersededBy,
+				header.assuranceLevel(), header.assuranceProvider(), header.assuranceStatement());
+		return new ReportResponse(company, operationalBoundary, p, emissions, byGas, biogenicCo2Kg, biogenicCo2T,
+				baseYear, methodology, boundaryExclusions, exclusions, lines, run, h, byScope3Category, byFacility,
+				byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality, sincePublication, correction);
+	}
 
 	/** The records left out under one reason, with the emissions the accountant estimated for them (spec 04.4). */
 	public record ExclusionSummary(ExclusionReason reason, int recordCount, BigDecimal estimatedKgCo2e,
@@ -306,7 +353,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 						: version.getExclusions().stream().map(BoundaryExclusionResponse::from).toList(),
 				run.getExclusions().stream().map(RunExclusionResponse::from).toList(), lines,
 				RunResponse.from(run), header, byScope3Category, byFacility, byEntity, byCountry, factorRows,
-				intensity, exclusionSummary, dataQuality);
+				intensity, exclusionSummary, dataQuality, null, null);
 	}
 
 	/** Excluded records grouped by reason with the estimated magnitude summed (spec 04.4, Chapter 9). */

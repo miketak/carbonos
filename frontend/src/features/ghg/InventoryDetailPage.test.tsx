@@ -24,6 +24,7 @@ import {
   classifyAssignment,
   excludeAssignment,
   freezeInventory,
+  getInheritance,
   getBoundary,
   getBoundaryVersion,
   getInventory,
@@ -40,6 +41,7 @@ import {
   listOrganizationUnits,
   publishInventory,
   reopenInventory,
+  supersedeInventory,
   excludeFacility,
   setBoundaryTreatment,
   setEntityTreatment,
@@ -108,6 +110,8 @@ const inventory: Inventory = {
   finalRunId: null,
   status: 'DRAFT',
   supersededById: null,
+  copiedFromId: null,
+  correctionReason: null,
   publishedAt: null,
   currentBoundaryVersionId: null,
   currentBoundaryVersionNo: null,
@@ -258,6 +262,8 @@ const unclassified: Assignment = {
   inheritedLeaseType: null,
   suggestedFactorId: null,
   suggestedFactorName: null,
+  inherited: false,
+  changedSincePublication: null,
 }
 
 const classified: Assignment = {
@@ -336,10 +342,12 @@ beforeEach(() => {
   vi.mocked(syncAssignments).mockReset()
   vi.mocked(classifyAssignment).mockReset()
   vi.mocked(excludeAssignment).mockReset()
+  vi.mocked(getInheritance).mockReset().mockResolvedValue(null)
   vi.mocked(freezeInventory).mockReset()
   vi.mocked(reopenInventory).mockReset()
   vi.mocked(withdrawFinal).mockReset()
   vi.mocked(publishInventory).mockReset()
+  vi.mocked(supersedeInventory).mockReset()
   vi.mocked(setBoundaryTreatment).mockReset()
   vi.mocked(setEntityTreatment).mockReset()
   vi.mocked(excludeFacility).mockReset()
@@ -898,6 +906,8 @@ test('a record in mass against a factor per litre converts through the chosen de
     inheritedLeaseType: null,
     suggestedFactorId: null,
     suggestedFactorName: null,
+    inherited: false,
+    changedSincePublication: null,
   }
   vi.mocked(searchAssignments).mockResolvedValue(pageOf([inTonnes]))
   vi.mocked(classifyAssignment).mockResolvedValue({ ...inTonnes, densityId: 'den-2' })
@@ -1049,6 +1059,49 @@ test('the activity view suggests the grid factor of the facility and names an in
       emissionFactorId: 'ef-grid',
       scope: 'SCOPE_2',
       category: 'PURCHASED_ELECTRICITY',
+    }),
+  )
+})
+
+test('a correction asks for its reason and the page names what an inventory inherited (spec 05.3)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'PUBLISHED',
+    finalRunId: 'run-1',
+    publishedAt: '2026-09-01T10:00:00Z',
+    copiedFromId: 'inv-0',
+  })
+  vi.mocked(getInheritance).mockResolvedValue({
+    sourceInventoryId: 'inv-0',
+    sourceName: '2024 Corporate',
+    inherited: 12,
+    undecided: 3,
+    correctionReason: null,
+  })
+  vi.mocked(supersedeInventory).mockResolvedValue({ ...inventory, id: 'inv-9', name: 'Fix' })
+  renderPage()
+
+  expect(
+    await screen.findByText(/12 decisions inherited, 3 records of this period/),
+  ).toBeInTheDocument()
+  expect(
+    screen.getByText(/shows each record as the published run snapshotted it/),
+  ).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: /create correction/i }))
+  const dialog = await screen.findByRole('dialog', { name: /create a correction/i })
+  const create = within(dialog).getByRole('button', { name: /^create correction$/i })
+  expect(create).toBeDisabled()
+  await user.type(
+    within(dialog).getByLabelText('Reason for the correction'),
+    'camp LPG was material after all',
+  )
+  await waitFor(() => expect(create).toBeEnabled())
+  await user.click(create)
+  await waitFor(() =>
+    expect(supersedeInventory).toHaveBeenCalledWith('inv-1', {
+      name: '2025 Corporate Inventory (correction)',
+      reason: 'camp LPG was material after all',
     }),
   )
 })

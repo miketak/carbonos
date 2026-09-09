@@ -1,6 +1,7 @@
 package com.carbonos.ghg.internal.web.dto;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import com.carbonos.ghg.internal.ConsolidationApproach;
 import com.carbonos.ghg.internal.GwpSet;
@@ -22,5 +23,7 @@ public record InventoryRequest( //
 		GwpSet gwpSet, //
 		StraddleTreatment straddleTreatment, //
 		// start with every operation the approach includes in the boundary (spec 03.4); create only
-		Boolean prefillBoundary) {
+		Boolean prefillBoundary, //
+		// copy the boundary, instruments, declaration and every assignment from this inventory (spec 05.3)
+		UUID copyFromInventoryId) {
 }

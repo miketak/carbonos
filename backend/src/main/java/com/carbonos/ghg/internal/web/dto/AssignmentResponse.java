@@ -24,7 +24,7 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 		boolean classified, Scope scope, ActivityCategory category, LeaseType leaseType, UUID emissionFactorId,
 		String factorName, String scopeJustification, boolean proxy, String proxyJustification, UUID densityId,
 		String densityMaterial, BigDecimal densityKgPerLitre, LeaseType inheritedLeaseType, UUID suggestedFactorId,
-		String suggestedFactorName) {
+		String suggestedFactorName, boolean inherited, List<String> changedSincePublication) {
 
 	public static AssignmentResponse from(InventoryAssignment assignment) {
 		return from(assignment, null);
@@ -32,8 +32,40 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 
 	/** With the grid factor suggested for the record's facility (spec 03.4), when there is one. */
 	public static AssignmentResponse from(InventoryAssignment assignment, InventoryService.Suggestion suggestion) {
+		return from(assignment, suggestion, null);
+	}
+
+	/**
+	 * For a published inventory (spec 05.3): the facts as the published run
+	 * snapshotted them, and which fields have changed since.
+	 */
+	public static AssignmentResponse from(InventoryAssignment assignment, InventoryService.Suggestion suggestion,
+			InventoryService.PublishedFact published) {
 		var activity = assignment.getActivity();
 		var inheritedLease = activity.getFacility().leaseOver(activity.getPeriodStart(), activity.getPeriodEnd());
+		List<String> changed = null;
+		var activityType = activity.getActivityType();
+		var quantity = activity.getQuantity();
+		var unit = activity.getUnit();
+		var periodStart = activity.getPeriodStart();
+		var periodEnd = activity.getPeriodEnd();
+		var evidenceRef = activity.getEvidenceRef();
+		if (published != null) {
+			changed = new java.util.ArrayList<>();
+			if (!published.activityType().equals(activityType)) changed.add("activityType");
+			if (published.quantity().compareTo(quantity) != 0) changed.add("quantity");
+			if (!published.unit().equalsIgnoreCase(unit)) changed.add("unit");
+			if (!published.periodStart().equals(periodStart)) changed.add("periodStart");
+			if (!published.periodEnd().equals(periodEnd)) changed.add("periodEnd");
+			if (published.evidenceRef() != null && !published.evidenceRef().equals(evidenceRef)) changed.add("evidenceRef");
+			if (activity.isDeleted()) changed.add("removed");
+			activityType = published.activityType();
+			quantity = published.quantity();
+			unit = published.unit();
+			periodStart = published.periodStart();
+			periodEnd = published.periodEnd();
+			evidenceRef = published.evidenceRef() != null ? published.evidenceRef() : evidenceRef;
+		}
 		var factor = assignment.getEmissionFactor();
 		var stream = activity.getStream();
 		var density = assignment.getDensity();
@@ -42,9 +74,9 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 				stream == null ? null : stream.getName(), stream == null ? null : stream.getKind(),
 				stream == null ? null : stream.isContractorOperated(),
 				stream == null ? null : stream.defaultScope(), stream == null ? null : stream.defaultCategory(),
-				stream == null ? null : stream.getKind().categories(), activity.getActivityType(), activity.getQuantity(),
-				activity.getUnit(), activity.getPeriodStart(), activity.getPeriodEnd(), activity.getDataQuality(),
-				activity.getDataQualityTier(), activity.getUncertaintyPercent(), activity.getEvidenceRef(),
+				stream == null ? null : stream.getKind().categories(), activityType, quantity, unit, periodStart,
+				periodEnd, activity.getDataQuality(), activity.getDataQualityTier(), activity.getUncertaintyPercent(),
+				evidenceRef,
 				assignment.isIncluded(), assignment.getExclusionReason(), assignment.getExclusionDetail(),
 				assignment.getExclusionJustification(), assignment.getEstimatedKgCo2e(),
 				assignment.isClassified(), assignment.getScope(), assignment.getCategory(),
@@ -53,6 +85,7 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 				assignment.getProxyJustification(), density == null ? null : density.getId(),
 				density == null ? null : density.getMaterial(), density == null ? null : density.getKgPerLitre(),
 				inheritedLease, suggestion == null ? null : suggestion.factorId(),
-				suggestion == null ? null : suggestion.factorName());
+				suggestion == null ? null : suggestion.factorName(), assignment.isInherited(),
+				changed == null ? null : List.copyOf(changed));
 	}
 }

@@ -175,6 +175,59 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
     <>
       <Section number={0} title="Report" stagger={0}>
         <ReportHeaderBlock header={report.header} />
+        {report.correction && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-sm">
+            <p className="font-semibold">Correction of {report.correction.ofName}</p>
+            <p className="mt-1">{report.correction.reason}</p>
+            <p className="mt-1 text-ink-muted">
+              Against the published run: {report.correction.addedLines} line
+              {report.correction.addedLines === 1 ? '' : 's'} added,{' '}
+              {report.correction.removedLines} removed, {report.correction.changedLines} changed;{' '}
+              {report.correction.deltaKgCo2e >= 0 ? '+' : ''}
+              {formatCo2e(report.correction.deltaKgCo2e)} in total.
+            </p>
+          </div>
+        )}
+        {report.sincePublication && (
+          <div className="mt-3 rounded-lg border border-teal/20 bg-white/40 p-3 text-sm">
+            <p className="font-semibold">Since publication</p>
+            <p className="text-xs text-ink-muted">
+              The report above reads exactly as it was published. What came after is listed here and
+              nowhere else.
+            </p>
+            {report.sincePublication.changedRecords.length === 0 &&
+              report.sincePublication.laterInventories.length === 0 &&
+              report.sincePublication.events.length === 0 && (
+                <p className="mt-1 text-ink-muted">Nothing has changed since.</p>
+              )}
+            {report.sincePublication.changedRecords.length > 0 && (
+              <ul className="mt-1 flex flex-col gap-0.5">
+                {report.sincePublication.changedRecords.map((change) => (
+                  <li key={`${change.activityId}:${change.field}`}>
+                    <span className="font-medium">{change.activityType}</span>: {change.field}{' '}
+                    {change.was} → {change.now}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {report.sincePublication.laterInventories.length > 0 && (
+              <p className="mt-1 text-ink-muted">
+                Later inventories:{' '}
+                {report.sincePublication.laterInventories
+                  .map((later) => `${later.name} (${later.periodLabel})`)
+                  .join(', ')}
+                .
+              </p>
+            )}
+            {report.sincePublication.events.length > 0 && (
+              <p className="mt-1 text-ink-muted">
+                {report.sincePublication.events.length} act
+                {report.sincePublication.events.length === 1 ? '' : 's'} on the inventory since
+                publication; see its history.
+              </p>
+            )}
+          </div>
+        )}
       </Section>
 
       <Section number={1} title="Company and organizational boundary" stagger={1}>

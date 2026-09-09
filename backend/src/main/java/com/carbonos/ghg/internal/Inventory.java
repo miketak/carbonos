@@ -112,6 +112,17 @@ public class Inventory {
 	@Column(name = "superseded_by_id")
 	private UUID supersededById;
 
+	// spec 05.3: the inventory this one copied its view from, why a correction was made, and the
+	// report exactly as it was published
+	@Column(name = "copied_from_id")
+	private UUID copiedFromId;
+
+	@Column(name = "correction_reason", length = 1000)
+	private String correctionReason;
+
+	@Column(name = "published_report", columnDefinition = "text")
+	private String publishedReport;
+
 	@Column(name = "published_at")
 	private Instant publishedAt;
 
@@ -288,6 +299,30 @@ public class Inventory {
 
 	public UUID getSupersededById() {
 		return supersededById;
+	}
+
+	public UUID getCopiedFromId() {
+		return copiedFromId;
+	}
+
+	void setCopiedFromId(UUID copiedFromId) {
+		this.copiedFromId = copiedFromId;
+	}
+
+	public String getCorrectionReason() {
+		return correctionReason;
+	}
+
+	void setCorrectionReason(String correctionReason) {
+		this.correctionReason = correctionReason;
+	}
+
+	public String getPublishedReport() {
+		return publishedReport;
+	}
+
+	void setPublishedReport(String publishedReport) {
+		this.publishedReport = publishedReport;
 	}
 
 	public Instant getPublishedAt() {

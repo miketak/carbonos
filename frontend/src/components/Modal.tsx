@@ -12,17 +12,20 @@ interface ModalProps {
 export function Modal({ title, onClose, children }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
+  // focus once on open (an inline onClose is a new function every render, and refocusing on each
+  // keystroke would steal typing from any field but the first)
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null
     panelRef.current?.querySelector<HTMLElement>('input, select, button')?.focus()
+    return () => previouslyFocused?.focus()
+  }, [])
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      previouslyFocused?.focus()
-    }
+    return () => document.removeEventListener('keydown', onKeyDown)
   }, [onClose])
 
   return (

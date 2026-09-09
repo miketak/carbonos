@@ -1609,10 +1609,16 @@ class GhgApiIntegrationTests {
 		mvc.perform(delete("/api/ghg/inventories/" + inventoryId).with(asMember()).with(csrf()))
 			.andExpect(status().isConflict());
 
+		// a correction must say why it exists
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "2025 Corporate (restated)"}"""))
+			.andExpect(status().isUnprocessableContent())
+			.andExpect(jsonPath("$.errors.reason").exists());
 		var successor = body(mvc
 			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
 				.contentType("application/json").content("""
-						{"name": "2025 Corporate (restated)"}"""))
+						{"name": "2025 Corporate (restated)", "reason": "Restated after a metering error was found"}"""))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.status").value("DRAFT"))
 			.andExpect(jsonPath("$.name").value("2025 Corporate (restated)")));
@@ -2345,7 +2351,9 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		var successor = body(mvc
-			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf()))
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"reason": "Restated to carry the exclusion forward"}"""))
 			.andExpect(status().isCreated()));
 		mvc.perform(get("/api/ghg/inventories/" + JsonPath.read(successor, "$.id") + "/boundary/exclusions")
 			.with(asMember()))
@@ -2579,7 +2587,7 @@ class GhgApiIntegrationTests {
 		var correction = body(mvc
 			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
 				.contentType("application/json").content("""
-						{"name": "FY2025 (restated)"}"""))
+						{"name": "FY2025 (restated)", "reason": "Restated after the final review"}"""))
 			.andExpect(status().isCreated()));
 		String correctionId = JsonPath.read(correction, "$.id");
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
@@ -3472,5 +3480,158 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[?(@.inBoundary == true)]").isEmpty());
 		assertThat(pit).isNotNull();
 		assertThat(terminal).isNotNull();
+	}
+	// --- inheritance and the published record (spec 05.3) --------------------------------
+
+	@Test
+	void aNewInventoryCopiesItsViewAndACorrectionInheritsItWithAReason() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var camp = createFacility(orgId, "Nkran Exploration Camp");
+		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
+		var lpg = createActivity(orgId, camp, "Camp LPG", "500", "litre", "2025-01-15");
+		var source = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(source, pit);
+		putBoundary(source, camp);
+		var dieselAssignment = syncAndGetAssignmentId(source, diesel);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + source + "/assignments").with(asMember())));
+		String lpgAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + lpg + "')].id").getFirst();
+		classifyAs(dieselAssignment, DIESEL_FACTOR, "SCOPE_1", "MOBILE_COMBUSTION").andExpect(status().isOk());
+		mvc.perform(put("/api/ghg/assignments/" + lpgAssignment + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "METHODOLOGY", "justification": "camp LPG is below the materiality threshold", "estimatedKgCo2e": 750}"""))
+			.andExpect(status().isOk());
+		mvc.perform(put("/api/ghg/inventories/" + source + "/operational-boundary").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"scope3Categories": ["BUSINESS_TRAVEL"], "exclusionsRationale": "Other categories immaterial"}"""))
+			.andExpect(status().isOk());
+
+		// a second inventory copies the view: boundary, declaration, every decision, marked inherited
+		var laterRecord = createActivity(orgId, pit, "Haul fleet diesel, July", "800", "litre", "2025-07-31");
+		var copy = mvc.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"name": "2025 Equity", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+					 "consolidationApproach": "EQUITY_SHARE", "copyFromInventoryId": "%s"}""".formatted(source)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.copiedFromId").value(source))
+			.andExpect(jsonPath("$.scope3Categories[0]").value("BUSINESS_TRAVEL"))
+			.andReturn();
+		String copyId = JsonPath.read(copy.getResponse().getContentAsString(), "$.id");
+		mvc.perform(get("/api/ghg/inventories/" + copyId + "/boundary").with(asMember()))
+			.andExpect(jsonPath("$[*].facilities[?(@.facilityId == '" + pit + "')].inBoundary").value(true));
+		mvc.perform(get("/api/ghg/inventories/" + copyId + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2))
+			.andExpect(jsonPath("$[?(@.activityId == '" + diesel + "')].factorName").value("Diesel (100% mineral diesel)"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + diesel + "')].inherited").value(true))
+			.andExpect(jsonPath("$[?(@.activityId == '" + lpg + "')].exclusionReason").value("METHODOLOGY"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + lpg + "')].estimatedKgCo2e").value(750.0));
+		mvc.perform(get("/api/ghg/inventories/" + copyId + "/inheritance").with(asMember()))
+			.andExpect(jsonPath("$.sourceName").value("2025 Corporate"))
+			.andExpect(jsonPath("$.inherited").value(2))
+			.andExpect(jsonPath("$.undecided").value(1));
+		mvc.perform(get("/api/ghg/inventories/" + source + "/inheritance").with(asMember()))
+			.andExpect(status().isNoContent());
+		assertThat(laterRecord).isNotNull();
+
+		// a correction needs a reason, inherits the view, and its report says what changed
+		freeze(source);
+		var publishedRun = runAndGetId(source, "Run 001");
+		mvc.perform(post("/api/ghg/inventories/" + source + "/finalize").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"runId": "%s"}""".formatted(publishedRun))).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + source + "/publish").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + source + "/supersede").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "2025 Corporate (correction)"}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.reason").exists());
+		var correction = mvc.perform(post("/api/ghg/inventories/" + source + "/supersede").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "2025 Corporate (correction)", "reason": "camp LPG was material after all: 23,530 litres"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.correctionReason").value("camp LPG was material after all: 23,530 litres"))
+			.andReturn();
+		String correctionId = JsonPath.read(correction.getResponse().getContentAsString(), "$.id");
+		var correctionListing = body(mvc.perform(get("/api/ghg/inventories/" + correctionId + "/assignments").with(asMember())));
+		assertThat(JsonPath.<List<Boolean>>read(correctionListing, "$[?(@.activityId == '" + diesel + "')].inherited").getFirst()).isTrue();
+		String lpgInCorrection = JsonPath.<List<String>>read(correctionListing, "$[?(@.activityId == '" + lpg + "')].id").getFirst();
+		mvc.perform(put("/api/ghg/assignments/" + lpgInCorrection + "/include").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		classify(lpgInCorrection, DIESEL_FACTOR);
+		mvc.perform(post("/api/ghg/inventories/" + correctionId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var correctionListing2 = body(mvc.perform(get("/api/ghg/inventories/" + correctionId + "/assignments").with(asMember())));
+		String julyInCorrection = JsonPath.<List<String>>read(correctionListing2, "$[?(@.activityId == '" + laterRecord + "')].id").getFirst();
+		mvc.perform(put("/api/ghg/assignments/" + julyInCorrection + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "DUPLICATE", "justification": "entered twice from the same dispensing log", "estimatedKgCo2e": 0}"""))
+			.andExpect(status().isOk());
+		freeze(correctionId);
+		var correctedRun = runAndGetId(correctionId, "Corrected run");
+		// the published run had one line (diesel, 2,660); the correction adds the LPG line (500 x 2.66 = 1,330)
+		mvc.perform(get("/api/ghg/runs/" + correctedRun + "/report").with(asMember()))
+			.andExpect(jsonPath("$.correction.ofName").value("2025 Corporate"))
+			.andExpect(jsonPath("$.correction.reason").value("camp LPG was material after all: 23,530 litres"))
+			.andExpect(jsonPath("$.correction.publishedRunId").value(publishedRun))
+			.andExpect(jsonPath("$.correction.addedLines").value(1))
+			.andExpect(jsonPath("$.correction.removedLines").value(0))
+			.andExpect(jsonPath("$.correction.changedLines").value(0))
+			.andExpect(jsonPath("$.correction.deltaKgCo2e").value(1330.0));
+		mvc.perform(get("/api/ghg/inventories/" + source + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.action == 'CORRECTION_CREATED')].reason")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("material after all"))));
+	}
+
+	@Test
+	void thePublishedReportIsFrozenAndLaterChangesAppearSeparately() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"runId": "%s"}""".formatted(runId))).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.baseYear").doesNotExist())
+			.andExpect(jsonPath("$.sincePublication.events.length()").value(0))
+			.andExpect(jsonPath("$.sincePublication.changedRecords.length()").value(0))
+			.andExpect(jsonPath("$.lines[0].quantity").value(1000.0));
+
+		// after publication: a base year designated, a later inventory created, the fact corrected
+		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"inventoryId": "%s", "thresholdPercent": 5, "reason": "first verifiable year",
+					 "structuralChangeConvention": "TRANSACTION_DATE"}""".formatted(inventoryId)))
+			.andExpect(status().isOk());
+		createInventory(orgId, "2026 Corporate", "OPERATIONAL_CONTROL", "2026-01-01", "2026-12-31");
+		mvc.perform(put("/api/ghg/activities/" + diesel).with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"facilityId": "%s", "activityType": "Haul fleet diesel", "quantity": 1200, "unit": "litre",
+					 "periodStart": "2025-06-30", "periodEnd": "2025-06-30", "dataQuality": "MEASURED",
+					 "reason": "dispensing log reconciled after publication"}""".formatted(pit)))
+			.andExpect(status().isOk());
+
+		// the published report reads as it was; what came after sits in its own block
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.baseYear").doesNotExist())
+			.andExpect(jsonPath("$.lines[0].quantity").value(1000.0))
+			.andExpect(jsonPath("$.sincePublication.laterInventories[0].name").value("2026 Corporate"))
+			.andExpect(jsonPath("$.sincePublication.changedRecords[0].field").value("quantity"))
+			.andExpect(jsonPath("$.sincePublication.changedRecords[0].was").value("1000"))
+			.andExpect(jsonPath("$.sincePublication.changedRecords[0].now").value("1200"));
+		// the published inventory's view shows the fact as published and marks the change
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[0].quantity").value(1000.0))
+			.andExpect(jsonPath("$[0].changedSincePublication[0]").value("quantity"));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember()))
+			.andExpect(content().string(org.hamcrest.Matchers.containsString(",1000,")));
 	}
 }

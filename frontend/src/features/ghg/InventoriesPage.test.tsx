@@ -37,6 +37,8 @@ const draft: Inventory = {
   finalRunId: null,
   status: 'DRAFT',
   supersededById: null,
+  copiedFromId: null,
+  correctionReason: null,
   publishedAt: null,
   currentBoundaryVersionId: null,
   currentBoundaryVersionNo: null,
@@ -133,6 +135,27 @@ test('a new inventory starts with every operation the approach includes, unless 
         consolidationApproach: 'OPERATIONAL_CONTROL',
         prefillBoundary: true,
       }),
+    ),
+  )
+})
+
+test('a new inventory can copy its view from another, which switches off pre-population (spec 03.4, 05.3)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(createInventory).mockResolvedValue(draft)
+  renderWithProviders(<InventoriesPage />, {
+    route: '/app/ghg/org-1/inventories',
+    path: '/app/ghg/:organizationId/inventories',
+  })
+
+  await user.click(await screen.findByRole('button', { name: /new inventory/i }))
+  const dialog = await screen.findByRole('dialog', { name: /new inventory/i })
+  await user.selectOptions(within(dialog).getByLabelText(/Copy the view from/), draft.id)
+  await user.click(within(dialog).getByRole('button', { name: /^create inventory$/i }))
+
+  await waitFor(() =>
+    expect(createInventory).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({ copyFromInventoryId: draft.id, prefillBoundary: false }),
     ),
   )
 })

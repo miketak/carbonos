@@ -36,6 +36,7 @@ import {
   getBaseYear,
   getBoundary,
   getBoundaryVersion,
+  getInheritance,
   getInventory,
   getOrganization,
   getReport,
@@ -158,6 +159,7 @@ export const validationKey = (inventoryId: string) => ['ghg', 'validation', inve
 export const runsKey = (inventoryId: string) => ['ghg', 'runs', inventoryId] as const
 export const coverageKey = (inventoryId: string) => ['ghg', 'coverage', inventoryId] as const
 export const auditEventsKey = (inventoryId: string) => ['ghg', 'events', inventoryId] as const
+export const inheritanceKey = (inventoryId: string) => ['ghg', 'inheritance', inventoryId] as const
 export const runKey = (id: string) => ['ghg', 'run', id] as const
 export const reportKey = (runId: string) => ['ghg', 'report', runId] as const
 
@@ -427,6 +429,13 @@ export function useAssignmentPageQuery(inventoryId: string, query: AssignmentQue
     queryKey: assignmentPageKey(inventoryId, query),
     queryFn: () => searchAssignments(inventoryId, query),
     placeholderData: (previous) => previous,
+  })
+}
+
+export function useInheritanceQuery(inventoryId: string) {
+  return useQuery({
+    queryKey: inheritanceKey(inventoryId),
+    queryFn: () => getInheritance(inventoryId),
   })
 }
 
@@ -742,7 +751,9 @@ export function usePublishInventory(inventoryId: string) {
 }
 
 export function useSupersedeInventory(inventoryId: string) {
-  return useLifecycleMutation(inventoryId, (name?: string) => supersedeInventory(inventoryId, name))
+  return useLifecycleMutation(inventoryId, (input: { name?: string; reason: string }) =>
+    supersedeInventory(inventoryId, input),
+  )
 }
 
 export function useSetBoundaryTreatment(inventoryId: string) {

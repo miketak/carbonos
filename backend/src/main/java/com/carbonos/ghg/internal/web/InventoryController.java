@@ -53,10 +53,12 @@ class InventoryController {
 
 	private final InventoryService inventoryService;
 	private final GhgService ghgService;
+	private final ReportAssembler reports;
 
-	InventoryController(InventoryService inventoryService, GhgService ghgService) {
+	InventoryController(InventoryService inventoryService, GhgService ghgService, ReportAssembler reports) {
 		this.inventoryService = inventoryService;
 		this.ghgService = ghgService;
+		this.reports = reports;
 	}
 
 	// --- inventories --------------------------------------------------------
@@ -71,7 +73,7 @@ class InventoryController {
 			@Valid @RequestBody InventoryRequest body) {
 		var inventory = inventoryService.create(organizationId, body.name(), body.periodStart(), body.periodEnd(),
 				body.purpose(), body.baseYear(), body.consolidationApproach(), body.gwpSet(), body.straddleTreatment(),
-				Boolean.TRUE.equals(body.prefillBoundary()));
+				Boolean.TRUE.equals(body.prefillBoundary()), body.copyFromInventoryId());
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
 			.path("/api/ghg/inventories/{id}")
 			.buildAndExpand(inventory.getId())
@@ -242,15 +244,27 @@ class InventoryController {
 		return inventoryService.events(id).stream().map(AuditEventResponse::from).toList();
 	}
 
+	/** Publishes, then keeps the final run's report exactly as it reads now (spec 05.3). */
 	@PostMapping("/inventories/{id}/publish")
 	InventoryResponse publish(@PathVariable UUID id) {
-		return InventoryResponse.from(inventoryService.publish(id));
+		var inventory = inventoryService.publish(id);
+		reports.snapshotPublished(inventory.getId(), inventory.getFinalRunId());
+		return InventoryResponse.from(inventoryService.get(id));
+	}
+
+	/** What the inventory inherited from its source (spec 05.3); 204 when nothing was copied. */
+	@GetMapping("/inventories/{id}/inheritance")
+	ResponseEntity<InventoryService.Inheritance> inheritance(@PathVariable UUID id) {
+		return inventoryService.inheritance(id)
+			.map(ResponseEntity::ok)
+			.orElseGet(() -> ResponseEntity.noContent().build());
 	}
 
 	@PostMapping("/inventories/{id}/supersede")
 	ResponseEntity<InventoryResponse> supersede(@PathVariable UUID id,
 			@Valid @RequestBody(required = false) SupersedeRequest body) {
-		var successor = inventoryService.supersede(id, body == null ? null : body.name());
+		var successor = inventoryService.supersede(id, body == null ? null : body.name(),
+				body == null ? null : body.reason());
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
 			.path("/api/ghg/inventories/{id}")
 			.buildAndExpand(successor.getId())
@@ -290,7 +304,11 @@ class InventoryController {
 	List<AssignmentResponse> assignments(@PathVariable UUID id) {
 		var assignments = inventoryService.listAssignments(id);
 		var suggestions = inventoryService.suggestions(assignments);
-		return assignments.stream().map(a -> AssignmentResponse.from(a, suggestions.get(a.getId()))).toList();
+		var published = inventoryService.publishedFacts(inventoryService.get(id));
+		return assignments.stream()
+			.map(a -> AssignmentResponse.from(a, suggestions.get(a.getId()),
+					published.isEmpty() ? null : published.get(a.getActivity().getId())))
+			.toList();
 	}
 
 	/** The activity view searched, filtered and paged, with the counts by status (spec 04.5). */
@@ -300,7 +318,8 @@ class InventoryController {
 			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
 		var result = inventoryService.searchAssignments(id,
 				new InventoryService.AssignmentQuery(q, facilityId, status, page, size));
-		return AssignmentPageResponse.from(result, inventoryService.suggestions(result.items()));
+		return AssignmentPageResponse.from(result, inventoryService.suggestions(result.items()),
+				inventoryService.publishedFacts(inventoryService.get(id)));
 	}
 
 	@PostMapping("/inventories/{id}/assignments/sync")

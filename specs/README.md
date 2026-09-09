@@ -32,6 +32,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
 | 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |
+| 05.3 | [Inheritance between inventories and the published record](05.3-inheritance-and-the-published-record.md) | Ch. 1, 5, 9, 10 | Implemented |
 | 06 | [Tracking emissions over time](06-tracking-emissions-over-time.md) | Ch. 5 | Implemented |
 | 06.1 | [Recalculation policy conformance](06.1-recalculation-policy-conformance.md) | Ch. 5, 9 | Implemented |
 | 07 | [Reporting and verification](07-reporting-and-verification.md) | Ch. 9, 10 | Implemented |

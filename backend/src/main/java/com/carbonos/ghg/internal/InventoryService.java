@@ -128,6 +128,19 @@ public class InventoryService {
 	public Inventory create(UUID organizationId, String name, LocalDate periodStart, LocalDate periodEnd,
 			String purpose, Integer baseYear, ConsolidationApproach approach, GwpSet gwpSet,
 			StraddleTreatment straddleTreatment, boolean prefillBoundary) {
+		return create(organizationId, name, periodStart, periodEnd, purpose, baseYear, approach, gwpSet,
+				straddleTreatment, prefillBoundary, null);
+	}
+
+	/**
+	 * With {@code copyFromInventoryId} (spec 05.3): the boundary, exclusions,
+	 * instruments, declaration and every assignment of another inventory of the
+	 * organization are copied, so a second inventory over the same period, or
+	 * the next year's, starts from last year's decisions.
+	 */
+	public Inventory create(UUID organizationId, String name, LocalDate periodStart, LocalDate periodEnd,
+			String purpose, Integer baseYear, ConsolidationApproach approach, GwpSet gwpSet,
+			StraddleTreatment straddleTreatment, boolean prefillBoundary, UUID copyFromInventoryId) {
 		requirePeriod(periodStart, periodEnd);
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
@@ -135,6 +148,15 @@ public class InventoryService {
 		var inventory = inventories.save(new Inventory(organization, name.trim(), periodStart, periodEnd,
 				trimToNull(purpose), baseYear, approach, gwpSet == null ? GwpSet.AR5 : gwpSet,
 				straddleTreatment == null ? StraddleTreatment.PRO_RATE : straddleTreatment));
+		if (copyFromInventoryId != null) {
+			var source = get(copyFromInventoryId);
+			if (!source.getOrganization().getId().equals(organizationId)) {
+				throw GhgNotFoundException.inventory(copyFromInventoryId);
+			}
+			copyView(source, inventory, true);
+			inventory.setCopiedFromId(source.getId());
+			return inventory;
+		}
 		if (prefillBoundary) {
 			var facilitiesByEntity = facilities
 				.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(organizationId)
@@ -619,6 +641,15 @@ public class InventoryService {
 	 * operational boundary copied, that supersedes the published one.
 	 */
 	public Inventory supersede(UUID inventoryId, String name) {
+		return supersede(inventoryId, name, null);
+	}
+
+	/**
+	 * With a reason (spec 05.3): Chapter 5 wants a restatement's reason stated;
+	 * the correction records it, inherits the published inventory's whole view
+	 * (assignments included), and its report says what changed.
+	 */
+	public Inventory supersede(UUID inventoryId, String name, String reason) {
 		var inventory = get(inventoryId);
 		access.checkApprove(inventory.getOrganization());
 		if (inventory.getStatus() != InventoryStatus.PUBLISHED) {
@@ -627,32 +658,140 @@ public class InventoryService {
 		if (inventory.getSupersededById() != null) {
 			throw new GhgRuleViolationException("This inventory has already been superseded.");
 		}
+		var why = trimToNull(reason);
+		if (why == null || why.length() < 10) {
+			throw new GhgFieldException("reason", "A correction needs a reason of at least 10 characters: "
+					+ "what was wrong in the published inventory.");
+		}
 		var successorName = trimToNull(name) != null ? name.trim() : inventory.getName() + " (correction)";
 		var successor = inventories.save(new Inventory(inventory.getOrganization(), successorName,
 				inventory.getPeriodStart(), inventory.getPeriodEnd(), inventory.getPurpose(), inventory.getBaseYear(),
 				inventory.getConsolidationApproach(), inventory.getGwpSet(), inventory.getStraddleTreatment()));
-		successor.setOperationalBoundary(inventory.getScope3Categories(), inventory.getScope3ExclusionsRationale());
-		for (var treatment : boundaryTreatments.findAllByInventoryId(inventoryId)) {
-			var copy = new BoundaryTreatment(successor, treatment.getEntity());
+		copyView(inventory, successor, true);
+		successor.setCorrectionReason(why);
+		successor.setCopiedFromId(inventory.getId());
+		inventory.markSupersededBy(successor);
+		record(inventory, null, GhgAuditEvent.Action.CORRECTION_CREATED,
+				"correction '" + successorName + "' created: " + why);
+		return successor;
+	}
+
+	/**
+	 * Copies one inventory's view into another (spec 05.3): the boundary with
+	 * its windows and overrides, the exclusions, the instruments and residual
+	 * mix, the declaration, the report header, and, when asked, every
+	 * assignment of a record still on file with its classification or its
+	 * exclusion.
+	 */
+	private void copyView(Inventory source, Inventory target, boolean withAssignments) {
+		var sourceId = source.getId();
+		target.setOperationalBoundary(source.getScope3Categories(), source.getScope3ExclusionsRationale());
+		target.setReportMetadata(source.getApprovedBy(), source.getAssuranceLevel(), source.getAssuranceProvider(),
+				source.getAssuranceStatement(), source.getUncertaintyStatement());
+		for (var treatment : boundaryTreatments.findAllByInventoryId(sourceId)) {
+			if (treatment.getEntity().isDeleted()) {
+				continue;
+			}
+			var copy = new BoundaryTreatment(target, treatment.getEntity());
 			copy.update(treatment.getRelationshipType(), treatment.getEconomicInterestPercent(),
 					treatment.isOperatedByCompany(), treatment.isControlledByCompany(), treatment.getEffectiveFrom(),
 					treatment.getEffectiveTo());
-			treatment.getFacilities().forEach(member -> copy.includeFacility(member.getFacility()));
-			boundaryTreatments.save(copy);
+			copy.setFinancialControlOverride(treatment.getFinancialControlOverride());
+			treatment.getFacilities()
+				.stream()
+				.map(BoundaryFacility::getFacility)
+				.filter(facility -> !facility.isDeleted())
+				.forEach(copy::includeFacility);
+			if (!copy.getFacilities().isEmpty()) {
+				boundaryTreatments.save(copy);
+			}
 		}
-		for (var factor : marketFactors.findAllByInventoryId(inventoryId)) {
-			marketFactors.save(new MarketFactor(successor, factor.getFacility(), factor.getInstrumentType(),
+		for (var factor : marketFactors.findAllByInventoryId(sourceId)) {
+			marketFactors.save(new MarketFactor(target, factor.getFacility(), factor.getInstrumentType(),
 					factor.getKgCo2ePerKwh(), factor.getSource(), factor.isMeetsQualityCriteria(),
 					factor.getQualityNotes(), factor.coverage()));
 		}
-		successor.setResidualMix(inventory.getResidualMixAvailable(), inventory.getResidualMixKgCo2ePerKwh());
-		for (var exclusion : boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
-			boundaryExclusions.save(new BoundaryExclusion(successor, exclusion.isWholeEntity() ? exclusion.getEntity() : null,
+		target.setResidualMix(source.getResidualMixAvailable(), source.getResidualMixKgCo2ePerKwh());
+		for (var exclusion : boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(sourceId)) {
+			boundaryExclusions.save(new BoundaryExclusion(target, exclusion.isWholeEntity() ? exclusion.getEntity() : null,
 					exclusion.getFacility(), exclusion.getReason(), exclusion.getDetail()));
 		}
-		inventory.markSupersededBy(successor);
-		record(inventory, null, GhgAuditEvent.Action.CORRECTION_CREATED, "correction '" + successorName + "' created");
-		return successor;
+		for (var metric : intensityMetrics.findAllByInventoryIdOrderByName(sourceId)) {
+			intensityMetrics.save(new IntensityMetric(target, metric.getName(), metric.getValue(), metric.getUnit()));
+		}
+		if (withAssignments) {
+			for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(sourceId)) {
+				if (assignment.getActivity().isDeleted()) {
+					continue;
+				}
+				assignments.save(new InventoryAssignment(target, assignment));
+			}
+		}
+	}
+
+	/** What an inventory inherited from its source, and how many records the source never decided on (spec 05.3). */
+	public record Inheritance(UUID sourceInventoryId, String sourceName, long inherited, long undecided,
+			String correctionReason) {
+	}
+
+	@Transactional(readOnly = true)
+	public Optional<Inheritance> inheritance(UUID inventoryId) {
+		var inventory = get(inventoryId);
+		if (inventory.getCopiedFromId() == null) {
+			return Optional.empty();
+		}
+		var source = inventories.findById(inventory.getCopiedFromId()).orElse(null);
+		var all = assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
+		var inherited = all.stream().filter(InventoryAssignment::isInherited).count();
+		var decided = all.stream().map(a -> a.getActivity().getId()).collect(Collectors.toSet());
+		var undecided = activities
+			.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(inventory.getOrganization().getId())
+			.stream()
+			.filter(activity -> !decided.contains(activity.getId())
+					&& inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd()))
+			.count();
+		return Optional.of(new Inheritance(inventory.getCopiedFromId(), source == null ? null : source.getName(),
+				inherited, undecided, inventory.getCorrectionReason()));
+	}
+
+	/** Keeps the report exactly as it was published (spec 05.3); the web layer renders it. */
+	public void storePublishedReport(UUID inventoryId, String reportJson) {
+		var inventory = get(inventoryId);
+		if (inventory.getStatus() != InventoryStatus.PUBLISHED) {
+			throw new GhgRuleViolationException("Only a published inventory keeps a published report.");
+		}
+		inventory.setPublishedReport(reportJson);
+	}
+
+	/**
+	 * The facts as the published run snapshotted them (spec 05.3): a line or an
+	 * exclusion per record, so the published inventory's view reads as it was.
+	 */
+	public record PublishedFact(String activityType, BigDecimal quantity, String unit, LocalDate periodStart,
+			LocalDate periodEnd, String evidenceRef) {
+	}
+
+	@Transactional(readOnly = true)
+	public Map<UUID, PublishedFact> publishedFacts(Inventory inventory) {
+		if (inventory.getStatus() != InventoryStatus.PUBLISHED || inventory.getFinalRunId() == null) {
+			return Map.of();
+		}
+		var run = runs.findWithLinesById(inventory.getFinalRunId()).orElse(null);
+		if (run == null) {
+			return Map.of();
+		}
+		runs.findWithExclusionsById(run.getId()).ifPresent(withExclusions -> withExclusions.getExclusions().size());
+		var facts = new HashMap<UUID, PublishedFact>();
+		for (var line : run.getLines()) {
+			facts.put(line.getActivityId(), new PublishedFact(line.getActivityType(), line.getQuantity(), line.getUnit(),
+					line.getPeriodStart(), line.getPeriodEnd(), line.getEvidenceRef()));
+		}
+		for (var exclusion : run.getExclusions()) {
+			facts.putIfAbsent(exclusion.getActivityId(), new PublishedFact(exclusion.getActivityType(),
+					exclusion.getQuantity(), exclusion.getUnit(), exclusion.getPeriodStart(), exclusion.getPeriodEnd(),
+					null));
+		}
+		return facts;
 	}
 
 	@Transactional(readOnly = true)
