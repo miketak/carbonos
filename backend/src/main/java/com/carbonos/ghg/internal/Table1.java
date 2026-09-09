@@ -38,7 +38,22 @@ public final class Table1 {
 
 	public static BigDecimal share(RelationshipType relationship, ConsolidationApproach approach,
 			BigDecimal economicInterestPercent, boolean operatedByCompany, boolean controlledByCompany) {
+		return share(relationship, approach, economicInterestPercent, operatedByCompany, controlledByCompany, null);
+	}
+
+	/**
+	 * The share with the financial-control override (spec 03.4): Chapter 3
+	 * defines financial control as the ability to direct policies, not a
+	 * percentage, so a minority holding consolidated under IFRS 10 is 100%
+	 * under financial control, and a majority holding without control is 0%.
+	 */
+	public static BigDecimal share(RelationshipType relationship, ConsolidationApproach approach,
+			BigDecimal economicInterestPercent, boolean operatedByCompany, boolean controlledByCompany,
+			Boolean financialControlOverride) {
 		var interest = economicInterestPercent.movePointLeft(2);
+		if (approach == ConsolidationApproach.FINANCIAL_CONTROL && financialControlOverride != null) {
+			return financialControlOverride ? BigDecimal.ONE : BigDecimal.ZERO;
+		}
 		return switch (approach) {
 			case EQUITY_SHARE -> relationship == RelationshipType.FIXED_ASSET_INVESTMENT ? BigDecimal.ZERO : interest;
 			case FINANCIAL_CONTROL -> switch (relationship) {
@@ -57,6 +72,12 @@ public final class Table1 {
 	/** The Table 1 row applied, in words, e.g. "joint venture under joint financial control; operational control: 100% (operator)". */
 	public static String describe(RelationshipType relationship, ConsolidationApproach approach,
 			BigDecimal economicInterestPercent, boolean operatedByCompany, boolean controlledByCompany) {
+		return describe(relationship, approach, economicInterestPercent, operatedByCompany, controlledByCompany, null);
+	}
+
+	public static String describe(RelationshipType relationship, ConsolidationApproach approach,
+			BigDecimal economicInterestPercent, boolean operatedByCompany, boolean controlledByCompany,
+			Boolean financialControlOverride) {
 		var interest = economicInterestPercent.stripTrailingZeros().toPlainString() + "% economic interest";
 		var row = switch (relationship) {
 			case SUBSIDIARY -> "group company or subsidiary under financial control";
@@ -65,6 +86,11 @@ public final class Table1 {
 			case FIXED_ASSET_INVESTMENT -> "fixed-asset investment with no significant influence";
 			case FRANCHISE -> "franchise";
 		};
+		if (approach == ConsolidationApproach.FINANCIAL_CONTROL && financialControlOverride != null) {
+			return row + "; financial control: " + (financialControlOverride
+					? "100% (consolidated under financial control by decision, whatever the holding)"
+					: "0% (not financially controlled by decision, whatever the holding)");
+		}
 		var rule = switch (approach) {
 			case EQUITY_SHARE -> relationship == RelationshipType.FIXED_ASSET_INVESTMENT ? "0% (no significant influence)"
 					: relationship == RelationshipType.FRANCHISE && economicInterestPercent.signum() == 0

@@ -78,8 +78,24 @@ export function EntitiesPage() {
                   </td>
                   <td className="px-4 py-3 text-ink-muted">
                     {relationshipShortLabels[entity.relationshipType]}
+                    {entity.jurisdiction && (
+                      <span className="ml-1 text-xs">({entity.jurisdiction})</span>
+                    )}
                     {entity.chain.length > 0 && (
                       <span className="block text-xs">held through {entity.chain.join(' > ')}</span>
+                    )}
+                    {(entity.effectiveFrom || entity.effectiveTo) && (
+                      <span className="block text-xs">
+                        {entity.effectiveFrom ? `from ${entity.effectiveFrom}` : ''}
+                        {entity.effectiveTo ? ` until ${entity.effectiveTo}` : ''}
+                      </span>
+                    )}
+                    {entity.financialControlOverride !== null && (
+                      <span className="block text-xs text-amber-700">
+                        {entity.financialControlOverride
+                          ? 'financially controlled by decision'
+                          : 'not financially controlled by decision'}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-3">

@@ -4,9 +4,9 @@ import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
-import { relationshipShortLabels } from '../format'
+import { facilityTypeLabels, leaseLabels, relationshipShortLabels } from '../format'
 import { useCreateFacility, useEntitiesQuery, useUpdateFacility } from '../useGhg'
-import type { Facility } from '../api'
+import type { Facility, FacilityType, LeaseType } from '../api'
 
 interface FacilityFormModalProps {
   organizationId: string
@@ -30,6 +30,11 @@ export function FacilityFormModal({
   const [name, setName] = useState(facility?.name ?? '')
   const [location, setLocation] = useState(facility?.location ?? '')
   const [country, setCountry] = useState(facility?.country ?? '')
+  const [gridRegion, setGridRegion] = useState(facility?.gridRegion ?? '')
+  const [facilityType, setFacilityType] = useState<FacilityType | ''>(facility?.facilityType ?? '')
+  const [leaseType, setLeaseType] = useState<LeaseType | ''>(facility?.leaseType ?? '')
+  const [leaseFrom, setLeaseFrom] = useState(facility?.leaseFrom ?? '')
+  const [leaseTo, setLeaseTo] = useState(facility?.leaseTo ?? '')
   // '' means "not chosen yet": the reporting company once the entities load
   const [entityId, setEntityId] = useState(facility?.entityId ?? '')
 
@@ -47,6 +52,11 @@ export function FacilityFormModal({
       location,
       ...(country.trim() !== '' ? { country: country.trim().toUpperCase() } : {}),
       entityId: selectedEntityId || undefined,
+      gridRegion: gridRegion.trim() === '' ? undefined : gridRegion.trim().toUpperCase(),
+      facilityType: facilityType === '' ? undefined : facilityType,
+      leaseType: leaseType === '' ? undefined : leaseType,
+      leaseFrom: leaseType === '' || leaseFrom === '' ? undefined : leaseFrom,
+      leaseTo: leaseType === '' || leaseTo === '' ? undefined : leaseTo,
     }
     const handlers = {
       onSuccess: () => onSaved(`${name.trim()} ${facility ? 'updated' : 'added'}.`),
@@ -83,6 +93,63 @@ export function FacilityFormModal({
           error={errors?.country}
           hint="ISO 3166-1 alpha-2 code, for the report's country breakdown."
         />
+        <div className="grid grid-cols-2 gap-3">
+          <InputField
+            label="Grid region (optional)"
+            placeholder="GHA or US-CAMX"
+            maxLength={40}
+            value={gridRegion}
+            onChange={(event) => setGridRegion(event.target.value)}
+            error={errors?.gridRegion}
+            hint="The grid the site draws from; its location-based factor is suggested. Blank follows the country."
+          />
+          <SelectField
+            label="Facility type (optional)"
+            value={facilityType}
+            onChange={(event) => setFacilityType(event.target.value as FacilityType | '')}
+            error={errors?.facilityType}
+          >
+            <option value="">Not stated</option>
+            {Object.entries(facilityTypeLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </SelectField>
+        </div>
+        <SelectField
+          label="Lease (optional)"
+          value={leaseType}
+          onChange={(event) => setLeaseType(event.target.value as LeaseType | '')}
+          error={errors?.leaseType}
+          hint="Records at a leased site inherit the lease; Appendix F sets their scope under each approach."
+        >
+          <option value="">Owned, not leased</option>
+          {Object.entries(leaseLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </SelectField>
+        {leaseType !== '' && (
+          <div className="grid grid-cols-2 gap-3">
+            <InputField
+              label="Lease from (optional)"
+              type="date"
+              value={leaseFrom}
+              onChange={(event) => setLeaseFrom(event.target.value)}
+              error={errors?.leaseFrom}
+            />
+            <InputField
+              label="Lease until (optional)"
+              type="date"
+              min={leaseFrom || undefined}
+              value={leaseTo}
+              onChange={(event) => setLeaseTo(event.target.value)}
+              error={errors?.leaseTo}
+            />
+          </div>
+        )}
         <SelectField
           label="Legal entity"
           value={selectedEntityId}

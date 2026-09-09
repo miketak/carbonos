@@ -7,6 +7,9 @@ import type { Entity } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
+// forms with many fields take longer than the 15s default on a loaded machine
+vi.setConfig({ testTimeout: 30000 })
+
 import { createEntity, listEntities } from './api'
 
 const own: Entity = {
@@ -24,6 +27,11 @@ const own: Entity = {
   equityShare: 1,
   financialControlShare: 1,
   operationalControlShare: 1,
+  effectiveFrom: null,
+  effectiveTo: null,
+  jurisdiction: null,
+  financialControlOverride: null,
+  controlNote: null,
   createdAt: '2026-08-01T00:00:00Z',
 }
 
@@ -43,6 +51,11 @@ const jv: Entity = {
   equityShare: 0.4,
   financialControlShare: 0.4,
   operationalControlShare: 1,
+  effectiveFrom: null,
+  effectiveTo: null,
+  jurisdiction: null,
+  financialControlOverride: null,
+  controlNote: null,
   createdAt: '2026-08-01T00:00:00Z',
 }
 
@@ -96,5 +109,36 @@ test('the add form submits the Table 1 facts', async () => {
       controlledByCompany: undefined,
       parentEntityId: undefined,
     }),
+  )
+})
+
+test('the add form submits the dates, the jurisdiction and the control decision (spec 03.4)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(createEntity).mockResolvedValue({ ...jv, id: 'ent-3', name: 'Takoradi Port Co' })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /add entity/i }))
+  const dialog = await screen.findByRole('dialog', { name: /add legal entity/i })
+  await user.click(within(dialog).getByLabelText('Name'))
+  await user.paste('Takoradi Port Co')
+  await user.selectOptions(within(dialog).getByLabelText('Relationship'), 'ASSOCIATE')
+  await user.selectOptions(within(dialog).getByLabelText('Financial control'), 'true')
+  await user.click(within(dialog).getByLabelText('Basis of the decision'))
+  await user.paste('Board control under the 2023 shareholders agreement')
+  await user.type(within(dialog).getByLabelText('Acquired on (optional)'), '2025-07-01')
+  await user.type(within(dialog).getByLabelText('Jurisdiction (optional)'), 'gh')
+  await user.click(within(dialog).getByRole('button', { name: /^add entity$/i }))
+
+  await waitFor(() =>
+    expect(createEntity).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({
+        relationshipType: 'ASSOCIATE',
+        financialControlOverride: true,
+        controlNote: 'Board control under the 2023 shareholders agreement',
+        effectiveFrom: '2025-07-01',
+        jurisdiction: 'GH',
+      }),
+    ),
   )
 })

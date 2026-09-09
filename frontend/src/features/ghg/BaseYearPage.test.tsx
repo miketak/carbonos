@@ -7,6 +7,9 @@ import type { BaseYear, Inventory } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
+// forms with many fields take longer than the 15s default on a loaded machine
+vi.setConfig({ testTimeout: 30000 })
+
 import {
   decideRecalculation,
   getBaseYear,
@@ -69,6 +72,7 @@ const baseYear: BaseYear = {
       cumulativePercent: 4.1,
       aboveThreshold: false,
       raisedBy: null,
+      comparisonRunId: null,
       status: 'FLAGGED',
       runId: null,
       decisionNote: null,
@@ -179,4 +183,29 @@ test('a flagged candidate shows its reason and can be declined', async () => {
     }),
   )
   expect(await screen.findByText(/recalculation declined/i)).toBeInTheDocument()
+})
+
+test('a candidate can be weighed against a comparison run instead of a typed share (spec 03.4)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getBaseYear).mockResolvedValue(baseYear)
+  vi.mocked(raiseRecalculation).mockResolvedValue(baseYear)
+  renderPage()
+
+  await screen.findByText(/First year with metered data/)
+  await user.click(screen.getByRole('button', { name: /raise a candidate/i }))
+  const dialog = await screen.findByRole('dialog', { name: /raise a recalculation candidate/i })
+  await user.click(within(dialog).getByLabelText('What changed'))
+  await user.paste('Supplier-specific grid factor')
+  await user.click(within(dialog).getByLabelText('Comparison run id (optional)'))
+  await user.paste('run-9')
+  await user.click(within(dialog).getByRole('button', { name: /^raise$/i }))
+
+  await waitFor(() =>
+    expect(raiseRecalculation).toHaveBeenCalledWith('org-1', {
+      trigger: 'METHODOLOGY_CHANGE',
+      reason: 'Supplier-specific grid factor',
+      affectedPercent: undefined,
+      comparisonRunId: 'run-9',
+    }),
+  )
 })

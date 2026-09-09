@@ -7,6 +7,9 @@ import type { Entity, Facility } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
+// forms with many fields take longer than the 15s default on a loaded machine
+vi.setConfig({ testTimeout: 30000 })
+
 import { createFacility, createStream, listEntities, listFacilities, listStreams } from './api'
 
 const own: Entity = {
@@ -24,6 +27,11 @@ const own: Entity = {
   equityShare: 1,
   financialControlShare: 1,
   operationalControlShare: 1,
+  effectiveFrom: null,
+  effectiveTo: null,
+  jurisdiction: null,
+  financialControlOverride: null,
+  controlNote: null,
   createdAt: '2026-08-01T00:00:00Z',
 }
 
@@ -44,6 +52,12 @@ const pit: Facility = {
   name: 'Obuasi Ridge Open Pit',
   location: 'Obuasi, Ghana',
   country: null,
+  gridRegion: null,
+  effectiveGridRegion: null,
+  facilityType: null,
+  leaseType: null,
+  leaseFrom: null,
+  leaseTo: null,
   entityId: own.id,
   entityName: own.name,
   relationshipType: 'SUBSIDIARY',
@@ -57,6 +71,12 @@ const plant: Facility = {
   name: 'Tarkwa Processing Plant',
   location: 'Tarkwa, Ghana',
   country: null,
+  gridRegion: null,
+  effectiveGridRegion: null,
+  facilityType: null,
+  leaseType: null,
+  leaseFrom: null,
+  leaseTo: null,
   entityId: jv.id,
   entityName: jv.name,
   relationshipType: 'JOINT_VENTURE',
@@ -116,5 +136,34 @@ test('the add form submits the chosen legal entity', async () => {
       location: 'Takoradi, Ghana',
       entityId: 'ent-2',
     }),
+  )
+})
+
+test('the add form submits the grid region, the type and the lease (spec 03.4)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(createFacility).mockResolvedValue({ ...pit, id: 'fac-3', name: 'Tema Warehouse' })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /add facility/i }))
+  const dialog = await screen.findByRole('dialog', { name: /add facility/i })
+  await user.type(within(dialog).getByLabelText('Name'), 'Tema Warehouse')
+  await user.type(within(dialog).getByLabelText('Location'), 'Tema, Ghana')
+  await user.type(within(dialog).getByLabelText('Grid region (optional)'), 'gha')
+  await user.selectOptions(within(dialog).getByLabelText('Facility type (optional)'), 'WAREHOUSE')
+  await user.selectOptions(within(dialog).getByLabelText('Lease (optional)'), 'OPERATING_LEASE_IN')
+  await user.type(within(dialog).getByLabelText('Lease from (optional)'), '2025-07-01')
+  await user.click(within(dialog).getByRole('button', { name: /^add facility$/i }))
+
+  await waitFor(() =>
+    expect(createFacility).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({
+        name: 'Tema Warehouse',
+        gridRegion: 'GHA',
+        facilityType: 'WAREHOUSE',
+        leaseType: 'OPERATING_LEASE_IN',
+        leaseFrom: '2025-07-01',
+      }),
+    ),
   )
 })

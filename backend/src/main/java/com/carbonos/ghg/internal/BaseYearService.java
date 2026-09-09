@@ -84,16 +84,55 @@ public class BaseYearService {
 	 */
 	public BaseYear raise(UUID organizationId, RecalculationTrigger trigger, String reason,
 			BigDecimal affectedPercent) {
+		return raise(organizationId, trigger, reason, affectedPercent, null);
+	}
+
+	/**
+	 * With a comparison run (spec 03.4): a run of the base-year inventory that
+	 * applies the new method or the corrected data; the affected share is the
+	 * difference between its total and the base-year run's total, as a
+	 * percentage of the base. A typed share wins when both are given.
+	 */
+	public BaseYear raise(UUID organizationId, RecalculationTrigger trigger, String reason,
+			BigDecimal affectedPercent, UUID comparisonRunId) {
 		access.checkWrite(organizations.findById(organizationId).orElseThrow(() -> GhgNotFoundException.organization(organizationId)));
 		var baseYear = find(organizationId).orElseThrow(() -> GhgNotFoundException.baseYear(organizationId));
 		if (trigger == RecalculationTrigger.STRUCTURAL_CHANGE) {
 			throw new GhgRuleViolationException(
 					"Structural changes are detected when an inventory is frozen. Freeze the inventory instead.");
 		}
+		if (affectedPercent == null && comparisonRunId == null) {
+			throw new GhgFieldException("affectedPercent",
+					"Give the affected share of base-year emissions, or name a comparison run of the base-year inventory.");
+		}
+		var share = affectedPercent;
+		if (comparisonRunId != null) {
+			var comparison = runs.findById(comparisonRunId)
+				.orElseThrow(() -> GhgNotFoundException.run(comparisonRunId));
+			if (!comparison.getInventory().getId().equals(baseYear.getInventory().getId())) {
+				throw new GhgRuleViolationException("The comparison run must be a run of the base-year inventory '"
+						+ baseYear.getInventory().getName() + "'.");
+			}
+			var baseRunId = baseYear.getInventory().getFinalRunId();
+			var base = baseRunId == null ? null : runs.findById(baseRunId).orElse(null);
+			if (base == null) {
+				throw new GhgRuleViolationException(
+						"The base-year inventory has no final run to compare with. Designate one first.");
+			}
+			if (share == null) {
+				share = base.getTotalKgCo2e().signum() == 0 ? BigDecimal.ZERO
+						: comparison.getTotalKgCo2e()
+							.subtract(base.getTotalKgCo2e())
+							.abs()
+							.multiply(new BigDecimal("100"))
+							.divide(base.getTotalKgCo2e(), 2, RoundingMode.HALF_UP);
+			}
+		}
 		var what = (trigger == RecalculationTrigger.METHODOLOGY_CHANGE ? "methodology change: "
 				: "error correction: ") + reason.trim();
-		baseYear.flag(trigger, what, null, null, affectedPercent.setScale(2, RoundingMode.HALF_UP),
+		var flagged = baseYear.flag(trigger, what, null, null, share.setScale(2, RoundingMode.HALF_UP),
 				access.currentUserEmail());
+		flagged.setComparisonRunId(comparisonRunId);
 		return baseYear;
 	}
 

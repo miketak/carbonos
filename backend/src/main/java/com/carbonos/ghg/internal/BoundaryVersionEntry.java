@@ -66,6 +66,9 @@ public class BoundaryVersionEntry {
 	@Column(name = "accounting_share", nullable = false, precision = 7, scale = 4)
 	private BigDecimal accountingShare;
 
+	@Column(name = "financial_control_override")
+	private Boolean financialControlOverride;
+
 	@Column(name = "effective_from")
 	private LocalDate effectiveFrom;
 
@@ -99,6 +102,7 @@ public class BoundaryVersionEntry {
 		this.effectiveEconomicInterestPercent = chain.effectiveInterestPercent(treatment.getEconomicInterestPercent());
 		this.chainNames = chain.names().isEmpty() ? null : String.join(" > ", chain.names());
 		this.accountingShare = treatment.accountingShare(approach, chain.shareFactor());
+		this.financialControlOverride = treatment.getFinancialControlOverride();
 		this.effectiveFrom = treatment.getEffectiveFrom();
 		this.effectiveTo = treatment.getEffectiveTo();
 		this.excluded = accountingShare.signum() == 0;
@@ -158,6 +162,10 @@ public class BoundaryVersionEntry {
 
 	public BigDecimal getAccountingShare() {
 		return accountingShare;
+	}
+
+	public Boolean getFinancialControlOverride() {
+		return financialControlOverride;
 	}
 
 	public LocalDate getEffectiveFrom() {

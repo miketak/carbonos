@@ -22,6 +22,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 03.1 | [Legal entities and Table 1](03.1-legal-entities-and-table-1.md) | Ch. 3 | Implemented |
 | 03.2 | [Effective-dated membership](03.2-effective-dated-membership.md) | Ch. 3, 5 | Implemented |
 | 03.3 | [Table 1 completeness](03.3-table-1-completeness.md) | Ch. 3 | Implemented |
+| 03.4 | [Entity dates and control, facility attributes, and boundary pre-population](03.4-entity-dates-facility-attributes-and-boundary-prefill.md) | Ch. 3, 5, Scope 2 Guidance, App. F | Implemented |
 | 04 | [Operational boundary and classification](04-operational-boundary-and-classification.md) | Ch. 4 | Implemented |
 | 04.1 | [Scope as an accounting decision](04.1-scope-as-accounting-decision.md) | Ch. 4, App. F | Implemented |
 | 04.2 | [Activity periods, cut-off and pro-rating](04.2-activity-periods-and-pro-rating.md) | Ch. 5, 7, 9 | Implemented |

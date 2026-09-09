@@ -15,8 +15,8 @@ import com.carbonos.ghg.internal.Table1;
 public record BoundaryVersionEntryResponse(UUID entityId, String entityName, RelationshipType relationshipType,
 		BigDecimal economicInterestPercent, boolean operatedByCompany, boolean controlledByCompany,
 		BigDecimal effectiveEconomicInterestPercent, List<String> chain, BigDecimal accountingShare,
-		String table1Row, LocalDate effectiveFrom, LocalDate effectiveTo, boolean excluded, String exclusionReason,
-		List<VersionFacility> facilities) {
+		String table1Row, LocalDate effectiveFrom, LocalDate effectiveTo, Boolean financialControlOverride,
+		boolean excluded, String exclusionReason, List<VersionFacility> facilities) {
 
 	public record VersionFacility(UUID facilityId, String facilityName, String location) {
 		static VersionFacility from(BoundaryVersionFacility facility) {
@@ -30,9 +30,10 @@ public record BoundaryVersionEntryResponse(UUID entityId, String entityName, Rel
 				entry.isControlledByCompany(), entry.getEffectiveEconomicInterestPercent(), entry.getChain(),
 				entry.getAccountingShare(),
 				Table1.describe(entry.getRelationshipType(), approach, entry.getEconomicInterestPercent(),
-						entry.isOperatedByCompany(), entry.isControlledByCompany())
+						entry.isOperatedByCompany(), entry.isControlledByCompany(), entry.getFinancialControlOverride())
 						+ (entry.getChain().isEmpty() ? "" : "; held through " + String.join(" > ", entry.getChain())),
-				entry.getEffectiveFrom(), entry.getEffectiveTo(), entry.isExcluded(), entry.getExclusionReason(),
+				entry.getEffectiveFrom(), entry.getEffectiveTo(), entry.getFinancialControlOverride(), entry.isExcluded(),
+				entry.getExclusionReason(),
 				entry.getFacilities().stream().map(VersionFacility::from).toList());
 	}
 }

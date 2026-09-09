@@ -8,6 +8,7 @@ import com.carbonos.ghg.internal.ActivityCategory;
 import com.carbonos.ghg.internal.DataQuality;
 import com.carbonos.ghg.internal.ExclusionReason;
 import com.carbonos.ghg.internal.InventoryAssignment;
+import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.LeaseType;
 import com.carbonos.ghg.internal.Scope;
 import com.carbonos.ghg.internal.StreamKind;
@@ -22,10 +23,17 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 		String exclusionJustification, BigDecimal estimatedKgCo2e,
 		boolean classified, Scope scope, ActivityCategory category, LeaseType leaseType, UUID emissionFactorId,
 		String factorName, String scopeJustification, boolean proxy, String proxyJustification, UUID densityId,
-		String densityMaterial, BigDecimal densityKgPerLitre) {
+		String densityMaterial, BigDecimal densityKgPerLitre, LeaseType inheritedLeaseType, UUID suggestedFactorId,
+		String suggestedFactorName) {
 
 	public static AssignmentResponse from(InventoryAssignment assignment) {
+		return from(assignment, null);
+	}
+
+	/** With the grid factor suggested for the record's facility (spec 03.4), when there is one. */
+	public static AssignmentResponse from(InventoryAssignment assignment, InventoryService.Suggestion suggestion) {
 		var activity = assignment.getActivity();
+		var inheritedLease = activity.getFacility().leaseOver(activity.getPeriodStart(), activity.getPeriodEnd());
 		var factor = assignment.getEmissionFactor();
 		var stream = activity.getStream();
 		var density = assignment.getDensity();
@@ -43,6 +51,8 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 				assignment.getLeaseType(), factor == null ? null : factor.getId(),
 				factor == null ? null : factor.getName(), assignment.getScopeJustification(), assignment.isProxy(),
 				assignment.getProxyJustification(), density == null ? null : density.getId(),
-				density == null ? null : density.getMaterial(), density == null ? null : density.getKgPerLitre());
+				density == null ? null : density.getMaterial(), density == null ? null : density.getKgPerLitre(),
+				inheritedLease, suggestion == null ? null : suggestion.factorId(),
+				suggestion == null ? null : suggestion.factorName());
 	}
 }

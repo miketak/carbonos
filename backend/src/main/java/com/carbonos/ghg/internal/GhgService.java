@@ -226,7 +226,15 @@ public class GhgService {
 	/** The facts of an entity as a request states them (spec 03.1, 03.3). */
 	public record EntityFacts(String name, RelationshipType relationshipType, BigDecimal economicInterestPercent,
 			BigDecimal legalOwnershipPercent, boolean operatedByCompany, Boolean controlledByCompany,
-			UUID parentEntityId) {
+			UUID parentEntityId, LocalDate effectiveFrom, LocalDate effectiveTo, String jurisdiction,
+			Boolean financialControlOverride, String controlNote) {
+	}
+
+	private static void requireStructure(EntityFacts facts) {
+		if (facts.effectiveFrom() != null && facts.effectiveTo() != null
+				&& facts.effectiveTo().isBefore(facts.effectiveFrom())) {
+			throw new GhgFieldException("effectiveTo", "The disposal date is before the acquisition date.");
+		}
 	}
 
 	public LegalEntity createEntity(UUID organizationId, EntityFacts facts) {
@@ -237,9 +245,13 @@ public class GhgService {
 			throw new GhgRuleViolationException("An entity named '" + trimmed + "' already exists.");
 		}
 		var parent = requireParent(facts.parentEntityId(), organizationId, null);
-		return entities.save(new LegalEntity(organization, trimmed, facts.relationshipType(),
+		requireStructure(facts);
+		var entity = new LegalEntity(organization, trimmed, facts.relationshipType(),
 				facts.economicInterestPercent(), facts.legalOwnershipPercent(), facts.operatedByCompany(),
-				controlFlag(facts), parent, false));
+				controlFlag(facts), parent, false);
+		entity.setStructure(facts.effectiveFrom(), facts.effectiveTo(), country(facts.jurisdiction()),
+				facts.financialControlOverride(), trimToNull(facts.controlNote()));
+		return entities.save(entity);
 	}
 
 	/** Financial control is a fact only for franchises (spec 03.3); every other row implies it or rules it out. */
@@ -291,8 +303,11 @@ public class GhgService {
 			throw new GhgRuleViolationException("An entity named '" + trimmed + "' already exists.");
 		}
 		var parent = requireParent(facts.parentEntityId(), entity.getOrganization().getId(), entity);
+		requireStructure(facts);
 		entity.update(trimmed, facts.relationshipType(), facts.economicInterestPercent(),
 				facts.legalOwnershipPercent(), facts.operatedByCompany(), controlFlag(facts), parent);
+		entity.setStructure(facts.effectiveFrom(), facts.effectiveTo(), country(facts.jurisdiction()),
+				entity.isReportingCompany() ? null : facts.financialControlOverride(), trimToNull(facts.controlNote()));
 		return entity;
 	}
 
@@ -323,20 +338,45 @@ public class GhgService {
 		return facilities.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(organizationId);
 	}
 
+	/** The attributes of a facility beyond its name, location and entity (spec 03.4). */
+	public record FacilityAttributes(String gridRegion, FacilityType facilityType, LeaseType leaseType,
+			LocalDate leaseFrom, LocalDate leaseTo) {
+		public static FacilityAttributes none() {
+			return new FacilityAttributes(null, null, null, null, null);
+		}
+	}
+
+	private static void requireLease(FacilityAttributes attributes) {
+		if (attributes.leaseFrom() != null && attributes.leaseTo() != null
+				&& attributes.leaseTo().isBefore(attributes.leaseFrom())) {
+			throw new GhgFieldException("leaseTo", "The lease ends before it starts.");
+		}
+	}
+
 	/** Adds a facility under an entity; without one it belongs to the reporting company (spec 03.1). */
 	public Facility createFacility(UUID organizationId, UUID entityId, String name, String location,
-			String country) {
+			String country, FacilityAttributes attributes) {
 		var organization = getOrganization(organizationId);
 		access.checkWrite(organization);
 		var entity = requireEntityInOrganization(entityId, organizationId);
-		return facilities.save(new Facility(organization, entity, name.trim(), location.trim(), country(country)));
+		requireLease(attributes);
+		var facility = new Facility(organization, entity, name.trim(), location.trim(), country(country));
+		facility.setAttributes(trimToNull(attributes.gridRegion()) == null ? null
+				: attributes.gridRegion().trim().toUpperCase(Locale.ROOT), attributes.facilityType(),
+				attributes.leaseType(), attributes.leaseFrom(), attributes.leaseTo());
+		return facilities.save(facility);
 	}
 
-	public Facility updateFacility(UUID id, UUID entityId, String name, String location, String country) {
+	public Facility updateFacility(UUID id, UUID entityId, String name, String location, String country,
+			FacilityAttributes attributes) {
 		var facility = getFacility(id);
 		access.checkWrite(facility.getOrganization());
 		var entity = requireEntityInOrganization(entityId, facility.getOrganization().getId());
+		requireLease(attributes);
 		facility.update(entity, name.trim(), location.trim(), country(country));
+		facility.setAttributes(trimToNull(attributes.gridRegion()) == null ? null
+				: attributes.gridRegion().trim().toUpperCase(Locale.ROOT), attributes.facilityType(),
+				attributes.leaseType(), attributes.leaseFrom(), attributes.leaseTo());
 		return facility;
 	}
 
@@ -533,20 +573,38 @@ public class GhgService {
 					pack.publicationYear(), row.dataYear(), null, null, trimToNull(row.notes()));
 			var current = existing.get(row.code());
 			if (current == null) {
-				emissionFactors.save(new EmissionFactor(organization.getId(), row.name(), row.defaultScope(),
+				var factor = new EmissionFactor(organization.getId(), row.name(), row.defaultScope(),
 						row.defaultCategory(), row.scopeAgnostic(), row.unit(), row.kgCo2ePerUnit(), gases,
 						trimToNull(row.blendComposition()), trimToNull(row.blendGwpSource()), provenance, row.approved(),
-						packId, row.code()));
+						packId, row.code());
+				factor.setGridRegion(gridRegionOf(row.code()));
+				emissionFactors.save(factor);
 				created++;
 			}
 			else {
 				current.update(row.name(), row.defaultScope(), row.defaultCategory(), row.scopeAgnostic(), row.unit(),
 						row.kgCo2ePerUnit(), gases, trimToNull(row.blendComposition()), trimToNull(row.blendGwpSource()),
 						provenance, current.isApproved());
+				current.setGridRegion(gridRegionOf(row.code()));
 				updated++;
 			}
 		}
 		return new ImportResult(packId, created, updated);
+	}
+
+	/** The grid a pack row serves (spec 03.4): Ember rows carry the alpha-3 code, eGRID rows the subregion. */
+	static String gridRegionOf(String code) {
+		if (code == null) {
+			return null;
+		}
+		var parts = code.split(":");
+		if (code.startsWith("EMBER:grid:") && parts.length >= 3) {
+			return parts[2];
+		}
+		if (code.startsWith("EPA:Electricity_US_eGRID_subregion") && parts.length >= 3) {
+			return "US-" + parts[2].split("_")[0];
+		}
+		return null;
 	}
 
 	private static BigDecimal nz(BigDecimal value) {

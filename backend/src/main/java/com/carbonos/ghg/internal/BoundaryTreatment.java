@@ -65,6 +65,10 @@ public class BoundaryTreatment {
 	@Column(name = "effective_to")
 	private LocalDate effectiveTo;
 
+	// the financial-control decision copied from the entity (spec 03.4)
+	@Column(name = "financial_control_override")
+	private Boolean financialControlOverride;
+
 	@OneToMany(mappedBy = "treatment", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<BoundaryFacility> facilities = new ArrayList<>();
 
@@ -88,6 +92,18 @@ public class BoundaryTreatment {
 		this.economicInterestPercent = entity.getEconomicInterestPercent();
 		this.operatedByCompany = entity.isOperatedByCompany();
 		this.controlledByCompany = entity.isControlledByCompany();
+		this.financialControlOverride = entity.getFinancialControlOverride();
+		// spec 03.4: the membership window defaults to the entity's effective dates
+		this.effectiveFrom = entity.getEffectiveFrom();
+		this.effectiveTo = entity.getEffectiveTo();
+	}
+
+	public Boolean getFinancialControlOverride() {
+		return financialControlOverride;
+	}
+
+	void setFinancialControlOverride(Boolean financialControlOverride) {
+		this.financialControlOverride = financialControlOverride;
 	}
 
 	public UUID getId() {
@@ -161,7 +177,7 @@ public class BoundaryTreatment {
 	/** This entity's own Table 1 row under the approach, before the chain of parents (spec 03.3). */
 	public BigDecimal ownShare(ConsolidationApproach approach) {
 		return Table1.share(relationshipType, approach, economicInterestPercent, operatedByCompany,
-				controlledByCompany);
+				controlledByCompany, financialControlOverride);
 	}
 
 	/**

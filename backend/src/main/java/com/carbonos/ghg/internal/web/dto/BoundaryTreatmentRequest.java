@@ -23,10 +23,14 @@ public record BoundaryTreatmentRequest( //
 		Boolean controlledByCompany, //
 		LocalDate effectiveFrom, //
 		LocalDate effectiveTo, //
-		Boolean clearWindow) {
+		Boolean clearWindow, //
+		// the financial-control decision (spec 03.4); clearFinancialControlOverride returns to the Table 1 row
+		Boolean financialControlOverride, //
+		Boolean clearFinancialControlOverride) {
 
 	public InventoryService.TreatmentInput toInput() {
 		return new InventoryService.TreatmentInput(relationshipType, economicInterestPercent, operatedByCompany,
-				controlledByCompany, effectiveFrom, effectiveTo, Boolean.TRUE.equals(clearWindow));
+				controlledByCompany, effectiveFrom, effectiveTo, Boolean.TRUE.equals(clearWindow),
+				financialControlOverride, Boolean.TRUE.equals(clearFinancialControlOverride));
 	}
 }

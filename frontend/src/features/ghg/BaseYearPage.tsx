@@ -446,12 +446,21 @@ function RaiseModal({
   )
   const [reason, setReason] = useState('')
   const [percent, setPercent] = useState('')
+  const [comparisonRunId, setComparisonRunId] = useState('')
   const validation = fieldErrors(raise.error)
   const error = raise.isError && !validation ? problemDetail(raise.error) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    raise.mutate({ trigger, reason, affectedPercent: Number(percent) }, { onSuccess: onDone })
+    raise.mutate(
+      {
+        trigger,
+        reason,
+        affectedPercent: percent.trim() === '' ? undefined : Number(percent),
+        comparisonRunId: comparisonRunId === '' ? undefined : comparisonRunId,
+      },
+      { onSuccess: onDone },
+    )
   }
 
   return (
@@ -489,7 +498,14 @@ function RaiseModal({
           value={percent}
           onChange={(event) => setPercent(event.target.value)}
           error={validation?.affectedPercent}
-          required
+          hint="Type it, or name a comparison run below and the share is the difference between the two totals."
+        />
+        <InputField
+          label="Comparison run id (optional)"
+          placeholder="A run of the base-year inventory that applies the new method"
+          value={comparisonRunId}
+          onChange={(event) => setComparisonRunId(event.target.value)}
+          error={validation?.comparisonRunId}
         />
         {error && (
           <p role="alert" className="text-sm font-medium text-red-600">

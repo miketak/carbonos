@@ -28,7 +28,7 @@ Status summary (update as tickets close):
 | Priority | Tickets | Done |
 |---|---|---|
 | P0 | 9 | 9 |
-| P1 | 13 | 6 |
+| P1 | 13 | 9 |
 | P2 | 4 | 0 |
 
 ## Theme 1: Scope 2 accounting
@@ -165,21 +165,21 @@ Status summary (update as tickets close):
 
 ## Theme 5: Organization, entities, facilities, boundary
 
-- [ ] **T-19 (P1) Legal entity effective dates, jurisdiction, and a financial-control override**
+- [x] **T-19 (P1) Legal entity effective dates, jurisdiction, and a financial-control override**
   - Findings: F5, F47
   - Problem: the entity record has no acquisition or disposal date, no country, and no way to record that a minority holding is consolidated under IFRS 10 (financial control without majority). The acquisition date can only be entered as "Member from" per inventory, after ticking the entity into a boundary, and must be repeated in every inventory. Structural-change detection therefore depends on that manual entry, and the affected share for a manual recalculation candidate is typed rather than computed.
   - Standard: Corporate Standard chapter 3 (financial control is the ability to direct policies, not a percentage); chapter 5 (structural changes must be dated for base-year recalculation).
   - Done when: entities carry effective-from and effective-to dates, jurisdiction, and a "financially controlled" override with a note; each inventory defaults "Member from" and "Member to" from those dates; the affected share for a recalculation candidate is computed from the runs where possible, with a manual override and note.
   - Spec: update 03.1 (legal entities) and 06 (base year).
 
-- [ ] **T-20 (P1) Facility country, grid region, facility type, and lease flags**
+- [x] **T-20 (P1) Facility country, grid region, facility type, and lease flags**
   - Findings: F7
   - Problem: a facility is name, free-text location, and legal entity. Nothing drives the grid factor ("Grid electricity (UK)" is offered for a mine in Ghana). Lease status has to be re-declared per record per inventory although it is a property of the site.
   - Standard: Scope 2 Guidance section 6.3 (location-based factor for the grid where the facility sits); Corporate Standard Appendix F (lease treatment).
   - Done when: facilities have country, grid region (which pre-selects the location-based factor), facility type, and lease-in or lease-out flags with dates; records inherit these and the classification shows the inherited lease treatment.
   - Spec: update 02 (organization) and 04.
 
-- [ ] **T-21 (P1) Pre-populate the boundary from the consolidation approach**
+- [x] **T-21 (P1) Pre-populate the boundary from the consolidation approach**
   - Findings: F21
   - Problem: every entity and facility starts unticked; the officer had to tick each of seven entities and seven facilities. The associate with a 0% operational-control share could still be ticked (with a warning). Under a control approach, every controlled operation is in by definition; opt-in inclusion invites omissions and doubles the work per inventory.
   - Standard: Corporate Standard chapter 3.

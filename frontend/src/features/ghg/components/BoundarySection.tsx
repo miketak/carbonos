@@ -101,7 +101,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
               <TapCheckbox
                 label={`${entity.entityName} in boundary`}
                 checked={entity.inBoundary}
-                disabled={!editable}
+                disabled={!editable || (!entity.inBoundary && entity.shareUnderApproach === 0)}
                 onChange={() => toggleEntity(entity)}
               />
               <div className="min-w-0 flex-1">
@@ -245,6 +245,14 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
               </p>
             )}
 
+            {!entity.inBoundary && entity.shareUnderApproach === 0 && (
+              <p className="mt-2 pl-12 text-xs text-ink-muted">
+                Outside the boundary under{' '}
+                {approachLabels[inventory.consolidationApproach].toLowerCase()}: 0% share from its
+                Table 1 row. Record why it is left out so the report says so.
+              </p>
+            )}
+
             {!entity.inBoundary && entity.facilities.length > 0 && (
               <div className="mt-2 pl-12">
                 <ExclusionControl
@@ -271,7 +279,9 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                     <TapCheckbox
                       label={`${facility.facilityName} in boundary`}
                       checked={facility.inBoundary}
-                      disabled={!editable}
+                      disabled={
+                        !editable || (!facility.inBoundary && entity.shareUnderApproach === 0)
+                      }
                       onChange={() => toggleFacility(facility.facilityId, facility.inBoundary)}
                     />
                     <span className="min-w-0 flex-1 text-sm">
