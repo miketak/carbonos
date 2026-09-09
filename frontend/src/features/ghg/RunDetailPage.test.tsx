@@ -195,6 +195,7 @@ const report: Report = {
       byGas: {
         co2Kg: 1052.3,
         ch4Kg: 0.04,
+        ch4FossilKg: 0.04,
         n2oKg: 0.04,
         hfcsKg: 0,
         pfcsKg: 0,
@@ -228,6 +229,7 @@ const report: Report = {
     byGas: {
       co2Kg: 1934.3,
       ch4Kg: 0.1,
+      ch4FossilKg: 0.1,
       n2oKg: 0.04,
       hfcsKg: 0,
       pfcsKg: 0,
@@ -315,7 +317,9 @@ test('reports scope 2 market-based beside location-based, each gas, and biogenic
   expect(within(gases).getByText('N2O')).toBeInTheDocument()
   // zero gases are hidden; the assessment report behind the blends is stated
   expect(within(gases).queryByText('SF6')).not.toBeInTheDocument()
-  expect(within(gases).getByText(/HFC and PFC blends used the same report/)).toBeInTheDocument()
+  expect(
+    within(gases).getByText(/blends are converted from their component gases/),
+  ).toBeInTheDocument()
 
   expect(screen.getByText(/of biogenic CO₂, reported separately/)).toBeInTheDocument()
   expect(screen.getByText('18.000 t')).toBeInTheDocument()

@@ -18,7 +18,14 @@ function gasSplit(factor: EmissionFactor): string {
     ['NF₃', factor.gases.nf3],
   ]
   for (const [gas, kg] of gases) {
-    if (kg > 0) parts.push(`${gas} ${kg.toLocaleString(undefined, { maximumFractionDigits: 6 })}`)
+    if (kg <= 0) continue
+    const origin = gas === 'CH₄' ? (factor.ch4Fossil ? ' (fossil)' : ' (biogenic)') : ''
+    parts.push(`${gas} ${kg.toLocaleString(undefined, { maximumFractionDigits: 6 })}${origin}`)
+  }
+  if (factor.blendComposition) {
+    parts.push(`blend ${factor.blendComposition}, converted with the inventory's GWP set`)
+  } else if (factor.blendGwpSource) {
+    parts.push(`blend CO₂e on the source's IPCC ${factor.blendGwpSource} basis`)
   }
   if (factor.biogenicCo2KgPerUnit > 0) {
     parts.push(

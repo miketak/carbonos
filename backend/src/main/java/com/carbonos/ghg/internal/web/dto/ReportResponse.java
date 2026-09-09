@@ -109,7 +109,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		}
 		var gwp = run.getGwpSet();
 		var byGas = List.of(Gas.of("CO2", run.getCo2Kg(), run.getCo2Kg()),
-				Gas.of("CH4", run.getCh4Kg(), run.getCh4Kg().multiply(gwp.ch4())),
+				Gas.of("CH4", run.getCh4Kg(), run.ch4KgCo2e()),
 				Gas.of("N2O", run.getN2oKg(), run.getN2oKg().multiply(gwp.n2o())),
 				Gas.of("HFCs", run.getHfcsKg(), run.getHfcsKgCo2e()), Gas.of("PFCs", run.getPfcsKg(), run.getPfcsKgCo2e()),
 				Gas.of("SF6", run.getSf6Kg(), run.getSf6Kg().multiply(gwp.sf6())),
@@ -117,10 +117,15 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		var sources = run.getLines().stream().map(line -> line.getFactorName()).distinct().sorted().toList();
 		var reports = run.assessmentReports();
 		var blendReports = reports.stream().skip(1).toList();
-		var potentials = "CO2e uses IPCC " + gwp.name() + " 100-year global warming potentials"
-				+ (blendReports.isEmpty() ? "; the HFC and PFC blends used the same report."
-						: ". More than one assessment report was used: the HFC and PFC blends keep the potentials of IPCC "
-								+ String.join(" and ", blendReports) + " that their source applied.");
+		var methane = gwp == GwpSet.AR6
+				? " Methane of fossil origin is converted at " + gwp.ch4(true) + " and biogenic methane at "
+						+ gwp.ch4(false) + " (IPCC AR6, Table 7.15 and Table 7.SM.7)."
+				: " Methane is converted at " + gwp.ch4(true) + " whatever its origin (IPCC AR5, Table 8.A.1).";
+		var potentials = "CO2e uses IPCC " + gwp.name() + " 100-year global warming potentials." + methane
+				+ (blendReports.isEmpty()
+						? " HFC and PFC blends are converted from their component gases with the same potentials."
+						: " More than one assessment report was used: a blend whose composition is not recorded keeps "
+								+ "the CO2e its source stated under IPCC " + String.join(" and ", blendReports) + ".");
 		var failing = marketFactors.stream().filter(factor -> !factor.isMeetsQualityCriteria()).toList();
 		var residualMixAvailable = inventory.getResidualMixAvailable();
 		var residualMixDisclosure = run.getScope2MarketBasedKgCo2e() == null ? null

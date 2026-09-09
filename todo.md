@@ -27,7 +27,7 @@ Status summary (update as tickets close):
 
 | Priority | Tickets | Done |
 |---|---|---|
-| P0 | 9 | 0 |
+| P0 | 9 | 1 |
 | P1 | 13 | 0 |
 | P2 | 4 | 0 |
 
@@ -56,12 +56,12 @@ Status summary (update as tickets close):
   - Done when: an organization can add factors with source, URL, publication and data year, GWP set, unit, per-gas values, fossil or biogenic CH4 flag (see T-04), validity dates, and an approval flag; seeded factors cite the exact publication, table, and data year, with "(approx.)" removed and the Ecoriv citation replaced by the underlying source; importable packs exist for DEFRA/DESNZ, EPA Hub, IPCC 2006 process defaults, and a Ghana pack (Energy Commission generation mix, T&D losses); sector packs for mining, oil and gas, and construction cover the streams listed in F51; per-gas values are carried where the source publishes them and the report says when a source does not.
   - Spec: none yet. This is the largest ticket; consider splitting into (a) organization-level factors with provenance, (b) reseed with citations, (c) packs.
 
-- [ ] **T-04 (P0) Fix the refrigerant GWP values and derive CO2e from the inventory's GWP set**
+- [x] **T-04 (P0) Fix the refrigerant GWP values and derive CO2e from the inventory's GWP set**
   - Findings: F18, F37
   - Problem: R-410A is seeded at 2,088 kg CO2e/kg, which is the AR4 blend value, but labelled "IPCC AR5 GWP100". An 85 kg top-up reported 177.48 tCO2e where AR5 gives 163.54 tCO2e (8.5% overstatement). The AR6 inventory kept 2,088 and its report says the blends "keep the potentials of IPCC AR5", compounding the mislabel. Separately, AR6 applies CH4 at 27.9 (the non-fossil value) to fossil fuel combustion; AR6 gives 29.8 for fossil-origin methane.
   - Standard: 2013 required-gases amendment and Corporate Standard chapter 9 (GWP source stated and used consistently).
   - Done when: refrigerant factors are stored as gas mass with per-component composition (R-410A: 50% HFC-32, 50% HFC-125) and CO2e is computed from the inventory's GWP set (AR5: HFC-32 677, HFC-125 3,170; AR6: 771 and 3,740); the 85 kg line reports about 163.5 tCO2e under AR5 (1,923.5 kg CO2e/kg) and about 191.7 tCO2e under AR6 (2,255.5 kg CO2e/kg); CH4 carries a fossil or biogenic flag and AR6 uses 29.8 for fossil combustion; a migration corrects the seeded R-410A row and its label. Regression test on both numbers.
-  - Spec: none yet; extend 07.2 (required disclosures, gases).
+  - Spec: 07.2 (Gas masses, Methane origin), migration V20.
 
 ## Theme 3: Runs, reports, and export
 

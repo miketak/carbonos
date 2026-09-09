@@ -152,8 +152,12 @@ export interface EmissionFactor {
   gases: Gases
   biogenicCo2KgPerUnit: number
   gwpSet: GwpSet
-  /** The IPCC assessment report behind the blend potentials; null for a factor with no blend. */
+  /** The IPCC assessment report the source applied to the blend; null for a factor with no blend. */
   blendGwpSource: string | null
+  /** "50% HFC-32, 50% HFC-125": a blend with a composition converts with the inventory's GWP set (spec 07.2). */
+  blendComposition: string | null
+  /** Fossil-origin methane (fuel combustion) or biogenic (landfill, biomass); AR6 rates them differently. */
+  ch4Fossil: boolean
   source: string
 }
 
@@ -402,6 +406,8 @@ export interface ValidationReport {
 export interface ByGas {
   co2Kg: number
   ch4Kg: number
+  /** The fossil-origin part of ch4Kg (spec 07.2). */
+  ch4FossilKg: number
   n2oKg: number
   hfcsKg: number
   pfcsKg: number

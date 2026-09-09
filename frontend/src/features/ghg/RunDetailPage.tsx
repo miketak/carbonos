@@ -328,9 +328,12 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         </table>
         <p className="mt-2 text-xs text-ink-muted">
           Each gas in mass and in CO₂e under IPCC {methodology.gwpSet} 100-year potentials.
+          {methodology.gwpSet === 'AR6'
+            ? ' Methane of fossil origin is converted at 29.8 and biogenic methane at 27.9.'
+            : ' Methane is converted at 28 whatever its origin.'}
           {methodology.multipleAssessmentReports
-            ? ` More than one assessment report was used: the HFC and PFC blends keep the potentials of IPCC ${methodology.assessmentReports.slice(1).join(' and ')} that their source applied.`
-            : ' The HFC and PFC blends used the same report.'}
+            ? ` More than one assessment report was used: a blend whose composition is not recorded keeps the CO₂e its source stated under IPCC ${methodology.assessmentReports.slice(1).join(' and ')}.`
+            : ' HFC and PFC blends are converted from their component gases with the same potentials.'}
         </p>
       </Section>
 
