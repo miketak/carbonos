@@ -27,7 +27,7 @@ Status summary (update as tickets close):
 
 | Priority | Tickets | Done |
 |---|---|---|
-| P0 | 9 | 6 |
+| P0 | 9 | 7 |
 | P1 | 13 | 0 |
 | P2 | 4 | 0 |
 
@@ -109,12 +109,12 @@ Status summary (update as tickets close):
 
 ## Theme 4: Activity data and classification
 
-- [ ] **T-11 (P0) Source-stream register per facility, explicit scope choice, and scope override**
+- [x] **T-11 (P0) Source-stream register per facility, explicit scope choice, and scope override**
   - Findings: F10, F26, F27, F30
   - Problem: "Activity" is free text and factor candidates are filtered by unit dimension only, so genset diesel offers Petrol and Water supply, and nothing prevents "Waste to landfill" for cyanide. Selecting a factor classifies the record immediately with the factor's suggested scope, so contractor-owned fleet diesel lands in Scope 1 and the pre-flight warns "'Diesel' suggests scope 1" on every contractor line forever. For Scope 2 and Scope 3 factors the scope is locked as "inherent", although mines run their own landfills (Scope 1 CH4), sell electricity, and host contractor consumption. A proxy factor (ANFO for emulsion, calcination for purchased lime) cannot be flagged and the record's own description is dropped from the snapshot line.
   - Standard: Corporate Standard chapter 4 and Scope 3 Standard category 1 guidance (contractor equipment is Scope 3 unless the company directs its operation); ISO 14064-1 section 9.3.3 and Corporate Standard chapter 7 (completeness needs a controlled list of source streams).
   - Done when: each facility has a register of source streams (type, fuel, meter or supplier, owned or contractor) and factor candidates derive from the stream; scope is an explicit choice, defaulted from the stream, with the "suggests scope" warning suppressed once a reason is documented; scope override with required justification is allowed on any factor; a "proxy factor" flag with justification exists and the record description prints on every snapshot line.
-  - Spec: update 04 (activity data) and the classification spec.
+  - Spec: 04.3 (source streams, explicit scope choice and proxy factors), migration V26; 04.1 updated.
 
 - [ ] **T-12 (P1) Carry classifications, exclusions, lease flags, and the Scope 3 declaration into new inventories and corrections**
   - Findings: F29

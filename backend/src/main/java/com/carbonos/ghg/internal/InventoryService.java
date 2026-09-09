@@ -784,23 +784,27 @@ public class InventoryService {
 	 * derive from Appendix F under the inventory's approach.
 	 */
 	public InventoryAssignment classify(UUID assignmentId, UUID emissionFactorId, Scope scope,
-			ActivityCategory category, LeaseType leaseType) {
+			ActivityCategory category, LeaseType leaseType, String scopeJustification, boolean proxy,
+			String proxyJustification) {
 		var assignment = getAssignment(assignmentId);
 		requireEditable(assignment.getInventory());
 		var factor = emissionFactors.findById(emissionFactorId)
 			.orElseThrow(() -> GhgNotFoundException.emissionFactor(emissionFactorId));
+		// spec 04.3: the stream fixes the default; without one the factor suggests it
+		var stream = assignment.getActivity().getStream();
+		var defaultScope = stream != null ? stream.defaultScope() : factor.getDefaultScope();
+		var defaultCategory = stream != null ? stream.defaultCategory() : factor.getDefaultCategory();
 		Scope chosenScope;
 		ActivityCategory chosenCategory;
 		if (leaseType != null) {
-			var derived = leaseType.derive(assignment.getInventory().getConsolidationApproach(),
-					factor.getDefaultScope(), factor.getDefaultCategory());
+			var derived = leaseType.derive(assignment.getInventory().getConsolidationApproach(), defaultScope,
+					defaultCategory);
 			chosenScope = derived.scope();
 			chosenCategory = derived.category();
 		}
 		else {
-			chosenScope = scope != null ? scope : factor.getDefaultScope();
-			chosenCategory = category != null ? category
-					: chosenScope == factor.getDefaultScope() ? factor.getDefaultCategory() : null;
+			chosenScope = scope != null ? scope : defaultScope;
+			chosenCategory = category != null ? category : chosenScope == defaultScope ? defaultCategory : null;
 			if (chosenCategory == null) {
 				throw new GhgRuleViolationException("Choose a " + chosenScope.name().toLowerCase().replace('_', ' ')
 						+ " category for '" + factor.getName() + "'.");
@@ -811,8 +815,19 @@ public class InventoryService {
 					.toLowerCase()
 					.replace('_', ' ') + " category, not " + chosenScope.name().toLowerCase().replace('_', ' ') + ".");
 			}
+			if (stream != null && !stream.getKind().categories().contains(chosenCategory)) {
+				throw new GhgRuleViolationException(chosenCategory + " is not a category a "
+						+ stream.getKind().name().toLowerCase().replace('_', ' ') + " stream ('" + stream.getName()
+						+ "') can be classified into.");
+			}
 		}
-		assignment.classify(factor, chosenScope, chosenCategory, leaseType);
+		var departs = leaseType == null && chosenScope != defaultScope;
+		var justification = trimToNull(scopeJustification);
+		if (proxy && trimToNull(proxyJustification) == null) {
+			throw new GhgRuleViolationException("A proxy factor needs a justification: say what the factor stands in for.");
+		}
+		assignment.classify(factor, chosenScope, chosenCategory, leaseType, departs ? justification : null, proxy,
+				proxy ? trimToNull(proxyJustification) : null);
 		return assignment;
 	}
 
@@ -1010,18 +1025,18 @@ public class InventoryService {
 								+ ") is unclassified: assign an emission factor or exclude it."));
 				continue;
 			}
+			// spec 04.3: scope is a choice; a departure from the stream's (or factor's) default needs a reason
 			var factor = assignment.getEmissionFactor();
-			var leased = assignment.getLeaseType() != null && assignment.getScope() == Scope.SCOPE_3;
-			if (!leased && !factor.compatibleWith(assignment.getScope())) {
+			var stream = activity.getStream();
+			var defaultScope = stream != null ? stream.defaultScope() : factor.getDefaultScope();
+			var departs = assignment.getLeaseType() == null && assignment.getScope() != defaultScope;
+			if (departs && assignment.getScopeJustification() == null) {
 				classificationFindings.add(new Finding(Severity.ERROR, "'" + activity.getActivityType()
-						+ "' is classified in " + scopeName(assignment.getScope()) + " with '" + factor.getName()
-						+ "', a " + scopeName(factor.getDefaultScope()) + " factor whose scope is inherent."));
-			}
-			else if (assignment.getScope() != factor.getDefaultScope()) {
-				classificationFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType()
-						+ "' is classified in " + scopeName(assignment.getScope()) + "; '" + factor.getName()
-						+ "' suggests " + scopeName(factor.getDefaultScope())
-						+ (assignment.getLeaseType() != null ? " (leased asset, Appendix F)" : "") + "."));
+						+ "' is classified in " + scopeName(assignment.getScope()) + "; "
+						+ (stream != null ? "its stream '" + stream.getName() + "'" : "'" + factor.getName() + "'")
+						+ " defaults to " + scopeName(defaultScope)
+						+ ". Record why (a justification of at least 10 characters), or classify it in "
+						+ scopeName(defaultScope) + "."));
 			}
 		}
 

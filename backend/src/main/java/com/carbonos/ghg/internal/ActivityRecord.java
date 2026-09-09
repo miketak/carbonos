@@ -36,6 +36,11 @@ public class ActivityRecord {
 	@Column(name = "activity_type", nullable = false, length = 120)
 	private String activityType;
 
+	// the source stream the record belongs to (spec 04.3); optional
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "stream_id")
+	private SourceStream stream;
+
 	@Column(nullable = false, precision = 14, scale = 3)
 	private BigDecimal quantity;
 
@@ -69,10 +74,12 @@ public class ActivityRecord {
 	protected ActivityRecord() {
 	}
 
-	ActivityRecord(Facility facility, String activityType, BigDecimal quantity, String unit, LocalDate periodStart,
-			LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality, String note) {
+	ActivityRecord(Facility facility, SourceStream stream, String activityType, BigDecimal quantity, String unit,
+			LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality,
+			String note) {
 		this.id = UUID.randomUUID();
 		this.facility = facility;
+		this.stream = stream;
 		this.activityType = activityType;
 		this.quantity = quantity;
 		this.unit = unit;
@@ -94,6 +101,10 @@ public class ActivityRecord {
 
 	public String getActivityType() {
 		return activityType;
+	}
+
+	public SourceStream getStream() {
+		return stream;
 	}
 
 	public BigDecimal getQuantity() {
@@ -137,9 +148,11 @@ public class ActivityRecord {
 	}
 
 	/** In-place correction (CORRECT-01); runs snapshot, so history is unaffected. */
-	void update(Facility facility, String activityType, BigDecimal quantity, String unit, LocalDate periodStart,
-			LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality, String note) {
+	void update(Facility facility, SourceStream stream, String activityType, BigDecimal quantity, String unit,
+			LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality,
+			String note) {
 		this.facility = facility;
+		this.stream = stream;
 		this.activityType = activityType;
 		this.quantity = quantity;
 		this.unit = unit;

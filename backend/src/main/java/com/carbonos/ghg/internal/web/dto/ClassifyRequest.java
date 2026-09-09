@@ -7,6 +7,7 @@ import com.carbonos.ghg.internal.LeaseType;
 import com.carbonos.ghg.internal.Scope;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * A classification (spec 04.1): the factor plus the scope and category the
@@ -17,5 +18,9 @@ public record ClassifyRequest( //
 		@NotNull UUID emissionFactorId, //
 		Scope scope, //
 		ActivityCategory category, //
-		LeaseType leaseType) {
+		LeaseType leaseType, //
+		// why the scope departs from the stream's or factor's default (spec 04.3)
+		@Size(min = 10, max = 500) String scopeJustification, //
+		Boolean proxy, //
+		@Size(min = 5, max = 500) String proxyJustification) {
 }

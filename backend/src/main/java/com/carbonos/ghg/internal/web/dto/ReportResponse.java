@@ -228,12 +228,16 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 						+ " not applied, as the lines state.";
 		var scope2Methods = "Scope 2 is reported location-based and market-based, each labeled (Scope 2 Guidance, "
 				+ "chapter 4). " + basis + failingClause + " The inventory total uses the location-based figure.";
+		var proxies = run.getLines().stream().filter(GhgRunLine::isProxy).count();
+		var proxyClause = proxies == 0 ? ""
+				: " " + proxies + " line" + (proxies == 1 ? " uses" : "s use") + " a proxy factor for a source with no "
+						+ "published factor, with the justification on the line.";
 		var statement = "Emissions were calculated as activity data multiplied by an emission factor and the "
 				+ "accounting share of the facility's legal entity under the " + describe(run.getConsolidationApproach())
 				+ " approach (GHG Protocol Corporate Standard, Chapter 3, Table 1), applied at every level of the "
 				+ "group. Activity data were converted into each factor's unit within its physical dimension "
 				+ "only. " + potentials + " " + scope2Methods
-				+ " Figures are stated in metric tonnes, with kilograms retained on every line."
+				+ proxyClause + " Figures are stated in metric tonnes, with kilograms retained on every line."
 				+ " Biogenic CO2 is reported outside the scopes.";
 		// every run reports both methods (spec 07.3); a base year on the grid-average basis is a location-based proxy
 		var baseYearScope2Method = baseRun == null ? null : "DUAL";

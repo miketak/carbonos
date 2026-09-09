@@ -6,11 +6,16 @@ import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
 import { FacilityFormModal } from './components/FacilityFormModal'
+import { StreamsModal } from './components/StreamsModal'
 import { relationshipShortLabels } from './format'
 import { useDeleteFacility, useEntitiesQuery, useFacilitiesQuery } from './useGhg'
 import type { Facility } from './api'
 
-type Dialog = { kind: 'create' } | { kind: 'edit'; facility: Facility } | null
+type Dialog =
+  | { kind: 'create' }
+  | { kind: 'edit'; facility: Facility }
+  | { kind: 'streams'; facility: Facility }
+  | null
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
@@ -102,6 +107,13 @@ export function FacilitiesPage() {
                     <Button
                       variant="ghost"
                       className="px-2 py-1 text-xs"
+                      onClick={() => setDialog({ kind: 'streams', facility })}
+                    >
+                      Source streams
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="px-2 py-1 text-xs"
                       onClick={() => setDialog({ kind: 'edit', facility })}
                     >
                       Edit
@@ -138,6 +150,13 @@ export function FacilitiesPage() {
             setDialog(null)
             toast(message)
           }}
+        />
+      )}
+      {dialog?.kind === 'streams' && (
+        <StreamsModal
+          organizationId={organizationId}
+          facility={dialog.facility}
+          onClose={() => setDialog(null)}
         />
       )}
       {dialog?.kind === 'edit' && (

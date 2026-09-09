@@ -732,11 +732,20 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.category").value("PURCHASED_GOODS_SERVICES"));
 		// a category from the wrong scope is refused outright
 		classifyAs(hired, DIESEL_FACTOR, "SCOPE_3", "MOBILE_COMBUSTION").andExpect(status().isConflict());
-		// the deliberate departure from the factor's default is visible, not blocking
+		// spec 04.3: the departure from the factor's default blocks until a reason is recorded, then it is silent
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
-			.andExpect(jsonPath("$.gates[2].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"))
 			.andExpect(jsonPath("$.gates[2].findings[0].message")
-				.value(org.hamcrest.Matchers.containsString("'Diesel' suggests scope 1")));
+				.value(org.hamcrest.Matchers.containsString("'Diesel' defaults to scope 1. Record why")));
+		mvc.perform(put("/api/ghg/assignments/" + hired + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s", "scope": "SCOPE_3", "category": "PURCHASED_GOODS_SERVICES",
+					 "scopeJustification": "Contractor-owned and operated fleet; the company does not direct its operation"}"""
+				.formatted(DIESEL_FACTOR)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.scopeJustification").value(org.hamcrest.Matchers.startsWith("Contractor-owned")));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[2].status").value("PASSED"));
 
 		freeze(inventoryId);
 		run(inventoryId, "Run 001").andExpect(status().isCreated())
@@ -746,7 +755,7 @@ class GhgApiIntegrationTests {
 	}
 
 	@Test
-	void aFactorWhoseScopeIsInherentIsRefusedInAnotherScope() throws Exception {
+	void aFactorInAnotherScopeThanItsDefaultNeedsAJustification() throws Exception {
 		var orgId = createOrganization("Ecoriv Holdings");
 		var plant = createFacility(orgId, "Tema Plant");
 		var activityId = createActivity(orgId, plant, "Electricity", "1000", "kWh", "2025-06-30");
@@ -754,11 +763,146 @@ class GhgApiIntegrationTests {
 		putBoundary(inventoryId, plant);
 		var assignmentId = syncAndGetAssignmentId(inventoryId, activityId);
 
+		// spec 04.3: no scope is inherent; a departure without a reason blocks the run
 		classifyAs(assignmentId, GRID_FACTOR, "SCOPE_1", "STATIONARY_COMBUSTION").andExpect(status().isOk());
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"))
 			.andExpect(jsonPath("$.gates[2].findings[0].message")
-				.value(org.hamcrest.Matchers.containsString("a scope 2 factor whose scope is inherent")));
+				.value(org.hamcrest.Matchers.containsString("'Grid electricity (Ghana)' defaults to scope 2")));
+	}
+
+	/** Audit findings F10, F26, F27, F30 (T-11): the stream register, the scope choice and proxy factors. */
+	@Test
+	void aStreamDrivesTheDefaultScopeAndAnyDepartureNeedsAJustification() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var pit = createFacility(orgId, "Obuom Pit");
+		// the register: an owned genset stream, a contractor-operated fleet, the company's own landfill
+		var gensets = body(mvc
+			.perform(post("/api/ghg/facilities/" + pit + "/streams").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Standby gensets", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel",
+						 "meterOrSupplier": "Bulk tank dip", "contractorOperated": false}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.defaultScope").value("SCOPE_1"))
+			.andExpect(jsonPath("$.defaultCategory").value("STATIONARY_COMBUSTION")));
+		String gensetsId = JsonPath.read(gensets, "$.id");
+		var fleet = body(mvc
+			.perform(post("/api/ghg/facilities/" + pit + "/streams").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Contract mining fleet", "kind": "MOBILE_COMBUSTION", "fuel": "Diesel",
+						 "meterOrSupplier": "Rocksure dispensing log", "contractorOperated": true}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.defaultScope").value("SCOPE_3"))
+			.andExpect(jsonPath("$.defaultCategory").value("UPSTREAM_TRANSPORT")));
+		String fleetId = JsonPath.read(fleet, "$.id");
+		var landfill = body(mvc
+			.perform(post("/api/ghg/facilities/" + pit + "/streams").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Camp landfill", "kind": "WASTE", "contractorOperated": false}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.defaultScope").value("SCOPE_3"))
+			.andExpect(jsonPath("$.allowedCategories").value(org.hamcrest.Matchers.hasItem("FUGITIVE_EMISSIONS"))));
+		String landfillId = JsonPath.read(landfill, "$.id");
+		// a duplicate name at the facility is refused; a stream of another facility cannot be named by a record
+		mvc.perform(post("/api/ghg/facilities/" + pit + "/streams").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "standby gensets", "kind": "STATIONARY_COMBUSTION", "contractorOperated": false}"""))
+			.andExpect(status().isConflict());
+		var otherSite = createFacility(orgId, "Nkran Camp");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"facilityId": "%s", "streamId": "%s", "activityType": "Genset diesel", "quantity": 100,
+					 "unit": "litre", "periodStart": "2025-06-30", "periodEnd": "2025-06-30", "dataQuality": "MEASURED"}"""
+				.formatted(otherSite, gensetsId)))
+			.andExpect(status().isConflict());
+		// records name their stream
+		String gensetDiesel = JsonPath.read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"facilityId": "%s", "streamId": "%s", "activityType": "Genset diesel, June", "quantity": 1000,
+						 "unit": "litre", "periodStart": "2025-06-01", "periodEnd": "2025-06-30", "evidenceRef": "TANK-6",
+						 "dataQuality": "MEASURED"}""".formatted(pit, gensetsId)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.streamName").value("Standby gensets"))), "$.id");
+		String fleetDiesel = JsonPath.read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"facilityId": "%s", "streamId": "%s", "activityType": "Rocksure fleet diesel, June",
+						 "quantity": 2000, "unit": "litre", "periodStart": "2025-06-01", "periodEnd": "2025-06-30",
+						 "evidenceRef": "RS-06", "dataQuality": "MEASURED"}""".formatted(pit, fleetId)))
+			.andExpect(status().isCreated())), "$.id");
+		String waste = JsonPath.read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"facilityId": "%s", "streamId": "%s", "activityType": "Camp waste landfilled, June",
+						 "quantity": 1, "unit": "tonne", "periodStart": "2025-06-01", "periodEnd": "2025-06-30",
+						 "evidenceRef": "WB-06", "dataQuality": "MEASURED"}""".formatted(pit, landfillId)))
+			.andExpect(status().isCreated())), "$.id");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		excludeFacility(inventoryId, otherSite, "NOT_APPLICABLE", "No activity in 2025");
+		var gensetAssignment = syncAndGetAssignmentId(inventoryId, gensetDiesel);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityId == '" + fleetDiesel + "')].defaultScope").value("SCOPE_3"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + fleetDiesel + "')].contractorOperated").value(true)));
+		String fleetAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + fleetDiesel + "')].id").getFirst();
+		String wasteAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + waste + "')].id").getFirst();
+		// the factor alone classifies each record in its stream's default: scope 1 for the gensets, scope 3 for the
+		// contractor's fleet, with no warning about "suggests scope 1"
+		classify(gensetAssignment, DIESEL_FACTOR);
+		classify(fleetAssignment, DIESEL_FACTOR);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + gensetAssignment + "')].scope").value("SCOPE_1"))
+			.andExpect(jsonPath("$[?(@.id == '" + gensetAssignment + "')].category").value("STATIONARY_COMBUSTION"))
+			.andExpect(jsonPath("$[?(@.id == '" + fleetAssignment + "')].scope").value("SCOPE_3"))
+			.andExpect(jsonPath("$[?(@.id == '" + fleetAssignment + "')].category").value("UPSTREAM_TRANSPORT"));
+		// a category outside the stream's kind is refused; the landfill factor in scope 1 needs a reason
+		classifyAs(wasteAssignment, LANDFILL_FACTOR, "SCOPE_3", "BUSINESS_TRAVEL").andExpect(status().isConflict());
+		classifyAs(wasteAssignment, LANDFILL_FACTOR, "SCOPE_1", "FUGITIVE_EMISSIONS").andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"))
+			.andExpect(jsonPath("$.gates[2].findings[0].message")
+				.value(org.hamcrest.Matchers.containsString("its stream 'Camp landfill' defaults to scope 3")));
+		// a proxy factor needs its justification; with both reasons recorded the gate is silent
+		mvc.perform(put("/api/ghg/assignments/" + wasteAssignment + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s", "scope": "SCOPE_1", "category": "FUGITIVE_EMISSIONS",
+					 "scopeJustification": "Company-operated landfill on the mining lease: a direct source", "proxy": true}"""
+				.formatted(LANDFILL_FACTOR)))
+			.andExpect(status().isConflict());
+		mvc.perform(put("/api/ghg/assignments/" + wasteAssignment + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s", "scope": "SCOPE_1", "category": "FUGITIVE_EMISSIONS",
+					 "scopeJustification": "Company-operated landfill on the mining lease: a direct source",
+					 "proxy": true, "proxyJustification": "DEFRA commercial waste to landfill stands in for an unlined site landfill"}"""
+				.formatted(LANDFILL_FACTOR)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.proxy").value(true));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[2].status").value("PASSED"));
+		freeze(inventoryId);
+		// the lines carry the record's own description, the stream, the reasons and the proxy flag
+		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + fleetDiesel + "')].activityType").value("Rocksure fleet diesel, June"))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + fleetDiesel + "')].streamName").value("Contract mining fleet"))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + fleetDiesel + "')].scope").value("SCOPE_3"))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + waste + "')].proxy").value(true))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + waste + "')].scopeJustification")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("Company-operated landfill"))))
+			.andExpect(jsonPath("$.run.scope1KgCo2e").value(3106.2))
+			.andExpect(jsonPath("$.run.scope3KgCo2e").value(5320.0)));
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(detail, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.methodology.statement")
+				.value(org.hamcrest.Matchers.containsString("1 line uses a proxy factor")));
+		// a stream with records cannot be deleted; an empty one can
+		mvc.perform(delete("/api/ghg/streams/" + gensetsId).with(asMember()).with(csrf())).andExpect(status().isConflict());
+		String empty = JsonPath.read(body(mvc
+			.perform(post("/api/ghg/facilities/" + pit + "/streams").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Explosives", "kind": "PROCESS", "contractorOperated": false}"""))
+			.andExpect(status().isCreated())), "$.id");
+		mvc.perform(delete("/api/ghg/streams/" + empty).with(asMember()).with(csrf())).andExpect(status().isNoContent());
+		mvc.perform(get("/api/ghg/facilities/" + pit + "/streams").with(asOutsider())).andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -785,9 +929,9 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.scope").value("SCOPE_3"))
 			.andExpect(jsonPath("$.category").value("UPSTREAM_LEASED_ASSETS"));
-		// the departure from the factor's default is a warning, never an error, for a leased asset
+		// a lease type derived the scope: no justification is needed and the gate is silent (spec 04.3)
 		mvc.perform(get("/api/ghg/inventories/" + equity + "/validation").with(asMember()))
-			.andExpect(jsonPath("$.gates[2].status").value("WARNINGS"));
+			.andExpect(jsonPath("$.gates[2].status").value("PASSED"));
 	}
 
 	@Test

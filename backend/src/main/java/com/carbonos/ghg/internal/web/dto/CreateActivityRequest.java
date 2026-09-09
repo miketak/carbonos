@@ -15,6 +15,7 @@ import jakarta.validation.constraints.Size;
 
 public record CreateActivityRequest( //
 		@NotNull UUID facilityId, //
+		UUID streamId, //
 		@NotBlank @Size(max = 120) String activityType, //
 		@NotNull @Positive @Digits(integer = 11, fraction = 3) BigDecimal quantity, //
 		@NotBlank @Size(max = 30) String unit, //

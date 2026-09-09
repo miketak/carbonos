@@ -9,6 +9,7 @@ import type {
   MarketInstrument,
   RelationshipType,
   Scope2MarketBasis,
+  StreamKind,
   StructuralChangeConvention,
 } from './api'
 
@@ -90,6 +91,21 @@ export const conventionLabels: Record<StructuralChangeConvention, string> = {
 /** "2025-03-15" for a one-day record, else "2025-01-01 → 2025-12-31" (spec 04.2). */
 export function formatPeriod(start: string, end: string): string {
   return start === end ? start : `${start} → ${end}`
+}
+
+export const streamKindLabels: Record<StreamKind, string> = {
+  STATIONARY_COMBUSTION: 'Stationary combustion',
+  MOBILE_COMBUSTION: 'Mobile combustion',
+  PROCESS: 'Process',
+  FUGITIVE: 'Fugitive',
+  PURCHASED_ELECTRICITY: 'Purchased electricity',
+  PURCHASED_HEAT_STEAM_COOLING: 'Purchased heat, steam or cooling',
+  WASTE: 'Waste',
+  TRANSPORT: 'Transport',
+  TRAVEL: 'Business travel',
+  COMMUTING: 'Employee commuting',
+  PURCHASED_GOODS: 'Purchased goods and services',
+  OTHER: 'Other',
 }
 
 export const marketBasisLabels: Record<Scope2MarketBasis, string> = {

@@ -63,6 +63,47 @@ export type ActivityCategory =
   | 'FRANCHISES'
   | 'INVESTMENTS'
 
+/** The kind of a source stream (spec 04.3). */
+export type StreamKind =
+  | 'STATIONARY_COMBUSTION'
+  | 'MOBILE_COMBUSTION'
+  | 'PROCESS'
+  | 'FUGITIVE'
+  | 'PURCHASED_ELECTRICITY'
+  | 'PURCHASED_HEAT_STEAM_COOLING'
+  | 'WASTE'
+  | 'TRANSPORT'
+  | 'TRAVEL'
+  | 'COMMUTING'
+  | 'PURCHASED_GOODS'
+  | 'OTHER'
+
+/** One source of emissions at a facility, and the classification its records default to (spec 04.3). */
+export interface SourceStream {
+  id: string
+  facilityId: string
+  facilityName: string
+  name: string
+  kind: StreamKind
+  fuel: string | null
+  meterOrSupplier: string | null
+  contractorOperated: boolean
+  note: string | null
+  defaultScope: GhgScope
+  defaultCategory: ActivityCategory
+  allowedCategories: ActivityCategory[]
+  createdAt: string
+}
+
+export interface SourceStreamInput {
+  name: string
+  kind: StreamKind
+  fuel?: string
+  meterOrSupplier?: string
+  contractorOperated: boolean
+  note?: string
+}
+
 /** The assurance a report carries (spec 07.4). */
 export type AssuranceLevel = 'UNVERIFIED' | 'LIMITED' | 'REASONABLE'
 
@@ -190,6 +231,9 @@ export interface Activity {
   id: string
   facilityId: string
   facilityName: string
+  /** The source stream the record belongs to (spec 04.3); optional. */
+  streamId: string | null
+  streamName: string | null
   activityType: string
   quantity: number
   unit: string
@@ -204,6 +248,7 @@ export interface Activity {
 
 export interface ActivityInput {
   facilityId: string
+  streamId?: string
   activityType: string
   quantity: number
   unit: string
@@ -402,6 +447,14 @@ export interface Assignment {
   activityId: string
   facilityId: string
   facilityName: string
+  /** The record's stream and the classification it defaults to (spec 04.3); null without a stream. */
+  streamId: string | null
+  streamName: string | null
+  streamKind: StreamKind | null
+  contractorOperated: boolean | null
+  defaultScope: GhgScope | null
+  defaultCategory: ActivityCategory | null
+  allowedCategories: ActivityCategory[] | null
   activityType: string
   quantity: number
   unit: string
@@ -419,6 +472,10 @@ export interface Assignment {
   leaseType: LeaseType | null
   emissionFactorId: string | null
   factorName: string | null
+  /** Why the scope departs from the default, and whether the factor is a proxy (spec 04.3). */
+  scopeJustification: string | null
+  proxy: boolean
+  proxyJustification: string | null
 }
 
 /** A classification (spec 04.1): factor plus the scope and category chosen; a lease type derives them. */
@@ -427,6 +484,9 @@ export interface ClassifyInput {
   scope?: GhgScope
   category?: ActivityCategory
   leaseType?: LeaseType
+  scopeJustification?: string
+  proxy?: boolean
+  proxyJustification?: string
 }
 
 export interface ValidationFinding {
@@ -508,6 +568,11 @@ export interface RunLine {
   evidenceRef: string | null
   factorId: string | null
   factorName: string
+  /** The record's stream, the scope justification and the proxy flag (spec 04.3). */
+  streamName: string | null
+  scopeJustification: string | null
+  proxy: boolean
+  proxyJustification: string | null
   scope: GhgScope
   category: ActivityCategory
   leaseType: LeaseType | null
@@ -912,6 +977,27 @@ export function updateFacility(id: string, input: FacilityInput): Promise<Facili
 
 export function deleteFacility(id: string): Promise<void> {
   return api<void>(`/api/ghg/facilities/${id}`, { method: 'DELETE' })
+}
+
+// --- source streams (spec 04.3) ---------------------------------------------------
+
+export function listStreams(organizationId: string): Promise<SourceStream[]> {
+  return api<SourceStream[]>(`/api/ghg/organizations/${organizationId}/streams`)
+}
+
+export function createStream(facilityId: string, input: SourceStreamInput): Promise<SourceStream> {
+  return api<SourceStream>(`/api/ghg/facilities/${facilityId}/streams`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateStream(id: string, input: SourceStreamInput): Promise<SourceStream> {
+  return api<SourceStream>(`/api/ghg/streams/${id}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+
+export function deleteStream(id: string): Promise<void> {
+  return api<void>(`/api/ghg/streams/${id}`, { method: 'DELETE' })
 }
 
 // --- emission factors --------------------------------------------------------

@@ -64,6 +64,17 @@ public class InventoryAssignment {
 	@JoinColumn(name = "emission_factor_id")
 	private EmissionFactor emissionFactor;
 
+	// why the scope departs from the stream's (or the factor's) default, and whether the factor is a
+	// proxy for a source with no published factor (spec 04.3)
+	@Column(name = "scope_justification", length = 500)
+	private String scopeJustification;
+
+	@Column(nullable = false)
+	private boolean proxy;
+
+	@Column(name = "proxy_justification", length = 500)
+	private String proxyJustification;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -126,11 +137,27 @@ public class InventoryAssignment {
 		return emissionFactor != null;
 	}
 
-	void classify(EmissionFactor factor, Scope scope, ActivityCategory category, LeaseType leaseType) {
+	public String getScopeJustification() {
+		return scopeJustification;
+	}
+
+	public boolean isProxy() {
+		return proxy;
+	}
+
+	public String getProxyJustification() {
+		return proxyJustification;
+	}
+
+	void classify(EmissionFactor factor, Scope scope, ActivityCategory category, LeaseType leaseType,
+			String scopeJustification, boolean proxy, String proxyJustification) {
 		this.emissionFactor = factor;
 		this.scope = scope;
 		this.category = category;
 		this.leaseType = leaseType;
+		this.scopeJustification = scopeJustification;
+		this.proxy = proxy;
+		this.proxyJustification = proxyJustification;
 	}
 
 	void exclude(ExclusionReason reason, String detail) {

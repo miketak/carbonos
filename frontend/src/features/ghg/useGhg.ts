@@ -9,12 +9,14 @@ import {
   createFacility,
   createInventory,
   createOrganization,
+  createStream,
   decideRecalculation,
   deleteActivity,
   deleteEntity,
   deleteFacility,
   deleteInventory,
   deleteOrganization,
+  deleteStream,
   excludeAssignment,
   excludeEntity,
   excludeFacility,
@@ -42,6 +44,7 @@ import {
   listMarketFactors,
   listOrganizations,
   listRuns,
+  listStreams,
   listUnits,
   publishInventory,
   raiseRecalculation,
@@ -63,6 +66,7 @@ import {
   updateFacility,
   updateInventory,
   updateOrganization,
+  updateStream,
   voidRun,
   withdrawFinal,
 } from './api'
@@ -83,11 +87,13 @@ import type {
   RecalculationDecisionInput,
   ReportMetadataInput,
   ResidualMixInput,
+  SourceStreamInput,
 } from './api'
 
 export const organizationsKey = ['ghg', 'organizations'] as const
 export const factorsKey = ['ghg', 'emission-factors'] as const
 export const unitsKey = ['ghg', 'units'] as const
+export const streamsKey = (orgId: string) => ['ghg', 'streams', orgId] as const
 export const organizationKey = (id: string) => ['ghg', 'organization', id] as const
 export const entitiesKey = (orgId: string) => ['ghg', 'entities', orgId] as const
 export const facilitiesKey = (orgId: string) => ['ghg', 'facilities', orgId] as const
@@ -115,6 +121,41 @@ export function useOrganizationsQuery() {
 
 export function useOrganizationQuery(id: string) {
   return useQuery({ queryKey: organizationKey(id), queryFn: () => getOrganization(id) })
+}
+
+export function useStreamsQuery(orgId: string) {
+  return useQuery({ queryKey: streamsKey(orgId), queryFn: () => listStreams(orgId) })
+}
+
+function useStreamMutation<TArgs, TResult>(
+  orgId: string,
+  mutationFn: (args: TArgs) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: streamsKey(orgId) })
+    },
+  })
+}
+
+export function useCreateStream(orgId: string) {
+  return useStreamMutation(
+    orgId,
+    ({ facilityId, input }: { facilityId: string; input: SourceStreamInput }) =>
+      createStream(facilityId, input),
+  )
+}
+
+export function useUpdateStream(orgId: string) {
+  return useStreamMutation(orgId, ({ id, input }: { id: string; input: SourceStreamInput }) =>
+    updateStream(id, input),
+  )
+}
+
+export function useDeleteStream(orgId: string) {
+  return useStreamMutation(orgId, (id: string) => deleteStream(id))
 }
 
 export function useEmissionFactorsQuery() {

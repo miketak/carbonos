@@ -21,6 +21,10 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Legal entity", id);
 	}
 
+	static GhgNotFoundException stream(UUID id) {
+		return new GhgNotFoundException("Source stream", id);
+	}
+
 	static GhgNotFoundException facility(UUID id) {
 		return new GhgNotFoundException("Facility", id);
 	}

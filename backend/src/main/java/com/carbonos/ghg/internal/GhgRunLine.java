@@ -84,6 +84,19 @@ public class GhgRunLine {
 	@Column(name = "factor_id")
 	private UUID factorId;
 
+	// the record's stream, the scope justification and the proxy flag (spec 04.3)
+	@Column(name = "stream_name", length = 120)
+	private String streamName;
+
+	@Column(name = "scope_justification", length = 500)
+	private String scopeJustification;
+
+	@Column(nullable = false)
+	private boolean proxy;
+
+	@Column(name = "proxy_justification", length = 500)
+	private String proxyJustification;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 10)
 	private Scope scope;
@@ -222,6 +235,10 @@ public class GhgRunLine {
 		this.activityType = activity.getActivityType();
 		this.evidenceRef = activity.getEvidenceRef();
 		this.factorId = factor.getId();
+		this.streamName = activity.getStream() == null ? null : activity.getStream().getName();
+		this.scopeJustification = assignment.getScopeJustification();
+		this.proxy = assignment.isProxy();
+		this.proxyJustification = assignment.getProxyJustification();
 		this.scope = assignment.getScope();
 		this.category = assignment.getCategory();
 		this.leaseType = assignment.getLeaseType();
@@ -305,6 +322,22 @@ public class GhgRunLine {
 
 	public UUID getFactorId() {
 		return factorId;
+	}
+
+	public String getStreamName() {
+		return streamName;
+	}
+
+	public String getScopeJustification() {
+		return scopeJustification;
+	}
+
+	public boolean isProxy() {
+		return proxy;
+	}
+
+	public String getProxyJustification() {
+		return proxyJustification;
 	}
 
 	public Scope getScope() {
