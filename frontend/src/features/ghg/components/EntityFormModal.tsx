@@ -4,6 +4,7 @@ import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
+import { checkNumber, collectErrors } from '../../../lib/validate'
 import { relationshipLabels } from '../format'
 import { useCreateEntity, useEntitiesQuery, useUpdateEntity } from '../useGhg'
 import type { Entity, RelationshipType } from '../api'
@@ -64,11 +65,35 @@ export function EntityFormModal({
   )
   const [controlNote, setControlNote] = useState(entity?.controlNote ?? '')
 
-  const errors = fieldErrors(mutation.error)
+  const [clientErrors, setClientErrors] = useState<Record<string, string> | undefined>()
+
+  const errors = clientErrors ?? fieldErrors(mutation.error)
   const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
+  // equity share follows economic interest; a material gap to legal ownership is what a verifier asks about
+  const interestGap =
+    legalOwnership.trim() === '' ||
+    !Number.isFinite(Number(economicInterest)) ||
+    !Number.isFinite(Number(legalOwnership))
+      ? 0
+      : Math.abs(Number(economicInterest) - Number(legalOwnership))
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    const invalid = collectErrors({
+      economicInterestPercent: checkNumber(economicInterest, {
+        label: 'Economic interest',
+        min: 0,
+        max: 100,
+        required: true,
+      }),
+      legalOwnershipPercent: checkNumber(legalOwnership, {
+        label: 'Legal ownership',
+        min: 0,
+        max: 100,
+      }),
+    })
+    setClientErrors(invalid)
+    if (invalid) return
     const input = {
       name,
       relationshipType,
@@ -93,7 +118,7 @@ export function EntityFormModal({
 
   return (
     <Modal title={entity ? 'Edit legal entity' : 'Add legal entity'} onClose={onClose}>
-      <form onSubmit={submit} className="flex flex-col gap-4">
+      <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <InputField
           label="Name"
           value={name}
@@ -146,6 +171,13 @@ export function EntityFormModal({
               error={errors?.legalOwnershipPercent}
               hint="For disclosure; equity share follows economic interest, where substance overrides form."
             />
+            {interestGap >= 10 && (
+              <p role="status" className="col-span-2 text-xs font-medium text-amber-700">
+                Economic interest and legal ownership differ by {formatGap(interestGap)} points.
+                Equity share follows economic interest; a verifier will ask why they differ, so keep
+                the agreement that explains it with the entity&apos;s evidence.
+              </p>
+            )}
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -248,4 +280,8 @@ export function EntityFormModal({
       </form>
     </Modal>
   )
+}
+
+function formatGap(points: number): string {
+  return Number.isInteger(points) ? String(points) : points.toFixed(2)
 }

@@ -17,6 +17,12 @@
 }
 
 @layer base {
+  /* the app header is sticky (57px): a control scrolled into view lands below it, not under it,
+     so a pointer click reaches the control instead of the header (ticket T-26) */
+  html {
+    scroll-padding-top: 5rem;
+  }
+
   body {
     @apply bg-soft-mint font-sans text-dark-teal antialiased;
     margin: 0;

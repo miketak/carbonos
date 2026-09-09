@@ -112,6 +112,43 @@ test('the add form submits the Table 1 facts', async () => {
   )
 })
 
+test('an economic interest above 100 gets an inline message and sends nothing (ticket T-24)', async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /add entity/i }))
+  const dialog = await screen.findByRole('dialog', { name: /add legal entity/i })
+  await user.click(screen.getByLabelText('Name'))
+  await user.paste('Takoradi Port Co')
+  const interest = screen.getByLabelText('Economic interest (%)')
+  await user.clear(interest)
+  await user.paste('150')
+  await user.click(within(dialog).getByRole('button', { name: /^add entity$/i }))
+
+  expect(
+    await within(dialog).findByText('Economic interest must be between 0 and 100.'),
+  ).toBeInTheDocument()
+  expect(interest).toHaveAttribute('aria-invalid', 'true')
+  expect(createEntity).not.toHaveBeenCalled()
+  expect(screen.getByRole('dialog', { name: /add legal entity/i })).toBeInTheDocument()
+})
+
+test('a material gap between economic interest and legal ownership shows a note (ticket T-24)', async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /add entity/i }))
+  await screen.findByRole('dialog', { name: /add legal entity/i })
+  await user.clear(screen.getByLabelText('Economic interest (%)'))
+  await user.paste('60')
+  await user.click(screen.getByLabelText('Legal ownership (%)'))
+  await user.paste('20')
+
+  expect(
+    await screen.findByText(/Economic interest and legal ownership differ by 40 points/),
+  ).toBeInTheDocument()
+})
+
 test('the add form submits the dates, the jurisdiction and the control decision (spec 03.4)', async () => {
   const user = userEvent.setup()
   vi.mocked(createEntity).mockResolvedValue({ ...jv, id: 'ent-3', name: 'Takoradi Port Co' })

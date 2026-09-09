@@ -6,20 +6,9 @@ const EXIT_MS = 9650
 const DONE_MS = 10000
 const SKIP_EXIT_MS = 300
 
-/* the boot log is theater: everything is already loaded underneath */
-const BOOT_LINES = [
-  'Initializing inventory engine',
-  'Loading emission factor library',
-  'Mounting organizational boundaries',
-  'Indexing activity data',
-  'Calibrating consolidation models',
-  'Verifying audit trail integrity',
-  'Securing session',
-]
-const BOOT_LINE_START_MS = 2000
-const BOOT_LINE_STEP_MS = 950
-const BOOT_CHECK_DELAY_MS = 500
-const BOOT_PROGRESS_MS = 7300
+/* the loader is theater: everything is already loaded underneath, so it claims nothing (ticket T-25) */
+const PROGRESS_START_MS = 2000
+const PROGRESS_MS = 7300
 
 const EXPO_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
@@ -86,7 +75,7 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
   return (
     <div
       role="status"
-      aria-label={`${WORDMARK} — ${TAGLINE}`}
+      aria-label={`${WORDMARK}: ${TAGLINE}`}
       className={`fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-dark-teal via-[#17444b] to-[#0c2b30] transition-opacity duration-300 ease-in ${
         exiting ? 'opacity-0' : 'opacity-100'
       }`}
@@ -117,49 +106,38 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
           {TAGLINE}
         </p>
 
-        <BootLog />
+        <Progress />
       </div>
     </div>
   )
 }
 
-/** Staged status lines + progress bar: the confidence-inspiring boot sequence. */
-function BootLog() {
+/**
+ * A plain progress bar. Earlier builds listed staged "verifying" and "calibrating"
+ * lines here; nothing was verified, and a verifier would ask what was, so the loader
+ * now shows progress and nothing else.
+ */
+function Progress() {
   return (
     <div
-      className="mt-2 flex w-80 flex-col gap-3"
-      style={{ animation: `splash-rise 400ms ease-out ${BOOT_LINE_START_MS - 200}ms both` }}
+      className="mt-2 flex w-80 flex-col gap-2"
+      style={{ animation: `splash-rise 400ms ease-out ${PROGRESS_START_MS - 200}ms both` }}
     >
-      <div className="h-0.5 overflow-hidden rounded-full bg-white/10">
+      <div
+        className="h-0.5 overflow-hidden rounded-full bg-white/10"
+        role="progressbar"
+        aria-label="Loading"
+      >
         <div
           className="h-full origin-left rounded-full bg-gradient-to-r from-teal to-accent-green"
           style={{
-            animation: `splash-progress ${BOOT_PROGRESS_MS}ms cubic-bezier(0.4, 0, 0.2, 1) ${BOOT_LINE_START_MS}ms both`,
+            animation: `splash-progress ${PROGRESS_MS}ms cubic-bezier(0.4, 0, 0.2, 1) ${PROGRESS_START_MS}ms both`,
           }}
         />
       </div>
-      <ul className="flex flex-col gap-1.5 font-mono text-[11px] tracking-wide text-white/60">
-        {BOOT_LINES.map((line, index) => {
-          const lineDelay = BOOT_LINE_START_MS + index * BOOT_LINE_STEP_MS
-          return (
-            <li
-              key={line}
-              className="flex items-center justify-between gap-4"
-              style={{ animation: `splash-rise 300ms ease-out ${lineDelay}ms both` }}
-            >
-              <span>{line}</span>
-              <span
-                className="text-accent-green"
-                style={{
-                  animation: `splash-tick 200ms ease-out ${lineDelay + BOOT_CHECK_DELAY_MS}ms both`,
-                }}
-              >
-                ✓
-              </span>
-            </li>
-          )
-        })}
-      </ul>
+      <p className="text-center font-mono text-[11px] tracking-wide text-white/50">
+        Loading your workspace. Click or press any key to skip.
+      </p>
     </div>
   )
 }
