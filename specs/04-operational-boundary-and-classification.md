@@ -11,20 +11,20 @@
 
 Having decided *which* operations are in (spec 03), the company decides
 *which emissions* of those operations it accounts for and how they are
-categorised: direct emissions from owned or controlled sources (scope 1),
-indirect emissions from purchased electricity, heat and steam (scope 2), and
-other indirect emissions in the value chain (scope 3). Every included activity
+categorized: direct emissions from owned or controlled sources (scope 1),
+indirect emissions from purchased or acquired electricity, steam, heat, and
+cooling (scope 2), and other indirect emissions in the value chain (scope 3). Every included activity
 record must end up in exactly one scope and category with an emission factor
 that turns its quantity into CO2e.
 
-## Behaviour
+## Behavior
 
 ### Scopes and categories
 
 | Scope | Standard's definition | Categories in CarbonOS today |
 | --- | --- | --- |
 | 1 | Direct emissions from sources the company owns or controls | STATIONARY_COMBUSTION, MOBILE_COMBUSTION, PROCESS_EMISSIONS, FUGITIVE_EMISSIONS |
-| 2 | Indirect emissions from the generation of purchased electricity, heat and steam consumed by the company | PURCHASED_ELECTRICITY, PURCHASED_HEAT_STEAM |
+| 2 | Indirect emissions from the generation of purchased or acquired electricity, steam, heat, and cooling consumed by the company | PURCHASED_ELECTRICITY, PURCHASED_HEAT_STEAM (no cooling category yet; spec 07.2) |
 | 3 | Other indirect emissions, a consequence of the company's activities but from sources it does not own or control | The Scope 3 Standard's fifteen categories, from PURCHASED_GOODS_SERVICES to INVESTMENTS (the seeded water-supply factor is a purchased good) |
 
 Each category belongs to exactly one scope (spec 04.1).
@@ -34,12 +34,15 @@ Each category belongs to exactly one scope (spec 04.1).
 A shared, read-only, seeded library. Each factor has a name, a **default**
 scope and category (a suggestion; spec 04.1), whether it is scope-agnostic,
 unit, value in kg CO2e per unit, per-gas components (spec 07.1), and source.
-Sixteen are seeded (DEFRA 2025, IPCC AR5 GWP100, IPCC 2006 process factors,
-and an Ecoriv Ghana grid factor), spanning natural gas, LPG, diesel, petrol,
+Sixteen are seeded from the UK Department for Environment, Food and Rural
+Affairs (DEFRA) 2025 factors, the IPCC Fifth Assessment Report (AR5) 100-year
+global warming potentials, IPCC 2006 process factors, and an Ecoriv Ghana grid
+factor. They span natural gas, liquefied petroleum gas (LPG), diesel, petrol,
 R-410A leakage, Ghana and UK grid electricity, district heat, car and
-long-haul flight travel, bus commuting, landfill waste, water supply, ANFO
-explosives, quicklime calcination and wood pellets. Values are close to published figures and explicitly approximate; a
-curated library replaces the seed before production use. New factors require a
+long-haul flight travel, bus commuting, landfill waste, water supply,
+ammonium nitrate fuel oil (ANFO) explosives, quicklime calcination, and wood
+pellets. Values are close to published figures and explicitly approximate;
+the seed is not for production use (see Non-goals). New factors require a
 migration; there is no runtime editor.
 
 ### Classification
@@ -49,7 +52,7 @@ the scope and category** the company's relationship to the source dictates;
 they default from the factor, and a lease type derives them per Appendix F
 (spec 04.1). The picker offers factors whose unit
 shares the fact's physical dimension (so a US-gallon fact sees per-litre and
-per-m3 factors) and previews the conversion inline, e.g.
+per-m3 factors) and previews the conversion inline, for example
 `1,250,000 US-gallon → 4,731,764.73 litre × 2.66 kg CO₂e/litre`. A fact in a
 custom, unregistered unit matches only a factor with the identical unit string
 and never auto-converts; when nothing matches, the picker shows every factor
@@ -101,3 +104,5 @@ menu. Manual: `docs/qa/003-inventory.md` section F.
 ## Non-goals and open questions
 
 - A runtime factor editor; automatic scope inference from metadata.
+- A curated, production-grade factor library to replace the seed.
+- A purchased-cooling category under scope 2 (spec 07.2).

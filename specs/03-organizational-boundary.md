@@ -15,10 +15,10 @@ Chapter 3 asks a company to choose one **consolidation approach** and apply it
 consistently to determine which operations' emissions it accounts for, and at
 what share. It also expects that choice to be a deliberate, documented
 declaration that a verifier can examine. The boundary is the single most
-consequential judgement in an inventory, and this spec makes it explicit,
+consequential judgment in an inventory, and this spec makes it explicit,
 drawn by legal entity, prefilled from facts, frozen before use, and versioned.
 
-## Behaviour
+## Behavior
 
 ### Consolidation approaches
 
@@ -48,15 +48,19 @@ facilities included beneath it. Presence of a treatment is membership of the
 boundary. The **accounting share** is derived, never stored on the treatment,
 by Table 1 of the Standard:
 
-| Relationship | Equity share | Financial control | Operational control |
+| Table 1 row (CarbonOS relationship type) | Equity share | Financial control | Operational control |
 | --- | --- | --- | --- |
-| Wholly owned / subsidiary | economic interest | 100% | 100% if operated |
-| JV, joint financial control | economic interest | economic interest | 100% for the operator, else 0 |
-| Non-incorporated JV, company operates | economic interest | economic interest | 100% |
-| Associate (significant influence) | economic interest | 0 | 0 |
-| Fixed-asset investment | 0 | 0 | 0 |
+| Group company or subsidiary (`WHOLLY_OWNED`): the company has financial control, at any ownership percentage | economic interest | 100% | 100% if operated, else 0 |
+| Joint venture, partnership, or operation under joint financial control (`JOINT_VENTURE`) | economic interest | economic interest | 100% for the operator, else 0 |
+| The same row with the operated flag fixed to true (`NON_INCORPORATED_JV`, spec 03.3) | economic interest | economic interest | 100% |
+| Associate or affiliate: significant influence, no control (`ASSOCIATE`) | economic interest | 0 | 0 |
+| Fixed-asset investment: no significant influence (`FIXED_ASSET_INVESTMENT`) | 0 | 0 | 0 |
+| Franchise | Not modeled. The Standard excludes a franchise unless the franchiser holds equity rights or control (spec 03.3) | | |
 
-The share flows down to every facility of the entity. The boundary response
+Table 1 of the Standard has two columns, equity share and financial control.
+The operational-control column here comes from the text of Chapter 3: 100% of
+an operation the company or one of its subsidiaries operates, otherwise
+nothing. The share flows down to every facility of the entity. The boundary response
 spells out the Table 1 row applied, so the accountant and the verifier read
 the same sentence.
 
@@ -117,13 +121,14 @@ correction, and a run launched before the reopen still cites v1.
 
 ### What a version holds
 
-Per entity in the boundary: the entity id, its **name copied at freeze time**,
-relationship type, economic interest, operated flag, the derived accounting
-share, the membership window, whether it stood excluded and why, and the
-facilities beneath it with their names and locations copied; plus the
-approach, the entity and facility counts, who froze it (email copied at the
-time) and when. Names are denormalized so the version stays readable after an
-entity or facility is renamed or deleted.
+A version holds one entry per entity in the boundary: the entity id, its
+**name copied at freeze time**, relationship type, economic interest, operated
+flag, the derived accounting share, the membership window, and whether it
+stood excluded and why. Each entry lists the facilities beneath it with their
+names and locations copied. The version header holds the approach, the entity
+and facility counts, who froze it (email copied at the time), and when. Names
+are denormalized so the version stays readable after an entity or facility is
+renamed or deleted.
 
 ### What a run reads
 
@@ -141,7 +146,7 @@ verified.
 - ERROR: an included activity's facility is outside the boundary (not a
   member, a zero-share entity, or outside the membership window), naming why.
 - WARNING: an entity's share is 0% under the chosen approach.
-- WARNING: a treatment differs from the entity record, e.g.
+- WARNING: a treatment differs from the entity record, for example
   `Tema JV's treatment (joint venture, 40%, operated) differs from the entity record (joint venture, 45%, operated). Review the boundary.`
 - WARNING: a membership window starts or ends inside the period.
 
@@ -205,4 +210,8 @@ membership windows; zero-share entities recorded as excluded. Frontend:
 ## Non-goals and open questions
 
 - Diffing versions; reverting to an earlier version.
-- Group structures deeper than one entity layer (spec 03.1 non-goal).
+- Consolidation at more than one level. Chapter 3 requires the chosen
+  approach to be applied at every level of the group. CarbonOS models one
+  layer, so an interest held through a subsidiary is entered as its product
+  (83% of 50% is 41.5%). Spec 03.3.
+- Franchises, the fifth row of Table 1. Spec 03.3.

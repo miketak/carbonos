@@ -19,13 +19,15 @@ also says *not* to recalculate for organic growth or decline, nor for
 acquiring facilities that did not exist in the base year. CarbonOS had an
 optional `baseYear` integer on the inventory connected to nothing.
 
-## Behaviour
+## Behavior
 
 - An organization designates a **base year**: the inventory that established
   it (its period's year is the base year, its final run the base-year figure),
-  and records a **recalculation policy**: the significance threshold (e.g. 5%
-  of base-year emissions) and the triggers it honours (structural changes,
-  methodology changes, error corrections).
+  and records a **recalculation policy**: the significance threshold (for
+  example 5% of base-year emissions) and three trigger switches (structural
+  changes, methodology changes, error corrections). Chapter 5 makes all three
+  mandatory triggers, so a policy with a switch off does not conform; spec
+  06.1 removes the switches.
 - Freezing any other inventory of the organization measures the new boundary
   version against the version before it (or, for a first freeze, the
   base-year inventory's boundary under the same approach). A facility added or
@@ -35,7 +37,10 @@ optional `baseYear` integer on the inventory connected to nothing.
   when that is above zero a recalculation candidate is **flagged** with the
   reason recorded, marked above or below the threshold. Facilities that
   emitted nothing in the base year (they did not exist) never flag, and
-  neither does organic growth, because nothing structural changed.
+  neither does organic growth, because nothing structural changed. Each
+  freeze is measured on its own; the cumulative effect of several small
+  changes since the base year, which Chapter 5 says can be significant, is
+  not tracked (spec 06.1).
 - The accountant **decides** each flag: `RECALCULATED`, naming a run of the
   base-year inventory that is now the recalculated base and carries the
   reason and the triggering version, or `DECLINED` with a note. Earlier runs
@@ -89,6 +94,13 @@ Frontend: `BaseYearPage.test.tsx`, `RunDetailPage.test.tsx`.
 ## Non-goals and open questions
 
 Automatic recalculation arithmetic (a recalculated base is a run the
-accountant launches); methodology-change and error-correction flags are
-recorded by decision only, not detected; targets against the base year
-(Chapter 11).
+accountant launches); targets against the base year (Chapter 11).
+
+Requirements of Chapter 5, Chapter 9, and the 2013 amendment that this spec
+does not meet, all collected in spec 06.1: the reason for choosing the base
+year is not recorded; methodology-change and error-correction flags cannot be
+raised at all, only switched off; the threshold is not cumulative; the
+convention for mid-year structural changes (transaction date or whole year)
+is not disclosed; the base year and the current inventory are not checked for
+the same GWP set; and the report shows the base year and the current period
+without the years between.

@@ -18,7 +18,7 @@ roles, sessions and the administrator's user management, and the rule that
 ties every GHG object to the user who created its organization. Self-service
 registration is its own branch, spec 01.1.
 
-## Behaviour
+## Behavior
 
 ### Accounts, roles, status
 
@@ -39,7 +39,7 @@ receive their profile and a session cookie (`HttpOnly`, `SameSite=Lax`) and land
 on `/app`, or on the page they were originally headed for. Invalid email, wrong
 password and a `DISABLED` account all produce the same 401 "Invalid email or
 password." so accounts cannot be enumerated. Logout invalidates the server
-session. Every mutating request carries the CSRF double-submit token
+session. Every mutating request carries the cross-site request forgery (CSRF) double-submit token
 (`XSRF-TOKEN` cookie echoed as `X-XSRF-TOKEN`); raw posts without it are refused
 with 403.
 
@@ -47,7 +47,7 @@ with 403.
 
 Visiting `/app` or `/admin/users` signed out redirects to `/login` and returns
 afterwards. A `MEMBER` calling any `/api/admin/**` endpoint receives 403, and the
-SPA shows an "Access denied" panel with a "Back to home" link. `/actuator/health`
+single-page app (SPA) shows an "Access denied" panel with a "Back to home" link. `/actuator/health`
 stays public for the platform healthcheck; other actuator endpoints require a
 session.
 

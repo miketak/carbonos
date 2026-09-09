@@ -10,7 +10,7 @@
 
 What the Standard requires, what the product does today, and the gap.
 
-## Behaviour
+## Behavior
 
 The feature from the outside: states, rules, flows. Use Given / When / Then
 for the cases that matter.
@@ -33,3 +33,6 @@ Domain events published or consumed across module boundaries.
 The automated tests that prove it, and any manual QA procedure.
 
 ## Non-goals and open questions
+
+Deliberate omissions, and any requirement of the Standard this spec does not
+meet, each with a pointer to the spec that will.
