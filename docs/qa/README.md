@@ -1,0 +1,65 @@
+# QA procedures
+
+Manual test procedures for CarbonOS on **staging**. Each procedure has one
+objective, takes a human 30 to 90 minutes, and can be run on its own. Run
+them in order when you test a release; run one on its own after a change to
+the area it covers.
+
+## Before you start
+
+- **App:** https://frontend-staging-2e61.up.railway.app
+- **Accounts:** an ADMIN account whose password you hold, and two or three
+  email addresses you can read (a Gmail address with plus-aliases such as
+  `you+qa1@gmail.com` works; mail arrives in the base inbox).
+- **Browsers:** a normal window and a private window, so two sessions never
+  collide.
+- **A calculator.** Several procedures check arithmetic against figures you
+  compute by hand.
+- **A clean slate, if you want one.** From the repo root,
+  `make db-wipe ENV=staging` rebuilds the staging database from the
+  migrations and leaves only the seeded admin. Without it, the procedures
+  still work: every organization is tenant-scoped and invisible to other
+  users, so old test data does not get in the way.
+
+## How to read a procedure
+
+Each case has numbered steps, an **Expected result**, and a verdict line.
+Tick pass or fail and write a note on every case, even a passing one, when
+you saw anything odd. A case that fails does not stop the procedure unless
+the text says so. At the end, fill in the sign-off table and file one issue
+per failed case.
+
+The procedures name specs under `specs/`. When a case and a spec disagree,
+the spec is the reference; report the difference.
+
+## The procedures
+
+| # | Procedure | Objective | Time |
+| --- | --- | --- | --- |
+| 1 | [Access and roles](001-access-and-roles.md) | A newcomer gets an account, joins an organization with a role, and can do only what the role allows. | 60 min |
+| 2 | [Organization setup](002-organization-setup.md) | The organization's structure, sites, source streams, units and emission factors are recorded with the provenance a verifier expects. | 75 min |
+| 3 | [Activity data](003-activity-data.md) | Facts are recorded one by one and in bulk, corrected with a reason, removed with a reason, and backed by evidence. | 60 min |
+| 4 | [Boundary and inventory lifecycle](004-boundary-and-lifecycle.md) | An inventory starts from the approach, its boundary and exclusions are frozen as a version, and the lifecycle refuses what it must. | 60 min |
+| 5 | [Classification and pre-flight](005-classification-and-preflight.md) | Every record is classified as an accounting decision, every departure is justified, and the gates block a run that would misstate. | 90 min |
+| 6 | [Scope 2 instruments](006-scope2-instruments.md) | Market-based scope 2 rests on instruments that pass the Quality Criteria, and the report says so either way. | 45 min |
+| 7 | [Runs, reports and exports](007-runs-reports-and-exports.md) | A run is a reproducible snapshot, the report carries every Chapter 9 element, and the exports match the page. | 75 min |
+| 8 | [Publication and corrections](008-publication-and-corrections.md) | A published report never changes, what came after is shown apart, and a correction inherits the view with a reason. | 45 min |
+| 9 | [Base year and recalculation](009-base-year.md) | The base year is designated with its policy, structural changes are detected, and manual candidates are weighed. | 45 min |
+
+## Shared scenario
+
+Procedures 2 to 9 use one company, **Sankofa Gold plc**, a Ghanaian gold
+miner. Procedure 2 sets it up; the later procedures assume it exists. If you
+skip procedure 2, create the entities, facilities and streams its section B
+lists before you continue.
+
+## Sign-off template
+
+Copy this table to the end of your notes for each procedure.
+
+| Field | Value |
+| --- | --- |
+| Procedure and version tested | |
+| Tester and date | |
+| Cases failed | |
+| Issues filed | |
