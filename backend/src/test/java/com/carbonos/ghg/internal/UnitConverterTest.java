@@ -60,4 +60,34 @@ class UnitConverterTest {
 			assertThat(converter.dimensionOf(unit)).as("seeded unit '%s'", unit).isPresent();
 		}
 	}
+
+	@Test
+	void customUnitsConvertAsMultiplesOfTheirBaseUnit() {
+		// spec 02.2: 1 drum = 200 litre, defined by the organization
+		var drum = new CustomUnit(java.util.UUID.randomUUID(), "drum", "Drum (200 L)", "litre", new BigDecimal("200"));
+		var scoped = converter.with(java.util.List.of(drum));
+		assertThat(scoped.dimensionOf("drum")).contains(Dimension.VOLUME);
+		assertThat(scoped.canConvert("drum", "litre")).isTrue();
+		assertThat(scoped.convert(new BigDecimal("3"), "drum", "litre")).isEqualByComparingTo("600");
+		assertThat(scoped.convert(new BigDecimal("1000"), "litre", "drum")).isEqualByComparingTo("5");
+		assertThat(scoped.definitionsBehind("drum", "litre")).isEqualTo("1 drum = 200 litre");
+		// the plain registry still knows nothing of it
+		assertThat(converter.dimensionOf("drum")).isEmpty();
+	}
+
+	@Test
+	void massAndVolumeMeetThroughADensity() {
+		var diesel = new Density(null, "Diesel", new BigDecimal("0.84"), "typical", null);
+		var scoped = converter.with(java.util.List.of());
+		assertThat(Conversion.needsDensity(scoped, "tonne", "litre")).isTrue();
+		assertThat(Conversion.needsDensity(scoped, "litre", "kWh")).isFalse();
+		var conversion = Conversion.of(scoped, new BigDecimal("12"), "tonne", "litre", diesel).orElseThrow();
+		// 12 t = 12,000 kg / 0.84 = 14,285.714 litre
+		assertThat(conversion.convertedQuantity().setScale(3, java.math.RoundingMode.HALF_UP)).isEqualByComparingTo("14285.714");
+		assertThat(conversion.viaDensity()).isTrue();
+		assertThat(conversion.note()).contains("12 tonne = 12000 kg ÷ 0.84 kg/litre").contains("typical value");
+		var back = Conversion.of(scoped, new BigDecimal("1000"), "litre", "kg", diesel).orElseThrow();
+		assertThat(back.convertedQuantity()).isEqualByComparingTo("840");
+		assertThat(Conversion.of(scoped, BigDecimal.ONE, "tonne", "litre", null)).isEmpty();
+	}
 }

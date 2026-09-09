@@ -55,7 +55,10 @@ public final class RunCsv {
 				new Column<>("data_quality", GhgRunLine::getDataQuality),
 				new Column<>("data_quality_tier", GhgRunLine::getDataQualityTier),
 				new Column<>("uncertainty_percent", GhgRunLine::getUncertaintyPercent),
-				new Column<>("evidence_files", GhgRunLine::getEvidenceFiles));
+				new Column<>("evidence_files", GhgRunLine::getEvidenceFiles),
+				new Column<>("density_material", GhgRunLine::getDensityMaterial),
+				new Column<>("density_kg_per_litre", GhgRunLine::getDensityKgPerLitre),
+				new Column<>("conversion_note", GhgRunLine::getConversionNote));
 		return render(columns, run.getLines());
 	}
 

@@ -297,7 +297,7 @@ class InventoryController {
 	AssignmentResponse classify(@PathVariable UUID id, @Valid @RequestBody ClassifyRequest body) {
 		return AssignmentResponse.from(inventoryService.classify(id, body.emissionFactorId(), body.scope(),
 				body.category(), body.leaseType(), body.scopeJustification(), Boolean.TRUE.equals(body.proxy()),
-				body.proxyJustification()));
+				body.proxyJustification(), body.densityId()));
 	}
 
 	@PutMapping("/assignments/{id}/exclude")

@@ -1182,8 +1182,9 @@ class GhgApiIntegrationTests {
 	void crossDimensionUnitsCannotBeReconciledAndBlockTheRun() throws Exception {
 		var orgId = createOrganization("Ecoriv Holdings");
 		var facilityId = createFacility(orgId, "Tema Plant");
-		// diesel recorded in kg (mass) against a per-litre (volume) factor: no conversion
-		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "800", "kg", "2025-03-15");
+		// diesel recorded in kWh (energy) against a per-litre (volume) factor: no conversion and no
+		// density bridges energy (mass to volume is spec 02.2)
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "800", "kWh", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
 		prepare(inventoryId, activityId, DIESEL_FACTOR);
@@ -3072,5 +3073,101 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isNoContent());
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/entities").with(asMember()))
 			.andExpect(jsonPath("$[?(@.id == '" + shell + "')]").isEmpty());
+	}
+	// --- units: densities and custom units (spec 02.2) ------------------------------------
+
+	@Test
+	void massAndVolumeReconcileThroughADensityAndCustomUnitsConvert() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var facilityId = createFacility(orgId, "Nkran Mine");
+		// LPG invoiced by mass against the diesel factor per litre stands in for any mass-to-volume case
+		var byMass = createActivity(orgId, facilityId, "Diesel by tanker", "12", "tonne", "2025-03-15");
+		var byDrum = createActivity(orgId, facilityId, "Diesel in drums", "5", "drum", "2025-04-01");
+
+		// the shared typical densities are listed; the organization adds its supplier's figure
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/densities").with(asMember()))
+			.andExpect(jsonPath("$[?(@.material == 'Diesel')].typical").value(true))
+			.andExpect(jsonPath("$[?(@.material == 'Diesel')].kgPerLitre").value(0.84));
+		var own = mvc.perform(post("/api/ghg/organizations/" + orgId + "/densities").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"material": "Diesel (GOIL, 2025 CoA)", "kgPerLitre": 0.8325,
+					 "source": "GOIL certificate of analysis, batch 2025-03"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.typical").value(false))
+			.andReturn();
+		String supplierDensity = JsonPath.read(own.getResponse().getContentAsString(), "$.id");
+		String typicalDensity = JsonPath.<List<String>>read(body(mvc.perform(
+				get("/api/ghg/organizations/" + orgId + "/densities").with(asMember()))), "$[?(@.material == 'Diesel')].id")
+			.getFirst();
+
+		// a custom unit is a multiple of a registered one; a registered code is refused
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/custom-units").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"code": "litre", "label": "Litre", "baseUnit": "litre", "factor": 1}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.code").exists());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/custom-units").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"code": "drum", "label": "Drum (200 L)", "baseUnit": "litre", "factor": 200}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.definition").value("1 drum = 200 litre"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/units").with(asMember()))
+			.andExpect(jsonPath("$[?(@.code == 'drum')].custom").value(true))
+			.andExpect(jsonPath("$[?(@.code == 'drum')].dimension").value("VOLUME"));
+
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId);
+		var massAssignment = syncAndGetAssignmentId(inventoryId, byMass);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		String drumAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + byDrum + "')].id").getFirst();
+
+		// mass against a per-litre factor needs a density; with the typical one the gate warns, with the supplier's it is silent
+		mvc.perform(put("/api/ghg/assignments/" + massAssignment + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s"}""".formatted(DIESEL_FACTOR)))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.densityId").exists());
+		mvc.perform(put("/api/ghg/assignments/" + massAssignment + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s", "densityId": "%s"}""".formatted(DIESEL_FACTOR, typicalDensity)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.densityMaterial").value("Diesel"));
+		classify(drumAssignment, DIESEL_FACTOR);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("typical density of Diesel"))));
+		mvc.perform(put("/api/ghg/assignments/" + massAssignment + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s", "densityId": "%s"}""".formatted(DIESEL_FACTOR, supplierDensity)))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].findings[?(@.message =~ /.*typical density.*/)]").isEmpty());
+		freeze(inventoryId);
+
+		// 12 t / 0.8325 = 14,414.414 litre x 2.66 = 38,342.342 kg; 5 drum = 1,000 litre x 2.66 = 2,660 kg
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + runId).with(asMember()))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + byMass + "')].convertedQuantity").value(14414.414414))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + byMass + "')].kgCo2e").value(38342.342))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + byMass + "')].densityKgPerLitre").value(0.8325))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + byMass + "')].conversionNote")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("12000 kg ÷ 0.8325 kg/litre"))))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + byDrum + "')].convertedQuantity").value(1000.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + byDrum + "')].kgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + byDrum + "')].conversionNote").value("1 drum = 200 litre"))
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(41002.342));
+
+		// a density a classification applies, and a unit records are recorded in, cannot be deleted
+		mvc.perform(delete("/api/ghg/densities/" + supplierDensity).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
+		mvc.perform(delete("/api/ghg/densities/" + typicalDensity).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
+		String drumId = JsonPath.read(body(mvc.perform(
+				get("/api/ghg/organizations/" + orgId + "/custom-units").with(asMember()))), "$[0].id");
+		mvc.perform(delete("/api/ghg/custom-units/" + drumId).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
 	}
 }

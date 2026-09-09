@@ -295,6 +295,45 @@ export interface Unit {
   dimension: Dimension
   /** The unit's size in its dimension's canonical base unit. */
   toCanonical: number
+  /** A unit the organization defined as a multiple of a registered one (spec 02.2). */
+  custom: boolean
+  /** "1 drum = 200 litre" for a custom unit; null otherwise. */
+  definition: string | null
+}
+
+/** A unit defined as a multiple of a registered one (spec 02.2). */
+export interface CustomUnit {
+  id: string
+  code: string
+  label: string
+  baseUnit: string
+  factor: number
+  definition: string
+}
+
+export interface CustomUnitInput {
+  code: string
+  label: string
+  baseUnit: string
+  factor: number
+}
+
+/** A density in kg per litre; a typical one is a shared planning value (spec 02.2). */
+export interface Density {
+  id: string
+  organizationId: string | null
+  typical: boolean
+  material: string
+  kgPerLitre: number
+  source: string
+  note: string | null
+}
+
+export interface DensityInput {
+  material: string
+  kgPerLitre: number
+  source: string
+  note?: string
 }
 
 /** An organizational fact: no scope, category, or factor (spec 05). */
@@ -599,6 +638,10 @@ export interface Assignment {
   scopeJustification: string | null
   proxy: boolean
   proxyJustification: string | null
+  /** The density that converts a record in mass to a factor per litre, or the reverse (spec 02.2). */
+  densityId: string | null
+  densityMaterial: string | null
+  densityKgPerLitre: number | null
 }
 
 /** A classification (spec 04.1): factor plus the scope and category chosen; a lease type derives them. */
@@ -610,6 +653,7 @@ export interface ClassifyInput {
   scopeJustification?: string
   proxy?: boolean
   proxyJustification?: string
+  densityId?: string
 }
 
 export interface ValidationFinding {
@@ -701,6 +745,10 @@ export interface RunLine {
   dataQualityTier: number | null
   uncertaintyPercent: number | null
   evidenceFiles: string | null
+  /** The density applied and the conversion in words (spec 02.2). */
+  densityMaterial: string | null
+  densityKgPerLitre: number | null
+  conversionNote: string | null
   scope: GhgScope
   category: ActivityCategory
   leaseType: LeaseType | null
@@ -1253,6 +1301,55 @@ export function importFactorPack(
 
 export function listUnits(): Promise<Unit[]> {
   return api<Unit[]>('/api/ghg/units')
+}
+
+/** The registry plus the organization's custom units (spec 02.2). */
+export function listOrganizationUnits(organizationId: string): Promise<Unit[]> {
+  return api<Unit[]>(`/api/ghg/organizations/${organizationId}/units`)
+}
+
+export function listCustomUnits(organizationId: string): Promise<CustomUnit[]> {
+  return api<CustomUnit[]>(`/api/ghg/organizations/${organizationId}/custom-units`)
+}
+
+export function createCustomUnit(
+  organizationId: string,
+  input: CustomUnitInput,
+): Promise<CustomUnit> {
+  return api<CustomUnit>(`/api/ghg/organizations/${organizationId}/custom-units`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateCustomUnit(id: string, input: CustomUnitInput): Promise<CustomUnit> {
+  return api<CustomUnit>(`/api/ghg/custom-units/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteCustomUnit(id: string): Promise<void> {
+  return api<void>(`/api/ghg/custom-units/${id}`, { method: 'DELETE' })
+}
+
+export function listDensities(organizationId: string): Promise<Density[]> {
+  return api<Density[]>(`/api/ghg/organizations/${organizationId}/densities`)
+}
+
+export function createDensity(organizationId: string, input: DensityInput): Promise<Density> {
+  return api<Density>(`/api/ghg/organizations/${organizationId}/densities`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateDensity(id: string, input: DensityInput): Promise<Density> {
+  return api<Density>(`/api/ghg/densities/${id}`, { method: 'PUT', body: JSON.stringify(input) })
+}
+
+export function deleteDensity(id: string): Promise<void> {
+  return api<void>(`/api/ghg/densities/${id}`, { method: 'DELETE' })
 }
 
 // --- activity facts ----------------------------------------------------------

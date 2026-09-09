@@ -112,6 +112,16 @@ public class GhgRunLine {
 	@Column(name = "evidence_files", length = 1000)
 	private String evidenceFiles;
 
+	// the density applied and the conversion in words (spec 02.2)
+	@Column(name = "density_material", length = 120)
+	private String densityMaterial;
+
+	@Column(name = "density_kg_per_litre", precision = 10, scale = 5)
+	private BigDecimal densityKgPerLitre;
+
+	@Column(name = "conversion_note", length = 500)
+	private String conversionNote;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 10)
 	private Scope scope;
@@ -236,8 +246,13 @@ public class GhgRunLine {
 
 	GhgRunLine(GhgRun run, InventoryAssignment assignment, BigDecimal convertedQuantity, BigDecimal conversionFactor,
 			BigDecimal kgCo2ePerUnit, BigDecimal weight, Period period, BigDecimal kgCo2e, Gases gases, Market market,
-			String evidenceFiles) {
+			String evidenceFiles, String conversionNote) {
 		var activity = assignment.getActivity();
+		this.conversionNote = conversionNote;
+		if (assignment.getDensity() != null) {
+			this.densityMaterial = assignment.getDensity().getMaterial();
+			this.densityKgPerLitre = assignment.getDensity().getKgPerLitre();
+		}
 		this.dataQuality = activity.getDataQuality();
 		this.dataQualityTier = activity.getDataQualityTier();
 		this.uncertaintyPercent = activity.getUncertaintyPercent();
@@ -375,6 +390,19 @@ public class GhgRunLine {
 	/** The evidence files attached to the record when the run was launched, comma separated; null for none. */
 	public String getEvidenceFiles() {
 		return evidenceFiles;
+	}
+
+	public String getDensityMaterial() {
+		return densityMaterial;
+	}
+
+	public BigDecimal getDensityKgPerLitre() {
+		return densityKgPerLitre;
+	}
+
+	/** "1 drum = 200 litre", or the mass-to-volume arithmetic through a density; null for a plain conversion. */
+	public String getConversionNote() {
+		return conversionNote;
 	}
 
 	public Scope getScope() {

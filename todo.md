@@ -28,7 +28,7 @@ Status summary (update as tickets close):
 | Priority | Tickets | Done |
 |---|---|---|
 | P0 | 9 | 9 |
-| P1 | 13 | 4 |
+| P1 | 13 | 5 |
 | P2 | 4 | 0 |
 
 ## Theme 1: Scope 2 accounting
@@ -123,7 +123,7 @@ Status summary (update as tickets close):
   - Done when: creating an inventory offers "copy the activity view from" another inventory (same organization) with a diff of records that have no source classification; a correction always inherits the source inventory's classifications, exclusions, lease flags, and declaration and shows what changed.
   - Spec: update 05 (lifecycle) and 04.
 
-- [ ] **T-13 (P1) Units: per-tonne fuel factors, density conversions, and defined custom units**
+- [x] **T-13 (P1) Units: per-tonne fuel factors, density conversions, and defined custom units**
   - Findings: F11
   - Problem: conversions within a dimension work and print on the line (m3 to litre, MWh and GWh to kWh). LPG entered in kg could only match per-tonne factors for ANFO, quicklime, and waste; there is no density table and no LPG per-tonne factor. A custom unit ("drum (200 L)") is told it "won't auto-convert", no factor matched, and the record had to be excluded and later corrected after publication. LPG, HFO, and coal are invoiced by mass in Ghana; diesel comes in drums or tonnes at remote sites.
   - Done when: DEFRA-style per-tonne, per-litre, and per-kWh values exist for every fuel (depends on T-03); a density table converts mass to volume with the density printed on the line; a custom unit can be defined as a multiple of a base unit (1 drum = 200 litre) and converts.

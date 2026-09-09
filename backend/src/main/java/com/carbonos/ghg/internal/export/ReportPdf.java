@@ -223,7 +223,8 @@ public final class ReportPdf {
 			for (var l : report.lines()) {
 				row(lines, l.facilityName(), nvl(l.activityType(), "") + "\n" + l.factorName(), l.scope().name().replace("SCOPE_", ""),
 						plain(l.quantity()) + " " + l.unit() + (l.convertedQuantity().compareTo(l.quantity()) == 0 ? ""
-								: " = " + plain(l.convertedQuantity()) + " " + l.factorUnit()),
+								: " = " + plain(l.convertedQuantity()) + " " + l.factorUnit())
+								+ (l.conversionNote() == null ? "" : "\n" + l.conversionNote()),
 						plain(l.kgCo2ePerUnit()), percent(l.weight()) + (l.periodShare().compareTo(BigDecimal.ONE) == 0 ? ""
 								: " x " + percent(l.periodShare())),
 						plain(l.kgCo2e()) + (l.marketBasedKgCo2e() == null || l.scope().name().equals("SCOPE_2") == false ? ""

@@ -59,7 +59,8 @@ public class InventoryService {
 	private final BaseYearService baseYears;
 	private final ApplicationEventPublisher events;
 	private final GhgAccess access;
-	private final UnitConverter units;
+	private final OrganizationUnits organizationUnits;
+	private final DensityRepository densities;
 	private final EvidenceRepository evidence;
 
 	InventoryService(OrganizationRepository organizations, LegalEntityRepository entities,
@@ -69,7 +70,10 @@ public class InventoryService {
 			BoundaryExclusionRepository boundaryExclusions, InventoryAssignmentRepository assignments,
 			MarketFactorRepository marketFactors, GhgRunRepository runs, GhgAuditEventRepository auditEvents,
 			IntensityMetricRepository intensityMetrics, BaseYearService baseYears, ApplicationEventPublisher events,
-			GhgAccess access, UnitConverter units, EvidenceRepository evidence) {
+			GhgAccess access, OrganizationUnits organizationUnits, DensityRepository densities,
+			EvidenceRepository evidence) {
+		this.organizationUnits = organizationUnits;
+		this.densities = densities;
 		this.evidence = evidence;
 		this.organizations = organizations;
 		this.entities = entities;
@@ -88,7 +92,6 @@ public class InventoryService {
 		this.baseYears = baseYears;
 		this.events = events;
 		this.access = access;
-		this.units = units;
 	}
 
 	// --- inventories --------------------------------------------------------
@@ -825,11 +828,26 @@ public class InventoryService {
 	 */
 	public InventoryAssignment classify(UUID assignmentId, UUID emissionFactorId, Scope scope,
 			ActivityCategory category, LeaseType leaseType, String scopeJustification, boolean proxy,
-			String proxyJustification) {
+			String proxyJustification, UUID densityId) {
 		var assignment = getAssignment(assignmentId);
 		requireEditable(assignment.getInventory());
 		var factor = emissionFactors.findById(emissionFactorId)
 			.orElseThrow(() -> GhgNotFoundException.emissionFactor(emissionFactorId));
+		// spec 02.2: a record in mass against a factor per litre (or the reverse) needs a density
+		var organizationId = assignment.getInventory().getOrganization().getId();
+		var units = organizationUnits.forOrganization(organizationId);
+		Density density = null;
+		if (Conversion.needsDensity(units, assignment.getActivity().getUnit(), factor.getUnit())) {
+			if (densityId == null) {
+				throw new GhgFieldException("densityId", "'" + assignment.getActivity().getActivityType()
+						+ "' is recorded in " + assignment.getActivity().getUnit() + " and '" + factor.getName()
+						+ "' is per " + factor.getUnit() + ": choose the density that converts between them.");
+			}
+			density = densities.findById(densityId).orElseThrow(() -> GhgNotFoundException.density(densityId));
+			if (density.getOrganizationId() != null && !density.getOrganizationId().equals(organizationId)) {
+				throw GhgNotFoundException.density(densityId);
+			}
+		}
 		// spec 04.3: the stream fixes the default; without one the factor suggests it
 		var stream = assignment.getActivity().getStream();
 		var defaultScope = stream != null ? stream.defaultScope() : factor.getDefaultScope();
@@ -867,7 +885,7 @@ public class InventoryService {
 			throw new GhgRuleViolationException("A proxy factor needs a justification: say what the factor stands in for.");
 		}
 		assignment.classify(factor, chosenScope, chosenCategory, leaseType, departs ? justification : null, proxy,
-				proxy ? trimToNull(proxyJustification) : null);
+				proxy ? trimToNull(proxyJustification) : null, density);
 		record(assignment.getInventory(), null, GhgAuditEvent.Action.CLASSIFIED, "'" + assignment.getActivity().getActivityType()
 				+ "' classified as " + scopeName(chosenScope) + ", " + chosenCategory.name().toLowerCase().replace('_', ' ')
 				+ ", with '" + factor.getName() + "'" + (proxy ? " (proxy)" : ""));
@@ -928,6 +946,7 @@ public class InventoryService {
 	@Transactional(readOnly = true)
 	public Report validate(UUID inventoryId) {
 		var inventory = get(inventoryId);
+		var units = organizationUnits.forOrganization(inventory.getOrganization().getId());
 		var approach = inventory.getConsolidationApproach();
 		var treatments = boundaryTreatments.findAllByInventoryId(inventoryId);
 		var allAssignments = assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
@@ -1134,18 +1153,34 @@ public class InventoryService {
 				factorFindings.add(new Finding(Severity.WARNING, "'" + chosen.getName()
 						+ "' publishes CO2e only: the by-gas table carries no CH4 or N2O for it, and the report says so."));
 			}
-			if (!isReconcilable(activityUnit, factorUnit)) {
+			if (Conversion.needsDensity(units, activityUnit, factorUnit)) {
+				// spec 02.2: mass and volume meet through a density; a typical value is disclosed
+				if (assignment.getDensity() == null) {
+					factorFindings.add(new Finding(Severity.ERROR, "'" + activity.getActivityType()
+							+ "' is recorded in " + describeUnit(units, activityUnit) + " but its factor '"
+							+ chosen.getName() + "' is per " + describeUnit(units, factorUnit)
+							+ ": choose the density that converts between them (record one under Units if none fits)."));
+				}
+				else if (assignment.getDensity().isTypical()) {
+					factorFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType()
+							+ "' converts through the typical density of " + assignment.getDensity().getMaterial() + " ("
+							+ plain(assignment.getDensity().getKgPerLitre())
+							+ " kg/litre). Replace it with the supplier's specification before a final run."));
+				}
+			}
+			else if (!isReconcilable(units, activityUnit, factorUnit)) {
 				factorFindings.add(new Finding(Severity.ERROR, "'" + activity.getActivityType()
-						+ "' is recorded in " + describeUnit(activityUnit) + " but its factor '"
-						+ assignment.getEmissionFactor().getName() + "' is per " + describeUnit(factorUnit)
+						+ "' is recorded in " + describeUnit(units, activityUnit) + " but its factor '"
+						+ assignment.getEmissionFactor().getName() + "' is per " + describeUnit(units, factorUnit)
 						+ ": no conversion between them. Record it in a unit compatible with " + factorUnit
-						+ ", or choose a factor in " + activityUnit + "."));
+						+ ", choose a factor in " + activityUnit + ", or define " + activityUnit
+						+ " as a custom unit under Units."));
 			}
 			if (assignment.getScope() == Scope.SCOPE_2 && instruments.containsKey(activity.getFacility().getId())
 					&& !units.canConvert(activityUnit, KWH)) {
 				factorFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType() + "' at "
 						+ activity.getFacility().getName() + " has a market-based factor per kWh but is recorded in "
-						+ describeUnit(activityUnit) + ": the market-based figure falls back to location-based."));
+						+ describeUnit(units, activityUnit) + ": the market-based figure falls back to location-based."));
 			}
 		}
 		if (inventory.getResidualMixAvailable() == null) {
@@ -1267,6 +1302,7 @@ public class InventoryService {
 			.stream()
 			.collect(Collectors.toMap(factor -> factor.getFacility().getId(), Function.identity()));
 		var gwp = inventory.getGwpSet();
+		var units = organizationUnits.forOrganization(inventory.getOrganization().getId());
 		// spec 05.2: one more than the highest number ever issued, voided runs included
 		var runNo = runs.findTopByInventoryIdOrderByRunNoDesc(inventoryId).map(last -> last.getRunNo() + 1).orElse(1);
 		var run = new GhgRun(inventory, runNo, label.trim(), access.currentUserEmail());
@@ -1316,9 +1352,11 @@ public class InventoryService {
 			var quantity = activity.getQuantity();
 			var activityUnit = activity.getUnit();
 			var factorUnit = factor.getUnit();
-			var convertsDimensionally = units.canConvert(activityUnit, factorUnit);
-			var conversionFactor = convertsDimensionally ? units.ratio(activityUnit, factorUnit) : BigDecimal.ONE;
-			var convertedQuantity = convertsDimensionally ? units.convert(quantity, activityUnit, factorUnit) : quantity;
+			// spec 02.2: within a dimension, through a custom unit, or through a density; the gate proved it converts
+			var conversion = Conversion.of(units, quantity, activityUnit, factorUnit, assignment.getDensity())
+				.orElse(new Conversion(quantity, BigDecimal.ONE, null, false));
+			var conversionFactor = conversion.factor();
+			var convertedQuantity = conversion.convertedQuantity();
 			var perUnit = factor.kgCo2ePerUnit(gwp);
 			var counted = convertedQuantity.multiply(periodShare);
 			var kgCo2e = round(counted.multiply(perUnit).multiply(share));
@@ -1335,14 +1373,16 @@ public class InventoryService {
 					factor.blendGwpSourceFor(gwp), factor.isCh4Fossil());
 			GhgRunLine.Market market = null;
 			if (assignment.getScope() == Scope.SCOPE_2) {
-				market = marketBased(inventory, assignment, instruments.get(activity.getFacility().getId()),
+				market = marketBased(units, inventory, assignment, instruments.get(activity.getFacility().getId()),
 						remainingCoverage, counted, perUnit, share, periodShare, kgCo2e);
 			}
 			var files = evidenceByActivity.get(activity.getId());
 			var evidenceFiles = files == null ? null : String.join(", ", files);
 			run.addLine(new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, period,
 					kgCo2e, gases, market, evidenceFiles != null && evidenceFiles.length() > 1000
-							? evidenceFiles.substring(0, 997) + "..." : evidenceFiles));
+							? evidenceFiles.substring(0, 997) + "..." : evidenceFiles,
+					conversion.note() != null && conversion.note().length() > 500
+							? conversion.note().substring(0, 497) + "..." : conversion.note()));
 		}
 		// spec 07.4: the frozen factor set behind the report's factor table
 		for (var factor : factorsUsed.values()) {
@@ -1429,9 +1469,10 @@ public class InventoryService {
 	 * the split. Purchased heat, steam and cooling, and lines that do not
 	 * convert to kWh, keep their location-based figure.
 	 */
-	private GhgRunLine.Market marketBased(Inventory inventory, InventoryAssignment assignment, MarketFactor instrument,
-			Map<UUID, BigDecimal> remainingCoverage, BigDecimal convertedQuantity, BigDecimal perUnit, BigDecimal share,
-			BigDecimal periodShare, BigDecimal locationKgCo2e) {
+	private GhgRunLine.Market marketBased(UnitConverter.Scoped units, Inventory inventory,
+			InventoryAssignment assignment, MarketFactor instrument, Map<UUID, BigDecimal> remainingCoverage,
+			BigDecimal convertedQuantity, BigDecimal perUnit, BigDecimal share, BigDecimal periodShare,
+			BigDecimal locationKgCo2e) {
 		var activity = assignment.getActivity();
 		if (assignment.getCategory() != ActivityCategory.PURCHASED_ELECTRICITY) {
 			return new GhgRunLine.Market(locationKgCo2e, null, null, "no contractual instrument applies to "
@@ -1552,7 +1593,7 @@ public class InventoryService {
 	 * Whether an activity's unit can drive its factor: a dimensional conversion
 	 * exists, or (for custom/unrecognized units) the two strings match exactly.
 	 */
-	private boolean isReconcilable(String activityUnit, String factorUnit) {
+	private static boolean isReconcilable(UnitConverter.Scoped units, String activityUnit, String factorUnit) {
 		return units.canConvert(activityUnit, factorUnit) || activityUnit.equalsIgnoreCase(factorUnit);
 	}
 
@@ -1567,7 +1608,7 @@ public class InventoryService {
 	}
 
 	/** A unit with its dimension for error messages, e.g. "kg (mass)" or "widgets (unrecognized)". */
-	private String describeUnit(String unit) {
+	private static String describeUnit(UnitConverter.Scoped units, String unit) {
 		return units.dimensionOf(unit)
 			.map(dimension -> unit + " (" + dimension.name().toLowerCase().replace('_', ' ') + ")")
 			.orElse(unit + " (unrecognized)");

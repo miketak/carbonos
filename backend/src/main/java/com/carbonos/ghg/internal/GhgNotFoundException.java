@@ -83,6 +83,14 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Recalculation", id);
 	}
 
+	static GhgNotFoundException density(UUID id) {
+		return new GhgNotFoundException("Density", id);
+	}
+
+	static GhgNotFoundException customUnit(UUID id) {
+		return new GhgNotFoundException("Custom unit", id);
+	}
+
 	static GhgNotFoundException evidence(UUID id) {
 		return new GhgNotFoundException("Evidence", id);
 	}

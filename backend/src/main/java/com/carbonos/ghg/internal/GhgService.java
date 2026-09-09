@@ -39,13 +39,20 @@ public class GhgService {
 	private final ActivityRevisionRepository revisions;
 	private final BoundaryTreatmentRepository boundaryTreatments;
 	private final EvidenceRepository evidence;
+	private final CustomUnitRepository customUnits;
+	private final DensityRepository densities;
+	private final InventoryAssignmentRepository assignments;
 
 	GhgService(OrganizationRepository organizations, LegalEntityRepository entities, FacilityRepository facilities,
 			EmissionFactorRepository emissionFactors, ActivityRecordRepository activities,
 			SourceStreamRepository streams, GhgRunLineRepository runLines, FactorPacks factorPacks, UnitConverter units,
 			OrganizationMemberRepository members, UserDirectory userDirectory, GhgAccess access,
 			ActivityRevisionRepository revisions, BoundaryTreatmentRepository boundaryTreatments,
-			EvidenceRepository evidence) {
+			EvidenceRepository evidence, CustomUnitRepository customUnits, DensityRepository densities,
+			InventoryAssignmentRepository assignments) {
+		this.customUnits = customUnits;
+		this.densities = densities;
+		this.assignments = assignments;
 		this.evidence = evidence;
 		this.revisions = revisions;
 		this.boundaryTreatments = boundaryTreatments;
@@ -577,6 +584,128 @@ public class GhgService {
 				throw new GhgRuleViolationException("The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.");
 			}
 		}
+	}
+
+	// --- units and densities (spec 02.2) ------------------------------------------
+
+	/** The registry plus the organization's custom units, for the unit picker and conversion previews. */
+	@Transactional(readOnly = true)
+	public List<UnitConverter.UnitDef> listUnits(UUID organizationId) {
+		getOrganization(organizationId);
+		return units.with(customUnits.findAllByOrganizationIdOrderByCodeAsc(organizationId)).all();
+	}
+
+	@Transactional(readOnly = true)
+	public List<CustomUnit> listCustomUnits(UUID organizationId) {
+		getOrganization(organizationId);
+		return customUnits.findAllByOrganizationIdOrderByCodeAsc(organizationId);
+	}
+
+	public record CustomUnitFacts(String code, String label, String baseUnit, BigDecimal factor) {
+	}
+
+	public CustomUnit createCustomUnit(UUID organizationId, CustomUnitFacts facts) {
+		var organization = getOrganization(organizationId);
+		access.checkWrite(organization);
+		var code = facts.code().trim();
+		requireCustomUnit(organizationId, code, facts, null);
+		return customUnits.save(new CustomUnit(organizationId, code, facts.label().trim(),
+				units.registered(facts.baseUnit()).orElseThrow().code(), facts.factor()));
+	}
+
+	public CustomUnit updateCustomUnit(UUID id, CustomUnitFacts facts) {
+		var unit = getCustomUnit(id);
+		var code = facts.code().trim();
+		requireCustomUnit(unit.getOrganizationId(), code, facts, unit);
+		unit.update(code, facts.label().trim(), units.registered(facts.baseUnit()).orElseThrow().code(),
+				facts.factor());
+		return unit;
+	}
+
+	/** A unit records are recorded in stays defined; the records would stop converting without it. */
+	public void deleteCustomUnit(UUID id) {
+		var unit = getCustomUnit(id);
+		var inUse = activities
+			.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(unit.getOrganizationId())
+			.stream()
+			.anyMatch(activity -> activity.getUnit().equalsIgnoreCase(unit.getCode()));
+		if (inUse) {
+			throw new GhgRuleViolationException("Records are recorded in " + unit.getCode()
+					+ ". Correct them into another unit before deleting the definition.");
+		}
+		customUnits.delete(unit);
+	}
+
+	private void requireCustomUnit(UUID organizationId, String code, CustomUnitFacts facts, CustomUnit self) {
+		if (units.registered(code).isPresent()) {
+			throw new GhgFieldException("code", "'" + code + "' is already a registered unit.");
+		}
+		if ((self == null || !self.getCode().equalsIgnoreCase(code))
+				&& customUnits.existsByOrganizationIdAndCodeIgnoreCase(organizationId, code)) {
+			throw new GhgFieldException("code", "A custom unit named '" + code + "' already exists.");
+		}
+		if (units.registered(facts.baseUnit()).isEmpty()) {
+			throw new GhgFieldException("baseUnit", "'" + facts.baseUnit()
+					+ "' is not a registered unit. A custom unit is a multiple of a registered one.");
+		}
+	}
+
+	private CustomUnit getCustomUnit(UUID id) {
+		var unit = customUnits.findById(id).orElseThrow(() -> GhgNotFoundException.customUnit(id));
+		access.checkWrite(getOrganization(unit.getOrganizationId()));
+		return unit;
+	}
+
+	/** The shared typical densities and the organization's own, by material. */
+	@Transactional(readOnly = true)
+	public List<Density> listDensities(UUID organizationId) {
+		getOrganization(organizationId);
+		return densities.findAllByOrganizationIdIsNullOrOrganizationIdOrderByMaterialAsc(organizationId);
+	}
+
+	public record DensityFacts(String material, BigDecimal kgPerLitre, String source, String note) {
+	}
+
+	public Density createDensity(UUID organizationId, DensityFacts facts) {
+		var organization = getOrganization(organizationId);
+		access.checkWrite(organization);
+		var material = facts.material().trim();
+		if (densities.existsByOrganizationIdAndMaterialIgnoreCase(organizationId, material)) {
+			throw new GhgFieldException("material", "A density for '" + material + "' already exists.");
+		}
+		return densities.save(new Density(organizationId, material, facts.kgPerLitre(), facts.source().trim(),
+				trimToNull(facts.note())));
+	}
+
+	public Density updateDensity(UUID id, DensityFacts facts) {
+		var density = getOwnDensity(id);
+		var material = facts.material().trim();
+		if (!material.equalsIgnoreCase(density.getMaterial())
+				&& densities.existsByOrganizationIdAndMaterialIgnoreCase(density.getOrganizationId(), material)) {
+			throw new GhgFieldException("material", "A density for '" + material + "' already exists.");
+		}
+		density.update(material, facts.kgPerLitre(), facts.source().trim(), trimToNull(facts.note()));
+		return density;
+	}
+
+	/** A density a classification applies is part of the record; retire it by correcting the classification. */
+	public void deleteDensity(UUID id) {
+		var density = getOwnDensity(id);
+		if (assignments.existsByDensityId(id)) {
+			throw new GhgRuleViolationException("The density of " + density.getMaterial()
+					+ " is applied by a classification. Choose another density there before deleting it.");
+		}
+		densities.delete(density);
+	}
+
+	private Density getOwnDensity(UUID id) {
+		var density = densities.findById(id).orElseThrow(() -> GhgNotFoundException.density(id));
+		if (density.getOrganizationId() == null) {
+			throw new GhgRuleViolationException("The typical density of " + density.getMaterial()
+					+ " is shared and cannot be changed. Record the organization's own density instead.");
+		}
+		access.checkWrite(getOrganization(density.getOrganizationId()));
+		return density;
 	}
 
 	// --- activity data (organizational facts) -------------------------------

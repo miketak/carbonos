@@ -7,6 +7,8 @@ export const DIMENSION_ORDER: Dimension[] = [
   'MASS',
   'DISTANCE',
   'PASSENGER_DISTANCE',
+  'FREIGHT',
+  'COUNT',
 ]
 
 export const DIMENSION_LABELS: Record<Dimension, string> = {
@@ -30,10 +32,17 @@ export function groupUnits(
   })).filter((group) => group.units.length > 0)
 }
 
-/** Finds a registered unit by its code (case-insensitive); undefined for custom units. */
+/** Finds a unit by its code (case-insensitive), custom units included when the list carries them. */
 export function findUnit(units: Unit[], code: string): Unit | undefined {
   const target = code.trim().toLowerCase()
   return units.find((unit) => unit.code.toLowerCase() === target)
+}
+
+/** Whether two units meet only through a density: one in mass, the other in volume (spec 02.2). */
+export function needsDensity(units: Unit[], from: string, to: string): boolean {
+  const a = unitDimension(units, from)
+  const b = unitDimension(units, to)
+  return (a === 'MASS' && b === 'VOLUME') || (a === 'VOLUME' && b === 'MASS')
 }
 
 /** The dimension of a (possibly custom) unit string, or null if unrecognized. */

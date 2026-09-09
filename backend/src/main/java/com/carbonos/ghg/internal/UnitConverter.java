@@ -27,8 +27,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class UnitConverter {
 
-	/** One registered unit: its canonical code, dimension, and size in the dimension's base unit. */
-	public record UnitDef(String code, String label, Dimension dimension, BigDecimal toCanonical) {
+	/**
+	 * One unit: its canonical code, dimension, size in the dimension's base
+	 * unit, and, for a custom unit (spec 02.2), the definition it prints.
+	 */
+	public record UnitDef(String code, String label, Dimension dimension, BigDecimal toCanonical, String definition) {
+		public UnitDef(String code, String label, Dimension dimension, BigDecimal toCanonical) {
+			this(code, label, dimension, toCanonical, null);
+		}
+
+		public boolean isCustom() {
+			return definition != null;
+		}
 	}
 
 	private static final MathContext MC = MathContext.DECIMAL64;
@@ -110,6 +120,85 @@ public class UnitConverter {
 	/** The registry in declaration order, for the UI's unit picker. */
 	public List<UnitDef> all() {
 		return units;
+	}
+
+	/**
+	 * The registry plus an organization's custom units (spec 02.2), each a
+	 * multiple of a registered unit. A custom code shadows nothing: a code
+	 * already in the registry is refused when the unit is defined.
+	 */
+	public Scoped with(List<CustomUnit> customUnits) {
+		var extra = new LinkedHashMap<String, UnitDef>();
+		var defs = new java.util.ArrayList<UnitDef>(units);
+		for (var custom : customUnits) {
+			var base = lookup(custom.getBaseUnit());
+			if (base.isEmpty()) {
+				continue;
+			}
+			var def = new UnitDef(custom.getCode(), custom.getLabel(), base.get().dimension(),
+					base.get().toCanonical().multiply(custom.getFactor(), MC), custom.definition());
+			extra.put(normalize(custom.getCode()), def);
+			defs.add(def);
+		}
+		return new Scoped(List.copyOf(defs), Map.copyOf(extra));
+	}
+
+	/** The dimension of a registered base unit, for defining a custom unit. */
+	public Optional<UnitDef> registered(String unit) {
+		return lookup(unit);
+	}
+
+	/** The registry seen through one organization's custom units. */
+	public final class Scoped {
+
+		private final List<UnitDef> all;
+		private final Map<String, UnitDef> custom;
+
+		private Scoped(List<UnitDef> all, Map<String, UnitDef> custom) {
+			this.all = all;
+			this.custom = custom;
+		}
+
+		public List<UnitDef> all() {
+			return all;
+		}
+
+		public Optional<UnitDef> find(String unit) {
+			var own = custom.get(normalize(unit));
+			return own != null ? Optional.of(own) : lookup(unit);
+		}
+
+		public Optional<Dimension> dimensionOf(String unit) {
+			return find(unit).map(UnitDef::dimension);
+		}
+
+		public boolean canConvert(String from, String to) {
+			var f = find(from);
+			var t = find(to);
+			return f.isPresent() && t.isPresent() && f.get().dimension() == t.get().dimension();
+		}
+
+		public BigDecimal ratio(String from, String to) {
+			var f = find(from).orElseThrow(() -> unknown(from));
+			var t = find(to).orElseThrow(() -> unknown(to));
+			if (f.dimension() != t.dimension()) {
+				throw new IllegalArgumentException("Cannot convert " + f.code() + " (" + f.dimension() + ") to "
+						+ t.code() + " (" + t.dimension() + ")");
+			}
+			return f.toCanonical().divide(t.toCanonical(), MC);
+		}
+
+		public BigDecimal convert(BigDecimal quantity, String from, String to) {
+			return quantity.multiply(ratio(from, to), MC);
+		}
+
+		/** The custom-unit definitions a conversion between two units relies on, for the line's note. */
+		public String definitionsBehind(String from, String to) {
+			var parts = new java.util.ArrayList<String>();
+			find(from).filter(UnitDef::isCustom).map(UnitDef::definition).ifPresent(parts::add);
+			find(to).filter(UnitDef::isCustom).map(UnitDef::definition).ifPresent(parts::add);
+			return parts.isEmpty() ? null : String.join("; ", parts);
+		}
 	}
 
 	private Optional<UnitDef> lookup(String unit) {

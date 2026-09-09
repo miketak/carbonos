@@ -9,11 +9,13 @@ import com.carbonos.ghg.internal.UnitConverter.UnitDef;
  * A convertible unit for the activity-entry picker and the client-side
  * conversion preview. {@code toCanonical} is the unit's size in its dimension's
  * base unit, so the client can preview a conversion the same way the backend
- * computes it at run time.
+ * computes it at run time. A custom unit carries its definition (spec 02.2).
  */
-public record UnitResponse(String code, String label, Dimension dimension, BigDecimal toCanonical) {
+public record UnitResponse(String code, String label, Dimension dimension, BigDecimal toCanonical, boolean custom,
+		String definition) {
 
 	public static UnitResponse from(UnitDef def) {
-		return new UnitResponse(def.code(), def.label(), def.dimension(), def.toCanonical());
+		return new UnitResponse(def.code(), def.label(), def.dimension(), def.toCanonical(), def.isCustom(),
+				def.definition());
 	}
 }
