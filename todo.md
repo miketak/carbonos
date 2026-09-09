@@ -27,18 +27,18 @@ Status summary (update as tickets close):
 
 | Priority | Tickets | Done |
 |---|---|---|
-| P0 | 9 | 1 |
+| P0 | 9 | 2 |
 | P1 | 13 | 0 |
 | P2 | 4 | 0 |
 
 ## Theme 1: Scope 2 accounting
 
-- [ ] **T-01 (P0) Apply contractual instruments to the MWh they cover, and always report both Scope 2 methods**
+- [x] **T-01 (P0) Apply contractual instruments to the MWh they cover, and always report both Scope 2 methods**
   - Findings: F31, F34
   - Problem: an instrument (PPA, REC, supplier contract) is applied to a facility's entire electricity consumption. In the audit a PPA covering 20,000 MWh of 46,500 MWh zeroed the whole facility; market-based Scope 2 came out at 1,475 tCO2e against a correct figure of about 13,162 tCO2e (the uncovered 26,500 MWh at 0.441 kg/kWh is 11,686.5 tCO2e). When no instruments exist, the report prints location-based only.
   - Standard: Scope 2 Guidance sections 6.2 and 7.4 (instruments apply to the MWh they cover, balance at residual mix or grid average); Scope 2 Guidance chapter 4 and Corporate Standard chapter 9 as amended in 2015 (dual reporting is required for any company with operations in a market with contractual instruments; Ghana has I-RECs).
   - Done when: an instrument has a covered quantity (MWh) and a period; the run applies it to that quantity, computes the balance at residual mix (or location-based when no residual mix is disclosed), and prints the split on the line; the report prints location-based and market-based totals on every run, and says "no instruments, market-based equals residual mix / grid average" when that is the case. Retest with the Obuom PPA figures.
-  - Spec: none yet. Touches 06.1 (market-based) and 07.x (report).
+  - Spec: 07.3 (instrument coverage and dual reporting), migration V21.
 
 - [ ] **T-02 (P1) Capture the Scope 2 Quality Criteria one criterion at a time**
   - Findings: F32

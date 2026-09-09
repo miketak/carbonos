@@ -28,12 +28,15 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 07 | [Reporting and verification](07-reporting-and-verification.md) | Ch. 9, 10 | Implemented |
 | 07.1 | [Reporting completeness](07.1-reporting-completeness.md) | Ch. 9 | Implemented |
 | 07.2 | [Required disclosures](07.2-required-disclosures.md) | Ch. 4, 9, Scope 2 Guidance, 2013 amendment | Implemented |
+| 07.3 | [Scope 2 instrument coverage and dual reporting](07.3-scope-2-instrument-coverage.md) | Scope 2 Guidance Ch. 4, 6, 7 | Implemented |
 
 A chapter spec (`NN`) describes one stage of the workflow as it is today. A
 sub-spec (`NN.M`) is a branch of that stage that deserves its own document.
-Every spec listed is implemented as of 2026-09-08. Sub-specs 03.3, 06.1 and
+Every spec listed is implemented as of 2026-09-09. Sub-specs 03.3, 06.1 and
 07.2 come from a conformance review of the set against the Standard on
 2026-09-08; the conformance table in spec 00 records what each closed.
+Sub-specs from 07.3 onward close tickets of the GHG officer audit backlog in
+`todo.md` (each ticket names its spec).
 Chapters 8 (reductions) and 11 (targets) of the Standard have no spec yet.
 
 ## Lifecycle

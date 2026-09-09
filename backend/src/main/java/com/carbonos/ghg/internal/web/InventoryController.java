@@ -240,7 +240,7 @@ class InventoryController {
 	MarketFactorResponse setMarketFactor(@PathVariable UUID id, @PathVariable UUID facilityId,
 			@Valid @RequestBody MarketFactorRequest body) {
 		return MarketFactorResponse.from(inventoryService.setMarketFactor(id, facilityId, body.instrumentType(),
-				body.kgCo2ePerKwh(), body.source(), body.meetsQualityCriteria(), body.qualityNotes()));
+				body.kgCo2ePerKwh(), body.source(), body.meetsQualityCriteria(), body.qualityNotes(), body.coverage()));
 	}
 
 	/** Whether a residual mix is available for the instruments' markets (spec 07.2). */

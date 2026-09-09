@@ -8,6 +8,7 @@ import type {
   LeaseType,
   MarketInstrument,
   RelationshipType,
+  Scope2MarketBasis,
   StructuralChangeConvention,
 } from './api'
 
@@ -84,6 +85,14 @@ export const leaseLabels: Record<LeaseType, string> = {
 export const conventionLabels: Record<StructuralChangeConvention, string> = {
   TRANSACTION_DATE: 'From the transaction date (membership windows)',
   WHOLE_YEAR: 'For the whole year, as the Standard recommends',
+}
+
+export const marketBasisLabels: Record<Scope2MarketBasis, string> = {
+  INSTRUMENTS:
+    'contractual instruments applied to the kWh they cover; the balance at the residual mix or grid average',
+  RESIDUAL_MIX: 'no instrument applied; every kWh at the residual mix',
+  GRID_AVERAGE:
+    'no instrument applied and no residual mix available; the grid average (location-based) stands in',
 }
 
 export const instrumentLabels: Record<MarketInstrument, string> = {

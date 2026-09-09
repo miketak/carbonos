@@ -72,9 +72,14 @@ public class GhgRun {
 	@Column(name = "scope3_kg_co2e", nullable = false, precision = 18, scale = 3)
 	private BigDecimal scope3KgCo2e;
 
-	// scope 2 under the market-based method; null when no facility has an instrument
-	@Column(name = "scope2_market_based_kg_co2e", precision = 18, scale = 3)
+	// scope 2 under the market-based method, reported on every run (spec 07.3)
+	@Column(name = "scope2_market_based_kg_co2e", nullable = false, precision = 18, scale = 3)
 	private BigDecimal scope2MarketBasedKgCo2e;
+
+	// what the market-based figure rests on: instruments, the residual mix, or the grid average
+	@Enumerated(EnumType.STRING)
+	@Column(name = "scope2_market_basis", nullable = false, length = 20)
+	private Scope2MarketBasis scope2MarketBasis;
 
 	@Column(name = "co2_kg", nullable = false, precision = 18, scale = 3)
 	private BigDecimal co2Kg;
@@ -132,7 +137,7 @@ public class GhgRun {
 	protected GhgRun() {
 	}
 
-	GhgRun(Inventory inventory, String label, boolean marketBasedReporting) {
+	GhgRun(Inventory inventory, String label) {
 		this.id = UUID.randomUUID();
 		this.inventory = inventory;
 		this.label = label;
@@ -147,7 +152,8 @@ public class GhgRun {
 		this.scope1KgCo2e = BigDecimal.ZERO;
 		this.scope2KgCo2e = BigDecimal.ZERO;
 		this.scope3KgCo2e = BigDecimal.ZERO;
-		this.scope2MarketBasedKgCo2e = marketBasedReporting ? BigDecimal.ZERO : null;
+		this.scope2MarketBasedKgCo2e = BigDecimal.ZERO;
+		this.scope2MarketBasis = Scope2MarketBasis.GRID_AVERAGE;
 		this.co2Kg = BigDecimal.ZERO;
 		this.ch4Kg = BigDecimal.ZERO;
 		this.ch4FossilKg = BigDecimal.ZERO;
@@ -169,8 +175,13 @@ public class GhgRun {
 			case SCOPE_1 -> scope1KgCo2e = scope1KgCo2e.add(line.getKgCo2e());
 			case SCOPE_2 -> {
 				scope2KgCo2e = scope2KgCo2e.add(line.getKgCo2e());
-				if (scope2MarketBasedKgCo2e != null) {
-					scope2MarketBasedKgCo2e = scope2MarketBasedKgCo2e.add(line.marketOrLocationKgCo2e());
+				scope2MarketBasedKgCo2e = scope2MarketBasedKgCo2e.add(line.marketOrLocationKgCo2e());
+				if (line.instrumentApplied()) {
+					scope2MarketBasis = Scope2MarketBasis.INSTRUMENTS;
+				}
+				else if (line.getMarketBalanceBasis() == Scope2MarketBasis.RESIDUAL_MIX
+						&& scope2MarketBasis != Scope2MarketBasis.INSTRUMENTS) {
+					scope2MarketBasis = Scope2MarketBasis.RESIDUAL_MIX;
 				}
 			}
 			case SCOPE_3 -> scope3KgCo2e = scope3KgCo2e.add(line.getKgCo2e());
@@ -263,6 +274,10 @@ public class GhgRun {
 
 	public BigDecimal getScope2MarketBasedKgCo2e() {
 		return scope2MarketBasedKgCo2e;
+	}
+
+	public Scope2MarketBasis getScope2MarketBasis() {
+		return scope2MarketBasis;
 	}
 
 	public BigDecimal getCo2Kg() {

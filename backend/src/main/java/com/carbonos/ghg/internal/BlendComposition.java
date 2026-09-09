@@ -30,7 +30,8 @@ record BlendComposition(Map<String, BigDecimal> fractions) {
 			}
 			fractions.put(pair[0].trim(), new BigDecimal(pair[1].trim()));
 		}
-		return new BlendComposition(Map.copyOf(fractions));
+		// insertion order is the order the source lists the species, and the order the report prints them
+		return new BlendComposition(java.util.Collections.unmodifiableMap(fractions));
 	}
 
 	/** kg CO2e per kg of blend under the set, or null when the set lacks a species of it. */
