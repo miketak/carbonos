@@ -54,6 +54,7 @@ import {
   setEntityTreatment,
   setMarketFactor,
   setOperationalBoundary,
+  setReportMetadata,
   setResidualMix,
   supersedeInventory,
   syncAssignments,
@@ -80,6 +81,7 @@ import type {
   OrganizationInput,
   RaiseRecalculationInput,
   RecalculationDecisionInput,
+  ReportMetadataInput,
   ResidualMixInput,
 } from './api'
 
@@ -431,6 +433,12 @@ export function useWithdrawFinal(inventoryId: string) {
 
 export function useCoverageQuery(inventoryId: string) {
   return useQuery({ queryKey: coverageKey(inventoryId), queryFn: () => listCoverage(inventoryId) })
+}
+
+export function useSetReportMetadata(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, (input: ReportMetadataInput) =>
+    setReportMetadata(inventoryId, input),
+  )
 }
 
 export function useAuditEventsQuery(inventoryId: string) {

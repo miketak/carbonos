@@ -20,6 +20,9 @@ public interface GhgRunRepository extends JpaRepository<GhgRun, UUID> {
 	@EntityGraph(attributePaths = { "exclusions", "inventory" })
 	Optional<GhgRun> findWithExclusionsById(UUID id);
 
+	@EntityGraph(attributePaths = { "factors", "inventory" })
+	Optional<GhgRun> findWithFactorsById(UUID id);
+
 	/** The highest-numbered run the inventory ever issued, voided or not (spec 05.2). */
 	Optional<GhgRun> findTopByInventoryIdOrderByRunNoDesc(UUID inventoryId);
 }

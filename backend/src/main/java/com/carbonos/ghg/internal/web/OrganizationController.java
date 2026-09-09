@@ -46,7 +46,7 @@ class OrganizationController {
 
 	@PostMapping
 	ResponseEntity<OrganizationResponse> create(@Valid @RequestBody OrganizationRequest body) {
-		var organization = ghgService.createOrganization(body.name());
+		var organization = ghgService.createOrganization(body.name(), body.address(), body.contact());
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
 			.buildAndExpand(organization.getId()).toUri();
 		return ResponseEntity.created(location).body(toResponse(organization));
@@ -54,7 +54,7 @@ class OrganizationController {
 
 	@PutMapping("/{id}")
 	OrganizationResponse update(@PathVariable UUID id, @Valid @RequestBody OrganizationRequest body) {
-		return toResponse(ghgService.updateOrganization(id, body.name()));
+		return toResponse(ghgService.updateOrganization(id, body.name(), body.address(), body.contact()));
 	}
 
 	@DeleteMapping("/{id}")

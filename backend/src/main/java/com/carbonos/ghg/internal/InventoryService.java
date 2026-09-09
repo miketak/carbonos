@@ -55,6 +55,7 @@ public class InventoryService {
 	private final MarketFactorRepository marketFactors;
 	private final GhgRunRepository runs;
 	private final GhgAuditEventRepository auditEvents;
+	private final IntensityMetricRepository intensityMetrics;
 	private final BaseYearService baseYears;
 	private final ApplicationEventPublisher events;
 	private final GhgAccess access;
@@ -66,7 +67,8 @@ public class InventoryService {
 			BoundaryTreatmentRepository boundaryTreatments, BoundaryVersionRepository boundaryVersions,
 			BoundaryExclusionRepository boundaryExclusions, InventoryAssignmentRepository assignments,
 			MarketFactorRepository marketFactors, GhgRunRepository runs, GhgAuditEventRepository auditEvents,
-			BaseYearService baseYears, ApplicationEventPublisher events, GhgAccess access, UnitConverter units) {
+			IntensityMetricRepository intensityMetrics, BaseYearService baseYears, ApplicationEventPublisher events,
+			GhgAccess access, UnitConverter units) {
 		this.organizations = organizations;
 		this.entities = entities;
 		this.facilities = facilities;
@@ -80,6 +82,7 @@ public class InventoryService {
 		this.marketFactors = marketFactors;
 		this.runs = runs;
 		this.auditEvents = auditEvents;
+		this.intensityMetrics = intensityMetrics;
 		this.baseYears = baseYears;
 		this.events = events;
 		this.access = access;
@@ -505,9 +508,48 @@ public class InventoryService {
 		if (inventory.getStatus() != InventoryStatus.FINAL) {
 			throw new GhgRuleViolationException("Designate a final run before publishing the inventory.");
 		}
-		inventory.publish();
+		inventory.publish(access.currentUserEmail());
 		events.publishEvent(new InventoryPublished(inventoryId, inventory.getFinalRunId()));
 		return inventory;
+	}
+
+	// --- report metadata (spec 07.4) -------------------------------------------------
+
+	/** The header the accountant types before publication: approver, assurance, intensity denominators. */
+	public Inventory setReportMetadata(UUID inventoryId, String approvedBy, AssuranceLevel assuranceLevel,
+			String assuranceProvider, String assuranceStatement, List<IntensityInput> metrics) {
+		var inventory = get(inventoryId);
+		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
+			throw new GhgRuleViolationException("A published inventory's report header cannot change.");
+		}
+		inventory.setReportMetadata(trimToNull(approvedBy), assuranceLevel, trimToNull(assuranceProvider),
+				trimToNull(assuranceStatement));
+		intensityMetrics.deleteAllByInventoryId(inventoryId);
+		for (var metric : metrics) {
+			intensityMetrics.save(new IntensityMetric(inventory, metric.name().trim(), metric.value(), metric.unit().trim()));
+		}
+		return inventory;
+	}
+
+	public record IntensityInput(String name, BigDecimal value, String unit) {
+	}
+
+	@Transactional(readOnly = true)
+	public List<IntensityMetric> intensityMetrics(UUID inventoryId) {
+		get(inventoryId);
+		return intensityMetrics.findAllByInventoryIdOrderByName(inventoryId);
+	}
+
+	/** The inventories a correction supersedes, oldest first (spec 07.4: the version chain). */
+	@Transactional(readOnly = true)
+	public List<Inventory> predecessors(UUID inventoryId) {
+		var chain = new ArrayList<Inventory>();
+		var current = inventories.findBySupersededById(inventoryId).orElse(null);
+		while (current != null && chain.size() < 100) {
+			chain.addFirst(current);
+			current = inventories.findBySupersededById(current.getId()).orElse(null);
+		}
+		return chain;
 	}
 
 	/**
@@ -1088,6 +1130,7 @@ public class InventoryService {
 		access.check(run.getInventory().getOrganization());
 		// a second fetch for the exclusions avoids a cartesian product of the two collections
 		runs.findWithExclusionsById(id).ifPresent(withExclusions -> withExclusions.getExclusions().size());
+		runs.findWithFactorsById(id).ifPresent(withFactors -> withFactors.getFactors().size());
 		return run;
 	}
 
@@ -1124,7 +1167,8 @@ public class InventoryService {
 		var gwp = inventory.getGwpSet();
 		// spec 05.2: one more than the highest number ever issued, voided runs included
 		var runNo = runs.findTopByInventoryIdOrderByRunNoDesc(inventoryId).map(last -> last.getRunNo() + 1).orElse(1);
-		var run = new GhgRun(inventory, runNo, label.trim());
+		var run = new GhgRun(inventory, runNo, label.trim(), access.currentUserEmail());
+		var factorsUsed = new java.util.LinkedHashMap<UUID, EmissionFactor>();
 		// spec 07.3: each instrument is applied to the kWh it covers, line by line, until used up
 		var remainingCoverage = new HashMap<UUID, BigDecimal>();
 		instruments.forEach((facilityId, instrument) -> remainingCoverage.put(facilityId, instrument.getCoveredKwh()));
@@ -1142,6 +1186,7 @@ public class InventoryService {
 			}
 			var activity = assignment.getActivity();
 			var factor = assignment.getEmissionFactor();
+			factorsUsed.putIfAbsent(factor.getId(), factor);
 			// spec 04.2: the share over the record's period, pro-rated by the days the version covers
 			var coverage = version.coverage(activity.getFacility().getId(), activity.getPeriodStart(),
 					activity.getPeriodEnd(), inventory.getPeriodStart(), inventory.getPeriodEnd());
@@ -1183,6 +1228,10 @@ public class InventoryService {
 			}
 			run.addLine(new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, period,
 					kgCo2e, gases, market));
+		}
+		// spec 07.4: the frozen factor set behind the report's factor table
+		for (var factor : factorsUsed.values()) {
+			run.addFactor(new GhgRunFactor(run, factor, gwp));
 		}
 		run = runs.save(run);
 		events.publishEvent(new GhgRunCompleted(run.getId(), inventoryId, run.getTotalKgCo2e()));

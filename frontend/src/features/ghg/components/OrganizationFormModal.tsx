@@ -24,13 +24,19 @@ export function OrganizationFormModal({
   const mutation = organization ? update : create
 
   const [name, setName] = useState(organization?.name ?? '')
+  const [address, setAddress] = useState(organization?.address ?? '')
+  const [contact, setContact] = useState(organization?.contact ?? '')
 
   const errors = fieldErrors(mutation.error)
   const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    const input = { name }
+    const input = {
+      name,
+      ...(address.trim() !== '' ? { address } : {}),
+      ...(contact.trim() !== '' ? { contact } : {}),
+    }
     const handlers = {
       onSuccess: () => onSaved(`${name.trim()} ${organization ? 'updated' : 'created'}.`),
     }
@@ -48,6 +54,21 @@ export function OrganizationFormModal({
           error={errors?.name}
           placeholder="Ecoriv Holdings"
           required
+        />
+        <InputField
+          label="Address (optional)"
+          placeholder="12 Liberation Road, Accra"
+          value={address}
+          onChange={(event) => setAddress(event.target.value)}
+          error={errors?.address}
+          hint="Printed in the report header as the reporting entity's address."
+        />
+        <InputField
+          label="Contact (optional)"
+          placeholder="sustainability@example.com"
+          value={contact}
+          onChange={(event) => setContact(event.target.value)}
+          error={errors?.contact}
         />
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">

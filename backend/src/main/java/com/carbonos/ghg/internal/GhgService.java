@@ -3,6 +3,7 @@ package com.carbonos.ghg.internal;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -58,6 +59,10 @@ public class GhgService {
 
 	/** Creates the organization and its own legal entity, the wholly owned reporting company (spec 03.1). */
 	public Organization createOrganization(String name) {
+		return createOrganization(name, null, null);
+	}
+
+	public Organization createOrganization(String name, String address, String contact) {
 		var trimmed = name.trim();
 		if (organizations.existsByNameIgnoreCase(trimmed)) {
 			throw new DuplicateOrganizationException(trimmed);
@@ -70,12 +75,13 @@ public class GhgService {
 			// unique-constraint race between the existence check and the insert
 			throw new DuplicateOrganizationException(trimmed);
 		}
+		organization.setHeader(trimToNull(address), trimToNull(contact));
 		entities.save(new LegalEntity(organization, trimmed, RelationshipType.SUBSIDIARY, new BigDecimal("100.00"),
 				new BigDecimal("100.00"), true, true, null, true));
 		return organization;
 	}
 
-	public Organization updateOrganization(UUID id, String name) {
+	public Organization updateOrganization(UUID id, String name, String address, String contact) {
 		var organization = getOrganization(id);
 		var trimmed = name.trim();
 		if (!trimmed.equalsIgnoreCase(organization.getName()) && organizations.existsByNameIgnoreCase(trimmed)) {
@@ -86,6 +92,7 @@ public class GhgService {
 			.filter(own -> own.getName().equals(organization.getName()))
 			.ifPresent(own -> own.setName(trimmed));
 		organization.setName(trimmed);
+		organization.setHeader(trimToNull(address), trimToNull(contact));
 		return organization;
 	}
 
@@ -209,17 +216,24 @@ public class GhgService {
 	}
 
 	/** Adds a facility under an entity; without one it belongs to the reporting company (spec 03.1). */
-	public Facility createFacility(UUID organizationId, UUID entityId, String name, String location) {
+	public Facility createFacility(UUID organizationId, UUID entityId, String name, String location,
+			String country) {
 		var organization = getOrganization(organizationId);
 		var entity = requireEntityInOrganization(entityId, organizationId);
-		return facilities.save(new Facility(organization, entity, name.trim(), location.trim()));
+		return facilities.save(new Facility(organization, entity, name.trim(), location.trim(), country(country)));
 	}
 
-	public Facility updateFacility(UUID id, UUID entityId, String name, String location) {
+	public Facility updateFacility(UUID id, UUID entityId, String name, String location, String country) {
 		var facility = getFacility(id);
 		var entity = requireEntityInOrganization(entityId, facility.getOrganization().getId());
-		facility.update(entity, name.trim(), location.trim());
+		facility.update(entity, name.trim(), location.trim(), country(country));
 		return facility;
+	}
+
+	/** An ISO 3166-1 alpha-2 code, upper-cased, or null (spec 07.4). */
+	private static String country(String value) {
+		var trimmed = trimToNull(value);
+		return trimmed == null ? null : trimmed.toUpperCase(Locale.ROOT);
 	}
 
 	/** TRACE-02: a facility with recorded facts is history; it cannot be deleted. */

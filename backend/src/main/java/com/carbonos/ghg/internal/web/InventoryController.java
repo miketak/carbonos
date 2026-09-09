@@ -37,6 +37,7 @@ import com.carbonos.ghg.internal.web.dto.MarketFactorRequest;
 import com.carbonos.ghg.internal.web.dto.MarketFactorResponse;
 import com.carbonos.ghg.internal.web.dto.OperationalBoundaryRequest;
 import com.carbonos.ghg.internal.web.dto.ReasonRequest;
+import com.carbonos.ghg.internal.web.dto.ReportMetadataRequest;
 import com.carbonos.ghg.internal.web.dto.ResidualMixRequest;
 import com.carbonos.ghg.internal.web.dto.SupersedeRequest;
 import com.carbonos.ghg.internal.web.dto.ValidationReportResponse;
@@ -219,6 +220,17 @@ class InventoryController {
 	@PostMapping("/inventories/{id}/withdraw-final")
 	InventoryResponse withdrawFinal(@PathVariable UUID id, @Valid @RequestBody ReasonRequest body) {
 		return InventoryResponse.from(inventoryService.withdrawFinal(id, body.reason()));
+	}
+
+	/** The report header: approver, assurance, intensity denominators (spec 07.4). */
+	@PutMapping("/inventories/{id}/report-metadata")
+	InventoryResponse reportMetadata(@PathVariable UUID id, @Valid @RequestBody ReportMetadataRequest body) {
+		return InventoryResponse.from(inventoryService.setReportMetadata(id, body.approvedBy(),
+				body.assuranceLevel(), body.assuranceProvider(), body.assuranceStatement(),
+				body.intensityMetrics()
+					.stream()
+					.map(m -> new InventoryService.IntensityInput(m.name(), m.value(), m.unit()))
+					.toList()));
 	}
 
 	/** The recorded acts on the inventory, newest first (spec 05.2). */

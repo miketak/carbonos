@@ -40,6 +40,10 @@ public class Facility {
 	@Column(nullable = false, length = 120)
 	private String location;
 
+	// ISO 3166-1 alpha-2, for the report's country breakdown (spec 07.4); optional
+	@Column(length = 2)
+	private String country;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -51,12 +55,17 @@ public class Facility {
 	protected Facility() {
 	}
 
-	Facility(Organization organization, LegalEntity entity, String name, String location) {
+	Facility(Organization organization, LegalEntity entity, String name, String location, String country) {
 		this.id = UUID.randomUUID();
 		this.organization = organization;
 		this.entity = entity;
 		this.name = name;
 		this.location = location;
+		this.country = country;
+	}
+
+	public String getCountry() {
+		return country;
 	}
 
 	public UUID getId() {
@@ -83,9 +92,10 @@ public class Facility {
 		return createdAt;
 	}
 
-	void update(LegalEntity entity, String name, String location) {
+	void update(LegalEntity entity, String name, String location, String country) {
 		this.entity = entity;
 		this.name = name;
 		this.location = location;
+		this.country = country;
 	}
 }

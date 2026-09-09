@@ -22,11 +22,13 @@ import {
   scopeLabels,
 } from './format'
 import { useReportQuery } from './useGhg'
+import { assuranceLabels } from './components/ReportMetadataCard'
 import type {
   BoundaryExclusionEntry,
   ExclusionReason,
   RecalculationStatus,
   Report,
+  Breakdown,
   RunExclusion,
 } from './api'
 
@@ -154,6 +156,10 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
 
   return (
     <>
+      <Section number={0} title="Report" stagger={0}>
+        <ReportHeaderBlock header={report.header} />
+      </Section>
+
       <Section number={1} title="Company and organizational boundary" stagger={1}>
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-lg font-semibold">{company.organizationName}</span>
@@ -164,7 +170,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
             <p className="mt-2 text-sm text-ink-muted">
               Boundary version {company.boundaryVersion.version.versionNo}: the organizational
               boundary this run computed its accounting shares from, exactly as it stood when frozen
-              (spec 03).
+              (Corporate Standard, chapter 3).
             </p>
             <BoundaryVersionPanel versionId={company.boundaryVersion.version.id} />
           </>
@@ -281,6 +287,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
             </tr>
           </tbody>
         </table>
+        <BreakdownTables report={report} />
         <p className="mt-2 text-xs text-ink-muted">
           Figures in metric tonnes to three decimals; each line below keeps its kilograms. The total
           uses the location-based scope 2 figure. Market-based basis:{' '}
@@ -403,11 +410,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
           GWP set: IPCC {methodology.gwpSet}, 100-year. Assessment reports used:{' '}
           {methodology.assessmentReports.join(', ')}.
         </p>
-        {methodology.factorSources.length > 0 && (
-          <p className="mt-1 text-sm text-ink-muted">
-            Emission factors: {methodology.factorSources.join(', ')}.
-          </p>
-        )}
+        <FactorTable factors={report.factors} />
       </Section>
 
       <Section number={9} title="Exclusions" stagger={9}>
@@ -625,6 +628,182 @@ function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+/** The header block (spec 07.4): the reporting entity, who prepared and approved the report, its version and assurance. */
+function ReportHeaderBlock({ header }: { header: Report['header'] }) {
+  const rows: [string, string][] = [
+    ['Reporting entity', [header.organizationName, header.address].filter(Boolean).join(', ')],
+    ['Contact', header.contact ?? 'not recorded'],
+    ['Reporting period', `${header.periodLabel} (${header.periodStart} → ${header.periodEnd})`],
+    [
+      'Prepared by',
+      `${header.preparedBy ?? 'not recorded'}, ${new Date(header.preparedAt).toLocaleString()}`,
+    ],
+    ['Approved by', header.approvedBy ?? 'not yet approved'],
+    [
+      'Published',
+      header.publishedAt
+        ? `${new Date(header.publishedAt).toLocaleString()} by ${header.publishedBy ?? 'unknown'}`
+        : 'not published',
+    ],
+    [
+      'Version',
+      `${header.version}${header.supersedes.length > 0 ? `, supersedes ${header.supersedes.join(', ')}` : ''}${header.supersededBy ? `; superseded by ${header.supersededBy}` : ''}`,
+    ],
+    [
+      'Assurance',
+      header.assuranceLevel === 'UNVERIFIED'
+        ? 'Unverified'
+        : `${assuranceLabels[header.assuranceLevel]}${header.assuranceProvider ? ` by ${header.assuranceProvider}` : ''}${header.assuranceStatement ? ` (${header.assuranceStatement})` : ''}`,
+    ],
+  ]
+  return (
+    <table aria-label="Report header" className="w-full text-left text-sm">
+      <tbody>
+        {rows.map(([label, value]) => (
+          <tr key={label} className="border-b border-teal/5 last:border-0">
+            <th scope="row" className="py-1 pr-3 font-medium whitespace-nowrap text-ink-muted">
+              {label}
+            </th>
+            <td className="py-1">{value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function BreakdownTable({ title, rows }: { title: string; rows: Breakdown[] }) {
+  if (rows.length === 0) return null
+  return (
+    <div className="mt-4 overflow-x-auto">
+      <p className="text-xs font-semibold text-ink-muted uppercase">{title}</p>
+      <table aria-label={title} className="mt-1 w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+            <th className="py-1 font-semibold">Name</th>
+            <th className="py-1 text-right font-semibold">Scope 1</th>
+            <th className="py-1 text-right font-semibold">Scope 2 (location)</th>
+            <th className="py-1 text-right font-semibold">Scope 2 (market)</th>
+            <th className="py-1 text-right font-semibold">Scope 3</th>
+            <th className="py-1 text-right font-semibold">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.name} className="border-b border-teal/5 last:border-0">
+              <td className="py-1 pr-2">{row.name}</td>
+              <td className="py-1 text-right tabular-nums">
+                {formatTonnes(row.scope1KgCo2e / 1000)}
+              </td>
+              <td className="py-1 text-right tabular-nums">
+                {formatTonnes(row.scope2KgCo2e / 1000)}
+              </td>
+              <td className="py-1 text-right tabular-nums">
+                {formatTonnes(row.scope2MarketBasedKgCo2e / 1000)}
+              </td>
+              <td className="py-1 text-right tabular-nums">
+                {formatTonnes(row.scope3KgCo2e / 1000)}
+              </td>
+              <td className="py-1 text-right font-semibold tabular-nums">
+                {formatTonnes(row.totalTCo2e)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/** Chapter 9: scope 3 by category is required where scope 3 is reported; facility, entity and country breakdowns are recommended. */
+function BreakdownTables({ report }: { report: Report }) {
+  return (
+    <>
+      {report.byScope3Category.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-semibold text-ink-muted uppercase">Scope 3 by category</p>
+          <table aria-label="Scope 3 by category" className="mt-1 w-full text-left text-sm">
+            <tbody>
+              {report.byScope3Category.map((row) => (
+                <tr key={row.category} className="border-b border-teal/5 last:border-0">
+                  <td className="py-1 pr-2">{categoryLabel(row.category)}</td>
+                  <td className="py-1 text-right text-xs text-ink-muted">
+                    {row.lineCount} line{row.lineCount === 1 ? '' : 's'}
+                  </td>
+                  <td className="py-1 text-right tabular-nums">{formatTonnes(row.tCo2e)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <BreakdownTable title="By facility" rows={report.byFacility} />
+      <BreakdownTable title="By legal entity" rows={report.byEntity} />
+      <BreakdownTable title="By country" rows={report.byCountry} />
+      {report.intensity.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-semibold text-ink-muted uppercase">Intensity</p>
+          <ul className="mt-1 text-sm">
+            {report.intensity.map((row) => (
+              <li key={row.name}>
+                {row.tCo2ePerUnit.toLocaleString(undefined, { maximumFractionDigits: 6 })} t CO₂e
+                per {row.unit} of {row.name.toLowerCase()} ({row.value.toLocaleString()} {row.unit})
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  )
+}
+
+/** Every factor as the run applied it (spec 07.4): value, unit, gas split, GWP set and source. */
+function FactorTable({ factors }: { factors: Report['factors'] }) {
+  if (factors.length === 0) return null
+  const gases = (f: Report['factors'][number]) =>
+    [
+      f.co2 > 0 ? `CO₂ ${f.co2}` : '',
+      f.ch4 > 0 ? `CH₄ ${f.ch4} (${f.ch4Fossil ? 'fossil' : 'biogenic'})` : '',
+      f.n2o > 0 ? `N₂O ${f.n2o}` : '',
+      f.hfcsKg > 0 ? `HFCs ${f.hfcsKg}${f.blendComposition ? ` (${f.blendComposition})` : ''}` : '',
+      f.pfcsKg > 0 ? `PFCs ${f.pfcsKg}` : '',
+      f.sf6 > 0 ? `SF₆ ${f.sf6}` : '',
+      f.nf3 > 0 ? `NF₃ ${f.nf3}` : '',
+      f.biogenicCo2 > 0 ? `biogenic CO₂ ${f.biogenicCo2}` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ')
+  return (
+    <div className="mt-3 overflow-x-auto">
+      <p className="text-xs font-semibold text-ink-muted uppercase">Emission factors applied</p>
+      <table aria-label="Emission factors applied" className="mt-1 w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+            <th className="py-1 font-semibold">Factor</th>
+            <th className="py-1 text-right font-semibold">kg CO₂e per unit</th>
+            <th className="py-1 font-semibold">Gases (kg per unit)</th>
+            <th className="py-1 font-semibold">GWP</th>
+            <th className="py-1 font-semibold">Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {factors.map((f) => (
+            <tr key={f.factorId} className="border-b border-teal/5 last:border-0">
+              <td className="py-1 pr-2 font-medium">{f.name}</td>
+              <td className="py-1 text-right tabular-nums whitespace-nowrap">
+                {f.kgCo2ePerUnit} / {f.unit}
+              </td>
+              <td className="py-1 pr-2 text-xs text-ink-muted">{gases(f)}</td>
+              <td className="py-1 pr-2 text-xs">IPCC {f.gwpSet}</td>
+              <td className="py-1 text-xs text-ink-muted">{f.source}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

@@ -9,5 +9,6 @@ import jakarta.validation.constraints.Size;
 public record FacilityRequest( //
 		@NotBlank @Size(max = 120) String name, //
 		@NotBlank @Size(max = 120) String location, //
+		@Size(min = 2, max = 2) String country, //
 		UUID entityId) {
 }

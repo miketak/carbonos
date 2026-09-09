@@ -84,6 +84,23 @@ public class Inventory {
 	@Column(name = "final_run_id")
 	private UUID finalRunId;
 
+	// the report header (spec 07.4): the approver override, who published, and the assurance
+	@Column(name = "approved_by", length = 160)
+	private String approvedBy;
+
+	@Column(name = "published_by", length = 320)
+	private String publishedBy;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "assurance_level", nullable = false, length = 12)
+	private AssuranceLevel assuranceLevel;
+
+	@Column(name = "assurance_provider", length = 160)
+	private String assuranceProvider;
+
+	@Column(name = "assurance_statement", length = 255)
+	private String assuranceStatement;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private InventoryStatus status;
@@ -125,7 +142,36 @@ public class Inventory {
 		this.consolidationApproach = consolidationApproach;
 		this.gwpSet = gwpSet;
 		this.straddleTreatment = straddleTreatment;
+		this.assuranceLevel = AssuranceLevel.UNVERIFIED;
 		this.status = InventoryStatus.DRAFT;
+	}
+
+	public String getApprovedBy() {
+		return approvedBy;
+	}
+
+	public String getPublishedBy() {
+		return publishedBy;
+	}
+
+	public AssuranceLevel getAssuranceLevel() {
+		return assuranceLevel;
+	}
+
+	public String getAssuranceProvider() {
+		return assuranceProvider;
+	}
+
+	public String getAssuranceStatement() {
+		return assuranceStatement;
+	}
+
+	void setReportMetadata(String approvedBy, AssuranceLevel assuranceLevel, String assuranceProvider,
+			String assuranceStatement) {
+		this.approvedBy = approvedBy;
+		this.assuranceLevel = assuranceLevel;
+		this.assuranceProvider = assuranceProvider;
+		this.assuranceStatement = assuranceStatement;
 	}
 
 	public StraddleTreatment getStraddleTreatment() {
@@ -290,9 +336,10 @@ public class Inventory {
 		this.status = InventoryStatus.FROZEN;
 	}
 
-	void publish() {
+	void publish(String publishedBy) {
 		this.status = InventoryStatus.PUBLISHED;
 		this.publishedAt = Instant.now();
+		this.publishedBy = publishedBy;
 	}
 
 	void markSupersededBy(Inventory successor) {

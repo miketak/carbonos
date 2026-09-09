@@ -18,12 +18,16 @@ const organizations: Organization[] = [
   {
     id: 'org-1',
     name: 'Ecoriv Holdings',
+    address: null,
+    contact: null,
     facilityCount: 2,
     createdAt: '2026-08-29T00:00:00Z',
   },
   {
     id: 'org-2',
     name: 'Tema Manufacturing',
+    address: null,
+    contact: null,
     facilityCount: 0,
     createdAt: '2026-08-29T00:00:00Z',
   },

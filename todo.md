@@ -27,7 +27,7 @@ Status summary (update as tickets close):
 
 | Priority | Tickets | Done |
 |---|---|---|
-| P0 | 9 | 4 |
+| P0 | 9 | 5 |
 | P1 | 13 | 0 |
 | P2 | 4 | 0 |
 
@@ -86,12 +86,12 @@ Status summary (update as tickets close):
   - Done when: records have a period start and end; a record that straddles a membership window or the inventory period is either pro-rated (with the rule printed on the line) or blocked at pre-flight, per an explicit setting; the activity view shows period coverage per facility per stream (which months have data); creating an inventory whose period is not 12 months warns; fiscal-year labels are supported.
   - Spec: 04.2 (activity periods, cut-off and pro-rating), migration V23; 02 and 05 updated.
 
-- [ ] **T-08 (P0) Report tables, factor table, and report metadata**
+- [x] **T-08 (P0) Report tables, factor table, and report metadata**
   - Findings: F39, F40, F43, F44
   - Problem: section 04 gives Scope 1, Scope 2 (both methods), Scope 3, and total, with nothing per Scope 3 category, facility, legal entity, or country. Section 08 lists factors by name only, with no values, units, per-gas split, vintages, or sources. There is no preparer, approver, date prepared, contact, assurance status, or version header. Wording issues: "The HFC and PFC blends used the same report" is unintelligible; the methodology paragraph cites "spec 03" and "spec 07.1" instead of Standard chapters.
   - Standard: Corporate Standard chapter 9 (Scope 3 by category is required information when Scope 3 is reported; breakdowns by business unit, facility, and country are recommended; factor sources are required).
   - Done when: the report has tables by Scope 3 category, by facility, by legal entity, and by country; a factor table with name, value, unit, per-gas split, GWP set, source, publication year, and retrieval date; a header block with reporting entity address, contact, prepared by, approved by, publication date, version with supersession chain, and assurance level and provider or "unverified"; optional intensity KPIs (tCO2e per ounce, per tonne milled); internal spec references replaced with chapter citations and the HFC sentence rewritten.
-  - Spec: update 07.1 and 07.2.
+  - Spec: 07.4 (report tables, factor table and report metadata), migration V24.
 
 - [ ] **T-09 (P1) Cross-check the Scope 3 declaration against calculated lines**
   - Findings: F23

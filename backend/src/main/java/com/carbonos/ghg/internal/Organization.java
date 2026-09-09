@@ -24,6 +24,13 @@ public class Organization {
 	@Column(name = "owner_user_id")
 	private UUID ownerUserId;
 
+	// the reporting entity's address and contact for the report header (spec 07.4)
+	@Column(length = 255)
+	private String address;
+
+	@Column(length = 160)
+	private String contact;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -63,6 +70,19 @@ public class Organization {
 
 	void setName(String name) {
 		this.name = name;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public String getContact() {
+		return contact;
+	}
+
+	void setHeader(String address, String contact) {
+		this.address = address;
+		this.contact = contact;
 	}
 
 }

@@ -60,6 +60,14 @@ public class GhgRun {
 	@Column(name = "void_reason", length = 500)
 	private String voidReason;
 
+	// who launched the run: the report's "prepared by" (spec 07.4)
+	@Column(name = "created_by", length = 320)
+	private String createdBy;
+
+	@OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OrderBy("name ASC")
+	private List<GhgRunFactor> factors = new ArrayList<>();
+
 	@Column(name = "period_start", nullable = false)
 	private LocalDate periodStart;
 
@@ -154,11 +162,12 @@ public class GhgRun {
 	protected GhgRun() {
 	}
 
-	GhgRun(Inventory inventory, int runNo, String label) {
+	GhgRun(Inventory inventory, int runNo, String label, String createdBy) {
 		this.id = UUID.randomUUID();
 		this.inventory = inventory;
 		this.runNo = runNo;
 		this.label = label;
+		this.createdBy = createdBy;
 		this.periodStart = inventory.getPeriodStart();
 		this.periodEnd = inventory.getPeriodEnd();
 		this.consolidationApproach = inventory.getConsolidationApproach();
@@ -240,6 +249,18 @@ public class GhgRun {
 
 	void addExclusion(GhgRunExclusion exclusion) {
 		exclusions.add(exclusion);
+	}
+
+	void addFactor(GhgRunFactor factor) {
+		factors.add(factor);
+	}
+
+	public List<GhgRunFactor> getFactors() {
+		return List.copyOf(factors);
+	}
+
+	public String getCreatedBy() {
+		return createdBy;
 	}
 
 	public UUID getId() {

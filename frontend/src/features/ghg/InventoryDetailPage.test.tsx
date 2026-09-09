@@ -64,6 +64,11 @@ const inventory: Inventory = {
   gwpSet: 'AR5',
   straddleTreatment: 'PRO_RATE',
   periodLabel: '2025',
+  approvedBy: null,
+  publishedBy: null,
+  assuranceLevel: 'UNVERIFIED',
+  assuranceProvider: null,
+  assuranceStatement: null,
   scope3Categories: [],
   scope3ExclusionsRationale: null,
   residualMixAvailable: null,
@@ -648,6 +653,7 @@ test('a run is voided with a reason, never deleted, and keeps its number', async
     voidReason: null,
     boundaryVersionId: 'bv-1',
     boundaryVersionNo: 1,
+    createdBy: null,
     createdAt: '2026-09-02T10:00:00Z',
   }
   vi.mocked(getInventory).mockResolvedValue({
