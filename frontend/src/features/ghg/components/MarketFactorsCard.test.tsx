@@ -8,7 +8,8 @@ import type { Facility, Inventory, MarketFactor } from '../api'
 vi.mock('../api', () => import('../testApiMock'))
 
 // typing into five fields through userEvent takes long under parallel jsdom workers on a loaded machine
-vi.setConfig({ testTimeout: 30000 })
+// the criteria checklist is eight selects on top of the form: slow under parallel jsdom workers
+vi.setConfig({ testTimeout: 60000 })
 
 import { listFacilities, listMarketFactors, setMarketFactor } from '../api'
 
@@ -32,6 +33,7 @@ const inventory: Inventory = {
   uncertaintyStatement: null,
   scope3Categories: [],
   scope3ExclusionsRationale: null,
+  scope3NotQuantified: [],
   residualMixAvailable: null,
   residualMixKgCo2ePerKwh: null,
   finalRunId: null,
@@ -73,6 +75,22 @@ const ppa: MarketFactor = {
   source: 'Obuom solar PPA 2025',
   meetsQualityCriteria: true,
   qualityNotes: null,
+  criteria: [
+    'CONVEYS_ATTRIBUTE',
+    'UNIQUE_CLAIM',
+    'RETIRED_FOR_COMPANY',
+    'VINTAGE_MATCHES',
+    'SAME_MARKET',
+    'SUPPLIER_FACTOR_NET',
+    'RESIDUAL_MIX_FOR_BALANCE',
+    'DOCUMENTED',
+  ].map((code) => ({ code, title: code, answer: 'MET' as const })),
+  unansweredCount: 0,
+  notMetCount: 0,
+  certificateId: 'IREC-GH-2025-0417',
+  registry: 'I-TRACK',
+  vintage: 2025,
+  retirementDate: '2026-01-15',
   coveredKwh: 20000000,
   periodStart: null,
   periodEnd: '2025-12-31',
@@ -114,4 +132,30 @@ test('lists what each instrument covers and its period', async () => {
 
   expect(await screen.findByText('20,000 MWh')).toBeInTheDocument()
   expect(screen.getByText('2025-01-01 → 2025-12-31')).toBeInTheDocument()
+})
+
+test('answers the eight criteria one at a time and records the certificate (spec 07.6)', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<MarketFactorsCard organizationId="org-1" inventory={inventory} />)
+
+  await screen.findByLabelText(/Residual mix available/)
+  await screen.findByText(/No instruments recorded: the market-based figure/)
+  await user.type(screen.getByLabelText(/^kg CO₂e per kWh/), '0')
+  await user.type(screen.getByLabelText(/^Source/), 'I-REC(E) Ghana 2025')
+  await user.type(screen.getByLabelText(/Covered quantity \(MWh\)/), '10')
+  await user.type(screen.getByLabelText('Certificate or contract reference'), 'IREC-GH-2025-0417')
+  await user.type(screen.getByLabelText('Registry'), 'I-TRACK')
+  await user.type(screen.getByLabelText('Vintage (year)'), '2025')
+  for (let i = 1; i <= 8; i++) {
+    await user.selectOptions(screen.getByLabelText(`Criterion ${i}`), i === 3 ? 'false' : 'true')
+  }
+  await user.click(screen.getByRole('button', { name: 'Add instrument' }))
+
+  await waitFor(() => expect(setMarketFactor).toHaveBeenCalled())
+  expect(vi.mocked(setMarketFactor).mock.calls[0][2]).toMatchObject({
+    criteria: [true, true, false, true, true, true, true, true],
+    certificateId: 'IREC-GH-2025-0417',
+    registry: 'I-TRACK',
+    vintage: 2025,
+  })
 })

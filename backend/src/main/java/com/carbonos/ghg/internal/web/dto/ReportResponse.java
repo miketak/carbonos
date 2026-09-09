@@ -111,8 +111,9 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			AssuranceLevel assuranceLevel, String assuranceProvider, String assuranceStatement) {
 	}
 
-	/** Emissions of one scope 3 category (spec 07.4). */
-	public record CategoryFigure(ActivityCategory category, BigDecimal kgCo2e, BigDecimal tCo2e, int lineCount) {
+	/** Emissions of one scope 3 category (spec 07.4), declared or not, quantified or not (spec 07.6). */
+	public record CategoryFigure(ActivityCategory category, BigDecimal kgCo2e, BigDecimal tCo2e, int lineCount,
+			boolean declared, String notQuantifiedReason) {
 	}
 
 	/** Emissions of one facility, entity or country, split by scope (spec 07.4). */
@@ -141,7 +142,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 	}
 
 	public record OperationalBoundary(List<Scope> scopesCovered, List<ActivityCategory> scope3Categories,
-			List<ActivityCategory> scope3CategoriesReported, String exclusionsRationale) {
+			List<ActivityCategory> scope3CategoriesReported, String exclusionsRationale,
+			List<Inventory.NotQuantified> notQuantified) {
 	}
 
 	public record Period(LocalDate periodStart, LocalDate periodEnd, String inventoryName, InventoryStatus status,
@@ -215,11 +217,19 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				figure[1] = figure[1].add(BigDecimal.ONE);
 			}
 		}
-		var byScope3Category = byCategory.entrySet()
+		// spec 07.6: every declared category appears, quantified or with its reason; undeclared ones with lines too
+		var notQuantifiedReasons = inventory.getScope3NotQuantified()
 			.stream()
-			.map(e -> new CategoryFigure(e.getKey(), e.getValue()[0], tonnes(e.getValue()[0]),
-					e.getValue()[1].intValue()))
-			.toList();
+			.collect(java.util.stream.Collectors.toMap(Inventory.NotQuantified::category,
+					Inventory.NotQuantified::reason, (a, b) -> a));
+		var categoriesInOrder = new java.util.LinkedHashSet<ActivityCategory>(inventory.getScope3Categories());
+		categoriesInOrder.addAll(byCategory.keySet());
+		var byScope3Category = categoriesInOrder.stream().map(category -> {
+			var figure = byCategory.get(category);
+			var kg = figure == null ? BigDecimal.ZERO : figure[0];
+			return new CategoryFigure(category, kg, tonnes(kg), figure == null ? 0 : figure[1].intValue(),
+					inventory.getScope3Categories().contains(category), notQuantifiedReasons.get(category));
+		}).toList();
 		var byFacility = breakdown(run, GhgRunLine::getFacilityId, GhgRunLine::getFacilityName);
 		var byEntity = breakdown(run, GhgRunLine::getEntityId,
 				line -> line.getEntityName() == null ? "not recorded" : line.getEntityName());
@@ -336,7 +346,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				new Company(organization.getName(), run.getConsolidationApproach(),
 						version == null ? null : BoundaryVersionResponse.from(version)),
 				new OperationalBoundary(List.copyOf(scopesCovered), inventory.getScope3Categories(),
-						List.copyOf(scope3Reported), inventory.getScope3ExclusionsRationale()),
+						List.copyOf(scope3Reported), inventory.getScope3ExclusionsRationale(),
+						inventory.getScope3NotQuantified()),
 				new Period(run.getPeriodStart(), run.getPeriodEnd(), inventory.getName(), inventory.getStatus(),
 						inventory.getPublishedAt(), inventory.getSupersededById()),
 				new Emissions(run.getScope1KgCo2e(), run.getScope2KgCo2e(), run.getScope2MarketBasedKgCo2e(),

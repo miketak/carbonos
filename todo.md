@@ -28,7 +28,7 @@ Status summary (update as tickets close):
 | Priority | Tickets | Done |
 |---|---|---|
 | P0 | 9 | 9 |
-| P1 | 13 | 11 |
+| P1 | 13 | 13 |
 | P2 | 4 | 0 |
 
 ## Theme 1: Scope 2 accounting
@@ -40,7 +40,7 @@ Status summary (update as tickets close):
   - Done when: an instrument has a covered quantity (MWh) and a period; the run applies it to that quantity, computes the balance at residual mix (or location-based when no residual mix is disclosed), and prints the split on the line; the report prints location-based and market-based totals on every run, and says "no instruments, market-based equals residual mix / grid average" when that is the case. Retest with the Obuom PPA figures.
   - Spec: 07.3 (instrument coverage and dual reporting), migration V21.
 
-- [ ] **T-02 (P1) Capture the Scope 2 Quality Criteria one criterion at a time**
+- [x] **T-02 (P1) Capture the Scope 2 Quality Criteria one criterion at a time**
   - Findings: F32
   - Problem: "Meets the eight Scope 2 Quality Criteria" is one checkbox plus free text. Nothing captures certificate serial numbers, registry, vintage, retirement date, or market boundary. The fallback to location-based when unticked already works and is disclosed.
   - Standard: Scope 2 Guidance section 7.1 lists the criteria individually; verifiers test retirement statements and vintage matching per instrument.
@@ -93,7 +93,7 @@ Status summary (update as tickets close):
   - Done when: the report has tables by Scope 3 category, by facility, by legal entity, and by country; a factor table with name, value, unit, per-gas split, GWP set, source, publication year, and retrieval date; a header block with reporting entity address, contact, prepared by, approved by, publication date, version with supersession chain, and assurance level and provider or "unverified"; optional intensity KPIs (tCO2e per ounce, per tonne milled); internal spec references replaced with chapter citations and the HFC sentence rewritten.
   - Spec: 07.4 (report tables, factor table and report metadata), migration V24.
 
-- [ ] **T-09 (P1) Cross-check the Scope 3 declaration against calculated lines**
+- [x] **T-09 (P1) Cross-check the Scope 3 declaration against calculated lines**
   - Findings: F23
   - Problem: the declaration is printed verbatim. Categories 3, 4, and 15 were declared as covered and had zero lines (no factors exist for them); category 15 was the stated treatment of the associate and evaluated to nothing. A reader takes "covered" to mean quantified.
   - Standard: Scope 3 Standard chapter 11 (reported categories are quantified or the report says why not).

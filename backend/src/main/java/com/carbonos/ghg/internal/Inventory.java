@@ -68,6 +68,10 @@ public class Inventory {
 	@Column(name = "scope3_exclusions_rationale", length = 1000)
 	private String scope3ExclusionsRationale;
 
+	// spec 07.6: declared categories not quantified this year, with the reason: "CATEGORY|reason" lines
+	@Column(name = "scope3_not_quantified", columnDefinition = "text")
+	private String scope3NotQuantified;
+
 	// Scope 2 Guidance (spec 07.2): whether an adjusted residual mix is available for the markets the
 	// instruments sit in, and its factor when it is; null until the accountant says
 	@Column(name = "residual_mix_available")
@@ -270,6 +274,27 @@ public class Inventory {
 
 	public String getScope3ExclusionsRationale() {
 		return scope3ExclusionsRationale;
+	}
+
+	/** A declared category not quantified this year, and why (spec 07.6). */
+	public record NotQuantified(ActivityCategory category, String reason) {
+	}
+
+	public List<NotQuantified> getScope3NotQuantified() {
+		if (scope3NotQuantified == null || scope3NotQuantified.isBlank()) {
+			return List.of();
+		}
+		return scope3NotQuantified.lines().map(line -> {
+			var split = line.indexOf('|');
+			return new NotQuantified(ActivityCategory.valueOf(line.substring(0, split)), line.substring(split + 1));
+		}).toList();
+	}
+
+	void setScope3NotQuantified(List<NotQuantified> entries) {
+		this.scope3NotQuantified = entries.isEmpty() ? null
+				: entries.stream()
+					.map(entry -> entry.category().name() + "|" + entry.reason().replace('\n', ' '))
+					.collect(Collectors.joining("\n"));
 	}
 
 	public Boolean getResidualMixAvailable() {

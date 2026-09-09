@@ -107,13 +107,33 @@ public final class ReportPdf {
 			document.add(scopes);
 			document.add(new Paragraph(nvl(e.residualMixDisclosure(), ""), SMALL));
 			if (!report.byScope3Category().isEmpty()) {
-				subheading(document, "Scope 3 by category");
-				var cats = table(3, 60, 15, 25);
-				head(cats, "Category", "Lines", "t CO2e");
+				subheading(document, "Scope 3 by category (declared and reported)");
+				var cats = table(4, 40, 20, 10, 30);
+				head(cats, "Category", "Declared", "Lines", "t CO2e");
 				for (var c : report.byScope3Category()) {
-					row(cats, c.category().name(), String.valueOf(c.lineCount()), tonnes(c.tCo2e()));
+					row(cats, c.category().name(), c.declared() ? "yes" : "no (reported, not declared)",
+							String.valueOf(c.lineCount()), c.lineCount() == 0 && c.notQuantifiedReason() != null
+									? "declared, not quantified: " + c.notQuantifiedReason()
+									: c.lineCount() == 0 ? "declared, not quantified: no reason recorded" : tonnes(c.tCo2e()));
 				}
 				document.add(cats);
+			}
+			if (!e.marketInstruments().isEmpty()) {
+				subheading(document, "Contractual instruments and the Scope 2 Quality Criteria");
+				for (var instrument : e.marketInstruments()) {
+					var outcomes = new java.util.ArrayList<String>();
+					for (var c : instrument.criteria()) {
+						outcomes.add(c.code().toLowerCase().replace('_', ' ') + ": " + c.answer().name().toLowerCase().replace('_', ' '));
+					}
+					document.add(new Paragraph(instrument.facilityName() + ", " + instrument.instrumentType().name().toLowerCase().replace('_', ' ')
+							+ ", " + plain(instrument.kgCo2ePerKwh()) + " kg CO2e/kWh (" + instrument.source() + ")"
+							+ (instrument.certificateId() == null ? "" : ", certificate " + instrument.certificateId())
+							+ (instrument.registry() == null ? "" : " at " + instrument.registry())
+							+ (instrument.vintage() == null ? "" : ", vintage " + instrument.vintage())
+							+ (instrument.retirementDate() == null ? "" : ", retired " + instrument.retirementDate())
+							+ ": " + (instrument.meetsQualityCriteria() ? "meets every criterion" : "not applied") + ". "
+							+ String.join("; ", outcomes) + ".", SMALL));
+				}
 			}
 			breakdown(document, "By facility", report.byFacility());
 			breakdown(document, "By legal entity", report.byEntity());

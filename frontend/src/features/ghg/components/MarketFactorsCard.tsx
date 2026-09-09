@@ -13,7 +13,26 @@ import {
   useSetMarketFactor,
   useSetResidualMix,
 } from '../useGhg'
-import type { Inventory, MarketInstrument } from '../api'
+import { EvidenceModal } from './EvidenceModal'
+import type { Inventory, MarketFactor, MarketInstrument } from '../api'
+
+/** The eight Scope 2 Quality Criteria in the Guidance's order (spec 07.6). */
+export const criteriaTitles: string[] = [
+  'Conveys the GHG emission rate attribute of the generation it represents',
+  'Is the only instrument carrying that attribute claim (no double counting)',
+  'Is tracked and retired or cancelled by or on behalf of the company',
+  'Is issued and redeemed as close as possible to the period of consumption',
+  'Is sourced from the same market as the consuming operations',
+  'A supplier-specific factor rests on delivered electricity net of certificates sold',
+  'Untracked electricity in the market takes a residual mix where one is published',
+  'Contract or certificate references, quantity, vintage and retirement are held as evidence',
+]
+
+const answerLabels: Record<'MET' | 'NOT_MET' | 'UNANSWERED', string> = {
+  MET: 'met',
+  NOT_MET: 'not met',
+  UNANSWERED: 'unanswered',
+}
 
 /**
  * Market-based scope 2 (spec 07.1, 07.2, Scope 2 Guidance): a contractual
@@ -41,8 +60,13 @@ export function MarketFactorsCard({
   const [instrument, setInstrument] = useState<MarketInstrument>('SUPPLIER_SPECIFIC')
   const [factor, setFactor] = useState('')
   const [source, setSource] = useState('')
-  const [meetsCriteria, setMeetsCriteria] = useState(true)
+  const [criteria, setCriteria] = useState<(boolean | null)[]>(Array(8).fill(null))
+  const [certificateId, setCertificateId] = useState('')
+  const [registry, setRegistry] = useState('')
+  const [vintage, setVintage] = useState('')
+  const [retirementDate, setRetirementDate] = useState('')
   const [qualityNotes, setQualityNotes] = useState('')
+  const [evidenceFor, setEvidenceFor] = useState<MarketFactor | null>(null)
   const [coveredMwh, setCoveredMwh] = useState('')
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
@@ -59,7 +83,11 @@ export function MarketFactorsCard({
           instrumentType: instrument,
           kgCo2ePerKwh: Number(factor),
           source,
-          meetsQualityCriteria: meetsCriteria,
+          criteria,
+          certificateId: certificateId.trim() === '' ? undefined : certificateId.trim(),
+          registry: registry.trim() === '' ? undefined : registry.trim(),
+          vintage: vintage.trim() === '' ? undefined : Number(vintage),
+          retirementDate: retirementDate === '' ? undefined : retirementDate,
           qualityNotes: qualityNotes.trim() === '' ? undefined : qualityNotes,
           coveredKwh: Number(coveredMwh) * 1000,
           periodStart: periodStart === '' ? undefined : periodStart,
@@ -70,6 +98,11 @@ export function MarketFactorsCard({
         onSuccess: (saved) => {
           setFactor('')
           setSource('')
+          setCriteria(Array(8).fill(null))
+          setCertificateId('')
+          setRegistry('')
+          setVintage('')
+          setRetirementDate('')
           setQualityNotes('')
           setCoveredMwh('')
           setPeriodStart('')
@@ -124,10 +157,39 @@ export function MarketFactorsCard({
                   </td>
                   <td className="px-3 py-2 text-ink-muted">{entry.source}</td>
                   <td className="px-3 py-2">
-                    {entry.meetsQualityCriteria ? 'Met' : 'Not met'}
+                    {entry.meetsQualityCriteria
+                      ? 'All eight met'
+                      : `Not applied: ${entry.notMetCount > 0 ? `${entry.notMetCount} not met` : ''}${entry.notMetCount > 0 && entry.unansweredCount > 0 ? ', ' : ''}${entry.unansweredCount > 0 ? `${entry.unansweredCount} unanswered` : ''}`}
+                    <span className="block text-xs text-ink-muted">
+                      {entry.criteria
+                        .map((criterion, index) => `${index + 1} ${answerLabels[criterion.answer]}`)
+                        .join(' · ')}
+                    </span>
+                    {(entry.certificateId ||
+                      entry.registry ||
+                      entry.vintage ||
+                      entry.retirementDate) && (
+                      <span className="block text-xs text-ink-muted">
+                        {[
+                          entry.certificateId,
+                          entry.registry,
+                          entry.vintage ? `vintage ${entry.vintage}` : null,
+                          entry.retirementDate ? `retired ${entry.retirementDate}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    )}
                     {entry.qualityNotes && (
                       <span className="block text-xs text-ink-muted">{entry.qualityNotes}</span>
                     )}
+                    <button
+                      type="button"
+                      className="block text-xs text-link hover:underline"
+                      onClick={() => setEvidenceFor(entry)}
+                    >
+                      Evidence
+                    </button>
                   </td>
                   <td className="px-3 py-2 text-right">
                     {editable && (
@@ -222,15 +284,67 @@ export function MarketFactorsCard({
             onChange={(event) => setPeriodEnd(event.target.value)}
             hint={`Defaults to ${inventory.periodEnd}`}
           />
-          <label className="flex items-center gap-2 text-sm md:col-span-2">
-            <input
-              type="checkbox"
-              checked={meetsCriteria}
-              onChange={(event) => setMeetsCriteria(event.target.checked)}
-              className="size-4 accent-teal"
-            />
-            Meets the eight Scope 2 Quality Criteria
-          </label>
+          <InputField
+            label="Certificate or contract reference"
+            placeholder="IREC-GH-2025-0417"
+            value={certificateId}
+            onChange={(event) => setCertificateId(event.target.value)}
+          />
+          <InputField
+            label="Registry"
+            placeholder="I-TRACK"
+            value={registry}
+            onChange={(event) => setRegistry(event.target.value)}
+          />
+          <InputField
+            label="Vintage (year)"
+            type="number"
+            min="1990"
+            max="2100"
+            value={vintage}
+            onChange={(event) => setVintage(event.target.value)}
+          />
+          <InputField
+            label="Retirement date"
+            type="date"
+            value={retirementDate}
+            onChange={(event) => setRetirementDate(event.target.value)}
+          />
+          <fieldset className="md:col-span-4">
+            <legend className="text-sm font-medium">Scope 2 Quality Criteria, one at a time</legend>
+            <p className="text-xs text-ink-muted">
+              The instrument is applied only when all eight are met; an unanswered criterion counts
+              as not met until it is answered.
+            </p>
+            <ol className="mt-2 flex flex-col gap-1">
+              {criteriaTitles.map((title, index) => (
+                <li key={title} className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="w-5 font-mono text-xs text-ink-muted">{index + 1}</span>
+                  <select
+                    aria-label={`Criterion ${index + 1}`}
+                    value={criteria[index] === null ? '' : criteria[index] ? 'true' : 'false'}
+                    onChange={(event) =>
+                      setCriteria(
+                        criteria.map((value, i) =>
+                          i === index
+                            ? event.target.value === ''
+                              ? null
+                              : event.target.value === 'true'
+                            : value,
+                        ),
+                      )
+                    }
+                    className="rounded-lg border border-teal/20 bg-white/70 px-2 py-1 text-xs focus:ring-2 focus:ring-teal focus:outline-none"
+                  >
+                    <option value="">Not yet answered</option>
+                    <option value="true">Met</option>
+                    <option value="false">Not met</option>
+                  </select>
+                  <span className="min-w-0 flex-1">{title}</span>
+                </li>
+              ))}
+            </ol>
+          </fieldset>
           <div className="md:col-span-2">
             <InputField
               label="Quality notes"
@@ -248,6 +362,15 @@ export function MarketFactorsCard({
         </form>
       )}
       <ResidualMix inventory={inventory} editable={editable} />
+      {evidenceFor && (
+        <EvidenceModal
+          owner={{ marketFactorId: evidenceFor.id }}
+          organizationId={organizationId}
+          title={`Evidence for the ${evidenceFor.facilityName} instrument`}
+          editable={editable}
+          onClose={() => setEvidenceFor(null)}
+        />
+      )}
     </GlassCard>
   )
 }
