@@ -41,8 +41,7 @@ class EntityController {
 
 	@PostMapping("/organizations/{organizationId}/entities")
 	ResponseEntity<EntityResponse> create(@PathVariable UUID organizationId, @Valid @RequestBody EntityRequest body) {
-		var entity = ghgService.createEntity(organizationId, body.name(), body.relationshipType(),
-				body.economicInterestPercent(), body.legalOwnershipPercent(), body.operatedByCompany());
+		var entity = ghgService.createEntity(organizationId, body.toFacts());
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
 			.path("/api/ghg/entities/{id}")
 			.buildAndExpand(entity.getId())
@@ -52,8 +51,7 @@ class EntityController {
 
 	@PutMapping("/entities/{id}")
 	EntityResponse update(@PathVariable UUID id, @Valid @RequestBody EntityRequest body) {
-		return EntityResponse.from(ghgService.updateEntity(id, body.name(), body.relationshipType(),
-				body.economicInterestPercent(), body.legalOwnershipPercent(), body.operatedByCompany()));
+		return EntityResponse.from(ghgService.updateEntity(id, body.toFacts()));
 	}
 
 	@DeleteMapping("/entities/{id}")

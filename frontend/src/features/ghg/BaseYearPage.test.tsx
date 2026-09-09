@@ -7,7 +7,14 @@ import type { BaseYear, Inventory } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import { decideRecalculation, getBaseYear, listInventories, listRuns, setBaseYear } from './api'
+import {
+  decideRecalculation,
+  getBaseYear,
+  listInventories,
+  listRuns,
+  raiseRecalculation,
+  setBaseYear,
+} from './api'
 
 const inventory: Inventory = {
   id: 'inv-2024',
@@ -21,6 +28,8 @@ const inventory: Inventory = {
   gwpSet: 'AR5',
   scope3Categories: [],
   scope3ExclusionsRationale: null,
+  residualMixAvailable: null,
+  residualMixKgCo2ePerKwh: null,
   finalRunId: 'run-base',
   status: 'FINAL',
   supersededById: null,
@@ -36,7 +45,8 @@ const baseYear: BaseYear = {
   inventoryName: '2024 Base Year',
   year: 2024,
   thresholdPercent: 5,
-  triggers: { structuralChanges: true, methodologyChanges: true, errorCorrections: false },
+  reason: 'First year with metered data for every site',
+  structuralChangeConvention: 'TRANSACTION_DATE',
   baseRunId: 'run-base',
   recalculations: [
     {
@@ -48,7 +58,9 @@ const baseYear: BaseYear = {
       boundaryVersionId: 'bv-2',
       boundaryVersionNo: 2,
       affectedPercent: 4.1,
+      cumulativePercent: 4.1,
       aboveThreshold: false,
+      raisedBy: null,
       status: 'FLAGGED',
       runId: null,
       decisionNote: null,
@@ -73,11 +85,12 @@ beforeEach(() => {
   vi.mocked(listRuns).mockReset()
   vi.mocked(setBaseYear).mockReset()
   vi.mocked(decideRecalculation).mockReset()
+  vi.mocked(raiseRecalculation).mockReset()
   vi.mocked(listInventories).mockResolvedValue([inventory])
   vi.mocked(listRuns).mockResolvedValue([])
 })
 
-test('designating a base year records the inventory, threshold and triggers', async () => {
+test('designating a base year records the inventory, threshold, reason and convention', async () => {
   const user = userEvent.setup()
   vi.mocked(getBaseYear).mockResolvedValue(null)
   vi.mocked(setBaseYear).mockResolvedValue({ ...baseYear, recalculations: [] })
@@ -89,17 +102,46 @@ test('designating a base year records the inventory, threshold and triggers', as
   await screen.findByRole('option', { name: /2024 Base Year/ })
   await user.clear(screen.getByLabelText('Significance threshold (%)'))
   await user.paste('7.5')
-  await user.click(screen.getByLabelText(/Discovery of significant errors/))
+  await user.click(screen.getByLabelText('Why this year'))
+  await user.paste('First year with metered data for every site')
+  await user.selectOptions(screen.getByLabelText('Mid-year structural changes'), 'WHOLE_YEAR')
   await user.click(screen.getByRole('button', { name: /designate base year/i }))
 
   await waitFor(() =>
     expect(setBaseYear).toHaveBeenCalledWith('org-1', {
       inventoryId: 'inv-2024',
       thresholdPercent: 7.5,
-      triggers: { structuralChanges: true, methodologyChanges: true, errorCorrections: false },
+      reason: 'First year with metered data for every site',
+      structuralChangeConvention: 'WHOLE_YEAR',
     }),
   )
   expect(await screen.findByText(/base year 2024 designated/i)).toBeInTheDocument()
+})
+
+test('a methodology change is raised by hand with its weight', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getBaseYear).mockResolvedValue(baseYear)
+  vi.mocked(raiseRecalculation).mockResolvedValue(baseYear)
+  renderPage()
+
+  expect(await screen.findByText(/First year with metered data/)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: /raise a candidate/i }))
+  const dialog = await screen.findByRole('dialog', { name: /raise a recalculation candidate/i })
+  await user.selectOptions(within(dialog).getByLabelText('Trigger'), 'ERROR_CORRECTION')
+  await user.click(within(dialog).getByLabelText('What changed'))
+  await user.paste('Mill meter under-read by 2.5%')
+  await user.click(within(dialog).getByLabelText(/Affected share of base-year emissions/))
+  await user.paste('2.5')
+  await user.click(within(dialog).getByRole('button', { name: /^raise$/i }))
+
+  await waitFor(() =>
+    expect(raiseRecalculation).toHaveBeenCalledWith('org-1', {
+      trigger: 'ERROR_CORRECTION',
+      reason: 'Mill meter under-read by 2.5%',
+      affectedPercent: 2.5,
+    }),
+  )
+  expect(await screen.findByText(/recalculation candidate raised/i)).toBeInTheDocument()
 })
 
 test('a flagged candidate shows its reason and can be declined', async () => {

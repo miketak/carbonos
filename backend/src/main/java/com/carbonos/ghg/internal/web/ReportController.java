@@ -46,7 +46,9 @@ class ReportController {
 					.filter(r -> r.getRunId() != null)
 					.collect(java.util.stream.Collectors.toMap(r -> r.getRunId(),
 							r -> inventoryService.getRun(r.getRunId()), (a, b) -> a));
-		return ReportResponse.of(run, inventory, organization, version, baseYear, baseRun, recalculatedRuns,
+		var profile = baseYear == null ? java.util.List.<com.carbonos.ghg.internal.BaseYearService.ProfileEntry>of()
+				: baseYearService.profile(baseYear, run.getPeriodEnd());
+		return ReportResponse.of(run, inventory, organization, version, baseYear, baseRun, recalculatedRuns, profile,
 				inventoryService.marketFactors(inventory.getId()));
 	}
 }

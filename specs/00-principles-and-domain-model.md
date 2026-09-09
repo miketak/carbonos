@@ -91,7 +91,7 @@ ORGANIZATION ── LEGAL ENTITIES ── FACILITIES ── ACTIVITY RECORDS   �
 | Protocol | CarbonOS | Spec |
 | --- | --- | --- |
 | Reporting company | Organization | 02 |
-| Legal entity, joint venture, associate, investment (Table 1) | Legal entity, with a relationship type and economic interest | 03.1 |
+| Legal entity, joint venture, associate, investment, franchise (Table 1) | Legal entity, with a relationship type, economic interest, control facts and the parent it is held through | 03.1, 03.3 |
 | Operation, facility, business unit | Facility, under one legal entity | 02 |
 | Activity data | Activity record | 02 |
 | Consolidation approach (equity share, financial control, operational control) | `consolidationApproach` on the inventory | 03 |
@@ -108,40 +108,39 @@ ORGANIZATION ── LEGAL ENTITIES ── FACILITIES ── ACTIVITY RECORDS   �
 ## Conformance at a glance
 
 Reviewed on 2026-09-08 against the revised edition of the Standard, the Scope
-2 Guidance (2015), and the required-gases amendment (2013). *Done* means the
-requirement is met as the Standard states it. *Partial* means the behavior
-exists but misses a stated condition. *Gap* means the requirement is not
-implemented. Every Partial and Gap names the `Draft` spec that closes it.
+2 Guidance (2015), and the required-gases amendment (2013), and closed the
+same day by specs 03.3, 06.1 and 07.2. *Done* means the requirement is met as
+the Standard states it; the last column names the spec that meets it.
 
 | Chapter | Requirement | State | Spec |
 | --- | --- | --- | --- |
 | 3 | One consolidation approach per inventory, applied consistently | Done | 03 |
 | 3 | Equity share, financial control, and operational control as separate facts | Done | 03 |
 | 3 | Table 1: subsidiaries, joint control, associates, fixed-asset investments | Done | 03.1 |
-| 3 | Table 1: franchises | Gap | 03.3 |
-| 3 | The consolidation policy applied at every level of the group | Partial: one entity layer, so a chained interest is entered as its product | 03.3 |
+| 3 | Table 1: franchises | Done | 03.3 |
+| 3 | The consolidation policy applied at every level of the group | Done: an entity names the parent it is held through, and the share is the product along the chain | 03.3 |
 | 3 | Consolidation by legal entity; economic interest over legal form | Done | 03.1 |
-| 3, 5 | Acquisitions and divestments accounted from a stated date | Done for the transaction-date convention; the whole-year convention the guidance recommends is not offered or disclosed | 03.2, 06.1 |
+| 3, 5 | Acquisitions and divestments accounted from a stated date, with the convention disclosed | Done: the policy records the transaction-date or whole-year convention and the report prints it | 03.2, 06.1 |
 | 4 | Scope 1 and scope 2 accounted and reported separately | Done | 04 |
-| 4 | Scope 2 covers electricity, steam, heat, and cooling | Partial: no cooling category | 07.2 |
+| 4 | Scope 2 covers electricity, steam, heat, and cooling | Done | 07.2 |
 | 4 | Scope by the reporter's relationship to the source | Done | 04.1 |
 | 4 | Process emissions as a scope 1 kind; the fifteen scope 3 categories | Done | 04.1 |
 | 4, App. F | Leased assets by lease type and approach | Done | 04.1 |
 | 4, 9 | Biogenic CO2 outside scope 1; CH4 and N2O from biomass inside it | Done | 05, 07.1 |
-| 5 | A base year with a stated reason for choosing it | Partial: no reason recorded | 06.1 |
+| 5 | A base year with a stated reason for choosing it | Done | 06.1 |
 | 5 | Recalculation policy with a significance threshold | Done | 06 |
-| 5 | Structural changes, methodology changes, and error corrections all trigger recalculation | Partial: methodology and error triggers can be switched off and are never raised | 06.1 |
-| 5 | Threshold applied to the cumulative effect of changes since the base year | Gap: each freeze is measured alone | 06.1 |
+| 5 | Structural changes, methodology changes, and error corrections all trigger recalculation | Done: structural changes are detected at freeze, the other two are raised by the accountant | 06.1 |
+| 5 | Threshold applied to the cumulative effect of changes since the base year | Done | 06.1 |
 | 5 | No recalculation for organic growth or for facilities that did not exist in the base year | Done | 06 |
 | 6 | Activity data × emission factor, converted within a physical dimension | Done | 05 |
-| 6, amendment | 100-year GWP values from one IPCC assessment report per inventory | Partial: HFC and PFC blends keep the source's potentials, and the source's report is not named | 07.1, 07.2 |
+| 6, amendment | 100-year GWP values from one IPCC assessment report per inventory, or every report named | Done: blends keep their source's report and the methodology names every report used | 07.1, 07.2 |
 | 7 | Data quality per fact; validation before calculation | Done | 02, 05 |
 | 9 | Emissions by scope, total scope 1 and 2 independent of trades | Done | 07 |
-| 9, amendment | Each of the seven gases in tonnes of gas and tonnes CO2e | Partial: kilograms; HFCs and PFCs as CO2e only | 07.2 |
+| 9, amendment | Each of the seven gases in tonnes of gas and tonnes CO2e | Done | 07.2 |
 | 9, Scope 2 Guidance | Location-based and market-based scope 2, each labeled | Done | 07.1 |
-| Scope 2 Guidance | Instruments meet the Scope 2 Quality Criteria; residual mix or its absence disclosed; the method behind a single total named | Gap | 07.2 |
-| 9 | Exclusions of sources, facilities, and operations, with justification | Partial: excluded records and zero-share entities only; an entity or facility left out of the boundary is not reported | 05.1, 07.2 |
+| Scope 2 Guidance | Instruments meet the Scope 2 Quality Criteria; residual mix or its absence disclosed; the method behind a single total named | Done | 07.2 |
+| 9 | Exclusions of sources, facilities, and operations, with justification | Done: excluded records, zero-share entities, and every facility left out of the boundary with its reason | 05.1, 07.2 |
 | 9 | Operational boundary declared (which scope 3 categories) | Done | 07.1 |
-| 9 | Base-year emissions and an emissions profile over time | Partial: base year and current period only | 06.1 |
+| 9 | Base-year emissions and an emissions profile over time | Done | 06.1 |
 | 10 | Verifiable audit trail | Done for the boundary, lines, and exclusions | 07 |
 | 2, 8, 11 | Inventory design, reductions, targets | No spec | |

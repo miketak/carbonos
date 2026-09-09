@@ -22,9 +22,9 @@ export type FindingSeverity = 'ERROR' | 'WARNING' | 'INFO'
  * run moves it to FINAL, publishing makes it a record.
  */
 export type InventoryStatus = 'DRAFT' | 'FROZEN' | 'FINAL' | 'PUBLISHED'
-/** The legal structures of Table 1 of the Corporate Standard (spec 03.1). */
+/** The five financial accounting categories of Table 1 of the Corporate Standard (spec 03.1, 03.3). */
 export type RelationshipType =
-  'WHOLLY_OWNED' | 'JOINT_VENTURE' | 'NON_INCORPORATED_JV' | 'ASSOCIATE' | 'FIXED_ASSET_INVESTMENT'
+  'SUBSIDIARY' | 'JOINT_VENTURE' | 'ASSOCIATE' | 'FIXED_ASSET_INVESTMENT' | 'FRANCHISE'
 /** Appendix F lease types (spec 04.1). */
 export type LeaseType =
   'FINANCE_LEASE_IN' | 'OPERATING_LEASE_IN' | 'FINANCE_LEASE_OUT' | 'OPERATING_LEASE_OUT'
@@ -32,6 +32,8 @@ export type GwpSet = 'AR5' | 'AR6'
 export type MarketInstrument = 'SUPPLIER_SPECIFIC' | 'CONTRACT' | 'CERTIFICATE' | 'RESIDUAL_MIX'
 export type RecalculationStatus = 'FLAGGED' | 'RECALCULATED' | 'DECLINED'
 export type RecalculationTrigger = 'STRUCTURAL_CHANGE' | 'METHODOLOGY_CHANGE' | 'ERROR_CORRECTION'
+/** How a mid-year structural change is accounted (spec 06.1): from its date, or for the whole year. */
+export type StructuralChangeConvention = 'TRANSACTION_DATE' | 'WHOLE_YEAR'
 /** The Standard's scope 1 kinds, the scope 2 kinds and the fifteen scope 3 categories (spec 04.1). */
 export type ActivityCategory =
   | 'STATIONARY_COMBUSTION'
@@ -40,6 +42,7 @@ export type ActivityCategory =
   | 'FUGITIVE_EMISSIONS'
   | 'PURCHASED_ELECTRICITY'
   | 'PURCHASED_HEAT_STEAM'
+  | 'PURCHASED_COOLING'
   | 'PURCHASED_GOODS_SERVICES'
   | 'CAPITAL_GOODS'
   | 'FUEL_ENERGY_RELATED'
@@ -75,9 +78,17 @@ export interface Entity {
   economicInterestPercent: number
   legalOwnershipPercent: number | null
   operatedByCompany: boolean
-  /** The organization itself, wholly owned: the entity facilities default to. */
+  /** Financial control, a fact for franchises only (spec 03.3); implied by the subsidiary row. */
+  controlledByCompany: boolean
+  /** The entity the company holds this one through; null when held directly (spec 03.3). */
+  parentEntityId: string | null
+  /** The economic interest through the chain of parents. */
+  effectiveEconomicInterestPercent: number
+  /** The parents' names from the nearest parent up to the reporting company. */
+  chain: string[]
+  /** The organization itself, the subsidiary facilities default to. */
   reportingCompany: boolean
-  /** The share Table 1 gives the entity under each approach. */
+  /** The share Table 1 gives the entity under each approach, chain included. */
   equityShare: number
   financialControlShare: number
   operationalControlShare: number
@@ -90,6 +101,9 @@ export interface EntityInput {
   economicInterestPercent: number
   legalOwnershipPercent?: number
   operatedByCompany: boolean
+  /** Franchises only; refused for any other row. */
+  controlledByCompany?: boolean
+  parentEntityId?: string
 }
 
 /** A site: name, location and the legal entity it belongs to (spec 03.1). */
@@ -110,7 +124,7 @@ export interface FacilityInput {
   entityId?: string
 }
 
-/** kg of each gas per unit (HFCs and PFCs are kg CO2e of the blend). */
+/** kg of each gas per unit; for the HFC and PFC blends also the kg CO2e their source applied. */
 export interface Gases {
   co2: number
   ch4: number
@@ -119,6 +133,8 @@ export interface Gases {
   pfcs: number
   sf6: number
   nf3: number
+  hfcsKg: number
+  pfcsKg: number
 }
 
 export interface EmissionFactor {
@@ -136,6 +152,8 @@ export interface EmissionFactor {
   gases: Gases
   biogenicCo2KgPerUnit: number
   gwpSet: GwpSet
+  /** The IPCC assessment report behind the blend potentials; null for a factor with no blend. */
+  blendGwpSource: string | null
   source: string
 }
 
@@ -188,6 +206,9 @@ export interface Inventory {
   /** The operational boundary declaration (spec 07.1). */
   scope3Categories: ActivityCategory[]
   scope3ExclusionsRationale: string | null
+  /** Scope 2 Guidance (spec 07.2): whether a residual mix is available, and its factor when it is. */
+  residualMixAvailable: boolean | null
+  residualMixKgCo2ePerKwh: number | null
   finalRunId: string | null
   status: InventoryStatus
   supersededById: string | null
@@ -212,11 +233,33 @@ export interface OperationalBoundaryInput {
   exclusionsRationale?: string
 }
 
+/** Why an operation is left out of the boundary (spec 07.2). */
+export interface BoundaryExclusion {
+  reason: ExclusionReason
+  detail: string | null
+}
+
+export interface BoundaryExclusionInput {
+  reason: ExclusionReason
+  detail?: string
+}
+
+/** An operation a boundary left out, live or as a version froze it. */
+export interface BoundaryExclusionEntry {
+  entityId: string
+  entityName: string
+  facilityId: string | null
+  facilityName: string | null
+  reason: ExclusionReason
+  detail: string | null
+}
+
 export interface BoundaryFacilityMember {
   facilityId: string
   facilityName: string
   location: string
   inBoundary: boolean
+  exclusion: BoundaryExclusion | null
 }
 
 /**
@@ -232,10 +275,16 @@ export interface BoundaryEntity {
   relationshipType: RelationshipType | null
   economicInterestPercent: number | null
   operatedByCompany: boolean | null
+  controlledByCompany: boolean | null
+  /** Through the chain of parents; from the facts when the entity is outside the boundary. */
+  effectiveEconomicInterestPercent: number
+  chain: string[]
   accountingShare: number | null
   table1Row: string | null
   effectiveFrom: string | null
   effectiveTo: string | null
+  /** Recorded when the whole entity is deliberately left out (spec 07.2). */
+  exclusion: BoundaryExclusion | null
   facilities: BoundaryFacilityMember[]
 }
 
@@ -249,6 +298,7 @@ export interface BoundaryTreatmentInput {
   relationshipType?: RelationshipType
   economicInterestPercent?: number
   operatedByCompany?: boolean
+  controlledByCompany?: boolean
   effectiveFrom?: string
   effectiveTo?: string
   clearWindow?: boolean
@@ -280,6 +330,9 @@ export interface BoundaryVersionEntry {
   relationshipType: RelationshipType
   economicInterestPercent: number
   operatedByCompany: boolean
+  controlledByCompany: boolean
+  effectiveEconomicInterestPercent: number
+  chain: string[]
   accountingShare: number
   table1Row: string
   effectiveFrom: string | null
@@ -293,6 +346,8 @@ export interface BoundaryVersionEntry {
 export interface BoundaryVersion {
   version: BoundaryVersionSummary
   entries: BoundaryVersionEntry[]
+  /** The operations the version recorded as left out, with their reasons (spec 07.2). */
+  exclusions: BoundaryExclusionEntry[]
 }
 
 /** The fact plus this inventory's accounting decision about it. */
@@ -343,11 +398,13 @@ export interface ValidationReport {
   gates: GateResult[]
 }
 
-/** Totals per gas: kg of the gas, or kg CO2e for the HFC and PFC blends. */
+/** Totals per gas: kg of each gas, and for the HFC and PFC blends also the kg CO2e their source applied. */
 export interface ByGas {
   co2Kg: number
   ch4Kg: number
   n2oKg: number
+  hfcsKg: number
+  pfcsKg: number
   hfcsKgCo2e: number
   pfcsKgCo2e: number
   sf6Kg: number
@@ -399,9 +456,13 @@ export interface RunLine {
   kgCo2e: number
   byGas: ByGas
   biogenicCo2Kg: number
+  /** The assessment report behind the line's blend potentials, when the factor carries a blend. */
+  blendGwpSource: string | null
   marketBasedKgCo2e: number | null
   marketFactorKgCo2ePerKwh: number | null
   marketInstrument: MarketInstrument | null
+  /** Why the market-based figure is not the facility's instrument (spec 07.2). */
+  marketNote: string | null
 }
 
 /** An assignment a run left out, with the activity's facts and the documented reason (spec 05.1). */
@@ -431,18 +492,22 @@ export interface MarketFactor {
   instrumentType: MarketInstrument
   kgCo2ePerKwh: number
   source: string
+  /** Whether the instrument meets the eight Scope 2 Quality Criteria (spec 07.2). */
+  meetsQualityCriteria: boolean
+  qualityNotes: string | null
 }
 
 export interface MarketFactorInput {
   instrumentType: MarketInstrument
   kgCo2ePerKwh: number
   source: string
+  meetsQualityCriteria: boolean
+  qualityNotes?: string
 }
 
-export interface RecalculationTriggers {
-  structuralChanges: boolean
-  methodologyChanges: boolean
-  errorCorrections: boolean
+export interface ResidualMixInput {
+  available: boolean
+  kgCo2ePerKwh?: number
 }
 
 /** One candidate recalculation of the base year and the accountant's decision on it (spec 06). */
@@ -454,7 +519,11 @@ export interface Recalculation {
   boundaryVersionId: string | null
   boundaryVersionNo: number | null
   affectedPercent: number | null
+  /** This change together with the outstanding earlier ones (spec 06.1). */
+  cumulativePercent: number | null
   aboveThreshold: boolean
+  /** Who raised a methodology or error flag by hand; null for a detected structural change. */
+  raisedBy: string | null
   status: RecalculationStatus
   runId: string | null
   decisionNote: string | null
@@ -463,14 +532,16 @@ export interface Recalculation {
   createdAt: string
 }
 
-/** The organization's base year and recalculation policy (spec 06). */
+/** The organization's base year and recalculation policy (spec 06, 06.1). */
 export interface BaseYear {
   id: string
   inventoryId: string
   inventoryName: string
   year: number
   thresholdPercent: number
-  triggers: RecalculationTriggers
+  /** Why this year: the Standard asks for a year with verifiable data and the reason for choosing it. */
+  reason: string
+  structuralChangeConvention: StructuralChangeConvention
   baseRunId: string | null
   recalculations: Recalculation[]
   createdAt: string
@@ -479,7 +550,15 @@ export interface BaseYear {
 export interface BaseYearInput {
   inventoryId: string
   thresholdPercent: number
-  triggers: RecalculationTriggers
+  reason: string
+  structuralChangeConvention: StructuralChangeConvention
+}
+
+/** A methodology-change or error-correction candidate the accountant raises (spec 06.1). */
+export interface RaiseRecalculationInput {
+  trigger: 'METHODOLOGY_CHANGE' | 'ERROR_CORRECTION'
+  reason: string
+  affectedPercent: number
 }
 
 export interface RecalculationDecisionInput {
@@ -495,6 +574,20 @@ export interface RunFigure {
   scope1KgCo2e: number
   scope2KgCo2e: number
   scope3KgCo2e: number
+}
+
+/** One inventory in the emissions profile over time (spec 06.1). */
+export interface ProfileEntry {
+  inventoryId: string
+  name: string
+  year: number
+  periodStart: string
+  periodEnd: string
+  status: InventoryStatus
+  finalRunId: string | null
+  totalKgCo2e: number | null
+  recalculatedRunId: string | null
+  recalculatedTotalKgCo2e: number | null
 }
 
 /** The inventory report for one run, in the order Chapter 9 lists its elements (spec 07.1). */
@@ -524,26 +617,50 @@ export interface Report {
     scope2MarketBasedKgCo2e: number | null
     scope3KgCo2e: number
     totalKgCo2e: number
+    /** The same figures in metric tonnes, as Chapter 9 asks (spec 07.2). */
+    scope1TCo2e: number
+    scope2LocationBasedTCo2e: number
+    scope2MarketBasedTCo2e: number | null
+    scope3TCo2e: number
+    totalTCo2e: number
+    /** The Scope 2 Guidance disclosures (spec 07.2). */
+    totalMethod: 'LOCATION_BASED'
+    baseYearScope2Method: 'LOCATION_BASED' | 'DUAL' | null
+    baseYearMarketBasedIsProxy: boolean | null
+    residualMixAvailable: boolean | null
+    residualMixKgCo2ePerKwh: number | null
+    residualMixDisclosure: string | null
     marketInstruments: MarketFactor[]
   }
-  /** kg of the gas (null for the HFC and PFC blends) and kg CO2e under the run's GWP set. */
-  byGas: { gas: string; kg: number | null; kgCo2e: number }[]
+  /** Mass of each gas and its CO2e under the run's GWP set, in kilograms and in tonnes. */
+  byGas: { gas: string; kg: number; kgCo2e: number; tonnes: number; tCo2e: number }[]
   biogenicCo2Kg: number
+  biogenicCo2T: number
   baseYear: {
     year: number
     inventoryName: string
     inventoryId: string
     thresholdPercent: number
-    triggers: RecalculationTriggers
+    reason: string
+    structuralChangeConvention: StructuralChangeConvention
+    /** Whether the run's GWP set matches the base year's (the amendment recommends it). */
+    gwpSetMatches: boolean
     originalBase: RunFigure | null
     recalculations: { decision: Recalculation; recalculatedBase: RunFigure | null }[]
+    /** Every inventory between the base year and the reporting period (spec 06.1). */
+    profile: ProfileEntry[]
   } | null
   methodology: {
     gwpSet: GwpSet
     consolidationApproach: ConsolidationApproach
     factorSources: string[]
+    /** The run's set first, then any report a blend's source applied. */
+    assessmentReports: string[]
+    multipleAssessmentReports: boolean
     statement: string
   }
+  /** Operations left out of the boundary, as the version froze them (spec 07.2). */
+  boundaryExclusions: BoundaryExclusionEntry[]
   exclusions: RunExclusion[]
   lines: RunLine[]
   run: Run
@@ -739,6 +856,46 @@ export function removeEntityTreatment(inventoryId: string, entityId: string): Pr
   })
 }
 
+// --- boundary exclusions (spec 07.2) ---------------------------------------------
+
+export function listBoundaryExclusions(inventoryId: string): Promise<BoundaryExclusionEntry[]> {
+  return api<BoundaryExclusionEntry[]>(`/api/ghg/inventories/${inventoryId}/boundary/exclusions`)
+}
+
+export function excludeEntity(
+  inventoryId: string,
+  entityId: string,
+  input: BoundaryExclusionInput,
+): Promise<BoundaryEntity> {
+  return api<BoundaryEntity>(
+    `/api/ghg/inventories/${inventoryId}/boundary/entities/${entityId}/exclude`,
+    { method: 'PUT', body: JSON.stringify(input) },
+  )
+}
+
+export function clearEntityExclusion(inventoryId: string, entityId: string): Promise<void> {
+  return api<void>(`/api/ghg/inventories/${inventoryId}/boundary/entities/${entityId}/exclude`, {
+    method: 'DELETE',
+  })
+}
+
+export function excludeFacility(
+  inventoryId: string,
+  facilityId: string,
+  input: BoundaryExclusionInput,
+): Promise<BoundaryEntity> {
+  return api<BoundaryEntity>(`/api/ghg/inventories/${inventoryId}/boundary/${facilityId}/exclude`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function clearFacilityExclusion(inventoryId: string, facilityId: string): Promise<void> {
+  return api<void>(`/api/ghg/inventories/${inventoryId}/boundary/${facilityId}/exclude`, {
+    method: 'DELETE',
+  })
+}
+
 export function listBoundaryVersions(inventoryId: string): Promise<BoundaryVersionSummary[]> {
   return api<BoundaryVersionSummary[]>(`/api/ghg/inventories/${inventoryId}/boundary/versions`)
 }
@@ -799,6 +956,14 @@ export function setMarketFactor(
 export function removeMarketFactor(inventoryId: string, facilityId: string): Promise<void> {
   return api<void>(`/api/ghg/inventories/${inventoryId}/market-factors/${facilityId}`, {
     method: 'DELETE',
+  })
+}
+
+/** Whether a residual mix is available for the instruments' markets, and its factor (spec 07.2). */
+export function setResidualMix(inventoryId: string, input: ResidualMixInput): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/inventories/${inventoryId}/residual-mix`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
   })
 }
 
@@ -889,6 +1054,17 @@ export function setBaseYear(organizationId: string, input: BaseYearInput): Promi
 
 export function clearBaseYear(organizationId: string): Promise<void> {
   return api<void>(`/api/ghg/organizations/${organizationId}/base-year`, { method: 'DELETE' })
+}
+
+/** Raises a methodology-change or error-correction candidate (spec 06.1). */
+export function raiseRecalculation(
+  organizationId: string,
+  input: RaiseRecalculationInput,
+): Promise<BaseYear> {
+  return api<BaseYear>(`/api/ghg/organizations/${organizationId}/base-year/recalculations`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }
 
 export function decideRecalculation(

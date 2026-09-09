@@ -67,7 +67,7 @@ lifecycle, the base year and the Chapter 9 report.
 
 | Ref | Name | Relationship | Economic interest % | Operated by Sankofa |
 | --- | --- | --- | --- | --- |
-| E0 | Sankofa Gold plc | Wholly owned (the reporting company, created with the organization) | 100 | ✓ |
+| E0 | Sankofa Gold plc | Subsidiary (the reporting company, created with the organization) | 100 | ✓ |
 | E1 | Tarkwa Gold JV Ltd | Joint venture (joint financial control) | 40 | ✓ |
 | E2 | Takoradi Port Co | Associate (significant influence, no control) | 30 | ✗ |
 
@@ -183,7 +183,7 @@ prove in section K that they cannot see it.
 | B5 | **Add entity**: E1 `Tarkwa Gold JV Ltd`, relationship **Joint venture (joint financial control)**, economic interest `40`, legal ownership left empty, operated by company **on**. Then E2 `Takoradi Port Co`, **Associate**, `30`, operated **off** | Three rows. Read the three share columns, which are Table 1 applied: E1 reads equity **40%**, financial control **40%**, operational control **100%**; E2 reads **30% / 0% / 0%**; E0 reads **100% / 100% / 100%** | ☐ P ☐ F | |
 | B6 | **Edit** E0 and try to change its relationship | The form only allows renaming: the reporting company is wholly owned by definition. Cancel | ☐ P ☐ F | |
 | B7 | Sidebar → **Facilities** → **Add facility**. Read the **Legal entity** select | It defaults to Sankofa Gold plc and lists all three entities, with a hint that ownership and control facts live on the entity | ☐ P ☐ F | |
-| B8 | Add all five facilities from the facilities table above, choosing the entity per row | Table lists five rows with location and the legal entity (name with the relationship beneath). Stat chips read Facilities **5**, Legal entities represented **3 of 3**, Wholly owned **3 of 5** | ☐ P ☐ F | |
+| B8 | Add all five facilities from the facilities table above, choosing the entity per row | Table lists five rows with location and the legal entity (name with the relationship beneath). Stat chips read Facilities **5**, Legal entities represented **3 of 3**, Under subsidiaries **3 of 5** | ☐ P ☐ F | |
 | B9 | **Legal entities** → **Remove** on E2 | Refused: the entity still has facilities (S3). Move them first | ☐ P ☐ F | |
 | B10 | Return to **Overview** | The first step is ticked off; the CTA has moved to "Record activity data" | ☐ P ☐ F | |
 
@@ -214,7 +214,7 @@ back deliberately so section E can exercise reconciliation.
 | D1 | Sidebar → **Inventories** → **New inventory**. Name `2025 Corporate Inventory`, period `2025-01-01` → `2025-12-31`, purpose `Corporate reporting`, approach **Operational control**, GWP set left at **AR5** | Created; card shows the approach badge, a **DRAFT** chip and `2025-01-01 → 2025-12-31 · Corporate reporting`. Open it | ☐ P ☐ F | |
 | D2 | Read the header, then scroll to **Pre-flight checks** before touching anything | Beside the approach badge a chip reads **DRAFT** and a pill reads **GWP AR5**. The **Inventory lifecycle** card explains the draft state and offers **Freeze inventory**. Pre-flight badge reads **LAUNCH ON HOLD**; Reporting boundary is **HOLD**, reading "The organizational boundary is empty"; a fifth gate, **Base year**, reads PASS | ☐ P ☐ F | |
 | D3 | In **Organizational boundary**, read the list | One block per legal entity (E0, E1, E2), each with its facilities beneath, nothing ticked | ☐ P ☐ F | |
-| D4 | Tick **S1** (under Sankofa Gold plc) into the boundary | The entity block fills in with nothing typed: relationship **Wholly owned**, economic interest **100**, operated **on**, accounting share **100%**, and a line spelling out the Table 1 row ("wholly owned operation or subsidiary; operational control: 100% (operator)"). S4 and S5 stay unticked | ☐ P ☐ F | |
+| D4 | Tick **S1** (under Sankofa Gold plc) into the boundary | The entity block fills in with nothing typed: relationship **Subsidiary**, economic interest **100**, operated **on**, accounting share **100%**, and a line spelling out the Table 1 row ("group company or subsidiary under financial control; operational control: 100% (operator)"). S4 and S5 stay unticked | ☐ P ☐ F | |
 | D5 | Tick **S4** and **S5** in | All three sit under the one entity at **100%** | ☐ P ☐ F | |
 | D6 | Re-read Pre-flight checks | Reporting boundary is still **HOLD**, but the finding has changed to "The inventory is a draft. Freeze it to enable a run." Activity data completeness now warns that **12 organizational activity records have not been reviewed** and tells you to run "Review activity data" | ☐ P ☐ F | |
 
@@ -283,18 +283,18 @@ constants (`US-gallon → litre = 3.785411784`, `MWh → kWh = 1000`,
 | | Scope 1 | Scope 2 | Scope 3 | Total |
 | --- | --- | --- | --- | --- |
 | kg CO₂e | 12,967,920.182 | 21,481,110.000 | 977,412.932 | **35,426,443.114** |
-| displayed | 12,967.92 t | 21,481.11 t | 977.41 t | **35,426.44 t CO₂e** |
+| displayed (report, three decimals) | 12,967.920 t | 21,481.110 t | 977.413 t | **35,426.443 t CO₂e** |
 
 | # | Step | Expected result | Verdict | Notes |
 | --- | --- | --- | --- | --- |
 | H1 | Leave the run label at `Run 001` and click **Launch calculation run** | Toast "Calculation complete."; the browser navigates to the run report page, laid out as ten numbered sections in the order Chapter 9 of the Standard lists them | ☐ P ☐ F | |
-| H2 | Read **Emissions by scope** | **35,426.44 t CO₂e**, split as the table above. Scope 2 shows a location-based figure only: no facility has a market-based instrument | ☐ P ☐ F | |
+| H2 | Read **Emissions by scope** | The animated total reads **35,426.44 t CO₂e** and the table beneath states each scope in metric tonnes to three decimals, as the table above, with the note that the total uses the location-based scope 2 figure. Scope 2 shows a location-based figure only: no facility has a market-based instrument | ☐ P ☐ F | |
 | H3 | Count the **Snapshot lines** | **9 lines**. R10, R11 and R12 are excluded, so they never reach the calculation | ☐ P ☐ F | |
 | H4 | Read **Company and organizational boundary** | It names Sankofa Gold plc, the approach, version 1 and who froze it when, then lists the entities with their Table 1 facts, shares and facilities. Takoradi Port Co is listed as excluded with its reason: the card is the complete boundary declaration, the lines are only what emitted | ☐ P ☐ F | |
 | H5 | Find the R1 line (Haul fleet diesel) | Quantity cell shows the original **and** the converted quantity (`1,250,000 US-gallon → 4,731,764.73 litre`); line total **12,586.49 t CO₂e** | ☐ P ☐ F | |
 | H6 | Read **Exclusions** | Three rows grouped by reason: R10 under Outside boundary with the detail "Takoradi Port Co: 0% accounting share under operational control", R11 under Methodology exclusion, R12 under Outside reporting period with the detail naming the period | ☐ P ☐ F | |
 | H7 | Find the R2 line (Mill grid electricity) | Weight **100%**, line total **21,388.5 t CO₂e**, because Sankofa operates the plant its JV company owns 40% of | ☐ P ☐ F | |
-| H7b | Read **Emissions by gas** and **Biogenic CO₂** | Seven gases in the Standard's order with kg of gas and kg CO₂e; CH₄ and N₂O are non-zero (fuels and landfill), HFCs carry the R-410A top-up (45 kg × 2,088 = **93.96 t**), biogenic CO₂ is **0 kg** and stated as outside the scopes | ☐ P ☐ F | |
+| H7b | Read **Emissions by gas** and **Biogenic CO₂** | The gases in the Standard's order with the mass of gas and CO₂e in tonnes; CH₄ and N₂O are non-zero (fuels and landfill), HFCs carry the R-410A top-up as **45 kg** of gas and **93.960 t CO₂e** (45 × 2,088), and the note says the HFC and PFC blends used the same assessment report. Biogenic CO₂ is **0.000 t** (0 kg) and stated as outside the scopes | ☐ P ☐ F | |
 | H8 | Go back to the inventory and click **Mark as final** on Run 001 | Run shows a `FINAL` pill; the header chip reads **FINAL · BOUNDARY v1**; the lifecycle card now offers **Withdraw final designation** and an enabled **Publish** | ☐ P ☐ F | |
 | H9 | Open the organization **Overview** | The setup checklist is gone, replaced by the dashboard: animated total, scope bars, "Top facilities by emissions" led by Tarkwa Processing Plant | ☐ P ☐ F | |
 
@@ -308,7 +308,7 @@ records consolidated a second way.
 | | Scope 1 | Scope 2 | Scope 3 | Total |
 | --- | --- | --- | --- | --- |
 | kg CO₂e | 13,158,924.182 | 8,648,010.000 | 977,412.932 | **22,784,347.114** |
-| displayed | 13,158.92 t | 8,648.01 t | 977.41 t | **22,784.35 t CO₂e** |
+| displayed (report, three decimals) | 13,158.924 t | 8,648.010 t | 977.413 t | **22,784.347 t CO₂e** |
 
 | # | Step | Expected result | Verdict | Notes |
 | --- | --- | --- | --- | --- |
@@ -416,6 +416,7 @@ Record the three extra facts first (R13, R14, R15 from the scenario).
 | --- | --- | --- | --- | --- |
 | M1 | **Activity data** → record **R13**, **R14**, **R15** and **R16** as listed in the scenario (R15 in the registered unit **tonne**, not the custom one) | Sixteen rows | ☐ P ☐ F | |
 | M2 | **Inventories** → **New inventory**: name `2025 Acquisition View`, same period, purpose `Post-acquisition`, approach **Equity share**. Open it and tick **S1**, **S4** (under Sankofa Gold plc) and **S3** (Takoradi Port Co) | Two entities in the boundary: Sankofa Gold plc at **100%** with S1 and S4 (S5 unticked), Takoradi Port Co at **30%** | ☐ P ☐ F | |
+| M2b | Read Pre-flight checks, then record why the rest is left out: under **Tarkwa Gold JV Ltd** (not in the boundary) choose **Methodology exclusion** under "left out because" with the detail `JV plant reported by the operator`; beside **S5** choose **Not applicable** with `Exploration only; no fuel or power in 2025` | Before: Reporting boundary holds with "'Tarkwa Processing Plant' (Tarkwa Gold JV Ltd) is neither in the boundary nor excluded with a reason" and the same for Nkran Exploration Camp (Chapter 9, spec 07.2). After: both holds are gone | ☐ P ☐ F | |
 | M3 | On Takoradi Port Co set **Member from** to `2025-07-01` (leave "Member until" empty) | The block shows "member from 2025-07-01". Reporting boundary warns that Takoradi Port Co is a member from 2025-07-01: a partial-period membership | ☐ P ☐ F | |
 | M4 | **Review activity data** | Toast "16 new records under review." R14 (Shiploader diesel, 2025-03-31) is `Excluded · Outside boundary` with the detail "Takoradi Port Co: member from 2025-07-01"; R10 (2025-09-30) is included; R2, R5, R6 (S2, S5) are outside the boundary; R12 is outside the period | ☐ P ☐ F | |
 | M5 | Classify R1, R3, R4, R7, R8, R9, R10 per the classification table; exclude R11 as **Methodology exclusion** and R16 as **Not applicable** (section P uses it) | As in section F | ☐ P ☐ F | |
@@ -423,7 +424,8 @@ Record the three extra facts first (R13, R14, R15 from the scenario).
 | M7 | Classify **R13** (Contractor mining fleet diesel) with **Diesel (/litre)**, then change its **scope** select to **Scope 3** | The category select now lists the fifteen scope 3 categories; it defaults to "1. Purchased goods and services". A muted note reads "suggests Scope 1". Classification reads **WARN** (nothing else at S1 is unclassified now): "'Contractor mining fleet diesel' is classified in scope 3; 'Diesel' suggests scope 1." The same physics, a different relationship to the source | ☐ P ☐ F | |
 | M8 | Change R4's **lease type** to **Operating lease (leased in)** | Scope flips to **Scope 3**, category **8. Upstream leased assets**: under equity share an operating lease the company holds is scope 3 (Appendix F). Set it back to "Not a leased asset": scope 2 again | ☐ P ☐ F | |
 | M9 | In **Operational boundary declaration**, tick **Business travel**, **Waste generated in operations**, **Purchased goods and services**, write `Other scope 3 categories are immaterial for a single-mine group.` and **Save declaration** | Toast "Operational boundary declaration saved." | ☐ P ☐ F | |
-| M10 | In **Market-based scope 2 instruments**, add facility **S4**, instrument **Energy attribute certificate**, `0.05` kg CO₂e per kWh, source `Supplier REC 2025` | A row appears for Accra Corporate Office; toast "Instrument recorded for Accra Corporate Office." | ☐ P ☐ F | |
+| M10 | In **Market-based scope 2 instruments**, add facility **S4**, instrument **Energy attribute certificate**, `0.05` kg CO₂e per kWh, source `Supplier REC 2025`, **Meets the eight Scope 2 Quality Criteria** ticked | A row appears for Accra Corporate Office with "Met" under Quality criteria; toast "Instrument recorded for Accra Corporate Office." Emission factors now warns that the inventory "does not say whether a residual mix is available" | ☐ P ☐ F | |
+| M10b | Under the instruments set **Residual mix available** to **No residual mix is available** and **Save residual mix** | Toast "Residual mix recorded." The Emission factors warning is gone | ☐ P ☐ F | |
 | M11 | Read Pre-flight checks | Reporting boundary WARN (the partial-period membership), Completeness WARN, Classification WARN (R13's scope choice), Emission factors PASS, Base year PASS. Do **not** freeze yet: section O freezes this inventory | ☐ P ☐ F | |
 
 ---
@@ -452,12 +454,12 @@ S5: 28,026 kg; S3's window: 247,380 kg) sum to **8,868,390 kg**, which is
 
 | # | Step | Expected result | Verdict | Notes |
 | --- | --- | --- | --- | --- |
-| O1 | Sidebar → **Base year** | A card "Base year and recalculation policy" explaining none is designated, with a form: base-year inventory, significance threshold (default `5`), three trigger checkboxes | ☐ P ☐ F | |
-| O2 | Choose **2025 Equity Share Inventory**, threshold `5`, all three triggers on, **Designate base year** | The card now reads base year **2025**, the inventory name, threshold 5%, the triggers honoured. "Recalculation history" reads "No recalculation candidates yet." | ☐ P ☐ F | |
+| O1 | Sidebar → **Base year** | A card "Base year and recalculation policy" explaining none is designated, with a form: base-year inventory, significance threshold (default `5`), **Why this year**, and **Mid-year structural changes** (default "From the transaction date"). No trigger checkboxes: all three of Chapter 5's triggers are mandatory | ☐ P ☐ F | |
+| O2 | Choose **2025 Equity Share Inventory**, threshold `5`, reason `First year with verifiable data for every site`, convention left at the default, **Designate base year** | The card now reads base year **2025**, the inventory name, threshold 5%, the reason and "From the transaction date (membership windows)". "Recalculation history" reads "No recalculation candidates yet." with a **Raise a candidate** button | ☐ P ☐ F | |
 | O3 | Open inventory C and **Freeze inventory** | Toast "Inventory frozen as boundary v1." Pre-flight's **Base year** gate turns **HOLD**: "Base year flagged for recalculation (structural change: ... 38.92% of base-year emissions, above the 5% threshold, recalculation required)." The reason names Tarkwa Processing Plant removed, Nkran Exploration Camp removed and Takoradi Port Loadout membership window changed. **Launch calculation run** is disabled | ☐ P ☐ F | |
 | O4 | Open inventory B (the base year itself) and read its Pre-flight checks | The same flag appears as a **WARN**ing, not a hold: the base-year inventory must stay runnable, because a recalculated base is one of its runs | ☐ P ☐ F | |
 | O5 | Sidebar → **Base year** → in the history, **Decline** the candidate with the note `Divestments are reflected in the 2025 acquisition view; the base year is kept as established.` | The candidate reads DECLINED with your email, the time and the note. Inventory C's Base year gate returns to **PASS** | ☐ P ☐ F | |
-| O6 | In inventory C, launch `Run 001` and read the report's **Base year** section | It names 2025, the base-year inventory, the 5% threshold, the original base figure **22,784.35 t CO₂e**, and the declined recalculation with its reason and note | ☐ P ☐ F | |
+| O6 | In inventory C, launch `Run 001` and read the report's **Base year** section | It names 2025, the base-year inventory, the 5% threshold, the reason, the convention, the original base figure **22,784.35 t CO₂e**, the declined recalculation with its reason and note, and an **Emissions profile over time** table listing the base year (final run 22,784.35 t) and this inventory (not yet final) | ☐ P ☐ F | |
 
 Expected figures for C's Run 001, by hand (S1 and S4 at 100%, S3 at 30%, R3
 already corrected to 130,000 litre in J3):
@@ -477,11 +479,11 @@ already corrected to 130,000 litre in J3):
 
 | # | Step | Expected result | Verdict | Notes |
 | --- | --- | --- | --- | --- |
-| O7 | Read **Emissions by scope** on C's report | **21,198.96 t CO₂e**, split as the table above. Scope 2 shows **location-based 92.61 t** and **market-based 10.5 t** side by side (210,000 kWh × 0.05), with the certificate listed beneath | ☐ P ☐ F | |
+| O7 | Read **Emissions by scope** on C's report | **21,198.96 t CO₂e**, split as the table above in tonnes to three decimals. Scope 2 shows **location-based 92.610 t** and **market-based 10.500 t** side by side (210,000 kWh × 0.05), the certificate listed beneath as meeting the Scope 2 Quality Criteria, the note that the total uses the location-based figure, and the Guidance's sentence that an adjusted residual mix is not available and double counting between consumers may result | ☐ P ☐ F | |
 | O8 | Read **Operational boundary** | Scopes covered: 1, 2, 3. Declared scope 3 categories: purchased goods and services, waste, business travel, with the rationale; categories actually reported this run match | ☐ P ☐ F | |
-| O9 | Read **Emissions by gas** | CH₄ **9,717.749 kg** (272.1 t CO₂e), N₂O **698.976 kg** (185.23 t CO₂e), CO₂ the remainder; HFCs, PFCs, SF₆ and NF₃ absent. Landfill (R8) is almost all CH₄ | ☐ P ☐ F | |
-| O10 | Read **Exclusions** | R14 under Outside boundary with "Takoradi Port Co: member from 2025-07-01"; R2, R5, R6 under Outside boundary with "facility not in the boundary"; R11 under Methodology exclusion; R16 under Not applicable; R12 under Outside reporting period | ☐ P ☐ F | |
-| O11 | Read **Methodology** | A statement naming Table 1, unit conversion within a dimension, IPCC AR5 potentials and both scope 2 methods; the factor sources list | ☐ P ☐ F | |
+| O9 | Read **Emissions by gas** | CH₄ **9,717.749 kg** (272.097 t CO₂e), N₂O **698.976 kg** (185.229 t CO₂e), CO₂ the remainder; HFCs, PFCs, SF₆ and NF₃ absent. Landfill (R8) is almost all CH₄ | ☐ P ☐ F | |
+| O10 | Read **Exclusions** | First "Operations excluded from the boundary": Tarkwa Gold JV Ltd (whole entity) under Methodology exclusion and Nkran Exploration Camp under Not applicable, each with its detail (M2b). Then the records: R14 under Outside boundary with "Takoradi Port Co: member from 2025-07-01"; R2, R5, R6 under Outside boundary with "facility not in the boundary"; R11 under Methodology exclusion; R16 under Not applicable; R12 under Outside reporting period | ☐ P ☐ F | |
+| O11 | Read **Methodology** | A statement naming Table 1 applied at every level of the group, unit conversion within a dimension, IPCC AR5 potentials, both scope 2 methods and the location-based total; "Assessment reports used: AR5"; the factor sources list | ☐ P ☐ F | |
 | O12 | Find the R13 line | Scope 3, category "1. Purchased goods and services", factor Diesel, **5,586 t CO₂e** | ☐ P ☐ F | |
 | O13 | In **Company and organizational boundary**, read Takoradi Port Co's entry | Beneath the entity name the version records "member from 2025-07-01": the version states from when, not only who | ☐ P ☐ F | |
 
@@ -494,14 +496,14 @@ second, smaller candidate.
 | O15 | **Review activity data** | Toast "1 stale decision refreshed." R14 is now included and unclassified; classify it with **Diesel (/litre)** | ☐ P ☐ F | |
 | O16 | Set Takoradi Port Co's **Member until** to `2025-06-30` | Reporting boundary turns **HOLD**: "Included activity 'Shiploader diesel' (Takoradi Port Loadout, 2025-09-30) is outside the boundary (Takoradi Port Co: member from 2025-01-01 until 2025-06-30)": R10 now falls after the window | ☐ P ☐ F | |
 | O17 | Click **Clear** on the membership window | Both dates empty; the error and the partial-period warning are gone; R10 and R14 both included | ☐ P ☐ F | |
-| O18 | **Freeze inventory** and confirm | Toast "Inventory frozen as boundary v2." Pre-flight's **Base year** gate reads **WARN**, not hold: "structural change: Takoradi Port Loadout membership window changed; 1.09% of base-year emissions, below the 5% threshold, recalculation optional" (R10's 247,380 kg against B's total). Only the window changed between v1 and v2 | ☐ P ☐ F | |
-| O19 | Launch `Run 002` | Total **21,278.76 t CO₂e** (Run 001 plus R14's 100,000 litre × 2.66 × 30% = **79.8 t**); the Exclusions section no longer lists R14 | ☐ P ☐ F | |
-| O20 | Open **Run 001**'s report again | Its Exclusions section still lists R14 under Outside boundary with "member from 2025-07-01", and its boundary card still shows the window: a run's exclusions are a snapshot, not a live view | ☐ P ☐ F | |
-| O21 | Open inventory B and launch `Run 002` there | B is FINAL, and runs stay allowed: total **22,805.97 t CO₂e** (Run 001 plus R3's correction from J3, 10,000 litre × 2.162 = 21.62 t). Do not mark it final | ☐ P ☐ F | |
-| O22 | Sidebar → **Base year** → on the second, optional candidate click **Record recalculated base**, choose B's **Run 002**, note `Base restated for the corrected petrol volume.` | The candidate reads RECALCULATED, naming the run, your email and the note | ☐ P ☐ F | |
-| O23 | Open inventory C's **Run 002** report, section **Base year** | The original base **22,784.35 t** and, in the history, the recalculated base **22,805.97 t** beside the reason: both base years are readable | ☐ P ☐ F | |
+| O18 | **Freeze inventory** and confirm | Toast "Inventory frozen as boundary v2." Pre-flight's **Base year** gate reads **HOLD**: "structural change: Takoradi Port Loadout membership window changed; 1.09% of base-year emissions on its own, 40.01% together with 1 earlier change since the 2025 base year, above the 5% threshold, recalculation required" (R10's 247,380 kg against B's total, weighed together with the declined 38.92% change, which stays outstanding until a base is recalculated). Only the window changed between v1 and v2 | ☐ P ☐ F | |
+| O19 | Open inventory B and launch `Run 002` there | B is FINAL, and runs stay allowed: total **22,805.97 t CO₂e** (Run 001 plus R3's correction from J3, 10,000 litre × 2.162 = 21.62 t). Do not mark it final | ☐ P ☐ F | |
+| O20 | Sidebar → **Base year** → on the second candidate click **Record recalculated base**, choose B's **Run 002**, note `Base restated for the corrected petrol volume.` | The candidate reads RECALCULATED, naming the run, your email and the note. Inventory C's Base year gate returns to **PASS** | ☐ P ☐ F | |
+| O21 | In inventory C, launch `Run 002` | Total **21,278.76 t CO₂e** (Run 001 plus R14's 100,000 litre × 2.66 × 30% = **79.8 t**); the Exclusions section no longer lists R14 | ☐ P ☐ F | |
+| O22 | Open **Run 001**'s report again | Its Exclusions section still lists R14 under Outside boundary with "member from 2025-07-01", and its boundary card still shows the window: a run's exclusions are a snapshot, not a live view | ☐ P ☐ F | |
+| O23 | Open inventory C's **Run 002** report, section **Base year** | The original base **22,784.35 t** and, in the history, the recalculated base **22,805.97 t** beside the reason: both base years are readable. The profile table shows the base year with both figures | ☐ P ☐ F | |
 | O24 | **Facilities** → **Add facility** `Kumasi Assay Lab`, `Kumasi, Ghana`, entity Sankofa Gold plc. In inventory C, **Reopen as draft**, tick the new facility in, **Freeze inventory** | Toast "Inventory frozen as boundary v3." No new candidate appears under **Base year** (still two): a facility with no base-year emissions is organic growth, not a structural change | ☐ P ☐ F | |
-| O25 | **Base year** → **Edit policy**: threshold `3`, untick "methodology changes", **Save policy** | The card reads threshold 3% and the triggers honoured; the history is untouched | ☐ P ☐ F | |
+| O25 | **Base year** → **Edit policy**: threshold `3`, reason `First year with verifiable data; restated in O20`, **Save policy** | The card reads threshold 3% and the new reason; the history is untouched | ☐ P ☐ F | |
 
 ---
 
@@ -509,10 +511,11 @@ second, smaller candidate.
 
 | # | Step | Expected result | Verdict | Notes |
 | --- | --- | --- | --- | --- |
-| P1 | **New inventory**: name `2025 AR6 check`, same period, approach **Operational control**, GWP set **AR6**. Open it and tick **S1** and **S4** in | Header pill reads **GWP AR6** | ☐ P ☐ F | |
+| P1 | **New inventory**: name `2025 AR6 check`, same period, approach **Operational control**, GWP set **AR6**. Open it and tick **S1** and **S4** in | Header pill reads **GWP AR6**. Base year warns "This inventory uses IPCC AR6 potentials; the 2025 base year uses IPCC AR5" | ☐ P ☐ F | |
+| P1b | Record why the rest is left out: under **Tarkwa Gold JV Ltd** and **Takoradi Port Co** choose **Not applicable**, and beside **S5** choose **Not applicable** | The three "neither in the boundary nor excluded" holds are gone | ☐ P ☐ F | |
 | P2 | **Review activity data**, then classify **R8** with Waste to landfill, **R16** with **Wood pellets (biomass)**, and **R4** with Grid electricity (Ghana) setting its **lease type** to **Operating lease (leased in)** | R4 stays **Scope 2**, Purchased electricity: under operational control an asset the company leases in and operates is scope 1 or 2 whatever the lease type (contrast M8 under equity share). Classification stays **PASS**: the scope matches the factor's suggestion | ☐ P ☐ F | |
 | P3 | Exclude every other included record (R1, R3, R7, R9, R11, R13, R15) as **Not applicable**; **Freeze inventory**; launch `Run 001` | Total **350.93 t CO₂e**: R8 **258.16 t** (258,163.005 kg: 12.2 CO₂ + 15.5 × 27.9 CH₄ = 444.65 per tonne × 580.598 t, against 259.06 t under AR5 in earlier runs), R16 **153.48 kg** (10 t × (0.1 × 27.9 + 0.046 × 273)), R4 **92.61 t**. Methodology names IPCC AR6 | ☐ P ☐ F | |
-| P4 | Read **Biogenic CO₂** | **18 t** (10 t × 1,800 kg), stated as outside the scopes; the total above does not include it | ☐ P ☐ F | |
+| P4 | Read **Biogenic CO₂** | **18.000 t** (18,000 kg: 10 t × 1,800 kg), stated as outside the scopes; the total above does not include it | ☐ P ☐ F | |
 | P5 | Read **Emissions by gas** | CH₄ **9,000.273 kg** (8,999.273 from the landfill plus 1 from the pellets), N₂O **0.46 kg** (the pellets); HFCs, PFCs, SF₆, NF₃ absent | ☐ P ☐ F | |
 
 ---
@@ -527,10 +530,39 @@ economic interest, the Table 1 row spec 03.1 was written for.
 | Q1 | **New inventory**: name `2025 Financial Control View`, same period, approach **Financial control**. Open it and tick **S2** in | Tarkwa Gold JV Ltd enters at **40%** with the row "joint venture under joint financial control; financial control: 40% economic interest (jointly controlled)" | ☐ P ☐ F | |
 | Q2 | Tick **S3** in, then untick it again | Takoradi Port Co enters at **0%** (associate, no control), then leaves the boundary entirely when its last facility is unticked: the entity block returns to unticked | ☐ P ☐ F | |
 | Q3 | **Review activity data**, classify **R2** with Grid electricity (Ghana) and **R6** with Refrigerant R-410A leakage | Only R2 and R6 are included; every record at S1, S3, S4 and S5 is `Excluded · Outside boundary` with "facility not in the boundary", and R12 is outside the period | ☐ P ☐ F | |
+| Q3b | Record why the rest is left out: under **Sankofa Gold plc** choose **Not applicable** with `Wholly owned sites reported in inventory A`, and under **Takoradi Port Co** choose **Methodology exclusion** with `Associate: no financial control` | Reporting boundary shows only the draft error | ☐ P ☐ F | |
 | Q4 | **Freeze inventory** | Toast "Inventory frozen as boundary v1." No base-year candidate appears: the base year is an equity-share inventory and this is the inventory's first version, so there is nothing comparable to measure against | ☐ P ☐ F | |
 | Q5 | Launch `Run 001` | Total **8,592.98 t CO₂e**: R2 **8,555.4 t** (48,500,000 kWh × 0.441 × 40%) and R6 **37.58 t** (45 kg × 2,088 × 40%), both at weight **40%**. Under operational control (section H) the same plant counted at 100%; under equity share at 40%; here at 40% because Sankofa jointly controls it | ☐ P ☐ F | |
-| Q6 | Read **Emissions by gas** | HFCs **37.58 t CO₂e** with no kg figure (a blend, per the footnote) | ☐ P ☐ F | |
+| Q6 | Read **Emissions by gas** | HFCs **18 kg** of gas (45 × 40%) and **37.584 t CO₂e**; the note says the HFC and PFC blends used the same assessment report (AR5) | ☐ P ☐ F | |
 | Q7 | Sidebar → **Base year** → **Clear base year** | The card returns to the designation form and the history is gone. Open inventory C's Run 002 report: the Base year section now reads that no base year is designated | ☐ P ☐ F | |
+
+---
+
+## R. Table 1 completeness, the recalculation policy and the required disclosures (specs 03.3, 06.1, 07.2)
+
+Three sub-specs from the conformance review of 2026-09-08. Section R uses the
+Standard's own Holland Industries example for the parent chain and a chiller
+refrigerant for the HFC blend.
+
+| # | Step | Expected result | Verdict | Notes |
+| --- | --- | --- | --- | --- |
+| R1 | **Legal entities** → **Add entity**: `Holland America`, relationship **Group company or subsidiary (financial control)**, economic interest `83`, operated on, held directly | The row reads Subsidiary, 83%, equity share **83%**, financial control **100%**, operational control **100%** | ☐ P ☐ F | |
+| R2 | **Add entity**: `BGB`, relationship **Joint venture, partnership or operation (joint financial control)**, economic interest `50`, operated off, **Held through** `Holland America` | The row reads Joint venture, "held through Holland America", 50% and "41.5% through the chain"; shares **41.5% / 50% / 0%**, the Standard's Table 2 figures for BGB | ☐ P ☐ F | |
+| R3 | Edit `Holland America` and set **Held through** to `BGB` | Refused: "cannot loop". Then try to remove `Holland America` | Refused: it is the parent of other entities | ☐ P ☐ F | |
+| R4 | **Add entity**: `Sankofa Gold Shop Kumasi`, relationship **Franchise**, economic interest `0`, operated off, **Financially controlled** off | Shares **0% / 0% / 0%**: a franchise with no equity rights or control stands outside every boundary. Tick **Financially controlled** on and save | Financial control **100%** | ☐ P ☐ F | |
+| R5 | In a new equity-share inventory, tick a facility of `BGB` in and read the entity block | The Table 1 row ends with "held through Holland America"; share **41.5%**; the version, once frozen, shows the chain beneath the entity name | ☐ P ☐ F | |
+| R6 | Open inventory A (published) and read the boundary section | Every unticked facility of a member entity shows "left out:" with a reason, or "left out without a reason" in amber | ☐ P ☐ F | |
+| R7 | In inventory C, **Reopen as draft**, beside **S5** choose **Clear the reason**, and read Pre-flight | Reporting boundary turns **HOLD**: "'Nkran Exploration Camp' (Sankofa Gold plc) is neither in the boundary nor excluded with a reason" | ☐ P ☐ F | |
+| R8 | Beside S5 choose **Not applicable** again and type the detail `Exploration only; no fuel or power in 2025` | The hold clears. **Freeze inventory**, launch a run and read **Exclusions**: "Operations excluded from the boundary" lists Nkran Exploration Camp with the reason and detail, before the record exclusions | ☐ P ☐ F | |
+| R9 | In inventory C's **Market-based scope 2 instruments**, untick **Meets the eight Scope 2 Quality Criteria** on a new certificate for S1 with notes `Criterion 5: sourced from another market`, and set **Residual mix available** to **No** | Emission factors warns the instrument "does not meet the Scope 2 Quality Criteria: the market-based figure falls back to location-based" | ☐ P ☐ F | |
+| R10 | Launch a run and read **Emissions by scope** | Figures in tonnes to three decimals; the instrument listed as "does not meet the Scope 2 Quality Criteria: Criterion 5 ..."; the sentence that an adjusted residual mix is not available and double counting may result; "The total uses the location-based scope 2 figure" | ☐ P ☐ F | |
+| R11 | **Activity data** → record `Chiller refrigerant top-up`, `10` `kg` at S1; in a fresh AR6 inventory classify it with **Refrigerant R-410A leakage** and run | **Emissions by gas** shows HFCs **10 kg** of gas and **20.880 t CO₂e**; the note says more than one assessment report was used, the blend keeping IPCC AR5; **Methodology** reads "Assessment reports used: AR6, AR5" | ☐ P ☐ F | |
+| R12 | Record `District cooling`, `1000` `kWh` at S4 and classify it with **District cooling** | Scope **2**, category **Purchased cooling** | ☐ P ☐ F | |
+| R13 | **Base year** → **Edit policy**: choose **For the whole year** under **Mid-year structural changes**, save. In inventory C (a draft), set Takoradi Port Co's **Member from** to `2025-07-01` and read Pre-flight | The card shows the new convention. Reporting boundary warns that Takoradi Port Co has a membership window but the policy accounts structural changes for the whole year. Click **Clear** on the window | ☐ P ☐ F | |
+| R14 | **Base year** → **Raise a candidate**: trigger **Methodology change**, what changed `Supplier-specific grid factor replaces the national average`, affected share `3` | A FLAGGED candidate "methodology change: ... 3% of base-year emissions, below the 5% threshold, recalculation optional", raised by your email | ☐ P ☐ F | |
+| R15 | **Raise a candidate** again: **Significant error corrected**, `Mill meter under-read`, affected share `2.5` | The candidate reads "2.5% of base-year emissions on its own, 5.5% together with 1 earlier change since the 2025 base year, above the 5% threshold, recalculation required". Inventory C's Base year gate turns **HOLD** | ☐ P ☐ F | |
+| R16 | Open inventory C's latest run report, section **Base year** | The reason, the convention, and an **Emissions profile over time** table listing every inventory from the base year to this period with its final run and, for the base year, the recalculated figure | ☐ P ☐ F | |
+| R17 | Open the AR6 inventory from R11 and read its Pre-flight | Base year warns "This inventory uses IPCC AR6 potentials; the 2025 base year uses IPCC AR5" | ☐ P ☐ F | |
 
 ---
 

@@ -71,11 +71,16 @@ public class BoundaryVersion {
 	@OneToMany(mappedBy = "version", cascade = CascadeType.ALL, orphanRemoval = true)
 	private Set<BoundaryVersionEntry> entries = new LinkedHashSet<>();
 
+	// the operations deliberately left out, with their reasons (spec 07.2)
+	@OneToMany(mappedBy = "version", cascade = CascadeType.ALL, orphanRemoval = true)
+	private Set<BoundaryVersionExclusion> exclusions = new LinkedHashSet<>();
+
 	protected BoundaryVersion() {
 	}
 
-	BoundaryVersion(Inventory inventory, int versionNo, List<BoundaryTreatment> treatments, UUID frozenByUserId,
-			String frozenBy) {
+	BoundaryVersion(Inventory inventory, int versionNo, List<BoundaryTreatment> treatments,
+			java.util.function.Function<BoundaryTreatment, EntityChain> chains, List<BoundaryExclusion> excluded,
+			UUID frozenByUserId, String frozenBy) {
 		this.id = UUID.randomUUID();
 		this.inventory = inventory;
 		this.versionNo = versionNo;
@@ -83,7 +88,10 @@ public class BoundaryVersion {
 		this.frozenByUserId = frozenByUserId;
 		this.frozenBy = frozenBy;
 		for (var treatment : treatments) {
-			entries.add(new BoundaryVersionEntry(this, treatment, consolidationApproach));
+			entries.add(new BoundaryVersionEntry(this, treatment, consolidationApproach, chains.apply(treatment)));
+		}
+		for (var exclusion : excluded) {
+			exclusions.add(new BoundaryVersionExclusion(this, exclusion));
 		}
 		this.entityCount = (int) entries.stream().filter(entry -> !entry.isExcluded()).count();
 		this.facilityCount = entries.stream()
@@ -151,6 +159,14 @@ public class BoundaryVersion {
 
 	public Instant getFrozenAt() {
 		return frozenAt;
+	}
+
+	/** The operations this version recorded as left out, entity name then facility name. */
+	public List<BoundaryVersionExclusion> getExclusions() {
+		return exclusions.stream()
+			.sorted(Comparator.comparing(BoundaryVersionExclusion::getEntityName)
+				.thenComparing(exclusion -> exclusion.getFacilityName() == null ? "" : exclusion.getFacilityName()))
+			.toList();
 	}
 
 	/** Alphabetical by entity, whether freshly built or loaded, so every reader sees the same order. */

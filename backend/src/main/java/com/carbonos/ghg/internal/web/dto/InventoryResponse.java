@@ -1,5 +1,6 @@
 package com.carbonos.ghg.internal.web.dto;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -13,7 +14,8 @@ import com.carbonos.ghg.internal.InventoryStatus;
 
 public record InventoryResponse(UUID id, UUID organizationId, String name, LocalDate periodStart,
 		LocalDate periodEnd, String purpose, Integer baseYear, ConsolidationApproach consolidationApproach,
-		GwpSet gwpSet, List<ActivityCategory> scope3Categories, String scope3ExclusionsRationale, UUID finalRunId,
+		GwpSet gwpSet, List<ActivityCategory> scope3Categories, String scope3ExclusionsRationale,
+		Boolean residualMixAvailable, BigDecimal residualMixKgCo2ePerKwh, UUID finalRunId,
 		InventoryStatus status, UUID supersededById, Instant publishedAt, UUID currentBoundaryVersionId,
 		Integer currentBoundaryVersionNo, Instant createdAt) {
 
@@ -22,7 +24,7 @@ public record InventoryResponse(UUID id, UUID organizationId, String name, Local
 				inventory.getPeriodStart(), inventory.getPeriodEnd(), inventory.getPurpose(),
 				inventory.getBaseYear(), inventory.getConsolidationApproach(), inventory.getGwpSet(),
 				inventory.getScope3Categories(), inventory.getScope3ExclusionsRationale(),
-				inventory.getFinalRunId(), inventory.getStatus(), inventory.getSupersededById(),
+				inventory.getResidualMixAvailable(), inventory.getResidualMixKgCo2ePerKwh(), inventory.getFinalRunId(), inventory.getStatus(), inventory.getSupersededById(),
 				inventory.getPublishedAt(), inventory.getCurrentBoundaryVersionId(),
 				inventory.getCurrentBoundaryVersionNo(), inventory.getCreatedAt());
 	}

@@ -5,7 +5,7 @@ import { InputField, SelectField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
 import { relationshipLabels } from '../format'
-import { useCreateEntity, useUpdateEntity } from '../useGhg'
+import { useCreateEntity, useEntitiesQuery, useUpdateEntity } from '../useGhg'
 import type { Entity, RelationshipType } from '../api'
 
 interface EntityFormModalProps {
@@ -16,9 +16,10 @@ interface EntityFormModalProps {
 }
 
 /**
- * Create or edit a legal entity: its Table 1 relationship type and economic
- * interest (spec 03.1). The reporting company is wholly owned by definition,
- * so its form only renames.
+ * Create or edit a legal entity: its Table 1 relationship type, economic
+ * interest, the control fact for a franchise, and the parent the company
+ * holds it through (spec 03.1, 03.3). The reporting company is the group's
+ * own wholly owned operation by definition, so its form only renames.
  */
 export function EntityFormModal({
   organizationId,
@@ -28,13 +29,20 @@ export function EntityFormModal({
 }: EntityFormModalProps) {
   const create = useCreateEntity(organizationId)
   const update = useUpdateEntity(organizationId)
+  const entitiesQuery = useEntitiesQuery(organizationId)
   const mutation = entity ? update : create
   const reportingCompany = entity?.reportingCompany ?? false
+  // a parent is any other entity of the organization; the reporting company holds everything directly
+  const parents = (entitiesQuery.data ?? []).filter((candidate) => candidate.id !== entity?.id)
 
   const [name, setName] = useState(entity?.name ?? '')
   const [relationshipType, setRelationshipType] = useState<RelationshipType>(
-    entity?.relationshipType ?? 'WHOLLY_OWNED',
+    entity?.relationshipType ?? 'SUBSIDIARY',
   )
+  const [controlledByCompany, setControlledByCompany] = useState(
+    entity?.controlledByCompany ?? false,
+  )
+  const [parentEntityId, setParentEntityId] = useState(entity?.parentEntityId ?? '')
   const [economicInterest, setEconomicInterest] = useState(
     entity ? String(entity.economicInterestPercent) : '100',
   )
@@ -56,6 +64,8 @@ export function EntityFormModal({
       economicInterestPercent: Number(economicInterest),
       legalOwnershipPercent: legalOwnership.trim() === '' ? undefined : Number(legalOwnership),
       operatedByCompany,
+      controlledByCompany: relationshipType === 'FRANCHISE' ? controlledByCompany : undefined,
+      parentEntityId: parentEntityId === '' ? undefined : parentEntityId,
     }
     const handlers = {
       onSuccess: () => onSaved(`${name.trim()} ${entity ? 'updated' : 'added'}.`),
@@ -77,8 +87,9 @@ export function EntityFormModal({
         />
         {reportingCompany ? (
           <p className="text-xs text-ink-muted">
-            The reporting company is a wholly owned operation by definition: 100% economic interest,
-            operated by the company. Record other structures as separate entities.
+            The reporting company is the group's own wholly owned operation by definition: 100%
+            economic interest, operated by the company. Record other structures as separate
+            entities.
           </p>
         ) : (
           <>
@@ -127,6 +138,31 @@ export function EntityFormModal({
               />
               Operated by the company
             </label>
+            {relationshipType === 'FRANCHISE' && (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={controlledByCompany}
+                  onChange={(event) => setControlledByCompany(event.target.checked)}
+                  className="size-4 accent-teal"
+                />
+                Financially controlled by the company
+              </label>
+            )}
+            <SelectField
+              label="Held through"
+              value={parentEntityId}
+              onChange={(event) => setParentEntityId(event.target.value)}
+              error={errors?.parentEntityId}
+              hint="The parent the company holds this entity through. Chapter 3 applies the consolidation policy at every level: the share is this row times the parent's."
+            >
+              <option value="">Held directly by the reporting company</option>
+              {parents.map((candidate) => (
+                <option key={candidate.id} value={candidate.id}>
+                  {candidate.name}
+                </option>
+              ))}
+            </SelectField>
           </>
         )}
         {generalError && (

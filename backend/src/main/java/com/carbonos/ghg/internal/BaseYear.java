@@ -12,6 +12,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -21,9 +23,11 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 /**
- * An organization's base year (spec 06, Chapter 5): the inventory that
- * established it, and the recalculation policy: the significance threshold
- * and the triggers the company honours.
+ * An organization's base year (spec 06, 06.1, Chapter 5): the inventory that
+ * established it, the reason it was chosen, and the recalculation policy: the
+ * significance threshold, applied to each change and to the cumulative effect
+ * of changes since the base year, and the convention for mid-year structural
+ * changes. Every policy honors all three of the Standard's triggers.
  */
 @Entity
 @Table(name = "ghg_base_years")
@@ -43,14 +47,13 @@ public class BaseYear {
 	@Column(name = "threshold_percent", nullable = false, precision = 5, scale = 2)
 	private BigDecimal thresholdPercent;
 
-	@Column(name = "trigger_structural", nullable = false)
-	private boolean triggerStructural;
+	// why this year: "a base year for which verifiable emissions data are available" (Chapter 5)
+	@Column(nullable = false, length = 500)
+	private String reason;
 
-	@Column(name = "trigger_methodology", nullable = false)
-	private boolean triggerMethodology;
-
-	@Column(name = "trigger_errors", nullable = false)
-	private boolean triggerErrors;
+	@Enumerated(EnumType.STRING)
+	@Column(name = "structural_change_convention", nullable = false, length = 20)
+	private StructuralChangeConvention structuralChangeConvention;
 
 	@OneToMany(mappedBy = "baseYear", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("createdAt ASC")
@@ -67,15 +70,14 @@ public class BaseYear {
 	protected BaseYear() {
 	}
 
-	BaseYear(Organization organization, Inventory inventory, BigDecimal thresholdPercent, boolean triggerStructural,
-			boolean triggerMethodology, boolean triggerErrors) {
+	BaseYear(Organization organization, Inventory inventory, BigDecimal thresholdPercent, String reason,
+			StructuralChangeConvention convention) {
 		this.id = UUID.randomUUID();
 		this.organization = organization;
 		this.inventory = inventory;
 		this.thresholdPercent = thresholdPercent;
-		this.triggerStructural = triggerStructural;
-		this.triggerMethodology = triggerMethodology;
-		this.triggerErrors = triggerErrors;
+		this.reason = reason;
+		this.structuralChangeConvention = convention;
 	}
 
 	public UUID getId() {
@@ -94,16 +96,17 @@ public class BaseYear {
 		return thresholdPercent;
 	}
 
-	public boolean isTriggerStructural() {
-		return triggerStructural;
+	public String getReason() {
+		return reason;
 	}
 
-	public boolean isTriggerMethodology() {
-		return triggerMethodology;
+	public StructuralChangeConvention getStructuralChangeConvention() {
+		return structuralChangeConvention;
 	}
 
-	public boolean isTriggerErrors() {
-		return triggerErrors;
+	/** The base year as a calendar year: the year the base-year inventory's period starts. */
+	public int year() {
+		return inventory.getPeriodStart().getYear();
 	}
 
 	public List<BaseYearRecalculation> getRecalculations() {
@@ -114,20 +117,56 @@ public class BaseYear {
 		return createdAt;
 	}
 
-	void update(Inventory inventory, BigDecimal thresholdPercent, boolean triggerStructural,
-			boolean triggerMethodology, boolean triggerErrors) {
+	void update(Inventory inventory, BigDecimal thresholdPercent, String reason,
+			StructuralChangeConvention convention) {
 		this.inventory = inventory;
 		this.thresholdPercent = thresholdPercent;
-		this.triggerStructural = triggerStructural;
-		this.triggerMethodology = triggerMethodology;
-		this.triggerErrors = triggerErrors;
+		this.reason = reason;
+		this.structuralChangeConvention = convention;
 	}
 
-	BaseYearRecalculation flag(RecalculationTrigger trigger, String reason, Inventory triggeringInventory,
-			BoundaryVersion version, BigDecimal affectedPercent) {
-		var above = affectedPercent != null && affectedPercent.compareTo(thresholdPercent) > 0;
+	/**
+	 * The candidates that still weigh on the base year: every undecided one,
+	 * and every declined one raised since the last recalculated base. A
+	 * recalculation resets the running sum; a refusal does not.
+	 */
+	List<BaseYearRecalculation> outstanding() {
+		var lastRecalculated = recalculations.stream()
+			.filter(candidate -> candidate.getStatus() == RecalculationStatus.RECALCULATED)
+			.map(BaseYearRecalculation::getDecidedAt)
+			.filter(java.util.Objects::nonNull)
+			.max(java.util.Comparator.naturalOrder());
+		return recalculations.stream()
+			.filter(candidate -> candidate.getStatus() == RecalculationStatus.FLAGGED
+					|| (candidate.getStatus() == RecalculationStatus.DECLINED && (lastRecalculated.isEmpty()
+							|| candidate.getCreatedAt() == null || candidate.getCreatedAt().isAfter(lastRecalculated.get()))))
+			.toList();
+	}
+
+	/**
+	 * Records a candidate, weighing it on its own and together with the
+	 * outstanding candidates (Chapter 5: "the cumulative effect of a number of
+	 * minor structural changes can result in a significant impact").
+	 */
+	BaseYearRecalculation flag(RecalculationTrigger trigger, String what, Inventory triggeringInventory,
+			BoundaryVersion version, BigDecimal affectedPercent, String raisedBy) {
+		var earlier = outstanding();
+		var cumulative = earlier.stream()
+			.map(BaseYearRecalculation::getAffectedPercent)
+			.filter(java.util.Objects::nonNull)
+			.reduce(affectedPercent, BigDecimal::add);
+		var above = affectedPercent.compareTo(thresholdPercent) > 0 || cumulative.compareTo(thresholdPercent) > 0;
+		var threshold = thresholdPercent.stripTrailingZeros().toPlainString();
+		var reason = what + "; " + affectedPercent.stripTrailingZeros().toPlainString()
+				+ "% of base-year emissions"
+				+ (earlier.isEmpty() ? ""
+						: " on its own, " + cumulative.stripTrailingZeros().toPlainString() + "% together with "
+								+ earlier.size() + " earlier change" + (earlier.size() == 1 ? "" : "s") + " since the "
+								+ year() + " base year")
+				+ ", " + (above ? "above" : "below") + " the " + threshold + "% threshold, recalculation "
+				+ (above ? "required" : "optional");
 		var recalculation = new BaseYearRecalculation(this, trigger, reason, triggeringInventory, version,
-				affectedPercent, above);
+				affectedPercent, cumulative, above, raisedBy);
 		recalculations.add(recalculation);
 		return recalculation;
 	}

@@ -1,5 +1,6 @@
 package com.carbonos.ghg.internal;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -66,6 +67,14 @@ public class Inventory {
 
 	@Column(name = "scope3_exclusions_rationale", length = 1000)
 	private String scope3ExclusionsRationale;
+
+	// Scope 2 Guidance (spec 07.2): whether an adjusted residual mix is available for the markets the
+	// instruments sit in, and its factor when it is; null until the accountant says
+	@Column(name = "residual_mix_available")
+	private Boolean residualMixAvailable;
+
+	@Column(name = "residual_mix_kg_co2e_per_kwh", precision = 12, scale = 6)
+	private BigDecimal residualMixKgCo2ePerKwh;
 
 	@Column(name = "final_run_id")
 	private UUID finalRunId;
@@ -157,6 +166,19 @@ public class Inventory {
 
 	public String getScope3ExclusionsRationale() {
 		return scope3ExclusionsRationale;
+	}
+
+	public Boolean getResidualMixAvailable() {
+		return residualMixAvailable;
+	}
+
+	public BigDecimal getResidualMixKgCo2ePerKwh() {
+		return residualMixKgCo2ePerKwh;
+	}
+
+	void setResidualMix(Boolean available, BigDecimal kgCo2ePerKwh) {
+		this.residualMixAvailable = available;
+		this.residualMixKgCo2ePerKwh = Boolean.TRUE.equals(available) ? kgCo2ePerKwh : null;
 	}
 
 	public UUID getFinalRunId() {

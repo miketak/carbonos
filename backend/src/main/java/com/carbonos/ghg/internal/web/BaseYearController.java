@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.carbonos.ghg.internal.BaseYearService;
 import com.carbonos.ghg.internal.web.dto.BaseYearRequest;
 import com.carbonos.ghg.internal.web.dto.BaseYearResponse;
+import com.carbonos.ghg.internal.web.dto.RaiseRecalculationRequest;
 import com.carbonos.ghg.internal.web.dto.RecalculationDecisionRequest;
 
 import jakarta.validation.Valid;
@@ -43,14 +44,21 @@ class BaseYearController {
 	@PutMapping
 	BaseYearResponse set(@PathVariable UUID organizationId, @Valid @RequestBody BaseYearRequest body) {
 		return BaseYearResponse.from(baseYearService.set(organizationId, body.inventoryId(), body.thresholdPercent(),
-				body.triggers().structuralChanges(), body.triggers().methodologyChanges(),
-				body.triggers().errorCorrections()));
+				body.reason(), body.structuralChangeConvention()));
 	}
 
 	@DeleteMapping
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	void clear(@PathVariable UUID organizationId) {
 		baseYearService.clear(organizationId);
+	}
+
+	/** The accountant raises a methodology-change or error-correction candidate (spec 06.1). */
+	@PostMapping("/recalculations")
+	@ResponseStatus(HttpStatus.CREATED)
+	BaseYearResponse raise(@PathVariable UUID organizationId, @Valid @RequestBody RaiseRecalculationRequest body) {
+		return BaseYearResponse
+			.from(baseYearService.raise(organizationId, body.trigger(), body.reason(), body.affectedPercent()));
 	}
 
 	@PostMapping("/recalculations/{recalculationId}/decide")

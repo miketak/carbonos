@@ -13,7 +13,7 @@ public interface BoundaryVersionRepository extends JpaRepository<BoundaryVersion
 
 	// entries and their facilities render with the version and the tenant
 	// check needs the inventory; fetch them eagerly because open-in-view is off
-	@EntityGraph(attributePaths = { "entries", "entries.facilities", "inventory" })
+	@EntityGraph(attributePaths = { "entries", "entries.facilities", "exclusions", "inventory" })
 	Optional<BoundaryVersion> findWithEntriesById(UUID id);
 
 	Optional<BoundaryVersion> findTopByInventoryIdOrderByVersionNoDesc(UUID inventoryId);

@@ -15,4 +15,6 @@ public interface LegalEntityRepository extends JpaRepository<LegalEntity, UUID> 
 	boolean existsByOrganizationIdAndNameIgnoreCase(UUID organizationId, String name);
 
 	long countByOrganizationId(UUID organizationId);
+
+	boolean existsByParentId(UUID parentId);
 }

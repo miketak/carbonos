@@ -11,11 +11,11 @@ import com.carbonos.ghg.internal.Scope;
 
 public record EmissionFactorResponse(UUID id, String name, Scope defaultScope, ActivityCategory defaultCategory,
 		boolean scopeAgnostic, String unit, Dimension dimension, BigDecimal kgCo2ePerUnit, Gases gases,
-		BigDecimal biogenicCo2KgPerUnit, GwpSet gwpSet, String source) {
+		BigDecimal biogenicCo2KgPerUnit, GwpSet gwpSet, String blendGwpSource, String source) {
 
-	/** kg of each gas per unit; HFCs and PFCs are kg CO2e of the blend. */
+	/** kg of each gas per unit; for the HFC and PFC blends also the kg CO2e the source applied (spec 07.2). */
 	public record Gases(BigDecimal co2, BigDecimal ch4, BigDecimal n2o, BigDecimal hfcs, BigDecimal pfcs,
-			BigDecimal sf6, BigDecimal nf3) {
+			BigDecimal sf6, BigDecimal nf3, BigDecimal hfcsKg, BigDecimal pfcsKg) {
 	}
 
 	public static EmissionFactorResponse from(EmissionFactor factor, Dimension dimension) {
@@ -24,7 +24,7 @@ public record EmissionFactorResponse(UUID id, String name, Scope defaultScope, A
 				factor.getKgCo2ePerUnit(),
 				new Gases(factor.getCo2KgPerUnit(), factor.getCh4KgPerUnit(), factor.getN2oKgPerUnit(),
 						factor.getHfcsKgCo2ePerUnit(), factor.getPfcsKgCo2ePerUnit(), factor.getSf6KgPerUnit(),
-						factor.getNf3KgPerUnit()),
-				factor.getBiogenicCo2KgPerUnit(), GwpSet.AR5, factor.getSource());
+						factor.getNf3KgPerUnit(), factor.getHfcsKgPerUnit(), factor.getPfcsKgPerUnit()),
+				factor.getBiogenicCo2KgPerUnit(), GwpSet.AR5, factor.getBlendGwpSource(), factor.getSource());
 	}
 }

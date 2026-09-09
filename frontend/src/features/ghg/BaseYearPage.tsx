@@ -8,16 +8,23 @@ import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail } from '../../lib/api'
-import { formatCo2e } from './format'
+import { conventionLabels, formatCo2e } from './format'
 import {
   useBaseYearQuery,
   useClearBaseYear,
   useDecideRecalculation,
   useInventoriesQuery,
+  useRaiseRecalculation,
   useRunsQuery,
   useSetBaseYear,
 } from './useGhg'
-import type { BaseYear, Inventory, Recalculation, RecalculationStatus } from './api'
+import type {
+  BaseYear,
+  Inventory,
+  Recalculation,
+  RecalculationStatus,
+  StructuralChangeConvention,
+} from './api'
 
 const statusStyles: Record<RecalculationStatus, string> = {
   FLAGGED: 'bg-amber-100 text-amber-800',
@@ -26,10 +33,11 @@ const statusStyles: Record<RecalculationStatus, string> = {
 }
 
 /**
- * The organization's base year and recalculation policy (spec 06, Chapter 5):
- * which inventory established the base year, the significance threshold and
- * the triggers honoured, and the candidates that later boundary changes
- * raised for the accountant to decide.
+ * The organization's base year and recalculation policy (spec 06, 06.1,
+ * Chapter 5): which inventory established the base year and why, the
+ * significance threshold, the convention for mid-year structural changes, and
+ * the candidates, detected at freeze or raised by the accountant, weighed on
+ * their own and together.
  */
 export function BaseYearPage() {
   const { organizationId = '' } = useParams()
@@ -65,10 +73,10 @@ export function BaseYearPage() {
               <div>
                 <h2 className="text-lg">Base year and recalculation policy</h2>
                 <p className="text-sm text-ink-muted">
-                  Structural changes, methodology changes and significant errors can distort a
-                  comparison, so the Standard asks for a threshold and a policy. Organic growth or
-                  decline, and facilities that did not exist in the base year, never trigger a
-                  recalculation.
+                  Structural changes, methodology changes, and significant errors all trigger a
+                  recalculation under Chapter 5, on their own or together, so the Standard asks for
+                  a threshold and a policy. Organic growth or decline, and facilities that did not
+                  exist in the base year, never trigger one.
                 </p>
               </div>
               {baseYear && !editing && (
@@ -125,11 +133,6 @@ export function BaseYearPage() {
 }
 
 function Designation({ baseYear }: { baseYear: BaseYear }) {
-  const triggers = [
-    baseYear.triggers.structuralChanges ? 'structural changes' : null,
-    baseYear.triggers.methodologyChanges ? 'methodology changes' : null,
-    baseYear.triggers.errorCorrections ? 'significant errors' : null,
-  ].filter((trigger) => trigger !== null)
   return (
     <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
       <div>
@@ -154,8 +157,12 @@ function Designation({ baseYear }: { baseYear: BaseYear }) {
         <dd className="font-semibold">{baseYear.thresholdPercent}% of base-year emissions</dd>
       </div>
       <div>
-        <dt className="text-xs text-ink-muted uppercase">Triggers honoured</dt>
-        <dd>{triggers.length > 0 ? triggers.join(', ') : 'none'}</dd>
+        <dt className="text-xs text-ink-muted uppercase">Mid-year structural changes</dt>
+        <dd>{conventionLabels[baseYear.structuralChangeConvention]}</dd>
+      </div>
+      <div className="sm:col-span-2">
+        <dt className="text-xs text-ink-muted uppercase">Why this year</dt>
+        <dd>{baseYear.reason}</dd>
       </div>
     </dl>
   )
@@ -177,9 +184,10 @@ function PolicyForm({
   const set = useSetBaseYear(organizationId)
   const [inventoryId, setInventoryId] = useState(baseYear?.inventoryId ?? inventories[0]?.id ?? '')
   const [threshold, setThreshold] = useState(String(baseYear?.thresholdPercent ?? 5))
-  const [structural, setStructural] = useState(baseYear?.triggers.structuralChanges ?? true)
-  const [methodology, setMethodology] = useState(baseYear?.triggers.methodologyChanges ?? true)
-  const [errors, setErrors] = useState(baseYear?.triggers.errorCorrections ?? true)
+  const [reason, setReason] = useState(baseYear?.reason ?? '')
+  const [convention, setConvention] = useState<StructuralChangeConvention>(
+    baseYear?.structuralChangeConvention ?? 'TRANSACTION_DATE',
+  )
 
   const validation = fieldErrors(set.error)
   const generalError = set.isError && !validation ? problemDetail(set.error) : undefined
@@ -190,11 +198,8 @@ function PolicyForm({
       {
         inventoryId,
         thresholdPercent: Number(threshold),
-        triggers: {
-          structuralChanges: structural,
-          methodologyChanges: methodology,
-          errorCorrections: errors,
-        },
+        reason,
+        structuralChangeConvention: convention,
       },
       { onSuccess: (saved) => onSaved(saved as BaseYear) },
     )
@@ -240,36 +245,33 @@ function PolicyForm({
         hint="A change affecting more than this share of base-year emissions requires recalculation."
         required
       />
-      <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium">Triggers honoured</legend>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={structural}
-            onChange={(event) => setStructural(event.target.checked)}
-            className="size-4 accent-teal"
-          />
-          Structural changes: acquisitions, divestments, mergers, outsourcing or insourcing
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={methodology}
-            onChange={(event) => setMethodology(event.target.checked)}
-            className="size-4 accent-teal"
-          />
-          Methodology changes
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={errors}
-            onChange={(event) => setErrors(event.target.checked)}
-            className="size-4 accent-teal"
-          />
-          Discovery of significant errors
-        </label>
-      </fieldset>
+      <InputField
+        label="Why this year"
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        error={validation?.reason}
+        hint="The Standard asks for a year with verifiable data and the reason for choosing it."
+        placeholder="First year with metered data for every site"
+        maxLength={500}
+        required
+      />
+      <SelectField
+        label="Mid-year structural changes"
+        value={convention}
+        onChange={(event) => setConvention(event.target.value as StructuralChangeConvention)}
+        hint="Chapter 5 recommends recalculating the base year and the current year for the entire year. Membership windows account from the transaction date instead; the report prints which convention was used."
+      >
+        {Object.entries(conventionLabels).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </SelectField>
+      <p className="text-xs text-ink-muted">
+        Structural changes are detected when an inventory is frozen. Methodology changes and
+        significant errors are raised by hand under the recalculation history. All three are
+        mandatory triggers under Chapter 5.
+      </p>
       {generalError && (
         <p role="alert" className="text-sm font-medium text-red-600">
           {generalError}
@@ -292,6 +294,7 @@ function PolicyForm({
 type Decision =
   | { kind: 'decline'; recalculation: Recalculation }
   | { kind: 'recalculate'; recalculation: Recalculation }
+  | { kind: 'raise' }
   | null
 
 /** Every candidate a boundary change raised, oldest first, with the decision taken on each. */
@@ -307,15 +310,27 @@ function RecalculationHistory({
 
   return (
     <GlassCard className="p-6">
-      <h2 className="text-lg">Recalculation history</h2>
-      <p className="text-sm text-ink-muted">
-        Freezing an inventory whose boundary differs from the base year measures the affected
-        facilities against the base-year run and records a candidate here.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-lg">Recalculation history</h2>
+          <p className="text-sm text-ink-muted">
+            Freezing an inventory whose boundary differs from the base year measures the affected
+            facilities against the base-year run and records a candidate here. A change is weighed
+            on its own and together with the outstanding earlier ones.
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          className="px-3 py-1.5 text-sm"
+          onClick={() => setDecision({ kind: 'raise' })}
+        >
+          Raise a candidate
+        </Button>
+      </div>
       {baseYear.recalculations.length === 0 && (
         <p className="mt-4 text-sm text-ink-muted">
           No recalculation candidates yet. Freezing an inventory whose boundary differs from the
-          base year records one here.
+          base year records one here; a methodology change or a significant error is raised by hand.
         </p>
       )}
       <ul className="mt-4 flex flex-col gap-3">
@@ -336,10 +351,16 @@ function RecalculationHistory({
                   ? ` · boundary v${recalculation.boundaryVersionNo}`
                   : ''}
                 {recalculation.affectedPercent !== null
-                  ? ` · ${recalculation.affectedPercent}% of base-year emissions, ${
-                      recalculation.aboveThreshold ? 'above' : 'below'
-                    } the threshold`
+                  ? ` · ${recalculation.affectedPercent}% of base-year emissions`
                   : ''}
+                {recalculation.cumulativePercent !== null &&
+                recalculation.cumulativePercent !== recalculation.affectedPercent
+                  ? `, ${recalculation.cumulativePercent}% together with earlier changes`
+                  : ''}
+                {recalculation.affectedPercent !== null
+                  ? `, ${recalculation.aboveThreshold ? 'above' : 'below'} the threshold`
+                  : ''}
+                {recalculation.raisedBy ? ` · raised by ${recalculation.raisedBy}` : ''}
               </span>
             </div>
             <p className="mt-2">{recalculation.reason}</p>
@@ -383,6 +404,16 @@ function RecalculationHistory({
           }}
         />
       )}
+      {decision?.kind === 'raise' && (
+        <RaiseModal
+          organizationId={organizationId}
+          onClose={() => setDecision(null)}
+          onDone={() => {
+            setDecision(null)
+            toast('Recalculation candidate raised.')
+          }}
+        />
+      )}
       {decision?.kind === 'recalculate' && (
         <RecalculateModal
           organizationId={organizationId}
@@ -396,6 +427,85 @@ function RecalculationHistory({
         />
       )}
     </GlassCard>
+  )
+}
+
+/** A methodology change or a significant error, raised by the accountant (spec 06.1). */
+function RaiseModal({
+  organizationId,
+  onClose,
+  onDone,
+}: {
+  organizationId: string
+  onClose: () => void
+  onDone: () => void
+}) {
+  const raise = useRaiseRecalculation(organizationId)
+  const [trigger, setTrigger] = useState<'METHODOLOGY_CHANGE' | 'ERROR_CORRECTION'>(
+    'METHODOLOGY_CHANGE',
+  )
+  const [reason, setReason] = useState('')
+  const [percent, setPercent] = useState('')
+  const validation = fieldErrors(raise.error)
+  const error = raise.isError && !validation ? problemDetail(raise.error) : undefined
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    raise.mutate({ trigger, reason, affectedPercent: Number(percent) }, { onSuccess: onDone })
+  }
+
+  return (
+    <Modal title="Raise a recalculation candidate" onClose={onClose}>
+      <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
+        <p className="text-sm text-ink-muted">
+          Chapter 5 makes a methodology change and the discovery of a significant error mandatory
+          triggers. Neither can be detected from the data, so the accountant raises it with its
+          weight.
+        </p>
+        <SelectField
+          label="Trigger"
+          value={trigger}
+          onChange={(event) =>
+            setTrigger(event.target.value as 'METHODOLOGY_CHANGE' | 'ERROR_CORRECTION')
+          }
+        >
+          <option value="METHODOLOGY_CHANGE">Methodology change</option>
+          <option value="ERROR_CORRECTION">Significant error corrected</option>
+        </SelectField>
+        <InputField
+          label="What changed"
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          error={validation?.reason}
+          placeholder="Supplier-specific grid factor replaces the national average"
+          maxLength={400}
+          required
+        />
+        <InputField
+          label="Affected share of base-year emissions (%)"
+          type="number"
+          min="0"
+          step="0.01"
+          value={percent}
+          onChange={(event) => setPercent(event.target.value)}
+          error={validation?.affectedPercent}
+          required
+        />
+        {error && (
+          <p role="alert" className="text-sm font-medium text-red-600">
+            {error}
+          </p>
+        )}
+        <div className="mt-2 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" busy={raise.isPending}>
+            Raise
+          </Button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 

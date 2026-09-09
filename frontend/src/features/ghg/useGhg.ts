@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   classifyAssignment,
   clearBaseYear,
+  clearEntityExclusion,
+  clearFacilityExclusion,
   createActivity,
   createEntity,
   createFacility,
@@ -15,6 +17,8 @@ import {
   deleteOrganization,
   deleteRun,
   excludeAssignment,
+  excludeEntity,
+  excludeFacility,
   executeRun,
   finalizeRun,
   freezeInventory,
@@ -39,6 +43,7 @@ import {
   listRuns,
   listUnits,
   publishInventory,
+  raiseRecalculation,
   removeBoundaryTreatment,
   removeEntityTreatment,
   removeMarketFactor,
@@ -48,6 +53,7 @@ import {
   setEntityTreatment,
   setMarketFactor,
   setOperationalBoundary,
+  setResidualMix,
   supersedeInventory,
   syncAssignments,
   updateActivity,
@@ -60,6 +66,7 @@ import {
 import type {
   ActivityInput,
   BaseYearInput,
+  BoundaryExclusionInput,
   BoundaryTreatmentInput,
   ClassifyInput,
   EntityInput,
@@ -69,7 +76,9 @@ import type {
   MarketFactorInput,
   OperationalBoundaryInput,
   OrganizationInput,
+  RaiseRecalculationInput,
   RecalculationDecisionInput,
+  ResidualMixInput,
 } from './api'
 
 export const organizationsKey = ['ghg', 'organizations'] as const
@@ -450,6 +459,36 @@ export function useRemoveEntityTreatment(inventoryId: string) {
   )
 }
 
+// --- boundary exclusions (spec 07.2) --------------------------------------------
+
+export function useExcludeEntity(inventoryId: string) {
+  return useInventoryScopedMutation(
+    inventoryId,
+    ({ entityId, input }: { entityId: string; input: BoundaryExclusionInput }) =>
+      excludeEntity(inventoryId, entityId, input),
+  )
+}
+
+export function useClearEntityExclusion(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, (entityId: string) =>
+    clearEntityExclusion(inventoryId, entityId),
+  )
+}
+
+export function useExcludeFacility(inventoryId: string) {
+  return useInventoryScopedMutation(
+    inventoryId,
+    ({ facilityId, input }: { facilityId: string; input: BoundaryExclusionInput }) =>
+      excludeFacility(inventoryId, facilityId, input),
+  )
+}
+
+export function useClearFacilityExclusion(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, (facilityId: string) =>
+    clearFacilityExclusion(inventoryId, facilityId),
+  )
+}
+
 export function useSetMarketFactor(inventoryId: string) {
   return useInventoryScopedMutation(
     inventoryId,
@@ -461,6 +500,12 @@ export function useSetMarketFactor(inventoryId: string) {
 export function useRemoveMarketFactor(inventoryId: string) {
   return useInventoryScopedMutation(inventoryId, (facilityId: string) =>
     removeMarketFactor(inventoryId, facilityId),
+  )
+}
+
+export function useSetResidualMix(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, (input: ResidualMixInput) =>
+    setResidualMix(inventoryId, input),
   )
 }
 
@@ -527,6 +572,12 @@ export function useSetBaseYear(orgId: string) {
 
 export function useClearBaseYear(orgId: string) {
   return useBaseYearMutation(orgId, () => clearBaseYear(orgId))
+}
+
+export function useRaiseRecalculation(orgId: string) {
+  return useBaseYearMutation(orgId, (input: RaiseRecalculationInput) =>
+    raiseRecalculation(orgId, input),
+  )
 }
 
 export function useDecideRecalculation(orgId: string) {
