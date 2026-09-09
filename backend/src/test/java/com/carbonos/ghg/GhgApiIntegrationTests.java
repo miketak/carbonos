@@ -753,7 +753,11 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.scopeJustification").value(org.hamcrest.Matchers.startsWith("Contractor-owned")));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
-			.andExpect(jsonPath("$.gates[2].status").value("PASSED"));
+			// the scope 3 line warns that its category is not declared as covered (spec 07.6); nothing blocks
+			.andExpect(jsonPath("$.gates[2].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'ERROR')]").isEmpty())
+			.andExpect(jsonPath("$.gates[2].findings[*].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("does not list it as covered"))));
 
 		freeze(inventoryId);
 		run(inventoryId, "Run 001").andExpect(status().isCreated())
@@ -887,7 +891,11 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.proxy").value(true));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
-			.andExpect(jsonPath("$.gates[2].status").value("PASSED"));
+			// the scope 3 line warns that its category is not declared as covered (spec 07.6); nothing blocks
+			.andExpect(jsonPath("$.gates[2].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'ERROR')]").isEmpty())
+			.andExpect(jsonPath("$.gates[2].findings[*].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("does not list it as covered"))));
 		freeze(inventoryId);
 		// the lines carry the record's own description, the stream, the reasons and the proxy flag
 		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated())
@@ -939,7 +947,11 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.category").value("UPSTREAM_LEASED_ASSETS"));
 		// a lease type derived the scope: no justification is needed and the gate is silent (spec 04.3)
 		mvc.perform(get("/api/ghg/inventories/" + equity + "/validation").with(asMember()))
-			.andExpect(jsonPath("$.gates[2].status").value("PASSED"));
+			// the scope 3 line warns that its category is not declared as covered (spec 07.6); nothing blocks
+			.andExpect(jsonPath("$.gates[2].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'ERROR')]").isEmpty())
+			.andExpect(jsonPath("$.gates[2].findings[*].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("does not list it as covered"))));
 	}
 
 	@Test
