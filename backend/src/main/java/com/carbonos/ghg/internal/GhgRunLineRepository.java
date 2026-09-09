@@ -8,4 +8,6 @@ public interface GhgRunLineRepository extends JpaRepository<GhgRunLine, UUID> {
 
 	boolean existsByActivityId(UUID activityId);
 
+	boolean existsByFactorId(UUID factorId);
+
 }

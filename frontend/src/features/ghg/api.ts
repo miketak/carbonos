@@ -13,7 +13,8 @@ export type ExclusionReason =
   | 'OTHER'
 export type ValidationGate =
   'BOUNDARY' | 'COMPLETENESS' | 'CLASSIFICATION' | 'EMISSION_FACTOR' | 'BASE_YEAR'
-export type Dimension = 'ENERGY' | 'VOLUME' | 'MASS' | 'DISTANCE' | 'PASSENGER_DISTANCE'
+export type Dimension =
+  'ENERGY' | 'VOLUME' | 'MASS' | 'DISTANCE' | 'PASSENGER_DISTANCE' | 'FREIGHT' | 'COUNT'
 export type GateStatus = 'PASSED' | 'WARNINGS' | 'BLOCKED'
 export type FindingSeverity = 'ERROR' | 'WARNING' | 'INFO'
 /**
@@ -195,6 +196,8 @@ export interface Gases {
 
 export interface EmissionFactor {
   id: string
+  /** Null for the shared library; the owning organization otherwise (spec 02.1). */
+  organizationId: string | null
   name: string
   /** The scope and category the factor suggests; the accountant decides (spec 04.1). */
   defaultScope: GhgScope
@@ -214,7 +217,60 @@ export interface EmissionFactor {
   blendComposition: string | null
   /** Fossil-origin methane (fuel combustion) or biogenic (landfill, biomass); AR6 rates them differently. */
   ch4Fossil: boolean
+  /** The source publishes CO2e only, so the by-gas table cannot split it (spec 02.1). */
+  co2eOnly: boolean
   source: string
+  sourceUrl: string | null
+  publicationYear: number | null
+  dataYear: number | null
+  validFrom: string | null
+  validTo: string | null
+  note: string | null
+  approved: boolean
+  pack: string | null
+  packCode: string | null
+}
+
+export interface EmissionFactorInput {
+  name: string
+  defaultScope: GhgScope
+  defaultCategory: ActivityCategory
+  scopeAgnostic?: boolean
+  unit: string
+  kgCo2ePerUnit: number
+  co2KgPerUnit?: number
+  ch4KgPerUnit?: number
+  ch4Fossil?: boolean
+  n2oKgPerUnit?: number
+  hfcsKgPerUnit?: number
+  pfcsKgPerUnit?: number
+  sf6KgPerUnit?: number
+  nf3KgPerUnit?: number
+  biogenicCo2KgPerUnit?: number
+  blendComposition?: string
+  blendGwpSource?: string
+  source: string
+  sourceUrl?: string
+  publicationYear?: number
+  dataYear?: number
+  validFrom?: string
+  validTo?: string
+  note?: string
+  approved?: boolean
+}
+
+/** A shipped, importable factor pack (spec 02.1). */
+export interface FactorPack {
+  id: string
+  name: string
+  source: string
+  sourceUrl: string
+  publicationYear: number | null
+  gwpBasis: string
+  license: string
+  retrieved: string
+  factorCount: number
+  notes: string
 }
 
 /** A convertible unit for the activity-entry picker and conversion previews. */
@@ -1002,8 +1058,56 @@ export function deleteStream(id: string): Promise<void> {
 
 // --- emission factors --------------------------------------------------------
 
-export function listEmissionFactors(): Promise<EmissionFactor[]> {
-  return api<EmissionFactor[]>('/api/ghg/emission-factors')
+/** The shared library and the organization's own factors together (spec 02.1). */
+export function listEmissionFactors(organizationId: string): Promise<EmissionFactor[]> {
+  return api<EmissionFactor[]>(`/api/ghg/organizations/${organizationId}/emission-factors`)
+}
+
+export function createEmissionFactor(
+  organizationId: string,
+  input: EmissionFactorInput,
+): Promise<EmissionFactor> {
+  return api<EmissionFactor>(`/api/ghg/organizations/${organizationId}/emission-factors`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateEmissionFactor(
+  id: string,
+  input: EmissionFactorInput,
+): Promise<EmissionFactor> {
+  return api<EmissionFactor>(`/api/ghg/emission-factors/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function setFactorApproval(id: string, approved: boolean): Promise<EmissionFactor> {
+  return api<EmissionFactor>(
+    `/api/ghg/emission-factors/${id}/${approved ? 'approve' : 'unapprove'}`,
+    {
+      method: 'POST',
+    },
+  )
+}
+
+export function deleteEmissionFactor(id: string): Promise<void> {
+  return api<void>(`/api/ghg/emission-factors/${id}`, { method: 'DELETE' })
+}
+
+export function listFactorPacks(): Promise<FactorPack[]> {
+  return api<FactorPack[]>('/api/ghg/factor-packs')
+}
+
+export function importFactorPack(
+  organizationId: string,
+  packId: string,
+): Promise<{ pack: string; created: number; updated: number }> {
+  return api<{ pack: string; created: number; updated: number }>(
+    `/api/ghg/organizations/${organizationId}/factor-packs/${packId}/import`,
+    { method: 'POST' },
+  )
 }
 
 // --- units -------------------------------------------------------------------

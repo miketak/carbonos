@@ -736,7 +736,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"))
 			.andExpect(jsonPath("$.gates[2].findings[0].message")
-				.value(org.hamcrest.Matchers.containsString("'Diesel' defaults to scope 1. Record why")));
+				.value(org.hamcrest.Matchers.containsString("'Diesel (100% mineral diesel)' defaults to scope 1. Record why")));
 		mvc.perform(put("/api/ghg/assignments/" + hired + "/classify").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"emissionFactorId": "%s", "scope": "SCOPE_3", "category": "PURCHASED_GOODS_SERVICES",
@@ -768,7 +768,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"))
 			.andExpect(jsonPath("$.gates[2].findings[0].message")
-				.value(org.hamcrest.Matchers.containsString("'Grid electricity (Ghana)' defaults to scope 2")));
+				.value(org.hamcrest.Matchers.containsString("'Grid electricity (Ghana, Ecoriv 2025)' defaults to scope 2")));
 	}
 
 	/** Audit findings F10, F26, F27, F30 (T-11): the stream register, the scope choice and proxy factors. */
@@ -1022,7 +1022,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.run.totalKgCo2e").value(1064.0))
 			.andExpect(jsonPath("$.run.scope1KgCo2e").value(1064.0))
 			.andExpect(jsonPath("$.lines[0].weight").value(0.40))
-			.andExpect(jsonPath("$.lines[0].factorName").value("Diesel"))
+			.andExpect(jsonPath("$.lines[0].factorName").value("Diesel (100% mineral diesel)"))
 			.andReturn();
 		String runId = JsonPath.read(result.getResponse().getContentAsString(), "$.run.id");
 
@@ -1135,7 +1135,7 @@ class GhgApiIntegrationTests {
 
 	@Test
 	void everySeededFactorUnitIsAConvertibleUnit() {
-		assertThat(emissionFactors.findAllByOrderByDefaultScopeAscNameAsc()).allSatisfy(factor -> assertThat(
+		assertThat(emissionFactors.findAllByOrganizationIdIsNullOrderByDefaultScopeAscNameAsc()).allSatisfy(factor -> assertThat(
 				unitConverter.dimensionOf(factor.getUnit()))
 			.as("factor '%s' unit '%s' must be a registered unit", factor.getName(), factor.getUnit())
 			.isPresent());
@@ -2548,11 +2548,11 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.byCountry[?(@.name == 'GH')].totalKgCo2e").value(2391.0))
 			.andExpect(jsonPath("$.byCountry[?(@.name == 'not recorded')].totalKgCo2e").value(2660.0))
 			.andExpect(jsonPath("$.factors.length()").value(3))
-			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].kgCo2ePerUnit").value(2.66))
-			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].co2").value(2.6307))
-			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].ch4Fossil").value(true))
-			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].gwpSet").value("AR5"))
-			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].source").value("DEFRA 2025"))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel (100%% mineral diesel)')].kgCo2ePerUnit").value(2.66))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel (100%% mineral diesel)')].co2").value(2.6307))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel (100%% mineral diesel)')].ch4Fossil").value(true))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel (100%% mineral diesel)')].gwpSet").value("AR5"))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel (100%% mineral diesel)')].source").value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("UK Government GHG Conversion Factors"))))
 			// 5.051 t over 1,000 oz
 			.andExpect(jsonPath("$.intensity[0].tCo2ePerUnit").value(0.005051))
 			.andExpect(jsonPath("$.lines[?(@.facilityName == 'Obuom Processing Plant')].country").value(
@@ -2649,12 +2649,125 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.boundaryVersion.version.versionNo").value(1))
 			.andExpect(jsonPath("$.boundaryVersion.entries[0].entityName").value("Asante Gold Resources"))
 			.andExpect(jsonPath("$.factors.length()").value(2))
-			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].kgCo2ePerUnit").value(2.66))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel (100%% mineral diesel)')].kgCo2ePerUnit").value(2.66))
 			.andExpect(jsonPath("$.instruments[0].coveredKwh").value(400))
 			.andExpect(jsonPath("$.residualMixAvailable").doesNotExist()));
 		assertThat(body(mvc.perform(get("/api/ghg/runs/" + runId + "/inputs.json").with(asMember())))).isEqualTo(inputs);
 		// tenant-scoped like the report
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asOutsider())).andExpect(status().isNotFound());
 		mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asOutsider())).andExpect(status().isNotFound());
+	}
+
+	/** Audit findings F17, F19, F20, F51 (T-03): organization factors with provenance, approval, and packs. */
+	@Test
+	void anOrganizationAddsItsOwnFactorsAndImportsAPack() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		// the seeded library cites its sources; the district cooling assumption is not approved
+		var library = body(mvc.perform(get("/api/ghg/emission-factors").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + DIESEL_FACTOR + "')].source")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("UK Government GHG Conversion Factors"))))
+			.andExpect(jsonPath("$[?(@.id == '" + DIESEL_FACTOR + "')].publicationYear").value(2025))
+			.andExpect(jsonPath("$[?(@.id == '" + GRID_FACTOR + "')].co2eOnly").value(false))
+			.andExpect(jsonPath("$[?(@.id == '" + COOLING_FACTOR + "')].source")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("Ecoriv assumption")))));
+		assertThat(JsonPath.<List<Object>>read(library, "$[*].organizationId")).containsOnlyNulls();
+		// a supplier-specific factor with its provenance, unapproved until the sustainability lead signs it off
+		var hfo = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Heavy fuel oil (GOIL analysis 2025)", "defaultScope": "SCOPE_1",
+						 "defaultCategory": "STATIONARY_COMBUSTION", "scopeAgnostic": true, "unit": "tonne",
+						 "kgCo2ePerUnit": 3230, "co2KgPerUnit": 3216.4, "ch4KgPerUnit": 0.19, "n2oKgPerUnit": 0.027,
+						 "source": "GOIL fuel analysis certificate 2025-03", "sourceUrl": "https://example.test/goil",
+						 "publicationYear": 2025, "dataYear": 2025, "validFrom": "2025-01-01", "validTo": "2025-12-31",
+						 "approved": false}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.organizationId").value(orgId))
+			.andExpect(jsonPath("$.approved").value(false))
+			.andExpect(jsonPath("$.validTo").value("2025-12-31")));
+		String hfoId = JsonPath.read(hfo, "$.id");
+		// an unregistered unit is refused; a library factor cannot be edited; another tenant cannot see the factor
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Drums", "defaultScope": "SCOPE_1", "defaultCategory": "STATIONARY_COMBUSTION",
+					 "unit": "drum", "kgCo2ePerUnit": 500, "source": "Site estimate"}"""))
+			.andExpect(status().isConflict());
+		mvc.perform(post("/api/ghg/emission-factors/" + DIESEL_FACTOR + "/unapprove").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asOutsider()))
+			.andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + hfoId + "')].name").value("Heavy fuel oil (GOIL analysis 2025)"))
+			.andExpect(jsonPath("$[?(@.id == '" + DIESEL_FACTOR + "')]").isNotEmpty());
+		// the gate blocks a run on an unapproved factor; approval clears it
+		var fuel = createActivity(orgId, plant, "HFO burned in the power plant", "10", "tonne", "2025-06-30");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		classify(syncAndGetAssignmentId(inventoryId, fuel), hfoId);
+		freeze(inventoryId);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].status").value("BLOCKED"))
+			.andExpect(jsonPath("$.gates[3].findings[?(@.severity == 'ERROR')].message").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.containsString("which is not approved"))));
+		mvc.perform(post("/api/ghg/emission-factors/" + hfoId + "/approve").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.approved").value(true));
+		// the split rules: 10 t x (3,216.4 + 0.19 x 28 + 0.027 x 265) = 32,288.75 kg, not the stated 3,230 total,
+		// and the factor is in the run's frozen factor set with its source
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.run.scope1KgCo2e").value(32288.75))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Heavy fuel oil (GOIL analysis 2025)')].source")
+				.value("GOIL fuel analysis certificate 2025-03"));
+		// a factor a run applied cannot be deleted
+		mvc.perform(delete("/api/ghg/emission-factors/" + hfoId).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
+		// the packs: the mining pack imports its factors, twice over without duplicates
+		mvc.perform(get("/api/ghg/factor-packs").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == 'defra-2026')].factorCount").value(org.hamcrest.Matchers.hasItem(
+					org.hamcrest.Matchers.greaterThan(1000))))
+			.andExpect(jsonPath("$[?(@.id == 'sector-mining')]").isNotEmpty())
+			.andExpect(jsonPath("$[?(@.id == 'refrigerants-ar5')]").isNotEmpty());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+			.with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.created").value(org.hamcrest.Matchers.greaterThan(40)))
+			.andExpect(jsonPath("$.updated").value(0));
+		var again = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import")
+			.with(asMember()).with(csrf())).andExpect(jsonPath("$.created").value(0)));
+		assertThat(JsonPath.<Integer>read(again, "$.updated")).isGreaterThan(40);
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/no-such-pack/import").with(asMember())
+			.with(csrf())).andExpect(status().isNotFound());
+		// an imported blend follows the inventory's GWP set: R-407C is 23% HFC-32, 25% HFC-125, 52% HFC-134a
+		var factors = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		String r407c = JsonPath.<List<String>>read(factors, "$[?(@.name == 'Refrigerant R-407C leakage')].id").getFirst();
+		assertThat(JsonPath.<List<String>>read(factors, "$[?(@.name == 'Refrigerant R-407C leakage')].blendComposition")
+			.getFirst()).isEqualTo("23% HFC-32, 25% HFC-125, 52% HFC-134a");
+		assertThat(JsonPath.<List<String>>read(factors, "$[?(@.name == 'Refrigerant R-407C leakage')].pack").getFirst())
+			.isEqualTo("sector-mining");
+		assertThat(JsonPath.<List<Boolean>>read(factors, "$[?(@.name == 'Grid electricity T&D losses, Ghana (derived)')].approved")
+			.getFirst()).isFalse();
+		var leak = createActivity(orgId, plant, "R-407C top-up", "10", "kg", "2025-08-01");
+		var ar6 = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "FY2025 AR6", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+						 "consolidationApproach": "OPERATIONAL_CONTROL", "gwpSet": "AR6"}"""))
+			.andExpect(status().isCreated()));
+		String ar6Id = JsonPath.read(ar6, "$.id");
+		putBoundary(ar6Id, plant);
+		classify(syncAndGetAssignmentId(ar6Id, leak), r407c);
+		var ar6Listing = body(mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/assignments").with(asMember())));
+		mvc.perform(put("/api/ghg/assignments/" + JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + fuel + "')].id").getFirst()
+				+ "/exclude").with(asMember()).with(csrf()).contentType("application/json").content("""
+						{"reason": "NOT_APPLICABLE"}"""))
+			.andExpect(status().isOk());
+		freeze(ar6Id);
+		// AR6: 0.23 x 771 + 0.25 x 3,740 + 0.52 x 1,530 = 177.33 + 935 + 795.6 = 1,907.93 per kg; 10 kg = 19,079.3
+		run(ar6Id, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.lines[0].kgCo2ePerUnit").value(1907.93))
+			.andExpect(jsonPath("$.lines[0].kgCo2e").value(19079.3))
+			.andExpect(jsonPath("$.lines[0].blendGwpSource").value("AR6"));
 	}
 }

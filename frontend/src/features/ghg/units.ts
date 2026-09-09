@@ -15,6 +15,8 @@ export const DIMENSION_LABELS: Record<Dimension, string> = {
   MASS: 'Mass',
   DISTANCE: 'Distance',
   PASSENGER_DISTANCE: 'Passenger-distance',
+  FREIGHT: 'Freight (tonne-distance)',
+  COUNT: 'Count',
 }
 
 /** Units grouped by dimension, in display order, for `<optgroup>`s. */

@@ -7,6 +7,6 @@ package com.carbonos.ghg.internal;
  */
 public enum Dimension {
 
-	ENERGY, VOLUME, MASS, DISTANCE, PASSENGER_DISTANCE
+	ENERGY, VOLUME, MASS, DISTANCE, PASSENGER_DISTANCE, FREIGHT, COUNT
 
 }

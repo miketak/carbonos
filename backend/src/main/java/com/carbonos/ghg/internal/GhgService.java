@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -27,11 +29,14 @@ public class GhgService {
 	private final ActivityRecordRepository activities;
 	private final SourceStreamRepository streams;
 	private final GhgRunLineRepository runLines;
+	private final FactorPacks factorPacks;
+	private final UnitConverter units;
 	private final GhgAccess access;
 
 	GhgService(OrganizationRepository organizations, LegalEntityRepository entities, FacilityRepository facilities,
 			EmissionFactorRepository emissionFactors, ActivityRecordRepository activities,
-			SourceStreamRepository streams, GhgRunLineRepository runLines, GhgAccess access) {
+			SourceStreamRepository streams, GhgRunLineRepository runLines, FactorPacks factorPacks, UnitConverter units,
+			GhgAccess access) {
 		this.organizations = organizations;
 		this.entities = entities;
 		this.facilities = facilities;
@@ -39,6 +44,8 @@ public class GhgService {
 		this.activities = activities;
 		this.streams = streams;
 		this.runLines = runLines;
+		this.factorPacks = factorPacks;
+		this.units = units;
 		this.access = access;
 	}
 
@@ -320,11 +327,140 @@ public class GhgService {
 		return stream;
 	}
 
-	// --- emission factors ---------------------------------------------------
+	// --- emission factors (spec 02.1) --------------------------------------------
 
 	@Transactional(readOnly = true)
 	public List<EmissionFactor> listEmissionFactors() {
-		return emissionFactors.findAllByOrderByDefaultScopeAscNameAsc();
+		return emissionFactors.findAllByOrganizationIdIsNullOrderByDefaultScopeAscNameAsc();
+	}
+
+	/** The shared library and the organization's own factors together. */
+	@Transactional(readOnly = true)
+	public List<EmissionFactor> listEmissionFactors(UUID organizationId) {
+		getOrganization(organizationId);
+		return emissionFactors.findAllByOrganizationIdIsNullOrOrganizationIdOrderByDefaultScopeAscNameAsc(organizationId);
+	}
+
+	/** The facts of a factor as a request states them. */
+	public record FactorFacts(String name, Scope defaultScope, ActivityCategory defaultCategory, boolean scopeAgnostic,
+			String unit, BigDecimal kgCo2ePerUnit, EmissionFactor.Gases gases, String blendComposition,
+			String blendGwpSource, EmissionFactor.Provenance provenance, boolean approved) {
+	}
+
+	public EmissionFactor createEmissionFactor(UUID organizationId, FactorFacts facts) {
+		var organization = getOrganization(organizationId);
+		requireFactorFacts(facts);
+		return emissionFactors.save(new EmissionFactor(organization.getId(), facts.name().trim(), facts.defaultScope(),
+				facts.defaultCategory(), facts.scopeAgnostic(), facts.unit().trim(), facts.kgCo2ePerUnit(),
+				facts.gases(), trimToNull(facts.blendComposition()), trimToNull(facts.blendGwpSource()),
+				facts.provenance(), facts.approved(), null, null));
+	}
+
+	public EmissionFactor updateEmissionFactor(UUID id, FactorFacts facts) {
+		var factor = getOwnFactor(id);
+		requireFactorFacts(facts);
+		factor.update(facts.name().trim(), facts.defaultScope(), facts.defaultCategory(), facts.scopeAgnostic(),
+				facts.unit().trim(), facts.kgCo2ePerUnit(), facts.gases(), trimToNull(facts.blendComposition()),
+				trimToNull(facts.blendGwpSource()), facts.provenance(), facts.approved());
+		return factor;
+	}
+
+	public EmissionFactor setFactorApproval(UUID id, boolean approved) {
+		var factor = getOwnFactor(id);
+		factor.setApproved(approved);
+		return factor;
+	}
+
+	/** A factor a run applied is part of the record; retire it by its validity end instead. */
+	public void deleteEmissionFactor(UUID id) {
+		var factor = getOwnFactor(id);
+		if (runLines.existsByFactorId(id)) {
+			throw new GhgRuleViolationException("'" + factor.getName()
+					+ "' was applied by a calculation run. Set its validity end to retire it instead of deleting it.");
+		}
+		emissionFactors.delete(factor);
+	}
+
+	public record ImportResult(String pack, int created, int updated) {
+	}
+
+	/** A shipped pack with its factors, or 404. */
+	public FactorPacks.Pack pack(String packId) {
+		return factorPacks.find(packId).orElseThrow(() -> GhgNotFoundException.pack(packId));
+	}
+
+	/** Imports a pack as the organization's factors; a re-import updates the rows it created (by pack and code). */
+	public ImportResult importPack(UUID organizationId, String packId) {
+		var organization = getOrganization(organizationId);
+		var pack = factorPacks.find(packId).orElseThrow(() -> GhgNotFoundException.pack(packId));
+		var existing = emissionFactors.findAllByOrganizationIdAndPack(organizationId, packId)
+			.stream()
+			.collect(Collectors.toMap(EmissionFactor::getPackCode, Function.identity(), (a, b) -> a));
+		int created = 0;
+		int updated = 0;
+		for (var row : pack.factors()) {
+			if (units.dimensionOf(row.unit()).isEmpty()) {
+				continue; // a unit the registry cannot convert; the generator keeps them out, but a pack may carry one
+			}
+			var gases = new EmissionFactor.Gases(nz(row.co2()), nz(row.ch4()), row.ch4Fossil(), nz(row.n2o()),
+					nz(row.hfcsKg()), nz(row.pfcsKg()), nz(row.sf6()), nz(row.nf3()), nz(row.biogenicCo2()));
+			var citation = pack.source() + ": " + row.sourceDetail();
+			var provenance = new EmissionFactor.Provenance(citation.length() > 500 ? citation.substring(0, 497) + "..." : citation,
+					pack.sourceUrl(),
+					pack.publicationYear(), row.dataYear(), null, null, trimToNull(row.notes()));
+			var current = existing.get(row.code());
+			if (current == null) {
+				emissionFactors.save(new EmissionFactor(organization.getId(), row.name(), row.defaultScope(),
+						row.defaultCategory(), row.scopeAgnostic(), row.unit(), row.kgCo2ePerUnit(), gases,
+						trimToNull(row.blendComposition()), trimToNull(row.blendGwpSource()), provenance, row.approved(),
+						packId, row.code()));
+				created++;
+			}
+			else {
+				current.update(row.name(), row.defaultScope(), row.defaultCategory(), row.scopeAgnostic(), row.unit(),
+						row.kgCo2ePerUnit(), gases, trimToNull(row.blendComposition()), trimToNull(row.blendGwpSource()),
+						provenance, current.isApproved());
+				updated++;
+			}
+		}
+		return new ImportResult(packId, created, updated);
+	}
+
+	private static BigDecimal nz(BigDecimal value) {
+		return value == null ? BigDecimal.ZERO : value;
+	}
+
+	private EmissionFactor getOwnFactor(UUID id) {
+		var factor = emissionFactors.findById(id).orElseThrow(() -> GhgNotFoundException.emissionFactor(id));
+		if (factor.getOrganizationId() == null) {
+			throw new GhgRuleViolationException("'" + factor.getName()
+					+ "' is a shared library factor and cannot be changed. Add an organization factor instead.");
+		}
+		access.check(getOrganization(factor.getOrganizationId()));
+		return factor;
+	}
+
+	private void requireFactorFacts(FactorFacts facts) {
+		if (facts.defaultCategory().scope() != facts.defaultScope()) {
+			throw new GhgRuleViolationException(facts.defaultCategory() + " is not a " + facts.defaultScope().name()
+				.toLowerCase().replace('_', ' ') + " category.");
+		}
+		if (units.dimensionOf(facts.unit()).isEmpty()) {
+			throw new GhgRuleViolationException("'" + facts.unit() + "' is not a registered unit; records in it could "
+					+ "not be converted. Choose a unit from the registry.");
+		}
+		var p = facts.provenance();
+		if (p.validFrom() != null && p.validTo() != null && p.validTo().isBefore(p.validFrom())) {
+			throw new InvalidPeriodException();
+		}
+		if (facts.blendComposition() != null && !facts.blendComposition().isBlank()) {
+			try {
+				BlendComposition.parse(facts.blendComposition());
+			}
+			catch (RuntimeException ex) {
+				throw new GhgRuleViolationException("The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.");
+			}
+		}
 	}
 
 	// --- activity data (organizational facts) -------------------------------

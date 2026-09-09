@@ -285,6 +285,7 @@ beforeEach(() => {
     .mockResolvedValue([
       {
         id: 'ef-1',
+        organizationId: null,
         name: 'Diesel',
         defaultScope: 'SCOPE_1',
         defaultCategory: 'MOBILE_COMBUSTION',
@@ -308,7 +309,17 @@ beforeEach(() => {
         blendGwpSource: null,
         blendComposition: null,
         ch4Fossil: true,
+        co2eOnly: false,
         source: 'DEFRA 2025',
+        sourceUrl: null,
+        publicationYear: 2025,
+        dataYear: 2025,
+        validFrom: null,
+        validTo: null,
+        note: null,
+        approved: true,
+        pack: null,
+        packCode: null,
       },
     ])
 })

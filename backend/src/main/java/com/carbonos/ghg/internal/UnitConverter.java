@@ -46,6 +46,7 @@ public class UnitConverter {
 		put(defs, "GJ", "Gigajoule", Dimension.ENERGY, "277.777778", "gj", "gigajoule");
 		put(defs, "MJ", "Megajoule", Dimension.ENERGY, "0.277778", "mj", "megajoule");
 		put(defs, "therm", "Therm", Dimension.ENERGY, "29.307107", "therms", "thm");
+		put(defs, "mmBtu", "Million BTU", Dimension.ENERGY, "293.07107", "mmbtu", "million btu", "mmbtu (hhv)");
 
 		// VOLUME — canonical base: m3
 		put(defs, "m3", "Cubic metre", Dimension.VOLUME, "1", "m³", "cubic-metre", "cubic-meter", "cbm");
@@ -54,6 +55,8 @@ public class UnitConverter {
 				"gal-us");
 		put(defs, "UK-gallon", "UK gallon", Dimension.VOLUME, "0.00454609", "uk-gallon", "ukgal", "gallon-uk", "gal-uk",
 				"imperial-gallon");
+		put(defs, "scf", "Standard cubic foot", Dimension.VOLUME, "0.028316846592", "standard cubic foot", "ft3",
+				"cubic-foot");
 
 		// MASS — canonical base: kg
 		put(defs, "kg", "Kilogram", Dimension.MASS, "1", "kgs", "kilogram", "kilograms", "kilo");
@@ -63,8 +66,9 @@ public class UnitConverter {
 		put(defs, "short-ton", "US short ton", Dimension.MASS, "907.18474", "us-ton", "ton-us");
 
 		// DISTANCE — canonical base: km
-		put(defs, "km", "Kilometre", Dimension.DISTANCE, "1", "kilometre", "kilometres", "kilometer", "kilometers");
-		put(defs, "mile", "Mile", Dimension.DISTANCE, "1.609344", "miles", "mi");
+		put(defs, "km", "Kilometre", Dimension.DISTANCE, "1", "kilometre", "kilometres", "kilometer", "kilometers",
+				"vehicle-km", "vehicle.km", "vkm");
+		put(defs, "mile", "Mile", Dimension.DISTANCE, "1.609344", "miles", "mi", "vehicle-mile", "vehicle-miles");
 		put(defs, "m", "Metre", Dimension.DISTANCE, "0.001", "metre", "metres", "meter", "meters");
 
 		// PASSENGER_DISTANCE — canonical base: passenger-km
@@ -72,6 +76,15 @@ public class UnitConverter {
 				"pkm", "p-km", "passenger km");
 		put(defs, "passenger-mile", "Passenger-mile", Dimension.PASSENGER_DISTANCE, "1.609344", "p-mile", "pmi",
 				"passenger mile");
+
+		// FREIGHT — canonical base: tonne-km
+		put(defs, "tonne-km", "Tonne-kilometre", Dimension.FREIGHT, "1", "tonne.km", "tkm", "t-km", "tonne km");
+		put(defs, "short-ton-mile", "Short ton-mile", Dimension.FREIGHT, "1.459972", "ton-mile", "short ton-mile",
+				"ton-miles");
+
+		// COUNT — things counted, not measured: hotel nights
+		put(defs, "room-night", "Room-night", Dimension.COUNT, "1", "room per night", "room night", "room-nights",
+				"nights");
 
 		this.units = List.copyOf(defs.keySet());
 		var aliasMap = new LinkedHashMap<String, UnitDef>();

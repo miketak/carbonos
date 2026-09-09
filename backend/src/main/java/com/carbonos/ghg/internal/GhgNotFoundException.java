@@ -7,6 +7,12 @@ import org.springframework.web.ErrorResponseException;
 
 class GhgNotFoundException extends ErrorResponseException {
 
+	private GhgNotFoundException(String what, UUID id, String text) {
+		super(HttpStatus.NOT_FOUND);
+		setTitle(what + " not found");
+		setDetail(what + " " + text + " was not found.");
+	}
+
 	private GhgNotFoundException(String what, UUID id) {
 		super(HttpStatus.NOT_FOUND);
 		setTitle(what + " not found");
@@ -19,6 +25,10 @@ class GhgNotFoundException extends ErrorResponseException {
 
 	static GhgNotFoundException entity(UUID id) {
 		return new GhgNotFoundException("Legal entity", id);
+	}
+
+	static GhgNotFoundException pack(String id) {
+		return new GhgNotFoundException("Factor pack", null, id);
 	}
 
 	static GhgNotFoundException stream(UUID id) {

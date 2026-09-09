@@ -337,15 +337,17 @@ function ExcludeMenu({
 
 /** The activity view: this inventory's accounting decisions about the facts (spec 04, 04.1, 05). */
 export function AssignmentsSection({
+  organizationId,
   inventoryId,
   editable,
 }: {
+  organizationId: string
   inventoryId: string
   editable: boolean
 }) {
   const assignmentsQuery = useAssignmentsQuery(inventoryId)
   const coverageQuery = useCoverageQuery(inventoryId)
-  const factorsQuery = useEmissionFactorsQuery()
+  const factorsQuery = useEmissionFactorsQuery(organizationId)
   const unitsQuery = useUnitsQuery()
   const sync = useSyncAssignments(inventoryId)
   const classify = useClassifyAssignment(inventoryId)

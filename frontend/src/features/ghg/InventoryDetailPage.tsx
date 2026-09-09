@@ -110,7 +110,11 @@ export function InventoryDetailPage() {
         <OperationalBoundaryCard key={inventory.status} inventory={inventory} />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 4 } as CSSProperties}>
-        <AssignmentsSection inventoryId={inventoryId} editable={editable} />
+        <AssignmentsSection
+          organizationId={organizationId}
+          inventoryId={inventoryId}
+          editable={editable}
+        />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 5 } as CSSProperties}>
         <MarketFactorsCard organizationId={organizationId} inventory={inventory} />

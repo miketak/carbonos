@@ -31,9 +31,11 @@ Each category belongs to exactly one scope (spec 04.1).
 
 ### The emission-factor library
 
-A shared, read-only, seeded library. Each factor has a name, a **default**
-scope and category (a suggestion; spec 04.1), whether it is scope-agnostic,
-unit, value in kg CO2e per unit, per-gas components (spec 07.1), and source.
+A shared, read-only, seeded library plus each organization's own factors
+with full provenance and importable packs (spec 02.1). Each factor has a
+name, a **default** scope and category (a suggestion; spec 04.1), whether it
+is scope-agnostic, unit, value in kg CO2e per unit, per-gas components (spec
+07.1), and a cited source.
 Seventeen are seeded from the UK Department for Environment, Food and Rural
 Affairs (DEFRA) 2025 factors, the IPCC Fifth Assessment Report (AR5) 100-year
 global warming potentials, IPCC 2006 process factors, and an Ecoriv Ghana grid
@@ -41,9 +43,9 @@ factor. They span natural gas, liquefied petroleum gas (LPG), diesel, petrol,
 R-410A leakage, Ghana and UK grid electricity, district heat, car and
 long-haul flight travel, bus commuting, landfill waste, water supply,
 ammonium nitrate fuel oil (ANFO) explosives, quicklime calcination, wood
-pellets, and district cooling. Values are close to published figures and explicitly approximate;
-the seed is not for production use (see Non-goals). New factors require a
-migration; there is no runtime editor.
+pellets, and district cooling, each citing its publication, table and data
+year (spec 02.1). Organizations add their own factors and import packs at
+runtime.
 
 ### Classification
 
