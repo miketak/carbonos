@@ -5,6 +5,11 @@
 -- consolidation policy applies at every level of the group (Chapter 3).
 
 -- 1. Rename and retire, on the facts, the treatments and the frozen entries.
+--    The old checks go first: they still name the old values, so the rewrite
+--    would violate them.
+ALTER TABLE ghg_entities DROP CONSTRAINT ghg_entities_relationship_type_check;
+ALTER TABLE ghg_boundary_treatments DROP CONSTRAINT ghg_boundary_treatments_relationship_type_check;
+
 UPDATE ghg_entities SET relationship_type = 'SUBSIDIARY' WHERE relationship_type = 'WHOLLY_OWNED';
 UPDATE ghg_entities SET relationship_type = 'JOINT_VENTURE', operated_by_company = true
     WHERE relationship_type = 'NON_INCORPORATED_JV';
@@ -15,10 +20,8 @@ UPDATE ghg_boundary_version_entries SET relationship_type = 'SUBSIDIARY' WHERE r
 UPDATE ghg_boundary_version_entries SET relationship_type = 'JOINT_VENTURE', operated_by_company = true
     WHERE relationship_type = 'NON_INCORPORATED_JV';
 
-ALTER TABLE ghg_entities DROP CONSTRAINT ghg_entities_relationship_type_check;
 ALTER TABLE ghg_entities ADD CONSTRAINT ghg_entities_relationship_type_check
     CHECK (relationship_type IN ('SUBSIDIARY', 'JOINT_VENTURE', 'ASSOCIATE', 'FIXED_ASSET_INVESTMENT', 'FRANCHISE'));
-ALTER TABLE ghg_boundary_treatments DROP CONSTRAINT ghg_boundary_treatments_relationship_type_check;
 ALTER TABLE ghg_boundary_treatments ADD CONSTRAINT ghg_boundary_treatments_relationship_type_check
     CHECK (relationship_type IN ('SUBSIDIARY', 'JOINT_VENTURE', 'ASSOCIATE', 'FIXED_ASSET_INVESTMENT', 'FRANCHISE'));
 
