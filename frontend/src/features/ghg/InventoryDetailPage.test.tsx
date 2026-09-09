@@ -5,6 +5,7 @@ import { renderWithProviders } from '../../test/utils'
 import { InventoryDetailPage } from './InventoryDetailPage'
 import type {
   Assignment,
+  AssignmentPage,
   BoundaryEntity,
   BoundaryVersion,
   BoundaryVersionSummary,
@@ -27,8 +28,8 @@ import {
   getBoundaryVersion,
   getInventory,
   getValidation,
-  listAssignments,
   listCoverage,
+  searchAssignments,
   listAuditEvents,
   listBoundaryVersions,
   listDensities,
@@ -264,6 +265,19 @@ const classified: Assignment = {
   proxyJustification: null,
 }
 
+/** One page holding every given assignment, with the counts the view shows (spec 04.5). */
+function pageOf(items: Assignment[]): AssignmentPage {
+  return {
+    items,
+    page: 0,
+    size: 50,
+    total: items.length,
+    included: items.filter((a) => a.included && a.classified).length,
+    excluded: items.filter((a) => !a.included).length,
+    unclassified: items.filter((a) => a.included && !a.classified).length,
+  }
+}
+
 const blockedReport: ValidationReport = {
   ready: false,
   gates: [
@@ -298,7 +312,9 @@ function renderPage() {
 beforeEach(() => {
   vi.mocked(getInventory).mockReset().mockResolvedValue(inventory)
   vi.mocked(getBoundary).mockReset().mockResolvedValue(boundary)
-  vi.mocked(listAssignments).mockReset().mockResolvedValue([unclassified])
+  vi.mocked(searchAssignments)
+    .mockReset()
+    .mockResolvedValue(pageOf([unclassified]))
   vi.mocked(listCoverage).mockReset().mockResolvedValue([])
   vi.mocked(getValidation).mockReset().mockResolvedValue(blockedReport)
   vi.mocked(listRuns).mockReset().mockResolvedValue([])
@@ -459,7 +475,7 @@ test('classifying an assignment sends the factor with its default scope and cate
 
 test('moving a scope-agnostic factor to scope 3 sends a scope 3 category', async () => {
   const user = userEvent.setup()
-  vi.mocked(listAssignments).mockResolvedValue([classified])
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
   vi.mocked(classifyAssignment).mockResolvedValue({
     ...classified,
     scope: 'SCOPE_3',
@@ -481,18 +497,18 @@ test('moving a scope-agnostic factor to scope 3 sends a scope 3 category', async
 })
 
 test('a scope that departs from the factor default is visible', async () => {
-  vi.mocked(listAssignments).mockResolvedValue([
-    { ...classified, scope: 'SCOPE_3', category: 'PURCHASED_GOODS_SERVICES' },
-  ])
+  vi.mocked(searchAssignments).mockResolvedValue(
+    pageOf([{ ...classified, scope: 'SCOPE_3', category: 'PURCHASED_GOODS_SERVICES' }]),
+  )
   renderPage()
 
   expect((await screen.findAllByText(/'Diesel' suggests Scope 1/))[0]).toBeInTheDocument()
 })
 
 test('shows the unit conversion inline when the fact and factor units differ', async () => {
-  vi.mocked(listAssignments).mockResolvedValue([
-    { ...classified, unit: 'US-gallon', quantity: 10000 },
-  ])
+  vi.mocked(searchAssignments).mockResolvedValue(
+    pageOf([{ ...classified, unit: 'US-gallon', quantity: 10000 }]),
+  )
   renderPage()
 
   // 10,000 US-gallon -> ~37,854 litre, previewed next to the per-litre factor
@@ -503,19 +519,21 @@ test('shows the unit conversion inline when the fact and factor units differ', a
 })
 
 test('an automatic exclusion says why in words', async () => {
-  vi.mocked(listAssignments).mockResolvedValue([
-    {
-      ...unclassified,
-      streamKind: null,
-      contractorOperated: null,
-      defaultScope: null,
-      defaultCategory: null,
-      allowedCategories: null,
-      included: false,
-      exclusionReason: 'OUTSIDE_BOUNDARY',
-      exclusionDetail: 'Tema JV: member from 2025-07-01',
-    },
-  ])
+  vi.mocked(searchAssignments).mockResolvedValue(
+    pageOf([
+      {
+        ...unclassified,
+        streamKind: null,
+        contractorOperated: null,
+        defaultScope: null,
+        defaultCategory: null,
+        allowedCategories: null,
+        included: false,
+        exclusionReason: 'OUTSIDE_BOUNDARY',
+        exclusionDetail: 'Tema JV: member from 2025-07-01',
+      },
+    ]),
+  )
   renderPage()
 
   expect((await screen.findAllByText(/Tema JV: member from 2025-07-01/))[0]).toBeInTheDocument()
@@ -772,11 +790,13 @@ test('a run is voided with a reason, never deleted, and keeps its number', async
 
 test('shows which months of the period have data per facility and activity', async () => {
   vi.mocked(getInventory).mockResolvedValue(inventory)
-  vi.mocked(listAssignments).mockResolvedValue([unclassified])
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([unclassified]))
   vi.mocked(listCoverage).mockResolvedValue([
     {
       facilityId: 'fac-1',
       facilityName: 'Tema Plant',
+      streamId: null,
+      streamName: null,
       activityType: 'Diesel consumption',
       months: ['2025-01', '2025-02', '2025-03'],
       coveredMonths: ['2025-03'],
@@ -868,7 +888,7 @@ test('a record in mass against a factor per litre converts through the chosen de
     densityMaterial: 'Diesel',
     densityKgPerLitre: 0.84,
   }
-  vi.mocked(listAssignments).mockResolvedValue([inTonnes])
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([inTonnes]))
   vi.mocked(classifyAssignment).mockResolvedValue({ ...inTonnes, densityId: 'den-2' })
   renderPage()
 
@@ -890,4 +910,55 @@ test('a record in mass against a factor per litre converts through the chosen de
       densityId: 'den-2',
     }),
   )
+})
+
+test('the activity view filters by status and shows the counts (spec 04.5)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(searchAssignments).mockResolvedValue({
+    ...pageOf([unclassified, classified]),
+    total: 2,
+    included: 1,
+    unclassified: 1,
+    excluded: 0,
+  })
+  renderPage()
+
+  const status = await screen.findByLabelText('Status')
+  expect(within(status).getByRole('option', { name: 'Unclassified (1)' })).toBeInTheDocument()
+  await user.selectOptions(status, 'UNCLASSIFIED')
+  await waitFor(() =>
+    expect(searchAssignments).toHaveBeenLastCalledWith(
+      'inv-1',
+      expect.objectContaining({ status: 'UNCLASSIFIED', page: 0 }),
+    ),
+  )
+})
+
+test('the coverage matrix names streams and flags one with no data (spec 04.5)', async () => {
+  vi.mocked(listCoverage).mockResolvedValue([
+    {
+      facilityId: 'fac-1',
+      facilityName: 'Tema Plant',
+      streamId: 'st-1',
+      streamName: 'Standby gensets',
+      activityType: null,
+      months: ['2025-01', '2025-02'],
+      coveredMonths: ['2025-01'],
+    },
+    {
+      facilityId: 'fac-1',
+      facilityName: 'Tema Plant',
+      streamId: 'st-2',
+      streamName: 'Camp LPG',
+      activityType: null,
+      months: ['2025-01', '2025-02'],
+      coveredMonths: [],
+    },
+  ])
+  renderPage()
+
+  const matrix = await screen.findByRole('table', { name: 'Period coverage' })
+  expect(within(matrix).getByTitle('Standby gensets, 2025-01: data')).toHaveTextContent('●')
+  expect(within(matrix).getByTitle('Camp LPG, 2025-01: no data')).toHaveTextContent('○')
+  expect(within(matrix).getByText('no data')).toBeInTheDocument()
 })

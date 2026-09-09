@@ -8,7 +8,7 @@ import { ScopeBreakdown } from './components/ScopeBreakdown'
 import { MembersCard } from './components/MembersCard'
 import { TopFacilities } from './components/TopFacilities'
 import {
-  useActivitiesQuery,
+  useActivityPageQuery,
   useFacilitiesQuery,
   useInventoriesQuery,
   useOrganizationQuery,
@@ -21,7 +21,7 @@ export function OverviewPage() {
   const { organizationId = '' } = useParams()
   const organization = useOrganizationQuery(organizationId).data
   const facilitiesQuery = useFacilitiesQuery(organizationId)
-  const activitiesQuery = useActivitiesQuery(organizationId)
+  const activitiesQuery = useActivityPageQuery(organizationId, { size: 1 })
   const inventoriesQuery = useInventoriesQuery(organizationId)
 
   if (facilitiesQuery.isPending || activitiesQuery.isPending || inventoriesQuery.isPending) {
@@ -34,7 +34,7 @@ export function OverviewPage() {
   }
 
   const facilities = facilitiesQuery.data ?? []
-  const activities = activitiesQuery.data ?? []
+  const activityCount = activitiesQuery.data?.total ?? 0
   const inventories = inventoriesQuery.data ?? []
   // the headline inventory: prefer one with a designated final run, else the newest
   const headline = inventories.find((inventory) => inventory.finalRunId) ?? inventories[0]
@@ -46,7 +46,7 @@ export function OverviewPage() {
       <div className="animate-fade-up">
         <SetupChecklist
           facilityCount={facilities.length}
-          activityCount={activities.length}
+          activityCount={activityCount}
           inventories={inventories}
         />
       </div>

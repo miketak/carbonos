@@ -11,7 +11,9 @@ vi.setConfig({ testTimeout: 30000 })
 
 import {
   deleteActivity,
-  listActivities,
+  importActivities,
+  listStreams,
+  searchActivities,
   listActivityRevisions,
   listEvidence,
   listFacilities,
@@ -75,7 +77,11 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  vi.mocked(listActivities).mockReset().mockResolvedValue([diesel])
+  vi.mocked(searchActivities)
+    .mockReset()
+    .mockResolvedValue({ items: [diesel], page: 0, size: 50, total: 1 })
+  vi.mocked(listStreams).mockReset().mockResolvedValue([])
+  vi.mocked(importActivities).mockReset()
   vi.mocked(listFacilities).mockReset().mockResolvedValue([facility])
   vi.mocked(listOrganizationUnits).mockReset().mockResolvedValue(units)
   vi.mocked(listEvidence)
@@ -175,4 +181,41 @@ test('the evidence dialog lists the attached files and the history shows old and
     await within(history).findByText('dispensing log reconciled with the supplier invoice'),
   ).toBeInTheDocument()
   expect(within(history).getByText('900')).toBeInTheDocument()
+})
+
+test('searching the register asks the server with the query and sort (spec 04.5)', async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  await screen.findByText('Diesel consumption')
+  await user.type(screen.getByLabelText('Search'), 'lpg')
+  await waitFor(() =>
+    expect(searchActivities).toHaveBeenLastCalledWith(
+      'org-1',
+      expect.objectContaining({ q: 'lpg', sort: 'periodEnd', dir: 'desc', page: 0, size: 50 }),
+    ),
+  )
+})
+
+test('an import with rejected rows names each row and imports nothing (spec 04.5)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(importActivities).mockResolvedValue({
+    imported: 0,
+    rejected: [{ row: 3, message: "quantity 'abc' is not a number" }],
+  })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: 'Import CSV' }))
+  const dialog = screen.getByRole('dialog', { name: 'Import activity data' })
+  expect(within(dialog).getByRole('link', { name: 'Download the template' })).toHaveAttribute(
+    'href',
+    '/api/ghg/organizations/org-1/activities/import-template.csv',
+  )
+  const file = new File(['facility,activity_type\n'], 'march.csv', { type: 'text/csv' })
+  await user.upload(within(dialog).getByLabelText('CSV file'), file)
+  await user.click(within(dialog).getByRole('button', { name: 'Import' }))
+
+  expect(await within(dialog).findByText(/Nothing imported: 1 row rejected/)).toBeInTheDocument()
+  expect(within(dialog).getByText("quantity 'abc' is not a number")).toBeInTheDocument()
+  expect(importActivities).toHaveBeenCalledWith('org-1', file)
 })

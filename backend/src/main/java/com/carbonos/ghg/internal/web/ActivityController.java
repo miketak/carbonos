@@ -1,10 +1,15 @@
 package com.carbonos.ghg.internal.web;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,12 +19,17 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.carbonos.ghg.internal.ActivityImportService;
 import com.carbonos.ghg.internal.GhgService;
+import com.carbonos.ghg.internal.web.dto.ActivityImportResponse;
 import com.carbonos.ghg.internal.web.dto.ActivityResponse;
+import com.carbonos.ghg.internal.web.dto.PageResponse;
 import com.carbonos.ghg.internal.web.dto.ActivityRevisionResponse;
 import com.carbonos.ghg.internal.web.dto.CreateActivityRequest;
 
@@ -30,9 +40,11 @@ import jakarta.validation.Valid;
 class ActivityController {
 
 	private final GhgService ghgService;
+	private final ActivityImportService imports;
 
-	ActivityController(GhgService ghgService) {
+	ActivityController(GhgService ghgService, ActivityImportService imports) {
 		this.ghgService = ghgService;
+		this.imports = imports;
 	}
 
 	@GetMapping("/organizations/{organizationId}/activities")
@@ -42,6 +54,39 @@ class ActivityController {
 			.map(summary -> ActivityResponse.from(summary.activity(), summary.evidenceCount(),
 					summary.revisionCount()))
 			.toList();
+	}
+
+	/** The register searched, filtered, sorted and paged (spec 04.5). */
+	@GetMapping("/organizations/{organizationId}/activities/page")
+	PageResponse<ActivityResponse> page(@PathVariable UUID organizationId, @RequestParam(required = false) String q,
+			@RequestParam(required = false) UUID facilityId, @RequestParam(required = false) UUID streamId,
+			@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+			@RequestParam(defaultValue = "periodEnd") String sort, @RequestParam(defaultValue = "desc") String dir,
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
+		var result = ghgService.searchActivities(organizationId, new GhgService.ActivityQuery(q, facilityId, streamId,
+				from, to, sort, !"asc".equalsIgnoreCase(dir), page, size));
+		return new PageResponse<>(result.items()
+			.stream()
+			.map(summary -> ActivityResponse.from(summary.activity(), summary.evidenceCount(), summary.revisionCount()))
+			.toList(), result.page(), result.size(), result.total());
+	}
+
+	/** Bulk entry from a CSV file: all rows or none (spec 04.5). */
+	@PostMapping(path = "/organizations/{organizationId}/activities/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	ActivityImportResponse importFile(@PathVariable UUID organizationId, @RequestPart("file") MultipartFile file) {
+		return ActivityImportResponse.from(imports.importFile(organizationId, file));
+	}
+
+	@GetMapping(value = "/organizations/{organizationId}/activities/import-template.csv", produces = "text/csv")
+	ResponseEntity<byte[]> template(@PathVariable UUID organizationId) {
+		ghgService.getOrganization(organizationId);
+		return ResponseEntity.ok()
+			.contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+			.header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+				.filename("activity-import-template.csv", StandardCharsets.UTF_8)
+				.build()
+				.toString())
+			.body(ActivityImportService.template().getBytes(StandardCharsets.UTF_8));
 	}
 
 	@PostMapping("/organizations/{organizationId}/activities")

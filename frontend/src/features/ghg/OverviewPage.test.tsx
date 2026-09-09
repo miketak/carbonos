@@ -10,7 +10,7 @@ vi.mock('./api', () => import('./testApiMock'))
 import {
   addMember,
   getOrganization,
-  listActivities,
+  searchActivities,
   listFacilities,
   listInventories,
   listMembers,
@@ -132,7 +132,7 @@ beforeEach(() => {
       },
     ])
   vi.mocked(addMember).mockReset()
-  vi.mocked(listActivities).mockReset()
+  vi.mocked(searchActivities).mockReset()
   vi.mocked(listInventories).mockReset()
   vi.mocked(listRuns).mockReset()
   vi.mocked(getOrganization).mockResolvedValue(organization)
@@ -140,7 +140,7 @@ beforeEach(() => {
 
 test('walks a new organization from facts to a final inventory', async () => {
   vi.mocked(listFacilities).mockResolvedValue([])
-  vi.mocked(listActivities).mockResolvedValue([])
+  vi.mocked(searchActivities).mockResolvedValue({ items: [], page: 0, size: 1, total: 0 })
   vi.mocked(listInventories).mockResolvedValue([])
   renderOverviewPage()
 
@@ -157,33 +157,38 @@ test('walks a new organization from facts to a final inventory', async () => {
 
 test('points at inventories once facts exist', async () => {
   vi.mocked(listFacilities).mockResolvedValue([facility])
-  vi.mocked(listActivities).mockResolvedValue([
-    {
-      id: 'act-1',
-      facilityId: 'fac-1',
-      facilityName: 'Tema Plant',
-      streamId: null,
-      streamName: null,
-      activityType: 'Diesel consumption',
-      quantity: 100,
-      unit: 'litre',
-      periodStart: '2025-03-15',
-      periodEnd: '2025-03-15',
-      dataSource: null,
-      evidenceRef: null,
-      dataQuality: 'MEASURED',
-      note: null,
-      dataQualityTier: 1,
-      dataQualityTierLabel: 'Metered or invoiced primary data',
-      uncertaintyPercent: null,
-      removed: false,
-      removedAt: null,
-      removedBy: null,
-      removeReason: null,
-      evidenceCount: 0,
-      revisionCount: 0,
-    },
-  ])
+  vi.mocked(searchActivities).mockResolvedValue({
+    items: [
+      {
+        id: 'act-1',
+        facilityId: 'fac-1',
+        facilityName: 'Tema Plant',
+        streamId: null,
+        streamName: null,
+        activityType: 'Diesel consumption',
+        quantity: 100,
+        unit: 'litre',
+        periodStart: '2025-03-15',
+        periodEnd: '2025-03-15',
+        dataSource: null,
+        evidenceRef: null,
+        dataQuality: 'MEASURED',
+        note: null,
+        dataQualityTier: 1,
+        dataQualityTierLabel: 'Metered or invoiced primary data',
+        uncertaintyPercent: null,
+        removed: false,
+        removedAt: null,
+        removedBy: null,
+        removeReason: null,
+        evidenceCount: 0,
+        revisionCount: 0,
+      },
+    ],
+    page: 0,
+    size: 1,
+    total: 1,
+  })
   vi.mocked(listInventories).mockResolvedValue([])
   renderOverviewPage()
 
@@ -195,33 +200,38 @@ test('points at inventories once facts exist', async () => {
 
 test('shows the headline inventory with its final run once one exists', async () => {
   vi.mocked(listFacilities).mockResolvedValue([facility])
-  vi.mocked(listActivities).mockResolvedValue([
-    {
-      id: 'act-1',
-      facilityId: 'fac-1',
-      facilityName: 'Tema Plant',
-      streamId: null,
-      streamName: null,
-      activityType: 'Diesel consumption',
-      quantity: 100,
-      unit: 'litre',
-      periodStart: '2025-03-15',
-      periodEnd: '2025-03-15',
-      dataSource: null,
-      evidenceRef: null,
-      dataQuality: 'MEASURED',
-      note: null,
-      dataQualityTier: 1,
-      dataQualityTierLabel: 'Metered or invoiced primary data',
-      uncertaintyPercent: null,
-      removed: false,
-      removedAt: null,
-      removedBy: null,
-      removeReason: null,
-      evidenceCount: 0,
-      revisionCount: 0,
-    },
-  ])
+  vi.mocked(searchActivities).mockResolvedValue({
+    items: [
+      {
+        id: 'act-1',
+        facilityId: 'fac-1',
+        facilityName: 'Tema Plant',
+        streamId: null,
+        streamName: null,
+        activityType: 'Diesel consumption',
+        quantity: 100,
+        unit: 'litre',
+        periodStart: '2025-03-15',
+        periodEnd: '2025-03-15',
+        dataSource: null,
+        evidenceRef: null,
+        dataQuality: 'MEASURED',
+        note: null,
+        dataQualityTier: 1,
+        dataQualityTierLabel: 'Metered or invoiced primary data',
+        uncertaintyPercent: null,
+        removed: false,
+        removedAt: null,
+        removedBy: null,
+        removeReason: null,
+        evidenceCount: 0,
+        revisionCount: 0,
+      },
+    ],
+    page: 0,
+    size: 1,
+    total: 1,
+  })
   vi.mocked(listInventories).mockResolvedValue([inventory])
   vi.mocked(listRuns).mockResolvedValue([run])
   renderOverviewPage()

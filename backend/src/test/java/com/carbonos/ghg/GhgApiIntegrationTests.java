@@ -3170,4 +3170,115 @@ class GhgApiIntegrationTests {
 		mvc.perform(delete("/api/ghg/custom-units/" + drumId).with(asMember()).with(csrf()))
 			.andExpect(status().isConflict());
 	}
+	// --- bulk import and the activity register (spec 04.5) --------------------------------
+
+	@Test
+	void activityDataIsImportedFromCsvAllOrNothingAndTheRegisterPagesFiltersAndSorts() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		var camp = createFacility(orgId, "Nkran Camp");
+		mvc.perform(post("/api/ghg/facilities/" + mine + "/streams").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"name": "Standby gensets", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel", "contractorOperated": false}"""))
+			.andExpect(status().isCreated());
+		mvc.perform(post("/api/ghg/facilities/" + camp + "/streams").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"name": "Camp LPG", "kind": "STATIONARY_COMBUSTION", "fuel": "LPG", "contractorOperated": false}"""))
+			.andExpect(status().isCreated());
+
+		// the template downloads with the header and one example row
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/import-template.csv").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(content().string(org.hamcrest.Matchers.startsWith("facility,stream,activity_type,quantity,unit,period_start")));
+
+		// a file with a bad row imports nothing and names the row and the problem
+		var bad = ("facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality\r\n"
+				+ "Nkran Mine,Standby gensets,Diesel consumption,12500,litre,2025-03-01,2025-03-31,Fuel register,INV-1,MEASURED\r\n"
+				+ "Nkran Mine,,Diesel consumption,abc,litre,2025-04-01,2025-04-30,Fuel register,INV-2,MEASURED\r\n"
+				+ "Obuasi Depot,,Petrol,300,litre,2025-04-01,,,,GUESSED\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import")
+			.file(new org.springframework.mock.web.MockMultipartFile("file", "march.csv", "text/csv", bad))
+			.with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.imported").value(0))
+			.andExpect(jsonPath("$.rejected.length()").value(2))
+			.andExpect(jsonPath("$.rejected[0].row").value(3))
+			.andExpect(jsonPath("$.rejected[0].message").value(org.hamcrest.Matchers.containsString("not a number")))
+			.andExpect(jsonPath("$.rejected[1].row").value(4))
+			.andExpect(jsonPath("$.rejected[1].message").value(org.hamcrest.Matchers.containsString("no facility named 'Obuasi Depot'")))
+			.andExpect(jsonPath("$.rejected[1].message").value(org.hamcrest.Matchers.containsString("data_quality must be")));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(0));
+
+		// a clean file imports every row; the same file again is all duplicates
+		var rows = new StringBuilder("facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note\r\n");
+		for (int month = 1; month <= 12; month++) {
+			var start = java.time.LocalDate.of(2025, month, 1);
+			rows.append("Nkran Mine,Standby gensets,Diesel consumption,").append(10000 + month * 100).append(",litre,")
+				.append(start).append(',').append(start.withDayOfMonth(start.lengthOfMonth()))
+				.append(",Fuel register,INV-").append(month).append(",MEASURED,1,2,\"monthly, metered\"\r\n");
+		}
+		rows.append("Nkran Camp,Camp LPG,LPG cylinders,\"1,200\",kg,2025-06-01,2025-06-30,Supplier invoice,LPG-6,ESTIMATED,4,,\r\n");
+		var good = rows.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import")
+			.file(new org.springframework.mock.web.MockMultipartFile("file", "2025.csv", "text/csv", good))
+			.with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.imported").value(13))
+			.andExpect(jsonPath("$.rejected.length()").value(0));
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import")
+			.file(new org.springframework.mock.web.MockMultipartFile("file", "2025.csv", "text/csv", good))
+			.with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.imported").value(0))
+			.andExpect(jsonPath("$.rejected.length()").value(13))
+			.andExpect(jsonPath("$.rejected[0].message").value(org.hamcrest.Matchers.containsString("duplicate")));
+
+		// the register pages, filters, searches and sorts
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember())
+			.param("size", "5").param("sort", "periodStart").param("dir", "asc"))
+			.andExpect(jsonPath("$.total").value(13))
+			.andExpect(jsonPath("$.items.length()").value(5))
+			.andExpect(jsonPath("$.items[0].periodStart").value("2025-01-01"))
+			.andExpect(jsonPath("$.items[0].streamName").value("Standby gensets"))
+			.andExpect(jsonPath("$.items[0].note").value("monthly, metered"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember())
+			.param("size", "5").param("page", "2").param("sort", "periodStart").param("dir", "asc"))
+			.andExpect(jsonPath("$.items.length()").value(3))
+			.andExpect(jsonPath("$.items[2].periodStart").value("2025-12-01"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember())
+			.param("facilityId", camp))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].quantity").value(1200.0))
+			.andExpect(jsonPath("$.items[0].dataQualityTier").value(4));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("q", "lpg"))
+			.andExpect(jsonPath("$.total").value(1));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember())
+			.param("from", "2025-10-01").param("to", "2025-12-31"))
+			.andExpect(jsonPath("$.total").value(3));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember())
+			.param("sort", "quantity").param("dir", "desc").param("size", "1"))
+			.andExpect(jsonPath("$.items[0].quantity").value(11200.0));
+
+		// the activity view pages with the counts by status; the coverage matrix is per stream
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, mine);
+		putBoundary(inventoryId, camp);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.created").value(13));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
+			.param("status", "UNCLASSIFIED").param("size", "4"))
+			.andExpect(jsonPath("$.total").value(13))
+			.andExpect(jsonPath("$.unclassified").value(13))
+			.andExpect(jsonPath("$.items.length()").value(4));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember()).param("q", "camp"))
+			.andExpect(jsonPath("$.total").value(1));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/coverage").with(asMember()))
+			.andExpect(jsonPath("$[?(@.streamName == 'Standby gensets')].coveredMonths.length()").value(12))
+			.andExpect(jsonPath("$[?(@.streamName == 'Camp LPG')].coveredMonths").value(org.hamcrest.Matchers.hasItem(java.util.List.of("2025-06"))));
+	}
 }

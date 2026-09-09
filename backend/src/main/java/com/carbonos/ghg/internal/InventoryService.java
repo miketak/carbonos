@@ -62,6 +62,7 @@ public class InventoryService {
 	private final OrganizationUnits organizationUnits;
 	private final DensityRepository densities;
 	private final EvidenceRepository evidence;
+	private final SourceStreamRepository streams;
 
 	InventoryService(OrganizationRepository organizations, LegalEntityRepository entities,
 			FacilityRepository facilities, ActivityRecordRepository activities,
@@ -71,7 +72,8 @@ public class InventoryService {
 			MarketFactorRepository marketFactors, GhgRunRepository runs, GhgAuditEventRepository auditEvents,
 			IntensityMetricRepository intensityMetrics, BaseYearService baseYears, ApplicationEventPublisher events,
 			GhgAccess access, OrganizationUnits organizationUnits, DensityRepository densities,
-			EvidenceRepository evidence) {
+			EvidenceRepository evidence, SourceStreamRepository streams) {
+		this.streams = streams;
 		this.organizationUnits = organizationUnits;
 		this.densities = densities;
 		this.evidence = evidence;
@@ -736,6 +738,50 @@ public class InventoryService {
 	public List<InventoryAssignment> listAssignments(UUID inventoryId) {
 		get(inventoryId);
 		return assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
+	}
+
+	/** The activity view's search, filters and page (spec 04.5); status is INCLUDED, EXCLUDED or UNCLASSIFIED. */
+	public record AssignmentQuery(String q, UUID facilityId, String status, int page, int size) {
+	}
+
+	public record AssignmentPage(List<InventoryAssignment> items, int page, int size, long total, long included,
+			long excluded, long unclassified) {
+	}
+
+	@Transactional(readOnly = true)
+	public AssignmentPage searchAssignments(UUID inventoryId, AssignmentQuery query) {
+		get(inventoryId);
+		var all = assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
+		var included = all.stream().filter(a -> a.isIncluded() && a.isClassified()).count();
+		var unclassified = all.stream().filter(a -> a.isIncluded() && !a.isClassified()).count();
+		var excluded = all.size() - included - unclassified;
+		var like = query.q() == null || query.q().isBlank() ? null : query.q().trim().toLowerCase(Locale.ROOT);
+		var matching = all.stream().filter(a -> {
+			var activity = a.getActivity();
+			if (query.facilityId() != null && !activity.getFacility().getId().equals(query.facilityId())) {
+				return false;
+			}
+			if (query.status() != null) {
+				var status = !a.isIncluded() ? "EXCLUDED" : a.isClassified() ? "INCLUDED" : "UNCLASSIFIED";
+				if (!status.equalsIgnoreCase(query.status())) {
+					return false;
+				}
+			}
+			if (like != null) {
+				var haystack = (activity.getActivityType() + " " + activity.getFacility().getName() + " "
+						+ (activity.getStream() == null ? "" : activity.getStream().getName()) + " "
+						+ (a.getEmissionFactor() == null ? "" : a.getEmissionFactor().getName()) + " "
+						+ activity.getUnit() + " " + (activity.getEvidenceRef() == null ? "" : activity.getEvidenceRef()))
+					.toLowerCase(Locale.ROOT);
+				return haystack.contains(like);
+			}
+			return true;
+		}).toList();
+		var size = Math.max(1, Math.min(query.size(), 500));
+		var from = Math.min(Math.max(0, query.page()) * size, matching.size());
+		var items = matching.subList(from, Math.min(from + size, matching.size()));
+		return new AssignmentPage(List.copyOf(items), Math.max(0, query.page()), size, matching.size(), included,
+				excluded, unclassified);
 	}
 
 	/**
@@ -1421,14 +1467,24 @@ public class InventoryService {
 
 	// --- coverage (spec 04.2) -----------------------------------------------------
 
-	/** Which months of the inventory period have data, per facility and activity type. */
-	public record CoverageRow(UUID facilityId, String facilityName, String activityType, List<String> months,
-			List<String> coveredMonths) {
+	/**
+	 * Which months of the inventory period have data, per facility and stream
+	 * (spec 04.5), or per activity type for records without a stream. Every
+	 * stream of a facility in the boundary has a row, so a stream with no data
+	 * at all shows as empty months.
+	 */
+	public record CoverageRow(UUID facilityId, String facilityName, UUID streamId, String streamName,
+			String activityType, List<String> months, List<String> coveredMonths) {
 	}
 
 	@Transactional(readOnly = true)
 	public List<CoverageRow> coverage(UUID inventoryId) {
 		var inventory = get(inventoryId);
+		var boundaryFacilityIds = boundaryTreatments.findAllByInventoryId(inventoryId)
+			.stream()
+			.flatMap(t -> t.getFacilities().stream())
+			.map(member -> member.getFacility().getId())
+			.collect(Collectors.toSet());
 		var months = new ArrayList<java.time.YearMonth>();
 		for (var month = java.time.YearMonth.from(inventory.getPeriodStart()); !month
 			.isAfter(java.time.YearMonth.from(inventory.getPeriodEnd())); month = month.plusMonths(1)) {
@@ -1437,14 +1493,26 @@ public class InventoryService {
 		var labels = months.stream().map(java.time.YearMonth::toString).toList();
 		var rows = new java.util.LinkedHashMap<String, CoverageRow>();
 		var covered = new java.util.LinkedHashMap<String, java.util.TreeSet<String>>();
+		for (var stream : streams.findAllByFacilityOrganizationIdOrderByNameAsc(inventory.getOrganization().getId())) {
+			if (boundaryFacilityIds.contains(stream.getFacility().getId())) {
+				var key = stream.getFacility().getId() + "|stream|" + stream.getId();
+				rows.put(key, new CoverageRow(stream.getFacility().getId(), stream.getFacility().getName(),
+						stream.getId(), stream.getName(), null, labels, List.of()));
+				covered.put(key, new java.util.TreeSet<>());
+			}
+		}
 		for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
 			if (!assignment.isIncluded()) {
 				continue;
 			}
 			var activity = assignment.getActivity();
-			var key = activity.getFacility().getId() + "|" + activity.getActivityType().toLowerCase(Locale.ROOT);
+			var stream = activity.getStream();
+			var key = stream != null ? activity.getFacility().getId() + "|stream|" + stream.getId()
+					: activity.getFacility().getId() + "|type|" + activity.getActivityType().toLowerCase(Locale.ROOT);
 			rows.computeIfAbsent(key, k -> new CoverageRow(activity.getFacility().getId(),
-					activity.getFacility().getName(), activity.getActivityType(), labels, List.of()));
+					activity.getFacility().getName(), stream == null ? null : stream.getId(),
+					stream == null ? null : stream.getName(), stream == null ? activity.getActivityType() : null, labels,
+					List.of()));
 			var set = covered.computeIfAbsent(key, k -> new java.util.TreeSet<>());
 			for (var month : months) {
 				if (activity.period().overlaps(month.atDay(1), month.atEndOfMonth())) {
@@ -1455,8 +1523,11 @@ public class InventoryService {
 		return rows.entrySet()
 			.stream()
 			.map(entry -> new CoverageRow(entry.getValue().facilityId(), entry.getValue().facilityName(),
-					entry.getValue().activityType(), labels, List.copyOf(covered.get(entry.getKey()))))
-			.sorted(java.util.Comparator.comparing(CoverageRow::facilityName).thenComparing(CoverageRow::activityType))
+					entry.getValue().streamId(), entry.getValue().streamName(), entry.getValue().activityType(), labels,
+					List.copyOf(covered.get(entry.getKey()))))
+			.sorted(java.util.Comparator.comparing(CoverageRow::facilityName)
+				.thenComparing(row -> row.streamName() != null ? row.streamName() : row.activityType(),
+						String.CASE_INSENSITIVE_ORDER))
 			.toList();
 	}
 

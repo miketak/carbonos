@@ -41,11 +41,14 @@ import {
   getReport,
   getRun,
   getValidation,
+  importActivities,
   importFactorPack,
   includeAssignment,
   listActivities,
   listActivityRevisions,
   listAssignments,
+  searchActivities,
+  searchAssignments,
   listAuditEvents,
   listBoundaryVersions,
   listCoverage,
@@ -96,6 +99,8 @@ import {
 } from './api'
 import type {
   ActivityInput,
+  ActivityQuery,
+  AssignmentQuery,
   BaseYearInput,
   BoundaryExclusionInput,
   BoundaryTreatmentInput,
@@ -132,6 +137,10 @@ export const organizationKey = (id: string) => ['ghg', 'organization', id] as co
 export const entitiesKey = (orgId: string) => ['ghg', 'entities', orgId] as const
 export const facilitiesKey = (orgId: string) => ['ghg', 'facilities', orgId] as const
 export const activitiesKey = (orgId: string) => ['ghg', 'activities', orgId] as const
+export const activityPageKey = (orgId: string, query: ActivityQuery) =>
+  ['ghg', 'activities', orgId, 'page', query] as const
+export const assignmentPageKey = (inventoryId: string, query: AssignmentQuery) =>
+  ['ghg', 'assignments', inventoryId, 'page', query] as const
 export const revisionsKey = (activityId: string) => ['ghg', 'revisions', activityId] as const
 export const evidenceKey = (owner: EvidenceOwner) =>
   ['ghg', 'evidence', 'activityId' in owner ? owner.activityId : owner.marketFactorId] as const
@@ -349,6 +358,23 @@ export function useActivitiesQuery(orgId: string) {
   return useQuery({ queryKey: activitiesKey(orgId), queryFn: () => listActivities(orgId) })
 }
 
+/** One page of the register; the key carries the query so each page and filter caches on its own (spec 04.5). */
+export function useActivityPageQuery(orgId: string, query: ActivityQuery) {
+  return useQuery({
+    queryKey: activityPageKey(orgId, query),
+    queryFn: () => searchActivities(orgId, query),
+    placeholderData: (previous) => previous,
+  })
+}
+
+export function useImportActivities(orgId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => importActivities(orgId, file),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) }),
+  })
+}
+
 export function useInventoriesQuery(orgId: string) {
   return useQuery({ queryKey: inventoriesKey(orgId), queryFn: () => listInventories(orgId) })
 }
@@ -392,6 +418,15 @@ export function useAssignmentsQuery(inventoryId: string) {
   return useQuery({
     queryKey: assignmentsKey(inventoryId),
     queryFn: () => listAssignments(inventoryId),
+  })
+}
+
+/** One page of the activity view with the counts by status (spec 04.5). */
+export function useAssignmentPageQuery(inventoryId: string, query: AssignmentQuery) {
+  return useQuery({
+    queryKey: assignmentPageKey(inventoryId, query),
+    queryFn: () => searchAssignments(inventoryId, query),
+    placeholderData: (previous) => previous,
   })
 }
 

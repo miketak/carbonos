@@ -714,6 +714,89 @@ public class GhgService {
 	public record ActivitySummary(ActivityRecord activity, long evidenceCount, long revisionCount) {
 	}
 
+	/** The register's search, filters, sort and page (spec 04.5). */
+	public record ActivityQuery(String q, UUID facilityId, UUID streamId, LocalDate from, LocalDate to, String sort,
+			boolean descending, int page, int size) {
+	}
+
+	/** One page of the register with the total that matches. */
+	public record ActivityPage(List<ActivitySummary> items, int page, int size, long total) {
+	}
+
+	private static final java.util.Map<String, String> SORTS = java.util.Map.of("periodEnd", "periodEnd", "periodStart",
+			"periodStart", "facility", "facility.name", "activityType", "activityType", "quantity", "quantity",
+			"createdAt", "createdAt");
+
+	@Transactional(readOnly = true)
+	public ActivityPage searchActivities(UUID organizationId, ActivityQuery query) {
+		getOrganization(organizationId);
+		var like = query.q() == null || query.q().isBlank() ? null : "%" + query.q().trim().toLowerCase(Locale.ROOT) + "%";
+		org.springframework.data.jpa.domain.Specification<ActivityRecord> spec = (root, cq, cb) -> {
+			var facility = root.join("facility");
+			var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+			predicates.add(cb.equal(facility.get("organization").get("id"), organizationId));
+			predicates.add(cb.isNull(root.get("deletedAt")));
+			if (query.facilityId() != null) {
+				predicates.add(cb.equal(facility.get("id"), query.facilityId()));
+			}
+			if (query.streamId() != null) {
+				predicates.add(cb.equal(root.get("stream").get("id"), query.streamId()));
+			}
+			if (query.from() != null) {
+				predicates.add(cb.greaterThanOrEqualTo(root.get("periodEnd"), query.from()));
+			}
+			if (query.to() != null) {
+				predicates.add(cb.lessThanOrEqualTo(root.get("periodStart"), query.to()));
+			}
+			if (like != null) {
+				var stream = root.join("stream", jakarta.persistence.criteria.JoinType.LEFT);
+				predicates.add(cb.or(cb.like(cb.lower(root.get("activityType")), like),
+						cb.like(cb.lower(facility.get("name")), like),
+						cb.like(cb.lower(cb.coalesce(root.get("dataSource"), "")), like),
+						cb.like(cb.lower(cb.coalesce(root.get("evidenceRef"), "")), like),
+						cb.like(cb.lower(cb.coalesce(root.get("note"), "")), like),
+						cb.like(cb.lower(cb.coalesce(stream.get("name"), "")), like),
+						cb.like(cb.lower(root.get("unit")), like)));
+			}
+			return cb.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
+		};
+		var property = SORTS.getOrDefault(query.sort() == null ? "periodEnd" : query.sort(), "periodEnd");
+		var direction = query.descending() ? org.springframework.data.domain.Sort.Direction.DESC
+				: org.springframework.data.domain.Sort.Direction.ASC;
+		var sort = org.springframework.data.domain.Sort.by(direction, property)
+			.and(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
+		var size = Math.max(1, Math.min(query.size(), 500));
+		var page = activities.findAll(spec,
+				org.springframework.data.domain.PageRequest.of(Math.max(0, query.page()), size, sort));
+		var ids = page.getContent().stream().map(ActivityRecord::getId).toList();
+		var evidenceCounts = new java.util.HashMap<UUID, Long>();
+		var revisionCounts = new java.util.HashMap<UUID, Long>();
+		if (!ids.isEmpty()) {
+			for (var item : evidence.findAllByActivityIdIn(ids)) {
+				evidenceCounts.merge(item.getActivityId(), 1L, Long::sum);
+			}
+			for (var revision : revisions.findAllByActivityIdIn(ids)) {
+				revisionCounts.merge(revision.getActivityId(), 1L, Long::sum);
+			}
+		}
+		var items = page.getContent().stream().map(record -> {
+			// the facility and stream render outside the transaction: initialize them here
+			record.getFacility().getName();
+			if (record.getStream() != null) {
+				record.getStream().getName();
+			}
+			return new ActivitySummary(record, evidenceCounts.getOrDefault(record.getId(), 0L),
+					revisionCounts.getOrDefault(record.getId(), 0L));
+		}).toList();
+		return new ActivityPage(items, page.getNumber(), size, page.getTotalElements());
+	}
+
+	@Transactional(readOnly = true)
+	public long countActivities(UUID organizationId) {
+		getOrganization(organizationId);
+		return activities.countByFacilityOrganizationIdAndDeletedAtIsNull(organizationId);
+	}
+
 	@Transactional(readOnly = true)
 	public List<ActivitySummary> listActivities(UUID organizationId) {
 		getOrganization(organizationId);
