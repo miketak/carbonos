@@ -63,15 +63,23 @@ export type ActivityCategory =
   | 'FRANCHISES'
   | 'INVESTMENTS'
 
+/** The assurance a report carries (spec 07.4). */
+export type AssuranceLevel = 'UNVERIFIED' | 'LIMITED' | 'REASONABLE'
+
 export interface Organization {
   id: string
   name: string
+  /** The reporting entity's address and contact for the report header (spec 07.4). */
+  address: string | null
+  contact: string | null
   facilityCount: number
   createdAt: string
 }
 
 export interface OrganizationInput {
   name: string
+  address?: string
+  contact?: string
 }
 
 /** A legal entity the organization consolidates, with its Table 1 facts (spec 03.1). */
@@ -115,6 +123,8 @@ export interface Facility {
   id: string
   name: string
   location: string
+  /** ISO 3166-1 alpha-2, for the report's country breakdown (spec 07.4). */
+  country: string | null
   entityId: string
   entityName: string
   relationshipType: RelationshipType
@@ -124,6 +134,7 @@ export interface Facility {
 export interface FacilityInput {
   name: string
   location: string
+  country?: string
   /** Absent, the facility belongs to the reporting company. */
   entityId?: string
 }
@@ -217,6 +228,12 @@ export interface Inventory {
   straddleTreatment: StraddleTreatment
   /** "2025", or "FY2025/26" when the period crosses a year end (spec 04.2). */
   periodLabel: string
+  /** The report header (spec 07.4): the approver override, who published, and the assurance. */
+  approvedBy: string | null
+  publishedBy: string | null
+  assuranceLevel: AssuranceLevel
+  assuranceProvider: string | null
+  assuranceStatement: string | null
   /** The operational boundary declaration (spec 07.1). */
   scope3Categories: ActivityCategory[]
   scope3ExclusionsRationale: string | null
@@ -241,6 +258,20 @@ export interface InventoryInput {
   consolidationApproach: ConsolidationApproach
   gwpSet?: GwpSet
   straddleTreatment?: StraddleTreatment
+}
+
+export interface IntensityMetricInput {
+  name: string
+  value: number
+  unit: string
+}
+
+export interface ReportMetadataInput {
+  approvedBy?: string
+  assuranceLevel: AssuranceLevel
+  assuranceProvider?: string
+  assuranceStatement?: string
+  intensityMetrics: IntensityMetricInput[]
 }
 
 export interface OperationalBoundaryInput {
@@ -458,6 +489,8 @@ export interface Run {
   /** The boundary version the shares came from; null for runs older than spec 03. */
   boundaryVersionId: string | null
   boundaryVersionNo: number | null
+  /** Who launched the run: the report's "prepared by" (spec 07.4). */
+  createdBy: string | null
   createdAt: string
 }
 
@@ -466,6 +499,10 @@ export interface RunLine {
   activityId: string
   facilityId: string | null
   facilityName: string
+  /** The facility's legal entity and country as they stood at run time (spec 07.4). */
+  entityId: string | null
+  entityName: string | null
+  country: string | null
   factorName: string
   scope: GhgScope
   category: ActivityCategory
@@ -733,6 +770,71 @@ export interface Report {
   exclusions: RunExclusion[]
   lines: RunLine[]
   run: Run
+  /** The header block (spec 07.4). */
+  header: ReportHeader
+  byScope3Category: {
+    category: ActivityCategory
+    kgCo2e: number
+    tCo2e: number
+    lineCount: number
+  }[]
+  byFacility: Breakdown[]
+  byEntity: Breakdown[]
+  byCountry: Breakdown[]
+  /** Every factor exactly as the run applied it (spec 07.4). */
+  factors: FactorRow[]
+  intensity: { name: string; value: number; unit: string; tCo2ePerUnit: number }[]
+}
+
+export interface ReportHeader {
+  organizationName: string
+  address: string | null
+  contact: string | null
+  periodLabel: string
+  periodStart: string
+  periodEnd: string
+  preparedBy: string | null
+  preparedAt: string
+  approvedBy: string | null
+  publishedBy: string | null
+  publishedAt: string | null
+  version: number
+  supersedes: string[]
+  supersededBy: string | null
+  assuranceLevel: AssuranceLevel
+  assuranceProvider: string | null
+  assuranceStatement: string | null
+}
+
+export interface Breakdown {
+  id: string | null
+  name: string
+  scope1KgCo2e: number
+  scope2KgCo2e: number
+  scope2MarketBasedKgCo2e: number
+  scope3KgCo2e: number
+  totalKgCo2e: number
+  totalTCo2e: number
+}
+
+export interface FactorRow {
+  factorId: string
+  name: string
+  unit: string
+  gwpSet: GwpSet
+  kgCo2ePerUnit: number
+  co2: number
+  ch4: number
+  ch4Fossil: boolean
+  n2o: number
+  hfcsKg: number
+  pfcsKg: number
+  sf6: number
+  nf3: number
+  biogenicCo2: number
+  blendComposition: string | null
+  blendGwpSource: string | null
+  source: string
 }
 
 // --- organizations ---------------------------------------------------------
@@ -878,6 +980,14 @@ export function setOperationalBoundary(
   input: OperationalBoundaryInput,
 ): Promise<Inventory> {
   return api<Inventory>(`/api/ghg/inventories/${id}/operational-boundary`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+/** The report header the accountant types before publication (spec 07.4). */
+export function setReportMetadata(id: string, input: ReportMetadataInput): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/inventories/${id}/report-metadata`, {
     method: 'PUT',
     body: JSON.stringify(input),
   })

@@ -60,6 +60,16 @@ public class GhgRunLine {
 	@Column(name = "facility_name", nullable = false, length = 120)
 	private String facilityName;
 
+	// the facility's legal entity and country as they stood at run time (spec 07.4)
+	@Column(name = "entity_id")
+	private UUID entityId;
+
+	@Column(name = "entity_name", length = 120)
+	private String entityName;
+
+	@Column(length = 2)
+	private String country;
+
 	@Column(name = "factor_name", nullable = false, length = 120)
 	private String factorName;
 
@@ -194,6 +204,9 @@ public class GhgRunLine {
 		this.activityId = activity.getId();
 		this.facilityId = activity.getFacility().getId();
 		this.facilityName = activity.getFacility().getName();
+		this.entityId = activity.getFacility().getEntity().getId();
+		this.entityName = activity.getFacility().getEntity().getName();
+		this.country = activity.getFacility().getCountry();
 		this.factorName = factor.getName();
 		this.scope = assignment.getScope();
 		this.category = assignment.getCategory();
@@ -250,6 +263,18 @@ public class GhgRunLine {
 
 	public String getFacilityName() {
 		return facilityName;
+	}
+
+	public UUID getEntityId() {
+		return entityId;
+	}
+
+	public String getEntityName() {
+		return entityName;
+	}
+
+	public String getCountry() {
+		return country;
 	}
 
 	public String getFactorName() {
@@ -417,5 +442,10 @@ public class GhgRunLine {
 
 	BigDecimal marketOrLocationKgCo2e() {
 		return marketBasedKgCo2e != null ? marketBasedKgCo2e : kgCo2e;
+	}
+
+	/** The scope 2 figure under the market-based method, for the report's breakdown tables (spec 07.4). */
+	public BigDecimal marketBasedOrLocationKgCo2e() {
+		return marketOrLocationKgCo2e();
 	}
 }

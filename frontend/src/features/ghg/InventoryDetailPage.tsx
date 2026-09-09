@@ -16,6 +16,7 @@ import { LifecycleBar } from './components/LifecycleBar'
 import { MarketFactorsCard } from './components/MarketFactorsCard'
 import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
 import { PreflightPanel } from './components/PreflightPanel'
+import { ReportMetadataCard } from './components/ReportMetadataCard'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
 import { formatCo2e } from './format'
 import {
@@ -113,6 +114,11 @@ export function InventoryDetailPage() {
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 5 } as CSSProperties}>
         <MarketFactorsCard organizationId={organizationId} inventory={inventory} />
+        <ReportMetadataCard
+          key={`header-${inventory.status}`}
+          inventory={inventory}
+          intensityMetrics={[]}
+        />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 6 } as CSSProperties}>
         <LaunchSection inventory={inventory} />

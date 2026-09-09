@@ -11,6 +11,8 @@ import { getOrganization, listActivities, listFacilities, listInventories, listR
 const organization: Organization = {
   id: 'org-1',
   name: 'Ecoriv Holdings',
+  address: null,
+  contact: null,
   facilityCount: 1,
   createdAt: '2026-08-01T00:00:00Z',
 }
@@ -19,6 +21,7 @@ const facility: Facility = {
   id: 'fac-1',
   name: 'Tema Plant',
   location: 'Tema',
+  country: null,
   entityId: 'ent-1',
   entityName: 'Ecoriv Holdings',
   relationshipType: 'SUBSIDIARY',
@@ -37,6 +40,11 @@ const inventory: Inventory = {
   gwpSet: 'AR5',
   straddleTreatment: 'PRO_RATE',
   periodLabel: '2025',
+  approvedBy: null,
+  publishedBy: null,
+  assuranceLevel: 'UNVERIFIED',
+  assuranceProvider: null,
+  assuranceStatement: null,
   scope3Categories: [],
   scope3ExclusionsRationale: null,
   residualMixAvailable: null,
@@ -86,6 +94,7 @@ const run: Run = {
   voidReason: null,
   boundaryVersionId: 'bv-1',
   boundaryVersionNo: 1,
+  createdBy: null,
   createdAt: '2026-08-29T00:00:00Z',
 }
 

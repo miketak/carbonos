@@ -29,6 +29,7 @@ export function FacilityFormModal({
 
   const [name, setName] = useState(facility?.name ?? '')
   const [location, setLocation] = useState(facility?.location ?? '')
+  const [country, setCountry] = useState(facility?.country ?? '')
   // '' means "not chosen yet": the reporting company once the entities load
   const [entityId, setEntityId] = useState(facility?.entityId ?? '')
 
@@ -41,7 +42,12 @@ export function FacilityFormModal({
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    const input = { name, location, entityId: selectedEntityId || undefined }
+    const input = {
+      name,
+      location,
+      ...(country.trim() !== '' ? { country: country.trim().toUpperCase() } : {}),
+      entityId: selectedEntityId || undefined,
+    }
     const handlers = {
       onSuccess: () => onSaved(`${name.trim()} ${facility ? 'updated' : 'added'}.`),
     }
@@ -67,6 +73,15 @@ export function FacilityFormModal({
           error={errors?.location}
           placeholder="Accra, Ghana"
           required
+        />
+        <InputField
+          label="Country (optional)"
+          placeholder="GH"
+          maxLength={2}
+          value={country}
+          onChange={(event) => setCountry(event.target.value)}
+          error={errors?.country}
+          hint="ISO 3166-1 alpha-2 code, for the report's country breakdown."
         />
         <SelectField
           label="Legal entity"

@@ -48,7 +48,10 @@ class ReportController {
 							r -> inventoryService.getRun(r.getRunId()), (a, b) -> a));
 		var profile = baseYear == null ? java.util.List.<com.carbonos.ghg.internal.BaseYearService.ProfileEntry>of()
 				: baseYearService.profile(baseYear, run.getPeriodEnd());
+		var successor = inventory.getSupersededById() == null ? null
+				: inventoryService.get(inventory.getSupersededById());
 		return ReportResponse.of(run, inventory, organization, version, baseYear, baseRun, recalculatedRuns, profile,
-				inventoryService.marketFactors(inventory.getId()));
+				inventoryService.marketFactors(inventory.getId()), inventoryService.predecessors(inventory.getId()),
+				successor, inventoryService.intensityMetrics(inventory.getId()));
 	}
 }

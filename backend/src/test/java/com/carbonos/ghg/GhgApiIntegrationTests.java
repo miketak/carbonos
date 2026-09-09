@@ -2335,4 +2335,112 @@ class GhgApiIntegrationTests {
 				.hasItem(org.hamcrest.Matchers.containsString("split the record at the cut-off or exclude it"))));
 		run(inventoryId, "Blocked").andExpect(status().isConflict());
 	}
+
+	/** Audit findings F39, F40, F43, F44 (T-08): breakdown tables, the factor table and the report header. */
+	@Test
+	void theReportBreaksEmissionsDownAndPrintsItsFactorsAndHeader() throws Exception {
+		var organization = body(mvc
+			.perform(post("/api/ghg/organizations").with(asMember()).with(csrf()).contentType("application/json")
+				.content("""
+						{"name": "Asante Gold Resources", "address": "12 Liberation Road, Accra",
+						 "contact": "sustainability@asante.example"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.address").value("12 Liberation Road, Accra")));
+		String orgId = JsonPath.read(organization, "$.id");
+		var tarkwa = createEntity(orgId, "Tarkwa Mine Ltd", "SUBSIDIARY", "100", true);
+		var obuom = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/facilities").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Obuom Processing Plant", "location": "Obuom", "country": "gh"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.country").value("GH")));
+		String obuomId = JsonPath.read(obuom, "$.id");
+		var pit = createFacility(orgId, "Tarkwa Pit", tarkwa);
+		var power = createActivity(orgId, obuomId, "Mill grid electricity", "1000", "kWh", "2025-06-30");
+		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
+		var travel = createActivity(orgId, obuomId, "Staff flights", "10000", "passenger-km", "2025-06-30");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, obuomId);
+		putBoundary(inventoryId, pit);
+		classify(syncAndGetAssignmentId(inventoryId, power), GRID_FACTOR);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + diesel + "')].id").getFirst(),
+				DIESEL_FACTOR);
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + travel + "')].id").getFirst(),
+				"c4a1f001-0000-4000-8000-000000000010");
+		// the header the accountant types: an approver override, assurance, an intensity denominator
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/report-metadata").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"approvedBy": "Ama Mensah, Sustainability Lead", "assuranceLevel": "LIMITED",
+					 "assuranceProvider": "Verify Ghana Ltd", "assuranceStatement": "VG-2026-014",
+					 "intensityMetrics": [{"name": "Gold produced", "value": 1000, "unit": "oz"}]}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.assuranceLevel").value("LIMITED"))
+			.andExpect(jsonPath("$.approvedBy").value("Ama Mensah, Sustainability Lead"));
+		freeze(inventoryId);
+		String runId = runAndGetId(inventoryId, "Run 001");
+		// scope 1 diesel 2,660; scope 2 electricity 441; scope 3 flights 10,000 x 0.195 = 1,950; total 5,051 kg
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.header.organizationName").value("Asante Gold Resources"))
+			.andExpect(jsonPath("$.header.address").value("12 Liberation Road, Accra"))
+			.andExpect(jsonPath("$.header.contact").value("sustainability@asante.example"))
+			.andExpect(jsonPath("$.header.periodLabel").value("2025"))
+			.andExpect(jsonPath("$.header.preparedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.header.approvedBy").value("Ama Mensah, Sustainability Lead"))
+			.andExpect(jsonPath("$.header.version").value(1))
+			.andExpect(jsonPath("$.header.assuranceLevel").value("LIMITED"))
+			.andExpect(jsonPath("$.header.assuranceProvider").value("Verify Ghana Ltd"))
+			.andExpect(jsonPath("$.byScope3Category.length()").value(1))
+			.andExpect(jsonPath("$.byScope3Category[0].category").value("BUSINESS_TRAVEL"))
+			.andExpect(jsonPath("$.byScope3Category[0].tCo2e").value(1.95))
+			.andExpect(jsonPath("$.byFacility[0].name").value("Tarkwa Pit"))
+			.andExpect(jsonPath("$.byFacility[0].scope1KgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.byFacility[1].name").value("Obuom Processing Plant"))
+			.andExpect(jsonPath("$.byFacility[1].scope2KgCo2e").value(441.0))
+			.andExpect(jsonPath("$.byFacility[1].scope3KgCo2e").value(1950.0))
+			.andExpect(jsonPath("$.byEntity[?(@.name == 'Tarkwa Mine Ltd')].totalKgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.byEntity[?(@.name == 'Asante Gold Resources')].totalKgCo2e").value(2391.0))
+			.andExpect(jsonPath("$.byCountry[?(@.name == 'GH')].totalKgCo2e").value(2391.0))
+			.andExpect(jsonPath("$.byCountry[?(@.name == 'not recorded')].totalKgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.factors.length()").value(3))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].kgCo2ePerUnit").value(2.66))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].co2").value(2.6307))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].ch4Fossil").value(true))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].gwpSet").value("AR5"))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].source").value("DEFRA 2025"))
+			// 5.051 t over 1,000 oz
+			.andExpect(jsonPath("$.intensity[0].tCo2ePerUnit").value(0.005051))
+			.andExpect(jsonPath("$.lines[?(@.facilityName == 'Obuom Processing Plant')].country").value(
+					org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.equalTo("GH"))));
+		// publication records the publisher; a correction is version 2 and names what it supersedes
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf())).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.publishedBy").value("kojo@ecoriv.com"));
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/report-metadata").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"assuranceLevel": "REASONABLE", "intensityMetrics": []}"""))
+			.andExpect(status().isConflict());
+		var correction = body(mvc
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "FY2025 (restated)"}"""))
+			.andExpect(status().isCreated()));
+		String correctionId = JsonPath.read(correction, "$.id");
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.header.publishedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.header.supersededBy").value("FY2025 (restated)"));
+		// the correction inherits the boundary; classify its records again (ticket T-12 will carry them over)
+		classify(syncAndGetAssignmentId(correctionId, power), GRID_FACTOR);
+		var restatedListing = body(mvc.perform(get("/api/ghg/inventories/" + correctionId + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(restatedListing, "$[?(@.activityId == '" + diesel + "')].id").getFirst(),
+				DIESEL_FACTOR);
+		classify(JsonPath.<List<String>>read(restatedListing, "$[?(@.activityId == '" + travel + "')].id").getFirst(),
+				"c4a1f001-0000-4000-8000-000000000010");
+		freeze(correctionId);
+		String restated = runAndGetId(correctionId, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + restated + "/report").with(asMember()))
+			.andExpect(jsonPath("$.header.version").value(2))
+			.andExpect(jsonPath("$.header.supersedes[0]").value("FY2025"));
+	}
 }

@@ -186,6 +186,9 @@ const report: Report = {
       activityId: 'act-1',
       facilityId: 'fac-1',
       facilityName: 'Tema Plant',
+      entityId: null,
+      entityName: null,
+      country: null,
       factorName: 'Diesel',
       scope: 'SCOPE_1',
       category: 'MOBILE_COMBUSTION',
@@ -228,6 +231,62 @@ const report: Report = {
       marketBalanceBasis: null,
     },
   ],
+  header: {
+    organizationName: 'Sankofa Gold plc',
+    address: '12 Liberation Road, Accra',
+    contact: 'sustainability@sankofa.test',
+    periodLabel: '2025',
+    periodStart: '2025-01-01',
+    periodEnd: '2025-12-31',
+    preparedBy: 'kojo@ecoriv.test',
+    preparedAt: '2026-09-02T10:00:00Z',
+    approvedBy: 'Ama Mensah, Sustainability Lead',
+    publishedBy: null,
+    publishedAt: null,
+    version: 2,
+    supersedes: ['2025 Corporate Inventory'],
+    supersededBy: null,
+    assuranceLevel: 'LIMITED',
+    assuranceProvider: 'Verify Ghana Ltd',
+    assuranceStatement: 'VG-2026-014',
+  },
+  byScope3Category: [],
+  byFacility: [
+    {
+      id: 'fac-1',
+      name: 'Tema Plant',
+      scope1KgCo2e: 1064,
+      scope2KgCo2e: 882,
+      scope2MarketBasedKgCo2e: 491,
+      scope3KgCo2e: 0,
+      totalKgCo2e: 1946,
+      totalTCo2e: 1.946,
+    },
+  ],
+  byEntity: [],
+  byCountry: [],
+  factors: [
+    {
+      factorId: 'f-1',
+      name: 'Diesel',
+      unit: 'litre',
+      gwpSet: 'AR5',
+      kgCo2ePerUnit: 2.66,
+      co2: 2.6307,
+      ch4: 0.0001,
+      ch4Fossil: true,
+      n2o: 0.0001,
+      hfcsKg: 0,
+      pfcsKg: 0,
+      sf6: 0,
+      nf3: 0,
+      biogenicCo2: 0,
+      blendComposition: null,
+      blendGwpSource: null,
+      source: 'DEFRA 2025',
+    },
+  ],
+  intensity: [{ name: 'Gold produced', value: 1000, unit: 'oz', tCo2ePerUnit: 0.001946 }],
   run: {
     id: 'run-1',
     inventoryId: 'inv-1',
@@ -264,6 +323,7 @@ const report: Report = {
     voidReason: null,
     boundaryVersionId: 'bv-1',
     boundaryVersionNo: 1,
+    createdBy: null,
     createdAt: '2026-08-29T00:00:00Z',
   },
 }
@@ -464,4 +524,28 @@ test('a run older than boundary versioning says so instead of citing one', async
   expect(await screen.findByRole('heading', { name: 'Run 001' })).toBeInTheDocument()
   expect(screen.getByText(/predates boundary versioning/)).toBeInTheDocument()
   expect(vi.mocked(getBoundaryVersion)).not.toHaveBeenCalled()
+})
+
+test('opens with the header block and prints the breakdown and factor tables', async () => {
+  renderRunDetailPage()
+
+  const header = await screen.findByRole('table', { name: 'Report header' })
+  expect(
+    within(header).getByText(/Sankofa Gold plc, 12 Liberation Road, Accra/),
+  ).toBeInTheDocument()
+  expect(within(header).getByText(/kojo@ecoriv.test/)).toBeInTheDocument()
+  expect(within(header).getByText('Ama Mensah, Sustainability Lead')).toBeInTheDocument()
+  expect(within(header).getByText(/2, supersedes 2025 Corporate Inventory/)).toBeInTheDocument()
+  expect(
+    within(header).getByText(/Limited assurance by Verify Ghana Ltd \(VG-2026-014\)/),
+  ).toBeInTheDocument()
+
+  const byFacility = screen.getByRole('table', { name: 'By facility' })
+  expect(within(byFacility).getByText('Tema Plant').closest('tr')).toHaveTextContent(/1\.946 t/)
+  expect(screen.getByText(/0\.001946 t CO₂e per oz of gold produced/)).toBeInTheDocument()
+
+  const factors = screen.getByRole('table', { name: 'Emission factors applied' })
+  expect(within(factors).getByText('Diesel').closest('tr')).toHaveTextContent(/2\.66 \/ litre/)
+  expect(within(factors).getByText(/CH₄ 0\.0001 \(fossil\)/)).toBeInTheDocument()
+  expect(within(factors).getByText('DEFRA 2025')).toBeInTheDocument()
 })

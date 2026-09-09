@@ -16,7 +16,7 @@ public record RunResponse(UUID id, UUID inventoryId, int runNo, String label, Lo
 		BigDecimal scope1KgCo2e, BigDecimal scope2KgCo2e, BigDecimal scope3KgCo2e,
 		BigDecimal scope2MarketBasedKgCo2e, Scope2MarketBasis scope2MarketBasis, ByGas byGas,
 		BigDecimal biogenicCo2Kg, boolean isFinal, boolean voided, Instant voidedAt, String voidedBy,
-		String voidReason, UUID boundaryVersionId, Integer boundaryVersionNo, Instant createdAt) {
+		String voidReason, UUID boundaryVersionId, Integer boundaryVersionNo, String createdBy, Instant createdAt) {
 
 	/**
 	 * Totals per gas: kg of each gas, the fossil part of the methane, and for the
@@ -38,6 +38,6 @@ public record RunResponse(UUID id, UUID inventoryId, int runNo, String label, Lo
 						run.getHfcsKgCo2e(), run.getPfcsKgCo2e(), run.getSf6Kg(), run.getNf3Kg()),
 				run.getBiogenicCo2Kg(), run.getId().equals(inventory.getFinalRunId()), run.isVoided(),
 				run.getVoidedAt(), run.getVoidedBy(), run.getVoidReason(), run.getBoundaryVersionId(),
-				run.getBoundaryVersionNo(), run.getCreatedAt());
+				run.getBoundaryVersionNo(), run.getCreatedBy(), run.getCreatedAt());
 	}
 }
