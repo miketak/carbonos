@@ -1,7 +1,12 @@
 package com.carbonos.ghg.internal;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,7 +16,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * A row of the seeded factor library; read-only at runtime. A factor suggests
+ * An emission factor: a row of the shared library (read-only) or an
+ * organization's own factor with its provenance (spec 02.1). A factor suggests
  * a default scope and category (spec 04.1) and carries per-gas components
  * (spec 07.1): kg of CO2, CH4, N2O, SF6 and NF3 per unit, the mass and
  * composition of HFC and PFC blends per unit (spec 07.2), whether its methane
@@ -91,8 +97,159 @@ public class EmissionFactor {
 	@Column(name = "ch4_fossil", nullable = false)
 	private boolean ch4Fossil;
 
-	@Column(nullable = false, length = 120)
+	@Column(nullable = false, length = 500)
 	private String source;
+
+	// --- spec 02.1: ownership, provenance, approval and the pack a factor came from ---
+
+	// null for the shared library; an organization's own factor otherwise
+	@Column(name = "organization_id")
+	private UUID organizationId;
+
+	@Column(name = "source_url", length = 500)
+	private String sourceUrl;
+
+	@Column(name = "publication_year")
+	private Integer publicationYear;
+
+	@Column(name = "data_year")
+	private Integer dataYear;
+
+	@Column(name = "valid_from")
+	private LocalDate validFrom;
+
+	@Column(name = "valid_to")
+	private LocalDate validTo;
+
+	@Column(length = 500)
+	private String note;
+
+	@Column(nullable = false)
+	private boolean approved;
+
+	@Column(length = 60)
+	private String pack;
+
+	@Column(name = "pack_code", length = 200)
+	private String packCode;
+
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@UpdateTimestamp
+	@Column(name = "updated_at", nullable = false)
+	private Instant updatedAt;
+
+	/** kg of each gas per unit (HFCs and PFCs as mass of blend), with the methane's origin. */
+	public record Gases(BigDecimal co2, BigDecimal ch4, boolean ch4Fossil, BigDecimal n2o, BigDecimal hfcsKg,
+			BigDecimal pfcsKg, BigDecimal sf6, BigDecimal nf3, BigDecimal biogenicCo2) {
+	}
+
+	/** Where a factor comes from and when it applies (spec 02.1). */
+	public record Provenance(String source, String sourceUrl, Integer publicationYear, Integer dataYear,
+			LocalDate validFrom, LocalDate validTo, String note) {
+	}
+
+	EmissionFactor(UUID organizationId, String name, Scope defaultScope, ActivityCategory defaultCategory,
+			boolean scopeAgnostic, String unit, BigDecimal kgCo2ePerUnit, Gases gases, String blendComposition,
+			String blendGwpSource, Provenance provenance, boolean approved, String pack, String packCode) {
+		this.id = UUID.randomUUID();
+		this.organizationId = organizationId;
+		this.pack = pack;
+		this.packCode = packCode;
+		update(name, defaultScope, defaultCategory, scopeAgnostic, unit, kgCo2ePerUnit, gases, blendComposition,
+				blendGwpSource, provenance, approved);
+	}
+
+	void update(String name, Scope defaultScope, ActivityCategory defaultCategory, boolean scopeAgnostic, String unit,
+			BigDecimal kgCo2ePerUnit, Gases gases, String blendComposition, String blendGwpSource,
+			Provenance provenance, boolean approved) {
+		this.name = name;
+		this.defaultScope = defaultScope;
+		this.defaultCategory = defaultCategory;
+		this.scopeAgnostic = scopeAgnostic;
+		this.unit = unit;
+		this.kgCo2ePerUnit = kgCo2ePerUnit;
+		this.co2KgPerUnit = gases.co2();
+		this.ch4KgPerUnit = gases.ch4();
+		this.ch4Fossil = gases.ch4Fossil();
+		this.n2oKgPerUnit = gases.n2o();
+		this.hfcsKgPerUnit = gases.hfcsKg();
+		this.pfcsKgPerUnit = gases.pfcsKg();
+		this.sf6KgPerUnit = gases.sf6();
+		this.nf3KgPerUnit = gases.nf3();
+		this.biogenicCo2KgPerUnit = gases.biogenicCo2();
+		// a blend's CO2e on the source basis; recomputed from the composition under a GWP set when one is recorded
+		this.hfcsKgCo2ePerUnit = gases.hfcsKg().signum() == 0 ? BigDecimal.ZERO
+				: kgCo2ePerUnit.subtract(co2KgPerUnit).max(BigDecimal.ZERO);
+		this.pfcsKgCo2ePerUnit = gases.pfcsKg().signum() == 0 ? BigDecimal.ZERO
+				: kgCo2ePerUnit.subtract(co2KgPerUnit).max(BigDecimal.ZERO);
+		this.blendComposition = blendComposition;
+		this.blendGwpSource = blendGwpSource;
+		this.source = provenance.source();
+		this.sourceUrl = provenance.sourceUrl();
+		this.publicationYear = provenance.publicationYear();
+		this.dataYear = provenance.dataYear();
+		this.validFrom = provenance.validFrom();
+		this.validTo = provenance.validTo();
+		this.note = provenance.note();
+		this.approved = approved;
+	}
+
+	public UUID getOrganizationId() {
+		return organizationId;
+	}
+
+	public String getSourceUrl() {
+		return sourceUrl;
+	}
+
+	public Integer getPublicationYear() {
+		return publicationYear;
+	}
+
+	public Integer getDataYear() {
+		return dataYear;
+	}
+
+	public LocalDate getValidFrom() {
+		return validFrom;
+	}
+
+	public LocalDate getValidTo() {
+		return validTo;
+	}
+
+	public String getNote() {
+		return note;
+	}
+
+	public boolean isApproved() {
+		return approved;
+	}
+
+	void setApproved(boolean approved) {
+		this.approved = approved;
+	}
+
+	public String getPack() {
+		return pack;
+	}
+
+	public String getPackCode() {
+		return packCode;
+	}
+
+	/** Whether the factor publishes CO2e only, so the by-gas table cannot split it (spec 02.1). */
+	public boolean isCo2eOnly() {
+		return !hasGasSplit() && hfcsKgPerUnit.signum() == 0 && pfcsKgPerUnit.signum() == 0;
+	}
+
+	/** Whether the factor's validity window covers a period; an open window covers everything. */
+	public boolean coversPeriod(LocalDate start, LocalDate end) {
+		return (validFrom == null || !validFrom.isAfter(start)) && (validTo == null || !validTo.isBefore(end));
+	}
 
 	protected EmissionFactor() {
 	}

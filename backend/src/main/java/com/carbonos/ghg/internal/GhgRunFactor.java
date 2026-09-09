@@ -78,7 +78,7 @@ public class GhgRunFactor {
 	@Column(name = "blend_gwp_source", length = 20)
 	private String blendGwpSource;
 
-	@Column(nullable = false, length = 120)
+	@Column(nullable = false, length = 500)
 	private String source;
 
 	protected GhgRunFactor() {

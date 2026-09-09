@@ -15,6 +15,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 01 | [Identity and access](01-identity-and-access.md) | | Implemented |
 | 01.1 | [Access requests](01.1-access-requests.md) | | Implemented |
 | 02 | [Organization and facts](02-organization-and-facts.md) | Ch. 6, 7 | Implemented |
+| 02.1 | [Emission factor library, provenance and packs](02.1-emission-factor-library.md) | Ch. 6, 9, Scope 2 Guidance | Implemented |
 | 03 | [Organizational boundary](03-organizational-boundary.md) | Ch. 3 | Implemented |
 | 03.1 | [Legal entities and Table 1](03.1-legal-entities-and-table-1.md) | Ch. 3 | Implemented |
 | 03.2 | [Effective-dated membership](03.2-effective-dated-membership.md) | Ch. 3, 5 | Implemented |

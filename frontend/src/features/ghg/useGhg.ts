@@ -5,6 +5,7 @@ import {
   clearEntityExclusion,
   clearFacilityExclusion,
   createActivity,
+  createEmissionFactor,
   createEntity,
   createFacility,
   createInventory,
@@ -12,6 +13,7 @@ import {
   createStream,
   decideRecalculation,
   deleteActivity,
+  deleteEmissionFactor,
   deleteEntity,
   deleteFacility,
   deleteInventory,
@@ -31,6 +33,7 @@ import {
   getReport,
   getRun,
   getValidation,
+  importFactorPack,
   includeAssignment,
   listActivities,
   listAssignments,
@@ -38,6 +41,7 @@ import {
   listBoundaryVersions,
   listCoverage,
   listEmissionFactors,
+  listFactorPacks,
   listEntities,
   listFacilities,
   listInventories,
@@ -55,6 +59,7 @@ import {
   setBaseYear,
   setBoundaryTreatment,
   setEntityTreatment,
+  setFactorApproval,
   setMarketFactor,
   setOperationalBoundary,
   setReportMetadata,
@@ -62,6 +67,7 @@ import {
   supersedeInventory,
   syncAssignments,
   updateActivity,
+  updateEmissionFactor,
   updateEntity,
   updateFacility,
   updateInventory,
@@ -76,6 +82,7 @@ import type {
   BoundaryExclusionInput,
   BoundaryTreatmentInput,
   ClassifyInput,
+  EmissionFactorInput,
   EntityInput,
   ExclusionReason,
   FacilityInput,
@@ -91,7 +98,8 @@ import type {
 } from './api'
 
 export const organizationsKey = ['ghg', 'organizations'] as const
-export const factorsKey = ['ghg', 'emission-factors'] as const
+export const factorsKey = (orgId: string) => ['ghg', 'emission-factors', orgId] as const
+export const factorPacksKey = ['ghg', 'factor-packs'] as const
 export const unitsKey = ['ghg', 'units'] as const
 export const streamsKey = (orgId: string) => ['ghg', 'streams', orgId] as const
 export const organizationKey = (id: string) => ['ghg', 'organization', id] as const
@@ -158,9 +166,51 @@ export function useDeleteStream(orgId: string) {
   return useStreamMutation(orgId, (id: string) => deleteStream(id))
 }
 
-export function useEmissionFactorsQuery() {
-  // the factor library is seeded and read-only, so cache it for the session
-  return useQuery({ queryKey: factorsKey, queryFn: listEmissionFactors, staleTime: Infinity })
+export function useEmissionFactorsQuery(orgId: string) {
+  return useQuery({ queryKey: factorsKey(orgId), queryFn: () => listEmissionFactors(orgId) })
+}
+
+export function useFactorPacksQuery() {
+  return useQuery({ queryKey: factorPacksKey, queryFn: listFactorPacks })
+}
+
+function useFactorMutation<TArgs, TResult>(
+  orgId: string,
+  mutationFn: (args: TArgs) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: factorsKey(orgId) })
+    },
+  })
+}
+
+export function useCreateEmissionFactor(orgId: string) {
+  return useFactorMutation(orgId, (input: EmissionFactorInput) =>
+    createEmissionFactor(orgId, input),
+  )
+}
+
+export function useUpdateEmissionFactor(orgId: string) {
+  return useFactorMutation(orgId, ({ id, input }: { id: string; input: EmissionFactorInput }) =>
+    updateEmissionFactor(id, input),
+  )
+}
+
+export function useSetFactorApproval(orgId: string) {
+  return useFactorMutation(orgId, ({ id, approved }: { id: string; approved: boolean }) =>
+    setFactorApproval(id, approved),
+  )
+}
+
+export function useDeleteEmissionFactor(orgId: string) {
+  return useFactorMutation(orgId, (id: string) => deleteEmissionFactor(id))
+}
+
+export function useImportFactorPack(orgId: string) {
+  return useFactorMutation(orgId, (packId: string) => importFactorPack(orgId, packId))
 }
 
 export function useUnitsQuery() {

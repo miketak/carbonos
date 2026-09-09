@@ -1,0 +1,34 @@
+{
+ "id": "nga-2024-explosives",
+ "name": "Australian National Greenhouse Accounts Factors 2024: explosives",
+ "source": "Australian Government DCCEEW, National Greenhouse Accounts Factors, 2024",
+ "sourceUrl": "https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors",
+ "publicationYear": 2024,
+ "gwpBasis": "AR5",
+ "license": "CC BY 4.0",
+ "retrieved": "2026-09-09",
+ "notes": "The only widely used published factor for explosives; applied to Ghanaian mining by analogy. IPCC 2006 publishes none.",
+ "factors": [
+  {
+   "code": "NGA:2024:explosives",
+   "name": "Explosives detonation (ANFO, emulsion, heavy ANFO)",
+   "defaultScope": "SCOPE_1",
+   "defaultCategory": "PROCESS_EMISSIONS",
+   "scopeAgnostic": true,
+   "unit": "tonne",
+   "kgCo2ePerUnit": 170.0,
+   "co2": 170.0,
+   "ch4": 0,
+   "ch4Fossil": true,
+   "n2o": 0,
+   "hfcsKg": 0,
+   "blendComposition": null,
+   "blendGwpSource": null,
+   "biogenicCo2": 0,
+   "dataYear": 2024,
+   "sourceDetail": "NGA Factors 2024, explosives: 0.17 t CO2-e per t of explosive, all types",
+   "approved": true,
+   "notes": ""
+  }
+ ]
+}

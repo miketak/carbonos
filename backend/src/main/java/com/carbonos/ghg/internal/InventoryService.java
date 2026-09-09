@@ -1041,6 +1041,7 @@ public class InventoryService {
 		}
 
 		var factorFindings = new ArrayList<Finding>();
+		var co2eOnlyNamed = new java.util.HashSet<UUID>();
 		for (var assignment : included) {
 			if (!assignment.isClassified()) {
 				continue;
@@ -1048,6 +1049,22 @@ public class InventoryService {
 			var activity = assignment.getActivity();
 			var activityUnit = activity.getUnit();
 			var factorUnit = assignment.getEmissionFactor().getUnit();
+			// spec 02.1: an unapproved factor blocks; a validity window or a CO2e-only source is disclosed
+			var chosen = assignment.getEmissionFactor();
+			if (!chosen.isApproved()) {
+				factorFindings.add(new Finding(Severity.ERROR, "'" + activity.getActivityType() + "' uses '"
+						+ chosen.getName() + "', which is not approved. Approve it under Emission factors, or choose another."));
+			}
+			else if (!chosen.coversPeriod(inventory.getPeriodStart(), inventory.getPeriodEnd())) {
+				factorFindings.add(new Finding(Severity.WARNING, "'" + chosen.getName() + "' is valid "
+						+ (chosen.getValidFrom() == null ? "until " + chosen.getValidTo()
+								: "from " + chosen.getValidFrom() + (chosen.getValidTo() == null ? "" : " until " + chosen.getValidTo()))
+						+ ", which does not cover the reporting period."));
+			}
+			if (chosen.isCo2eOnly() && co2eOnlyNamed.add(chosen.getId())) {
+				factorFindings.add(new Finding(Severity.WARNING, "'" + chosen.getName()
+						+ "' publishes CO2e only: the by-gas table carries no CH4 or N2O for it, and the report says so."));
+			}
 			if (!isReconcilable(activityUnit, factorUnit)) {
 				factorFindings.add(new Finding(Severity.ERROR, "'" + activity.getActivityType()
 						+ "' is recorded in " + describeUnit(activityUnit) + " but its factor '"
