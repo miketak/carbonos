@@ -83,6 +83,11 @@ public class InventoryAssignment {
 	@Column(name = "proxy_justification", length = 500)
 	private String proxyJustification;
 
+	// the density that bridges a record in mass and a factor per litre, or the reverse (spec 02.2)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "density_id")
+	private Density density;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -165,8 +170,13 @@ public class InventoryAssignment {
 		return proxyJustification;
 	}
 
+	public Density getDensity() {
+		return density;
+	}
+
 	void classify(EmissionFactor factor, Scope scope, ActivityCategory category, LeaseType leaseType,
-			String scopeJustification, boolean proxy, String proxyJustification) {
+			String scopeJustification, boolean proxy, String proxyJustification, Density density) {
+		this.density = density;
 		this.emissionFactor = factor;
 		this.scope = scope;
 		this.category = category;

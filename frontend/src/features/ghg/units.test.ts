@@ -3,11 +3,46 @@ import type { Unit } from './api'
 import { convertQuantity, findUnit, groupUnits, unitDimension } from './units'
 
 const units: Unit[] = [
-  { code: 'kWh', label: 'Kilowatt-hour', dimension: 'ENERGY', toCanonical: 1 },
-  { code: 'MWh', label: 'Megawatt-hour', dimension: 'ENERGY', toCanonical: 1000 },
-  { code: 'litre', label: 'Litre', dimension: 'VOLUME', toCanonical: 0.001 },
-  { code: 'US-gallon', label: 'US gallon', dimension: 'VOLUME', toCanonical: 0.003785411784 },
-  { code: 'kg', label: 'Kilogram', dimension: 'MASS', toCanonical: 1 },
+  {
+    code: 'kWh',
+    label: 'Kilowatt-hour',
+    dimension: 'ENERGY',
+    toCanonical: 1,
+    custom: false,
+    definition: null,
+  },
+  {
+    code: 'MWh',
+    label: 'Megawatt-hour',
+    dimension: 'ENERGY',
+    toCanonical: 1000,
+    custom: false,
+    definition: null,
+  },
+  {
+    code: 'litre',
+    label: 'Litre',
+    dimension: 'VOLUME',
+    toCanonical: 0.001,
+    custom: false,
+    definition: null,
+  },
+  {
+    code: 'US-gallon',
+    label: 'US gallon',
+    dimension: 'VOLUME',
+    toCanonical: 0.003785411784,
+    custom: false,
+    definition: null,
+  },
+  {
+    code: 'kg',
+    label: 'Kilogram',
+    dimension: 'MASS',
+    toCanonical: 1,
+    custom: false,
+    definition: null,
+  },
 ]
 
 test('findUnit matches by code, case-insensitively', () => {

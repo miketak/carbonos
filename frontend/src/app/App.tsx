@@ -10,6 +10,7 @@ import { ActivityPage } from '../features/ghg/ActivityPage'
 import { BaseYearPage } from '../features/ghg/BaseYearPage'
 import { EntitiesPage } from '../features/ghg/EntitiesPage'
 import { EmissionFactorsPage } from '../features/ghg/EmissionFactorsPage'
+import { UnitsPage } from '../features/ghg/UnitsPage'
 import { FacilitiesPage } from '../features/ghg/FacilitiesPage'
 import { InventoriesPage } from '../features/ghg/InventoriesPage'
 import { InventoryDetailPage } from '../features/ghg/InventoryDetailPage'
@@ -62,6 +63,7 @@ export function App() {
           <Route path="inventories/:inventoryId/runs/:runId" element={<RunDetailPage />} />
           <Route path="base-year" element={<BaseYearPage />} />
           <Route path="factors" element={<EmissionFactorsPage />} />
+          <Route path="units" element={<UnitsPage />} />
         </Route>
         <Route
           path="/app/profile"

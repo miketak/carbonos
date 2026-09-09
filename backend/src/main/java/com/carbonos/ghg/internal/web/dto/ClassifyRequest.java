@@ -22,5 +22,7 @@ public record ClassifyRequest( //
 		// why the scope departs from the stream's or factor's default (spec 04.3)
 		@Size(min = 10, max = 500) String scopeJustification, //
 		Boolean proxy, //
-		@Size(min = 5, max = 500) String proxyJustification) {
+		@Size(min = 5, max = 500) String proxyJustification, //
+		// the density that converts a record in mass to a factor per litre, or the reverse (spec 02.2)
+		UUID densityId) {
 }

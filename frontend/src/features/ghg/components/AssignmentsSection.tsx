@@ -17,11 +17,12 @@ import {
   leaseLabels,
   scopeLabels,
 } from '../format'
-import { convertQuantity, DIMENSION_LABELS, unitDimension } from '../units'
+import { convertQuantity, DIMENSION_LABELS, needsDensity, unitDimension } from '../units'
 import {
   useAssignmentsQuery,
   useClassifyAssignment,
   useCoverageQuery,
+  useDensitiesQuery,
   useEmissionFactorsQuery,
   useExcludeAssignment,
   useIncludeAssignment,
@@ -34,6 +35,7 @@ import type {
   Assignment,
   CoverageRow,
   ClassifyInput,
+  Density,
   EmissionFactor,
   ExcludeInput,
   ExclusionReason,
@@ -105,17 +107,37 @@ function StatusPills({
   )
 }
 
-/** The "10,000 US-gallon → 37,854.12 litre × 2.66 kg CO₂e/litre" line, or null when no conversion applies. */
+/**
+ * The "10,000 US-gallon → 37,854.12 litre × 2.66 kg CO₂e/litre" line, through a
+ * density when mass meets volume (spec 02.2), or null when no conversion applies.
+ */
 function conversionPreview(
   units: Unit[],
   assignment: Assignment,
   factor: EmissionFactor,
+  density: Density | undefined,
 ): string | null {
   if (factor.unit.toLowerCase() === assignment.unit.toLowerCase()) return null
-  const converted = convertQuantity(units, assignment.quantity, assignment.unit, factor.unit)
+  let converted = convertQuantity(units, assignment.quantity, assignment.unit, factor.unit)
+  let via = ''
+  if (converted === null && density && needsDensity(units, assignment.unit, factor.unit)) {
+    const fromMass = unitDimension(units, assignment.unit) === 'MASS'
+    if (fromMass) {
+      const kg = convertQuantity(units, assignment.quantity, assignment.unit, 'kg')
+      converted =
+        kg === null ? null : convertQuantity(units, kg / density.kgPerLitre, 'litre', factor.unit)
+    } else {
+      const litres = convertQuantity(units, assignment.quantity, assignment.unit, 'litre')
+      converted =
+        litres === null
+          ? null
+          : convertQuantity(units, litres * density.kgPerLitre, 'kg', factor.unit)
+    }
+    via = ` (density of ${density.material}, ${density.kgPerLitre} kg/litre)`
+  }
   if (converted === null) return null
   const shown = converted.toLocaleString(undefined, { maximumFractionDigits: 4 })
-  return `${assignment.quantity.toLocaleString()} ${assignment.unit} → ${shown} ${factor.unit} × ${factor.kgCo2ePerUnit} kg CO₂e/${factor.unit}`
+  return `${assignment.quantity.toLocaleString()} ${assignment.unit} → ${shown} ${factor.unit}${via} × ${factor.kgCo2ePerUnit} kg CO₂e/${factor.unit}`
 }
 
 /** The category to send for a scope: the factor's default when it belongs, else the scope's first. */
@@ -133,22 +155,27 @@ function ClassifyControls({
   assignment,
   factors,
   units,
+  densities,
   editable,
   onClassify,
 }: {
   assignment: Assignment
   factors: EmissionFactor[]
   units: Unit[]
+  densities: Density[]
   editable: boolean
   onClassify: (input: ClassifyInput) => void
 }) {
   // CLASS-01, widened for conversion: offer factors whose unit shares the fact's
-  // dimension (convertible). For a custom/unrecognized unit, fall back to an
-  // exact-string match; those never auto-convert.
+  // dimension (convertible), and, when the organization has densities, factors
+  // across the mass-volume divide (spec 02.2). For an unregistered unit, fall
+  // back to an exact-string match; those never auto-convert.
   const dimension = unitDimension(units, assignment.unit)
+  const bridged = (factor: EmissionFactor) =>
+    densities.length > 0 && needsDensity(units, assignment.unit, factor.unit)
   const compatible = factors.filter((factor) =>
     dimension !== null
-      ? factor.dimension === dimension
+      ? factor.dimension === dimension || bridged(factor)
       : factor.unit.toLowerCase() === assignment.unit.toLowerCase(),
   )
   const selected = factors.find((factor) => factor.id === assignment.emissionFactorId)
@@ -157,7 +184,9 @@ function ClassifyControls({
     selected && !compatible.some((factor) => factor.id === selected.id)
       ? [selected, ...compatible]
       : compatible
-  const preview = selected ? conversionPreview(units, assignment, selected) : null
+  const density = densities.find((candidate) => candidate.id === assignment.densityId)
+  const densityNeeded = !!selected && needsDensity(units, assignment.unit, selected.unit)
+  const preview = selected ? conversionPreview(units, assignment, selected, density) : null
   const scope = assignment.scope ?? selected?.defaultScope ?? 'SCOPE_1'
   const leased = assignment.leaseType !== null
   const scopeLocked = !!selected && !selected.scopeAgnostic && !leased
@@ -176,6 +205,9 @@ function ClassifyControls({
               emissionFactorId: factor.id,
               scope: factor.defaultScope,
               category: factor.defaultCategory,
+              densityId: needsDensity(units, assignment.unit, factor.unit)
+                ? (assignment.densityId ?? undefined)
+                : undefined,
             })
         }}
         className={selectClasses}
@@ -195,6 +227,30 @@ function ClassifyControls({
         </p>
       )}
       {preview && <p className="text-xs text-ink-muted tabular-nums">{preview}</p>}
+      {selected && densityNeeded && (
+        <select
+          aria-label={`${assignment.activityType} density`}
+          value={assignment.densityId ?? ''}
+          disabled={!editable}
+          onChange={(event) =>
+            onClassify({
+              emissionFactorId: selected.id,
+              scope: assignment.scope ?? selected.defaultScope,
+              category: assignment.category ?? selected.defaultCategory,
+              densityId: event.target.value === '' ? undefined : event.target.value,
+            })
+          }
+          className={selectClasses}
+        >
+          <option value="">Choose the density that converts…</option>
+          {densities.map((candidate) => (
+            <option key={candidate.id} value={candidate.id}>
+              {candidate.material}, {candidate.kgPerLitre} kg/litre
+              {candidate.typical ? ' (typical value)' : ''}
+            </option>
+          ))}
+        </select>
+      )}
       {selected && (
         <div className="flex flex-wrap gap-1">
           <select
@@ -207,6 +263,7 @@ function ClassifyControls({
                 emissionFactorId: selected.id,
                 scope: chosen,
                 category: categoryFor(chosen, selected),
+                densityId: assignment.densityId ?? undefined,
               })
             }}
             className={`${selectClasses} w-auto flex-1`}
@@ -226,6 +283,7 @@ function ClassifyControls({
                 emissionFactorId: selected.id,
                 scope,
                 category: event.target.value as ActivityCategory,
+                densityId: assignment.densityId ?? undefined,
               })
             }
             className={`${selectClasses} w-auto flex-1`}
@@ -248,8 +306,13 @@ function ClassifyControls({
                       emissionFactorId: selected.id,
                       scope: selected.defaultScope,
                       category: selected.defaultCategory,
+                      densityId: assignment.densityId ?? undefined,
                     }
-                  : { emissionFactorId: selected.id, leaseType: lease },
+                  : {
+                      emissionFactorId: selected.id,
+                      leaseType: lease,
+                      densityId: assignment.densityId ?? undefined,
+                    },
               )
             }}
             className={`${selectClasses} w-full`}
@@ -426,7 +489,8 @@ export function AssignmentsSection({
   const assignmentsQuery = useAssignmentsQuery(inventoryId)
   const coverageQuery = useCoverageQuery(inventoryId)
   const factorsQuery = useEmissionFactorsQuery(organizationId)
-  const unitsQuery = useUnitsQuery()
+  const densitiesQuery = useDensitiesQuery(organizationId)
+  const unitsQuery = useUnitsQuery(organizationId)
   const sync = useSyncAssignments(inventoryId)
   const classify = useClassifyAssignment(inventoryId)
   const exclude = useExcludeAssignment(inventoryId)
@@ -435,6 +499,7 @@ export function AssignmentsSection({
 
   const assignments = assignmentsQuery.data
   const factors = factorsQuery.data ?? []
+  const densities = densitiesQuery.data ?? []
   const units = unitsQuery.data ?? []
 
   const onClassify = (assignment: Assignment) => (input: ClassifyInput) =>
@@ -537,6 +602,7 @@ export function AssignmentsSection({
                           assignment={assignment}
                           factors={factors}
                           units={units}
+                          densities={densities}
                           editable={editable}
                           onClassify={onClassify(assignment)}
                         />
@@ -582,6 +648,7 @@ export function AssignmentsSection({
                       assignment={assignment}
                       factors={factors}
                       units={units}
+                      densities={densities}
                       editable={editable}
                       onClassify={onClassify(assignment)}
                     />

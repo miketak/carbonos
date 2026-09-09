@@ -31,11 +31,12 @@ import {
   listCoverage,
   listAuditEvents,
   listBoundaryVersions,
+  listDensities,
   listEmissionFactors,
   listFacilities,
   listMarketFactors,
   listRuns,
-  listUnits,
+  listOrganizationUnits,
   publishInventory,
   reopenInventory,
   excludeFacility,
@@ -47,10 +48,38 @@ import {
 } from './api'
 
 const units: Unit[] = [
-  { code: 'litre', label: 'Litre', dimension: 'VOLUME', toCanonical: 0.001 },
-  { code: 'm3', label: 'Cubic metre', dimension: 'VOLUME', toCanonical: 1 },
-  { code: 'US-gallon', label: 'US gallon', dimension: 'VOLUME', toCanonical: 0.003785411784 },
-  { code: 'kWh', label: 'Kilowatt-hour', dimension: 'ENERGY', toCanonical: 1 },
+  {
+    code: 'litre',
+    label: 'Litre',
+    dimension: 'VOLUME',
+    toCanonical: 0.001,
+    custom: false,
+    definition: null,
+  },
+  {
+    code: 'm3',
+    label: 'Cubic metre',
+    dimension: 'VOLUME',
+    toCanonical: 1,
+    custom: false,
+    definition: null,
+  },
+  {
+    code: 'US-gallon',
+    label: 'US gallon',
+    dimension: 'VOLUME',
+    toCanonical: 0.003785411784,
+    custom: false,
+    definition: null,
+  },
+  {
+    code: 'kWh',
+    label: 'Kilowatt-hour',
+    dimension: 'ENERGY',
+    toCanonical: 1,
+    custom: false,
+    definition: null,
+  },
 ]
 
 const inventory: Inventory = {
@@ -218,6 +247,9 @@ const unclassified: Assignment = {
   scopeJustification: null,
   proxy: false,
   proxyJustification: null,
+  densityId: null,
+  densityMaterial: null,
+  densityKgPerLitre: null,
 }
 
 const classified: Assignment = {
@@ -274,7 +306,8 @@ beforeEach(() => {
   vi.mocked(voidRun).mockReset()
   vi.mocked(listBoundaryVersions).mockReset().mockResolvedValue([])
   vi.mocked(getBoundaryVersion).mockReset().mockResolvedValue(v1Full)
-  vi.mocked(listUnits).mockReset().mockResolvedValue(units)
+  vi.mocked(listOrganizationUnits).mockReset().mockResolvedValue(units)
+  vi.mocked(listDensities).mockReset().mockResolvedValue([])
   vi.mocked(listMarketFactors).mockReset().mockResolvedValue([])
   vi.mocked(listFacilities).mockReset().mockResolvedValue([])
   vi.mocked(syncAssignments).mockReset()
@@ -782,6 +815,79 @@ test('a methodology exclusion asks for a justification and an estimated magnitud
       reason: 'METHODOLOGY',
       justification: 'no published factor for sodium cyanide',
       estimatedKgCo2e: 8400,
+    }),
+  )
+})
+
+test('a record in mass against a factor per litre converts through the chosen density (spec 02.2)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listOrganizationUnits).mockResolvedValue([
+    ...units,
+    {
+      code: 'tonne',
+      label: 'Tonne',
+      dimension: 'MASS',
+      toCanonical: 1000,
+      custom: false,
+      definition: null,
+    },
+    {
+      code: 'kg',
+      label: 'Kilogram',
+      dimension: 'MASS',
+      toCanonical: 1,
+      custom: false,
+      definition: null,
+    },
+  ])
+  vi.mocked(listDensities).mockResolvedValue([
+    {
+      id: 'den-1',
+      organizationId: null,
+      typical: true,
+      material: 'Diesel',
+      kgPerLitre: 0.84,
+      source: 'Typical mid-range density',
+      note: null,
+    },
+    {
+      id: 'den-2',
+      organizationId: 'org-1',
+      typical: false,
+      material: 'Diesel (GOIL)',
+      kgPerLitre: 0.8325,
+      source: 'GOIL CoA',
+      note: null,
+    },
+  ])
+  const inTonnes = {
+    ...classified,
+    unit: 'tonne',
+    quantity: 12,
+    densityId: 'den-1',
+    densityMaterial: 'Diesel',
+    densityKgPerLitre: 0.84,
+  }
+  vi.mocked(listAssignments).mockResolvedValue([inTonnes])
+  vi.mocked(classifyAssignment).mockResolvedValue({ ...inTonnes, densityId: 'den-2' })
+  renderPage()
+
+  // 12 t = 12,000 kg / 0.84 = 14,285.71 litre, previewed with the density named
+  expect(
+    (
+      await screen.findAllByText(
+        /12 tonne → 14,285\.7143 litre \(density of Diesel, 0\.84 kg\/litre\)/,
+      )
+    )[0],
+  ).toBeInTheDocument()
+  const densityPicker = screen.getAllByLabelText('Diesel consumption density')[0]
+  await user.selectOptions(densityPicker, 'den-2')
+  await waitFor(() =>
+    expect(classifyAssignment).toHaveBeenCalledWith('as-1', {
+      emissionFactorId: 'ef-1',
+      scope: 'SCOPE_1',
+      category: 'MOBILE_COMBUSTION',
+      densityId: 'den-2',
     }),
   )
 })

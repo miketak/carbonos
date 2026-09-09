@@ -15,11 +15,20 @@ import {
   listActivityRevisions,
   listEvidence,
   listFacilities,
-  listUnits,
+  listOrganizationUnits,
   updateActivity,
 } from './api'
 
-const units: Unit[] = [{ code: 'litre', label: 'Litre', dimension: 'VOLUME', toCanonical: 0.001 }]
+const units: Unit[] = [
+  {
+    code: 'litre',
+    label: 'Litre',
+    dimension: 'VOLUME',
+    toCanonical: 0.001,
+    custom: false,
+    definition: null,
+  },
+]
 
 const facility: Facility = {
   id: 'fac-1',
@@ -68,7 +77,7 @@ function renderPage() {
 beforeEach(() => {
   vi.mocked(listActivities).mockReset().mockResolvedValue([diesel])
   vi.mocked(listFacilities).mockReset().mockResolvedValue([facility])
-  vi.mocked(listUnits).mockReset().mockResolvedValue(units)
+  vi.mocked(listOrganizationUnits).mockReset().mockResolvedValue(units)
   vi.mocked(listEvidence)
     .mockReset()
     .mockResolvedValue([

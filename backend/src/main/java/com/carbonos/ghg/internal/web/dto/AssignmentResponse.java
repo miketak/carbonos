@@ -21,12 +21,14 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 		String evidenceRef, boolean included, ExclusionReason exclusionReason, String exclusionDetail,
 		String exclusionJustification, BigDecimal estimatedKgCo2e,
 		boolean classified, Scope scope, ActivityCategory category, LeaseType leaseType, UUID emissionFactorId,
-		String factorName, String scopeJustification, boolean proxy, String proxyJustification) {
+		String factorName, String scopeJustification, boolean proxy, String proxyJustification, UUID densityId,
+		String densityMaterial, BigDecimal densityKgPerLitre) {
 
 	public static AssignmentResponse from(InventoryAssignment assignment) {
 		var activity = assignment.getActivity();
 		var factor = assignment.getEmissionFactor();
 		var stream = activity.getStream();
+		var density = assignment.getDensity();
 		return new AssignmentResponse(assignment.getId(), activity.getId(), activity.getFacility().getId(),
 				activity.getFacility().getName(), stream == null ? null : stream.getId(),
 				stream == null ? null : stream.getName(), stream == null ? null : stream.getKind(),
@@ -40,6 +42,7 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 				assignment.isClassified(), assignment.getScope(), assignment.getCategory(),
 				assignment.getLeaseType(), factor == null ? null : factor.getId(),
 				factor == null ? null : factor.getName(), assignment.getScopeJustification(), assignment.isProxy(),
-				assignment.getProxyJustification());
+				assignment.getProxyJustification(), density == null ? null : density.getId(),
+				density == null ? null : density.getMaterial(), density == null ? null : density.getKgPerLitre());
 	}
 }

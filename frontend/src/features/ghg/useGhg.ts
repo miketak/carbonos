@@ -7,6 +7,8 @@ import {
   clearEntityExclusion,
   clearFacilityExclusion,
   createActivity,
+  createCustomUnit,
+  createDensity,
   createEmissionFactor,
   createEntity,
   createFacility,
@@ -16,6 +18,8 @@ import {
   createStream,
   decideRecalculation,
   deleteActivity,
+  deleteCustomUnit,
+  deleteDensity,
   deleteEmissionFactor,
   deleteEntity,
   deleteEvidence,
@@ -45,6 +49,8 @@ import {
   listAuditEvents,
   listBoundaryVersions,
   listCoverage,
+  listCustomUnits,
+  listDensities,
   listEmissionFactors,
   listEvidence,
   listFactorPacks,
@@ -54,6 +60,7 @@ import {
   listMembers,
   listMarketFactors,
   listOrganizations,
+  listOrganizationUnits,
   listRuns,
   listStreams,
   listUnits,
@@ -75,6 +82,8 @@ import {
   supersedeInventory,
   syncAssignments,
   updateActivity,
+  updateCustomUnit,
+  updateDensity,
   updateEmissionFactor,
   updateEntity,
   updateFacility,
@@ -91,6 +100,8 @@ import type {
   BoundaryExclusionInput,
   BoundaryTreatmentInput,
   ClassifyInput,
+  CustomUnitInput,
+  DensityInput,
   EmissionFactorInput,
   EntityInput,
   EvidenceOwner,
@@ -113,6 +124,9 @@ export const factorsKey = (orgId: string) => ['ghg', 'emission-factors', orgId] 
 export const factorPacksKey = ['ghg', 'factor-packs'] as const
 export const membersKey = (orgId: string) => ['ghg', 'members', orgId] as const
 export const unitsKey = ['ghg', 'units'] as const
+export const organizationUnitsKey = (orgId: string) => ['ghg', 'units', orgId] as const
+export const customUnitsKey = (orgId: string) => ['ghg', 'custom-units', orgId] as const
+export const densitiesKey = (orgId: string) => ['ghg', 'densities', orgId] as const
 export const streamsKey = (orgId: string) => ['ghg', 'streams', orgId] as const
 export const organizationKey = (id: string) => ['ghg', 'organization', id] as const
 export const entitiesKey = (orgId: string) => ['ghg', 'entities', orgId] as const
@@ -261,9 +275,66 @@ export function useImportFactorPack(orgId: string) {
   return useFactorMutation(orgId, (packId: string) => importFactorPack(orgId, packId))
 }
 
-export function useUnitsQuery() {
-  // the unit registry is static, so cache it for the session
-  return useQuery({ queryKey: unitsKey, queryFn: listUnits, staleTime: Infinity })
+export function useUnitsQuery(orgId?: string) {
+  // the shared registry is static; an organization's view adds its custom units (spec 02.2)
+  return useQuery({
+    queryKey: orgId ? organizationUnitsKey(orgId) : unitsKey,
+    queryFn: () => (orgId ? listOrganizationUnits(orgId) : listUnits()),
+    staleTime: orgId ? undefined : Infinity,
+  })
+}
+
+// --- units and densities (spec 02.2) ------------------------------------------------
+
+export function useCustomUnitsQuery(orgId: string) {
+  return useQuery({ queryKey: customUnitsKey(orgId), queryFn: () => listCustomUnits(orgId) })
+}
+
+export function useDensitiesQuery(orgId: string) {
+  return useQuery({ queryKey: densitiesKey(orgId), queryFn: () => listDensities(orgId) })
+}
+
+function useUnitsMutation<TArgs, TResult>(
+  orgId: string,
+  mutationFn: (args: TArgs) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: customUnitsKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: organizationUnitsKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: densitiesKey(orgId) })
+    },
+  })
+}
+
+export function useCreateCustomUnit(orgId: string) {
+  return useUnitsMutation(orgId, (input: CustomUnitInput) => createCustomUnit(orgId, input))
+}
+
+export function useUpdateCustomUnit(orgId: string) {
+  return useUnitsMutation(orgId, ({ id, input }: { id: string; input: CustomUnitInput }) =>
+    updateCustomUnit(id, input),
+  )
+}
+
+export function useDeleteCustomUnit(orgId: string) {
+  return useUnitsMutation(orgId, (id: string) => deleteCustomUnit(id))
+}
+
+export function useCreateDensity(orgId: string) {
+  return useUnitsMutation(orgId, (input: DensityInput) => createDensity(orgId, input))
+}
+
+export function useUpdateDensity(orgId: string) {
+  return useUnitsMutation(orgId, ({ id, input }: { id: string; input: DensityInput }) =>
+    updateDensity(id, input),
+  )
+}
+
+export function useDeleteDensity(orgId: string) {
+  return useUnitsMutation(orgId, (id: string) => deleteDensity(id))
 }
 
 export function useEntitiesQuery(orgId: string) {

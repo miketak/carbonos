@@ -63,6 +63,9 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
                     {line.factorUnit}
                   </span>
                 )}
+                {line.conversionNote && (
+                  <span className="block text-xs text-ink-muted">{line.conversionNote}</span>
+                )}
               </td>
               <td className="px-3 py-2 whitespace-nowrap">
                 {line.kgCo2ePerUnit} kg/{line.factorUnit}

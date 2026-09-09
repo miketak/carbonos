@@ -34,7 +34,7 @@ export function ActivityFormModal({
   const create = useCreateActivity(organizationId)
   const update = useUpdateActivity(organizationId)
   const mutation = activity ? update : create
-  const unitsQuery = useUnitsQuery()
+  const unitsQuery = useUnitsQuery(organizationId)
   const [facilityId, setFacilityId] = useState(activity?.facilityId ?? facilities[0]?.id ?? '')
   const [activityType, setActivityType] = useState(activity?.activityType ?? '')
   const [quantity, setQuantity] = useState(activity ? String(activity.quantity) : '')
@@ -286,7 +286,7 @@ function UnitField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           error={error}
-          hint="Custom units only match a factor with the identical unit and won't auto-convert."
+          hint="An unregistered unit only matches a factor in the identical unit. Define it under Units as a multiple of a registered unit and it converts."
           required
         />
         <button
@@ -325,12 +325,12 @@ function UnitField({
         <optgroup key={group.dimension} label={group.label}>
           {group.units.map((unit) => (
             <option key={unit.code} value={unit.code}>
-              {unit.label} ({unit.code})
+              {unit.label} ({unit.code}){unit.definition ? `, ${unit.definition}` : ''}
             </option>
           ))}
         </optgroup>
       ))}
-      <option value={CUSTOM_UNIT}>Custom unit…</option>
+      <option value={CUSTOM_UNIT}>Unregistered unit…</option>
     </SelectField>
   )
 }

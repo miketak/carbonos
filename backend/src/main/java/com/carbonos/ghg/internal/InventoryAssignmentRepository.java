@@ -9,13 +9,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface InventoryAssignmentRepository extends JpaRepository<InventoryAssignment, UUID> {
 
 	// activity (and its facility) plus factor render with each assignment
-	@EntityGraph(attributePaths = { "activity", "activity.facility", "activity.stream", "emissionFactor" })
+	@EntityGraph(attributePaths = { "activity", "activity.facility", "activity.stream", "emissionFactor", "density" })
 	List<InventoryAssignment> findAllByInventoryIdOrderByCreatedAtAsc(UUID inventoryId);
 
 	// single-assignment mutations map to DTOs outside the transaction
-	@EntityGraph(attributePaths = { "activity", "activity.facility", "activity.stream", "emissionFactor" })
+	@EntityGraph(attributePaths = { "activity", "activity.facility", "activity.stream", "emissionFactor", "density" })
 	java.util.Optional<InventoryAssignment> findWithDetailsById(UUID id);
 
 	List<InventoryAssignment> findAllByActivityId(UUID activityId);
+
+	boolean existsByDensityId(UUID densityId);
 
 }

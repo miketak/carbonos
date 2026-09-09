@@ -39,6 +39,12 @@ const sections = [
     end: false,
     icon: 'M2 5h7a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H2zM22 5h-7a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h7z',
   },
+  {
+    to: 'units',
+    label: 'Units',
+    end: false,
+    icon: 'M3 6h18M3 12h18M3 18h18M7 3v3M12 3v3M17 3v3',
+  },
 ]
 
 const collapseKey = 'ghg.sidebar'
