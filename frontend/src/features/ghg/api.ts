@@ -139,6 +139,19 @@ export interface OrganizationInput {
   contact?: string
 }
 
+/** What a facility is (spec 03.4). */
+export type FacilityType =
+  | 'OFFICE'
+  | 'MINE'
+  | 'PROCESSING_PLANT'
+  | 'WAREHOUSE'
+  | 'PORT'
+  | 'CAMP'
+  | 'FLEET_DEPOT'
+  | 'CONSTRUCTION_SITE'
+  | 'WELL_SITE'
+  | 'OTHER'
+
 /** A legal entity the organization consolidates, with its Table 1 facts (spec 03.1). */
 export interface Entity {
   id: string
@@ -149,6 +162,13 @@ export interface Entity {
   operatedByCompany: boolean
   /** Financial control, a fact for franchises only (spec 03.3); implied by the subsidiary row. */
   controlledByCompany: boolean
+  /** When the company acquired and disposed of the entity, and where it is incorporated (spec 03.4). */
+  effectiveFrom: string | null
+  effectiveTo: string | null
+  jurisdiction: string | null
+  /** The financial-control decision that overrides the Table 1 row; null follows the row (spec 03.4). */
+  financialControlOverride: boolean | null
+  controlNote: string | null
   /** The entity the company holds this one through; null when held directly (spec 03.3). */
   parentEntityId: string | null
   /** The economic interest through the chain of parents. */
@@ -173,6 +193,11 @@ export interface EntityInput {
   /** Franchises only; refused for any other row. */
   controlledByCompany?: boolean
   parentEntityId?: string
+  effectiveFrom?: string
+  effectiveTo?: string
+  jurisdiction?: string
+  financialControlOverride?: boolean
+  controlNote?: string
 }
 
 /** A site: name, location and the legal entity it belongs to (spec 03.1). */
@@ -182,6 +207,14 @@ export interface Facility {
   location: string
   /** ISO 3166-1 alpha-2, for the report's country breakdown (spec 07.4). */
   country: string | null
+  /** The grid the facility draws from, its type and the lease its records inherit (spec 03.4). */
+  gridRegion: string | null
+  /** The region a location-based factor is suggested for: the grid region, else the country's alpha-3 code. */
+  effectiveGridRegion: string | null
+  facilityType: FacilityType | null
+  leaseType: LeaseType | null
+  leaseFrom: string | null
+  leaseTo: string | null
   entityId: string
   entityName: string
   relationshipType: RelationshipType
@@ -194,6 +227,11 @@ export interface FacilityInput {
   country?: string
   /** Absent, the facility belongs to the reporting company. */
   entityId?: string
+  gridRegion?: string
+  facilityType?: FacilityType
+  leaseType?: LeaseType
+  leaseFrom?: string
+  leaseTo?: string
 }
 
 /** kg of each gas per unit; for the HFC and PFC blends also the kg CO2e their source applied. */
@@ -244,6 +282,8 @@ export interface EmissionFactor {
   approved: boolean
   pack: string | null
   packCode: string | null
+  /** The grid a location-based electricity factor serves (spec 03.4). */
+  gridRegion: string | null
 }
 
 export interface EmissionFactorInput {
@@ -459,6 +499,8 @@ export interface InventoryInput {
   consolidationApproach: ConsolidationApproach
   gwpSet?: GwpSet
   straddleTreatment?: StraddleTreatment
+  /** Start with every operation that has a share under the approach in the boundary (spec 03.4). */
+  prefillBoundary?: boolean
 }
 
 export interface IntensityMetricInput {
@@ -531,6 +573,10 @@ export interface BoundaryEntity {
   table1Row: string | null
   effectiveFrom: string | null
   effectiveTo: string | null
+  /** The financial-control decision the treatment carries (spec 03.4). */
+  financialControlOverride: boolean | null
+  /** The share the entity would have under the approach from its facts; 0 means outside the boundary. */
+  shareUnderApproach: number
   /** Recorded when the whole entity is deliberately left out (spec 07.2). */
   exclusion: BoundaryExclusion | null
   facilities: BoundaryFacilityMember[]
@@ -638,6 +684,11 @@ export interface Assignment {
   scopeJustification: string | null
   proxy: boolean
   proxyJustification: string | null
+  /** The lease the facility is under on the record's period, which the classification inherits (spec 03.4). */
+  inheritedLeaseType: LeaseType | null
+  /** The location-based factor suggested for the facility's grid region (spec 03.4). */
+  suggestedFactorId: string | null
+  suggestedFactorName: string | null
   /** The density that converts a record in mass to a factor per litre, or the reverse (spec 02.2). */
   densityId: string | null
   densityMaterial: string | null
@@ -654,6 +705,8 @@ export interface ClassifyInput {
   proxy?: boolean
   proxyJustification?: string
   densityId?: string
+  /** The record is not under the facility's lease although its period overlaps it (spec 03.4). */
+  ignoreFacilityLease?: boolean
 }
 
 export interface ValidationFinding {
@@ -923,6 +976,8 @@ export interface Recalculation {
   aboveThreshold: boolean
   /** Who raised a methodology or error flag by hand; null for a detected structural change. */
   raisedBy: string | null
+  /** The run of the base-year inventory the affected share was computed from, when it was (spec 03.4). */
+  comparisonRunId: string | null
   status: RecalculationStatus
   runId: string | null
   decisionNote: string | null
@@ -957,7 +1012,9 @@ export interface BaseYearInput {
 export interface RaiseRecalculationInput {
   trigger: 'METHODOLOGY_CHANGE' | 'ERROR_CORRECTION'
   reason: string
-  affectedPercent: number
+  /** Typed by hand, or computed from a comparison run of the base-year inventory (spec 03.4). */
+  affectedPercent?: number
+  comparisonRunId?: string
 }
 
 export interface RecalculationDecisionInput {

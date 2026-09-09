@@ -46,6 +46,7 @@ const diesel: EmissionFactor = {
   approved: true,
   pack: null,
   packCode: null,
+  gridRegion: null,
 }
 
 const hfo: EmissionFactor = {
@@ -62,6 +63,7 @@ const hfo: EmissionFactor = {
   approved: false,
   pack: 'sector-mining',
   packCode: 'X',
+  gridRegion: null,
 }
 
 const pack: FactorPack = {

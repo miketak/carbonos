@@ -133,6 +133,10 @@ public class EmissionFactor {
 	@Column(name = "pack_code", length = 200)
 	private String packCode;
 
+	// the grid a location-based electricity factor serves (spec 03.4)
+	@Column(name = "grid_region", length = 40)
+	private String gridRegion;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -239,6 +243,14 @@ public class EmissionFactor {
 
 	public String getPackCode() {
 		return packCode;
+	}
+
+	public String getGridRegion() {
+		return gridRegion;
+	}
+
+	void setGridRegion(String gridRegion) {
+		this.gridRegion = gridRegion;
 	}
 
 	/** Whether the factor publishes CO2e only, so the by-gas table cannot split it (spec 02.1). */

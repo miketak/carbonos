@@ -43,7 +43,7 @@ class FacilityController {
 	ResponseEntity<FacilityResponse> create(@PathVariable UUID organizationId,
 			@Valid @RequestBody FacilityRequest body) {
 		var facility = ghgService.createFacility(organizationId, body.entityId(), body.name(), body.location(),
-				body.country());
+				body.country(), body.attributes());
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
 			.path("/api/ghg/facilities/{id}")
 			.buildAndExpand(facility.getId())
@@ -54,7 +54,7 @@ class FacilityController {
 	@PutMapping("/facilities/{id}")
 	FacilityResponse update(@PathVariable UUID id, @Valid @RequestBody FacilityRequest body) {
 		return FacilityResponse.from(ghgService.updateFacility(id, body.entityId(), body.name(), body.location(),
-				body.country()));
+				body.country(), body.attributes()));
 	}
 
 	@DeleteMapping("/facilities/{id}")

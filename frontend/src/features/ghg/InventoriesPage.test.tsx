@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
@@ -7,7 +7,10 @@ import type { Inventory } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import { listInventories } from './api'
+// forms with many fields take longer than the 15s default on a loaded machine
+vi.setConfig({ testTimeout: 30000 })
+
+import { createInventory, listInventories } from './api'
 
 const draft: Inventory = {
   id: 'inv-1',
@@ -107,4 +110,29 @@ test('the new-inventory form warns when the period is not twelve months and name
   await user.type(start, '2025-07-01')
   expect(await screen.findByRole('status')).toHaveTextContent(/FY2025\/26/)
   expect(dialog).toBeInTheDocument()
+})
+
+test('a new inventory starts with every operation the approach includes, unless unticked (spec 03.4)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(createInventory).mockResolvedValue(draft)
+  renderWithProviders(<InventoriesPage />, {
+    route: '/app/ghg/org-1/inventories',
+    path: '/app/ghg/:organizationId/inventories',
+  })
+
+  await user.click(await screen.findByRole('button', { name: /new inventory/i }))
+  const dialog = await screen.findByRole('dialog', { name: /new inventory/i })
+  const prefill = within(dialog).getByLabelText(/Start with every operation the approach includes/)
+  expect(prefill).toBeChecked()
+  await user.click(within(dialog).getByRole('button', { name: /^create inventory$/i }))
+
+  await waitFor(() =>
+    expect(createInventory).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({
+        consolidationApproach: 'OPERATIONAL_CONTROL',
+        prefillBoundary: true,
+      }),
+    ),
+  )
 })

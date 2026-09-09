@@ -70,6 +70,10 @@ public class BaseYearRecalculation {
 	@Column(name = "run_id")
 	private UUID runId;
 
+	// the run of the base-year inventory a manual candidate's share was computed from (spec 03.4)
+	@Column(name = "comparison_run_id")
+	private UUID comparisonRunId;
+
 	@Column(name = "decision_note", length = 500)
 	private String decisionNote;
 
@@ -161,6 +165,14 @@ public class BaseYearRecalculation {
 
 	public UUID getRunId() {
 		return runId;
+	}
+
+	public UUID getComparisonRunId() {
+		return comparisonRunId;
+	}
+
+	void setComparisonRunId(UUID comparisonRunId) {
+		this.comparisonRunId = comparisonRunId;
 	}
 
 	public String getDecisionNote() {

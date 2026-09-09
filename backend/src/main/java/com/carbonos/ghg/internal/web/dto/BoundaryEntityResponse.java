@@ -23,7 +23,8 @@ public record BoundaryEntityResponse(UUID entityId, String entityName, boolean r
 		RelationshipType relationshipType, BigDecimal economicInterestPercent, Boolean operatedByCompany,
 		Boolean controlledByCompany, BigDecimal effectiveEconomicInterestPercent, List<String> chain,
 		BigDecimal accountingShare, String table1Row, LocalDate effectiveFrom, LocalDate effectiveTo,
-		Exclusion exclusion, List<FacilityMember> facilities) {
+		Boolean financialControlOverride, BigDecimal shareUnderApproach, Exclusion exclusion,
+		List<FacilityMember> facilities) {
 
 	public record Exclusion(ExclusionReason reason, String detail) {
 		static Exclusion from(BoundaryExclusion exclusion) {
@@ -48,7 +49,7 @@ public record BoundaryEntityResponse(UUID entityId, String entityName, boolean r
 		if (treatment == null) {
 			return new BoundaryEntityResponse(entity.getId(), entity.getName(), entity.isReportingCompany(), false,
 					null, null, null, null, entity.effectiveEconomicInterestPercent(), entity.chain(), null, null, null,
-					null, exclusion, members);
+					null, entity.getFinancialControlOverride(), entity.share(approach), exclusion, members);
 		}
 		var chain = view.chain();
 		return new BoundaryEntityResponse(entity.getId(), entity.getName(), entity.isReportingCompany(), true,
@@ -57,8 +58,10 @@ public record BoundaryEntityResponse(UUID entityId, String entityName, boolean r
 				chain.effectiveInterestPercent(treatment.getEconomicInterestPercent()), chain.names(),
 				treatment.accountingShare(approach, chain.shareFactor()),
 				Table1.describe(treatment.getRelationshipType(), approach, treatment.getEconomicInterestPercent(),
-						treatment.isOperatedByCompany(), treatment.isControlledByCompany())
+						treatment.isOperatedByCompany(), treatment.isControlledByCompany(),
+						treatment.getFinancialControlOverride())
 						+ (chain.names().isEmpty() ? "" : "; held through " + String.join(" > ", chain.names())),
-				treatment.getEffectiveFrom(), treatment.getEffectiveTo(), exclusion, members);
+				treatment.getEffectiveFrom(), treatment.getEffectiveTo(), treatment.getFinancialControlOverride(),
+				entity.share(approach), exclusion, members);
 	}
 }

@@ -24,5 +24,7 @@ public record ClassifyRequest( //
 		Boolean proxy, //
 		@Size(min = 5, max = 500) String proxyJustification, //
 		// the density that converts a record in mass to a factor per litre, or the reverse (spec 02.2)
-		UUID densityId) {
+		UUID densityId, //
+		// the record is not under the facility's lease although its period overlaps it (spec 03.4)
+		Boolean ignoreFacilityLease) {
 }

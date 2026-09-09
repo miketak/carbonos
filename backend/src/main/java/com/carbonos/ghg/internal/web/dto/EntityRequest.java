@@ -1,6 +1,7 @@
 package com.carbonos.ghg.internal.web.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.carbonos.ghg.internal.GhgService;
@@ -26,10 +27,17 @@ public record EntityRequest( //
 		@DecimalMin("0") @DecimalMax("100") @Digits(integer = 3, fraction = 2) BigDecimal legalOwnershipPercent, //
 		@NotNull Boolean operatedByCompany, //
 		Boolean controlledByCompany, //
-		UUID parentEntityId) {
+		UUID parentEntityId, //
+		// spec 03.4: acquisition and disposal dates, jurisdiction, the financial-control decision
+		LocalDate effectiveFrom, //
+		LocalDate effectiveTo, //
+		@Size(min = 2, max = 2) String jurisdiction, //
+		Boolean financialControlOverride, //
+		@Size(max = 500) String controlNote) {
 
 	public GhgService.EntityFacts toFacts() {
 		return new GhgService.EntityFacts(name, relationshipType, economicInterestPercent, legalOwnershipPercent,
-				operatedByCompany, controlledByCompany, parentEntityId);
+				operatedByCompany, controlledByCompany, parentEntityId, effectiveFrom, effectiveTo, jurisdiction,
+				financialControlOverride, controlNote);
 	}
 }

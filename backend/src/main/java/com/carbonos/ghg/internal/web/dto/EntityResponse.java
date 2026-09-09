@@ -2,6 +2,7 @@ package com.carbonos.ghg.internal.web.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,7 +14,8 @@ public record EntityResponse(UUID id, String name, RelationshipType relationship
 		BigDecimal economicInterestPercent, BigDecimal legalOwnershipPercent, boolean operatedByCompany,
 		boolean controlledByCompany, UUID parentEntityId, BigDecimal effectiveEconomicInterestPercent,
 		List<String> chain, boolean reportingCompany, BigDecimal equityShare, BigDecimal financialControlShare,
-		BigDecimal operationalControlShare, Instant createdAt) {
+		BigDecimal operationalControlShare, LocalDate effectiveFrom, LocalDate effectiveTo, String jurisdiction,
+		Boolean financialControlOverride, String controlNote, Instant createdAt) {
 
 	/** The entity plus the share Table 1 gives it under each approach, chain included, so the page can show all three. */
 	public static EntityResponse from(LegalEntity entity) {
@@ -22,6 +24,8 @@ public record EntityResponse(UUID id, String name, RelationshipType relationship
 				entity.isControlledByCompany(), entity.getParent() == null ? null : entity.getParent().getId(),
 				entity.effectiveEconomicInterestPercent(), entity.chain(), entity.isReportingCompany(),
 				entity.share(ConsolidationApproach.EQUITY_SHARE), entity.share(ConsolidationApproach.FINANCIAL_CONTROL),
-				entity.share(ConsolidationApproach.OPERATIONAL_CONTROL), entity.getCreatedAt());
+				entity.share(ConsolidationApproach.OPERATIONAL_CONTROL), entity.getEffectiveFrom(),
+				entity.getEffectiveTo(), entity.getJurisdiction(), entity.getFinancialControlOverride(),
+				entity.getControlNote(), entity.getCreatedAt());
 	}
 }

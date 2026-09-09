@@ -20,5 +20,7 @@ public record InventoryRequest( //
 		@Min(1990) @Max(2100) Integer baseYear, //
 		@NotNull ConsolidationApproach consolidationApproach, //
 		GwpSet gwpSet, //
-		StraddleTreatment straddleTreatment) {
+		StraddleTreatment straddleTreatment, //
+		// start with every operation the approach includes in the boundary (spec 03.4); create only
+		Boolean prefillBoundary) {
 }

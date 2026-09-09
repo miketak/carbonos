@@ -18,7 +18,8 @@ public record BaseYearResponse(UUID id, UUID inventoryId, String inventoryName, 
 	public record RecalculationResponse(UUID id, RecalculationTrigger triggerType, String reason,
 			UUID triggeringInventoryId, UUID boundaryVersionId, Integer boundaryVersionNo, BigDecimal affectedPercent,
 			BigDecimal cumulativePercent, boolean aboveThreshold, String raisedBy, RecalculationStatus status,
-			UUID runId, String decisionNote, String decidedBy, Instant decidedAt, Instant createdAt) {
+			UUID runId, String decisionNote, String decidedBy, Instant decidedAt, Instant createdAt,
+			UUID comparisonRunId) {
 
 		public static RecalculationResponse from(BaseYearRecalculation recalculation) {
 			return new RecalculationResponse(recalculation.getId(), recalculation.getTriggerType(),
@@ -27,7 +28,7 @@ public record BaseYearResponse(UUID id, UUID inventoryId, String inventoryName, 
 					recalculation.getAffectedPercent(), recalculation.getCumulativePercent(),
 					recalculation.isAboveThreshold(), recalculation.getRaisedBy(), recalculation.getStatus(),
 					recalculation.getRunId(), recalculation.getDecisionNote(), recalculation.getDecidedBy(),
-					recalculation.getDecidedAt(), recalculation.getCreatedAt());
+					recalculation.getDecidedAt(), recalculation.getCreatedAt(), recalculation.getComparisonRunId());
 		}
 	}
 

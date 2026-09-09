@@ -223,6 +223,31 @@ function ClassifyControls({
           </option>
         ))}
       </select>
+      {!selected && assignment.suggestedFactorId && editable && (
+        <button
+          type="button"
+          className="self-start text-xs text-link hover:underline"
+          onClick={() => {
+            const factor = factors.find(
+              (candidate) => candidate.id === assignment.suggestedFactorId,
+            )
+            if (factor)
+              onClassify({
+                emissionFactorId: factor.id,
+                scope: factor.defaultScope,
+                category: factor.defaultCategory,
+              })
+          }}
+        >
+          Suggested for this facility's grid: {assignment.suggestedFactorName}
+        </button>
+      )}
+      {assignment.inheritedLeaseType && (
+        <p className="text-xs text-amber-700">
+          Leased facility: {leaseLabels[assignment.inheritedLeaseType].toLowerCase()} inherited
+          {assignment.leaseType === null && selected ? ' (set aside for this record)' : ''}.
+        </p>
+      )}
       {options.length === 0 && (
         <p className="text-xs text-ink-muted">
           No factor matches {assignment.unit}
@@ -311,6 +336,7 @@ function ClassifyControls({
                       scope: selected.defaultScope,
                       category: selected.defaultCategory,
                       densityId: assignment.densityId ?? undefined,
+                      ignoreFacilityLease: assignment.inheritedLeaseType !== null,
                     }
                   : {
                       emissionFactorId: selected.id,

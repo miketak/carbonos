@@ -3,6 +3,7 @@ package com.carbonos.ghg.internal;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -67,6 +68,23 @@ public class LegalEntity {
 	// the organization itself, the subsidiary facilities default to
 	@Column(name = "reporting_company", nullable = false)
 	private boolean reportingCompany;
+
+	// spec 03.4: when the company acquired and disposed of the entity, where it is incorporated, and the
+	// financial-control decision that overrides the Table 1 row (IFRS 10 control without a majority)
+	@Column(name = "effective_from")
+	private LocalDate effectiveFrom;
+
+	@Column(name = "effective_to")
+	private LocalDate effectiveTo;
+
+	@Column(length = 2)
+	private String jurisdiction;
+
+	@Column(name = "financial_control_override")
+	private Boolean financialControlOverride;
+
+	@Column(name = "control_note", length = 500)
+	private String controlNote;
 
 	// a removed row stays as a tombstone: who removed it, when and why (spec 04.4)
 	@Column(name = "deleted_at")
@@ -144,6 +162,36 @@ public class LegalEntity {
 		return reportingCompany;
 	}
 
+	public LocalDate getEffectiveFrom() {
+		return effectiveFrom;
+	}
+
+	public LocalDate getEffectiveTo() {
+		return effectiveTo;
+	}
+
+	public String getJurisdiction() {
+		return jurisdiction;
+	}
+
+	public Boolean getFinancialControlOverride() {
+		return financialControlOverride;
+	}
+
+	public String getControlNote() {
+		return controlNote;
+	}
+
+	/** The dates, jurisdiction and control decision (spec 03.4). */
+	void setStructure(LocalDate effectiveFrom, LocalDate effectiveTo, String jurisdiction,
+			Boolean financialControlOverride, String controlNote) {
+		this.effectiveFrom = effectiveFrom;
+		this.effectiveTo = effectiveTo;
+		this.jurisdiction = jurisdiction;
+		this.financialControlOverride = financialControlOverride;
+		this.controlNote = controlNote;
+	}
+
 	public Instant getCreatedAt() {
 		return createdAt;
 	}
@@ -189,7 +237,7 @@ public class LegalEntity {
 	/** The share Table 1 gives this entity's own row under an approach, before the chain. */
 	public BigDecimal ownShare(ConsolidationApproach approach) {
 		return Table1.share(relationshipType, approach, economicInterestPercent, operatedByCompany,
-				controlledByCompany);
+				controlledByCompany, financialControlOverride);
 	}
 
 	/**

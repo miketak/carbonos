@@ -171,6 +171,7 @@ function InventoryFormModal({
   const [approach, setApproach] = useState<ConsolidationApproach>('OPERATIONAL_CONTROL')
   const [gwpSet, setGwpSet] = useState<GwpSet>('AR5')
   const [straddleTreatment, setStraddleTreatment] = useState<StraddleTreatment>('PRO_RATE')
+  const [prefillBoundary, setPrefillBoundary] = useState(true)
   const periodMonths = wholeMonths(periodStart, periodEnd)
 
   const errors = fieldErrors(create.error)
@@ -187,6 +188,7 @@ function InventoryFormModal({
         consolidationApproach: approach,
         gwpSet,
         straddleTreatment,
+        prefillBoundary,
       },
       { onSuccess: (inventory) => onSaved(`${inventory.name} created.`) },
     )
@@ -276,6 +278,21 @@ function InventoryFormModal({
             {generalError}
           </p>
         )}
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={prefillBoundary}
+            onChange={(event) => setPrefillBoundary(event.target.checked)}
+            className="mt-0.5 size-4 accent-teal"
+          />
+          <span>
+            Start with every operation the approach includes in the boundary
+            <span className="block text-xs text-ink-muted">
+              Chapter 3: under a control approach every controlled operation is in by definition.
+              Leaving one out is then an exclusion with a reason.
+            </span>
+          </span>
+        </label>
         <div className="mt-2 flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel

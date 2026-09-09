@@ -167,6 +167,8 @@ const boundary: BoundaryEntity[] = [
     table1Row: 'joint venture under joint financial control; equity share: 40% economic interest',
     effectiveFrom: null,
     effectiveTo: null,
+    financialControlOverride: null,
+    shareUnderApproach: 1,
     exclusion: null,
     facilities: [
       {
@@ -200,6 +202,8 @@ const boundary: BoundaryEntity[] = [
     table1Row: null,
     effectiveFrom: null,
     effectiveTo: null,
+    financialControlOverride: null,
+    shareUnderApproach: 1,
     exclusion: null,
     facilities: [
       {
@@ -251,6 +255,9 @@ const unclassified: Assignment = {
   densityId: null,
   densityMaterial: null,
   densityKgPerLitre: null,
+  inheritedLeaseType: null,
+  suggestedFactorId: null,
+  suggestedFactorName: null,
 }
 
 const classified: Assignment = {
@@ -376,6 +383,7 @@ beforeEach(() => {
         approved: true,
         pack: null,
         packCode: null,
+        gridRegion: null,
       },
     ])
 })
@@ -887,6 +895,9 @@ test('a record in mass against a factor per litre converts through the chosen de
     densityId: 'den-1',
     densityMaterial: 'Diesel',
     densityKgPerLitre: 0.84,
+    inheritedLeaseType: null,
+    suggestedFactorId: null,
+    suggestedFactorName: null,
   }
   vi.mocked(searchAssignments).mockResolvedValue(pageOf([inTonnes]))
   vi.mocked(classifyAssignment).mockResolvedValue({ ...inTonnes, densityId: 'den-2' })
@@ -961,4 +972,83 @@ test('the coverage matrix names streams and flags one with no data (spec 04.5)',
   expect(within(matrix).getByTitle('Standby gensets, 2025-01: data')).toHaveTextContent('●')
   expect(within(matrix).getByTitle('Camp LPG, 2025-01: no data')).toHaveTextContent('○')
   expect(within(matrix).getByText('no data')).toBeInTheDocument()
+})
+
+test('an entity at 0% under the approach cannot be ticked in and says why (spec 03.4)', async () => {
+  vi.mocked(getBoundary).mockResolvedValue([
+    {
+      ...boundary[1],
+      entityName: 'Takoradi Port Co',
+      reportingCompany: false,
+      shareUnderApproach: 0,
+    },
+  ])
+  renderPage()
+
+  expect(await screen.findByText(/Outside the boundary under equity share/)).toBeInTheDocument()
+  expect(screen.getByLabelText('Takoradi Port Co in boundary')).toBeDisabled()
+})
+
+test('the activity view suggests the grid factor of the facility and names an inherited lease (spec 03.4)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listEmissionFactors).mockResolvedValue([
+    {
+      id: 'ef-grid',
+      organizationId: null,
+      name: 'Grid electricity, Ghana (2024)',
+      defaultScope: 'SCOPE_2',
+      defaultCategory: 'PURCHASED_ELECTRICITY',
+      scopeAgnostic: false,
+      unit: 'kWh',
+      dimension: 'ENERGY',
+      kgCo2ePerUnit: 0.469,
+      gases: { co2: 0, ch4: 0, n2o: 0, hfcs: 0, pfcs: 0, sf6: 0, nf3: 0, hfcsKg: 0, pfcsKg: 0 },
+      biogenicCo2KgPerUnit: 0,
+      gwpSet: 'AR5',
+      blendGwpSource: null,
+      blendComposition: null,
+      ch4Fossil: true,
+      co2eOnly: true,
+      source: 'Ember 2025',
+      sourceUrl: null,
+      publicationYear: 2025,
+      dataYear: 2024,
+      validFrom: null,
+      validTo: null,
+      note: null,
+      approved: true,
+      pack: 'ember-grid-2025',
+      packCode: 'EMBER:grid:GHA:2024',
+      gridRegion: 'GHA',
+    },
+  ])
+  vi.mocked(searchAssignments).mockResolvedValue(
+    pageOf([
+      {
+        ...unclassified,
+        activityType: 'Grid electricity',
+        unit: 'kWh',
+        quantity: 5000,
+        suggestedFactorId: 'ef-grid',
+        suggestedFactorName: 'Grid electricity, Ghana (2024)',
+        inheritedLeaseType: 'OPERATING_LEASE_IN',
+      },
+    ]),
+  )
+  vi.mocked(classifyAssignment).mockResolvedValue({ ...classified, emissionFactorId: 'ef-grid' })
+  renderPage()
+
+  expect(
+    (await screen.findAllByText(/operating lease \(leased in\) inherited/))[0],
+  ).toBeInTheDocument()
+  await user.click(
+    (await screen.findAllByRole('button', { name: /Suggested for this facility's grid/ }))[0],
+  )
+  await waitFor(() =>
+    expect(classifyAssignment).toHaveBeenCalledWith('as-1', {
+      emissionFactorId: 'ef-grid',
+      scope: 'SCOPE_2',
+      category: 'PURCHASED_ELECTRICITY',
+    }),
+  )
 })

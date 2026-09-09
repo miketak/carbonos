@@ -70,7 +70,8 @@ class InventoryController {
 	ResponseEntity<InventoryResponse> create(@PathVariable UUID organizationId,
 			@Valid @RequestBody InventoryRequest body) {
 		var inventory = inventoryService.create(organizationId, body.name(), body.periodStart(), body.periodEnd(),
-				body.purpose(), body.baseYear(), body.consolidationApproach(), body.gwpSet(), body.straddleTreatment());
+				body.purpose(), body.baseYear(), body.consolidationApproach(), body.gwpSet(), body.straddleTreatment(),
+				Boolean.TRUE.equals(body.prefillBoundary()));
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
 			.path("/api/ghg/inventories/{id}")
 			.buildAndExpand(inventory.getId())
@@ -287,7 +288,9 @@ class InventoryController {
 
 	@GetMapping("/inventories/{id}/assignments")
 	List<AssignmentResponse> assignments(@PathVariable UUID id) {
-		return inventoryService.listAssignments(id).stream().map(AssignmentResponse::from).toList();
+		var assignments = inventoryService.listAssignments(id);
+		var suggestions = inventoryService.suggestions(assignments);
+		return assignments.stream().map(a -> AssignmentResponse.from(a, suggestions.get(a.getId()))).toList();
 	}
 
 	/** The activity view searched, filtered and paged, with the counts by status (spec 04.5). */
@@ -295,8 +298,9 @@ class InventoryController {
 	AssignmentPageResponse assignmentsPage(@PathVariable UUID id, @RequestParam(required = false) String q,
 			@RequestParam(required = false) UUID facilityId, @RequestParam(required = false) String status,
 			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
-		return AssignmentPageResponse.from(inventoryService.searchAssignments(id,
-				new InventoryService.AssignmentQuery(q, facilityId, status, page, size)));
+		var result = inventoryService.searchAssignments(id,
+				new InventoryService.AssignmentQuery(q, facilityId, status, page, size));
+		return AssignmentPageResponse.from(result, inventoryService.suggestions(result.items()));
 	}
 
 	@PostMapping("/inventories/{id}/assignments/sync")
@@ -308,7 +312,7 @@ class InventoryController {
 	AssignmentResponse classify(@PathVariable UUID id, @Valid @RequestBody ClassifyRequest body) {
 		return AssignmentResponse.from(inventoryService.classify(id, body.emissionFactorId(), body.scope(),
 				body.category(), body.leaseType(), body.scopeJustification(), Boolean.TRUE.equals(body.proxy()),
-				body.proxyJustification(), body.densityId()));
+				body.proxyJustification(), body.densityId(), Boolean.TRUE.equals(body.ignoreFacilityLease())));
 	}
 
 	@PutMapping("/assignments/{id}/exclude")

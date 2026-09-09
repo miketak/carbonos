@@ -3,6 +3,7 @@ import type {
   BoundaryVersionSummary,
   ConsolidationApproach,
   ExclusionReason,
+  FacilityType,
   GhgScope,
   InventoryStatus,
   LeaseType,
@@ -81,6 +82,20 @@ export const leaseLabels: Record<LeaseType, string> = {
   OPERATING_LEASE_IN: 'Operating lease (leased in)',
   FINANCE_LEASE_OUT: 'Finance lease (leased out)',
   OPERATING_LEASE_OUT: 'Operating lease (leased out)',
+}
+
+/** What a facility is (spec 03.4). */
+export const facilityTypeLabels: Record<FacilityType, string> = {
+  OFFICE: 'Office',
+  MINE: 'Mine',
+  PROCESSING_PLANT: 'Processing plant',
+  WAREHOUSE: 'Warehouse',
+  PORT: 'Port or loadout',
+  CAMP: 'Camp',
+  FLEET_DEPOT: 'Fleet depot',
+  CONSTRUCTION_SITE: 'Construction site',
+  WELL_SITE: 'Well site',
+  OTHER: 'Other',
 }
 
 export const conventionLabels: Record<StructuralChangeConvention, string> = {

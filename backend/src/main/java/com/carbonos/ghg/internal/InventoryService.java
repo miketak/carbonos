@@ -114,13 +114,44 @@ public class InventoryService {
 	public Inventory create(UUID organizationId, String name, LocalDate periodStart, LocalDate periodEnd,
 			String purpose, Integer baseYear, ConsolidationApproach approach, GwpSet gwpSet,
 			StraddleTreatment straddleTreatment) {
+		return create(organizationId, name, periodStart, periodEnd, purpose, baseYear, approach, gwpSet,
+				straddleTreatment, false);
+	}
+
+	/**
+	 * With {@code prefillBoundary} (spec 03.4): every entity whose share under
+	 * the approach is above zero joins the boundary with all its facilities,
+	 * its window defaulted from its dates. Under a control approach every
+	 * controlled operation is in by definition; leaving one out is then a
+	 * deliberate exclusion with a reason.
+	 */
+	public Inventory create(UUID organizationId, String name, LocalDate periodStart, LocalDate periodEnd,
+			String purpose, Integer baseYear, ConsolidationApproach approach, GwpSet gwpSet,
+			StraddleTreatment straddleTreatment, boolean prefillBoundary) {
 		requirePeriod(periodStart, periodEnd);
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.checkWrite(organization);
-		return inventories.save(new Inventory(organization, name.trim(), periodStart, periodEnd, trimToNull(purpose),
-				baseYear, approach, gwpSet == null ? GwpSet.AR5 : gwpSet,
+		var inventory = inventories.save(new Inventory(organization, name.trim(), periodStart, periodEnd,
+				trimToNull(purpose), baseYear, approach, gwpSet == null ? GwpSet.AR5 : gwpSet,
 				straddleTreatment == null ? StraddleTreatment.PRO_RATE : straddleTreatment));
+		if (prefillBoundary) {
+			var facilitiesByEntity = facilities
+				.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(organizationId)
+				.stream()
+				.collect(Collectors.groupingBy(facility -> facility.getEntity().getId()));
+			for (var entity : entities
+				.findAllByOrganizationIdAndDeletedAtIsNullOrderByReportingCompanyDescCreatedAtAsc(organizationId)) {
+				var members = facilitiesByEntity.getOrDefault(entity.getId(), List.of());
+				if (members.isEmpty() || entity.share(approach).signum() == 0) {
+					continue;
+				}
+				var treatment = new BoundaryTreatment(inventory, entity);
+				members.forEach(treatment::includeFacility);
+				boundaryTreatments.save(treatment);
+			}
+		}
+		return inventory;
 	}
 
 	public Inventory update(UUID id, String name, LocalDate periodStart, LocalDate periodEnd, String purpose,
@@ -184,9 +215,9 @@ public class InventoryService {
 	/** Explicit overrides for an entity's treatment; a null field prefills from the entity on creation and keeps its value on update. */
 	public record TreatmentInput(RelationshipType relationshipType, BigDecimal economicInterestPercent,
 			Boolean operatedByCompany, Boolean controlledByCompany, LocalDate effectiveFrom, LocalDate effectiveTo,
-			boolean clearWindow) {
+			boolean clearWindow, Boolean financialControlOverride, boolean clearFinancialControlOverride) {
 		static TreatmentInput none() {
-			return new TreatmentInput(null, null, null, null, null, null, false);
+			return new TreatmentInput(null, null, null, null, null, null, false, null, false);
 		}
 	}
 
@@ -423,6 +454,12 @@ public class InventoryService {
 				input.operatedByCompany() != null ? input.operatedByCompany() : treatment.isOperatedByCompany(),
 				input.controlledByCompany() != null ? input.controlledByCompany() : treatment.isControlledByCompany(),
 				from, to);
+		if (input.clearFinancialControlOverride()) {
+			treatment.setFinancialControlOverride(null);
+		}
+		else if (input.financialControlOverride() != null) {
+			treatment.setFinancialControlOverride(input.financialControlOverride());
+		}
 	}
 
 	// --- inventory lifecycle (spec 05.1) --------------------------------------
@@ -875,8 +912,23 @@ public class InventoryService {
 	public InventoryAssignment classify(UUID assignmentId, UUID emissionFactorId, Scope scope,
 			ActivityCategory category, LeaseType leaseType, String scopeJustification, boolean proxy,
 			String proxyJustification, UUID densityId) {
+		return classify(assignmentId, emissionFactorId, scope, category, leaseType, scopeJustification, proxy,
+				proxyJustification, densityId, false);
+	}
+
+	/**
+	 * With the facility's lease (spec 03.4): a record whose period overlaps the
+	 * facility's lease inherits its lease type unless one is chosen by hand or
+	 * {@code ignoreFacilityLease} says the record is not under it.
+	 */
+	public InventoryAssignment classify(UUID assignmentId, UUID emissionFactorId, Scope scope,
+			ActivityCategory category, LeaseType leaseType, String scopeJustification, boolean proxy,
+			String proxyJustification, UUID densityId, boolean ignoreFacilityLease) {
 		var assignment = getAssignment(assignmentId);
 		requireEditable(assignment.getInventory());
+		if (leaseType == null && !ignoreFacilityLease) {
+			leaseType = inheritedLease(assignment);
+		}
 		var factor = emissionFactors.findById(emissionFactorId)
 			.orElseThrow(() -> GhgNotFoundException.emissionFactor(emissionFactorId));
 		// spec 02.2: a record in mass against a factor per litre (or the reverse) needs a density
@@ -985,6 +1037,61 @@ public class InventoryService {
 		requireEditable(assignment.getInventory());
 		assignment.include();
 		return assignment;
+	}
+
+	/** The lease the record's facility is under over the record's period (spec 03.4), or null. */
+	static LeaseType inheritedLease(InventoryAssignment assignment) {
+		var activity = assignment.getActivity();
+		return activity.getFacility().leaseOver(activity.getPeriodStart(), activity.getPeriodEnd());
+	}
+
+	/** The grid factor suggested for a record's facility (spec 03.4): the newest approved one of its region. */
+	public record Suggestion(UUID factorId, String factorName) {
+	}
+
+	@Transactional(readOnly = true)
+	public Map<UUID, Suggestion> suggestions(List<InventoryAssignment> assignments) {
+		var result = new HashMap<UUID, Suggestion>();
+		if (assignments.isEmpty()) {
+			return result;
+		}
+		var organizationId = assignments.getFirst().getInventory().getOrganization().getId();
+		var byRegion = new HashMap<String, EmissionFactor>();
+		for (var factor : emissionFactors
+			.findAllByOrganizationIdIsNullOrOrganizationIdOrderByDefaultScopeAscNameAsc(organizationId)) {
+			if (factor.getGridRegion() == null || !factor.isApproved()
+					|| factor.getDefaultCategory() != ActivityCategory.PURCHASED_ELECTRICITY) {
+				continue;
+			}
+			var current = byRegion.get(factor.getGridRegion());
+			var newer = current == null || year(factor) > year(current)
+					|| (year(factor) == year(current) && current.getOrganizationId() == null
+							&& factor.getOrganizationId() != null);
+			if (newer) {
+				byRegion.put(factor.getGridRegion(), factor);
+			}
+		}
+		for (var assignment : assignments) {
+			var activity = assignment.getActivity();
+			var stream = activity.getStream();
+			var electricity = stream != null ? stream.getKind() == StreamKind.PURCHASED_ELECTRICITY
+					: assignment.getCategory() == ActivityCategory.PURCHASED_ELECTRICITY
+							|| activity.getUnit().toLowerCase(Locale.ROOT).endsWith("wh");
+			var region = activity.getFacility().effectiveGridRegion();
+			if (!electricity || region == null) {
+				continue;
+			}
+			var factor = byRegion.get(region);
+			if (factor != null) {
+				result.put(assignment.getId(), new Suggestion(factor.getId(), factor.getName()));
+			}
+		}
+		return result;
+	}
+
+	private static int year(EmissionFactor factor) {
+		return factor.getDataYear() != null ? factor.getDataYear()
+				: factor.getPublicationYear() != null ? factor.getPublicationYear() : 0;
 	}
 
 	// --- validation gates ----------------------------------------------------

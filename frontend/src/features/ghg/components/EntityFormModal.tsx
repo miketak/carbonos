@@ -52,6 +52,17 @@ export function EntityFormModal({
       : String(entity.legalOwnershipPercent),
   )
   const [operatedByCompany, setOperatedByCompany] = useState(entity?.operatedByCompany ?? true)
+  const [effectiveFrom, setEffectiveFrom] = useState(entity?.effectiveFrom ?? '')
+  const [effectiveTo, setEffectiveTo] = useState(entity?.effectiveTo ?? '')
+  const [jurisdiction, setJurisdiction] = useState(entity?.jurisdiction ?? '')
+  const [controlDecision, setControlDecision] = useState<'' | 'true' | 'false'>(
+    entity?.financialControlOverride === null || entity?.financialControlOverride === undefined
+      ? ''
+      : entity.financialControlOverride
+        ? 'true'
+        : 'false',
+  )
+  const [controlNote, setControlNote] = useState(entity?.controlNote ?? '')
 
   const errors = fieldErrors(mutation.error)
   const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
@@ -66,6 +77,12 @@ export function EntityFormModal({
       operatedByCompany,
       controlledByCompany: relationshipType === 'FRANCHISE' ? controlledByCompany : undefined,
       parentEntityId: parentEntityId === '' ? undefined : parentEntityId,
+      effectiveFrom: effectiveFrom === '' ? undefined : effectiveFrom,
+      effectiveTo: effectiveTo === '' ? undefined : effectiveTo,
+      jurisdiction: jurisdiction.trim() === '' ? undefined : jurisdiction.trim().toUpperCase(),
+      financialControlOverride:
+        reportingCompany || controlDecision === '' ? undefined : controlDecision === 'true',
+      controlNote: controlNote.trim() === '' ? undefined : controlNote.trim(),
     }
     const handlers = {
       onSuccess: () => onSaved(`${name.trim()} ${entity ? 'updated' : 'added'}.`),
@@ -150,6 +167,29 @@ export function EntityFormModal({
               </label>
             )}
             <SelectField
+              label="Financial control"
+              value={controlDecision}
+              onChange={(event) => setControlDecision(event.target.value as '' | 'true' | 'false')}
+              error={errors?.financialControlOverride}
+              hint="Chapter 3: control is the ability to direct policies, not a percentage. A decision here overrides the Table 1 row under the financial-control approach."
+            >
+              <option value="">Follows the Table 1 row</option>
+              <option value="true">
+                Consolidated under financial control (IFRS 10), whatever the holding
+              </option>
+              <option value="false">Not financially controlled, whatever the holding</option>
+            </SelectField>
+            {controlDecision !== '' && (
+              <InputField
+                label="Basis of the decision"
+                placeholder="Board control under the shareholders' agreement of 2023"
+                value={controlNote}
+                onChange={(event) => setControlNote(event.target.value)}
+                error={errors?.controlNote}
+                maxLength={500}
+              />
+            )}
+            <SelectField
               label="Held through"
               value={parentEntityId}
               onChange={(event) => setParentEntityId(event.target.value)}
@@ -165,6 +205,33 @@ export function EntityFormModal({
             </SelectField>
           </>
         )}
+        <div className="grid grid-cols-2 gap-3">
+          <InputField
+            label="Acquired on (optional)"
+            type="date"
+            value={effectiveFrom}
+            onChange={(event) => setEffectiveFrom(event.target.value)}
+            error={errors?.effectiveFrom}
+            hint="Every inventory's membership window starts here."
+          />
+          <InputField
+            label="Disposed of on (optional)"
+            type="date"
+            min={effectiveFrom || undefined}
+            value={effectiveTo}
+            onChange={(event) => setEffectiveTo(event.target.value)}
+            error={errors?.effectiveTo}
+          />
+        </div>
+        <InputField
+          label="Jurisdiction (optional)"
+          placeholder="GH"
+          maxLength={2}
+          value={jurisdiction}
+          onChange={(event) => setJurisdiction(event.target.value)}
+          error={errors?.jurisdiction}
+          hint="ISO 3166-1 alpha-2 code of the country of incorporation."
+        />
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">
             {generalError}

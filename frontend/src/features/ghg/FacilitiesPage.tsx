@@ -8,7 +8,7 @@ import { problemDetail } from '../../lib/api'
 import { FacilityFormModal } from './components/FacilityFormModal'
 import { RemoveDialog } from './components/RemoveDialog'
 import { StreamsModal } from './components/StreamsModal'
-import { relationshipShortLabels } from './format'
+import { facilityTypeLabels, leaseLabels, relationshipShortLabels } from './format'
 import { useDeleteFacility, useEntitiesQuery, useFacilitiesQuery } from './useGhg'
 import type { Facility } from './api'
 
@@ -98,7 +98,23 @@ export function FacilitiesPage() {
               {facilities.map((facility) => (
                 <tr key={facility.id} className="border-b border-teal/5 last:border-0">
                   <td className="px-4 py-3 font-medium">{facility.name}</td>
-                  <td className="px-4 py-3 text-ink-muted">{facility.location}</td>
+                  <td className="px-4 py-3 text-ink-muted">
+                    {facility.location}
+                    {(facility.facilityType || facility.effectiveGridRegion) && (
+                      <span className="block text-xs">
+                        {facility.facilityType ? facilityTypeLabels[facility.facilityType] : ''}
+                        {facility.facilityType && facility.effectiveGridRegion ? ' · ' : ''}
+                        {facility.effectiveGridRegion ? `grid ${facility.effectiveGridRegion}` : ''}
+                      </span>
+                    )}
+                    {facility.leaseType && (
+                      <span className="block text-xs text-amber-700">
+                        {leaseLabels[facility.leaseType]}
+                        {facility.leaseFrom ? ` from ${facility.leaseFrom}` : ''}
+                        {facility.leaseTo ? ` until ${facility.leaseTo}` : ''}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {facility.entityName}
                     <span className="block text-xs text-ink-muted">

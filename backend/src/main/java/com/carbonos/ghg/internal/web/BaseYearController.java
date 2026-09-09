@@ -57,8 +57,8 @@ class BaseYearController {
 	@PostMapping("/recalculations")
 	@ResponseStatus(HttpStatus.CREATED)
 	BaseYearResponse raise(@PathVariable UUID organizationId, @Valid @RequestBody RaiseRecalculationRequest body) {
-		return BaseYearResponse
-			.from(baseYearService.raise(organizationId, body.trigger(), body.reason(), body.affectedPercent()));
+		return BaseYearResponse.from(baseYearService.raise(organizationId, body.trigger(), body.reason(),
+				body.affectedPercent(), body.comparisonRunId()));
 	}
 
 	@PostMapping("/recalculations/{recalculationId}/decide")
