@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import com.carbonos.ghg.internal.ActivityCategory;
+import com.carbonos.ghg.internal.DataQuality;
 import com.carbonos.ghg.internal.GhgRunLine;
 import com.carbonos.ghg.internal.LeaseType;
 import com.carbonos.ghg.internal.MarketInstrument;
@@ -14,6 +15,7 @@ import com.carbonos.ghg.internal.Scope2MarketBasis;
 public record RunLineResponse(UUID id, UUID activityId, UUID facilityId, String facilityName, UUID entityId,
 		String entityName, String country, String activityType, String evidenceRef, UUID factorId, String factorName,
 		String streamName, String scopeJustification, boolean proxy, String proxyJustification,
+		DataQuality dataQuality, Integer dataQualityTier, BigDecimal uncertaintyPercent, String evidenceFiles,
 		Scope scope, ActivityCategory category, LeaseType leaseType, BigDecimal quantity, String unit,
 		String factorUnit, BigDecimal convertedQuantity, BigDecimal conversionFactor, BigDecimal kgCo2ePerUnit,
 		BigDecimal weight, LocalDate periodStart, LocalDate periodEnd, long periodDays, long coveredDays,
@@ -26,7 +28,8 @@ public record RunLineResponse(UUID id, UUID activityId, UUID facilityId, String 
 		return new RunLineResponse(line.getId(), line.getActivityId(), line.getFacilityId(), line.getFacilityName(),
 				line.getEntityId(), line.getEntityName(), line.getCountry(), line.getActivityType(),
 				line.getEvidenceRef(), line.getFactorId(), line.getFactorName(), line.getStreamName(),
-				line.getScopeJustification(), line.isProxy(), line.getProxyJustification(), line.getScope(), line.getCategory(), line.getLeaseType(), line.getQuantity(),
+				line.getScopeJustification(), line.isProxy(), line.getProxyJustification(), line.getDataQuality(),
+				line.getDataQualityTier(), line.getUncertaintyPercent(), line.getEvidenceFiles(), line.getScope(), line.getCategory(), line.getLeaseType(), line.getQuantity(),
 				line.getUnit(), line.getFactorUnit(), line.getConvertedQuantity(), line.getConversionFactor(),
 				line.getKgCo2ePerUnit(), line.getWeight(), line.getPeriodStart(), line.getPeriodEnd(),
 				line.getPeriodDays(), line.getCoveredDays(), line.getPeriodShare(), line.getPeriodNote(),

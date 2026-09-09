@@ -1269,7 +1269,7 @@ class GhgApiIntegrationTests {
 			.content("""
 					{"facilityId": "%s", "activityType": "Diesel consumption", "quantity": 1200,
 					 "unit": "litre", "periodStart": "2025-03-15", "periodEnd": "2025-03-15", "evidenceRef": "INV-2938-corrected",
-					 "dataQuality": "MEASURED"}""".formatted(facilityId)))
+					 "dataQuality": "MEASURED", "reason": "meter reading reconciled with the invoice"}""".formatted(facilityId)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.quantity").value(1200.0))
 			.andExpect(jsonPath("$.evidenceRef").value("INV-2938-corrected"));
@@ -1517,7 +1517,7 @@ class GhgApiIntegrationTests {
 		classify(dieselAssignment, DIESEL_FACTOR);
 		mvc.perform(put("/api/ghg/assignments/" + anfoAssignment + "/exclude").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"reason": "METHODOLOGY"}"""))
+					{"reason": "METHODOLOGY", "justification": "emulsion explosive without a published factor", "estimatedKgCo2e": 120}"""))
 			.andExpect(status().isOk());
 		freeze(inventoryId);
 		String firstRun = runAndGetId(inventoryId, "Run 001");
@@ -1935,7 +1935,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(put("/api/ghg/assignments/"
 				+ JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + waste + "')].id").getFirst()
 				+ "/exclude").with(asMember()).with(csrf()).contentType("application/json").content("""
-						{"reason": "NOT_APPLICABLE"}"""))
+						{"reason": "NOT_APPLICABLE", "justification": "not a source of this inventory", "estimatedKgCo2e": 0}"""))
 			.andExpect(status().isOk());
 		freeze(ar6Id);
 		run(ar6Id, "Run 001").andExpect(status().isCreated())
@@ -2770,7 +2770,7 @@ class GhgApiIntegrationTests {
 		var ar6Listing = body(mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/assignments").with(asMember())));
 		mvc.perform(put("/api/ghg/assignments/" + JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + fuel + "')].id").getFirst()
 				+ "/exclude").with(asMember()).with(csrf()).contentType("application/json").content("""
-						{"reason": "NOT_APPLICABLE"}"""))
+						{"reason": "NOT_APPLICABLE", "justification": "not a source of this inventory", "estimatedKgCo2e": 0}"""))
 			.andExpect(status().isOk());
 		freeze(ar6Id);
 		// AR6: 0.23 x 771 + 0.25 x 3,740 + 0.52 x 1,530 = 177.33 + 935 + 795.6 = 1,907.93 per kg; 10 kg = 19,079.3
@@ -2884,5 +2884,193 @@ class GhgApiIntegrationTests {
 		mvc.perform(delete("/api/ghg/organizations/" + orgId + "/members/" + abenaMember).with(asMember()).with(csrf()))
 			.andExpect(status().isNoContent());
 		mvc.perform(get("/api/ghg/organizations/" + orgId).with(as(abena))).andExpect(status().isNotFound());
+	}
+	// --- data quality, evidence, corrections and justified exclusions (spec 04.4) --------------
+
+	@Test
+	void activityDataCarriesQualityEvidenceCorrectionsAndJustifiedExclusions() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var facilityId = createFacility(orgId, "Nkran Mine");
+		var diesel = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
+		var cyanide = createActivity(orgId, facilityId, "Sodium cyanide", "12", "tonne", "2025-03-20");
+
+		// a record carries a quality tier and an uncertainty; the tier defaults from the method
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + diesel + "')].dataQualityTier").value(1))
+			.andExpect(jsonPath("$[?(@.id == '" + diesel + "')].dataQualityTierLabel")
+				.value("Metered or invoiced primary data"));
+		var tiered = mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"facilityId": "%s", "activityType": "Grinding media", "quantity": 40, "unit": "tonne",
+					 "periodStart": "2025-01-01", "periodEnd": "2025-12-31", "dataQuality": "ESTIMATED",
+					 "dataQualityTier": 4, "uncertaintyPercent": 25}""".formatted(facilityId)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.dataQualityTier").value(4))
+			.andExpect(jsonPath("$.uncertaintyPercent").value(25.0))
+			.andReturn();
+		String media = JsonPath.read(tiered.getResponse().getContentAsString(), "$.id");
+
+		// a correction needs a reason and leaves a revision with the old and new values
+		mvc.perform(put("/api/ghg/activities/" + diesel).with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"facilityId": "%s", "activityType": "Diesel consumption", "quantity": 1200, "unit": "litre",
+					 "periodStart": "2025-03-15", "periodEnd": "2025-03-15", "dataQuality": "MEASURED"}"""
+				.formatted(facilityId)))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.reason").exists());
+		mvc.perform(put("/api/ghg/activities/" + diesel).with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"facilityId": "%s", "activityType": "Diesel consumption", "quantity": 1200, "unit": "litre",
+					 "periodStart": "2025-03-15", "periodEnd": "2025-03-15", "dataQuality": "MEASURED",
+					 "uncertaintyPercent": 2, "reason": "dispensing log reconciled with the supplier invoice"}"""
+				.formatted(facilityId)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.quantity").value(1200.0));
+		mvc.perform(get("/api/ghg/activities/" + diesel + "/revisions").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].kind").value("CORRECTED"))
+			.andExpect(jsonPath("$[0].changedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$[0].reason").value("dispensing log reconciled with the supplier invoice"))
+			.andExpect(jsonPath("$[0].changes[?(@.field == 'quantity')].before").value("1000"))
+			.andExpect(jsonPath("$[0].changes[?(@.field == 'quantity')].after").value("1200"))
+			.andExpect(jsonPath("$[0].changes[?(@.field == 'uncertaintyPercent')].after").value("2"));
+
+		// evidence: a file in the object store and a link, listed, downloadable, tenant-scoped
+		var pdf = new org.springframework.mock.web.MockMultipartFile("file", "invoice-2938.pdf", "application/pdf",
+				"%PDF-1.4 fuel invoice".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		var uploaded = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/activities/" + diesel + "/evidence").file(pdf).with(asMember()).with(csrf()))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.kind").value("FILE"))
+			.andExpect(jsonPath("$.name").value("invoice-2938.pdf"))
+			.andExpect(jsonPath("$.contentType").value("application/pdf"))
+			.andReturn();
+		String evidenceId = JsonPath.read(uploaded.getResponse().getContentAsString(), "$.id");
+		var word = new org.springframework.mock.web.MockMultipartFile("file", "notes.exe", "application/octet-stream",
+				"MZ binary".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/activities/" + diesel + "/evidence").file(word).with(asMember()).with(csrf()))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.file").exists());
+		mvc.perform(post("/api/ghg/activities/" + diesel + "/evidence/links").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"name": "Fuel register (SharePoint)", "url": "https://docs.example.com/fuel/2025-03"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.kind").value("LINK"));
+		mvc.perform(get("/api/ghg/activities/" + diesel + "/evidence").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2));
+		mvc.perform(get("/api/ghg/evidence/" + evidenceId).with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Type", "application/pdf"))
+			.andExpect(content().string("%PDF-1.4 fuel invoice"));
+		mvc.perform(get("/api/ghg/evidence/" + evidenceId).with(asOutsider())).andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + diesel + "')].evidenceCount").value(2))
+			.andExpect(jsonPath("$[?(@.id == '" + diesel + "')].revisionCount").value(1));
+
+		// a manual exclusion needs a justification and an estimated magnitude
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId);
+		var dieselAssignment = syncAndGetAssignmentId(inventoryId, diesel);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		String cyanideAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + cyanide + "')].id").getFirst();
+		String mediaAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + media + "')].id").getFirst();
+		mvc.perform(put("/api/ghg/assignments/" + cyanideAssignment + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "METHODOLOGY"}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.justification").exists());
+		mvc.perform(put("/api/ghg/assignments/" + cyanideAssignment + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "METHODOLOGY", "justification": "no published factor for sodium cyanide"}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.estimatedKgCo2e").exists());
+		mvc.perform(put("/api/ghg/assignments/" + cyanideAssignment + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "METHODOLOGY", "justification": "no published factor for sodium cyanide; supplier study pending",
+					 "estimatedKgCo2e": 8400}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.exclusionJustification").value("no published factor for sodium cyanide; supplier study pending"))
+			.andExpect(jsonPath("$.estimatedKgCo2e").value(8400.0));
+		mvc.perform(put("/api/ghg/assignments/" + mediaAssignment + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "NOT_APPLICABLE", "justification": "grinding media wear is not a combustion source", "estimatedKgCo2e": 0}"""))
+			.andExpect(status().isOk());
+		classify(dieselAssignment, DIESEL_FACTOR);
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/report-metadata").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"assuranceLevel": "UNVERIFIED", "intensityMetrics": [],
+					 "uncertaintyStatement": "Fuel data are metered; the cyanide estimate rests on supplier averages."}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.uncertaintyStatement").value(org.hamcrest.Matchers.startsWith("Fuel data are metered")));
+		freeze(inventoryId);
+		var runId = runAndGetId(inventoryId, "Run 001");
+
+		// the run's exclusions and lines carry the justification, the magnitude, the tier and the evidence
+		mvc.perform(get("/api/ghg/runs/" + runId).with(asMember()))
+			.andExpect(jsonPath("$.exclusions[?(@.activityId == '" + cyanide + "')].exclusionJustification")
+				.value("no published factor for sodium cyanide; supplier study pending"))
+			.andExpect(jsonPath("$.exclusions[?(@.activityId == '" + cyanide + "')].estimatedKgCo2e").value(8400.0))
+			.andExpect(jsonPath("$.lines[0].dataQualityTier").value(1))
+			.andExpect(jsonPath("$.lines[0].uncertaintyPercent").value(2.0))
+			.andExpect(jsonPath("$.lines[0].evidenceFiles").value("invoice-2938.pdf, Fuel register (SharePoint)"));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.exclusionSummary[?(@.reason == 'METHODOLOGY')].recordCount").value(1))
+			.andExpect(jsonPath("$.exclusionSummary[?(@.reason == 'METHODOLOGY')].estimatedKgCo2e").value(8400.0))
+			.andExpect(jsonPath("$.exclusionSummary[?(@.reason == 'NOT_APPLICABLE')].estimatedKgCo2e").value(0.0))
+			.andExpect(jsonPath("$.dataQuality.byTier[0].tier").value(1))
+			.andExpect(jsonPath("$.dataQuality.byTier[0].sharePercent").value(100.0))
+			.andExpect(jsonPath("$.dataQuality.weightedUncertaintyPercent").value(2.0))
+			.andExpect(jsonPath("$.dataQuality.uncertaintyStatement").value(org.hamcrest.Matchers.startsWith("Fuel data are metered")));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember()))
+			.andExpect(content().string(org.hamcrest.Matchers.containsString("evidence_files")))
+			.andExpect(content().string(org.hamcrest.Matchers.containsString("invoice-2938.pdf")));
+
+		// a record in a run cannot be removed; one that is not is removed with a reason and reviews exclude it
+		mvc.perform(delete("/api/ghg/activities/" + diesel).with(asMember()).with(csrf()).param("reason", "entered twice"))
+			.andExpect(status().isConflict());
+		reopen(inventoryId);
+		var duplicate = createActivity(orgId, facilityId, "Diesel consumption (duplicate)", "1000", "litre", "2025-03-15");
+		syncAndGetAssignmentId(inventoryId, duplicate);
+		mvc.perform(delete("/api/ghg/activities/" + duplicate).with(asMember()).with(csrf()))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.reason").exists());
+		mvc.perform(delete("/api/ghg/activities/" + duplicate).with(asMember()).with(csrf())
+			.param("reason", "entered twice from the same dispensing log"))
+			.andExpect(status().isNoContent());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + duplicate + "')]").isEmpty());
+		mvc.perform(get("/api/ghg/activities/" + duplicate + "/revisions").with(asMember()))
+			.andExpect(jsonPath("$[0].kind").value("REMOVED"))
+			.andExpect(jsonPath("$[0].reason").value("entered twice from the same dispensing log"));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[1].findings[?(@.severity == 'ERROR')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("was removed"))));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.updated").value(1));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityId == '" + duplicate + "')].exclusionReason").value("RECORD_REMOVED"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + duplicate + "')].exclusionDetail")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("entered twice"))));
+
+		// facilities and entities are removed with a reason and stay as tombstones
+		var depot = createFacility(orgId, "Kumasi Depot");
+		mvc.perform(delete("/api/ghg/facilities/" + depot).with(asMember()).with(csrf()))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.reason").exists());
+		mvc.perform(delete("/api/ghg/facilities/" + depot).with(asMember()).with(csrf()).param("reason", "site closed in 2024"))
+			.andExpect(status().isNoContent());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/facilities").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + depot + "')]").isEmpty());
+		var shell = createEntity(orgId, "Dormant Holdings Ltd", "SUBSIDIARY", "100", true);
+		mvc.perform(delete("/api/ghg/entities/" + shell).with(asMember()).with(csrf()).param("reason", "liquidated"))
+			.andExpect(status().isNoContent());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/entities").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + shell + "')]").isEmpty());
 	}
 }

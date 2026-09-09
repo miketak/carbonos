@@ -1,5 +1,6 @@
 package com.carbonos.ghg.internal;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -47,6 +48,13 @@ public class InventoryAssignment {
 	// why, in words, for automatic exclusions, e.g. the membership window (spec 03.2)
 	@Column(name = "exclusion_detail", length = 255)
 	private String exclusionDetail;
+
+	// a manual exclusion's justification in words and its estimated magnitude (spec 04.4)
+	@Column(name = "exclusion_justification", length = 500)
+	private String exclusionJustification;
+
+	@Column(name = "estimated_kg_co2e", precision = 18, scale = 3)
+	private BigDecimal estimatedKgCo2e;
 
 	@Enumerated(EnumType.STRING)
 	@Column(length = 10)
@@ -117,6 +125,14 @@ public class InventoryAssignment {
 		return exclusionDetail;
 	}
 
+	public String getExclusionJustification() {
+		return exclusionJustification;
+	}
+
+	public BigDecimal getEstimatedKgCo2e() {
+		return estimatedKgCo2e;
+	}
+
 	public Scope getScope() {
 		return scope;
 	}
@@ -161,14 +177,22 @@ public class InventoryAssignment {
 	}
 
 	void exclude(ExclusionReason reason, String detail) {
+		exclude(reason, detail, null, null);
+	}
+
+	void exclude(ExclusionReason reason, String detail, String justification, BigDecimal estimatedKgCo2e) {
 		this.included = false;
 		this.exclusionReason = reason;
 		this.exclusionDetail = detail;
+		this.exclusionJustification = justification;
+		this.estimatedKgCo2e = estimatedKgCo2e;
 	}
 
 	void include() {
 		this.included = true;
 		this.exclusionReason = null;
 		this.exclusionDetail = null;
+		this.exclusionJustification = null;
+		this.estimatedKgCo2e = null;
 	}
 }

@@ -11,9 +11,9 @@ public interface FacilityRepository extends JpaRepository<Facility, UUID> {
 	// the entity renders with each facility; fetch it eagerly because
 	// open-in-view is off and mapping happens outside the transaction
 	@EntityGraph(attributePaths = "entity")
-	List<Facility> findAllByOrganizationIdOrderByCreatedAtAsc(UUID organizationId);
+	List<Facility> findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(UUID organizationId);
 
-	long countByOrganizationId(UUID organizationId);
+	long countByOrganizationIdAndDeletedAtIsNull(UUID organizationId);
 
-	boolean existsByEntityId(UUID entityId);
+	boolean existsByEntityIdAndDeletedAtIsNull(UUID entityId);
 }

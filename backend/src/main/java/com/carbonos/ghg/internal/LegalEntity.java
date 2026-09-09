@@ -68,6 +68,16 @@ public class LegalEntity {
 	@Column(name = "reporting_company", nullable = false)
 	private boolean reportingCompany;
 
+	// a removed row stays as a tombstone: who removed it, when and why (spec 04.4)
+	@Column(name = "deleted_at")
+	private Instant deletedAt;
+
+	@Column(name = "deleted_by", length = 320)
+	private String deletedBy;
+
+	@Column(name = "delete_reason", length = 500)
+	private String deleteReason;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -136,6 +146,28 @@ public class LegalEntity {
 
 	public Instant getCreatedAt() {
 		return createdAt;
+	}
+
+	public boolean isDeleted() {
+		return deletedAt != null;
+	}
+
+	public Instant getDeletedAt() {
+		return deletedAt;
+	}
+
+	public String getDeletedBy() {
+		return deletedBy;
+	}
+
+	public String getDeleteReason() {
+		return deleteReason;
+	}
+
+	void markRemoved(String by, String reason) {
+		this.deletedAt = Instant.now();
+		this.deletedBy = by;
+		this.deleteReason = reason;
 	}
 
 	void update(String name, RelationshipType relationshipType, BigDecimal economicInterestPercent,

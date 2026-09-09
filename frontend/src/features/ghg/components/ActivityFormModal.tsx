@@ -6,6 +6,7 @@ import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
 import { useCreateActivity, useUnitsQuery, useUpdateActivity } from '../useGhg'
 import type { Activity, DataQuality, Facility, Unit } from '../api'
+import { tierLabels } from '../format'
 import { findUnit, groupUnits } from '../units'
 
 const CUSTOM_UNIT = '__custom__'
@@ -43,6 +44,13 @@ export function ActivityFormModal({
   const [dataSource, setDataSource] = useState(activity?.dataSource ?? '')
   const [evidenceRef, setEvidenceRef] = useState(activity?.evidenceRef ?? '')
   const [dataQuality, setDataQuality] = useState<DataQuality>(activity?.dataQuality ?? 'MEASURED')
+  const [tier, setTier] = useState(activity ? String(activity.dataQualityTier) : '')
+  const [uncertainty, setUncertainty] = useState(
+    activity?.uncertaintyPercent === null || activity?.uncertaintyPercent === undefined
+      ? ''
+      : String(activity.uncertaintyPercent),
+  )
+  const [reason, setReason] = useState('')
   const [note, setNote] = useState(activity?.note ?? '')
 
   const errors = fieldErrors(mutation.error)
@@ -61,10 +69,12 @@ export function ActivityFormModal({
       evidenceRef: evidenceRef.trim() === '' ? undefined : evidenceRef,
       dataQuality,
       note: note.trim() === '' ? undefined : note,
+      dataQualityTier: tier === '' ? undefined : Number(tier),
+      uncertaintyPercent: uncertainty.trim() === '' ? undefined : Number(uncertainty),
     }
     if (activity) {
       update.mutate(
-        { id: activity.id, input },
+        { id: activity.id, input: { ...input, reason: reason.trim() } },
         { onSuccess: () => onSaved('Record corrected. Past runs are unaffected.') },
       )
     } else {
@@ -150,24 +160,63 @@ export function ActivityFormModal({
             error={errors?.evidenceRef}
           />
         </div>
-        <SelectField
-          label="Data quality"
-          value={dataQuality}
-          onChange={(event) => setDataQuality(event.target.value as DataQuality)}
-          error={errors?.dataQuality}
-        >
-          {Object.entries(qualityLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </SelectField>
+        <div className="grid grid-cols-2 gap-3">
+          <SelectField
+            label="Data quality"
+            value={dataQuality}
+            onChange={(event) => setDataQuality(event.target.value as DataQuality)}
+            error={errors?.dataQuality}
+          >
+            {Object.entries(qualityLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Quality tier"
+            value={tier}
+            onChange={(event) => setTier(event.target.value)}
+            error={errors?.dataQualityTier}
+            hint="1 is metered primary data, 5 an assumption. Blank follows the method."
+          >
+            <option value="">Follow the method</option>
+            {Object.entries(tierLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {value}: {label}
+              </option>
+            ))}
+          </SelectField>
+        </div>
+        <InputField
+          label="Uncertainty, ± % (optional)"
+          type="number"
+          min="0"
+          step="0.1"
+          value={uncertainty}
+          onChange={(event) => setUncertainty(event.target.value)}
+          error={errors?.uncertaintyPercent}
+          hint="The report weights it by emissions into the uncertainty statement."
+        />
         <InputField
           label="Note (optional)"
           value={note}
           onChange={(event) => setNote(event.target.value)}
           error={errors?.note}
         />
+        {activity && (
+          <InputField
+            label="Reason for the correction"
+            placeholder="Dispensing log reconciled with the supplier invoice"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            error={errors?.reason}
+            hint="Recorded with the old and new values in the record's history."
+            minLength={5}
+            maxLength={500}
+            required
+          />
+        )}
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">
             {generalError}
@@ -177,7 +226,11 @@ export function ActivityFormModal({
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" busy={mutation.isPending}>
+          <Button
+            type="submit"
+            busy={mutation.isPending}
+            disabled={activity !== undefined && reason.trim().length < 5}
+          >
             {activity ? 'Save correction' : 'Record'}
           </Button>
         </div>

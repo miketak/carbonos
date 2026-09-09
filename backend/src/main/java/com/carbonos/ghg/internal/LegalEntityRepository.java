@@ -8,13 +8,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LegalEntityRepository extends JpaRepository<LegalEntity, UUID> {
 
-	List<LegalEntity> findAllByOrganizationIdOrderByReportingCompanyDescCreatedAtAsc(UUID organizationId);
+	List<LegalEntity> findAllByOrganizationIdAndDeletedAtIsNullOrderByReportingCompanyDescCreatedAtAsc(
+			UUID organizationId);
 
 	Optional<LegalEntity> findByOrganizationIdAndReportingCompanyTrue(UUID organizationId);
 
-	boolean existsByOrganizationIdAndNameIgnoreCase(UUID organizationId, String name);
+	boolean existsByOrganizationIdAndNameIgnoreCaseAndDeletedAtIsNull(UUID organizationId, String name);
 
-	long countByOrganizationId(UUID organizationId);
+	long countByOrganizationIdAndDeletedAtIsNull(UUID organizationId);
 
-	boolean existsByParentId(UUID parentId);
+	boolean existsByParentIdAndDeletedAtIsNull(UUID parentId);
 }

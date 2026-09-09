@@ -6,11 +6,13 @@ import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
 import { EntityFormModal } from './components/EntityFormModal'
+import { RemoveDialog } from './components/RemoveDialog'
 import { relationshipShortLabels } from './format'
 import { useDeleteEntity, useEntitiesQuery } from './useGhg'
 import type { Entity } from './api'
 
-type Dialog = { kind: 'create' } | { kind: 'edit'; entity: Entity } | null
+type Dialog =
+  { kind: 'create' } | { kind: 'edit'; entity: Entity } | { kind: 'remove'; entity: Entity } | null
 
 function percent(share: number): string {
   return `${Math.round(share * 100)}%`
@@ -122,16 +124,7 @@ export function EntitiesPage() {
                       <Button
                         variant="ghost"
                         className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                        onClick={() =>
-                          deleteEntity.mutate(entity.id, {
-                            onSuccess: () => toast(`${entity.name} removed.`),
-                            onError: (error) =>
-                              toast(
-                                problemDetail(error) ?? `Could not remove ${entity.name}.`,
-                                'error',
-                              ),
-                          })
-                        }
+                        onClick={() => setDialog({ kind: 'remove', entity })}
                       >
                         Remove
                       </Button>
@@ -152,6 +145,29 @@ export function EntitiesPage() {
             setDialog(null)
             toast(message)
           }}
+        />
+      )}
+      {dialog?.kind === 'remove' && (
+        <RemoveDialog
+          title={`Remove ${dialog.entity.name}?`}
+          description="The entity stays on file as removed, with your name, the date and the reason. An entity with facilities, or one other entities are held through, cannot be removed."
+          busy={deleteEntity.isPending}
+          onClose={() => setDialog(null)}
+          onConfirm={(reason) =>
+            deleteEntity.mutate(
+              { id: dialog.entity.id, reason },
+              {
+                onSuccess: () => {
+                  setDialog(null)
+                  toast(`${dialog.entity.name} removed.`)
+                },
+                onError: (error) => {
+                  setDialog(null)
+                  toast(problemDetail(error) ?? `Could not remove ${dialog.entity.name}.`, 'error')
+                },
+              },
+            )
+          }
         />
       )}
       {dialog?.kind === 'edit' && (

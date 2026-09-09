@@ -97,6 +97,21 @@ public class GhgRunLine {
 	@Column(name = "proxy_justification", length = 500)
 	private String proxyJustification;
 
+	// the record's data quality, its tier, its uncertainty and the evidence files attached when
+	// the run was launched (spec 04.4)
+	@Enumerated(EnumType.STRING)
+	@Column(name = "data_quality", length = 20)
+	private DataQuality dataQuality;
+
+	@Column(name = "data_quality_tier")
+	private Integer dataQualityTier;
+
+	@Column(name = "uncertainty_percent", precision = 6, scale = 2)
+	private BigDecimal uncertaintyPercent;
+
+	@Column(name = "evidence_files", length = 1000)
+	private String evidenceFiles;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 10)
 	private Scope scope;
@@ -220,8 +235,13 @@ public class GhgRunLine {
 	}
 
 	GhgRunLine(GhgRun run, InventoryAssignment assignment, BigDecimal convertedQuantity, BigDecimal conversionFactor,
-			BigDecimal kgCo2ePerUnit, BigDecimal weight, Period period, BigDecimal kgCo2e, Gases gases, Market market) {
+			BigDecimal kgCo2ePerUnit, BigDecimal weight, Period period, BigDecimal kgCo2e, Gases gases, Market market,
+			String evidenceFiles) {
 		var activity = assignment.getActivity();
+		this.dataQuality = activity.getDataQuality();
+		this.dataQualityTier = activity.getDataQualityTier();
+		this.uncertaintyPercent = activity.getUncertaintyPercent();
+		this.evidenceFiles = evidenceFiles;
 		var factor = assignment.getEmissionFactor();
 		this.id = UUID.randomUUID();
 		this.run = run;
@@ -338,6 +358,23 @@ public class GhgRunLine {
 
 	public String getProxyJustification() {
 		return proxyJustification;
+	}
+
+	public DataQuality getDataQuality() {
+		return dataQuality;
+	}
+
+	public Integer getDataQualityTier() {
+		return dataQualityTier;
+	}
+
+	public BigDecimal getUncertaintyPercent() {
+		return uncertaintyPercent;
+	}
+
+	/** The evidence files attached to the record when the run was launched, comma separated; null for none. */
+	public String getEvidenceFiles() {
+		return evidenceFiles;
 	}
 
 	public Scope getScope() {

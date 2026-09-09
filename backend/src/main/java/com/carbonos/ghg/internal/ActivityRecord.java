@@ -3,6 +3,9 @@ package com.carbonos.ghg.internal;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -67,6 +70,24 @@ public class ActivityRecord {
 	@Column(length = 255)
 	private String note;
 
+	// the data quality tier, 1 (metered primary data) to 5 (assumption), and the uncertainty the
+	// accountant attaches to the figure (spec 04.4)
+	@Column(name = "data_quality_tier", nullable = false)
+	private int dataQualityTier;
+
+	@Column(name = "uncertainty_percent", precision = 6, scale = 2)
+	private BigDecimal uncertaintyPercent;
+
+	// a removed record stays as a tombstone: who removed it, when and why (spec 04.4)
+	@Column(name = "deleted_at")
+	private Instant deletedAt;
+
+	@Column(name = "deleted_by", length = 320)
+	private String deletedBy;
+
+	@Column(name = "delete_reason", length = 500)
+	private String deleteReason;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -76,8 +97,10 @@ public class ActivityRecord {
 
 	ActivityRecord(Facility facility, SourceStream stream, String activityType, BigDecimal quantity, String unit,
 			LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality,
-			String note) {
+			String note, Integer dataQualityTier, BigDecimal uncertaintyPercent) {
 		this.id = UUID.randomUUID();
+		this.dataQualityTier = dataQualityTier == null ? DataQualityTier.defaultFor(dataQuality) : dataQualityTier;
+		this.uncertaintyPercent = uncertaintyPercent;
 		this.facility = facility;
 		this.stream = stream;
 		this.activityType = activityType;
@@ -147,10 +170,78 @@ public class ActivityRecord {
 		return createdAt;
 	}
 
+	public int getDataQualityTier() {
+		return dataQualityTier;
+	}
+
+	public BigDecimal getUncertaintyPercent() {
+		return uncertaintyPercent;
+	}
+
+	public boolean isDeleted() {
+		return deletedAt != null;
+	}
+
+	public Instant getDeletedAt() {
+		return deletedAt;
+	}
+
+	public String getDeletedBy() {
+		return deletedBy;
+	}
+
+	public String getDeleteReason() {
+		return deleteReason;
+	}
+
+	/** Leaves the record as a tombstone (spec 04.4): reviews exclude it, nothing reads it as a fact again. */
+	void markRemoved(String by, String reason) {
+		this.deletedAt = Instant.now();
+		this.deletedBy = by;
+		this.deleteReason = reason;
+	}
+
+	/** One field's old and new value in a correction (spec 04.4). */
+	public record Change(String field, String before, String after) {
+	}
+
+	/** The fields a correction would change, before it is applied, for the revision history. */
+	List<Change> changesTo(Facility facility, SourceStream stream, String activityType, BigDecimal quantity,
+			String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef,
+			DataQuality dataQuality, String note, int dataQualityTier, BigDecimal uncertaintyPercent) {
+		var changes = new ArrayList<Change>();
+		diff(changes, "facility", this.facility.getName(), facility.getName());
+		diff(changes, "stream", this.stream == null ? null : this.stream.getName(), stream == null ? null : stream.getName());
+		diff(changes, "activityType", this.activityType, activityType);
+		diff(changes, "quantity", plain(this.quantity), plain(quantity));
+		diff(changes, "unit", this.unit, unit);
+		diff(changes, "periodStart", this.periodStart.toString(), periodStart.toString());
+		diff(changes, "periodEnd", this.periodEnd.toString(), periodEnd.toString());
+		diff(changes, "dataSource", this.dataSource, dataSource);
+		diff(changes, "evidenceRef", this.evidenceRef, evidenceRef);
+		diff(changes, "dataQuality", this.dataQuality.name(), dataQuality.name());
+		diff(changes, "dataQualityTier", String.valueOf(this.dataQualityTier), String.valueOf(dataQualityTier));
+		diff(changes, "uncertaintyPercent", plain(this.uncertaintyPercent), plain(uncertaintyPercent));
+		diff(changes, "note", this.note, note);
+		return changes;
+	}
+
+	private static void diff(List<Change> changes, String field, String before, String after) {
+		if (!Objects.equals(before, after)) {
+			changes.add(new Change(field, before, after));
+		}
+	}
+
+	private static String plain(BigDecimal value) {
+		return value == null ? null : value.stripTrailingZeros().toPlainString();
+	}
+
 	/** In-place correction (CORRECT-01); runs snapshot, so history is unaffected. */
 	void update(Facility facility, SourceStream stream, String activityType, BigDecimal quantity, String unit,
 			LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality,
-			String note) {
+			String note, int dataQualityTier, BigDecimal uncertaintyPercent) {
+		this.dataQualityTier = dataQualityTier;
+		this.uncertaintyPercent = uncertaintyPercent;
 		this.facility = facility;
 		this.stream = stream;
 		this.activityType = activityType;

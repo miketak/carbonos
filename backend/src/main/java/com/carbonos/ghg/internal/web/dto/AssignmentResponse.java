@@ -17,8 +17,9 @@ import java.util.List;
 public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, String facilityName,
 		UUID streamId, String streamName, StreamKind streamKind, Boolean contractorOperated, Scope defaultScope,
 		ActivityCategory defaultCategory, List<ActivityCategory> allowedCategories, String activityType, BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd,
-		DataQuality dataQuality,
+		DataQuality dataQuality, int dataQualityTier, BigDecimal uncertaintyPercent,
 		String evidenceRef, boolean included, ExclusionReason exclusionReason, String exclusionDetail,
+		String exclusionJustification, BigDecimal estimatedKgCo2e,
 		boolean classified, Scope scope, ActivityCategory category, LeaseType leaseType, UUID emissionFactorId,
 		String factorName, String scopeJustification, boolean proxy, String proxyJustification) {
 
@@ -33,8 +34,9 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 				stream == null ? null : stream.defaultScope(), stream == null ? null : stream.defaultCategory(),
 				stream == null ? null : stream.getKind().categories(), activity.getActivityType(), activity.getQuantity(),
 				activity.getUnit(), activity.getPeriodStart(), activity.getPeriodEnd(), activity.getDataQuality(),
-				activity.getEvidenceRef(),
+				activity.getDataQualityTier(), activity.getUncertaintyPercent(), activity.getEvidenceRef(),
 				assignment.isIncluded(), assignment.getExclusionReason(), assignment.getExclusionDetail(),
+				assignment.getExclusionJustification(), assignment.getEstimatedKgCo2e(),
 				assignment.isClassified(), assignment.getScope(), assignment.getCategory(),
 				assignment.getLeaseType(), factor == null ? null : factor.getId(),
 				factor == null ? null : factor.getName(), assignment.getScopeJustification(), assignment.isProxy(),

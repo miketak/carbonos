@@ -28,7 +28,7 @@ Status summary (update as tickets close):
 | Priority | Tickets | Done |
 |---|---|---|
 | P0 | 9 | 9 |
-| P1 | 13 | 0 |
+| P1 | 13 | 4 |
 | P2 | 4 | 0 |
 
 ## Theme 1: Scope 2 accounting
@@ -129,28 +129,28 @@ Status summary (update as tickets close):
   - Done when: DEFRA-style per-tonne, per-litre, and per-kWh values exist for every fuel (depends on T-03); a density table converts mass to volume with the density printed on the line; a custom unit can be defined as a multiple of a base unit (1 drum = 200 litre) and converts.
   - Spec: update 04.
 
-- [ ] **T-14 (P1) Data quality tiers and an uncertainty statement**
+- [x] **T-14 (P1) Data quality tiers and an uncertainty statement**
   - Findings: F12
   - Problem: data quality is "Measured / Estimated / Calculated" only; pre-flight lists estimated and calculated records as information; the report says nothing about data quality or uncertainty.
   - Standard: ISO 14064-1 section 9.3.1 (uncertainty description); Corporate Standard chapter 7 (data quality assessment); Scope 3 Standard chapter 7 (five-tier data quality scoring).
   - Done when: each record or stream has a scored tier and an optional percentage uncertainty; the report prints a data-quality table (share of each scope by tier) and a qualitative uncertainty statement.
   - Spec: update 04 and 07.1.
 
-- [ ] **T-15 (P1) Evidence attachments printed on report lines**
+- [x] **T-15 (P1) Evidence attachments printed on report lines**
   - Findings: F13
   - Problem: evidence is an optional free-text reference ("Invoice #2938"); no upload, no link, and the reference does not print on snapshot lines. Every verifier sample becomes a manual chase.
   - Standard: ISO 14064-3 sampling traces from a report line to the primary document.
   - Done when: a record accepts file attachments or document links (reuse the existing object storage); the evidence reference and record ID print on each snapshot line and in the CSV export (T-06); instruments accept attachments too (T-02).
   - Spec: update 04.
 
-- [ ] **T-16 (P1) Fact corrections with reason and history; confirmations and soft delete for facts, facilities, and entities**
+- [x] **T-16 (P1) Fact corrections with reason and history; confirmations and soft delete for facts, facilities, and entities**
   - Findings: F14, F8
   - Problem: "Correct" opens the entry form with no reason field; after saving, the row shows the new value with no marker and no way to see the previous value. "Remove" deletes a record instantly with no confirmation. Facilities without records and entities without facilities are also removed instantly. Blocking removal when dependencies exist already works and the messages are good.
   - Standard: ISO 14064-1 section 8.3 (records); Corporate Standard transparency principle.
   - Done when: a correction requires a reason and the record shows its value history (who, when, old, new, why); removals ask for confirmation and leave a tombstone with an audit entry; the same applies to facilities and entities.
   - Spec: update 04 and 02 (organization).
 
-- [ ] **T-17 (P1) Record-level exclusions need a justification and a magnitude**
+- [x] **T-17 (P1) Record-level exclusions need a justification and a magnitude**
   - Findings: F22
   - Problem: entity and facility exclusions capture a picklist plus "Detail for the verifier" and print well. Record exclusions offer seven reasons as a menu with no text; the report lists excluded records under the reason heading only. "Methodology exclusion" is a category, not a justification.
   - Standard: Corporate Standard chapter 9 and Scope 3 Standard chapter 11 (exclusions disclosed and justified).

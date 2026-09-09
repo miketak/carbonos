@@ -131,6 +131,32 @@ export const exclusionLabels: Record<ExclusionReason, string> = {
   NOT_APPLICABLE: 'Not applicable',
   METHODOLOGY: 'Methodology exclusion',
   OTHER: 'Other documented reason',
+  RECORD_REMOVED: 'Record removed',
+}
+
+/** The five data quality tiers of spec 04.4, after the Scope 3 Standard's indicators. */
+export const tierLabels: Record<number, string> = {
+  1: 'Metered or invoiced primary data',
+  2: 'Primary data with minor estimation',
+  3: 'Calculated from partial primary data',
+  4: 'Estimated from secondary or proxy data',
+  5: 'Rough estimate or assumption',
+}
+
+/** The reasons a person can choose; the review computes the rest (spec 04.4). */
+export const manualExclusionReasons: ExclusionReason[] = [
+  'OUTSIDE_PERIOD',
+  'OUTSIDE_BOUNDARY',
+  'NON_GHG',
+  'DUPLICATE',
+  'NOT_APPLICABLE',
+  'METHODOLOGY',
+  'OTHER',
+]
+
+/** Whether the review computes the detail for a reason, so no justification is asked (spec 04.4). */
+export function isAutomaticReason(reason: ExclusionReason): boolean {
+  return reason === 'OUTSIDE_PERIOD' || reason === 'OUTSIDE_BOUNDARY' || reason === 'RECORD_REMOVED'
 }
 
 /** Every category with its scope, in the Standard's order (spec 04.1). */

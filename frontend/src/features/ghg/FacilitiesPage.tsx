@@ -6,6 +6,7 @@ import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
 import { FacilityFormModal } from './components/FacilityFormModal'
+import { RemoveDialog } from './components/RemoveDialog'
 import { StreamsModal } from './components/StreamsModal'
 import { relationshipShortLabels } from './format'
 import { useDeleteFacility, useEntitiesQuery, useFacilitiesQuery } from './useGhg'
@@ -15,6 +16,7 @@ type Dialog =
   | { kind: 'create' }
   | { kind: 'edit'; facility: Facility }
   | { kind: 'streams'; facility: Facility }
+  | { kind: 'remove'; facility: Facility }
   | null
 
 function StatChip({ label, value }: { label: string; value: string }) {
@@ -121,16 +123,7 @@ export function FacilitiesPage() {
                     <Button
                       variant="ghost"
                       className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                      onClick={() =>
-                        deleteFacility.mutate(facility.id, {
-                          onSuccess: () => toast(`${facility.name} removed.`),
-                          onError: (error) =>
-                            toast(
-                              problemDetail(error) ?? `Could not remove ${facility.name}.`,
-                              'error',
-                            ),
-                        })
-                      }
+                      onClick={() => setDialog({ kind: 'remove', facility })}
                     >
                       Remove
                     </Button>
@@ -150,6 +143,32 @@ export function FacilitiesPage() {
             setDialog(null)
             toast(message)
           }}
+        />
+      )}
+      {dialog?.kind === 'remove' && (
+        <RemoveDialog
+          title={`Remove ${dialog.facility.name}?`}
+          description="The facility stays on file as removed, with your name, the date and the reason. A facility with activity records, or one an unpublished inventory still holds in its boundary, cannot be removed."
+          busy={deleteFacility.isPending}
+          onClose={() => setDialog(null)}
+          onConfirm={(reason) =>
+            deleteFacility.mutate(
+              { id: dialog.facility.id, reason },
+              {
+                onSuccess: () => {
+                  setDialog(null)
+                  toast(`${dialog.facility.name} removed.`)
+                },
+                onError: (error) => {
+                  setDialog(null)
+                  toast(
+                    problemDetail(error) ?? `Could not remove ${dialog.facility.name}.`,
+                    'error',
+                  )
+                },
+              },
+            )
+          }
         />
       )}
       {dialog?.kind === 'streams' && (

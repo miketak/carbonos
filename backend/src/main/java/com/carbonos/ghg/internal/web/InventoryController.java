@@ -226,7 +226,7 @@ class InventoryController {
 	@PutMapping("/inventories/{id}/report-metadata")
 	InventoryResponse reportMetadata(@PathVariable UUID id, @Valid @RequestBody ReportMetadataRequest body) {
 		return InventoryResponse.from(inventoryService.setReportMetadata(id, body.approvedBy(),
-				body.assuranceLevel(), body.assuranceProvider(), body.assuranceStatement(),
+				body.assuranceLevel(), body.assuranceProvider(), body.assuranceStatement(), body.uncertaintyStatement(),
 				body.intensityMetrics()
 					.stream()
 					.map(m -> new InventoryService.IntensityInput(m.name(), m.value(), m.unit()))
@@ -302,7 +302,8 @@ class InventoryController {
 
 	@PutMapping("/assignments/{id}/exclude")
 	AssignmentResponse exclude(@PathVariable UUID id, @Valid @RequestBody ExcludeRequest body) {
-		return AssignmentResponse.from(inventoryService.exclude(id, body.reason()));
+		return AssignmentResponse.from(inventoryService.exclude(id, body.reason(), body.justification(),
+				body.estimatedKgCo2e()));
 	}
 
 	@PutMapping("/assignments/{id}/include")

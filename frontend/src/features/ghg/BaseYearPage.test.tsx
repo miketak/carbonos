@@ -33,6 +33,7 @@ const inventory: Inventory = {
   assuranceLevel: 'UNVERIFIED',
   assuranceProvider: null,
   assuranceStatement: null,
+  uncertaintyStatement: null,
   scope3Categories: [],
   scope3ExclusionsRationale: null,
   residualMixAvailable: null,

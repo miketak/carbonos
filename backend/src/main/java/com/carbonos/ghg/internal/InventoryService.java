@@ -60,6 +60,7 @@ public class InventoryService {
 	private final ApplicationEventPublisher events;
 	private final GhgAccess access;
 	private final UnitConverter units;
+	private final EvidenceRepository evidence;
 
 	InventoryService(OrganizationRepository organizations, LegalEntityRepository entities,
 			FacilityRepository facilities, ActivityRecordRepository activities,
@@ -68,7 +69,8 @@ public class InventoryService {
 			BoundaryExclusionRepository boundaryExclusions, InventoryAssignmentRepository assignments,
 			MarketFactorRepository marketFactors, GhgRunRepository runs, GhgAuditEventRepository auditEvents,
 			IntensityMetricRepository intensityMetrics, BaseYearService baseYears, ApplicationEventPublisher events,
-			GhgAccess access, UnitConverter units) {
+			GhgAccess access, UnitConverter units, EvidenceRepository evidence) {
+		this.evidence = evidence;
 		this.organizations = organizations;
 		this.entities = entities;
 		this.facilities = facilities;
@@ -204,7 +206,7 @@ public class InventoryService {
 		var treatments = boundaryTreatments.findAllByInventoryId(inventoryId)
 			.stream()
 			.collect(Collectors.toMap(treatment -> treatment.getEntity().getId(), Function.identity()));
-		var facilitiesByEntity = facilities.findAllByOrganizationIdOrderByCreatedAtAsc(organizationId)
+		var facilitiesByEntity = facilities.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(organizationId)
 			.stream()
 			.collect(Collectors.groupingBy(facility -> facility.getEntity().getId()));
 		var exclusions = boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
@@ -214,7 +216,7 @@ public class InventoryService {
 		var byFacility = exclusions.stream()
 			.filter(exclusion -> !exclusion.isWholeEntity())
 			.collect(Collectors.toMap(exclusion -> exclusion.getFacility().getId(), Function.identity()));
-		return entities.findAllByOrganizationIdOrderByReportingCompanyDescCreatedAtAsc(organizationId)
+		return entities.findAllByOrganizationIdAndDeletedAtIsNullOrderByReportingCompanyDescCreatedAtAsc(organizationId)
 			.stream()
 			.map(entity -> new BoundaryEntityView(entity,
 					facilitiesByEntity.getOrDefault(entity.getId(), List.of()), treatments.get(entity.getId()),
@@ -303,7 +305,7 @@ public class InventoryService {
 			.filter(exclusion -> !exclusion.isWholeEntity())
 			.map(exclusion -> exclusion.getFacility().getId())
 			.collect(Collectors.toSet());
-		return facilities.findAllByOrganizationIdOrderByCreatedAtAsc(organizationId)
+		return facilities.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(organizationId)
 			.stream()
 			.filter(facility -> treatments.stream().noneMatch(treatment -> treatment.includes(facility.getId())))
 			.filter(facility -> !excludedEntities.contains(facility.getEntity().getId())
@@ -348,7 +350,7 @@ public class InventoryService {
 		var entity = requireEntity(entityId, inventory);
 		var treatment = boundaryTreatments.findByInventoryIdAndEntityId(inventoryId, entityId).orElseGet(() -> {
 			var created = new BoundaryTreatment(inventory, entity);
-			facilities.findAllByOrganizationIdOrderByCreatedAtAsc(inventory.getOrganization().getId())
+			facilities.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(inventory.getOrganization().getId())
 				.stream()
 				.filter(facility -> facility.getEntity().getId().equals(entityId))
 				.forEach(facility -> {
@@ -531,14 +533,15 @@ public class InventoryService {
 
 	/** The header the accountant types before publication: approver, assurance, intensity denominators. */
 	public Inventory setReportMetadata(UUID inventoryId, String approvedBy, AssuranceLevel assuranceLevel,
-			String assuranceProvider, String assuranceStatement, List<IntensityInput> metrics) {
+			String assuranceProvider, String assuranceStatement, String uncertaintyStatement,
+			List<IntensityInput> metrics) {
 		var inventory = get(inventoryId);
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
 			throw new GhgRuleViolationException("A published inventory's report header cannot change.");
 		}
 		access.checkWrite(inventory.getOrganization());
 		inventory.setReportMetadata(trimToNull(approvedBy), assuranceLevel, trimToNull(assuranceProvider),
-				trimToNull(assuranceStatement));
+				trimToNull(assuranceStatement), trimToNull(uncertaintyStatement));
 		record(inventory, null, GhgAuditEvent.Action.HEADER_SAVED, "report header saved");
 		intensityMetrics.deleteAllByInventoryId(inventoryId);
 		for (var metric : metrics) {
@@ -748,7 +751,7 @@ public class InventoryService {
 
 		var created = 0;
 		for (var activity : activities
-			.findAllByFacilityOrganizationIdOrderByPeriodEndDesc(inventory.getOrganization().getId())) {
+			.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(inventory.getOrganization().getId())) {
 			if (existing.contains(activity.getId())) {
 				continue;
 			}
@@ -760,6 +763,12 @@ public class InventoryService {
 
 		var updated = 0;
 		for (var assignment : reviewed) {
+			// spec 04.4: a record removed since the review leaves the view with its tombstone as the reason
+			if (assignment.isIncluded() && assignment.getActivity().isDeleted()) {
+				applyAutoExclusion(assignment, inventory, treatments);
+				updated++;
+				continue;
+			}
 			if (assignment.isIncluded() || !isAutoReason(assignment.getExclusionReason())) {
 				continue;
 			}
@@ -783,6 +792,10 @@ public class InventoryService {
 	private void applyAutoExclusion(InventoryAssignment assignment, Inventory inventory,
 			List<BoundaryTreatment> treatments) {
 		var activity = assignment.getActivity();
+		if (activity.isDeleted()) {
+			assignment.exclude(ExclusionReason.RECORD_REMOVED, removalDetail(activity));
+			return;
+		}
 		if (!inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd())) {
 			assignment.exclude(ExclusionReason.OUTSIDE_PERIOD,
 					"reporting period " + inventory.getPeriodStart() + " to " + inventory.getPeriodEnd());
@@ -796,7 +809,13 @@ public class InventoryService {
 	}
 
 	private static boolean isAutoReason(ExclusionReason reason) {
-		return reason == ExclusionReason.OUTSIDE_PERIOD || reason == ExclusionReason.OUTSIDE_BOUNDARY;
+		return reason != null && reason.isAutomatic();
+	}
+
+	private static String removalDetail(ActivityRecord activity) {
+		var detail = "removed " + activity.getDeletedAt().toString().substring(0, 10) + " by "
+				+ activity.getDeletedBy() + ": " + activity.getDeleteReason();
+		return detail.length() > 255 ? detail.substring(0, 252) + "..." : detail;
 	}
 
 	/**
@@ -860,10 +879,27 @@ public class InventoryService {
 	 * period or the boundary), the detail is computed the same way, so the
 	 * report reads alike whoever excluded the record.
 	 */
-	public InventoryAssignment exclude(UUID assignmentId, ExclusionReason reason) {
+	public InventoryAssignment exclude(UUID assignmentId, ExclusionReason reason, String justification,
+			BigDecimal estimatedKgCo2e) {
 		var assignment = getAssignment(assignmentId);
 		var inventory = assignment.getInventory();
 		requireEditable(inventory);
+		if (reason == ExclusionReason.RECORD_REMOVED) {
+			throw new GhgRuleViolationException(
+					"'Record removed' is the reason the review records for a removed record; choose another reason.");
+		}
+		var words = trimToNull(justification);
+		if (!reason.isAutomatic()) {
+			// spec 04.4: Chapter 9 wants each exclusion justified and its magnitude estimated
+			if (words == null || words.length() < 10) {
+				throw new GhgFieldException("justification",
+						"A record exclusion needs a justification of at least 10 characters.");
+			}
+			if (estimatedKgCo2e == null || estimatedKgCo2e.signum() < 0) {
+				throw new GhgFieldException("estimatedKgCo2e",
+						"Estimate the emissions left out, in kg CO2e (0 when the record emits nothing).");
+			}
+		}
 		String detail = null;
 		var activity = assignment.getActivity();
 		if (reason == ExclusionReason.OUTSIDE_PERIOD
@@ -876,7 +912,7 @@ public class InventoryService {
 					activity.getPeriodEnd());
 			detail = membership.member() ? null : membership.detail();
 		}
-		assignment.exclude(reason, detail);
+		assignment.exclude(reason, detail, words, reason.isAutomatic() ? null : estimatedKgCo2e);
 		return assignment;
 	}
 
@@ -900,7 +936,7 @@ public class InventoryService {
 			.map(assignment -> assignment.getActivity().getId())
 			.collect(Collectors.toSet());
 		var orgActivities = activities
-			.findAllByFacilityOrganizationIdOrderByPeriodEndDesc(inventory.getOrganization().getId());
+			.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(inventory.getOrganization().getId());
 		var baseYear = baseYears.of(inventory.getOrganization().getId()).orElse(null);
 		var wholeYear = baseYear != null
 				&& baseYear.getStructuralChangeConvention() == StructuralChangeConvention.WHOLE_YEAR;
@@ -1001,6 +1037,12 @@ public class InventoryService {
 		}
 		for (var assignment : included) {
 			var activity = assignment.getActivity();
+			if (activity.isDeleted()) {
+				completenessFindings.add(new Finding(Severity.ERROR, "'" + activity.getActivityType() + "' ("
+						+ activity.period().describe() + ") was removed (" + removalDetail(activity)
+						+ ") but is still included: run \"Review activity data\"."));
+				continue;
+			}
 			if (!inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd())) {
 				completenessFindings.add(new Finding(Severity.ERROR,
 						"Included activity '" + activity.getActivityType() + "' covers " + activity.period().describe()
@@ -1032,10 +1074,13 @@ public class InventoryService {
 				completenessFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType() + "' ("
 						+ activity.period().describe() + ") has no evidence reference."));
 			}
-			if (activity.getDataQuality() != DataQuality.MEASURED) {
+			if (activity.getDataQuality() != DataQuality.MEASURED || activity.getDataQualityTier() >= 4) {
 				completenessFindings.add(new Finding(Severity.INFO,
 						"'" + activity.getActivityType() + "' (" + activity.period().describe() + ") is "
-								+ activity.getDataQuality().name().toLowerCase() + " data."));
+								+ activity.getDataQuality().name().toLowerCase() + " data, tier "
+								+ activity.getDataQualityTier() + " (" + DataQualityTier.label(activity.getDataQualityTier())
+								+ ")" + (activity.getUncertaintyPercent() == null ? "" : ", uncertainty ±"
+										+ activity.getUncertaintyPercent().stripTrailingZeros().toPlainString() + "%") + "."));
 			}
 		}
 
@@ -1230,6 +1275,16 @@ public class InventoryService {
 		var remainingCoverage = new HashMap<UUID, BigDecimal>();
 		instruments.forEach((facilityId, instrument) -> remainingCoverage.put(facilityId, instrument.getCoveredKwh()));
 		// in date order, so an instrument is consumed chronologically (spec 07.3)
+		var evidenceByActivity = new HashMap<UUID, List<String>>();
+		var activityIds = assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)
+			.stream()
+			.map(a -> a.getActivity().getId())
+			.toList();
+		if (!activityIds.isEmpty()) {
+			for (var item : evidence.findAllByActivityIdIn(activityIds)) {
+				evidenceByActivity.computeIfAbsent(item.getActivityId(), k -> new ArrayList<>()).add(item.getName());
+			}
+		}
 		var ordered = assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)
 			.stream()
 			.sorted(java.util.Comparator.comparing((InventoryAssignment a) -> a.getActivity().getPeriodStart())
@@ -1283,8 +1338,11 @@ public class InventoryService {
 				market = marketBased(inventory, assignment, instruments.get(activity.getFacility().getId()),
 						remainingCoverage, counted, perUnit, share, periodShare, kgCo2e);
 			}
+			var files = evidenceByActivity.get(activity.getId());
+			var evidenceFiles = files == null ? null : String.join(", ", files);
 			run.addLine(new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, period,
-					kgCo2e, gases, market));
+					kgCo2e, gases, market, evidenceFiles != null && evidenceFiles.length() > 1000
+							? evidenceFiles.substring(0, 997) + "..." : evidenceFiles));
 		}
 		// spec 07.4: the frozen factor set behind the report's factor table
 		for (var factor : factorsUsed.values()) {

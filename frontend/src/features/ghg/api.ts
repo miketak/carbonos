@@ -11,6 +11,7 @@ export type ExclusionReason =
   | 'NOT_APPLICABLE'
   | 'METHODOLOGY'
   | 'OTHER'
+  | 'RECORD_REMOVED'
 export type ValidationGate =
   'BOUNDARY' | 'COMPLETENESS' | 'CLASSIFICATION' | 'EMISSION_FACTOR' | 'BASE_YEAR'
 export type Dimension =
@@ -314,6 +315,39 @@ export interface Activity {
   evidenceRef: string | null
   dataQuality: DataQuality
   note: string | null
+  /** The data quality tier, 1 (metered primary data) to 5 (assumption), and its uncertainty (spec 04.4). */
+  dataQualityTier: number
+  dataQualityTierLabel: string
+  uncertaintyPercent: number | null
+  /** A removed record stays as a tombstone (spec 04.4). */
+  removed: boolean
+  removedAt: string | null
+  removedBy: string | null
+  removeReason: string | null
+  evidenceCount: number
+  revisionCount: number
+}
+
+/** A file or link attached to a record or an instrument (spec 04.4). */
+export interface Evidence {
+  id: string
+  kind: 'FILE' | 'LINK'
+  name: string
+  url: string | null
+  contentType: string | null
+  sizeBytes: number | null
+  uploadedBy: string
+  uploadedAt: string
+}
+
+/** One correction or the removal of a record: who, when, why, each field's old and new value (spec 04.4). */
+export interface ActivityRevision {
+  id: string
+  kind: 'CORRECTED' | 'REMOVED'
+  reason: string
+  changes: { field: string; before: string | null; after: string | null }[]
+  changedBy: string
+  changedAt: string
 }
 
 export interface ActivityInput {
@@ -328,6 +362,17 @@ export interface ActivityInput {
   evidenceRef?: string
   dataQuality: DataQuality
   note?: string
+  dataQualityTier?: number
+  uncertaintyPercent?: number
+  /** Why the record is corrected; required on a correction (spec 04.4). */
+  reason?: string
+}
+
+/** A record exclusion (spec 04.4): a manual reason needs a justification and an estimated magnitude. */
+export interface ExcludeInput {
+  reason: ExclusionReason
+  justification?: string
+  estimatedKgCo2e?: number
 }
 
 export interface Inventory {
@@ -349,6 +394,8 @@ export interface Inventory {
   assuranceLevel: AssuranceLevel
   assuranceProvider: string | null
   assuranceStatement: string | null
+  /** The qualitative uncertainty statement printed with the data-quality table (spec 04.4). */
+  uncertaintyStatement: string | null
   /** The operational boundary declaration (spec 07.1). */
   scope3Categories: ActivityCategory[]
   scope3ExclusionsRationale: string | null
@@ -386,6 +433,7 @@ export interface ReportMetadataInput {
   assuranceLevel: AssuranceLevel
   assuranceProvider?: string
   assuranceStatement?: string
+  uncertaintyStatement?: string
   intensityMetrics: IntensityMetricInput[]
 }
 
@@ -531,11 +579,16 @@ export interface Assignment {
   periodStart: string
   periodEnd: string
   dataQuality: DataQuality
+  dataQualityTier: number
+  uncertaintyPercent: number | null
   evidenceRef: string | null
   included: boolean
   exclusionReason: ExclusionReason | null
   /** Why, in words, for automatic exclusions (e.g. the membership window). */
   exclusionDetail: string | null
+  /** A manual exclusion's justification and the emissions it leaves out (spec 04.4). */
+  exclusionJustification: string | null
+  estimatedKgCo2e: number | null
   classified: boolean
   scope: GhgScope | null
   category: ActivityCategory | null
@@ -643,6 +696,11 @@ export interface RunLine {
   scopeJustification: string | null
   proxy: boolean
   proxyJustification: string | null
+  /** The record's quality and the evidence attached when the run was launched (spec 04.4). */
+  dataQuality: DataQuality | null
+  dataQualityTier: number | null
+  uncertaintyPercent: number | null
+  evidenceFiles: string | null
   scope: GhgScope
   category: ActivityCategory
   leaseType: LeaseType | null
@@ -691,6 +749,8 @@ export interface RunExclusion {
   periodEnd: string
   exclusionReason: ExclusionReason
   exclusionDetail: string | null
+  exclusionJustification: string | null
+  estimatedKgCo2e: number | null
 }
 
 /** One recorded act on an inventory (spec 05.2). */
@@ -923,6 +983,32 @@ export interface Report {
   /** Every factor exactly as the run applied it (spec 07.4). */
   factors: FactorRow[]
   intensity: { name: string; value: number; unit: string; tCo2ePerUnit: number }[]
+  /** Excluded records per reason with the estimated emissions left out (spec 04.4). */
+  exclusionSummary: {
+    reason: ExclusionReason
+    recordCount: number
+    estimatedKgCo2e: number
+    estimatedTCo2e: number
+    unestimatedCount: number
+  }[]
+  /** The share of each scope resting on each data quality tier (spec 04.4). */
+  dataQuality: {
+    byTier: {
+      tier: number
+      label: string
+      lineCount: number
+      scope1KgCo2e: number
+      scope2KgCo2e: number
+      scope3KgCo2e: number
+      totalKgCo2e: number
+      sharePercent: number
+    }[]
+    weightedUncertaintyPercent: number | null
+    linesWithUncertainty: number
+    lineCount: number
+    statement: string
+    uncertaintyStatement: string | null
+  }
 }
 
 export interface ReportHeader {
@@ -1054,8 +1140,11 @@ export function updateEntity(id: string, input: EntityInput): Promise<Entity> {
   return api<Entity>(`/api/ghg/entities/${id}`, { method: 'PUT', body: JSON.stringify(input) })
 }
 
-export function deleteEntity(id: string): Promise<void> {
-  return api<void>(`/api/ghg/entities/${id}`, { method: 'DELETE' })
+/** Removes the entity with a reason; it stays as a tombstone (spec 04.4). */
+export function deleteEntity(id: string, reason: string): Promise<void> {
+  return api<void>(`/api/ghg/entities/${id}?reason=${encodeURIComponent(reason)}`, {
+    method: 'DELETE',
+  })
 }
 
 // --- facilities -------------------------------------------------------------
@@ -1078,8 +1167,11 @@ export function updateFacility(id: string, input: FacilityInput): Promise<Facili
   })
 }
 
-export function deleteFacility(id: string): Promise<void> {
-  return api<void>(`/api/ghg/facilities/${id}`, { method: 'DELETE' })
+/** Removes the facility with a reason; it stays as a tombstone (spec 04.4). */
+export function deleteFacility(id: string, reason: string): Promise<void> {
+  return api<void>(`/api/ghg/facilities/${id}?reason=${encodeURIComponent(reason)}`, {
+    method: 'DELETE',
+  })
 }
 
 // --- source streams (spec 04.3) ---------------------------------------------------
@@ -1184,8 +1276,55 @@ export function updateActivity(id: string, input: ActivityInput): Promise<Activi
   })
 }
 
-export function deleteActivity(id: string): Promise<void> {
-  return api<void>(`/api/ghg/activities/${id}`, { method: 'DELETE' })
+/** Removes the record with a reason; it stays as a tombstone (spec 04.4). */
+export function deleteActivity(id: string, reason: string): Promise<void> {
+  return api<void>(`/api/ghg/activities/${id}?reason=${encodeURIComponent(reason)}`, {
+    method: 'DELETE',
+  })
+}
+
+export function listActivityRevisions(id: string): Promise<ActivityRevision[]> {
+  return api<ActivityRevision[]>(`/api/ghg/activities/${id}/revisions`)
+}
+
+// --- evidence (spec 04.4) ------------------------------------------------------
+
+/** What evidence belongs to: a record, or a contractual instrument. */
+export type EvidenceOwner = { activityId: string } | { marketFactorId: string }
+
+function evidencePath(owner: EvidenceOwner): string {
+  return 'activityId' in owner
+    ? `/api/ghg/activities/${owner.activityId}/evidence`
+    : `/api/ghg/market-factors/${owner.marketFactorId}/evidence`
+}
+
+export function listEvidence(owner: EvidenceOwner): Promise<Evidence[]> {
+  return api<Evidence[]>(evidencePath(owner))
+}
+
+export function uploadEvidence(owner: EvidenceOwner, file: File): Promise<Evidence> {
+  const body = new FormData()
+  body.append('file', file)
+  return api<Evidence>(evidencePath(owner), { method: 'POST', body })
+}
+
+export function addEvidenceLink(
+  owner: EvidenceOwner,
+  input: { name?: string; url: string },
+): Promise<Evidence> {
+  return api<Evidence>(`${evidencePath(owner)}/links`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteEvidence(id: string): Promise<void> {
+  return api<void>(`/api/ghg/evidence/${id}`, { method: 'DELETE' })
+}
+
+/** Where a file downloads from (a link opens its own URL). */
+export function evidenceDownloadUrl(id: string): string {
+  return `/api/ghg/evidence/${id}`
 }
 
 // --- inventories --------------------------------------------------------------
@@ -1417,10 +1556,10 @@ export function classifyAssignment(id: string, input: ClassifyInput): Promise<As
   })
 }
 
-export function excludeAssignment(id: string, reason: ExclusionReason): Promise<Assignment> {
+export function excludeAssignment(id: string, input: ExcludeInput): Promise<Assignment> {
   return api<Assignment>(`/api/ghg/assignments/${id}/exclude`, {
     method: 'PUT',
-    body: JSON.stringify({ reason }),
+    body: JSON.stringify(input),
   })
 }
 
