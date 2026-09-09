@@ -31,19 +31,22 @@ lists the required elements (spec 07.1):
 2. The operational boundary declaration.
 3. The period and the inventory's status.
 4. Emissions by scope, with scope 2 location-based and market-based side by
-   side where instruments exist. The run total uses the location-based
-   figure.
+   side where instruments exist, the method behind the total, the base
+   year's scope 2 method, the instruments with their Scope 2 Quality
+   Criteria assessment, and the residual-mix disclosure (spec 07.2).
 5. Each of the seven gases.
 6. Biogenic CO2, outside the scopes.
 7. The base year with its recalculation history.
 8. The methodology statement, including the sources of the factors used.
-9. The **exclusions**, grouped by reason.
+9. The **exclusions**: the operations left out of the boundary with their
+   reasons (spec 07.2), then the excluded records grouped by reason.
 10. The **snapshot lines**: facility, source and category, scope, quantity
     with the conversion shown (`1,250,000 US-gallon → 4,731,764.73 litre`),
     factor, weight (the accounting share), and CO2e.
 
-A run older than versioning says so instead of citing a version. Figures are
-in kilograms; the Standard asks for metric tonnes (spec 07.2).
+A run older than versioning says so instead of citing a version. The report
+states figures in metric tonnes to three decimals and keeps the kilograms on
+every line (spec 07.2).
 
 The organization overview shows the headline of the latest final run: total,
 scope bars, top facilities.

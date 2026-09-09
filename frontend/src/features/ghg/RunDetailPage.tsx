@@ -10,14 +10,23 @@ import { RunLinesTable } from './components/RunLinesTable'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
 import {
   categoryLabel,
+  conventionLabels,
   exclusionLabels,
   formatCo2e,
   formatKg,
+  formatTonnes,
+  formatTonnesOfGas,
   instrumentLabels,
   scopeLabels,
 } from './format'
 import { useReportQuery } from './useGhg'
-import type { ExclusionReason, RecalculationStatus, Report, RunExclusion } from './api'
+import type {
+  BoundaryExclusionEntry,
+  ExclusionReason,
+  RecalculationStatus,
+  Report,
+  RunExclusion,
+} from './api'
 
 /** One Chapter 9 element of the report: a numbered small-caps heading over a glass card. */
 function Section({
@@ -117,8 +126,9 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
   const undeclared = operationalBoundary.scope3CategoriesReported.filter(
     (category) => !operationalBoundary.scope3Categories.includes(category),
   )
-  const gases = report.byGas.filter(
-    (gas) => gas.gas === 'CO2' || (gas.kg ?? 0) !== 0 || gas.kgCo2e !== 0,
+  const gases = report.byGas.filter((gas) => gas.gas === 'CO2' || gas.kg !== 0 || gas.kgCo2e !== 0)
+  const failingInstruments = emissions.marketInstruments.filter(
+    (instrument) => !instrument.meetsQualityCriteria,
   )
   const baseYearPath = `/app/ghg/${organizationId}/base-year`
 
@@ -222,37 +232,44 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
             <tr className="border-b border-teal/5">
               <td className="py-1.5">{scopeLabels.SCOPE_1}</td>
               <td className="py-1.5 text-right tabular-nums">
-                {formatCo2e(emissions.scope1KgCo2e)}
+                {formatTonnes(emissions.scope1TCo2e)}
               </td>
             </tr>
             <tr className="border-b border-teal/5">
               <td className="py-1.5">{scopeLabels.SCOPE_2}, location-based</td>
               <td className="py-1.5 text-right tabular-nums">
-                {formatCo2e(emissions.scope2LocationBasedKgCo2e)}
+                {formatTonnes(emissions.scope2LocationBasedTCo2e)}
               </td>
             </tr>
-            {emissions.scope2MarketBasedKgCo2e !== null && (
+            {emissions.scope2MarketBasedTCo2e !== null && (
               <tr className="border-b border-teal/5">
                 <td className="py-1.5">{scopeLabels.SCOPE_2}, market-based</td>
                 <td className="py-1.5 text-right tabular-nums">
-                  {formatCo2e(emissions.scope2MarketBasedKgCo2e)}
+                  {formatTonnes(emissions.scope2MarketBasedTCo2e)}
                 </td>
               </tr>
             )}
             <tr className="border-b border-teal/5">
               <td className="py-1.5">{scopeLabels.SCOPE_3}</td>
               <td className="py-1.5 text-right tabular-nums">
-                {formatCo2e(emissions.scope3KgCo2e)}
+                {formatTonnes(emissions.scope3TCo2e)}
               </td>
             </tr>
             <tr className="font-semibold">
               <td className="py-1.5">Total</td>
               <td className="py-1.5 text-right tabular-nums">
-                {formatCo2e(emissions.totalKgCo2e)}
+                {formatTonnes(emissions.totalTCo2e)}
               </td>
             </tr>
           </tbody>
         </table>
+        <p className="mt-2 text-xs text-ink-muted">
+          Figures in metric tonnes to three decimals; each line below keeps its kilograms. The total
+          uses the location-based scope 2 figure.
+          {emissions.baseYearScope2Method === 'LOCATION_BASED' &&
+            ' The base year reports scope 2 location-based only, which stands as a proxy for its market-based figure.'}
+          {emissions.baseYearScope2Method === 'DUAL' && ' The base year reports scope 2 both ways.'}
+        </p>
         {emissions.scope2MarketBasedKgCo2e !== null && emissions.marketInstruments.length > 0 && (
           <div className="mt-3">
             <p className="text-xs font-semibold text-ink-muted uppercase">
@@ -266,10 +283,26 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
                     {' '}
                     · {instrumentLabels[instrument.instrumentType]} · {instrument.kgCo2ePerKwh} kg
                     CO₂e/kWh · {instrument.source}
+                    {instrument.meetsQualityCriteria
+                      ? ' · meets the Scope 2 Quality Criteria'
+                      : ' · does not meet the Scope 2 Quality Criteria'}
+                    {instrument.qualityNotes ? `: ${instrument.qualityNotes}` : ''}
                   </span>
                 </li>
               ))}
             </ul>
+            {failingInstruments.length > 0 && (
+              <p className="mt-1 text-xs text-amber-700">
+                {failingInstruments.length === 1
+                  ? 'One instrument'
+                  : `${failingInstruments.length} instruments`}{' '}
+                did not meet the criteria and {failingInstruments.length === 1 ? 'was' : 'were'}{' '}
+                replaced as the lines state.
+              </p>
+            )}
+            {emissions.residualMixDisclosure && (
+              <p className="mt-1 text-xs text-ink-muted">{emissions.residualMixDisclosure}</p>
+            )}
           </div>
         )}
       </Section>
@@ -287,26 +320,29 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
             {gases.map((gas) => (
               <tr key={gas.gas} className="border-b border-teal/5 last:border-0">
                 <td className="py-1.5 font-medium">{gas.gas}</td>
-                <td className="py-1.5 text-right tabular-nums">
-                  {gas.kg === null ? '' : formatKg(gas.kg)}
-                </td>
-                <td className="py-1.5 text-right tabular-nums">{formatCo2e(gas.kgCo2e)}</td>
+                <td className="py-1.5 text-right tabular-nums">{formatKg(gas.kg)}</td>
+                <td className="py-1.5 text-right tabular-nums">{formatTonnes(gas.tCo2e)}</td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="mt-2 text-xs text-ink-muted">
-          HFCs and PFCs are blends whose global warming potentials the factor source applied, so
-          they are reported in CO₂e only. Other gases use IPCC {methodology.gwpSet} potentials.
+          Each gas in mass and in CO₂e under IPCC {methodology.gwpSet} 100-year potentials.
+          {methodology.multipleAssessmentReports
+            ? ` More than one assessment report was used: the HFC and PFC blends keep the potentials of IPCC ${methodology.assessmentReports.slice(1).join(' and ')} that their source applied.`
+            : ' The HFC and PFC blends used the same report.'}
         </p>
       </Section>
 
       <Section number={6} title="Biogenic CO₂" stagger={6}>
         <p className="text-sm">
-          <span className="font-semibold tabular-nums">{formatKg(report.biogenicCo2Kg)}</span>
+          <span className="font-semibold tabular-nums">
+            {formatTonnesOfGas(report.biogenicCo2T)}
+          </span>
           <span className="text-ink-muted">
             {' '}
-            of biogenic CO₂, reported separately and outside the scopes.
+            ({formatKg(report.biogenicCo2Kg)}) of biogenic CO₂, reported separately and outside the
+            scopes.
           </span>
         </p>
       </Section>
@@ -327,7 +363,10 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
 
       <Section number={8} title="Methodology" stagger={8}>
         <p className="text-sm">{methodology.statement}</p>
-        <p className="mt-2 text-sm text-ink-muted">GWP set: IPCC {methodology.gwpSet}, 100-year.</p>
+        <p className="mt-2 text-sm text-ink-muted">
+          GWP set: IPCC {methodology.gwpSet}, 100-year. Assessment reports used:{' '}
+          {methodology.assessmentReports.join(', ')}.
+        </p>
         {methodology.factorSources.length > 0 && (
           <p className="mt-1 text-sm text-ink-muted">
             Emission factors: {methodology.factorSources.join(', ')}.
@@ -336,6 +375,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
       </Section>
 
       <Section number={9} title="Exclusions" stagger={9}>
+        <BoundaryExclusions exclusions={report.boundaryExclusions} />
         <Exclusions exclusions={report.exclusions} />
       </Section>
 
@@ -353,21 +393,30 @@ function BaseYearSection({
   baseYear: NonNullable<Report['baseYear']>
   path: string
 }) {
-  const triggers = [
-    baseYear.triggers.structuralChanges ? 'structural changes' : null,
-    baseYear.triggers.methodologyChanges ? 'methodology changes' : null,
-    baseYear.triggers.errorCorrections ? 'significant errors' : null,
-  ].filter((trigger) => trigger !== null)
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p>
         <span className="font-semibold">{baseYear.year}</span>
         <span className="text-ink-muted">
           {' '}
-          · {baseYear.inventoryName} · significance threshold {baseYear.thresholdPercent}% ·
-          triggers honoured: {triggers.length > 0 ? triggers.join(', ') : 'none'}
+          · {baseYear.inventoryName} · significance threshold {baseYear.thresholdPercent}%, applied
+          to each change and to the cumulative effect since the base year
         </span>
       </p>
+      <p>
+        <span className="text-ink-muted">Why this year: </span>
+        {baseYear.reason}
+      </p>
+      <p>
+        <span className="text-ink-muted">Mid-year structural changes: </span>
+        {conventionLabels[baseYear.structuralChangeConvention]}
+      </p>
+      {!baseYear.gwpSetMatches && (
+        <p className="text-amber-700">
+          This run and the base year use different GWP sets; the required-gases amendment recommends
+          the same set for both.
+        </p>
+      )}
       {baseYear.originalBase ? (
         <p>
           <span className="text-ink-muted">
@@ -423,9 +472,76 @@ function BaseYearSection({
           </ul>
         </div>
       )}
+      {baseYear.profile.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-ink-muted uppercase">
+            Emissions profile over time
+          </p>
+          <table className="mt-1 w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+                <th className="py-1 font-semibold">Year</th>
+                <th className="py-1 font-semibold">Inventory</th>
+                <th className="py-1 text-right font-semibold">Final run</th>
+                <th className="py-1 text-right font-semibold">Recalculated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {baseYear.profile.map((entry) => (
+                <tr key={entry.inventoryId} className="border-b border-teal/5 last:border-0">
+                  <td className="py-1 tabular-nums">{entry.year}</td>
+                  <td className="py-1">{entry.name}</td>
+                  <td className="py-1 text-right tabular-nums">
+                    {entry.totalKgCo2e === null ? 'not yet final' : formatCo2e(entry.totalKgCo2e)}
+                  </td>
+                  <td className="py-1 text-right tabular-nums">
+                    {entry.recalculatedTotalKgCo2e === null
+                      ? ''
+                      : formatCo2e(entry.recalculatedTotalKgCo2e)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <Link to={path} className="font-semibold text-link">
         Base year and recalculation policy →
       </Link>
+    </div>
+  )
+}
+
+/** Operations deliberately left out of the boundary, with their reasons (Chapter 9, spec 07.2). */
+function BoundaryExclusions({ exclusions }: { exclusions: BoundaryExclusionEntry[] }) {
+  if (exclusions.length === 0) return null
+  return (
+    <div className="mb-4">
+      <h3 className="text-sm font-semibold">
+        Operations excluded from the boundary{' '}
+        <span className="font-normal text-ink-muted">
+          ({exclusions.length} {exclusions.length === 1 ? 'operation' : 'operations'})
+        </span>
+      </h3>
+      <table className="mt-1 w-full text-left text-sm">
+        <tbody>
+          {exclusions.map((exclusion) => (
+            <tr
+              key={`${exclusion.entityId}:${exclusion.facilityId ?? 'entity'}`}
+              className="border-b border-teal/5 last:border-0"
+            >
+              <td className="py-1.5 pr-3 font-medium">
+                {exclusion.facilityName ?? `${exclusion.entityName} (whole entity)`}
+              </td>
+              <td className="py-1.5 pr-3 text-ink-muted">
+                {exclusion.facilityName ? exclusion.entityName : ''}
+              </td>
+              <td className="py-1.5 pr-3">{exclusionLabels[exclusion.reason]}</td>
+              <td className="py-1.5 text-ink-muted">{exclusion.detail ?? ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

@@ -52,6 +52,14 @@ public class BaseYearRecalculation {
 	@Column(name = "affected_percent", precision = 7, scale = 2)
 	private BigDecimal affectedPercent;
 
+	// this change together with the outstanding earlier ones (spec 06.1)
+	@Column(name = "cumulative_percent", precision = 7, scale = 2)
+	private BigDecimal cumulativePercent;
+
+	// who raised a methodology or error flag by hand; null for a detected structural change
+	@Column(name = "raised_by", length = 320)
+	private String raisedBy;
+
 	@Column(name = "above_threshold", nullable = false)
 	private boolean aboveThreshold;
 
@@ -80,7 +88,7 @@ public class BaseYearRecalculation {
 
 	BaseYearRecalculation(BaseYear baseYear, RecalculationTrigger triggerType, String reason,
 			Inventory triggeringInventory, BoundaryVersion version, BigDecimal affectedPercent,
-			boolean aboveThreshold) {
+			BigDecimal cumulativePercent, boolean aboveThreshold, String raisedBy) {
 		this.id = UUID.randomUUID();
 		this.baseYear = baseYear;
 		this.triggerType = triggerType;
@@ -89,7 +97,9 @@ public class BaseYearRecalculation {
 		this.boundaryVersionId = version == null ? null : version.getId();
 		this.boundaryVersionNo = version == null ? null : version.getVersionNo();
 		this.affectedPercent = affectedPercent;
+		this.cumulativePercent = cumulativePercent;
 		this.aboveThreshold = aboveThreshold;
+		this.raisedBy = raisedBy;
 		this.status = RecalculationStatus.FLAGGED;
 	}
 
@@ -131,6 +141,14 @@ public class BaseYearRecalculation {
 
 	public BigDecimal getAffectedPercent() {
 		return affectedPercent;
+	}
+
+	public BigDecimal getCumulativePercent() {
+		return cumulativePercent;
+	}
+
+	public String getRaisedBy() {
+		return raisedBy;
 	}
 
 	public boolean isAboveThreshold() {

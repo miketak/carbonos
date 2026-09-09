@@ -47,6 +47,14 @@ public class MarketFactor {
 	@Column(nullable = false, length = 120)
 	private String source;
 
+	// whether the instrument meets the eight Scope 2 Quality Criteria (spec 07.2); when not, the
+	// market-based figure falls back and the report says why
+	@Column(name = "meets_quality_criteria", nullable = false)
+	private boolean meetsQualityCriteria;
+
+	@Column(name = "quality_notes", length = 500)
+	private String qualityNotes;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -59,13 +67,15 @@ public class MarketFactor {
 	}
 
 	MarketFactor(Inventory inventory, Facility facility, MarketInstrument instrumentType, BigDecimal kgCo2ePerKwh,
-			String source) {
+			String source, boolean meetsQualityCriteria, String qualityNotes) {
 		this.id = UUID.randomUUID();
 		this.inventory = inventory;
 		this.facility = facility;
 		this.instrumentType = instrumentType;
 		this.kgCo2ePerKwh = kgCo2ePerKwh;
 		this.source = source;
+		this.meetsQualityCriteria = meetsQualityCriteria;
+		this.qualityNotes = qualityNotes;
 	}
 
 	public UUID getId() {
@@ -92,9 +102,20 @@ public class MarketFactor {
 		return source;
 	}
 
-	void update(MarketInstrument instrumentType, BigDecimal kgCo2ePerKwh, String source) {
+	public boolean isMeetsQualityCriteria() {
+		return meetsQualityCriteria;
+	}
+
+	public String getQualityNotes() {
+		return qualityNotes;
+	}
+
+	void update(MarketInstrument instrumentType, BigDecimal kgCo2ePerKwh, String source, boolean meetsQualityCriteria,
+			String qualityNotes) {
 		this.instrumentType = instrumentType;
 		this.kgCo2ePerKwh = kgCo2ePerKwh;
 		this.source = source;
+		this.meetsQualityCriteria = meetsQualityCriteria;
+		this.qualityNotes = qualityNotes;
 	}
 }

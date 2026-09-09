@@ -24,7 +24,7 @@ that turns its quantity into CO2e.
 | Scope | Standard's definition | Categories in CarbonOS today |
 | --- | --- | --- |
 | 1 | Direct emissions from sources the company owns or controls | STATIONARY_COMBUSTION, MOBILE_COMBUSTION, PROCESS_EMISSIONS, FUGITIVE_EMISSIONS |
-| 2 | Indirect emissions from the generation of purchased or acquired electricity, steam, heat, and cooling consumed by the company | PURCHASED_ELECTRICITY, PURCHASED_HEAT_STEAM (no cooling category yet; spec 07.2) |
+| 2 | Indirect emissions from the generation of purchased or acquired electricity, steam, heat, and cooling consumed by the company | PURCHASED_ELECTRICITY, PURCHASED_HEAT_STEAM, PURCHASED_COOLING (spec 07.2) |
 | 3 | Other indirect emissions, a consequence of the company's activities but from sources it does not own or control | The Scope 3 Standard's fifteen categories, from PURCHASED_GOODS_SERVICES to INVESTMENTS (the seeded water-supply factor is a purchased good) |
 
 Each category belongs to exactly one scope (spec 04.1).
@@ -34,14 +34,14 @@ Each category belongs to exactly one scope (spec 04.1).
 A shared, read-only, seeded library. Each factor has a name, a **default**
 scope and category (a suggestion; spec 04.1), whether it is scope-agnostic,
 unit, value in kg CO2e per unit, per-gas components (spec 07.1), and source.
-Sixteen are seeded from the UK Department for Environment, Food and Rural
+Seventeen are seeded from the UK Department for Environment, Food and Rural
 Affairs (DEFRA) 2025 factors, the IPCC Fifth Assessment Report (AR5) 100-year
 global warming potentials, IPCC 2006 process factors, and an Ecoriv Ghana grid
 factor. They span natural gas, liquefied petroleum gas (LPG), diesel, petrol,
 R-410A leakage, Ghana and UK grid electricity, district heat, car and
 long-haul flight travel, bus commuting, landfill waste, water supply,
-ammonium nitrate fuel oil (ANFO) explosives, quicklime calcination, and wood
-pellets. Values are close to published figures and explicitly approximate;
+ammonium nitrate fuel oil (ANFO) explosives, quicklime calcination, wood
+pellets, and district cooling. Values are close to published figures and explicitly approximate;
 the seed is not for production use (see Non-goals). New factors require a
 migration; there is no runtime editor.
 
@@ -105,4 +105,3 @@ menu. Manual: `docs/qa/003-inventory.md` section F.
 
 - A runtime factor editor; automatic scope inference from metadata.
 - A curated, production-grade factor library to replace the seed.
-- A purchased-cooling category under scope 2 (spec 07.2).

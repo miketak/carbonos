@@ -3,8 +3,6 @@ package com.carbonos.ghg.internal.web;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,13 +17,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.carbonos.ghg.internal.BoundaryTreatment;
-import com.carbonos.ghg.internal.Facility;
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.Inventory;
 import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.web.dto.AssignmentResponse;
 import com.carbonos.ghg.internal.web.dto.BoundaryEntityResponse;
+import com.carbonos.ghg.internal.web.dto.BoundaryExclusionRequest;
+import com.carbonos.ghg.internal.web.dto.BoundaryExclusionResponse;
 import com.carbonos.ghg.internal.web.dto.BoundaryTreatmentRequest;
 import com.carbonos.ghg.internal.web.dto.BoundaryVersionResponse;
 import com.carbonos.ghg.internal.web.dto.BoundaryVersionSummaryResponse;
@@ -37,6 +35,7 @@ import com.carbonos.ghg.internal.web.dto.InventoryResponse;
 import com.carbonos.ghg.internal.web.dto.MarketFactorRequest;
 import com.carbonos.ghg.internal.web.dto.MarketFactorResponse;
 import com.carbonos.ghg.internal.web.dto.OperationalBoundaryRequest;
+import com.carbonos.ghg.internal.web.dto.ResidualMixRequest;
 import com.carbonos.ghg.internal.web.dto.SupersedeRequest;
 import com.carbonos.ghg.internal.web.dto.ValidationReportResponse;
 
@@ -106,19 +105,9 @@ class InventoryController {
 	}
 
 	private List<BoundaryEntityResponse> boundaryOf(Inventory inventory) {
-		var organizationId = inventory.getOrganization().getId();
-		var treatments = inventoryService.boundary(inventory.getId())
+		return inventoryService.boundaryView(inventory.getId())
 			.stream()
-			.collect(Collectors.toMap(treatment -> treatment.getEntity().getId(),
-					Function.<BoundaryTreatment>identity()));
-		var facilitiesByEntity = ghgService.listFacilities(organizationId)
-			.stream()
-			.collect(Collectors.groupingBy(facility -> facility.getEntity().getId()));
-		return ghgService.listEntities(organizationId)
-			.stream()
-			.map(entity -> BoundaryEntityResponse.of(entity,
-					facilitiesByEntity.getOrDefault(entity.getId(), List.<Facility>of()), treatments.get(entity.getId()),
-					inventory.getConsolidationApproach()))
+			.map(view -> BoundaryEntityResponse.of(view, inventory.getConsolidationApproach()))
 			.toList();
 	}
 
@@ -155,6 +144,41 @@ class InventoryController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	void removeFacility(@PathVariable UUID id, @PathVariable UUID facilityId) {
 		inventoryService.removeFacility(id, facilityId);
+	}
+
+	// --- boundary exclusions (spec 07.2) --------------------------------------------
+
+	@GetMapping("/inventories/{id}/boundary/exclusions")
+	List<BoundaryExclusionResponse> boundaryExclusions(@PathVariable UUID id) {
+		return inventoryService.boundaryExclusions(id).stream().map(BoundaryExclusionResponse::from).toList();
+	}
+
+	@PutMapping("/inventories/{id}/boundary/entities/{entityId}/exclude")
+	BoundaryEntityResponse excludeEntity(@PathVariable UUID id, @PathVariable UUID entityId,
+			@Valid @RequestBody BoundaryExclusionRequest body) {
+		var inventory = inventoryService.get(id);
+		inventoryService.excludeEntity(id, entityId, body.reason(), body.detail());
+		return entityEntry(inventory, entityId);
+	}
+
+	@DeleteMapping("/inventories/{id}/boundary/entities/{entityId}/exclude")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void clearEntityExclusion(@PathVariable UUID id, @PathVariable UUID entityId) {
+		inventoryService.clearEntityExclusion(id, entityId);
+	}
+
+	@PutMapping("/inventories/{id}/boundary/{facilityId}/exclude")
+	BoundaryEntityResponse excludeFacility(@PathVariable UUID id, @PathVariable UUID facilityId,
+			@Valid @RequestBody BoundaryExclusionRequest body) {
+		var inventory = inventoryService.get(id);
+		var exclusion = inventoryService.excludeFacility(id, facilityId, body.reason(), body.detail());
+		return entityEntry(inventory, exclusion.getEntity().getId());
+	}
+
+	@DeleteMapping("/inventories/{id}/boundary/{facilityId}/exclude")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void clearFacilityExclusion(@PathVariable UUID id, @PathVariable UUID facilityId) {
+		inventoryService.clearFacilityExclusion(id, facilityId);
 	}
 
 	@GetMapping("/inventories/{id}/boundary/versions")
@@ -216,7 +240,13 @@ class InventoryController {
 	MarketFactorResponse setMarketFactor(@PathVariable UUID id, @PathVariable UUID facilityId,
 			@Valid @RequestBody MarketFactorRequest body) {
 		return MarketFactorResponse.from(inventoryService.setMarketFactor(id, facilityId, body.instrumentType(),
-				body.kgCo2ePerKwh(), body.source()));
+				body.kgCo2ePerKwh(), body.source(), body.meetsQualityCriteria(), body.qualityNotes()));
+	}
+
+	/** Whether a residual mix is available for the instruments' markets (spec 07.2). */
+	@PutMapping("/inventories/{id}/residual-mix")
+	InventoryResponse residualMix(@PathVariable UUID id, @Valid @RequestBody ResidualMixRequest body) {
+		return InventoryResponse.from(inventoryService.setResidualMix(id, body.available(), body.kgCo2ePerKwh()));
 	}
 
 	@DeleteMapping("/inventories/{id}/market-factors/{facilityId}")

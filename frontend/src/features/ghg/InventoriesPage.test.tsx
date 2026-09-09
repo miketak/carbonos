@@ -20,6 +20,8 @@ const draft: Inventory = {
   gwpSet: 'AR5',
   scope3Categories: [],
   scope3ExclusionsRationale: null,
+  residualMixAvailable: null,
+  residualMixKgCo2ePerKwh: null,
   finalRunId: null,
   status: 'DRAFT',
   supersededById: null,

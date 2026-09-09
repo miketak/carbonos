@@ -56,8 +56,8 @@ export function FacilitiesPage() {
             value={`${new Set(facilities.map((facility) => facility.entityId)).size} of ${entityCount}`}
           />
           <StatChip
-            label="Wholly owned"
-            value={`${facilities.filter((facility) => facility.relationshipType === 'WHOLLY_OWNED').length} of ${facilities.length}`}
+            label="Under subsidiaries"
+            value={`${facilities.filter((facility) => facility.relationshipType === 'SUBSIDIARY').length} of ${facilities.length}`}
           />
         </div>
       )}

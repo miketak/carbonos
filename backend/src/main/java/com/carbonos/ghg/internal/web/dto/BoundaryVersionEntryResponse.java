@@ -13,8 +13,9 @@ import com.carbonos.ghg.internal.Table1;
 
 /** One entity as a version recorded it, with the facilities beneath it and whether it stood excluded. */
 public record BoundaryVersionEntryResponse(UUID entityId, String entityName, RelationshipType relationshipType,
-		BigDecimal economicInterestPercent, boolean operatedByCompany, BigDecimal accountingShare, String table1Row,
-		LocalDate effectiveFrom, LocalDate effectiveTo, boolean excluded, String exclusionReason,
+		BigDecimal economicInterestPercent, boolean operatedByCompany, boolean controlledByCompany,
+		BigDecimal effectiveEconomicInterestPercent, List<String> chain, BigDecimal accountingShare,
+		String table1Row, LocalDate effectiveFrom, LocalDate effectiveTo, boolean excluded, String exclusionReason,
 		List<VersionFacility> facilities) {
 
 	public record VersionFacility(UUID facilityId, String facilityName, String location) {
@@ -26,9 +27,11 @@ public record BoundaryVersionEntryResponse(UUID entityId, String entityName, Rel
 	public static BoundaryVersionEntryResponse from(BoundaryVersionEntry entry, ConsolidationApproach approach) {
 		return new BoundaryVersionEntryResponse(entry.getEntityId(), entry.getEntityName(),
 				entry.getRelationshipType(), entry.getEconomicInterestPercent(), entry.isOperatedByCompany(),
+				entry.isControlledByCompany(), entry.getEffectiveEconomicInterestPercent(), entry.getChain(),
 				entry.getAccountingShare(),
 				Table1.describe(entry.getRelationshipType(), approach, entry.getEconomicInterestPercent(),
-						entry.isOperatedByCompany()),
+						entry.isOperatedByCompany(), entry.isControlledByCompany())
+						+ (entry.getChain().isEmpty() ? "" : "; held through " + String.join(" > ", entry.getChain())),
 				entry.getEffectiveFrom(), entry.getEffectiveTo(), entry.isExcluded(), entry.getExclusionReason(),
 				entry.getFacilities().stream().map(VersionFacility::from).toList());
 	}

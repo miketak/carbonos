@@ -100,6 +100,12 @@ public class GhgRun {
 	@Column(name = "biogenic_co2_kg", nullable = false, precision = 18, scale = 3)
 	private BigDecimal biogenicCo2Kg;
 
+	@Column(name = "hfcs_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal hfcsKg;
+
+	@Column(name = "pfcs_kg", nullable = false, precision = 18, scale = 3)
+	private BigDecimal pfcsKg;
+
 	// the boundary version the shares came from; null for runs older than spec 03
 	@Column(name = "boundary_version_id")
 	private UUID boundaryVersionId;
@@ -146,6 +152,8 @@ public class GhgRun {
 		this.sf6Kg = BigDecimal.ZERO;
 		this.nf3Kg = BigDecimal.ZERO;
 		this.biogenicCo2Kg = BigDecimal.ZERO;
+		this.hfcsKg = BigDecimal.ZERO;
+		this.pfcsKg = BigDecimal.ZERO;
 	}
 
 	void addLine(GhgRunLine line) {
@@ -170,6 +178,27 @@ public class GhgRun {
 		sf6Kg = sf6Kg.add(line.getSf6Kg());
 		nf3Kg = nf3Kg.add(line.getNf3Kg());
 		biogenicCo2Kg = biogenicCo2Kg.add(line.getBiogenicCo2Kg());
+		hfcsKg = hfcsKg.add(line.getHfcsKg());
+		pfcsKg = pfcsKg.add(line.getPfcsKg());
+	}
+
+	public BigDecimal getHfcsKg() {
+		return hfcsKg;
+	}
+
+	public BigDecimal getPfcsKg() {
+		return pfcsKg;
+	}
+
+	/** Every assessment report behind this run's CO2e: the run's set, plus any blend source that differs. */
+	public List<String> assessmentReports() {
+		var reports = new ArrayList<String>();
+		reports.add(gwpSet.name());
+		lines.stream()
+			.map(GhgRunLine::getBlendGwpSource)
+			.filter(source -> source != null && !reports.contains(source))
+			.forEach(reports::add);
+		return reports;
 	}
 
 	void addExclusion(GhgRunExclusion exclusion) {

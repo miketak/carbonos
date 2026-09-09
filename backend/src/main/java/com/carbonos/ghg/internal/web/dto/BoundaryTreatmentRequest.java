@@ -20,12 +20,13 @@ public record BoundaryTreatmentRequest( //
 		RelationshipType relationshipType, //
 		@DecimalMin("0.00") @DecimalMax("100.00") BigDecimal economicInterestPercent, //
 		Boolean operatedByCompany, //
+		Boolean controlledByCompany, //
 		LocalDate effectiveFrom, //
 		LocalDate effectiveTo, //
 		Boolean clearWindow) {
 
 	public InventoryService.TreatmentInput toInput() {
 		return new InventoryService.TreatmentInput(relationshipType, economicInterestPercent, operatedByCompany,
-				effectiveFrom, effectiveTo, Boolean.TRUE.equals(clearWindow));
+				controlledByCompany, effectiveFrom, effectiveTo, Boolean.TRUE.equals(clearWindow));
 	}
 }
