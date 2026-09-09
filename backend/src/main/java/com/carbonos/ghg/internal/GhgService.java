@@ -245,16 +245,17 @@ public class GhgService {
 	@Transactional(readOnly = true)
 	public List<ActivityRecord> listActivities(UUID organizationId) {
 		getOrganization(organizationId);
-		return activities.findAllByFacilityOrganizationIdOrderByActivityDateDesc(organizationId);
+		return activities.findAllByFacilityOrganizationIdOrderByPeriodEndDesc(organizationId);
 	}
 
 	public ActivityRecord createActivity(UUID organizationId, UUID facilityId, String activityType,
-			BigDecimal quantity, String unit, LocalDate activityDate, String dataSource, String evidenceRef,
-			DataQuality dataQuality, String note) {
+			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
+			String evidenceRef, DataQuality dataQuality, String note) {
 		getOrganization(organizationId);
 		var facility = requireFacilityInOrganization(facilityId, organizationId);
-		return activities.save(new ActivityRecord(facility, activityType.trim(), quantity, unit.trim(), activityDate,
-				trimToNull(dataSource), trimToNull(evidenceRef), dataQuality, trimToNull(note)));
+		requirePeriod(periodStart, periodEnd);
+		return activities.save(new ActivityRecord(facility, activityType.trim(), quantity, unit.trim(), periodStart,
+				periodEnd, trimToNull(dataSource), trimToNull(evidenceRef), dataQuality, trimToNull(note)));
 	}
 
 	/**
@@ -263,13 +264,14 @@ public class GhgService {
 	 * their validation gates re-evaluate against it.
 	 */
 	public ActivityRecord updateActivity(UUID id, UUID facilityId, String activityType, BigDecimal quantity,
-			String unit, LocalDate activityDate, String dataSource, String evidenceRef, DataQuality dataQuality,
-			String note) {
+			String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef,
+			DataQuality dataQuality, String note) {
 		var activity = getActivity(id);
 		var organizationId = activity.getFacility().getOrganization().getId();
 		var facility = requireFacilityInOrganization(facilityId, organizationId);
-		activity.update(facility, activityType.trim(), quantity, unit.trim(), activityDate, trimToNull(dataSource),
-				trimToNull(evidenceRef), dataQuality, trimToNull(note));
+		requirePeriod(periodStart, periodEnd);
+		activity.update(facility, activityType.trim(), quantity, unit.trim(), periodStart, periodEnd,
+				trimToNull(dataSource), trimToNull(evidenceRef), dataQuality, trimToNull(note));
 		return activity;
 	}
 
@@ -316,6 +318,13 @@ public class GhgService {
 			throw GhgNotFoundException.entity(entityId);
 		}
 		return entity;
+	}
+
+	/** A record's period end may not precede its start (spec 04.2). */
+	private static void requirePeriod(LocalDate start, LocalDate end) {
+		if (end.isBefore(start)) {
+			throw new InvalidPeriodException();
+		}
 	}
 
 	private static String trimToNull(String value) {

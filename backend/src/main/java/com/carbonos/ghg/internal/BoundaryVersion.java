@@ -112,6 +112,23 @@ public class BoundaryVersion {
 			.findFirst();
 	}
 
+	/** The share a facility carries over a record's period, and how many of the record's days the version covers (spec 04.2). */
+	public record Coverage(BigDecimal share, long coveredDays, long totalDays) {
+	}
+
+	public Coverage coverage(UUID facilityId, LocalDate start, LocalDate end, LocalDate inventoryStart,
+			LocalDate inventoryEnd) {
+		var record = new DatePeriod(start, end);
+		var holder = entries.stream().filter(entry -> !entry.isExcluded() && entry.holds(facilityId)).findFirst();
+		if (holder.isEmpty()) {
+			return new Coverage(BigDecimal.ZERO, 0, record.days());
+		}
+		var entry = holder.get();
+		var inside = record.clip(inventoryStart, inventoryEnd);
+		var covered = inside == null ? null : inside.clip(entry.getEffectiveFrom(), entry.getEffectiveTo());
+		return new Coverage(entry.getAccountingShare(), covered == null ? 0 : covered.days(), record.days());
+	}
+
 	/** Every facility id a version recorded as a member (excluded entries aside). */
 	public List<UUID> memberFacilityIds() {
 		return entries.stream()

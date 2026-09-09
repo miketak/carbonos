@@ -80,11 +80,12 @@ inventory's, which must be FROZEN or FINAL. Creation re-validates and refuses
 with 409 `Validation failing` on any error. Per included assignment:
 
 ```
-share             = the frozen boundary version's share for the facility on the activity's date (spec 03)
+share             = the frozen boundary version's share for the facility over the record's period (spec 03)
+period share      = days of the record inside the period and the membership window / the record's days (spec 04.2)
 conversion factor = registry ratio(activity unit → factor unit), or 1 when identical
 converted qty     = quantity × conversion factor
 factor value      = Σ gas component × GWP(set), or the source CO2e when no split (spec 07.1)
-kg CO2e           = converted qty × factor value × share, HALF_UP to 3 dp
+kg CO2e           = converted qty × period share × factor value × share, HALF_UP to 3 dp
 kg per gas        = converted qty × gas component × share, HALF_UP to 3 dp (biogenic CO2 alike)
 market-based      = kWh × market factor × share for scope 2 lines at a facility with an instrument
 ```

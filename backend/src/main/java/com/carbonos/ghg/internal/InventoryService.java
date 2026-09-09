@@ -102,17 +102,19 @@ public class InventoryService {
 	}
 
 	public Inventory create(UUID organizationId, String name, LocalDate periodStart, LocalDate periodEnd,
-			String purpose, Integer baseYear, ConsolidationApproach approach, GwpSet gwpSet) {
+			String purpose, Integer baseYear, ConsolidationApproach approach, GwpSet gwpSet,
+			StraddleTreatment straddleTreatment) {
 		requirePeriod(periodStart, periodEnd);
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.check(organization);
 		return inventories.save(new Inventory(organization, name.trim(), periodStart, periodEnd, trimToNull(purpose),
-				baseYear, approach, gwpSet == null ? GwpSet.AR5 : gwpSet));
+				baseYear, approach, gwpSet == null ? GwpSet.AR5 : gwpSet,
+				straddleTreatment == null ? StraddleTreatment.PRO_RATE : straddleTreatment));
 	}
 
 	public Inventory update(UUID id, String name, LocalDate periodStart, LocalDate periodEnd, String purpose,
-			Integer baseYear, ConsolidationApproach approach, GwpSet gwpSet) {
+			Integer baseYear, ConsolidationApproach approach, GwpSet gwpSet, StraddleTreatment straddleTreatment) {
 		requirePeriod(periodStart, periodEnd);
 		var inventory = get(id);
 		var effectiveGwp = gwpSet == null ? inventory.getGwpSet() : gwpSet;
@@ -131,6 +133,9 @@ public class InventoryService {
 			}
 		}
 		inventory.update(name.trim(), periodStart, periodEnd, trimToNull(purpose), baseYear, approach, effectiveGwp);
+		if (straddleTreatment != null) {
+			inventory.setStraddleTreatment(straddleTreatment);
+		}
 		return inventory;
 	}
 
@@ -521,7 +526,7 @@ public class InventoryService {
 		var successorName = trimToNull(name) != null ? name.trim() : inventory.getName() + " (correction)";
 		var successor = inventories.save(new Inventory(inventory.getOrganization(), successorName,
 				inventory.getPeriodStart(), inventory.getPeriodEnd(), inventory.getPurpose(), inventory.getBaseYear(),
-				inventory.getConsolidationApproach(), inventory.getGwpSet()));
+				inventory.getConsolidationApproach(), inventory.getGwpSet(), inventory.getStraddleTreatment()));
 		successor.setOperationalBoundary(inventory.getScope3Categories(), inventory.getScope3ExclusionsRationale());
 		for (var treatment : boundaryTreatments.findAllByInventoryId(inventoryId)) {
 			var copy = new BoundaryTreatment(successor, treatment.getEntity());
@@ -622,7 +627,7 @@ public class InventoryService {
 	}
 
 	private Membership membership(List<BoundaryTreatment> treatments, ConsolidationApproach approach,
-			UUID facilityId, LocalDate date) {
+			UUID facilityId, LocalDate start, LocalDate end) {
 		var holder = treatments.stream().filter(treatment -> treatment.includes(facilityId)).findFirst();
 		if (holder.isEmpty()) {
 			return new Membership(false, "facility not in the boundary");
@@ -632,10 +637,30 @@ public class InventoryService {
 			return new Membership(false, treatment.getEntity().getName() + ": 0% accounting share under "
 					+ approach.name().toLowerCase().replace('_', ' '));
 		}
-		if (!treatment.covers(date)) {
+		if (!treatment.overlaps(start, end)) {
 			return new Membership(false, treatment.getEntity().getName() + ": " + treatment.describeWindow());
 		}
 		return Membership.IN;
+	}
+
+	/**
+	 * How much of a record's period the live boundary covers (spec 04.2): the
+	 * days inside both the reporting period and the entity's membership window,
+	 * over the record's days. A record wholly inside is fully covered.
+	 */
+	private record Straddle(long coveredDays, long totalDays) {
+		boolean partial() {
+			return coveredDays > 0 && coveredDays < totalDays;
+		}
+	}
+
+	private Straddle straddle(List<BoundaryTreatment> treatments, Inventory inventory, ActivityRecord activity) {
+		var record = activity.period();
+		var inside = record.clip(inventory.getPeriodStart(), inventory.getPeriodEnd());
+		var holder = treatments.stream().filter(t -> t.includes(activity.getFacility().getId())).findFirst();
+		var covered = inside == null || holder.isEmpty() ? null
+				: inside.clip(holder.get().getEffectiveFrom(), holder.get().getEffectiveTo());
+		return new Straddle(covered == null ? 0 : covered.days(), record.days());
 	}
 
 	// --- activity assignments (the view over the facts) ---------------------
@@ -662,7 +687,7 @@ public class InventoryService {
 
 		var created = 0;
 		for (var activity : activities
-			.findAllByFacilityOrganizationIdOrderByActivityDateDesc(inventory.getOrganization().getId())) {
+			.findAllByFacilityOrganizationIdOrderByPeriodEndDesc(inventory.getOrganization().getId())) {
 			if (existing.contains(activity.getId())) {
 				continue;
 			}
@@ -695,13 +720,13 @@ public class InventoryService {
 	private void applyAutoExclusion(InventoryAssignment assignment, Inventory inventory,
 			List<BoundaryTreatment> treatments) {
 		var activity = assignment.getActivity();
-		if (!inventory.covers(activity.getActivityDate())) {
+		if (!inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd())) {
 			assignment.exclude(ExclusionReason.OUTSIDE_PERIOD,
 					"reporting period " + inventory.getPeriodStart() + " to " + inventory.getPeriodEnd());
 			return;
 		}
 		var membership = membership(treatments, inventory.getConsolidationApproach(), activity.getFacility().getId(),
-				activity.getActivityDate());
+				activity.getPeriodStart(), activity.getPeriodEnd());
 		if (!membership.member()) {
 			assignment.exclude(ExclusionReason.OUTSIDE_BOUNDARY, membership.detail());
 		}
@@ -760,12 +785,14 @@ public class InventoryService {
 		requireEditable(inventory);
 		String detail = null;
 		var activity = assignment.getActivity();
-		if (reason == ExclusionReason.OUTSIDE_PERIOD && !inventory.covers(activity.getActivityDate())) {
+		if (reason == ExclusionReason.OUTSIDE_PERIOD
+				&& !inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd())) {
 			detail = "reporting period " + inventory.getPeriodStart() + " to " + inventory.getPeriodEnd();
 		}
 		else if (reason == ExclusionReason.OUTSIDE_BOUNDARY) {
 			var membership = membership(boundaryTreatments.findAllByInventoryId(inventory.getId()),
-					inventory.getConsolidationApproach(), activity.getFacility().getId(), activity.getActivityDate());
+					inventory.getConsolidationApproach(), activity.getFacility().getId(), activity.getPeriodStart(),
+					activity.getPeriodEnd());
 			detail = membership.member() ? null : membership.detail();
 		}
 		assignment.exclude(reason, detail);
@@ -792,7 +819,7 @@ public class InventoryService {
 			.map(assignment -> assignment.getActivity().getId())
 			.collect(Collectors.toSet());
 		var orgActivities = activities
-			.findAllByFacilityOrganizationIdOrderByActivityDateDesc(inventory.getOrganization().getId());
+			.findAllByFacilityOrganizationIdOrderByPeriodEndDesc(inventory.getOrganization().getId());
 		var baseYear = baseYears.of(inventory.getOrganization().getId()).orElse(null);
 		var wholeYear = baseYear != null
 				&& baseYear.getStructuralChangeConvention() == StructuralChangeConvention.WHOLE_YEAR;
@@ -808,6 +835,13 @@ public class InventoryService {
 		else if (inventory.isEditable()) {
 			boundaryFindings.add(new Finding(Severity.ERROR,
 					"The inventory is a draft. Freeze it to enable a run."));
+		}
+		if (inventory.months() != 12) {
+			// spec 04.2: Chapter 9 expects an annual inventory; anything else is allowed but must be deliberate
+			boundaryFindings.add(new Finding(Severity.WARNING, "The reporting period " + inventory.getPeriodStart()
+					+ " to " + inventory.getPeriodEnd() + " is not twelve months"
+					+ (inventory.months() > 0 ? " (" + inventory.months() + " months)" : "")
+					+ ". Chapter 9 expects an annual inventory; keep it only if the period is deliberate."));
 		}
 		var treatmentsByEntity = byEntity(treatments);
 		for (var treatment : treatments) {
@@ -845,11 +879,11 @@ public class InventoryService {
 		for (var assignment : included) {
 			var activity = assignment.getActivity();
 			var membership = membership(treatments, approach, activity.getFacility().getId(),
-					activity.getActivityDate());
+					activity.getPeriodStart(), activity.getPeriodEnd());
 			if (!membership.member()) {
 				boundaryFindings.add(new Finding(Severity.ERROR,
 						"Included activity '" + activity.getActivityType() + "' (" + activity.getFacility().getName()
-								+ ", " + activity.getActivityDate() + ") is outside the boundary ("
+								+ ", " + activity.period().describe() + ") is outside the boundary ("
 								+ membership.detail() + "): exclude it or change the boundary."));
 			}
 		}
@@ -875,29 +909,51 @@ public class InventoryService {
 				continue;
 			}
 			var activity = assignment.getActivity();
-			var inPeriod = inventory.covers(activity.getActivityDate());
+			var inPeriod = inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd());
 			var stillOutside = !inPeriod || !membership(treatments, approach, activity.getFacility().getId(),
-					activity.getActivityDate()).member();
+					activity.getPeriodStart(), activity.getPeriodEnd()).member();
 			if (!stillOutside) {
 				completenessFindings.add(new Finding(Severity.WARNING,
-						"'" + activity.getActivityType() + "' (" + activity.getActivityDate()
+						"'" + activity.getActivityType() + "' (" + activity.period().describe()
 								+ ") is excluded for a reason that no longer holds: run \"Review activity data\"."));
 			}
 		}
 		for (var assignment : included) {
 			var activity = assignment.getActivity();
-			if (!inventory.covers(activity.getActivityDate())) {
+			if (!inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd())) {
 				completenessFindings.add(new Finding(Severity.ERROR,
-						"Included activity '" + activity.getActivityType() + "' is dated " + activity.getActivityDate()
+						"Included activity '" + activity.getActivityType() + "' covers " + activity.period().describe()
 								+ ", outside the reporting period: exclude it."));
+			}
+			else {
+				// spec 04.2: a record straddling the period or the membership window is pro-rated or blocked
+				var straddle = straddle(treatments, inventory, activity);
+				if (straddle.partial()) {
+					var percent = BigDecimal.valueOf(straddle.coveredDays())
+						.multiply(BigDecimal.valueOf(100))
+						.divide(BigDecimal.valueOf(straddle.totalDays()), 2, RoundingMode.HALF_UP)
+						.stripTrailingZeros()
+						.toPlainString();
+					var where = "'" + activity.getActivityType() + "' (" + activity.getFacility().getName() + ") covers "
+							+ activity.period().describe() + "; " + straddle.coveredDays() + " of " + straddle.totalDays()
+							+ " days fall inside the reporting period and the membership window";
+					if (inventory.getStraddleTreatment() == StraddleTreatment.BLOCK) {
+						completenessFindings.add(new Finding(Severity.ERROR, where
+								+ ". The inventory blocks straddling records: split the record at the cut-off or exclude it."));
+					}
+					else {
+						completenessFindings.add(new Finding(Severity.WARNING,
+								where + ": the run pro-rates it to " + percent + "%."));
+					}
+				}
 			}
 			if (activity.getEvidenceRef() == null) {
 				completenessFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType() + "' ("
-						+ activity.getActivityDate() + ") has no evidence reference."));
+						+ activity.period().describe() + ") has no evidence reference."));
 			}
 			if (activity.getDataQuality() != DataQuality.MEASURED) {
 				completenessFindings.add(new Finding(Severity.INFO,
-						"'" + activity.getActivityType() + "' (" + activity.getActivityDate() + ") is "
+						"'" + activity.getActivityType() + "' (" + activity.period().describe() + ") is "
 								+ activity.getDataQuality().name().toLowerCase() + " data."));
 			}
 		}
@@ -908,7 +964,7 @@ public class InventoryService {
 			if (!assignment.isClassified()) {
 				classificationFindings.add(new Finding(Severity.ERROR,
 						"'" + activity.getActivityType() + "' (" + activity.getFacility().getName() + ", "
-								+ activity.getActivityDate()
+								+ activity.period().describe()
 								+ ") is unclassified: assign an emission factor or exclude it."));
 				continue;
 			}
@@ -973,7 +1029,8 @@ public class InventoryService {
 					.filter(assignment -> assignment.getScope() == Scope.SCOPE_2
 							&& assignment.getCategory() == ActivityCategory.PURCHASED_ELECTRICITY)
 					.filter(assignment -> assignment.getActivity().getFacility().getId().equals(instrument.getFacility().getId()))
-					.filter(assignment -> instrument.covers(assignment.getActivity().getActivityDate(), inventory))
+					.filter(assignment -> instrument.overlaps(assignment.getActivity().getPeriodStart(),
+							assignment.getActivity().getPeriodEnd(), inventory))
 					.filter(assignment -> units.canConvert(assignment.getActivity().getUnit(), KWH))
 					.map(assignment -> units.convert(assignment.getActivity().getQuantity(),
 							assignment.getActivity().getUnit(), KWH))
@@ -1074,7 +1131,8 @@ public class InventoryService {
 		// in date order, so an instrument is consumed chronologically (spec 07.3)
 		var ordered = assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)
 			.stream()
-			.sorted(java.util.Comparator.comparing((InventoryAssignment a) -> a.getActivity().getActivityDate())
+			.sorted(java.util.Comparator.comparing((InventoryAssignment a) -> a.getActivity().getPeriodStart())
+				.thenComparing(a -> a.getActivity().getPeriodEnd())
 				.thenComparing(a -> a.getActivity().getCreatedAt()))
 			.toList();
 		for (var assignment : ordered) {
@@ -1084,8 +1142,20 @@ public class InventoryService {
 			}
 			var activity = assignment.getActivity();
 			var factor = assignment.getEmissionFactor();
-			var share = version.shareOf(activity.getFacility().getId(), activity.getActivityDate())
-				.orElse(BigDecimal.ZERO);
+			// spec 04.2: the share over the record's period, pro-rated by the days the version covers
+			var coverage = version.coverage(activity.getFacility().getId(), activity.getPeriodStart(),
+					activity.getPeriodEnd(), inventory.getPeriodStart(), inventory.getPeriodEnd());
+			var share = coverage.coveredDays() == 0 ? BigDecimal.ZERO : coverage.share();
+			var periodShare = coverage.coveredDays() == coverage.totalDays() ? BigDecimal.ONE
+					: BigDecimal.valueOf(coverage.coveredDays())
+						.divide(BigDecimal.valueOf(coverage.totalDays()), 6, RoundingMode.HALF_UP);
+			var period = new GhgRunLine.Period(activity.getPeriodStart(), activity.getPeriodEnd(),
+					coverage.totalDays(), coverage.coveredDays(), periodShare,
+					periodShare.compareTo(BigDecimal.ONE) == 0 ? null
+							: "pro-rated: " + coverage.coveredDays() + " of " + coverage.totalDays()
+									+ " days inside the reporting period and the membership window ("
+									+ periodShare.movePointRight(2).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+									+ "%)");
 			var quantity = activity.getQuantity();
 			var activityUnit = activity.getUnit();
 			var factorUnit = factor.getUnit();
@@ -1093,7 +1163,8 @@ public class InventoryService {
 			var conversionFactor = convertsDimensionally ? units.ratio(activityUnit, factorUnit) : BigDecimal.ONE;
 			var convertedQuantity = convertsDimensionally ? units.convert(quantity, activityUnit, factorUnit) : quantity;
 			var perUnit = factor.kgCo2ePerUnit(gwp);
-			var kgCo2e = round(convertedQuantity.multiply(perUnit).multiply(share));
+			var counted = convertedQuantity.multiply(periodShare);
+			var kgCo2e = round(counted.multiply(perUnit).multiply(share));
 			var gases = new GhgRunLine.Gases(round(convertedQuantity.multiply(factor.getCo2KgPerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getCh4KgPerUnit()).multiply(share)),
 					round(convertedQuantity.multiply(factor.getN2oKgPerUnit()).multiply(share)),
@@ -1108,10 +1179,10 @@ public class InventoryService {
 			GhgRunLine.Market market = null;
 			if (assignment.getScope() == Scope.SCOPE_2) {
 				market = marketBased(inventory, assignment, instruments.get(activity.getFacility().getId()),
-						remainingCoverage, convertedQuantity, perUnit, share, kgCo2e);
+						remainingCoverage, counted, perUnit, share, periodShare, kgCo2e);
 			}
-			run.addLine(new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, kgCo2e,
-					gases, market));
+			run.addLine(new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, period,
+					kgCo2e, gases, market));
 		}
 		run = runs.save(run);
 		events.publishEvent(new GhgRunCompleted(run.getId(), inventoryId, run.getTotalKgCo2e()));
@@ -1142,6 +1213,47 @@ public class InventoryService {
 		return run;
 	}
 
+	// --- coverage (spec 04.2) -----------------------------------------------------
+
+	/** Which months of the inventory period have data, per facility and activity type. */
+	public record CoverageRow(UUID facilityId, String facilityName, String activityType, List<String> months,
+			List<String> coveredMonths) {
+	}
+
+	@Transactional(readOnly = true)
+	public List<CoverageRow> coverage(UUID inventoryId) {
+		var inventory = get(inventoryId);
+		var months = new ArrayList<java.time.YearMonth>();
+		for (var month = java.time.YearMonth.from(inventory.getPeriodStart()); !month
+			.isAfter(java.time.YearMonth.from(inventory.getPeriodEnd())); month = month.plusMonths(1)) {
+			months.add(month);
+		}
+		var labels = months.stream().map(java.time.YearMonth::toString).toList();
+		var rows = new java.util.LinkedHashMap<String, CoverageRow>();
+		var covered = new java.util.LinkedHashMap<String, java.util.TreeSet<String>>();
+		for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
+			if (!assignment.isIncluded()) {
+				continue;
+			}
+			var activity = assignment.getActivity();
+			var key = activity.getFacility().getId() + "|" + activity.getActivityType().toLowerCase(Locale.ROOT);
+			rows.computeIfAbsent(key, k -> new CoverageRow(activity.getFacility().getId(),
+					activity.getFacility().getName(), activity.getActivityType(), labels, List.of()));
+			var set = covered.computeIfAbsent(key, k -> new java.util.TreeSet<>());
+			for (var month : months) {
+				if (activity.period().overlaps(month.atDay(1), month.atEndOfMonth())) {
+					set.add(month.toString());
+				}
+			}
+		}
+		return rows.entrySet()
+			.stream()
+			.map(entry -> new CoverageRow(entry.getValue().facilityId(), entry.getValue().facilityName(),
+					entry.getValue().activityType(), labels, List.copyOf(covered.get(entry.getKey()))))
+			.sorted(java.util.Comparator.comparing(CoverageRow::facilityName).thenComparing(CoverageRow::activityType))
+			.toList();
+	}
+
 	// --- market-based scope 2 (spec 07.3) --------------------------------------
 
 	/**
@@ -1153,7 +1265,7 @@ public class InventoryService {
 	 */
 	private GhgRunLine.Market marketBased(Inventory inventory, InventoryAssignment assignment, MarketFactor instrument,
 			Map<UUID, BigDecimal> remainingCoverage, BigDecimal convertedQuantity, BigDecimal perUnit, BigDecimal share,
-			BigDecimal locationKgCo2e) {
+			BigDecimal periodShare, BigDecimal locationKgCo2e) {
 		var activity = assignment.getActivity();
 		if (assignment.getCategory() != ActivityCategory.PURCHASED_ELECTRICITY) {
 			return new GhgRunLine.Market(locationKgCo2e, null, null, "no contractual instrument applies to "
@@ -1165,7 +1277,8 @@ public class InventoryService {
 					+ ", which does not convert to kWh; the location-based figure stands", BigDecimal.ZERO,
 					BigDecimal.ZERO, null, null);
 		}
-		var kwh = units.convert(activity.getQuantity(), activity.getUnit(), KWH);
+		// the kWh the run counts: the record's, pro-rated like the location-based side (spec 04.2)
+		var kwh = units.convert(activity.getQuantity(), activity.getUnit(), KWH).multiply(periodShare);
 		var locationPerKwh = kwh.signum() == 0 ? BigDecimal.ZERO
 				: convertedQuantity.multiply(perUnit).divide(kwh, MathContext.DECIMAL64);
 		var covered = BigDecimal.ZERO;
@@ -1175,9 +1288,9 @@ public class InventoryService {
 		if (instrument == null) {
 			parts.add("no contractual instrument");
 		}
-		else if (!instrument.covers(activity.getActivityDate(), inventory)) {
+		else if (!instrument.overlaps(activity.getPeriodStart(), activity.getPeriodEnd(), inventory)) {
 			parts.add("the facility's instrument covers " + instrument.effectiveStart(inventory) + " to "
-					+ instrument.effectiveEnd(inventory) + ", not this record's date");
+					+ instrument.effectiveEnd(inventory) + ", not this record's period");
 		}
 		else if (!instrument.isMeetsQualityCriteria()) {
 			// Scope 2 Guidance: an instrument that fails the Quality Criteria is replaced by other data

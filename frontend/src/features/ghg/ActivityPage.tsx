@@ -4,6 +4,7 @@ import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
+import { formatPeriod } from './format'
 import { problemDetail } from '../../lib/api'
 import { ActivityFormModal } from './components/ActivityFormModal'
 import { useActivitiesQuery, useDeleteActivity, useFacilitiesQuery } from './useGhg'
@@ -68,7 +69,7 @@ export function ActivityPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Date</th>
+                <th className="px-4 py-3 font-semibold">Period</th>
                 <th className="px-4 py-3 font-semibold">Facility</th>
                 <th className="px-4 py-3 font-semibold">Activity</th>
                 <th className="px-4 py-3 font-semibold">Quantity</th>
@@ -80,7 +81,9 @@ export function ActivityPage() {
             <tbody>
               {activities.map((activity) => (
                 <tr key={activity.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-4 py-3 whitespace-nowrap">{activity.activityDate}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {formatPeriod(activity.periodStart, activity.periodEnd)}
+                  </td>
                   <td className="px-4 py-3">{activity.facilityName}</td>
                   <td className="px-4 py-3">
                     <span className="font-medium">{activity.activityType}</span>

@@ -1,6 +1,7 @@
 package com.carbonos.ghg.internal;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -28,6 +29,10 @@ public class GhgRunLine {
 	record Gases(BigDecimal co2, BigDecimal ch4, BigDecimal n2o, BigDecimal hfcs, BigDecimal pfcs, BigDecimal sf6,
 			BigDecimal nf3, BigDecimal biogenicCo2, BigDecimal hfcsKg, BigDecimal pfcsKg, String blendGwpSource,
 			boolean ch4Fossil) {
+	}
+
+	/** The record's period and how much of it the run counted (spec 04.2). */
+	record Period(LocalDate start, LocalDate end, long days, long coveredDays, BigDecimal share, String note) {
 	}
 
 	/**
@@ -90,6 +95,25 @@ public class GhgRunLine {
 
 	@Column(nullable = false, precision = 7, scale = 4)
 	private BigDecimal weight;
+
+	// the record's period and the pro-rating the run applied (spec 04.2)
+	@Column(name = "period_start", nullable = false)
+	private LocalDate periodStart;
+
+	@Column(name = "period_end", nullable = false)
+	private LocalDate periodEnd;
+
+	@Column(name = "period_days", nullable = false)
+	private long periodDays;
+
+	@Column(name = "covered_days", nullable = false)
+	private long coveredDays;
+
+	@Column(name = "period_share", nullable = false, precision = 9, scale = 6)
+	private BigDecimal periodShare;
+
+	@Column(name = "period_note", length = 255)
+	private String periodNote;
 
 	@Column(name = "kg_co2e", nullable = false, precision = 18, scale = 3)
 	private BigDecimal kgCo2e;
@@ -162,7 +186,7 @@ public class GhgRunLine {
 	}
 
 	GhgRunLine(GhgRun run, InventoryAssignment assignment, BigDecimal convertedQuantity, BigDecimal conversionFactor,
-			BigDecimal kgCo2ePerUnit, BigDecimal weight, BigDecimal kgCo2e, Gases gases, Market market) {
+			BigDecimal kgCo2ePerUnit, BigDecimal weight, Period period, BigDecimal kgCo2e, Gases gases, Market market) {
 		var activity = assignment.getActivity();
 		var factor = assignment.getEmissionFactor();
 		this.id = UUID.randomUUID();
@@ -181,6 +205,12 @@ public class GhgRunLine {
 		this.conversionFactor = conversionFactor;
 		this.kgCo2ePerUnit = kgCo2ePerUnit;
 		this.weight = weight;
+		this.periodStart = period.start();
+		this.periodEnd = period.end();
+		this.periodDays = period.days();
+		this.coveredDays = period.coveredDays();
+		this.periodShare = period.share();
+		this.periodNote = period.note();
 		this.kgCo2e = kgCo2e;
 		this.co2Kg = gases.co2();
 		this.ch4Kg = gases.ch4();
@@ -264,6 +294,30 @@ public class GhgRunLine {
 
 	public BigDecimal getWeight() {
 		return weight;
+	}
+
+	public LocalDate getPeriodStart() {
+		return periodStart;
+	}
+
+	public LocalDate getPeriodEnd() {
+		return periodEnd;
+	}
+
+	public long getPeriodDays() {
+		return periodDays;
+	}
+
+	public long getCoveredDays() {
+		return coveredDays;
+	}
+
+	public BigDecimal getPeriodShare() {
+		return periodShare;
+	}
+
+	public String getPeriodNote() {
+		return periodNote;
 	}
 
 	public BigDecimal getKgCo2e() {

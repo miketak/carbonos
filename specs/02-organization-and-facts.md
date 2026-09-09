@@ -73,7 +73,9 @@ note.
   but measured is surfaced as an INFO finding at validation, and a missing
   evidence reference as a WARNING, so completeness and accuracy (Chapter 7) are
   visible before a number is produced.
-- **Plausibility.** The activity date must be past or present (422 otherwise).
+- **Plausibility.** The record's period start and end must be past or
+  present, and the end may not precede the start (422 otherwise). A record
+  covers a period (spec 04.2); a single reading is a one-day period.
 - **Correction in place.** A fact is corrected with a PUT of the same shape as
   creation. Past runs are snapshots and stay unaffected; open inventories see
   the corrected fact and their gates re-evaluate. Full versioning of facts is
@@ -118,7 +120,7 @@ All under `/api/ghg`, session-authenticated, tenant-scoped (spec 01).
   activity data.
 - Activities: `GET|POST /organizations/{orgId}/activities`,
   `PUT|DELETE /activities/{id}`. `{facilityId, activityType, quantity (>0),
-  unit, activityDate (past or present), dataSource?, evidenceRef?, dataQuality,
+  unit, periodStart, periodEnd (past or present, spec 04.2), dataSource?, evidenceRef?, dataQuality,
   note?}`; DELETE 409 when a run line references it.
 - Units: `GET /units` → `{code, label, dimension, toCanonical}[]`.
 

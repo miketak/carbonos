@@ -75,13 +75,14 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		}
 	}
 
-	public record BaseYearSection(int year, String inventoryName, UUID inventoryId, BigDecimal thresholdPercent,
+	public record BaseYearSection(int year, String periodLabel, String inventoryName, UUID inventoryId, BigDecimal thresholdPercent,
 			String reason, StructuralChangeConvention structuralChangeConvention, boolean gwpSetMatches,
 			RunFigure originalBase, List<Recalculation> recalculations, List<ProfileEntry> profile) {
 	}
 
 	/** One inventory in the emissions profile over time (spec 06.1): its final run and, for the base year, the recalculated one. */
-	public record ProfileEntry(UUID inventoryId, String name, int year, LocalDate periodStart, LocalDate periodEnd,
+	public record ProfileEntry(UUID inventoryId, String name, int year, String periodLabel, LocalDate periodStart,
+			LocalDate periodEnd,
 			InventoryStatus status, UUID finalRunId, BigDecimal totalKgCo2e, UUID recalculatedRunId,
 			BigDecimal recalculatedTotalKgCo2e) {
 	}
@@ -177,14 +178,16 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			}
 			var profileEntries = profile.stream()
 				.map(entry -> new ProfileEntry(entry.inventory().getId(), entry.inventory().getName(),
-						entry.inventory().getPeriodStart().getYear(), entry.inventory().getPeriodStart(),
+						entry.inventory().getPeriodStart().getYear(), entry.inventory().periodLabel(),
+						entry.inventory().getPeriodStart(),
 						entry.inventory().getPeriodEnd(), entry.inventory().getStatus(),
 						entry.finalRun() == null ? null : entry.finalRun().getId(),
 						entry.finalRun() == null ? null : entry.finalRun().getTotalKgCo2e(),
 						entry.recalculatedRun() == null ? null : entry.recalculatedRun().getId(),
 						entry.recalculatedRun() == null ? null : entry.recalculatedRun().getTotalKgCo2e()))
 				.toList();
-			baseYearSection = new BaseYearSection(baseYear.year(), baseYear.getInventory().getName(),
+			baseYearSection = new BaseYearSection(baseYear.year(), baseYear.getInventory().periodLabel(),
+					baseYear.getInventory().getName(),
 					baseYear.getInventory().getId(), baseYear.getThresholdPercent(), baseYear.getReason(),
 					baseYear.getStructuralChangeConvention(), baseYear.getInventory().getGwpSet() == run.getGwpSet(),
 					baseRun == null ? null : figure(baseRun), recalculations, profileEntries);

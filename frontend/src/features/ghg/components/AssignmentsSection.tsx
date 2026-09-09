@@ -8,6 +8,7 @@ import {
   categoriesForScope,
   categoryLabel,
   exclusionLabels,
+  formatPeriod,
   leaseLabels,
   scopeLabels,
 } from '../format'
@@ -15,6 +16,7 @@ import { convertQuantity, DIMENSION_LABELS, unitDimension } from '../units'
 import {
   useAssignmentsQuery,
   useClassifyAssignment,
+  useCoverageQuery,
   useEmissionFactorsQuery,
   useExcludeAssignment,
   useIncludeAssignment,
@@ -25,6 +27,7 @@ import { ScopeBadge } from './badges'
 import type {
   ActivityCategory,
   Assignment,
+  CoverageRow,
   ClassifyInput,
   EmissionFactor,
   ExclusionReason,
@@ -341,6 +344,7 @@ export function AssignmentsSection({
   editable: boolean
 }) {
   const assignmentsQuery = useAssignmentsQuery(inventoryId)
+  const coverageQuery = useCoverageQuery(inventoryId)
   const factorsQuery = useEmissionFactorsQuery()
   const unitsQuery = useUnitsQuery()
   const sync = useSyncAssignments(inventoryId)
@@ -436,7 +440,8 @@ export function AssignmentsSection({
                       <span className="font-medium">{assignment.activityType}</span>
                       <span className="block text-xs text-ink-muted">
                         {assignment.facilityName} · {assignment.quantity.toLocaleString()}{' '}
-                        {assignment.unit} · {assignment.activityDate}
+                        {assignment.unit} ·{' '}
+                        {formatPeriod(assignment.periodStart, assignment.periodEnd)}
                       </span>
                     </td>
                     <td className="px-3 py-2">
@@ -470,6 +475,8 @@ export function AssignmentsSection({
             </table>
           </div>
 
+          <CoverageMatrix rows={coverageQuery.data ?? []} />
+
           {/* mobile: one card per fact */}
           <ul className="mt-4 flex flex-col gap-3 md:hidden">
             {assignments.map((assignment) => (
@@ -481,7 +488,7 @@ export function AssignmentsSection({
                   <p className="font-medium">{assignment.activityType}</p>
                   <p className="text-xs text-ink-muted">
                     {assignment.facilityName} · {assignment.quantity.toLocaleString()}{' '}
-                    {assignment.unit} · {assignment.activityDate}
+                    {assignment.unit} · {formatPeriod(assignment.periodStart, assignment.periodEnd)}
                   </p>
                 </div>
                 <StatusPills
@@ -511,5 +518,58 @@ export function AssignmentsSection({
         </>
       )}
     </GlassCard>
+  )
+}
+
+/**
+ * Period coverage (spec 04.2): which months of the inventory period have data
+ * from included records, per facility and activity type, so a missing quarter
+ * is visible before the run.
+ */
+function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
+  if (rows.length === 0) return null
+  const months = rows[0].months
+  return (
+    <div className="mt-6 hidden md:block">
+      <h3 className="text-sm font-semibold">Period coverage</h3>
+      <p className="text-xs text-ink-muted">
+        Months of the reporting period with data from included records, per facility and activity.
+      </p>
+      <div className="mt-2 overflow-x-auto">
+        <table aria-label="Period coverage" className="w-full text-left text-xs">
+          <thead>
+            <tr className="border-b border-teal/10 text-ink-muted uppercase">
+              <th className="px-2 py-1 font-semibold">Facility · activity</th>
+              {months.map((month) => (
+                <th key={month} className="px-1 py-1 text-center font-semibold">
+                  {month.slice(5)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={`${row.facilityId}:${row.activityType}`} className="border-b border-teal/5">
+                <td className="px-2 py-1 whitespace-nowrap">
+                  <span className="text-ink-muted">{row.facilityName}</span> · {row.activityType}
+                </td>
+                {months.map((month) => {
+                  const covered = row.coveredMonths.includes(month)
+                  return (
+                    <td
+                      key={month}
+                      title={`${row.activityType}, ${month}: ${covered ? 'data' : 'no data'}`}
+                      className={`px-1 py-1 text-center ${covered ? 'text-dark-teal' : 'text-red-500'}`}
+                    >
+                      {covered ? '●' : '○'}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }

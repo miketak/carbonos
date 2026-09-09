@@ -34,6 +34,7 @@ import {
   listAssignments,
   listAuditEvents,
   listBoundaryVersions,
+  listCoverage,
   listEmissionFactors,
   listEntities,
   listFacilities,
@@ -101,6 +102,7 @@ export const marketFactorsKey = (inventoryId: string) =>
 export const assignmentsKey = (inventoryId: string) => ['ghg', 'assignments', inventoryId] as const
 export const validationKey = (inventoryId: string) => ['ghg', 'validation', inventoryId] as const
 export const runsKey = (inventoryId: string) => ['ghg', 'runs', inventoryId] as const
+export const coverageKey = (inventoryId: string) => ['ghg', 'coverage', inventoryId] as const
 export const auditEventsKey = (inventoryId: string) => ['ghg', 'events', inventoryId] as const
 export const runKey = (id: string) => ['ghg', 'run', id] as const
 export const reportKey = (runId: string) => ['ghg', 'report', runId] as const
@@ -376,6 +378,7 @@ function useInventoryScopedMutation<TArgs, TResult>(
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boundaryKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: assignmentsKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: coverageKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: marketFactorsKey(inventoryId) })
       // the inventory carries the lifecycle status, which the header renders
@@ -424,6 +427,10 @@ export function useReopenInventory(inventoryId: string) {
 
 export function useWithdrawFinal(inventoryId: string) {
   return useLifecycleMutation(inventoryId, (reason: string) => withdrawFinal(inventoryId, reason))
+}
+
+export function useCoverageQuery(inventoryId: string) {
+  return useQuery({ queryKey: coverageKey(inventoryId), queryFn: () => listCoverage(inventoryId) })
 }
 
 export function useAuditEventsQuery(inventoryId: string) {

@@ -14,6 +14,7 @@ import {
   exclusionLabels,
   formatCo2e,
   formatKg,
+  formatPeriod,
   formatTonnes,
   formatTonnesOfGas,
   instrumentLabels,
@@ -431,7 +432,7 @@ function BaseYearSection({
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p>
-        <span className="font-semibold">{baseYear.year}</span>
+        <span className="font-semibold">{baseYear.periodLabel}</span>
         <span className="text-ink-muted">
           {' '}
           · {baseYear.inventoryName} · significance threshold {baseYear.thresholdPercent}%, applied
@@ -524,7 +525,7 @@ function BaseYearSection({
             <tbody>
               {baseYear.profile.map((entry) => (
                 <tr key={entry.inventoryId} className="border-b border-teal/5 last:border-0">
-                  <td className="py-1 tabular-nums">{entry.year}</td>
+                  <td className="py-1 tabular-nums">{entry.periodLabel}</td>
                   <td className="py-1">{entry.name}</td>
                   <td className="py-1 text-right tabular-nums">
                     {entry.totalKgCo2e === null ? 'not yet final' : formatCo2e(entry.totalKgCo2e)}
@@ -614,7 +615,7 @@ function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
                       {row.quantity.toLocaleString()} {row.unit}
                     </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap text-ink-muted">
-                      {row.activityDate}
+                      {formatPeriod(row.periodStart, row.periodEnd)}
                     </td>
                     <td className="py-1.5 text-ink-muted">{row.exclusionDetail ?? ''}</td>
                   </tr>

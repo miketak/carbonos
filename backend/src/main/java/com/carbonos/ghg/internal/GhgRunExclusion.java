@@ -45,8 +45,11 @@ public class GhgRunExclusion {
 	@Column(nullable = false, length = 30)
 	private String unit;
 
-	@Column(name = "activity_date", nullable = false)
-	private LocalDate activityDate;
+	@Column(name = "period_start", nullable = false)
+	private LocalDate periodStart;
+
+	@Column(name = "period_end", nullable = false)
+	private LocalDate periodEnd;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "exclusion_reason", nullable = false, length = 40)
@@ -67,7 +70,8 @@ public class GhgRunExclusion {
 		this.activityType = activity.getActivityType();
 		this.quantity = activity.getQuantity();
 		this.unit = activity.getUnit();
-		this.activityDate = activity.getActivityDate();
+		this.periodStart = activity.getPeriodStart();
+		this.periodEnd = activity.getPeriodEnd();
 		this.exclusionReason = assignment.getExclusionReason();
 		this.exclusionDetail = assignment.getExclusionDetail();
 	}
@@ -96,8 +100,12 @@ public class GhgRunExclusion {
 		return unit;
 	}
 
-	public LocalDate getActivityDate() {
-		return activityDate;
+	public LocalDate getPeriodStart() {
+		return periodStart;
+	}
+
+	public LocalDate getPeriodEnd() {
+		return periodEnd;
 	}
 
 	public ExclusionReason getExclusionReason() {

@@ -179,6 +179,11 @@ public class BoundaryTreatment {
 				&& (effectiveTo == null || !date.isAfter(effectiveTo));
 	}
 
+	/** Whether the membership window overlaps a period at all (spec 04.2). */
+	boolean overlaps(LocalDate start, LocalDate end) {
+		return new DatePeriod(start, end).overlaps(effectiveFrom, effectiveTo);
+	}
+
 	/** Whether the window starts or ends inside the period, i.e. the membership is partial. */
 	boolean isPartialWithin(LocalDate periodStart, LocalDate periodEnd) {
 		return (effectiveFrom != null && effectiveFrom.isAfter(periodStart))

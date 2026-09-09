@@ -42,8 +42,8 @@ class ActivityController {
 	ResponseEntity<ActivityResponse> create(@PathVariable UUID organizationId,
 			@Valid @RequestBody CreateActivityRequest body) {
 		var activity = ghgService.createActivity(organizationId, body.facilityId(), body.activityType(),
-				body.quantity(), body.unit(), body.activityDate(), body.dataSource(), body.evidenceRef(),
-				body.dataQuality(), body.note());
+				body.quantity(), body.unit(), body.periodStart(), body.periodEnd(), body.dataSource(),
+				body.evidenceRef(), body.dataQuality(), body.note());
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/ghg/activities/{id}")
 			.buildAndExpand(activity.getId()).toUri();
 		return ResponseEntity.created(location).body(ActivityResponse.from(activity));
@@ -52,8 +52,8 @@ class ActivityController {
 	@PutMapping("/activities/{id}")
 	ActivityResponse update(@PathVariable UUID id, @Valid @RequestBody CreateActivityRequest body) {
 		return ActivityResponse.from(ghgService.updateActivity(id, body.facilityId(), body.activityType(),
-				body.quantity(), body.unit(), body.activityDate(), body.dataSource(), body.evidenceRef(),
-				body.dataQuality(), body.note()));
+				body.quantity(), body.unit(), body.periodStart(), body.periodEnd(), body.dataSource(),
+				body.evidenceRef(), body.dataQuality(), body.note()));
 	}
 
 	@DeleteMapping("/activities/{id}")

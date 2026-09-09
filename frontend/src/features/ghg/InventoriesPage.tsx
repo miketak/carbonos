@@ -11,7 +11,7 @@ import { fieldErrors, problemDetail } from '../../lib/api'
 import { ApproachBadge, InventoryStatusBadge } from './components/badges'
 import { approachLabels } from './format'
 import { useCreateInventory, useDeleteInventory, useInventoriesQuery } from './useGhg'
-import type { ConsolidationApproach, GwpSet, Inventory } from './api'
+import type { ConsolidationApproach, GwpSet, Inventory, StraddleTreatment } from './api'
 
 /**
  * The accounting views: each inventory selects, classifies, and applies
@@ -141,6 +141,18 @@ function InventoryCard({
   )
 }
 
+/** Whole months between two ISO dates (end inclusive), -1 when not whole, null while incomplete. */
+function wholeMonths(start: string, end: string): number | null {
+  if (!start || !end) return null
+  const from = new Date(start + 'T00:00:00Z')
+  const to = new Date(end + 'T00:00:00Z')
+  to.setUTCDate(to.getUTCDate() + 1)
+  if (to <= from) return null
+  const months =
+    (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + to.getUTCMonth() - from.getUTCMonth()
+  return to.getUTCDate() === from.getUTCDate() ? months : -1
+}
+
 function InventoryFormModal({
   organizationId,
   onClose,
@@ -158,6 +170,8 @@ function InventoryFormModal({
   const [purpose, setPurpose] = useState('')
   const [approach, setApproach] = useState<ConsolidationApproach>('OPERATIONAL_CONTROL')
   const [gwpSet, setGwpSet] = useState<GwpSet>('AR5')
+  const [straddleTreatment, setStraddleTreatment] = useState<StraddleTreatment>('PRO_RATE')
+  const periodMonths = wholeMonths(periodStart, periodEnd)
 
   const errors = fieldErrors(create.error)
   const generalError = create.isError && !errors ? problemDetail(create.error) : undefined
@@ -172,6 +186,7 @@ function InventoryFormModal({
         purpose: purpose.trim() === '' ? undefined : purpose,
         consolidationApproach: approach,
         gwpSet,
+        straddleTreatment,
       },
       { onSuccess: (inventory) => onSaved(`${inventory.name} created.`) },
     )
@@ -205,6 +220,28 @@ function InventoryFormModal({
             required
           />
         </div>
+        {periodMonths !== null && periodMonths !== 12 && (
+          <p role="status" className="text-xs text-amber-700">
+            This period is{' '}
+            {periodMonths === -1 ? 'not a whole number of months' : `${periodMonths} months`}.
+            Chapter 9 expects an annual inventory; keep it only if the period is deliberate.
+          </p>
+        )}
+        {periodMonths === 12 && periodStart.slice(5) !== '01-01' && (
+          <p role="status" className="text-xs text-ink-muted">
+            A fiscal year: the inventory will be labelled FY{periodStart.slice(0, 4)}/
+            {periodEnd.slice(2, 4)}.
+          </p>
+        )}
+        <SelectField
+          label="Records that straddle the period or a membership window"
+          value={straddleTreatment}
+          onChange={(event) => setStraddleTreatment(event.target.value as StraddleTreatment)}
+          hint="An annual total for a site acquired mid-year is either counted for the days inside, with the split on the line, or blocked until split (spec 04.2)."
+        >
+          <option value="PRO_RATE">Pro-rate by days (default)</option>
+          <option value="BLOCK">Block the run until the record is split</option>
+        </SelectField>
         <InputField
           label="Purpose (optional)"
           placeholder="Corporate reporting, UK regulatory…"

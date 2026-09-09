@@ -21,6 +21,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 03.3 | [Table 1 completeness](03.3-table-1-completeness.md) | Ch. 3 | Implemented |
 | 04 | [Operational boundary and classification](04-operational-boundary-and-classification.md) | Ch. 4 | Implemented |
 | 04.1 | [Scope as an accounting decision](04.1-scope-as-accounting-decision.md) | Ch. 4, App. F | Implemented |
+| 04.2 | [Activity periods, cut-off and pro-rating](04.2-activity-periods-and-pro-rating.md) | Ch. 5, 7, 9 | Implemented |
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
 | 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |

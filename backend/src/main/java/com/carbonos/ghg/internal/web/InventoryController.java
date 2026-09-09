@@ -67,7 +67,7 @@ class InventoryController {
 	ResponseEntity<InventoryResponse> create(@PathVariable UUID organizationId,
 			@Valid @RequestBody InventoryRequest body) {
 		var inventory = inventoryService.create(organizationId, body.name(), body.periodStart(), body.periodEnd(),
-				body.purpose(), body.baseYear(), body.consolidationApproach(), body.gwpSet());
+				body.purpose(), body.baseYear(), body.consolidationApproach(), body.gwpSet(), body.straddleTreatment());
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
 			.path("/api/ghg/inventories/{id}")
 			.buildAndExpand(inventory.getId())
@@ -83,7 +83,13 @@ class InventoryController {
 	@PutMapping("/inventories/{id}")
 	InventoryResponse update(@PathVariable UUID id, @Valid @RequestBody InventoryRequest body) {
 		return InventoryResponse.from(inventoryService.update(id, body.name(), body.periodStart(), body.periodEnd(),
-				body.purpose(), body.baseYear(), body.consolidationApproach(), body.gwpSet()));
+				body.purpose(), body.baseYear(), body.consolidationApproach(), body.gwpSet(), body.straddleTreatment()));
+	}
+
+	/** Which months of the period have data, per facility and activity type (spec 04.2). */
+	@GetMapping("/inventories/{id}/coverage")
+	List<InventoryService.CoverageRow> coverage(@PathVariable UUID id) {
+		return inventoryService.coverage(id);
 	}
 
 	@DeleteMapping("/inventories/{id}")
