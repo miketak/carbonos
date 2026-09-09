@@ -126,6 +126,22 @@ test('records the megawatt-hours an instrument covers, in kWh, and always offers
   })
 })
 
+test('a negative factor gets an inline message and sends nothing (ticket T-24)', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<MarketFactorsCard organizationId="org-1" inventory={inventory} />)
+  await screen.findByText(/No instruments recorded: the market-based figure/)
+
+  const factor = screen.getByLabelText(/^kg CO₂e per kWh/)
+  await user.type(factor, '-0.1')
+  await user.type(screen.getByLabelText(/^Source/), 'Obuom solar PPA 2025')
+  await user.type(screen.getByLabelText(/Covered quantity \(MWh\)/), '20000')
+  await user.click(screen.getByRole('button', { name: 'Add instrument' }))
+
+  expect(await screen.findByText('kg CO₂e per kWh must be 0 or more.')).toBeInTheDocument()
+  expect(factor).toHaveAttribute('aria-invalid', 'true')
+  expect(setMarketFactor).not.toHaveBeenCalled()
+})
+
 test('lists what each instrument covers and its period', async () => {
   vi.mocked(listMarketFactors).mockResolvedValue([ppa])
   renderWithProviders(<MarketFactorsCard organizationId="org-1" inventory={inventory} />)

@@ -4,7 +4,8 @@ import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
+import { fieldErrors, problemDetail } from '../../../lib/api'
+import { checkNumber, collectErrors } from '../../../lib/validate'
 import { instrumentLabels } from '../format'
 import {
   useFacilitiesQuery,
@@ -70,12 +71,25 @@ export function MarketFactorsCard({
   const [coveredMwh, setCoveredMwh] = useState('')
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
+  const [clientErrors, setClientErrors] = useState<Record<string, string> | undefined>()
 
   const chosenFacility = facilityId || facilities[0]?.id || ''
+  const errors = clientErrors ?? fieldErrors(set.error)
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (!chosenFacility) return
+    const invalid = collectErrors({
+      kgCo2ePerKwh: checkNumber(factor, { label: 'kg CO₂e per kWh', min: 0, required: true }),
+      coveredKwh: checkNumber(coveredMwh, {
+        label: 'Covered quantity',
+        positive: true,
+        required: true,
+      }),
+      vintage: checkNumber(vintage, { label: 'Vintage', min: 1990, max: 2100 }),
+    })
+    setClientErrors(invalid)
+    if (invalid) return
     set.mutate(
       {
         facilityId: chosenFacility,
@@ -109,8 +123,11 @@ export function MarketFactorsCard({
           setPeriodEnd('')
           toast(`Instrument recorded for ${saved.facilityName}.`)
         },
-        onError: (error) =>
-          toast(problemDetail(error) ?? 'Could not save the instrument.', 'error'),
+        onError: (error) => {
+          if (!fieldErrors(error)) {
+            toast(problemDetail(error) ?? 'Could not save the instrument.', 'error')
+          }
+        },
       },
     )
   }
@@ -221,7 +238,7 @@ export function MarketFactorsCard({
         </p>
       )}
       {editable && facilities.length > 0 && (
-        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-4 md:items-end">
+        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-4 md:items-end" noValidate>
           <SelectField
             label="Facility"
             value={chosenFacility}
@@ -251,6 +268,7 @@ export function MarketFactorsCard({
             step="0.000001"
             value={factor}
             onChange={(event) => setFactor(event.target.value)}
+            error={errors?.kgCo2ePerKwh}
             required
           />
           <InputField
@@ -267,6 +285,7 @@ export function MarketFactorsCard({
             step="0.001"
             value={coveredMwh}
             onChange={(event) => setCoveredMwh(event.target.value)}
+            error={errors?.coveredKwh}
             hint="The megawatt-hours the instrument covers; the balance takes the residual mix or grid average."
             required
           />
@@ -303,6 +322,7 @@ export function MarketFactorsCard({
             max="2100"
             value={vintage}
             onChange={(event) => setVintage(event.target.value)}
+            error={errors?.vintage}
           />
           <InputField
             label="Retirement date"
@@ -385,12 +405,18 @@ function ResidualMix({ inventory, editable }: { inventory: Inventory; editable: 
   const [factor, setFactor] = useState(
     inventory.residualMixKgCo2ePerKwh === null ? '' : String(inventory.residualMixKgCo2ePerKwh),
   )
+  const [factorError, setFactorError] = useState<string | undefined>()
 
   return (
     <form
+      noValidate
       onSubmit={(event) => {
         event.preventDefault()
         if (available === '') return
+        const invalid =
+          available === 'true' ? checkNumber(factor, { label: 'Residual mix', min: 0 }) : undefined
+        setFactorError(invalid)
+        if (invalid) return
         set.mutate(
           {
             available: available === 'true',
@@ -424,6 +450,7 @@ function ResidualMix({ inventory, editable }: { inventory: Inventory; editable: 
         value={factor}
         disabled={!editable || available !== 'true'}
         onChange={(event) => setFactor(event.target.value)}
+        error={factorError ?? fieldErrors(set.error)?.kgCo2ePerKwh}
       />
       {editable && (
         <div className="flex justify-end">

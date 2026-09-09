@@ -29,7 +29,7 @@ Status summary (update as tickets close):
 |---|---|---|
 | P0 | 9 | 9 |
 | P1 | 13 | 13 |
-| P2 | 4 | 1 |
+| P2 | 4 | 4 |
 
 ## Theme 1: Scope 2 accounting
 
@@ -205,20 +205,23 @@ Status summary (update as tickets close):
 
 ## Theme 8: Validation and UI polish
 
-- [ ] **T-24 (P2) Inline validation messages for out-of-range inputs**
+- [x] **T-24 (P2) Inline validation messages for out-of-range inputs**
   - Findings: F6, F33
   - Problem: an economic interest of 150% leaves the dialog open with no message (only the browser's native range check); a market instrument at -0.1 kg/kWh is dropped silently.
   - Done when: legal ownership and economic interest are validated between 0 and 100 with an inline message, and a warning appears when they differ materially; instrument factors reject negatives with a message; the same treatment applies to every numeric field on the entity, facility, record, and instrument forms.
+  - Spec: 08 (form validation and UI polish).
 
-- [ ] **T-25 (P2) Remove the assurance-sounding splash copy**
+- [x] **T-25 (P2) Remove the assurance-sounding splash copy**
   - Findings: F3
   - Problem: the post-login loader shows "Verifying audit trail integrity" and "Calibrating consolidation models". Nothing is verified; a verifier will ask what was.
   - Done when: the loader is neutral (a progress indicator or nothing).
+  - Spec: 08.
 
-- [ ] **T-26 (P2) "Create correction" does not respond to a pointer click under automation**
+- [x] **T-26 (P2) "Create correction" does not respond to a pointer click under automation**
   - Findings: F50
   - Problem: Playwright reported the dialog backdrop or sticky header intercepting pointer events and no request was sent; a dispatched DOM click worked. Unconfirmed for a human click; animated glass overlays are the likely cause.
   - Done when: a real pointer click on "Create correction" on a published inventory opens the dialog and submits; z-index and pointer-events on the backdrop and header are checked.
+  - Spec: 08. The sticky header intercepted controls scrolled underneath it; the document now scroll-pads past it. The real-mouse retest stays on the follow-up audit list.
 
 ## Keep: behaviour the audit confirmed as correct
 

@@ -12,7 +12,9 @@ test('plays after triggerSplash and unmounts when finished', () => {
     expect(screen.getByRole('status')).toBeInTheDocument()
     expect(screen.getByText('CarbonOS')).toBeInTheDocument()
     expect(screen.getByText('Measure. Certify. Sustain.')).toBeInTheDocument()
-    expect(screen.getByText('Initializing inventory engine')).toBeInTheDocument()
+    // the loader claims nothing: no "verifying" or "calibrating" lines (ticket T-25)
+    expect(screen.getByRole('progressbar', { name: 'Loading' })).toBeInTheDocument()
+    expect(screen.queryByText(/verif|calibrat/i)).not.toBeInTheDocument()
 
     act(() => vi.advanceTimersByTime(11000))
     expect(screen.queryByRole('status')).not.toBeInTheDocument()

@@ -4,6 +4,7 @@ import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
+import { checkNumber, collectErrors } from '../../../lib/validate'
 import { useCreateActivity, useUnitsQuery, useUpdateActivity } from '../useGhg'
 import type { Activity, DataQuality, Facility, Unit } from '../api'
 import { tierLabels } from '../format'
@@ -53,11 +54,19 @@ export function ActivityFormModal({
   const [reason, setReason] = useState('')
   const [note, setNote] = useState(activity?.note ?? '')
 
-  const errors = fieldErrors(mutation.error)
+  const [clientErrors, setClientErrors] = useState<Record<string, string> | undefined>()
+
+  const errors = clientErrors ?? fieldErrors(mutation.error)
   const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    const invalid = collectErrors({
+      quantity: checkNumber(quantity, { label: 'Quantity', positive: true, required: true }),
+      uncertaintyPercent: checkNumber(uncertainty, { label: 'Uncertainty', min: 0, max: 100 }),
+    })
+    setClientErrors(invalid)
+    if (invalid) return
     const input = {
       facilityId,
       activityType,
