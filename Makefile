@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: db-up db-down backend frontend admin verify dev-up dev-down
+.PHONY: db-up db-down db-reset db-wipe backend frontend admin verify dev-up dev-down
 
 dev-up:           ## start db + backend + frontend in tmux (a "dev-console" window if inside tmux, else a "carbonos" session)
 	./scripts/dev-up.sh
@@ -12,6 +12,13 @@ db-up:            ## start local Postgres
 
 db-down:          ## stop local Postgres
 	docker compose down
+
+db-reset:         ## wipe the local compose database (drops the volumes) and start it again
+	docker compose down -v && docker compose up -d
+
+db-wipe:          ## wipe a Railway environment's database: make db-wipe ENV=staging [ARGS=--yes]
+	@test -n "$(ENV)" || { echo "Usage: make db-wipe ENV=staging [ARGS=--yes|--yes-production]"; exit 1; }
+	./scripts/wipe-railway-db.sh "$(ENV)" $(ARGS)
 
 backend:          ## run Spring Boot with the local profile (sources SDKMAN for Java 25)
 	cd backend && source "$$HOME/.sdkman/bin/sdkman-init.sh" && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local

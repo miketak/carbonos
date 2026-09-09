@@ -67,6 +67,27 @@ Trunk-based flow:
 7. Disable Railway's own GitHub auto-deploy for these services — GitHub
    Actions owns deployment (`railway up`), so double-deploys would result.
 
+### Wiping an environment's database
+
+The Railway Postgres services have no public proxy, so the wipe runs `psql`
+inside the Postgres container over `railway ssh`. One-time setup: sign in with
+`railway login` and register a key with
+`railway ssh keys add -k ~/.ssh/id_ed25519.pub`. Then:
+
+```bash
+make db-wipe ENV=staging            # prompts you to type "staging"
+make db-wipe ENV=staging ARGS=--yes # no prompt
+```
+
+The script checks that the container really belongs to the environment you
+named, prints what the database holds, drops and recreates the `public`
+schema, redeploys `backend` so Flyway migrates from V1 and the startup seeder
+recreates the admin, and waits until the health endpoint reports UP. Every
+account, organization and run is gone; the seeded admin is the only user left.
+Production requires `ARGS=--yes-production` and typing `production` at the
+prompt, which cannot be skipped. Locally, `make db-reset` drops the compose
+volumes instead.
+
 ## Releasing
 
 ```bash
