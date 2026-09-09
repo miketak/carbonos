@@ -51,9 +51,17 @@ public class ReportAssembler {
 		var inventory = inventoryService.get(run.getInventory().getId());
 		var published = inventory.getStatus() == InventoryStatus.PUBLISHED && id.equals(inventory.getFinalRunId())
 				&& inventory.getPublishedReport() != null;
-		var report = published ? mapper.readValue(inventory.getPublishedReport(), ReportResponse.class)
-				: assembleLive(run, inventory);
+		var report = published ? stored(inventory) : assembleLive(run, inventory);
 		return report.withAfter(published ? sincePublication(inventory, run) : null, correction(inventory, run));
+	}
+
+	/** The report as it read at publication, pointing at whatever superseded it since (spec 05.3). */
+	private ReportResponse stored(Inventory inventory) {
+		var snapshot = mapper.readValue(inventory.getPublishedReport(), ReportResponse.class);
+		var successor = inventory.getSupersededById() == null ? null
+				: inventoryService.get(inventory.getSupersededById());
+		return snapshot.withSupersededBy(successor == null ? null : successor.getId(),
+				successor == null ? null : successor.getName());
 	}
 
 	/** Keeps the final run's report as it reads at publication (spec 05.3). */

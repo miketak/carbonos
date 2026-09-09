@@ -67,6 +67,29 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality, sincePublication, correction);
 	}
 
+	/**
+	 * The same report pointing at the inventory that superseded it. Lineage is not part of the frozen figures: a
+	 * published record keeps its numbers but always names the correction that replaced it (spec 05.3).
+	 */
+	public ReportResponse withSupersededBy(UUID supersededById, String supersededBy) {
+		var p = period == null ? null
+				: new Period(period.periodStart(), period.periodEnd(), period.inventoryName(), period.status(),
+						period.publishedAt(), supersededById);
+		if (header == null) {
+			return new ReportResponse(company, operationalBoundary, p, emissions, byGas, biogenicCo2Kg, biogenicCo2T,
+					baseYear, methodology, boundaryExclusions, exclusions, lines, run, header, byScope3Category,
+					byFacility, byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality, sincePublication,
+					correction);
+		}
+		var h = new Header(header.organizationName(), header.address(), header.contact(), header.periodLabel(),
+				header.periodStart(), header.periodEnd(), header.preparedBy(), header.preparedAt(), header.approvedBy(),
+				header.publishedBy(), header.publishedAt(), header.version(), header.supersedes(), supersededBy,
+				header.assuranceLevel(), header.assuranceProvider(), header.assuranceStatement());
+		return new ReportResponse(company, operationalBoundary, p, emissions, byGas, biogenicCo2Kg, biogenicCo2T,
+				baseYear, methodology, boundaryExclusions, exclusions, lines, run, h, byScope3Category, byFacility,
+				byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality, sincePublication, correction);
+	}
+
 	/** The records left out under one reason, with the emissions the accountant estimated for them (spec 04.4). */
 	public record ExclusionSummary(ExclusionReason reason, int recordCount, BigDecimal estimatedKgCo2e,
 			BigDecimal estimatedTCo2e, int unestimatedCount) {

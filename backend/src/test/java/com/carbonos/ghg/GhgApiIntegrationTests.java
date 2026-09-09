@@ -1609,10 +1609,16 @@ class GhgApiIntegrationTests {
 		mvc.perform(delete("/api/ghg/inventories/" + inventoryId).with(asMember()).with(csrf()))
 			.andExpect(status().isConflict());
 
+		// a correction must say why it exists
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "2025 Corporate (restated)"}"""))
+			.andExpect(status().isUnprocessableContent())
+			.andExpect(jsonPath("$.errors.reason").exists());
 		var successor = body(mvc
 			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
 				.contentType("application/json").content("""
-						{"name": "2025 Corporate (restated)"}"""))
+						{"name": "2025 Corporate (restated)", "reason": "Restated after a metering error was found"}"""))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.status").value("DRAFT"))
 			.andExpect(jsonPath("$.name").value("2025 Corporate (restated)")));
@@ -2345,7 +2351,9 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		var successor = body(mvc
-			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf()))
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"reason": "Restated to carry the exclusion forward"}"""))
 			.andExpect(status().isCreated()));
 		mvc.perform(get("/api/ghg/inventories/" + JsonPath.read(successor, "$.id") + "/boundary/exclusions")
 			.with(asMember()))
@@ -2579,7 +2587,7 @@ class GhgApiIntegrationTests {
 		var correction = body(mvc
 			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
 				.contentType("application/json").content("""
-						{"name": "FY2025 (restated)"}"""))
+						{"name": "FY2025 (restated)", "reason": "Restated after the final review"}"""))
 			.andExpect(status().isCreated()));
 		String correctionId = JsonPath.read(correction, "$.id");
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
