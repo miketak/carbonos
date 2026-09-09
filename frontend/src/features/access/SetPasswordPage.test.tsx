@@ -45,12 +45,12 @@ test('greets the requester and signs them in after setting a password', async ()
   renderPage()
 
   expect(await screen.findByText('Kofi Mensah')).toBeInTheDocument()
-  await user.type(screen.getByLabelText(/new password/i), 'brand-new-secret')
-  await user.type(screen.getByLabelText(/confirm password/i), 'brand-new-secret')
+  await user.type(screen.getByLabelText(/new password/i), 'brand-new-secret-1')
+  await user.type(screen.getByLabelText(/confirm password/i), 'brand-new-secret-1')
   await user.click(screen.getByRole('button', { name: /set password and sign in/i }))
 
   expect(await screen.findByRole('heading', { name: 'App home' })).toBeInTheDocument()
-  expect(vi.mocked(completeSetup)).toHaveBeenCalledWith('tok-1', 'brand-new-secret')
+  expect(vi.mocked(completeSetup)).toHaveBeenCalledWith('tok-1', 'brand-new-secret-1')
 })
 
 test('rejects mismatched passwords before calling the API', async () => {
@@ -62,7 +62,7 @@ test('rejects mismatched passwords before calling the API', async () => {
   renderPage()
 
   await screen.findByText('Kofi Mensah')
-  await user.type(screen.getByLabelText(/new password/i), 'brand-new-secret')
+  await user.type(screen.getByLabelText(/new password/i), 'brand-new-secret-1')
   await user.type(screen.getByLabelText(/confirm password/i), 'something-else')
   await user.click(screen.getByRole('button', { name: /set password and sign in/i }))
 

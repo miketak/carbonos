@@ -60,6 +60,7 @@ public class BaseYearService {
 	/** Designates (or re-designates) the base year and records the policy. */
 	public BaseYear set(UUID organizationId, UUID inventoryId, BigDecimal thresholdPercent, String reason,
 			StructuralChangeConvention convention) {
+		access.checkWrite(organizations.findById(organizationId).orElseThrow(() -> GhgNotFoundException.organization(organizationId)));
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.check(organization);
@@ -83,6 +84,7 @@ public class BaseYearService {
 	 */
 	public BaseYear raise(UUID organizationId, RecalculationTrigger trigger, String reason,
 			BigDecimal affectedPercent) {
+		access.checkWrite(organizations.findById(organizationId).orElseThrow(() -> GhgNotFoundException.organization(organizationId)));
 		var baseYear = find(organizationId).orElseThrow(() -> GhgNotFoundException.baseYear(organizationId));
 		if (trigger == RecalculationTrigger.STRUCTURAL_CHANGE) {
 			throw new GhgRuleViolationException(
@@ -96,6 +98,7 @@ public class BaseYearService {
 	}
 
 	public void clear(UUID organizationId) {
+		access.checkWrite(organizations.findById(organizationId).orElseThrow(() -> GhgNotFoundException.organization(organizationId)));
 		find(organizationId).ifPresent(baseYears::delete);
 	}
 
@@ -106,6 +109,7 @@ public class BaseYearService {
 	 */
 	public BaseYear decide(UUID organizationId, UUID recalculationId, RecalculationStatus decision, UUID runId,
 			String note) {
+		access.checkWrite(organizations.findById(organizationId).orElseThrow(() -> GhgNotFoundException.organization(organizationId)));
 		var baseYear = find(organizationId).orElseThrow(() -> GhgNotFoundException.baseYear(organizationId));
 		var recalculation = baseYear.getRecalculations()
 			.stream()

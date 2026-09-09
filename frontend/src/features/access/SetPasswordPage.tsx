@@ -18,6 +18,7 @@ export function SetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [mismatch, setMismatch] = useState(false)
+  const [weak, setWeak] = useState(false)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
@@ -42,6 +43,12 @@ export function SetPasswordPage() {
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
+    // spec 01.2: the same rule the server applies
+    setWeak(false)
+    if (!/^(?=.*[A-Za-z])(?=.*\d).{12,72}$/.test(password)) {
+      setWeak(true)
+      return
+    }
     if (password !== confirm) {
       setMismatch(true)
       return
@@ -93,8 +100,8 @@ export function SetPasswordPage() {
               autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              error={errors?.password}
-              hint="At least 8 characters."
+              error={weak ? 'At least 12 characters, with a letter and a digit.' : errors?.password}
+              hint="At least 12 characters, with a letter and a digit."
               required
             />
             <InputField

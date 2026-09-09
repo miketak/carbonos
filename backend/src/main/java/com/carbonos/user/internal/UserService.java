@@ -53,6 +53,28 @@ public class UserService {
 		return user;
 	}
 
+	/** An approved access request creates the account at once, pending its password (spec 01.2). */
+	public User createPending(String email, String displayName) {
+		var normalizedEmail = normalize(email);
+		var existing = users.findByEmail(normalizedEmail);
+		if (existing.isPresent()) {
+			return existing.get();
+		}
+		var placeholder = java.util.UUID.randomUUID().toString() + java.util.UUID.randomUUID();
+		var user = new User(normalizedEmail, displayName, UserRole.MEMBER, passwordEncoder.encode(placeholder));
+		user.markPending();
+		user = users.saveAndFlush(user);
+		events.publishEvent(new UserCreated(user.getId(), user.getEmail()));
+		return user;
+	}
+
+	/** Sets the password of a pending account and activates it. */
+	public User activate(UUID id, String rawPassword) {
+		var user = get(id);
+		user.activate(passwordEncoder.encode(rawPassword));
+		return user;
+	}
+
 	public User update(UUID id, String displayName, UserRole role, UserStatus status, UUID actorId) {
 		var user = get(id);
 		var losesAdminAccess = user.getRole() == UserRole.ADMIN && user.getStatus() == UserStatus.ACTIVE

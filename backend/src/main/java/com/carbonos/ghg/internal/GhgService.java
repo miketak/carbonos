@@ -12,6 +12,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.carbonos.user.UserDirectory;
+
 /**
  * The organizational-facts side of spec 02 and spec 03.1: organizations,
  * their legal entities and facilities, the emission-factor library, and
@@ -31,12 +33,14 @@ public class GhgService {
 	private final GhgRunLineRepository runLines;
 	private final FactorPacks factorPacks;
 	private final UnitConverter units;
+	private final OrganizationMemberRepository members;
+	private final UserDirectory userDirectory;
 	private final GhgAccess access;
 
 	GhgService(OrganizationRepository organizations, LegalEntityRepository entities, FacilityRepository facilities,
 			EmissionFactorRepository emissionFactors, ActivityRecordRepository activities,
 			SourceStreamRepository streams, GhgRunLineRepository runLines, FactorPacks factorPacks, UnitConverter units,
-			GhgAccess access) {
+			OrganizationMemberRepository members, UserDirectory userDirectory, GhgAccess access) {
 		this.organizations = organizations;
 		this.entities = entities;
 		this.facilities = facilities;
@@ -46,6 +50,8 @@ public class GhgService {
 		this.runLines = runLines;
 		this.factorPacks = factorPacks;
 		this.units = units;
+		this.members = members;
+		this.userDirectory = userDirectory;
 		this.access = access;
 	}
 
@@ -56,7 +62,8 @@ public class GhgService {
 		if (access.isCurrentUserAdmin()) {
 			return organizations.findAllByOrderByCreatedAtAsc();
 		}
-		return organizations.findAllByOwnerUserIdOrderByCreatedAtAsc(access.currentUserId());
+		// spec 01.2: the organizations the caller is a member of
+		return members.findOrganizationsOfUser(access.currentUserId());
 	}
 
 	@Transactional(readOnly = true)
@@ -85,13 +92,29 @@ public class GhgService {
 			throw new DuplicateOrganizationException(trimmed);
 		}
 		organization.setHeader(trimToNull(address), trimToNull(contact));
+		// spec 01.2: the creator is the first owner
+		var creator = userDirectory.findById(access.currentUserId());
+		members.save(new OrganizationMember(organization, access.currentUserId(),
+				creator.map(UserDirectory.UserSummary::email).orElse(access.currentUserEmail()),
+				creator.map(UserDirectory.UserSummary::displayName).orElse(access.currentUserEmail()), OrgRole.OWNER));
 		entities.save(new LegalEntity(organization, trimmed, RelationshipType.SUBSIDIARY, new BigDecimal("100.00"),
 				new BigDecimal("100.00"), true, true, null, true));
 		return organization;
 	}
 
+	/** The caller's role in an organization, for the response (spec 01.2). */
+	@Transactional(readOnly = true)
+	public String roleIn(Organization organization) {
+		if (access.isCurrentUserAdmin()
+				&& members.findByOrganizationIdAndUserId(organization.getId(), access.currentUserId()).isEmpty()) {
+			return "ADMIN";
+		}
+		return access.roleIn(organization).map(Enum::name).orElse(null);
+	}
+
 	public Organization updateOrganization(UUID id, String name, String address, String contact) {
 		var organization = getOrganization(id);
+		access.checkOwner(organization);
 		var trimmed = name.trim();
 		if (!trimmed.equalsIgnoreCase(organization.getName()) && organizations.existsByNameIgnoreCase(trimmed)) {
 			throw new DuplicateOrganizationException(trimmed);
@@ -106,8 +129,62 @@ public class GhgService {
 	}
 
 	public void deleteOrganization(UUID id) {
-		organizations.delete(getOrganization(id));
+		var organization = getOrganization(id);
+		access.checkOwner(organization);
+		organizations.delete(organization);
 	}
+	// --- members (spec 01.2) -------------------------------------------------------
+
+	@Transactional(readOnly = true)
+	public List<OrganizationMember> listMembers(UUID organizationId) {
+		getOrganization(organizationId);
+		return members.findAllByOrganizationIdOrderByCreatedAtAsc(organizationId);
+	}
+
+	/** Adds a platform account as a member; owners (and platform administrators) only. */
+	public OrganizationMember addMember(UUID organizationId, String email, OrgRole role) {
+		var organization = getOrganization(organizationId);
+		access.checkOwner(organization);
+		var account = userDirectory.findByEmail(email).orElseThrow(() -> GhgNotFoundException.account(email));
+		if (members.findByOrganizationIdAndUserId(organizationId, account.id()).isPresent()) {
+			throw new GhgRuleViolationException(account.email() + " is already a member of '" + organization.getName() + "'.");
+		}
+		return members.save(new OrganizationMember(organization, account.id(), account.email(), account.displayName(), role));
+	}
+
+	public OrganizationMember changeMemberRole(UUID organizationId, UUID memberId, OrgRole role) {
+		var organization = getOrganization(organizationId);
+		access.checkOwner(organization);
+		var member = requireMember(organizationId, memberId);
+		if (member.getRole() == OrgRole.OWNER && role != OrgRole.OWNER && isLastOwner(organizationId)) {
+			throw new GhgRuleViolationException("'" + organization.getName() + "' needs at least one owner.");
+		}
+		member.setRole(role);
+		return member;
+	}
+
+	public void removeMember(UUID organizationId, UUID memberId) {
+		var organization = getOrganization(organizationId);
+		access.checkOwner(organization);
+		var member = requireMember(organizationId, memberId);
+		if (member.getRole() == OrgRole.OWNER && isLastOwner(organizationId)) {
+			throw new GhgRuleViolationException("'" + organization.getName() + "' needs at least one owner.");
+		}
+		members.delete(member);
+	}
+
+	private boolean isLastOwner(UUID organizationId) {
+		return members.countByOrganizationIdAndRole(organizationId, OrgRole.OWNER) <= 1;
+	}
+
+	private OrganizationMember requireMember(UUID organizationId, UUID memberId) {
+		var member = members.findById(memberId).orElseThrow(() -> GhgNotFoundException.member(memberId));
+		if (!member.getOrganization().getId().equals(organizationId)) {
+			throw GhgNotFoundException.member(memberId);
+		}
+		return member;
+	}
+
 
 	@Transactional(readOnly = true)
 	public long facilityCount(UUID organizationId) {
@@ -137,6 +214,7 @@ public class GhgService {
 
 	public LegalEntity createEntity(UUID organizationId, EntityFacts facts) {
 		var organization = getOrganization(organizationId);
+		access.checkWrite(organization);
 		var trimmed = facts.name().trim();
 		if (entities.existsByOrganizationIdAndNameIgnoreCase(organizationId, trimmed)) {
 			throw new GhgRuleViolationException("An entity named '" + trimmed + "' already exists.");
@@ -183,6 +261,7 @@ public class GhgService {
 	 */
 	public LegalEntity updateEntity(UUID id, EntityFacts facts) {
 		var entity = getEntity(id);
+		access.checkWrite(entity.getOrganization());
 		var trimmed = facts.name().trim();
 		if (entity.isReportingCompany() && (facts.relationshipType() != RelationshipType.SUBSIDIARY
 				|| facts.economicInterestPercent().compareTo(new BigDecimal("100")) != 0
@@ -202,6 +281,7 @@ public class GhgService {
 
 	public void deleteEntity(UUID id) {
 		var entity = getEntity(id);
+		access.checkWrite(entity.getOrganization());
 		if (entity.isReportingCompany()) {
 			throw new GhgRuleViolationException("The reporting company cannot be deleted.");
 		}
@@ -228,12 +308,14 @@ public class GhgService {
 	public Facility createFacility(UUID organizationId, UUID entityId, String name, String location,
 			String country) {
 		var organization = getOrganization(organizationId);
+		access.checkWrite(organization);
 		var entity = requireEntityInOrganization(entityId, organizationId);
 		return facilities.save(new Facility(organization, entity, name.trim(), location.trim(), country(country)));
 	}
 
 	public Facility updateFacility(UUID id, UUID entityId, String name, String location, String country) {
 		var facility = getFacility(id);
+		access.checkWrite(facility.getOrganization());
 		var entity = requireEntityInOrganization(entityId, facility.getOrganization().getId());
 		facility.update(entity, name.trim(), location.trim(), country(country));
 		return facility;
@@ -248,6 +330,7 @@ public class GhgService {
 	/** TRACE-02: a facility with recorded facts is history; it cannot be deleted. */
 	public void deleteFacility(UUID id) {
 		var facility = getFacility(id);
+		access.checkWrite(facility.getOrganization());
 		if (activities.existsByFacilityId(id)) {
 			throw new GhgRuleViolationException(
 					"'" + facility.getName() + "' has recorded activity data. Facts are the audit trail: "
@@ -277,6 +360,7 @@ public class GhgService {
 
 	public SourceStream createStream(UUID facilityId, StreamFacts facts) {
 		var facility = getFacility(facilityId);
+		access.checkWrite(facility.getOrganization());
 		var trimmed = facts.name().trim();
 		if (streams.existsByFacilityIdAndNameIgnoreCase(facilityId, trimmed)) {
 			throw new GhgRuleViolationException("'" + facility.getName() + "' already has a stream named '" + trimmed + "'.");
@@ -287,6 +371,7 @@ public class GhgService {
 
 	public SourceStream updateStream(UUID id, StreamFacts facts) {
 		var stream = getStream(id);
+		access.checkWrite(stream.getFacility().getOrganization());
 		var trimmed = facts.name().trim();
 		if (!trimmed.equalsIgnoreCase(stream.getName())
 				&& streams.existsByFacilityIdAndNameIgnoreCase(stream.getFacility().getId(), trimmed)) {
@@ -301,6 +386,7 @@ public class GhgService {
 	/** A stream with records is part of the register the facts are filed under; it cannot be deleted. */
 	public void deleteStream(UUID id) {
 		var stream = getStream(id);
+		access.checkWrite(stream.getFacility().getOrganization());
 		if (activities.existsByStreamId(id)) {
 			throw new GhgRuleViolationException("'" + stream.getName()
 					+ "' has activity records. Move them to another stream before deleting it.");
@@ -349,6 +435,7 @@ public class GhgService {
 
 	public EmissionFactor createEmissionFactor(UUID organizationId, FactorFacts facts) {
 		var organization = getOrganization(organizationId);
+		access.checkWrite(organization);
 		requireFactorFacts(facts);
 		return emissionFactors.save(new EmissionFactor(organization.getId(), facts.name().trim(), facts.defaultScope(),
 				facts.defaultCategory(), facts.scopeAgnostic(), facts.unit().trim(), facts.kgCo2ePerUnit(),
@@ -392,6 +479,7 @@ public class GhgService {
 	/** Imports a pack as the organization's factors; a re-import updates the rows it created (by pack and code). */
 	public ImportResult importPack(UUID organizationId, String packId) {
 		var organization = getOrganization(organizationId);
+		access.checkWrite(organization);
 		var pack = factorPacks.find(packId).orElseThrow(() -> GhgNotFoundException.pack(packId));
 		var existing = emissionFactors.findAllByOrganizationIdAndPack(organizationId, packId)
 			.stream()
@@ -436,7 +524,7 @@ public class GhgService {
 			throw new GhgRuleViolationException("'" + factor.getName()
 					+ "' is a shared library factor and cannot be changed. Add an organization factor instead.");
 		}
-		access.check(getOrganization(factor.getOrganizationId()));
+		access.checkWrite(getOrganization(factor.getOrganizationId()));
 		return factor;
 	}
 
@@ -474,7 +562,7 @@ public class GhgService {
 	public ActivityRecord createActivity(UUID organizationId, UUID facilityId, UUID streamId, String activityType,
 			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
 			String evidenceRef, DataQuality dataQuality, String note) {
-		getOrganization(organizationId);
+		access.checkWrite(getOrganization(organizationId));
 		var facility = requireFacilityInOrganization(facilityId, organizationId);
 		requirePeriod(periodStart, periodEnd);
 		return activities.save(new ActivityRecord(facility, requireStreamOfFacility(streamId, facility),
@@ -491,6 +579,7 @@ public class GhgService {
 			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
 			String evidenceRef, DataQuality dataQuality, String note) {
 		var activity = getActivity(id);
+		access.checkWrite(activity.getFacility().getOrganization());
 		var organizationId = activity.getFacility().getOrganization().getId();
 		var facility = requireFacilityInOrganization(facilityId, organizationId);
 		requirePeriod(periodStart, periodEnd);
@@ -503,6 +592,7 @@ public class GhgService {
 	/** TRACE-01: a fact referenced by a calculation run is audit trail; it cannot be deleted. */
 	public void deleteActivity(UUID id) {
 		var activity = getActivity(id);
+		access.checkWrite(activity.getFacility().getOrganization());
 		if (runLines.existsByActivityId(id)) {
 			throw new GhgRuleViolationException(
 					"This record has been calculated into one or more runs. Reported results must stay "

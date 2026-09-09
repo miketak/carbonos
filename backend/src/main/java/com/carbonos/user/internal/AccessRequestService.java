@@ -62,6 +62,8 @@ public class AccessRequestService {
 		var request = getPending(id);
 		var token = newToken();
 		request.approve(token, Instant.now().plus(TOKEN_TTL), actorId);
+		// spec 01.2: the account exists from approval, pending its password, so the Users list shows it
+		userService.createPending(request.getEmail(), request.getDisplayName());
 		events.publishEvent(new AccessRequestApproved(request.getId(), request.getEmail(),
 				request.getDisplayName(), token));
 		return request;
@@ -83,7 +85,11 @@ public class AccessRequestService {
 	/** Sets the password: creates the account and consumes the token. */
 	public User complete(String token, String rawPassword) {
 		var request = findLiveByToken(token);
-		var user = userService.create(request.getEmail(), request.getDisplayName(), UserRole.MEMBER, rawPassword);
+		if (!PasswordPolicy.accepts(rawPassword)) {
+			throw new WeakPasswordException();
+		}
+		var pending = userService.createPending(request.getEmail(), request.getDisplayName());
+		var user = userService.activate(pending.getId(), rawPassword);
 		request.complete();
 		return user;
 	}

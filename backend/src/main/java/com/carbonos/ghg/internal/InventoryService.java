@@ -110,7 +110,7 @@ public class InventoryService {
 		requirePeriod(periodStart, periodEnd);
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
-		access.check(organization);
+		access.checkWrite(organization);
 		return inventories.save(new Inventory(organization, name.trim(), periodStart, periodEnd, trimToNull(purpose),
 				baseYear, approach, gwpSet == null ? GwpSet.AR5 : gwpSet,
 				straddleTreatment == null ? StraddleTreatment.PRO_RATE : straddleTreatment));
@@ -120,6 +120,7 @@ public class InventoryService {
 			Integer baseYear, ConsolidationApproach approach, GwpSet gwpSet, StraddleTreatment straddleTreatment) {
 		requirePeriod(periodStart, periodEnd);
 		var inventory = get(id);
+		access.checkWrite(inventory.getOrganization());
 		var effectiveGwp = gwpSet == null ? inventory.getGwpSet() : gwpSet;
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
 			throw new GhgRuleViolationException(
@@ -144,6 +145,7 @@ public class InventoryService {
 
 	public void delete(UUID id) {
 		var inventory = get(id);
+		access.checkWrite(inventory.getOrganization());
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
 			throw new GhgRuleViolationException("A published inventory is a record and cannot be deleted.");
 		}
@@ -427,6 +429,7 @@ public class InventoryService {
 	 */
 	public BoundaryVersion freeze(UUID inventoryId) {
 		var inventory = get(inventoryId);
+		access.checkWrite(inventory.getOrganization());
 		if (!inventory.isEditable()) {
 			throw new GhgRuleViolationException("The inventory is already frozen.");
 		}
@@ -445,19 +448,24 @@ public class InventoryService {
 				access.currentUserEmail()));
 		inventory.freeze(version);
 		baseYears.evaluateStructuralChange(inventory, version, previous);
+		record(inventory, null, GhgAuditEvent.Action.FROZEN, "boundary version " + version.getVersionNo() + " cut");
 		return version;
 	}
 
 	/** Reopens a frozen inventory for editing. Versions already cut are untouched. */
 	public Inventory reopen(UUID inventoryId) {
 		var inventory = get(inventoryId);
+		access.checkWrite(inventory.getOrganization());
 		switch (inventory.getStatus()) {
 			case DRAFT -> throw new GhgRuleViolationException("The inventory is already a draft.");
 			case FINAL -> throw new GhgRuleViolationException(
 					"A run is designated final. Withdraw the designation before reopening the inventory.");
 			case PUBLISHED -> throw new GhgRuleViolationException(
 					"A published inventory cannot change. Create a correction that supersedes it.");
-			case FROZEN -> inventory.reopen();
+			case FROZEN -> {
+				inventory.reopen();
+				record(inventory, null, GhgAuditEvent.Action.REOPENED, "reopened as a draft");
+			}
 		}
 		return inventory;
 	}
@@ -465,6 +473,7 @@ public class InventoryService {
 	/** Designates a run as the final one of its inventory, which moves the inventory to FINAL. */
 	public Inventory designateFinal(UUID inventoryId, UUID runId) {
 		var inventory = get(inventoryId);
+		access.checkApprove(inventory.getOrganization());
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
 			throw new GhgRuleViolationException("A published inventory's final run cannot change.");
 		}
@@ -479,12 +488,14 @@ public class InventoryService {
 			throw new GhgRuleViolationException("Run " + run.getRunNo() + " is voided and cannot be designated final.");
 		}
 		inventory.designateFinal(runId);
+		record(inventory, run, GhgAuditEvent.Action.FINAL_DESIGNATED, "run " + run.getRunNo() + " designated final");
 		return inventory;
 	}
 
 	/** Withdraws the final designation; the reason is recorded as an audit event (spec 05.2). */
 	public Inventory withdrawFinal(UUID inventoryId, String reason) {
 		var inventory = get(inventoryId);
+		access.checkApprove(inventory.getOrganization());
 		if (inventory.getStatus() != InventoryStatus.FINAL) {
 			throw new GhgRuleViolationException("No run is designated final.");
 		}
@@ -505,10 +516,13 @@ public class InventoryService {
 	/** Issues the report: the inventory becomes a record and nothing on it may change afterwards. */
 	public Inventory publish(UUID inventoryId) {
 		var inventory = get(inventoryId);
+		access.checkApprove(inventory.getOrganization());
 		if (inventory.getStatus() != InventoryStatus.FINAL) {
 			throw new GhgRuleViolationException("Designate a final run before publishing the inventory.");
 		}
 		inventory.publish(access.currentUserEmail());
+		record(inventory, runs.findById(inventory.getFinalRunId()).orElse(null), GhgAuditEvent.Action.PUBLISHED,
+				"report issued");
 		events.publishEvent(new InventoryPublished(inventoryId, inventory.getFinalRunId()));
 		return inventory;
 	}
@@ -522,8 +536,10 @@ public class InventoryService {
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
 			throw new GhgRuleViolationException("A published inventory's report header cannot change.");
 		}
+		access.checkWrite(inventory.getOrganization());
 		inventory.setReportMetadata(trimToNull(approvedBy), assuranceLevel, trimToNull(assuranceProvider),
 				trimToNull(assuranceStatement));
+		record(inventory, null, GhgAuditEvent.Action.HEADER_SAVED, "report header saved");
 		intensityMetrics.deleteAllByInventoryId(inventoryId);
 		for (var metric : metrics) {
 			intensityMetrics.save(new IntensityMetric(inventory, metric.name().trim(), metric.value(), metric.unit().trim()));
@@ -559,6 +575,7 @@ public class InventoryService {
 	 */
 	public Inventory supersede(UUID inventoryId, String name) {
 		var inventory = get(inventoryId);
+		access.checkApprove(inventory.getOrganization());
 		if (inventory.getStatus() != InventoryStatus.PUBLISHED) {
 			throw new GhgRuleViolationException("Only a published inventory can be superseded.");
 		}
@@ -589,6 +606,7 @@ public class InventoryService {
 					exclusion.getFacility(), exclusion.getReason(), exclusion.getDetail()));
 		}
 		inventory.markSupersededBy(successor);
+		record(inventory, null, GhgAuditEvent.Action.CORRECTION_CREATED, "correction '" + successorName + "' created");
 		return successor;
 	}
 
@@ -606,7 +624,8 @@ public class InventoryService {
 		return version;
 	}
 
-	private static void requireEditable(Inventory inventory) {
+	private void requireEditable(Inventory inventory) {
+		access.checkWrite(inventory.getOrganization());
 		if (!inventory.isEditable()) {
 			throw new GhgRuleViolationException("The inventory is " + inventory.getStatus().name().toLowerCase()
 					+ ". Reopen it as a draft to change it.");
@@ -753,6 +772,8 @@ public class InventoryService {
 				updated++;
 			}
 		}
+		record(inventory, null, GhgAuditEvent.Action.REVIEWED,
+				created + " record" + (created == 1 ? "" : "s") + " reviewed, " + updated + " refreshed");
 		return new SyncResult(created, updated);
 	}
 
@@ -828,6 +849,9 @@ public class InventoryService {
 		}
 		assignment.classify(factor, chosenScope, chosenCategory, leaseType, departs ? justification : null, proxy,
 				proxy ? trimToNull(proxyJustification) : null);
+		record(assignment.getInventory(), null, GhgAuditEvent.Action.CLASSIFIED, "'" + assignment.getActivity().getActivityType()
+				+ "' classified as " + scopeName(chosenScope) + ", " + chosenCategory.name().toLowerCase().replace('_', ' ')
+				+ ", with '" + factor.getName() + "'" + (proxy ? " (proxy)" : ""));
 		return assignment;
 	}
 
@@ -1174,6 +1198,7 @@ public class InventoryService {
 	 */
 	public GhgRun executeRun(UUID inventoryId, String label) {
 		var inventory = get(inventoryId);
+		access.checkWrite(inventory.getOrganization());
 		if (!inventory.getStatus().allowsRuns()) {
 			throw new GhgRuleViolationException(inventory.isEditable()
 					? "The inventory is a draft. Freeze it to enable a run."
@@ -1266,6 +1291,7 @@ public class InventoryService {
 			run.addFactor(new GhgRunFactor(run, factor, gwp));
 		}
 		run = runs.save(run);
+		record(inventory, run, GhgAuditEvent.Action.RUN_LAUNCHED, "run " + run.getRunNo() + " '" + run.getLabel() + "' launched");
 		events.publishEvent(new GhgRunCompleted(run.getId(), inventoryId, run.getTotalKgCo2e()));
 		return run;
 	}
@@ -1278,6 +1304,7 @@ public class InventoryService {
 	public GhgRun voidRun(UUID id, String reason) {
 		var run = getRun(id);
 		var inventory = run.getInventory();
+		access.checkWrite(inventory.getOrganization());
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
 			throw new GhgRuleViolationException("A published inventory's runs are a record and cannot be voided.");
 		}
@@ -1426,6 +1453,12 @@ public class InventoryService {
 
 	private static String plain(BigDecimal value) {
 		return value.stripTrailingZeros().toPlainString();
+	}
+
+	/** One line of the inventory's history (spec 01.2): the act, who did it, and a detail. */
+	private void record(Inventory inventory, GhgRun run, GhgAuditEvent.Action action, String detail) {
+		auditEvents.save(new GhgAuditEvent(inventory.getId(), run, action, access.currentUserId(),
+				access.currentUserEmail(), detail));
 	}
 
 	// --- helpers -------------------------------------------------------------

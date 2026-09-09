@@ -27,6 +27,14 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Legal entity", id);
 	}
 
+	static GhgNotFoundException account(String email) {
+		return new GhgNotFoundException("Account", null, email);
+	}
+
+	static GhgNotFoundException member(UUID id) {
+		return new GhgNotFoundException("Member", id);
+	}
+
 	static GhgNotFoundException pack(String id) {
 		return new GhgNotFoundException("Factor pack", null, id);
 	}

@@ -1,7 +1,7 @@
 import { api } from '../../lib/api'
 
 export type Role = 'ADMIN' | 'MEMBER'
-export type Status = 'ACTIVE' | 'DISABLED'
+export type Status = 'ACTIVE' | 'DISABLED' | 'PENDING'
 
 export interface SessionUser {
   id: string

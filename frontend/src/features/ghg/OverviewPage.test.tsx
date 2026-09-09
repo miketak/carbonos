@@ -1,4 +1,5 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { OverviewPage } from './OverviewPage'
@@ -6,11 +7,20 @@ import type { Facility, Inventory, Organization, Run } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import { getOrganization, listActivities, listFacilities, listInventories, listRuns } from './api'
+import {
+  addMember,
+  getOrganization,
+  listActivities,
+  listFacilities,
+  listInventories,
+  listMembers,
+  listRuns,
+} from './api'
 
 const organization: Organization = {
   id: 'org-1',
   name: 'Ecoriv Holdings',
+  myRole: 'OWNER',
   address: null,
   contact: null,
   facilityCount: 1,
@@ -108,6 +118,19 @@ function renderOverviewPage() {
 beforeEach(() => {
   vi.mocked(getOrganization).mockReset()
   vi.mocked(listFacilities).mockReset()
+  vi.mocked(listMembers)
+    .mockReset()
+    .mockResolvedValue([
+      {
+        id: 'm-1',
+        userId: 'user-1',
+        email: 'ama@ecoriv.test',
+        displayName: 'Ama Mensah',
+        role: 'OWNER',
+        createdAt: '2026-09-01T10:00:00Z',
+      },
+    ])
+  vi.mocked(addMember).mockReset()
   vi.mocked(listActivities).mockReset()
   vi.mocked(listInventories).mockReset()
   vi.mocked(listRuns).mockReset()
@@ -193,4 +216,28 @@ test('shows the headline inventory with its final run once one exists', async ()
   )
   // every step is done, so the checklist retires
   expect(screen.queryByText(/from facts to a final inventory/i)).not.toBeInTheDocument()
+})
+
+test('an owner sees the members and adds one by email with a role', async () => {
+  const user = userEvent.setup()
+  vi.mocked(addMember).mockResolvedValue({
+    id: 'm-2',
+    userId: 'user-2',
+    email: 'abena@client.test',
+    displayName: 'Abena Owusu',
+    role: 'PREPARER',
+    createdAt: '2026-09-02T10:00:00Z',
+  })
+  renderOverviewPage()
+
+  expect(await screen.findByText('Ama Mensah')).toBeInTheDocument()
+  expect(screen.getByLabelText('Role of Ama Mensah')).toHaveValue('OWNER')
+  await user.type(screen.getByLabelText(/email of an existing account/i), 'abena@client.test')
+  await user.click(screen.getByRole('button', { name: /add member/i }))
+  await waitFor(() =>
+    expect(addMember).toHaveBeenCalledWith('org-1', {
+      email: 'abena@client.test',
+      role: 'PREPARER',
+    }),
+  )
 })
