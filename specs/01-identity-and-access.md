@@ -70,10 +70,12 @@ Violations are 409 with a human-readable detail.
 
 ### Tenant ownership of GHG data
 
-Every organization records the user who created it (`ownerUserId`). An
+Every organization records the user who created it (`ownerUserId`) and,
+since spec 01.2, has members with roles; the creator is its first owner. An
 organization and everything nested under it (facilities, activity records,
-inventories, boundaries, versions, assignments, runs) is reachable by exactly
-two parties: its owner and platform administrators. Denials are **404, never
+inventories, boundaries, versions, assignments, runs) is reachable by its
+members and by platform administrators, and each member's role decides what
+they may change (spec 01.2). Denials are **404, never
 403**, so an outsider cannot confirm that an id exists. `GET /api/ghg/organizations`
 lists only the caller's own organizations; administrators see all. The
 emission-factor library and the unit registry are shared, read-only, and still
@@ -135,7 +137,7 @@ it establishes the cross-module event pattern.
 - Password reset, change-own-password and forced rotation on first sign-in.
   A temporary password an administrator sets is the password until an
   administrator sets another.
-- Multi-member organizations, transferable ownership and per-inventory roles.
-  These are the prerequisite for any preparer/approver workflow (spec 05.1).
+- Per-inventory roles and a formal sign-off workflow; membership and
+  organization roles are spec 01.2.
 - Audit logging of administrative actions.
 - Pagination, search and filtering of the user list.

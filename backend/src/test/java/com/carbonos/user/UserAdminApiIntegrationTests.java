@@ -60,7 +60,7 @@ class UserAdminApiIntegrationTests {
 			.perform(post("/api/admin/users").with(asUser(admin)).with(csrf()).contentType("application/json")
 				.content("""
 						{"email": "kofi@ecoriv.com", "displayName": "Kofi Mensah",
-						 "role": "MEMBER", "temporaryPassword": "temporary-1"}"""))
+						 "role": "MEMBER", "temporaryPassword": "temporary-12"}"""))
 			.andExpect(status().isCreated())
 			.andExpect(header().exists("Location"))
 			.andExpect(jsonPath("$.email").value("kofi@ecoriv.com"))
@@ -91,7 +91,7 @@ class UserAdminApiIntegrationTests {
 		mvc.perform(post("/api/admin/users").with(asUser(admin)).with(csrf()).contentType("application/json")
 			.content("""
 					{"email": "ADMIN@ecoriv.com", "displayName": "Copy Cat",
-					 "role": "MEMBER", "temporaryPassword": "temporary-1"}"""))
+					 "role": "MEMBER", "temporaryPassword": "temporary-12"}"""))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.title").value("Duplicate email"));
 	}

@@ -146,4 +146,14 @@ public class User {
 	void setStatus(UserStatus status) {
 		this.status = status;
 	}
+
+	/** Activation (spec 01.2): the pending account gets its password and may sign in. */
+	void activate(String passwordHash) {
+		this.passwordHash = passwordHash;
+		this.status = UserStatus.ACTIVE;
+	}
+
+	void markPending() {
+		this.status = UserStatus.PENDING;
+	}
 }

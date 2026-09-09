@@ -108,9 +108,23 @@ export interface SourceStreamInput {
 /** The assurance a report carries (spec 07.4). */
 export type AssuranceLevel = 'UNVERIFIED' | 'LIMITED' | 'REASONABLE'
 
+/** A member's role in an organization (spec 01.2); ADMIN marks a platform administrator who is not a member. */
+export type OrgRole = 'OWNER' | 'REVIEWER' | 'PREPARER' | 'VERIFIER'
+
+export interface OrganizationMember {
+  id: string
+  userId: string
+  email: string
+  displayName: string
+  role: OrgRole
+  createdAt: string
+}
+
 export interface Organization {
   id: string
   name: string
+  /** The caller's role, or ADMIN for a platform administrator (spec 01.2). */
+  myRole: OrgRole | 'ADMIN' | null
   /** The reporting entity's address and contact for the report header (spec 07.4). */
   address: string | null
   contact: string | null
@@ -988,6 +1002,39 @@ export function updateOrganization(id: string, input: OrganizationInput): Promis
 
 export function deleteOrganization(id: string): Promise<void> {
   return api<void>(`/api/ghg/organizations/${id}`, { method: 'DELETE' })
+}
+
+// --- members (spec 01.2) ---------------------------------------------------------
+
+export function listMembers(organizationId: string): Promise<OrganizationMember[]> {
+  return api<OrganizationMember[]>(`/api/ghg/organizations/${organizationId}/members`)
+}
+
+export function addMember(
+  organizationId: string,
+  input: { email: string; role: OrgRole },
+): Promise<OrganizationMember> {
+  return api<OrganizationMember>(`/api/ghg/organizations/${organizationId}/members`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function changeMemberRole(
+  organizationId: string,
+  memberId: string,
+  role: OrgRole,
+): Promise<OrganizationMember> {
+  return api<OrganizationMember>(`/api/ghg/organizations/${organizationId}/members/${memberId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  })
+}
+
+export function removeMember(organizationId: string, memberId: string): Promise<void> {
+  return api<void>(`/api/ghg/organizations/${organizationId}/members/${memberId}`, {
+    method: 'DELETE',
+  })
 }
 
 // --- legal entities (spec 03.1) ---------------------------------------------

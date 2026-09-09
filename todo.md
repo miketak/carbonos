@@ -27,7 +27,7 @@ Status summary (update as tickets close):
 
 | Priority | Tickets | Done |
 |---|---|---|
-| P0 | 9 | 8 |
+| P0 | 9 | 9 |
 | P1 | 13 | 0 |
 | P2 | 4 | 0 |
 
@@ -188,12 +188,12 @@ Status summary (update as tickets close):
 
 ## Theme 6: Access, roles, and audit trail
 
-- [ ] **T-22 (P0) Shared organizations with membership, roles, and per-action attribution**
+- [x] **T-22 (P0) Shared organizations with membership, roles, and per-action attribution**
   - Findings: F1, F2
   - Problem: an organization is visible only to the user who created it. A second approved user sees "No organizations yet" and a direct URL sends them to login. Roles are Member and Admin only. A client team would have to share one login, so every action shows the same email. Also: an approved user does not appear in the Users list until they set a password, and the password policy is a minimum of 8 characters.
   - Standard: ISO 14064-1 section 8 (inventory quality management) and Corporate Standard chapter 7 assume defined roles and a review step.
   - Done when: organizations are tenant-level with membership; roles cover preparer, reviewer or approver, and read-only verifier; every classification, freeze, final, publish, and correction records who did it and when, and the report prints preparer and approver (T-08); pending-activation users appear in the Users list with their state; the password policy is strengthened or SSO is offered.
-  - Spec: new spec (organization membership) plus an update to 001 (admin panel).
+  - Spec: 01.2 (organization membership, roles and attribution), migration V28; 01 updated. Password policy strengthened (12+ characters, letter and digit); SSO stays a non-goal.
 
 ## Theme 7: Base year
 

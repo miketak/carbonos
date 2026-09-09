@@ -103,6 +103,9 @@ class GhgApiIntegrationTests {
 	@Autowired
 	UnitConverter unitConverter;
 
+	@Autowired
+	com.carbonos.user.internal.UserService userService;
+
 	@BeforeEach
 	void resetGhgData() {
 		baseYears.deleteAll();
@@ -123,6 +126,11 @@ class GhgApiIntegrationTests {
 
 	RequestPostProcessor asMember() {
 		return user(new AuthenticatedUser(ownerId, "kojo@ecoriv.com", "irrelevant", "MEMBER", true));
+	}
+
+	/** A real platform account, so membership by email can resolve it (spec 01.2). */
+	RequestPostProcessor as(com.carbonos.user.internal.User account) {
+		return user(new AuthenticatedUser(account.getId(), account.getEmail(), "irrelevant", "MEMBER", true));
 	}
 
 	RequestPostProcessor asOutsider() {
@@ -1095,12 +1103,13 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/runs/" + first + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isConflict());
 		// the acts are on the record
+		// every act is on the record (spec 01.2); the void names its run, its actor and its reason
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
-			.andExpect(jsonPath("$.length()").value(1))
-			.andExpect(jsonPath("$[0].action").value("RUN_VOIDED"))
-			.andExpect(jsonPath("$[0].runNo").value(1))
-			.andExpect(jsonPath("$[0].actor").value("kojo@ecoriv.com"))
-			.andExpect(jsonPath("$[0].reason").value("Boundary v1 omitted the Nkran camp"));
+			.andExpect(jsonPath("$[?(@.action == 'RUN_VOIDED')]", org.hamcrest.Matchers.hasSize(1)))
+			.andExpect(jsonPath("$[?(@.action == 'RUN_VOIDED')].runNo").value(1))
+			.andExpect(jsonPath("$[?(@.action == 'RUN_VOIDED')].actor").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$[?(@.action == 'RUN_VOIDED')].reason").value("Boundary v1 omitted the Nkran camp"))
+			.andExpect(jsonPath("$[?(@.action == 'RUN_LAUNCHED')]", org.hamcrest.Matchers.hasSize(3)));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asOutsider()))
 			.andExpect(status().isNotFound());
 	}
@@ -2769,5 +2778,111 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.lines[0].kgCo2ePerUnit").value(1907.93))
 			.andExpect(jsonPath("$.lines[0].kgCo2e").value(19079.3))
 			.andExpect(jsonPath("$.lines[0].blendGwpSource").value("AR6"));
+	}
+
+	/** Audit findings F1 and F2 (T-22): members, roles and attribution. */
+	@Test
+	void membersSeeTheOrganizationAndActWithinTheirRole() throws Exception {
+		var abena = userService.create("abena@client.test", "Abena Owusu", com.carbonos.user.internal.UserRole.MEMBER,
+				"analyst-passw0rd");
+		var kofi = userService.create("kofi@verify.test", "Kofi Verifier", com.carbonos.user.internal.UserRole.MEMBER,
+				"verifier-passw0rd");
+		var orgId = createOrganization("Asante Gold Resources");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
+		// the creator is the owner; nobody else sees the organization yet
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asMember()))
+			.andExpect(jsonPath("$.myRole").value("OWNER"));
+		mvc.perform(get("/api/ghg/organizations").with(as(abena))).andExpect(jsonPath("$.length()").value(0));
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(as(abena))).andExpect(status().isNotFound());
+		// only an owner adds members, by the email of an existing account
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "abena@client.test", "role": "PREPARER"}"""))
+			.andExpect(status().isNotFound());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "nobody@client.test", "role": "PREPARER"}"""))
+			.andExpect(status().isNotFound());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "Abena@Client.test", "role": "PREPARER"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.displayName").value("Abena Owusu"))
+			.andExpect(jsonPath("$.role").value("PREPARER"));
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "kofi@verify.test", "role": "VERIFIER"}"""))
+			.andExpect(status().isCreated());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/members").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(3))
+			.andExpect(jsonPath("$[0].role").value("OWNER"));
+		// the preparer sees the organization, classifies and freezes, each act under her email
+		mvc.perform(get("/api/ghg/organizations").with(as(abena)))
+			.andExpect(jsonPath("$[0].name").value("Asante Gold Resources"))
+			.andExpect(jsonPath("$[0].myRole").value("PREPARER"));
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(as(abena)).with(csrf()))
+			.andExpect(status().isOk());
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(as(abena))));
+		String assignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + diesel + "')].id").getFirst();
+		mvc.perform(put("/api/ghg/assignments/" + assignment + "/classify").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s"}""".formatted(DIESEL_FACTOR)))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(as(abena)).with(csrf()))
+			.andExpect(status().isOk());
+		String runId = JsonPath.read(body(mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(as(abena))
+			.with(csrf()).contentType("application/json").content("""
+					{"label": "Run 001"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.createdBy").value("abena@client.test"))), "$.run.id");
+		// a preparer cannot designate a final run or publish; a verifier cannot write at all
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(abena)).with(csrf()))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("REVIEWER or OWNER")));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(as(kofi))).andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(as(kofi))).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(as(kofi)).with(csrf()))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("PREPARER, REVIEWER or OWNER")));
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(as(kofi)).with(csrf())
+			.contentType("application/json").content("""
+					{"facilityId": "%s", "activityType": "Probe", "quantity": 1, "unit": "litre",
+					 "periodStart": "2025-08-01", "periodEnd": "2025-08-01", "dataQuality": "MEASURED"}""".formatted(plant)))
+			.andExpect(status().isForbidden());
+		// promoted to reviewer, she publishes; the report names her as preparer and publisher
+		var members = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/members").with(asMember())));
+		String abenaMember = JsonPath.<List<String>>read(members, "$[?(@.email == 'abena@client.test')].id").getFirst();
+		String ownerMember = JsonPath.<List<String>>read(members, "$[?(@.role == 'OWNER')].id").getFirst();
+		mvc.perform(put("/api/ghg/organizations/" + orgId + "/members/" + abenaMember).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"role": "REVIEWER"}"""))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(abena)).with(csrf())).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(as(abena)).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.publishedBy").value("abena@client.test"));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.header.preparedBy").value("abena@client.test"))
+			.andExpect(jsonPath("$.header.publishedBy").value("abena@client.test"));
+		// the history names every actor and act
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[*].action").value(org.hamcrest.Matchers.hasItems("REVIEWED", "CLASSIFIED", "FROZEN",
+					"RUN_LAUNCHED", "FINAL_DESIGNATED", "PUBLISHED")))
+			.andExpect(jsonPath("$[?(@.action == 'CLASSIFIED')].actor").value("abena@client.test"))
+			.andExpect(jsonPath("$[?(@.action == 'CLASSIFIED')].reason")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("'Genset diesel'"))));
+		// the last owner cannot be removed or demoted
+		mvc.perform(delete("/api/ghg/organizations/" + orgId + "/members/" + ownerMember).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict());
+		mvc.perform(put("/api/ghg/organizations/" + orgId + "/members/" + ownerMember).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"role": "VERIFIER"}"""))
+			.andExpect(status().isConflict());
+		mvc.perform(delete("/api/ghg/organizations/" + orgId + "/members/" + abenaMember).with(asMember()).with(csrf()))
+			.andExpect(status().isNoContent());
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(as(abena))).andExpect(status().isNotFound());
 	}
 }

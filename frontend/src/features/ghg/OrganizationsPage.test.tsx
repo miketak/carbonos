@@ -18,6 +18,7 @@ const organizations: Organization[] = [
   {
     id: 'org-1',
     name: 'Ecoriv Holdings',
+    myRole: 'OWNER',
     address: null,
     contact: null,
     facilityCount: 2,
@@ -26,6 +27,7 @@ const organizations: Organization[] = [
   {
     id: 'org-2',
     name: 'Tema Manufacturing',
+    myRole: 'OWNER',
     address: null,
     contact: null,
     facilityCount: 0,

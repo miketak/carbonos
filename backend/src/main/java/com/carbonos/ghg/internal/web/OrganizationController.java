@@ -64,6 +64,7 @@ class OrganizationController {
 	}
 
 	private OrganizationResponse toResponse(Organization organization) {
-		return OrganizationResponse.from(organization, ghgService.facilityCount(organization.getId()));
+		return OrganizationResponse.from(organization, ghgService.facilityCount(organization.getId()),
+				ghgService.roleIn(organization));
 	}
 }

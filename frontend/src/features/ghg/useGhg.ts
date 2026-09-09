@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  addMember,
+  changeMemberRole,
   classifyAssignment,
   clearBaseYear,
   clearEntityExclusion,
@@ -45,6 +47,7 @@ import {
   listEntities,
   listFacilities,
   listInventories,
+  listMembers,
   listMarketFactors,
   listOrganizations,
   listRuns,
@@ -55,6 +58,7 @@ import {
   removeBoundaryTreatment,
   removeEntityTreatment,
   removeMarketFactor,
+  removeMember,
   reopenInventory,
   setBaseYear,
   setBoundaryTreatment,
@@ -89,6 +93,7 @@ import type {
   InventoryInput,
   MarketFactorInput,
   OperationalBoundaryInput,
+  OrgRole,
   OrganizationInput,
   RaiseRecalculationInput,
   RecalculationDecisionInput,
@@ -100,6 +105,7 @@ import type {
 export const organizationsKey = ['ghg', 'organizations'] as const
 export const factorsKey = (orgId: string) => ['ghg', 'emission-factors', orgId] as const
 export const factorPacksKey = ['ghg', 'factor-packs'] as const
+export const membersKey = (orgId: string) => ['ghg', 'members', orgId] as const
 export const unitsKey = ['ghg', 'units'] as const
 export const streamsKey = (orgId: string) => ['ghg', 'streams', orgId] as const
 export const organizationKey = (id: string) => ['ghg', 'organization', id] as const
@@ -168,6 +174,39 @@ export function useDeleteStream(orgId: string) {
 
 export function useEmissionFactorsQuery(orgId: string) {
   return useQuery({ queryKey: factorsKey(orgId), queryFn: () => listEmissionFactors(orgId) })
+}
+
+export function useMembersQuery(orgId: string) {
+  return useQuery({ queryKey: membersKey(orgId), queryFn: () => listMembers(orgId) })
+}
+
+function useMemberMutation<TArgs, TResult>(
+  orgId: string,
+  mutationFn: (args: TArgs) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: membersKey(orgId) })
+    },
+  })
+}
+
+export function useAddMember(orgId: string) {
+  return useMemberMutation(orgId, (input: { email: string; role: OrgRole }) =>
+    addMember(orgId, input),
+  )
+}
+
+export function useChangeMemberRole(orgId: string) {
+  return useMemberMutation(orgId, ({ memberId, role }: { memberId: string; role: OrgRole }) =>
+    changeMemberRole(orgId, memberId, role),
+  )
+}
+
+export function useRemoveMember(orgId: string) {
+  return useMemberMutation(orgId, (memberId: string) => removeMember(orgId, memberId))
 }
 
 export function useFactorPacksQuery() {

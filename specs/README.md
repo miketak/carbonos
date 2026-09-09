@@ -14,6 +14,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 00 | [Principles and domain model](00-principles-and-domain-model.md) | Ch. 1 | Implemented |
 | 01 | [Identity and access](01-identity-and-access.md) | | Implemented |
 | 01.1 | [Access requests](01.1-access-requests.md) | | Implemented |
+| 01.2 | [Organization membership, roles and attribution](01.2-organization-membership-and-roles.md) | Ch. 7 | Implemented |
 | 02 | [Organization and facts](02-organization-and-facts.md) | Ch. 6, 7 | Implemented |
 | 02.1 | [Emission factor library, provenance and packs](02.1-emission-factor-library.md) | Ch. 6, 9, Scope 2 Guidance | Implemented |
 | 03 | [Organizational boundary](03-organizational-boundary.md) | Ch. 3 | Implemented |

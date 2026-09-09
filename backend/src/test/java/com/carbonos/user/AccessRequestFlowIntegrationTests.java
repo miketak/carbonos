@@ -32,6 +32,7 @@ import com.carbonos.user.internal.User;
 import com.carbonos.user.internal.UserRepository;
 import com.carbonos.user.internal.UserRole;
 import com.carbonos.user.internal.UserService;
+import com.carbonos.user.internal.UserStatus;
 import com.carbonos.user.AuthenticatedUser;
 import com.jayway.jsonpath.JsonPath;
 
@@ -100,11 +101,21 @@ class AccessRequestFlowIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.email").value("kofi.mensah@ecoriv.com"))
 			.andExpect(jsonPath("$.displayName").value("Kofi Mensah"));
+		// spec 01.2: the account exists from approval, pending its password, and a weak password is refused
+		assertThat(users.findByEmail("kofi.mensah@ecoriv.com").orElseThrow().getStatus())
+			.isEqualTo(UserStatus.PENDING);
+		mvc.perform(post("/api/access-requests/complete").with(csrf())
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("""
+					{"token": "%s", "password": "brand-new-secret"}
+					""".formatted(token)))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.password").exists());
 
 		var result = mvc.perform(post("/api/access-requests/complete").with(csrf())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("""
-					{"token": "%s", "password": "brand-new-secret"}
+					{"token": "%s", "password": "brand-new-secret-1"}
 					""".formatted(token)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.email").value("kofi.mensah@ecoriv.com"))

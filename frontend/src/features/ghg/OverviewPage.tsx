@@ -5,6 +5,7 @@ import { Skeleton } from '../../components/Skeleton'
 import { AnimatedCo2e } from './components/AnimatedCo2e'
 import { ApproachBadge } from './components/badges'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
+import { MembersCard } from './components/MembersCard'
 import { TopFacilities } from './components/TopFacilities'
 import {
   useActivitiesQuery,
@@ -53,6 +54,12 @@ export function OverviewPage() {
       {headline && (
         <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
           <HeadlineInventory inventory={headline} />
+        </div>
+      )}
+
+      {organization && (
+        <div className="animate-fade-up" style={{ '--stagger': 3 } as CSSProperties}>
+          <MembersCard organization={organization} />
         </div>
       )}
     </div>
