@@ -21,6 +21,7 @@ import { ScopeBreakdown } from './components/ScopeBreakdown'
 import { formatCo2e } from './format'
 import {
   useBoundaryQuery,
+  useInheritanceQuery,
   useVoidRun,
   useAuditEventsQuery,
   useExecuteRun,
@@ -36,6 +37,7 @@ export function InventoryDetailPage() {
   const { organizationId = '', inventoryId = '' } = useParams()
   const inventoryQuery = useInventoryQuery(inventoryId)
   const boundaryQuery = useBoundaryQuery(inventoryId)
+  const inheritanceQuery = useInheritanceQuery(inventoryId)
 
   if (inventoryQuery.isPending) {
     return (
@@ -96,6 +98,30 @@ export function InventoryDetailPage() {
             >
               Superseded by a correction
             </Link>
+          </p>
+        )}
+        {inheritanceQuery.data && (
+          <p className="mt-1 text-sm text-ink-muted">
+            {inventory.correctionReason ? 'Correction of ' : 'View copied from '}
+            <Link
+              to={`../${inheritanceQuery.data.sourceInventoryId}`}
+              relative="path"
+              className="font-semibold text-link"
+            >
+              {inheritanceQuery.data.sourceName ?? 'another inventory'}
+            </Link>
+            : {inheritanceQuery.data.inherited} decision
+            {inheritanceQuery.data.inherited === 1 ? '' : 's'} inherited
+            {inheritanceQuery.data.undecided > 0
+              ? `, ${inheritanceQuery.data.undecided} record${inheritanceQuery.data.undecided === 1 ? '' : 's'} of this period the source never decided on`
+              : ''}
+            .{inventory.correctionReason ? ` Reason: ${inventory.correctionReason}` : ''}
+          </p>
+        )}
+        {inventory.status === 'PUBLISHED' && (
+          <p className="mt-1 text-sm text-amber-700">
+            Published: the activity view shows each record as the published run snapshotted it, and
+            marks records whose facts changed since.
           </p>
         )}
       </div>
@@ -325,9 +351,18 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
   )
 }
 
-const actionLabels: Record<AuditEvent['action'], string> = {
+export const actionLabels: Record<AuditEvent['action'], string> = {
   RUN_VOIDED: 'Run voided',
   FINAL_WITHDRAWN: 'Final designation withdrawn',
+  CLASSIFIED: 'Record classified',
+  REVIEWED: 'Activity data reviewed',
+  FROZEN: 'Inventory frozen',
+  REOPENED: 'Inventory reopened',
+  RUN_LAUNCHED: 'Run launched',
+  FINAL_DESIGNATED: 'Final run designated',
+  PUBLISHED: 'Published',
+  CORRECTION_CREATED: 'Correction created',
+  HEADER_SAVED: 'Report header saved',
 }
 
 /** The recorded acts on the inventory (spec 05.2), newest first. */

@@ -56,6 +56,10 @@ public class InventoryAssignment {
 	@Column(name = "estimated_kg_co2e", precision = 18, scale = 3)
 	private BigDecimal estimatedKgCo2e;
 
+	// copied from another inventory's decision about the same record (spec 05.3)
+	@Column(nullable = false)
+	private boolean inherited;
+
 	@Enumerated(EnumType.STRING)
 	@Column(length = 10)
 	private Scope scope;
@@ -104,6 +108,29 @@ public class InventoryAssignment {
 		this.inventory = inventory;
 		this.activity = activity;
 		this.included = true;
+	}
+
+	/** The same decision about the same record in another inventory (spec 05.3). */
+	InventoryAssignment(Inventory inventory, InventoryAssignment source) {
+		this(inventory, source.activity);
+		this.included = source.included;
+		this.exclusionReason = source.exclusionReason;
+		this.exclusionDetail = source.exclusionDetail;
+		this.exclusionJustification = source.exclusionJustification;
+		this.estimatedKgCo2e = source.estimatedKgCo2e;
+		this.scope = source.scope;
+		this.category = source.category;
+		this.leaseType = source.leaseType;
+		this.emissionFactor = source.emissionFactor;
+		this.scopeJustification = source.scopeJustification;
+		this.proxy = source.proxy;
+		this.proxyJustification = source.proxyJustification;
+		this.density = source.density;
+		this.inherited = true;
+	}
+
+	public boolean isInherited() {
+		return inherited;
 	}
 
 	public UUID getId() {

@@ -37,6 +37,8 @@ const inventory: Inventory = {
   finalRunId: null,
   status: 'DRAFT',
   supersededById: null,
+  copiedFromId: null,
+  correctionReason: null,
   publishedAt: null,
   currentBoundaryVersionId: null,
   currentBoundaryVersionNo: null,

@@ -341,6 +341,8 @@ const report: Report = {
       'Data quality follows the Scope 3 Standard tiers: 100% of the total rests on tier 1 data.',
     uncertaintyStatement: 'Fuel data are metered; the cyanide estimate rests on supplier averages.',
   },
+  sincePublication: null,
+  correction: null,
   run: {
     id: 'run-1',
     inventoryId: 'inv-1',
@@ -638,4 +640,46 @@ test('prints the data-quality table and the exclusions with their justification 
     screen.getByText('emulsion explosive: no published factor; ANFO study pending'),
   ).toBeInTheDocument()
   expect(screen.getByText('Evidence: invoice-2938.pdf')).toBeInTheDocument()
+})
+
+test('a published run reads as published and lists what came after; a correction says what changed (spec 05.3)', async () => {
+  vi.mocked(getReport).mockResolvedValue({
+    ...report,
+    sincePublication: {
+      events: [],
+      laterInventories: [
+        { id: 'inv-2', name: '2026 Corporate', periodLabel: '2026', status: 'DRAFT' },
+      ],
+      changedRecords: [
+        {
+          activityId: 'act-1',
+          activityType: 'Diesel consumption',
+          field: 'quantity',
+          was: '1000',
+          now: '1200',
+        },
+      ],
+    },
+    correction: {
+      ofInventoryId: 'inv-0',
+      ofName: '2025 Corporate',
+      reason: 'camp LPG was material after all',
+      publishedRunId: 'run-0',
+      addedLines: 1,
+      removedLines: 0,
+      changedLines: 0,
+      deltaKgCo2e: 1330,
+      deltaTCo2e: 1.33,
+    },
+  })
+  renderRunDetailPage()
+
+  expect(await screen.findByText('Since publication')).toBeInTheDocument()
+  expect(screen.getByText(/quantity 1000 → 1200/)).toBeInTheDocument()
+  expect(screen.getByText(/Later inventories: 2026 Corporate \(2026\)/)).toBeInTheDocument()
+  expect(screen.getByText('Correction of 2025 Corporate')).toBeInTheDocument()
+  expect(screen.getByText('camp LPG was material after all')).toBeInTheDocument()
+  expect(
+    screen.getByText(/1 line added, 0 removed, 0 changed; \+1\.33 t CO₂e in total/),
+  ).toBeInTheDocument()
 })

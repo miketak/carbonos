@@ -28,7 +28,7 @@ Status summary (update as tickets close):
 | Priority | Tickets | Done |
 |---|---|---|
 | P0 | 9 | 9 |
-| P1 | 13 | 9 |
+| P1 | 13 | 11 |
 | P2 | 4 | 0 |
 
 ## Theme 1: Scope 2 accounting
@@ -100,7 +100,7 @@ Status summary (update as tickets close):
   - Done when: pre-flight warns on every declared category with no lines and on every category with lines that is not declared; the report prints per-category totals beside the declaration, including "declared, not quantified: reason".
   - Spec: update 03.x (operational boundary) and 07.1.
 
-- [ ] **T-10 (P1) Freeze the published report and the published inventory view; require a reason on corrections**
+- [x] **T-10 (P1) Freeze the published report and the published inventory view; require a reason on corrections**
   - Findings: F41, F49
   - Problem: after publication, the published run's base-year section changed to show a recalculation candidate raised later and an "Emissions profile over time" table listing inventories created afterwards. The published inventory page reflects fact corrections made at organization level after publication (the LPG record now shows 23,530 litre beside its original, now meaningless, exclusion) with no "changed since publication" marker. "Create correction" asks only for a name.
   - Standard: Corporate Standard chapter 5 (restatements need a stated reason and the change must be visible); a published report is a point-in-time document that the verifier's opinion attaches to.
@@ -116,7 +116,7 @@ Status summary (update as tickets close):
   - Done when: each facility has a register of source streams (type, fuel, meter or supplier, owned or contractor) and factor candidates derive from the stream; scope is an explicit choice, defaulted from the stream, with the "suggests scope" warning suppressed once a reason is documented; scope override with required justification is allowed on any factor; a "proxy factor" flag with justification exists and the record description prints on every snapshot line.
   - Spec: 04.3 (source streams, explicit scope choice and proxy factors), migration V26; 04.1 updated.
 
-- [ ] **T-12 (P1) Carry classifications, exclusions, lease flags, and the Scope 3 declaration into new inventories and corrections**
+- [x] **T-12 (P1) Carry classifications, exclusions, lease flags, and the Scope 3 declaration into new inventories and corrections**
   - Findings: F29
   - Problem: a second inventory over the same period and a correction of a published inventory both came back with all 30 records "Unclassified"; every factor, scope, category, lease flag, and record exclusion had to be re-entered. The correction carried the boundary and instruments but not the classification or declaration text. Each re-entry is a chance for the correction to diverge from what was published.
   - Standard: consistency principle (Corporate Standard chapter 1).

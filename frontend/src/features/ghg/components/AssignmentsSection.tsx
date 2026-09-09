@@ -101,6 +101,14 @@ function StatusPills({
           Included
         </span>
         {assignment.scope && <ScopeBadge scope={assignment.scope} />}
+        {assignment.inherited && (
+          <span
+            className="inline-block rounded-full border border-teal/30 px-2 py-0.5 text-xs text-ink-muted"
+            title="Copied from the source inventory's decision about this record (spec 05.3)"
+          >
+            inherited
+          </span>
+        )}
       </span>
     )
   }
@@ -679,6 +687,13 @@ export function AssignmentsSection({
                         {assignment.unit} ·{' '}
                         {formatPeriod(assignment.periodStart, assignment.periodEnd)}
                       </span>
+                      {assignment.changedSincePublication &&
+                        assignment.changedSincePublication.length > 0 && (
+                          <span className="block text-xs text-amber-700">
+                            Changed since publication:{' '}
+                            {assignment.changedSincePublication.join(', ')}
+                          </span>
+                        )}
                     </td>
                     <td className="px-3 py-2">
                       <StatusPills

@@ -44,6 +44,8 @@ const inventory: Inventory = {
   finalRunId: 'run-base',
   status: 'FINAL',
   supersededById: null,
+  copiedFromId: null,
+  correctionReason: null,
   publishedAt: null,
   currentBoundaryVersionId: 'bv-1',
   currentBoundaryVersionNo: 1,

@@ -21,7 +21,8 @@ public record InventoryResponse(UUID id, UUID organizationId, String name, Local
 		String uncertaintyStatement,
 		List<ActivityCategory> scope3Categories, String scope3ExclusionsRationale,
 		Boolean residualMixAvailable, BigDecimal residualMixKgCo2ePerKwh, UUID finalRunId,
-		InventoryStatus status, UUID supersededById, Instant publishedAt, UUID currentBoundaryVersionId,
+		InventoryStatus status, UUID supersededById, UUID copiedFromId, String correctionReason, Instant publishedAt,
+		UUID currentBoundaryVersionId,
 		Integer currentBoundaryVersionNo, Instant createdAt) {
 
 	public static InventoryResponse from(Inventory inventory) {
@@ -32,6 +33,7 @@ public record InventoryResponse(UUID id, UUID organizationId, String name, Local
 				inventory.getPublishedBy(), inventory.getAssuranceLevel(), inventory.getAssuranceProvider(),
 				inventory.getAssuranceStatement(), inventory.getUncertaintyStatement(), inventory.getScope3Categories(), inventory.getScope3ExclusionsRationale(),
 				inventory.getResidualMixAvailable(), inventory.getResidualMixKgCo2ePerKwh(), inventory.getFinalRunId(), inventory.getStatus(), inventory.getSupersededById(),
+				inventory.getCopiedFromId(), inventory.getCorrectionReason(),
 				inventory.getPublishedAt(), inventory.getCurrentBoundaryVersionId(),
 				inventory.getCurrentBoundaryVersionNo(), inventory.getCreatedAt());
 	}

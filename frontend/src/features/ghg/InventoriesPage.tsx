@@ -172,6 +172,8 @@ function InventoryFormModal({
   const [gwpSet, setGwpSet] = useState<GwpSet>('AR5')
   const [straddleTreatment, setStraddleTreatment] = useState<StraddleTreatment>('PRO_RATE')
   const [prefillBoundary, setPrefillBoundary] = useState(true)
+  const [copyFromInventoryId, setCopyFromInventoryId] = useState('')
+  const inventoriesQuery = useInventoriesQuery(organizationId)
   const periodMonths = wholeMonths(periodStart, periodEnd)
 
   const errors = fieldErrors(create.error)
@@ -188,7 +190,8 @@ function InventoryFormModal({
         consolidationApproach: approach,
         gwpSet,
         straddleTreatment,
-        prefillBoundary,
+        prefillBoundary: copyFromInventoryId === '' ? prefillBoundary : false,
+        copyFromInventoryId: copyFromInventoryId === '' ? undefined : copyFromInventoryId,
       },
       { onSuccess: (inventory) => onSaved(`${inventory.name} created.`) },
     )
@@ -278,10 +281,24 @@ function InventoryFormModal({
             {generalError}
           </p>
         )}
+        <SelectField
+          label="Copy the view from (optional)"
+          value={copyFromInventoryId}
+          onChange={(event) => setCopyFromInventoryId(event.target.value)}
+          hint="The boundary, instruments, declaration and every classification and exclusion of that inventory, so a second inventory or next year's starts from its decisions."
+        >
+          <option value="">Start from scratch</option>
+          {(inventoriesQuery.data ?? []).map((candidate) => (
+            <option key={candidate.id} value={candidate.id}>
+              {candidate.name} ({candidate.periodLabel})
+            </option>
+          ))}
+        </SelectField>
         <label className="flex items-start gap-2 text-sm">
           <input
             type="checkbox"
-            checked={prefillBoundary}
+            disabled={copyFromInventoryId !== ''}
+            checked={copyFromInventoryId === '' ? prefillBoundary : false}
             onChange={(event) => setPrefillBoundary(event.target.checked)}
             className="mt-0.5 size-4 accent-teal"
           />

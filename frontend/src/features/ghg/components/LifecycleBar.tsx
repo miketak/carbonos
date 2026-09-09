@@ -48,6 +48,7 @@ export function LifecycleBar({
   const [dialog, setDialog] = useState<'freeze' | 'publish' | 'supersede' | 'withdraw' | null>(null)
   const [correctionName, setCorrectionName] = useState(`${inventory.name} (correction)`)
   const [withdrawReason, setWithdrawReason] = useState('')
+  const [correctionReason, setCorrectionReason] = useState('')
 
   const fail = (fallback: string) => (error: unknown) => {
     setDialog(null)
@@ -227,14 +228,25 @@ export function LifecycleBar({
       {dialog === 'supersede' && (
         <Modal title="Create a correction" onClose={() => setDialog(null)}>
           <p className="text-sm text-ink-muted">
-            A correction is a new draft inventory over the same period and approach, starting from
-            this inventory's boundary. This inventory stays published and points to the correction.
+            A correction is a new draft inventory over the same period and approach. It inherits
+            this inventory's boundary, instruments, declaration and every classification and
+            exclusion, so only what was wrong needs changing. Chapter 5 wants the reason stated; the
+            correction's report prints it with what changed.
           </p>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col gap-3">
             <InputField
               label="Name"
               value={correctionName}
               onChange={(event) => setCorrectionName(event.target.value)}
+              required
+            />
+            <InputField
+              label="Reason for the correction"
+              placeholder="LPG at the camp was recorded in kg as litres"
+              value={correctionReason}
+              onChange={(event) => setCorrectionReason(event.target.value)}
+              minLength={10}
+              maxLength={1000}
               required
             />
           </div>
@@ -245,15 +257,19 @@ export function LifecycleBar({
             <Button
               type="button"
               busy={supersede.isPending}
+              disabled={correctionReason.trim().length < 10}
               onClick={() =>
-                supersede.mutate(correctionName, {
-                  onSuccess: (successor) => {
-                    setDialog(null)
-                    toast(`${successor.name} created as a correction.`)
-                    void navigate(`../${successor.id}`, { relative: 'path' })
+                supersede.mutate(
+                  { name: correctionName, reason: correctionReason.trim() },
+                  {
+                    onSuccess: (successor) => {
+                      setDialog(null)
+                      toast(`${successor.name} created as a correction.`)
+                      void navigate(`../${successor.id}`, { relative: 'path' })
+                    },
+                    onError: fail('Could not create the correction.'),
                   },
-                  onError: fail('Could not create the correction.'),
-                })
+                )
               }
             >
               Create correction

@@ -484,6 +484,9 @@ export interface Inventory {
   finalRunId: string | null
   status: InventoryStatus
   supersededById: string | null
+  /** The inventory this one copied its view from, and why a correction was made (spec 05.3). */
+  copiedFromId: string | null
+  correctionReason: string | null
   publishedAt: string | null
   currentBoundaryVersionId: string | null
   currentBoundaryVersionNo: number | null
@@ -501,6 +504,17 @@ export interface InventoryInput {
   straddleTreatment?: StraddleTreatment
   /** Start with every operation that has a share under the approach in the boundary (spec 03.4). */
   prefillBoundary?: boolean
+  /** Copy the boundary, instruments, declaration and every assignment from another inventory (spec 05.3). */
+  copyFromInventoryId?: string
+}
+
+/** What an inventory inherited from its source, and how many records the source never decided on (spec 05.3). */
+export interface Inheritance {
+  sourceInventoryId: string
+  sourceName: string | null
+  inherited: number
+  undecided: number
+  correctionReason: string | null
 }
 
 export interface IntensityMetricInput {
@@ -684,6 +698,10 @@ export interface Assignment {
   scopeJustification: string | null
   proxy: boolean
   proxyJustification: string | null
+  /** Copied from another inventory's decision about the same record (spec 05.3). */
+  inherited: boolean
+  /** For a published inventory: the fields of the fact that changed since the published run (spec 05.3). */
+  changedSincePublication: string[] | null
   /** The lease the facility is under on the record's period, which the classification inherits (spec 03.4). */
   inheritedLeaseType: LeaseType | null
   /** The location-based factor suggested for the facility's grid region (spec 03.4). */
@@ -857,7 +875,18 @@ export interface RunExclusion {
 /** One recorded act on an inventory (spec 05.2). */
 export interface AuditEvent {
   id: string
-  action: 'RUN_VOIDED' | 'FINAL_WITHDRAWN'
+  action:
+    | 'RUN_VOIDED'
+    | 'FINAL_WITHDRAWN'
+    | 'CLASSIFIED'
+    | 'REVIEWED'
+    | 'FROZEN'
+    | 'REOPENED'
+    | 'RUN_LAUNCHED'
+    | 'FINAL_DESIGNATED'
+    | 'PUBLISHED'
+    | 'CORRECTION_CREATED'
+    | 'HEADER_SAVED'
   runId: string | null
   runNo: number | null
   actor: string
@@ -1137,6 +1166,30 @@ export interface Report {
   /** Every factor exactly as the run applied it (spec 07.4). */
   factors: FactorRow[]
   intensity: { name: string; value: number; unit: string; tCo2ePerUnit: number }[]
+  /** What happened after publication, for a published inventory's final run (spec 05.3). */
+  sincePublication: {
+    events: AuditEvent[]
+    laterInventories: { id: string; name: string; periodLabel: string; status: InventoryStatus }[]
+    changedRecords: {
+      activityId: string
+      activityType: string
+      field: string
+      was: string
+      now: string
+    }[]
+  } | null
+  /** For a correction: what it restates and how its lines differ from the published run (spec 05.3). */
+  correction: {
+    ofInventoryId: string
+    ofName: string
+    reason: string
+    publishedRunId: string | null
+    addedLines: number
+    removedLines: number
+    changedLines: number
+    deltaKgCo2e: number
+    deltaTCo2e: number
+  } | null
   /** Excluded records per reason with the estimated emissions left out (spec 04.4). */
   exclusionSummary: {
     reason: ExclusionReason
@@ -1735,11 +1788,22 @@ export function publishInventory(inventoryId: string): Promise<Inventory> {
   return api<Inventory>(`/api/ghg/inventories/${inventoryId}/publish`, { method: 'POST' })
 }
 
-export function supersedeInventory(inventoryId: string, name?: string): Promise<Inventory> {
+/** A correction needs a reason: what was wrong in the published inventory (spec 05.3). */
+export function supersedeInventory(
+  inventoryId: string,
+  input: { name?: string; reason: string },
+): Promise<Inventory> {
   return api<Inventory>(`/api/ghg/inventories/${inventoryId}/supersede`, {
     method: 'POST',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(input),
   })
+}
+
+/** Null when the inventory copied nothing (the API answers 204). */
+export function getInheritance(inventoryId: string): Promise<Inheritance | null> {
+  return api<Inheritance | null>(`/api/ghg/inventories/${inventoryId}/inheritance`).then(
+    (value) => value ?? null,
+  )
 }
 
 // --- market-based scope 2 (spec 07.1) ------------------------------------------------
