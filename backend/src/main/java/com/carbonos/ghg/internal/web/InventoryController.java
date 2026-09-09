@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -20,6 +21,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.Inventory;
 import com.carbonos.ghg.internal.InventoryService;
+import com.carbonos.ghg.internal.web.dto.AssignmentPageResponse;
 import com.carbonos.ghg.internal.web.dto.AssignmentResponse;
 import com.carbonos.ghg.internal.web.dto.AuditEventResponse;
 import com.carbonos.ghg.internal.web.dto.BoundaryEntityResponse;
@@ -286,6 +288,15 @@ class InventoryController {
 	@GetMapping("/inventories/{id}/assignments")
 	List<AssignmentResponse> assignments(@PathVariable UUID id) {
 		return inventoryService.listAssignments(id).stream().map(AssignmentResponse::from).toList();
+	}
+
+	/** The activity view searched, filtered and paged, with the counts by status (spec 04.5). */
+	@GetMapping("/inventories/{id}/assignments/page")
+	AssignmentPageResponse assignmentsPage(@PathVariable UUID id, @RequestParam(required = false) String q,
+			@RequestParam(required = false) UUID facilityId, @RequestParam(required = false) String status,
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
+		return AssignmentPageResponse.from(inventoryService.searchAssignments(id,
+				new InventoryService.AssignmentQuery(q, facilityId, status, page, size)));
 	}
 
 	@PostMapping("/inventories/{id}/assignments/sync")

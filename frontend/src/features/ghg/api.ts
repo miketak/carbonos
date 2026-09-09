@@ -812,13 +812,62 @@ export interface AuditEvent {
   at: string
 }
 
-/** Which months of the inventory period have data, per facility and activity type (spec 04.2). */
+/**
+ * Which months of the inventory period have data, per facility and stream, or
+ * per activity type for records without a stream (spec 04.2, 04.5). A stream
+ * with no data at all still has a row.
+ */
 export interface CoverageRow {
   facilityId: string
   facilityName: string
-  activityType: string
+  streamId: string | null
+  streamName: string | null
+  activityType: string | null
   months: string[]
   coveredMonths: string[]
+}
+
+/** One page of a register (spec 04.5). */
+export interface Page<T> {
+  items: T[]
+  page: number
+  size: number
+  total: number
+}
+
+/** The register's search, filters, sort and page (spec 04.5). */
+export interface ActivityQuery {
+  q?: string
+  facilityId?: string
+  streamId?: string
+  from?: string
+  to?: string
+  sort?: 'periodEnd' | 'periodStart' | 'facility' | 'activityType' | 'quantity' | 'createdAt'
+  dir?: 'asc' | 'desc'
+  page?: number
+  size?: number
+}
+
+/** The outcome of a CSV import: every row, or none with each rejected row named (spec 04.5). */
+export interface ActivityImportResult {
+  imported: number
+  rejected: { row: number; message: string }[]
+}
+
+export type AssignmentStatus = 'INCLUDED' | 'EXCLUDED' | 'UNCLASSIFIED'
+
+export interface AssignmentQuery {
+  q?: string
+  facilityId?: string
+  status?: AssignmentStatus
+  page?: number
+  size?: number
+}
+
+export interface AssignmentPage extends Page<Assignment> {
+  included: number
+  excluded: number
+  unclassified: number
 }
 
 export interface RunDetail {
@@ -1358,6 +1407,42 @@ export function listActivities(organizationId: string): Promise<Activity[]> {
   return api<Activity[]>(`/api/ghg/organizations/${organizationId}/activities`)
 }
 
+function queryString(params: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') search.set(key, String(value))
+  }
+  const text = search.toString()
+  return text === '' ? '' : `?${text}`
+}
+
+/** The register searched, filtered, sorted and paged (spec 04.5). */
+export function searchActivities(
+  organizationId: string,
+  query: ActivityQuery,
+): Promise<Page<Activity>> {
+  return api<Page<Activity>>(
+    `/api/ghg/organizations/${organizationId}/activities/page${queryString({ ...query })}`,
+  )
+}
+
+/** Bulk entry from a CSV file: all rows or none (spec 04.5). */
+export function importActivities(
+  organizationId: string,
+  file: File,
+): Promise<ActivityImportResult> {
+  const body = new FormData()
+  body.append('file', file)
+  return api<ActivityImportResult>(`/api/ghg/organizations/${organizationId}/activities/import`, {
+    method: 'POST',
+    body,
+  })
+}
+
+export function activityImportTemplateUrl(organizationId: string): string {
+  return `/api/ghg/organizations/${organizationId}/activities/import-template.csv`
+}
+
 export function createActivity(organizationId: string, input: ActivityInput): Promise<Activity> {
   return api<Activity>(`/api/ghg/organizations/${organizationId}/activities`, {
     method: 'POST',
@@ -1635,6 +1720,16 @@ export function setResidualMix(inventoryId: string, input: ResidualMixInput): Pr
 
 export function listAssignments(inventoryId: string): Promise<Assignment[]> {
   return api<Assignment[]>(`/api/ghg/inventories/${inventoryId}/assignments`)
+}
+
+/** The activity view searched, filtered and paged, with the counts by status (spec 04.5). */
+export function searchAssignments(
+  inventoryId: string,
+  query: AssignmentQuery,
+): Promise<AssignmentPage> {
+  return api<AssignmentPage>(
+    `/api/ghg/inventories/${inventoryId}/assignments/page${queryString({ ...query })}`,
+  )
 }
 
 export function syncAssignments(

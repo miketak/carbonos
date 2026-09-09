@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../../../components/Button'
-import { InputField } from '../../../components/Field'
+import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { Skeleton } from '../../../components/Skeleton'
 import { useToast } from '../../../components/toast'
@@ -19,11 +19,12 @@ import {
 } from '../format'
 import { convertQuantity, DIMENSION_LABELS, needsDensity, unitDimension } from '../units'
 import {
-  useAssignmentsQuery,
+  useAssignmentPageQuery,
   useClassifyAssignment,
   useCoverageQuery,
   useDensitiesQuery,
   useEmissionFactorsQuery,
+  useFacilitiesQuery,
   useExcludeAssignment,
   useIncludeAssignment,
   useSyncAssignments,
@@ -33,6 +34,7 @@ import { ScopeBadge } from './badges'
 import type {
   ActivityCategory,
   Assignment,
+  AssignmentStatus,
   CoverageRow,
   ClassifyInput,
   Density,
@@ -43,6 +45,8 @@ import type {
   LeaseType,
   Unit,
 } from '../api'
+
+const PAGE_SIZE = 50
 
 const selectClasses =
   'w-full rounded-lg border border-teal/40 bg-white/70 px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60'
@@ -486,7 +490,18 @@ export function AssignmentsSection({
   inventoryId: string
   editable: boolean
 }) {
-  const assignmentsQuery = useAssignmentsQuery(inventoryId)
+  const [search, setSearch] = useState('')
+  const [facilityId, setFacilityId] = useState('')
+  const [status, setStatus] = useState<AssignmentStatus | ''>('')
+  const [page, setPage] = useState(0)
+  const assignmentsQuery = useAssignmentPageQuery(inventoryId, {
+    q: search.trim() === '' ? undefined : search.trim(),
+    facilityId: facilityId || undefined,
+    status: status || undefined,
+    page,
+    size: PAGE_SIZE,
+  })
+  const facilitiesQuery = useFacilitiesQuery(organizationId)
   const coverageQuery = useCoverageQuery(inventoryId)
   const factorsQuery = useEmissionFactorsQuery(organizationId)
   const densitiesQuery = useDensitiesQuery(organizationId)
@@ -497,7 +512,11 @@ export function AssignmentsSection({
   const include = useIncludeAssignment(inventoryId)
   const toast = useToast()
 
-  const assignments = assignmentsQuery.data
+  const assignments = assignmentsQuery.data?.items
+  const counts = assignmentsQuery.data
+  const total = counts?.total ?? 0
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const filtered = search.trim() !== '' || facilityId !== '' || status !== ''
   const factors = factorsQuery.data ?? []
   const densities = densitiesQuery.data ?? []
   const units = unitsQuery.data ?? []
@@ -554,12 +573,58 @@ export function AssignmentsSection({
         </Button>
       </div>
 
+      {counts && counts.included + counts.excluded + counts.unclassified > 0 && (
+        <div className="mt-4 grid gap-2 md:grid-cols-[2fr_1fr_1fr] md:items-end">
+          <InputField
+            label="Search the view"
+            placeholder="Activity, facility, stream, factor, unit, evidence"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setPage(0)
+            }}
+          />
+          <SelectField
+            label="Facility"
+            value={facilityId}
+            onChange={(event) => {
+              setFacilityId(event.target.value)
+              setPage(0)
+            }}
+          >
+            <option value="">All facilities</option>
+            {(facilitiesQuery.data ?? []).map((facility) => (
+              <option key={facility.id} value={facility.id}>
+                {facility.name}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Status"
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value as AssignmentStatus | '')
+              setPage(0)
+            }}
+          >
+            <option value="">
+              All ({counts.included + counts.excluded + counts.unclassified})
+            </option>
+            <option value="UNCLASSIFIED">Unclassified ({counts.unclassified})</option>
+            <option value="INCLUDED">Included and classified ({counts.included})</option>
+            <option value="EXCLUDED">Excluded ({counts.excluded})</option>
+          </SelectField>
+        </div>
+      )}
       {assignmentsQuery.isPending && (
         <div aria-label="Loading assignments" className="mt-4">
           <Skeleton className="h-16" />
         </div>
       )}
-      {assignments?.length === 0 && (
+      {assignments?.length === 0 && filtered && (
+        <p className="mt-4 text-sm text-ink-muted">No records match the search or the filters.</p>
+      )}
+      {assignments?.length === 0 && !filtered && (
         <p className="mt-4 text-sm text-ink-muted">
           Nothing under review yet: hit "Review activity data" to pull in the organization's
           records.
@@ -621,6 +686,32 @@ export function AssignmentsSection({
             </table>
           </div>
 
+          {pageCount > 1 && (
+            <div className="mt-2 flex items-center justify-between text-xs text-ink-muted">
+              <span>
+                {total.toLocaleString()} records, page {page + 1} of {pageCount}
+              </span>
+              <span className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  className="px-2 py-1 text-xs"
+                  disabled={page === 0}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="px-2 py-1 text-xs"
+                  disabled={page + 1 >= pageCount}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                </Button>
+              </span>
+            </div>
+          )}
+
           <CoverageMatrix rows={coverageQuery.data ?? []} />
 
           {/* mobile: one card per fact */}
@@ -669,9 +760,10 @@ export function AssignmentsSection({
 }
 
 /**
- * Period coverage (spec 04.2): which months of the inventory period have data
- * from included records, per facility and activity type, so a missing quarter
- * is visible before the run.
+ * Period coverage (spec 04.2, 04.5): which months of the inventory period have
+ * data from included records, per facility and stream (or activity type for
+ * records without a stream), so a missing quarter or a silent stream is
+ * visible before the run.
  */
 function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
   if (rows.length === 0) return null
@@ -680,13 +772,14 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
     <div className="mt-6 hidden md:block">
       <h3 className="text-sm font-semibold">Period coverage</h3>
       <p className="text-xs text-ink-muted">
-        Months of the reporting period with data from included records, per facility and activity.
+        Months of the reporting period with data from included records, per facility and stream. A
+        stream with no data at all shows every month empty.
       </p>
       <div className="mt-2 overflow-x-auto">
         <table aria-label="Period coverage" className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-teal/10 text-ink-muted uppercase">
-              <th className="px-2 py-1 font-semibold">Facility · activity</th>
+              <th className="px-2 py-1 font-semibold">Facility · stream</th>
               {months.map((month) => (
                 <th key={month} className="px-1 py-1 text-center font-semibold">
                   {month.slice(5)}
@@ -696,16 +789,25 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={`${row.facilityId}:${row.activityType}`} className="border-b border-teal/5">
+              <tr
+                key={`${row.facilityId}:${row.streamId ?? row.activityType}`}
+                className="border-b border-teal/5"
+              >
                 <td className="px-2 py-1 whitespace-nowrap">
-                  <span className="text-ink-muted">{row.facilityName}</span> · {row.activityType}
+                  <span className="text-ink-muted">{row.facilityName}</span> ·{' '}
+                  {row.streamName ?? row.activityType}
+                  {row.coveredMonths.length === 0 && (
+                    <span className="ml-1 rounded-full bg-red-100 px-1.5 text-red-700">
+                      no data
+                    </span>
+                  )}
                 </td>
                 {months.map((month) => {
                   const covered = row.coveredMonths.includes(month)
                   return (
                     <td
                       key={month}
-                      title={`${row.activityType}, ${month}: ${covered ? 'data' : 'no data'}`}
+                      title={`${row.streamName ?? row.activityType}, ${month}: ${covered ? 'data' : 'no data'}`}
                       className={`px-1 py-1 text-center ${covered ? 'text-dark-teal' : 'text-red-500'}`}
                     >
                       {covered ? '●' : '○'}

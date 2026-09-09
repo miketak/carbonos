@@ -11,6 +11,11 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+    properties:
+      # runs insert thousands of lines and imports thousands of records (spec 04.5)
+      hibernate.jdbc.batch_size: 50
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
   flyway:
     enabled: true
   mvc:

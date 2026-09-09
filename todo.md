@@ -28,7 +28,7 @@ Status summary (update as tickets close):
 | Priority | Tickets | Done |
 |---|---|---|
 | P0 | 9 | 9 |
-| P1 | 13 | 5 |
+| P1 | 13 | 6 |
 | P2 | 4 | 0 |
 
 ## Theme 1: Scope 2 accounting
@@ -157,7 +157,7 @@ Status summary (update as tickets close):
   - Done when: a record exclusion requires free-text justification and an estimated magnitude; the report totals the excluded quantity per reason and prints each justification.
   - Spec: update 04 and 07.1.
 
-- [ ] **T-18 (P1) Bulk import, search, filter, sort, pagination, and volume performance for activity data**
+- [x] **T-18 (P1) Bulk import, search, filter, sort, pagination, and volume performance for activity data**
   - Findings: F15; also the "Not exercised" note that the UI slowed at 30 records
   - Problem: the only entry route is one modal per record; 30 records display as an unsorted list. A mine site generates thousands of dispensing lines a year and practitioners work from spreadsheets.
   - Done when: CSV or XLSX import with a downloadable template and a validation report that names each rejected row; column sort, facility and stream filters, pagination; a monthly completeness matrix per facility and stream (depends on T-07 and T-11); the activity page and pre-flight stay responsive at 5,000 records.
