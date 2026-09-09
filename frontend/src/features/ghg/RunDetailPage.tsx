@@ -9,6 +9,7 @@ import { Breadcrumb } from './components/Breadcrumb'
 import { RunLinesTable } from './components/RunLinesTable'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
 import {
+  approachLabels,
   categoryLabel,
   conventionLabels,
   exclusionLabels,
@@ -664,6 +665,39 @@ function BaseYearSection({
                     {entry.recalculatedTotalKgCo2e === null
                       ? ''
                       : formatCo2e(entry.recalculatedTotalKgCo2e)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {(baseYear.otherViews ?? []).length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-ink-muted uppercase">Other views</p>
+          <p className="text-xs text-ink-muted">
+            Inventories over the same periods under another consolidation approach or GWP set. They
+            are not years of the base year&apos;s series and do not compare with it.
+          </p>
+          <table className="mt-1 w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+                <th className="py-1 font-semibold">Period</th>
+                <th className="py-1 font-semibold">Inventory</th>
+                <th className="py-1 font-semibold">Approach / GWP</th>
+                <th className="py-1 text-right font-semibold">Final run</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(baseYear.otherViews ?? []).map((entry) => (
+                <tr key={entry.inventoryId} className="border-b border-teal/5 last:border-0">
+                  <td className="py-1 tabular-nums">{entry.periodLabel}</td>
+                  <td className="py-1">{entry.name}</td>
+                  <td className="py-1">
+                    {approachLabels[entry.consolidationApproach]} / {entry.gwpSet}
+                  </td>
+                  <td className="py-1 text-right tabular-nums">
+                    {entry.totalKgCo2e === null ? 'not yet final' : formatCo2e(entry.totalKgCo2e)}
                   </td>
                 </tr>
               ))}

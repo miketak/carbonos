@@ -174,14 +174,29 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 
 	public record BaseYearSection(int year, String periodLabel, String inventoryName, UUID inventoryId, BigDecimal thresholdPercent,
 			String reason, StructuralChangeConvention structuralChangeConvention, boolean gwpSetMatches,
-			RunFigure originalBase, List<Recalculation> recalculations, List<ProfileEntry> profile) {
+			RunFigure originalBase, List<Recalculation> recalculations, List<ProfileEntry> profile,
+			List<ProfileEntry> otherViews) {
 	}
 
-	/** One inventory in the emissions profile over time (spec 06.1): its final run and, for the base year, the recalculated one. */
+	/**
+	 * One inventory in the emissions profile over time (spec 06.1): its final run and, for the base year, the
+	 * recalculated one. The approach and GWP set say whether it is a year of the base year's series or another view.
+	 */
 	public record ProfileEntry(UUID inventoryId, String name, int year, String periodLabel, LocalDate periodStart,
 			LocalDate periodEnd,
 			InventoryStatus status, UUID finalRunId, BigDecimal totalKgCo2e, UUID recalculatedRunId,
-			BigDecimal recalculatedTotalKgCo2e) {
+			BigDecimal recalculatedTotalKgCo2e, ConsolidationApproach consolidationApproach, GwpSet gwpSet) {
+
+		static ProfileEntry from(BaseYearService.ProfileEntry entry) {
+			var inventory = entry.inventory();
+			return new ProfileEntry(inventory.getId(), inventory.getName(), inventory.getPeriodStart().getYear(),
+					inventory.periodLabel(), inventory.getPeriodStart(), inventory.getPeriodEnd(), inventory.getStatus(),
+					entry.finalRun() == null ? null : entry.finalRun().getId(),
+					entry.finalRun() == null ? null : entry.finalRun().getTotalKgCo2e(),
+					entry.recalculatedRun() == null ? null : entry.recalculatedRun().getId(),
+					entry.recalculatedRun() == null ? null : entry.recalculatedRun().getTotalKgCo2e(),
+					inventory.getConsolidationApproach(), inventory.getGwpSet());
+		}
 	}
 
 	public record RunFigure(UUID runId, String label, BigDecimal totalKgCo2e, BigDecimal scope1KgCo2e,
@@ -197,7 +212,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 
 	public static ReportResponse of(GhgRun run, Inventory inventory, Organization organization,
 			BoundaryVersion version, BaseYear baseYear, GhgRun baseRun, Map<UUID, GhgRun> recalculatedRuns,
-			List<BaseYearService.ProfileEntry> profile, List<MarketFactor> marketFactors,
+			BaseYearService.Profile profile, List<MarketFactor> marketFactors,
 			List<Inventory> predecessors, Inventory successor, List<IntensityMetric> metrics) {
 		var lines = run.getLines().stream().map(RunLineResponse::from).toList();
 		var header = new Header(organization.getName(), organization.getAddress(), organization.getContact(),
@@ -324,21 +339,13 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				recalculations.add(new Recalculation(BaseYearResponse.RecalculationResponse.from(candidate),
 						recalculated == null ? null : figure(recalculated)));
 			}
-			var profileEntries = profile.stream()
-				.map(entry -> new ProfileEntry(entry.inventory().getId(), entry.inventory().getName(),
-						entry.inventory().getPeriodStart().getYear(), entry.inventory().periodLabel(),
-						entry.inventory().getPeriodStart(),
-						entry.inventory().getPeriodEnd(), entry.inventory().getStatus(),
-						entry.finalRun() == null ? null : entry.finalRun().getId(),
-						entry.finalRun() == null ? null : entry.finalRun().getTotalKgCo2e(),
-						entry.recalculatedRun() == null ? null : entry.recalculatedRun().getId(),
-						entry.recalculatedRun() == null ? null : entry.recalculatedRun().getTotalKgCo2e()))
-				.toList();
+			var profileEntries = profile.comparable().stream().map(ProfileEntry::from).toList();
+			var otherViews = profile.otherViews().stream().map(ProfileEntry::from).toList();
 			baseYearSection = new BaseYearSection(baseYear.year(), baseYear.getInventory().periodLabel(),
 					baseYear.getInventory().getName(),
 					baseYear.getInventory().getId(), baseYear.getThresholdPercent(), baseYear.getReason(),
 					baseYear.getStructuralChangeConvention(), baseYear.getInventory().getGwpSet() == run.getGwpSet(),
-					baseRun == null ? null : figure(baseRun), recalculations, profileEntries);
+					baseRun == null ? null : figure(baseRun), recalculations, profileEntries, otherViews);
 		}
 		var exclusionSummary = exclusionSummary(run);
 		var dataQuality = dataQuality(run, inventory.getUncertaintyStatement());

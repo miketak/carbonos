@@ -29,7 +29,7 @@ Status summary (update as tickets close):
 |---|---|---|
 | P0 | 9 | 9 |
 | P1 | 13 | 13 |
-| P2 | 4 | 0 |
+| P2 | 4 | 1 |
 
 ## Theme 1: Scope 2 accounting
 
@@ -197,11 +197,11 @@ Status summary (update as tickets close):
 
 ## Theme 7: Base year
 
-- [ ] **T-23 (P2) Scope the recalculation hold to inventories that report against the base year; filter the emissions profile**
+- [x] **T-23 (P2) Scope the recalculation hold to inventories that report against the base year; filter the emissions profile**
   - Findings: F46, F42
   - Problem: a pending recalculation candidate blocks runs on unrelated inventories (an FY2024 draft and a financial-control view both showed "Base year: HOLD"). The "Emissions profile over time" table lists four 2025 rows, one per inventory, including equity-share and financial-control views, as if they were years.
   - Done when: the hold blocks only inventories with the base year's approach and a later period, and warns elsewhere; the profile shows only inventories matching the base year's approach and GWP set, with other views listed separately.
-  - Spec: update 06 (base year).
+  - Spec: 06 and 06.1 updated (scope of the hold, other views in the profile).
 
 ## Theme 8: Validation and UI polish
 

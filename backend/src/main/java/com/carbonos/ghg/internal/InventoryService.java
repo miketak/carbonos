@@ -1581,9 +1581,16 @@ public class InventoryService {
 		var baseYearFindings = new ArrayList<Finding>();
 		for (var flag : baseYears.unresolvedFlags(inventory.getOrganization().getId())) {
 			var ownBaseYear = flag.getBaseYear().getInventory().getId().equals(inventoryId);
-			var severity = flag.isAboveThreshold() && !ownBaseYear ? Severity.ERROR : Severity.WARNING;
+			// the hold applies to the inventories that report against the base year; other views and
+			// earlier periods are told, not stopped (spec 06.1)
+			var against = !ownBaseYear && BaseYearService.reportsAgainst(flag.getBaseYear(), inventory);
+			var severity = flag.isAboveThreshold() && against ? Severity.ERROR : Severity.WARNING;
+			var scope = flag.isAboveThreshold() && !against && !ownBaseYear
+					? " This inventory is not held because " + BaseYearService.whyNotAgainst(flag.getBaseYear(), inventory)
+							+ "."
+					: "";
 			baseYearFindings.add(new Finding(severity, "Base year flagged for recalculation (" + flag.getReason()
-					+ "). Record the decision under the organization's base year."));
+					+ "). Record the decision under the organization's base year." + scope));
 		}
 		if (baseYear != null && !baseYear.getInventory().getId().equals(inventoryId)
 				&& baseYear.getInventory().getGwpSet() != inventory.getGwpSet()) {

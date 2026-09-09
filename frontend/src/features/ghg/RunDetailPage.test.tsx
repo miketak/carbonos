@@ -572,6 +572,8 @@ test('prints the base year with its reason, convention and the profile over time
           totalKgCo2e: 27930,
           recalculatedRunId: 'run-restated',
           recalculatedTotalKgCo2e: 27000,
+          consolidationApproach: 'OPERATIONAL_CONTROL',
+          gwpSet: 'AR5',
         },
         {
           inventoryId: 'inv-1',
@@ -585,6 +587,25 @@ test('prints the base year with its reason, convention and the profile over time
           totalKgCo2e: null,
           recalculatedRunId: null,
           recalculatedTotalKgCo2e: null,
+          consolidationApproach: 'OPERATIONAL_CONTROL',
+          gwpSet: 'AR5',
+        },
+      ],
+      otherViews: [
+        {
+          inventoryId: 'inv-equity',
+          name: '2025 Equity view',
+          year: 2025,
+          periodLabel: '2025',
+          periodStart: '2025-01-01',
+          periodEnd: '2025-12-31',
+          status: 'DRAFT',
+          finalRunId: null,
+          totalKgCo2e: null,
+          recalculatedRunId: null,
+          recalculatedTotalKgCo2e: null,
+          consolidationApproach: 'EQUITY_SHARE',
+          gwpSet: 'AR5',
         },
       ],
     },
@@ -600,6 +621,12 @@ test('prints the base year with its reason, convention and the profile over time
   )
   expect(within(profile).getByText('2025 Corporate Inventory').closest('tr')).toHaveTextContent(
     /not yet final/,
+  )
+  // a view under another approach is listed apart, not as a year of the series (ticket T-23)
+  expect(within(profile).queryByText('2025 Equity view')).not.toBeInTheDocument()
+  const others = screen.getByText('Other views').closest('div')!
+  expect(within(others).getByText('2025 Equity view').closest('tr')).toHaveTextContent(
+    /Equity share \/ AR5/,
   )
 })
 
