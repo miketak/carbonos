@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
 import { Button } from '../../../components/Button'
+import { InputField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { Skeleton } from '../../../components/Skeleton'
 import { useToast } from '../../../components/toast'
@@ -8,7 +10,10 @@ import {
   categoriesForScope,
   categoryLabel,
   exclusionLabels,
+  formatCo2e,
   formatPeriod,
+  isAutomaticReason,
+  manualExclusionReasons,
   leaseLabels,
   scopeLabels,
 } from '../format'
@@ -30,6 +35,7 @@ import type {
   CoverageRow,
   ClassifyInput,
   EmissionFactor,
+  ExcludeInput,
   ExclusionReason,
   GhgScope,
   LeaseType,
@@ -59,6 +65,14 @@ function StatusPills({
         Excluded · {assignment.exclusionReason ? exclusionLabels[assignment.exclusionReason] : ''}
         {assignment.exclusionDetail && (
           <span className="font-normal text-slate-500">({assignment.exclusionDetail})</span>
+        )}
+        {assignment.exclusionJustification && (
+          <span className="font-normal text-slate-500">
+            {assignment.exclusionJustification}
+            {assignment.estimatedKgCo2e !== null
+              ? `; about ${formatCo2e(assignment.estimatedKgCo2e)} left out`
+              : ''}
+          </span>
         )}
         {editable && (
           <button
@@ -267,19 +281,37 @@ function ClassifyControls({
 
 /**
  * DR-03: exclusion is a deliberate button-and-popover, not a disguised dropdown.
- * The button opens a small menu to capture the required reason; nothing changes
- * until a reason is chosen. Renders nothing once excluded (the removable status
- * chip owns the reversal).
+ * The button opens a small menu to capture the required reason; a reason the
+ * review cannot compute itself then asks for the justification and the
+ * estimated magnitude Chapter 9 wants (spec 04.4). Nothing changes until the
+ * form is submitted. Renders nothing once excluded (the removable status chip
+ * owns the reversal).
  */
 function ExcludeMenu({
   assignment,
   onExclude,
 }: {
   assignment: Assignment
-  onExclude: (reason: ExclusionReason) => void
+  onExclude: (input: ExcludeInput) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [chosen, setChosen] = useState<ExclusionReason | null>(null)
+  const [justification, setJustification] = useState('')
+  const [estimated, setEstimated] = useState('')
   const ref = useRef<HTMLDivElement>(null)
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!chosen) return
+    onExclude({
+      reason: chosen,
+      justification: justification.trim(),
+      estimatedKgCo2e: Number(estimated),
+    })
+    setChosen(null)
+    setJustification('')
+    setEstimated('')
+  }
 
   useEffect(() => {
     if (!open) return
@@ -315,21 +347,67 @@ function ExcludeMenu({
           <p className="border-b border-teal/10 px-3 py-2 text-xs font-semibold text-ink-muted">
             Exclude: reason
           </p>
-          {Object.entries(exclusionLabels).map(([value, label]) => (
+          {manualExclusionReasons.map((value) => (
             <button
               key={value}
               type="button"
               role="menuitem"
               onClick={() => {
                 setOpen(false)
-                onExclude(value as ExclusionReason)
+                if (isAutomaticReason(value)) onExclude({ reason: value })
+                else setChosen(value)
               }}
               className="block w-full px-3 py-2 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
             >
-              {label}
+              {exclusionLabels[value]}
             </button>
           ))}
         </div>
+      )}
+      {chosen && (
+        <form
+          onSubmit={submit}
+          aria-label={`Exclude ${assignment.activityType}: justification`}
+          className="absolute right-0 z-20 mt-1 flex w-80 flex-col gap-2 rounded-xl border border-teal/15 bg-white p-3 text-left shadow-[0_8px_28px_rgba(9,168,149,0.18)]"
+        >
+          <p className="text-xs font-semibold text-ink-muted">{exclusionLabels[chosen]}</p>
+          <InputField
+            label="Justification"
+            placeholder="Why this record is left out"
+            value={justification}
+            minLength={10}
+            maxLength={500}
+            required
+            onChange={(event) => setJustification(event.target.value)}
+          />
+          <InputField
+            label="Estimated emissions left out (kg CO₂e)"
+            type="number"
+            min="0"
+            step="0.001"
+            value={estimated}
+            required
+            hint="0 when the record emits nothing; the report totals these per reason."
+            onChange={(event) => setEstimated(event.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="px-2.5 py-1 text-xs"
+              onClick={() => setChosen(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="px-2.5 py-1 text-xs"
+              disabled={justification.trim().length < 10 || estimated.trim() === ''}
+            >
+              Exclude
+            </Button>
+          </div>
+        </form>
       )}
     </div>
   )
@@ -364,9 +442,9 @@ export function AssignmentsSection({
       { id: assignment.id, input },
       { onError: (error) => toast(problemDetail(error) ?? 'Could not classify.', 'error') },
     )
-  const onExclude = (assignment: Assignment) => (reason: ExclusionReason) =>
+  const onExclude = (assignment: Assignment) => (input: ExcludeInput) =>
     exclude.mutate(
-      { id: assignment.id, reason },
+      { id: assignment.id, input },
       { onError: (error) => toast(problemDetail(error) ?? 'Could not exclude.', 'error') },
     )
   const onInclude = (assignment: Assignment) => () =>

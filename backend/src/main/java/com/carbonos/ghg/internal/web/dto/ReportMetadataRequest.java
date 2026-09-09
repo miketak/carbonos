@@ -18,6 +18,8 @@ public record ReportMetadataRequest( //
 		@NotNull AssuranceLevel assuranceLevel, //
 		@Size(max = 160) String assuranceProvider, //
 		@Size(max = 255) String assuranceStatement, //
+		// the qualitative uncertainty statement printed with the data-quality table (spec 04.4)
+		@Size(max = 1000) String uncertaintyStatement, //
 		@NotNull @Valid List<IntensityMetricInput> intensityMetrics) {
 
 	public record IntensityMetricInput( //

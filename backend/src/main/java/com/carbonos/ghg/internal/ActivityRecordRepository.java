@@ -11,10 +11,10 @@ public interface ActivityRecordRepository extends JpaRepository<ActivityRecord, 
 	// facility is rendered with each activity; fetch it eagerly because
 	// open-in-view is off and mapping happens outside the transaction
 	@EntityGraph(attributePaths = { "facility", "stream" })
-	List<ActivityRecord> findAllByFacilityOrganizationIdOrderByPeriodEndDesc(UUID organizationId);
+	List<ActivityRecord> findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(UUID organizationId);
 
-	boolean existsByFacilityId(UUID facilityId);
+	boolean existsByFacilityIdAndDeletedAtIsNull(UUID facilityId);
 
-	boolean existsByStreamId(UUID streamId);
+	boolean existsByStreamIdAndDeletedAtIsNull(UUID streamId);
 
 }

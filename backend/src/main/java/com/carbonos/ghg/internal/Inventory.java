@@ -101,6 +101,10 @@ public class Inventory {
 	@Column(name = "assurance_statement", length = 255)
 	private String assuranceStatement;
 
+	// the qualitative uncertainty statement printed with the data-quality table (spec 04.4)
+	@Column(name = "uncertainty_statement", length = 1000)
+	private String uncertaintyStatement;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private InventoryStatus status;
@@ -166,8 +170,13 @@ public class Inventory {
 		return assuranceStatement;
 	}
 
+	public String getUncertaintyStatement() {
+		return uncertaintyStatement;
+	}
+
 	void setReportMetadata(String approvedBy, AssuranceLevel assuranceLevel, String assuranceProvider,
-			String assuranceStatement) {
+			String assuranceStatement, String uncertaintyStatement) {
+		this.uncertaintyStatement = uncertaintyStatement;
 		this.approvedBy = approvedBy;
 		this.assuranceLevel = assuranceLevel;
 		this.assuranceProvider = assuranceProvider;

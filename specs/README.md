@@ -25,6 +25,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 04.1 | [Scope as an accounting decision](04.1-scope-as-accounting-decision.md) | Ch. 4, App. F | Implemented |
 | 04.2 | [Activity periods, cut-off and pro-rating](04.2-activity-periods-and-pro-rating.md) | Ch. 5, 7, 9 | Implemented |
 | 04.3 | [Source streams, explicit scope choice and proxy factors](04.3-source-streams-and-scope-choice.md) | Ch. 4, 7 | Implemented |
+| 04.4 | [Activity data quality, evidence, corrections, and justified exclusions](04.4-activity-data-quality-evidence-and-corrections.md) | Ch. 7, 9, Scope 3 Standard Ch. 7, ISO 14064-1 | Implemented |
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
 | 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |

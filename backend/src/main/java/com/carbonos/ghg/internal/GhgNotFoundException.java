@@ -83,6 +83,10 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Recalculation", id);
 	}
 
+	static GhgNotFoundException evidence(UUID id) {
+		return new GhgNotFoundException("Evidence", id);
+	}
+
 	static GhgNotFoundException marketFactor(UUID id) {
 		return new GhgNotFoundException("Market factor", id);
 	}

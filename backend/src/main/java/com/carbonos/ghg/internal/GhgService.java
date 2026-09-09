@@ -36,11 +36,19 @@ public class GhgService {
 	private final OrganizationMemberRepository members;
 	private final UserDirectory userDirectory;
 	private final GhgAccess access;
+	private final ActivityRevisionRepository revisions;
+	private final BoundaryTreatmentRepository boundaryTreatments;
+	private final EvidenceRepository evidence;
 
 	GhgService(OrganizationRepository organizations, LegalEntityRepository entities, FacilityRepository facilities,
 			EmissionFactorRepository emissionFactors, ActivityRecordRepository activities,
 			SourceStreamRepository streams, GhgRunLineRepository runLines, FactorPacks factorPacks, UnitConverter units,
-			OrganizationMemberRepository members, UserDirectory userDirectory, GhgAccess access) {
+			OrganizationMemberRepository members, UserDirectory userDirectory, GhgAccess access,
+			ActivityRevisionRepository revisions, BoundaryTreatmentRepository boundaryTreatments,
+			EvidenceRepository evidence) {
+		this.evidence = evidence;
+		this.revisions = revisions;
+		this.boundaryTreatments = boundaryTreatments;
 		this.organizations = organizations;
 		this.entities = entities;
 		this.facilities = facilities;
@@ -188,7 +196,7 @@ public class GhgService {
 
 	@Transactional(readOnly = true)
 	public long facilityCount(UUID organizationId) {
-		return facilities.countByOrganizationId(organizationId);
+		return facilities.countByOrganizationIdAndDeletedAtIsNull(organizationId);
 	}
 
 	// --- legal entities (spec 03.1) ------------------------------------------
@@ -196,12 +204,14 @@ public class GhgService {
 	@Transactional(readOnly = true)
 	public List<LegalEntity> listEntities(UUID organizationId) {
 		getOrganization(organizationId);
-		return entities.findAllByOrganizationIdOrderByReportingCompanyDescCreatedAtAsc(organizationId);
+		return entities.findAllByOrganizationIdAndDeletedAtIsNullOrderByReportingCompanyDescCreatedAtAsc(organizationId);
 	}
 
 	@Transactional(readOnly = true)
 	public LegalEntity getEntity(UUID id) {
-		var entity = entities.findById(id).orElseThrow(() -> GhgNotFoundException.entity(id));
+		var entity = entities.findById(id)
+			.filter(found -> !found.isDeleted())
+			.orElseThrow(() -> GhgNotFoundException.entity(id));
 		access.check(entity.getOrganization());
 		return entity;
 	}
@@ -216,7 +226,7 @@ public class GhgService {
 		var organization = getOrganization(organizationId);
 		access.checkWrite(organization);
 		var trimmed = facts.name().trim();
-		if (entities.existsByOrganizationIdAndNameIgnoreCase(organizationId, trimmed)) {
+		if (entities.existsByOrganizationIdAndNameIgnoreCaseAndDeletedAtIsNull(organizationId, trimmed)) {
 			throw new GhgRuleViolationException("An entity named '" + trimmed + "' already exists.");
 		}
 		var parent = requireParent(facts.parentEntityId(), organizationId, null);
@@ -270,7 +280,7 @@ public class GhgService {
 					+ "by definition. Record other structures as separate entities.");
 		}
 		if (!trimmed.equalsIgnoreCase(entity.getName())
-				&& entities.existsByOrganizationIdAndNameIgnoreCase(entity.getOrganization().getId(), trimmed)) {
+				&& entities.existsByOrganizationIdAndNameIgnoreCaseAndDeletedAtIsNull(entity.getOrganization().getId(), trimmed)) {
 			throw new GhgRuleViolationException("An entity named '" + trimmed + "' already exists.");
 		}
 		var parent = requireParent(facts.parentEntityId(), entity.getOrganization().getId(), entity);
@@ -279,21 +289,23 @@ public class GhgService {
 		return entity;
 	}
 
-	public void deleteEntity(UUID id) {
+	/** Removes an entity with a reason; it stays as a tombstone (spec 04.4). */
+	public void deleteEntity(UUID id, String reason) {
 		var entity = getEntity(id);
 		access.checkWrite(entity.getOrganization());
 		if (entity.isReportingCompany()) {
 			throw new GhgRuleViolationException("The reporting company cannot be deleted.");
 		}
-		if (facilities.existsByEntityId(id)) {
+		if (facilities.existsByEntityIdAndDeletedAtIsNull(id)) {
 			throw new GhgRuleViolationException("'" + entity.getName()
 					+ "' still has facilities. Move them to another entity before deleting it.");
 		}
-		if (entities.existsByParentId(id)) {
+		if (entities.existsByParentIdAndDeletedAtIsNull(id)) {
 			throw new GhgRuleViolationException("'" + entity.getName()
 					+ "' is the parent of other entities. Re-parent them before deleting it.");
 		}
-		entities.delete(entity);
+		requireReason(reason, "Removing a legal entity");
+		entity.markRemoved(access.currentUserEmail(), reason.trim());
 	}
 
 	// --- facilities ---------------------------------------------------------
@@ -301,7 +313,7 @@ public class GhgService {
 	@Transactional(readOnly = true)
 	public List<Facility> listFacilities(UUID organizationId) {
 		getOrganization(organizationId);
-		return facilities.findAllByOrganizationIdOrderByCreatedAtAsc(organizationId);
+		return facilities.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(organizationId);
 	}
 
 	/** Adds a facility under an entity; without one it belongs to the reporting company (spec 03.1). */
@@ -327,16 +339,32 @@ public class GhgService {
 		return trimmed == null ? null : trimmed.toUpperCase(Locale.ROOT);
 	}
 
-	/** TRACE-02: a facility with recorded facts is history; it cannot be deleted. */
-	public void deleteFacility(UUID id) {
+	/**
+	 * TRACE-02: a facility with recorded facts is history; it cannot be deleted.
+	 * One without them is removed with a reason and stays as a tombstone
+	 * (spec 04.4), unless an unpublished inventory still holds it.
+	 */
+	public void deleteFacility(UUID id, String reason) {
 		var facility = getFacility(id);
 		access.checkWrite(facility.getOrganization());
-		if (activities.existsByFacilityId(id)) {
+		if (activities.existsByFacilityIdAndDeletedAtIsNull(id)) {
 			throw new GhgRuleViolationException(
 					"'" + facility.getName() + "' has recorded activity data. Facts are the audit trail: "
 							+ "remove or reassign its activity records before deleting the facility.");
 		}
-		facilities.delete(facility);
+		var holders = boundaryTreatments.unpublishedInventoriesHolding(id);
+		if (!holders.isEmpty()) {
+			throw new GhgRuleViolationException("'" + facility.getName() + "' is in the boundary of "
+					+ String.join(", ", holders) + ". Remove it from the boundary first.");
+		}
+		requireReason(reason, "Removing a facility");
+		facility.markRemoved(access.currentUserEmail(), reason.trim());
+	}
+
+	private static void requireReason(String reason, String what) {
+		if (reason == null || reason.trim().length() < 5) {
+			throw new GhgFieldException("reason", what + " needs a reason of at least 5 characters.");
+		}
 	}
 
 	// --- source streams (spec 04.3) ----------------------------------------------
@@ -387,7 +415,7 @@ public class GhgService {
 	public void deleteStream(UUID id) {
 		var stream = getStream(id);
 		access.checkWrite(stream.getFacility().getOrganization());
-		if (activities.existsByStreamId(id)) {
+		if (activities.existsByStreamIdAndDeletedAtIsNull(id)) {
 			throw new GhgRuleViolationException("'" + stream.getName()
 					+ "' has activity records. Move them to another stream before deleting it.");
 		}
@@ -553,70 +581,132 @@ public class GhgService {
 
 	// --- activity data (organizational facts) -------------------------------
 
-	@Transactional(readOnly = true)
-	public List<ActivityRecord> listActivities(UUID organizationId) {
-		getOrganization(organizationId);
-		return activities.findAllByFacilityOrganizationIdOrderByPeriodEndDesc(organizationId);
+	/** A record with how much evidence and how many revisions it carries (spec 04.4). */
+	public record ActivitySummary(ActivityRecord activity, long evidenceCount, long revisionCount) {
 	}
 
-	public ActivityRecord createActivity(UUID organizationId, UUID facilityId, UUID streamId, String activityType,
-			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
-			String evidenceRef, DataQuality dataQuality, String note) {
+	@Transactional(readOnly = true)
+	public List<ActivitySummary> listActivities(UUID organizationId) {
+		getOrganization(organizationId);
+		var records = activities.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(organizationId);
+		var ids = records.stream().map(ActivityRecord::getId).toList();
+		var evidenceCounts = new java.util.HashMap<UUID, Long>();
+		if (!ids.isEmpty()) {
+			for (var item : evidence.findAllByActivityIdIn(ids)) {
+				evidenceCounts.merge(item.getActivityId(), 1L, Long::sum);
+			}
+		}
+		var revisionCounts = new java.util.HashMap<UUID, Long>();
+		for (var revision : revisions.findAllByActivityIdIn(ids)) {
+			revisionCounts.merge(revision.getActivityId(), 1L, Long::sum);
+		}
+		return records.stream()
+			.map(record -> new ActivitySummary(record, evidenceCounts.getOrDefault(record.getId(), 0L),
+					revisionCounts.getOrDefault(record.getId(), 0L)))
+			.toList();
+	}
+
+	/** The facts of a record as a request states them (spec 04.4: with its quality tier and uncertainty). */
+	public record ActivityFacts(UUID facilityId, UUID streamId, String activityType, BigDecimal quantity, String unit,
+			LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality,
+			String note, Integer dataQualityTier, BigDecimal uncertaintyPercent) {
+	}
+
+	public ActivityRecord createActivity(UUID organizationId, ActivityFacts facts) {
 		access.checkWrite(getOrganization(organizationId));
-		var facility = requireFacilityInOrganization(facilityId, organizationId);
-		requirePeriod(periodStart, periodEnd);
-		return activities.save(new ActivityRecord(facility, requireStreamOfFacility(streamId, facility),
-				activityType.trim(), quantity, unit.trim(), periodStart, periodEnd, trimToNull(dataSource),
-				trimToNull(evidenceRef), dataQuality, trimToNull(note)));
+		var facility = requireFacilityInOrganization(facts.facilityId(), organizationId);
+		requirePeriod(facts.periodStart(), facts.periodEnd());
+		if (facts.dataQualityTier() != null) {
+			DataQualityTier.require(facts.dataQualityTier());
+		}
+		return activities.save(new ActivityRecord(facility, requireStreamOfFacility(facts.streamId(), facility),
+				facts.activityType().trim(), facts.quantity(), facts.unit().trim(), facts.periodStart(),
+				facts.periodEnd(), trimToNull(facts.dataSource()), trimToNull(facts.evidenceRef()),
+				facts.dataQuality(), trimToNull(facts.note()), facts.dataQualityTier(), facts.uncertaintyPercent()));
 	}
 
 	/**
 	 * CORRECT-01: corrections to facts edit the record in place. Past runs are
 	 * unaffected (they snapshot); inventory views see the corrected fact and
-	 * their validation gates re-evaluate against it.
+	 * their validation gates re-evaluate against it. The correction needs a
+	 * reason and leaves a revision with each field's old and new value (spec
+	 * 04.4).
 	 */
-	public ActivityRecord updateActivity(UUID id, UUID facilityId, UUID streamId, String activityType,
-			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
-			String evidenceRef, DataQuality dataQuality, String note) {
+	public ActivityRecord updateActivity(UUID id, ActivityFacts facts, String reason) {
 		var activity = getActivity(id);
 		access.checkWrite(activity.getFacility().getOrganization());
+		requireReason(reason, "A correction");
+		if (activity.isDeleted()) {
+			throw new GhgRuleViolationException("This record was removed and cannot be corrected.");
+		}
 		var organizationId = activity.getFacility().getOrganization().getId();
-		var facility = requireFacilityInOrganization(facilityId, organizationId);
-		requirePeriod(periodStart, periodEnd);
-		activity.update(facility, requireStreamOfFacility(streamId, facility), activityType.trim(), quantity,
-				unit.trim(), periodStart, periodEnd, trimToNull(dataSource), trimToNull(evidenceRef), dataQuality,
-				trimToNull(note));
+		var facility = requireFacilityInOrganization(facts.facilityId(), organizationId);
+		requirePeriod(facts.periodStart(), facts.periodEnd());
+		var tier = facts.dataQualityTier() == null ? activity.getDataQualityTier() : facts.dataQualityTier();
+		DataQualityTier.require(tier);
+		var stream = requireStreamOfFacility(facts.streamId(), facility);
+		var changes = activity.changesTo(facility, stream, facts.activityType().trim(), facts.quantity(),
+				facts.unit().trim(), facts.periodStart(), facts.periodEnd(), trimToNull(facts.dataSource()),
+				trimToNull(facts.evidenceRef()), facts.dataQuality(), trimToNull(facts.note()), tier,
+				facts.uncertaintyPercent());
+		activity.update(facility, stream, facts.activityType().trim(), facts.quantity(), facts.unit().trim(),
+				facts.periodStart(), facts.periodEnd(), trimToNull(facts.dataSource()), trimToNull(facts.evidenceRef()),
+				facts.dataQuality(), trimToNull(facts.note()), tier, facts.uncertaintyPercent());
+		revisions.save(new ActivityRevision(id, ActivityRevision.Kind.CORRECTED, reason.trim(), changes,
+				access.currentUserId(), access.currentUserEmail()));
 		return activity;
 	}
 
-	/** TRACE-01: a fact referenced by a calculation run is audit trail; it cannot be deleted. */
-	public void deleteActivity(UUID id) {
+	/** The corrections and the removal of a record, newest first (spec 04.4). */
+	@Transactional(readOnly = true)
+	public List<ActivityRevision> revisions(UUID activityId) {
+		getActivity(activityId);
+		return revisions.findAllByActivityIdOrderByChangedAtDesc(activityId);
+	}
+
+	/**
+	 * TRACE-01: a fact referenced by a calculation run is audit trail; it cannot
+	 * be deleted. One that is not is removed with a reason and stays as a
+	 * tombstone (spec 04.4); reviews exclude it from every draft inventory.
+	 */
+	public void deleteActivity(UUID id, String reason) {
 		var activity = getActivity(id);
 		access.checkWrite(activity.getFacility().getOrganization());
+		if (activity.isDeleted()) {
+			throw new GhgRuleViolationException("This record was already removed.");
+		}
 		if (runLines.existsByActivityId(id)) {
 			throw new GhgRuleViolationException(
 					"This record has been calculated into one or more runs. Reported results must stay "
 							+ "traceable to their source: correct the record instead of deleting it.");
 		}
-		activities.delete(activity);
+		requireReason(reason, "Removing a record");
+		activity.markRemoved(access.currentUserEmail(), reason.trim());
+		revisions.save(new ActivityRevision(id, ActivityRevision.Kind.REMOVED, reason.trim(), List.of(),
+				access.currentUserId(), access.currentUserEmail()));
 	}
 
 	// --- helpers -------------------------------------------------------------
 
 	private Facility getFacility(UUID id) {
-		var facility = facilities.findById(id).orElseThrow(() -> GhgNotFoundException.facility(id));
+		var facility = facilities.findById(id)
+			.filter(found -> !found.isDeleted())
+			.orElseThrow(() -> GhgNotFoundException.facility(id));
 		access.check(facility.getOrganization());
 		return facility;
 	}
 
-	private ActivityRecord getActivity(UUID id) {
+	/** A record by id, tombstones included: their history and evidence stay readable. */
+	ActivityRecord getActivity(UUID id) {
 		var activity = activities.findById(id).orElseThrow(() -> GhgNotFoundException.activity(id));
 		access.check(activity.getFacility().getOrganization());
 		return activity;
 	}
 
 	private Facility requireFacilityInOrganization(UUID facilityId, UUID organizationId) {
-		var facility = facilities.findById(facilityId).orElseThrow(() -> GhgNotFoundException.facility(facilityId));
+		var facility = facilities.findById(facilityId)
+			.filter(found -> !found.isDeleted())
+			.orElseThrow(() -> GhgNotFoundException.facility(facilityId));
 		if (!facility.getOrganization().getId().equals(organizationId)) {
 			throw GhgNotFoundException.facility(facilityId);
 		}
@@ -628,7 +718,9 @@ public class GhgService {
 			return entities.findByOrganizationIdAndReportingCompanyTrue(organizationId)
 				.orElseThrow(() -> new IllegalStateException("Organization " + organizationId + " has no own entity"));
 		}
-		var entity = entities.findById(entityId).orElseThrow(() -> GhgNotFoundException.entity(entityId));
+		var entity = entities.findById(entityId)
+			.filter(found -> !found.isDeleted())
+			.orElseThrow(() -> GhgNotFoundException.entity(entityId));
 		if (!entity.getOrganization().getId().equals(organizationId)) {
 			throw GhgNotFoundException.entity(entityId);
 		}

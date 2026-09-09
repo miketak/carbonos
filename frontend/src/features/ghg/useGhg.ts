@@ -12,11 +12,13 @@ import {
   createFacility,
   createInventory,
   createOrganization,
+  addEvidenceLink,
   createStream,
   decideRecalculation,
   deleteActivity,
   deleteEmissionFactor,
   deleteEntity,
+  deleteEvidence,
   deleteFacility,
   deleteInventory,
   deleteOrganization,
@@ -38,11 +40,13 @@ import {
   importFactorPack,
   includeAssignment,
   listActivities,
+  listActivityRevisions,
   listAssignments,
   listAuditEvents,
   listBoundaryVersions,
   listCoverage,
   listEmissionFactors,
+  listEvidence,
   listFactorPacks,
   listEntities,
   listFacilities,
@@ -77,6 +81,7 @@ import {
   updateInventory,
   updateOrganization,
   updateStream,
+  uploadEvidence,
   voidRun,
   withdrawFinal,
 } from './api'
@@ -88,7 +93,8 @@ import type {
   ClassifyInput,
   EmissionFactorInput,
   EntityInput,
-  ExclusionReason,
+  EvidenceOwner,
+  ExcludeInput,
   FacilityInput,
   InventoryInput,
   MarketFactorInput,
@@ -112,6 +118,9 @@ export const organizationKey = (id: string) => ['ghg', 'organization', id] as co
 export const entitiesKey = (orgId: string) => ['ghg', 'entities', orgId] as const
 export const facilitiesKey = (orgId: string) => ['ghg', 'facilities', orgId] as const
 export const activitiesKey = (orgId: string) => ['ghg', 'activities', orgId] as const
+export const revisionsKey = (activityId: string) => ['ghg', 'revisions', activityId] as const
+export const evidenceKey = (owner: EvidenceOwner) =>
+  ['ghg', 'evidence', 'activityId' in owner ? owner.activityId : owner.marketFactorId] as const
 export const inventoriesKey = (orgId: string) => ['ghg', 'inventories', orgId] as const
 export const baseYearKey = (orgId: string) => ['ghg', 'base-year', orgId] as const
 export const inventoryKey = (id: string) => ['ghg', 'inventory', id] as const
@@ -393,7 +402,9 @@ export function useUpdateEntity(orgId: string) {
 }
 
 export function useDeleteEntity(orgId: string) {
-  return useEntityMutation(orgId, (id: string) => deleteEntity(id))
+  return useEntityMutation(orgId, ({ id, reason }: { id: string; reason: string }) =>
+    deleteEntity(id, reason),
+  )
 }
 
 // --- facilities --------------------------------------------------------------
@@ -423,7 +434,7 @@ export function useUpdateFacility(orgId: string) {
 export function useDeleteFacility(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deleteFacility(id),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => deleteFacility(id, reason),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: facilitiesKey(orgId) })
       void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
@@ -453,9 +464,51 @@ export function useUpdateActivity(orgId: string) {
 export function useDeleteActivity(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deleteActivity(id),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => deleteActivity(id, reason),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) }),
   })
+}
+
+export function useActivityRevisionsQuery(activityId: string) {
+  return useQuery({
+    queryKey: revisionsKey(activityId),
+    queryFn: () => listActivityRevisions(activityId),
+  })
+}
+
+// --- evidence (spec 04.4) --------------------------------------------------------
+
+export function useEvidenceQuery(owner: EvidenceOwner) {
+  return useQuery({ queryKey: evidenceKey(owner), queryFn: () => listEvidence(owner) })
+}
+
+function useEvidenceMutation<TArgs, TResult>(
+  owner: EvidenceOwner,
+  orgId: string,
+  mutationFn: (args: TArgs) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: evidenceKey(owner) })
+      void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
+    },
+  })
+}
+
+export function useUploadEvidence(owner: EvidenceOwner, orgId: string) {
+  return useEvidenceMutation(owner, orgId, (file: File) => uploadEvidence(owner, file))
+}
+
+export function useAddEvidenceLink(owner: EvidenceOwner, orgId: string) {
+  return useEvidenceMutation(owner, orgId, (input: { name?: string; url: string }) =>
+    addEvidenceLink(owner, input),
+  )
+}
+
+export function useDeleteEvidence(owner: EvidenceOwner, orgId: string) {
+  return useEvidenceMutation(owner, orgId, (id: string) => deleteEvidence(id))
 }
 
 // --- inventories --------------------------------------------------------------
@@ -678,7 +731,7 @@ export function useClassifyAssignment(inventoryId: string) {
 export function useExcludeAssignment(inventoryId: string) {
   return useInventoryScopedMutation(
     inventoryId,
-    ({ id, reason }: { id: string; reason: ExclusionReason }) => excludeAssignment(id, reason),
+    ({ id, input }: { id: string; input: ExcludeInput }) => excludeAssignment(id, input),
   )
 }
 

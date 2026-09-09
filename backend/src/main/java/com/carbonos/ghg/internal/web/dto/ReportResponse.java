@@ -17,6 +17,7 @@ import com.carbonos.ghg.internal.BaseYear;
 import com.carbonos.ghg.internal.BaseYearService;
 import com.carbonos.ghg.internal.BoundaryVersion;
 import com.carbonos.ghg.internal.ConsolidationApproach;
+import com.carbonos.ghg.internal.ExclusionReason;
 import com.carbonos.ghg.internal.GhgRun;
 import com.carbonos.ghg.internal.GwpSet;
 import com.carbonos.ghg.internal.Inventory;
@@ -39,7 +40,22 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		BaseYearSection baseYear, Methodology methodology, List<BoundaryExclusionResponse> boundaryExclusions,
 		List<RunExclusionResponse> exclusions, List<RunLineResponse> lines, RunResponse run, Header header,
 		List<CategoryFigure> byScope3Category, List<Breakdown> byFacility, List<Breakdown> byEntity,
-		List<Breakdown> byCountry, List<FactorRow> factors, List<Intensity> intensity) {
+		List<Breakdown> byCountry, List<FactorRow> factors, List<Intensity> intensity,
+		List<ExclusionSummary> exclusionSummary, DataQualitySection dataQuality) {
+
+	/** The records left out under one reason, with the emissions the accountant estimated for them (spec 04.4). */
+	public record ExclusionSummary(ExclusionReason reason, int recordCount, BigDecimal estimatedKgCo2e,
+			BigDecimal estimatedTCo2e, int unestimatedCount) {
+	}
+
+	/** The share of each scope resting on each data quality tier, and the uncertainty statement (spec 04.4). */
+	public record DataQualitySection(List<TierRow> byTier, BigDecimal weightedUncertaintyPercent,
+			int linesWithUncertainty, int lineCount, String statement, String uncertaintyStatement) {
+	}
+
+	public record TierRow(int tier, String label, int lineCount, BigDecimal scope1KgCo2e, BigDecimal scope2KgCo2e,
+			BigDecimal scope3KgCo2e, BigDecimal totalKgCo2e, BigDecimal sharePercent) {
+	}
 
 	/** The report's header block (spec 07.4): who, for which entity, when, which version, with what assurance. */
 	public record Header(String organizationName, String address, String contact, String periodLabel,
@@ -267,6 +283,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 					baseYear.getStructuralChangeConvention(), baseYear.getInventory().getGwpSet() == run.getGwpSet(),
 					baseRun == null ? null : figure(baseRun), recalculations, profileEntries);
 		}
+		var exclusionSummary = exclusionSummary(run);
+		var dataQuality = dataQuality(run, inventory.getUncertaintyStatement());
 		return new ReportResponse(
 				new Company(organization.getName(), run.getConsolidationApproach(),
 						version == null ? null : BoundaryVersionResponse.from(version)),
@@ -288,7 +306,79 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 						: version.getExclusions().stream().map(BoundaryExclusionResponse::from).toList(),
 				run.getExclusions().stream().map(RunExclusionResponse::from).toList(), lines,
 				RunResponse.from(run), header, byScope3Category, byFacility, byEntity, byCountry, factorRows,
-				intensity);
+				intensity, exclusionSummary, dataQuality);
+	}
+
+	/** Excluded records grouped by reason with the estimated magnitude summed (spec 04.4, Chapter 9). */
+	private static List<ExclusionSummary> exclusionSummary(GhgRun run) {
+		var groups = new java.util.TreeMap<ExclusionReason, List<com.carbonos.ghg.internal.GhgRunExclusion>>();
+		for (var exclusion : run.getExclusions()) {
+			groups.computeIfAbsent(exclusion.getExclusionReason(), k -> new ArrayList<>()).add(exclusion);
+		}
+		return groups.entrySet().stream().map(e -> {
+			var estimated = e.getValue()
+				.stream()
+				.map(com.carbonos.ghg.internal.GhgRunExclusion::getEstimatedKgCo2e)
+				.filter(java.util.Objects::nonNull)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+			var unestimated = (int) e.getValue().stream().filter(x -> x.getEstimatedKgCo2e() == null).count();
+			return new ExclusionSummary(e.getKey(), e.getValue().size(), estimated, tonnes(estimated), unestimated);
+		}).toList();
+	}
+
+	/**
+	 * The data-quality table (spec 04.4, ISO 14064-1 section 9.3.1): each
+	 * scope's emissions by tier, the emission-weighted uncertainty where lines
+	 * record one, and a statement that says so in words.
+	 */
+	private static DataQualitySection dataQuality(GhgRun run, String uncertaintyStatement) {
+		var byTier = new java.util.TreeMap<Integer, BigDecimal[]>();
+		var counts = new java.util.TreeMap<Integer, Integer>();
+		var weighted = BigDecimal.ZERO;
+		var weightedBase = BigDecimal.ZERO;
+		var withUncertainty = 0;
+		for (var line : run.getLines()) {
+			var tier = line.getDataQualityTier() == null ? 3 : line.getDataQualityTier();
+			var sums = byTier.computeIfAbsent(tier, k -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });
+			switch (line.getScope()) {
+				case SCOPE_1 -> sums[0] = sums[0].add(line.getKgCo2e());
+				case SCOPE_2 -> sums[1] = sums[1].add(line.getKgCo2e());
+				case SCOPE_3 -> sums[2] = sums[2].add(line.getKgCo2e());
+			}
+			counts.merge(tier, 1, Integer::sum);
+			if (line.getUncertaintyPercent() != null) {
+				withUncertainty++;
+				weighted = weighted.add(line.getUncertaintyPercent().multiply(line.getKgCo2e().abs()));
+				weightedBase = weightedBase.add(line.getKgCo2e().abs());
+			}
+		}
+		var total = run.getTotalKgCo2e();
+		var rows = byTier.entrySet().stream().map(e -> {
+			var s = e.getValue();
+			var tierTotal = s[0].add(s[1]).add(s[2]);
+			var share = total.signum() == 0 ? BigDecimal.ZERO
+					: tierTotal.multiply(new BigDecimal("100")).divide(total, 1, java.math.RoundingMode.HALF_UP);
+			return new TierRow(e.getKey(), com.carbonos.ghg.internal.DataQualityTier.label(e.getKey()),
+					counts.get(e.getKey()), s[0], s[1], s[2], tierTotal, share);
+		}).toList();
+		var weightedUncertainty = weightedBase.signum() == 0 ? null
+				: weighted.divide(weightedBase, 1, java.math.RoundingMode.HALF_UP);
+		var parts = new ArrayList<String>();
+		for (var row : rows) {
+			parts.add(row.sharePercent().stripTrailingZeros().toPlainString() + "% of the total rests on tier "
+					+ row.tier() + " data (" + row.label().toLowerCase(java.util.Locale.ROOT) + ", " + row.lineCount()
+					+ " line" + (row.lineCount() == 1 ? "" : "s") + ")");
+		}
+		var statement = run.getLines().isEmpty() ? "No lines were calculated."
+				: "Data quality follows the Scope 3 Standard's tiers, 1 (metered or invoiced primary data) to 5 "
+						+ "(assumption): " + String.join("; ", parts) + "."
+						+ (weightedUncertainty == null
+								? " No line records a quantitative uncertainty; the statement below is qualitative."
+								: " " + withUncertainty + " of " + run.getLines().size()
+										+ " lines record a quantitative uncertainty; weighted by emissions it is ±"
+										+ weightedUncertainty.stripTrailingZeros().toPlainString() + "% for those lines.");
+		return new DataQualitySection(rows, weightedUncertainty, withUncertainty, run.getLines().size(), statement,
+				uncertaintyStatement);
 	}
 
 	/** Lines grouped by a key, each group's scopes summed, sorted by total descending (spec 07.4). */

@@ -58,6 +58,12 @@ public class GhgRunExclusion {
 	@Column(name = "exclusion_detail", length = 255)
 	private String exclusionDetail;
 
+	@Column(name = "exclusion_justification", length = 500)
+	private String exclusionJustification;
+
+	@Column(name = "estimated_kg_co2e", precision = 18, scale = 3)
+	private BigDecimal estimatedKgCo2e;
+
 	protected GhgRunExclusion() {
 	}
 
@@ -74,6 +80,8 @@ public class GhgRunExclusion {
 		this.periodEnd = activity.getPeriodEnd();
 		this.exclusionReason = assignment.getExclusionReason();
 		this.exclusionDetail = assignment.getExclusionDetail();
+		this.exclusionJustification = assignment.getExclusionJustification();
+		this.estimatedKgCo2e = assignment.getEstimatedKgCo2e();
 	}
 
 	public UUID getId() {
@@ -114,5 +122,13 @@ public class GhgRunExclusion {
 
 	public String getExclusionDetail() {
 		return exclusionDetail;
+	}
+
+	public String getExclusionJustification() {
+		return exclusionJustification;
+	}
+
+	public BigDecimal getEstimatedKgCo2e() {
+		return estimatedKgCo2e;
 	}
 }

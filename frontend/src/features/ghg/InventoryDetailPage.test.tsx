@@ -21,6 +21,7 @@ vi.setConfig({ testTimeout: 30000 })
 
 import {
   classifyAssignment,
+  excludeAssignment,
   freezeInventory,
   getBoundary,
   getBoundaryVersion,
@@ -69,6 +70,7 @@ const inventory: Inventory = {
   assuranceLevel: 'UNVERIFIED',
   assuranceProvider: null,
   assuranceStatement: null,
+  uncertaintyStatement: null,
   scope3Categories: [],
   scope3ExclusionsRationale: null,
   residualMixAvailable: null,
@@ -194,6 +196,8 @@ const unclassified: Assignment = {
   periodStart: '2025-03-15',
   periodEnd: '2025-03-15',
   dataQuality: 'MEASURED',
+  dataQualityTier: 1,
+  uncertaintyPercent: null,
   evidenceRef: 'INV-2938',
   streamKind: null,
   contractorOperated: null,
@@ -203,6 +207,8 @@ const unclassified: Assignment = {
   included: true,
   exclusionReason: null,
   exclusionDetail: null,
+  exclusionJustification: null,
+  estimatedKgCo2e: null,
   classified: false,
   scope: null,
   category: null,
@@ -273,6 +279,7 @@ beforeEach(() => {
   vi.mocked(listFacilities).mockReset().mockResolvedValue([])
   vi.mocked(syncAssignments).mockReset()
   vi.mocked(classifyAssignment).mockReset()
+  vi.mocked(excludeAssignment).mockReset()
   vi.mocked(freezeInventory).mockReset()
   vi.mocked(reopenInventory).mockReset()
   vi.mocked(withdrawFinal).mockReset()
@@ -747,4 +754,34 @@ test('shows which months of the period have data per facility and activity', asy
   const matrix = await screen.findByRole('table', { name: 'Period coverage' })
   expect(within(matrix).getByTitle('Diesel consumption, 2025-03: data')).toHaveTextContent('●')
   expect(within(matrix).getByTitle('Diesel consumption, 2025-01: no data')).toHaveTextContent('○')
+})
+
+test('a methodology exclusion asks for a justification and an estimated magnitude (spec 04.4)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(excludeAssignment).mockResolvedValue({
+    ...unclassified,
+    included: false,
+    exclusionReason: 'METHODOLOGY',
+    exclusionJustification: 'no published factor for sodium cyanide',
+    estimatedKgCo2e: 8400,
+  })
+  renderPage()
+
+  await user.click((await screen.findAllByRole('button', { name: /exclude…/i }))[0])
+  await user.click(screen.getAllByRole('menuitem', { name: 'Methodology exclusion' })[0])
+  const form = screen.getByRole('form', { name: /justification/i })
+  await user.type(
+    within(form).getByLabelText('Justification'),
+    'no published factor for sodium cyanide',
+  )
+  await user.type(within(form).getByLabelText(/Estimated emissions left out/), '8400')
+  await user.click(within(form).getByRole('button', { name: 'Exclude' }))
+
+  await waitFor(() =>
+    expect(excludeAssignment).toHaveBeenCalledWith('as-1', {
+      reason: 'METHODOLOGY',
+      justification: 'no published factor for sodium cyanide',
+      estimatedKgCo2e: 8400,
+    }),
+  )
 })

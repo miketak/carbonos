@@ -165,9 +165,35 @@ public final class ReportPdf {
 			}
 			document.add(factors);
 
+			heading(document, "8a. Data quality and uncertainty");
+			var dq = report.dataQuality();
+			document.add(new Paragraph(dq.statement(), BODY));
+			if (dq.uncertaintyStatement() != null) {
+				document.add(new Paragraph(dq.uncertaintyStatement(), BODY));
+			}
+			if (!dq.byTier().isEmpty()) {
+				var tiers = table(6, 8, 36, 14, 14, 14, 14);
+				head(tiers, "Tier", "Quality", "Scope 1 (t)", "Scope 2 (t)", "Scope 3 (t)", "Share");
+				for (var t : dq.byTier()) {
+					row(tiers, String.valueOf(t.tier()), t.label(), tonnes(t.scope1KgCo2e().movePointLeft(3)),
+							tonnes(t.scope2KgCo2e().movePointLeft(3)), tonnes(t.scope3KgCo2e().movePointLeft(3)),
+							t.sharePercent().stripTrailingZeros().toPlainString() + "%");
+				}
+				document.add(tiers);
+			}
+
 			heading(document, "9. Exclusions");
 			if (report.boundaryExclusions().isEmpty() && report.exclusions().isEmpty()) {
 				document.add(new Paragraph("No exclusions.", BODY));
+			}
+			if (!report.exclusionSummary().isEmpty()) {
+				var summary = table(3, 40, 20, 40);
+				head(summary, "Reason", "Records", "Estimated t CO2e left out");
+				for (var x : report.exclusionSummary()) {
+					row(summary, x.reason().name(), String.valueOf(x.recordCount()), tonnes(x.estimatedTCo2e())
+							+ (x.unestimatedCount() == 0 ? "" : " (" + x.unestimatedCount() + " not estimated)"));
+				}
+				document.add(summary);
 			}
 			if (!report.boundaryExclusions().isEmpty()) {
 				var ops = table(3, 40, 20, 40);
@@ -179,12 +205,14 @@ public final class ReportPdf {
 				document.add(ops);
 			}
 			if (!report.exclusions().isEmpty()) {
-				var recs = table(5, 28, 20, 14, 14, 24);
-				head(recs, "Record", "Facility", "Quantity", "Period", "Reason");
+				var recs = table(6, 22, 16, 12, 12, 26, 12);
+				head(recs, "Record", "Facility", "Quantity", "Period", "Reason and justification", "Est. kg CO2e");
 				for (var x : report.exclusions()) {
 					row(recs, x.activityType(), x.facilityName(), plain(x.quantity()) + " " + x.unit(),
 							x.periodStart() + (x.periodStart().equals(x.periodEnd()) ? "" : " to " + x.periodEnd()),
-							x.exclusionReason().name() + (x.exclusionDetail() == null ? "" : ": " + x.exclusionDetail()));
+							x.exclusionReason().name() + (x.exclusionDetail() == null ? "" : ": " + x.exclusionDetail())
+									+ (x.exclusionJustification() == null ? "" : ". " + x.exclusionJustification()),
+							x.estimatedKgCo2e() == null ? "" : plain(x.estimatedKgCo2e()));
 				}
 				document.add(recs);
 			}

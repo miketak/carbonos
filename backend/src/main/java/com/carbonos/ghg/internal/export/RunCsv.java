@@ -51,7 +51,11 @@ public final class RunCsv {
 				new Column<>("stream", GhgRunLine::getStreamName),
 				new Column<>("scope_justification", GhgRunLine::getScopeJustification),
 				new Column<>("proxy_factor", GhgRunLine::isProxy),
-				new Column<>("proxy_justification", GhgRunLine::getProxyJustification));
+				new Column<>("proxy_justification", GhgRunLine::getProxyJustification),
+				new Column<>("data_quality", GhgRunLine::getDataQuality),
+				new Column<>("data_quality_tier", GhgRunLine::getDataQualityTier),
+				new Column<>("uncertainty_percent", GhgRunLine::getUncertaintyPercent),
+				new Column<>("evidence_files", GhgRunLine::getEvidenceFiles));
 		return render(columns, run.getLines());
 	}
 
@@ -62,7 +66,9 @@ public final class RunCsv {
 				new Column<>("period_start", GhgRunExclusion::getPeriodStart),
 				new Column<>("period_end", GhgRunExclusion::getPeriodEnd), new Column<>("quantity", GhgRunExclusion::getQuantity),
 				new Column<>("unit", GhgRunExclusion::getUnit), new Column<>("reason", GhgRunExclusion::getExclusionReason),
-				new Column<>("detail", GhgRunExclusion::getExclusionDetail));
+				new Column<>("detail", GhgRunExclusion::getExclusionDetail),
+				new Column<>("justification", GhgRunExclusion::getExclusionJustification),
+				new Column<>("estimated_kg_co2e", GhgRunExclusion::getEstimatedKgCo2e));
 		return render(columns, run.getExclusions());
 	}
 

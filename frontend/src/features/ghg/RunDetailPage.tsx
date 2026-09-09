@@ -428,10 +428,12 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
           {methodology.assessmentReports.join(', ')}.
         </p>
         <FactorTable factors={report.factors} />
+        <DataQualityBlock dataQuality={report.dataQuality} />
       </Section>
 
       <Section number={9} title="Exclusions" stagger={9}>
         <BoundaryExclusions exclusions={report.boundaryExclusions} />
+        <ExclusionSummaryTable summary={report.exclusionSummary} />
         <Exclusions exclusions={report.exclusions} />
       </Section>
 
@@ -602,6 +604,85 @@ function BoundaryExclusions({ exclusions }: { exclusions: BoundaryExclusionEntry
   )
 }
 
+/** The data-quality table and the uncertainty statement (spec 04.4, ISO 14064-1 section 9.3.1). */
+function DataQualityBlock({ dataQuality }: { dataQuality: Report['dataQuality'] }) {
+  return (
+    <div className="mt-4">
+      <h3 className="text-sm font-semibold">Data quality and uncertainty</h3>
+      <p className="mt-1 text-sm">{dataQuality.statement}</p>
+      {dataQuality.uncertaintyStatement && (
+        <p className="mt-1 text-sm">{dataQuality.uncertaintyStatement}</p>
+      )}
+      {dataQuality.byTier.length > 0 && (
+        <div className="mt-2 overflow-x-auto">
+          <table aria-label="Data quality by tier" className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+                <th className="py-1.5 pr-3 font-semibold">Tier</th>
+                <th className="py-1.5 pr-3 font-semibold">Quality</th>
+                <th className="py-1.5 pr-3 text-right font-semibold">Scope 1</th>
+                <th className="py-1.5 pr-3 text-right font-semibold">Scope 2</th>
+                <th className="py-1.5 pr-3 text-right font-semibold">Scope 3</th>
+                <th className="py-1.5 text-right font-semibold">Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dataQuality.byTier.map((row) => (
+                <tr key={row.tier} className="border-b border-teal/5 last:border-0">
+                  <td className="py-1.5 pr-3 font-mono">{row.tier}</td>
+                  <td className="py-1.5 pr-3">{row.label}</td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums">
+                    {formatCo2e(row.scope1KgCo2e)}
+                  </td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums">
+                    {formatCo2e(row.scope2KgCo2e)}
+                  </td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums">
+                    {formatCo2e(row.scope3KgCo2e)}
+                  </td>
+                  <td className="py-1.5 text-right tabular-nums">{row.sharePercent}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Excluded records per reason with the emissions estimated to be left out (spec 04.4). */
+function ExclusionSummaryTable({ summary }: { summary: Report['exclusionSummary'] }) {
+  if (summary.length === 0) return null
+  return (
+    <table aria-label="Exclusions by reason" className="mb-4 w-full text-left text-sm">
+      <thead>
+        <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+          <th className="py-1.5 pr-3 font-semibold">Reason</th>
+          <th className="py-1.5 pr-3 text-right font-semibold">Records</th>
+          <th className="py-1.5 text-right font-semibold">Estimated left out</th>
+        </tr>
+      </thead>
+      <tbody>
+        {summary.map((row) => (
+          <tr key={row.reason} className="border-b border-teal/5 last:border-0">
+            <td className="py-1.5 pr-3">{exclusionLabels[row.reason]}</td>
+            <td className="py-1.5 pr-3 text-right tabular-nums">{row.recordCount}</td>
+            <td className="py-1.5 text-right tabular-nums">
+              {formatCo2e(row.estimatedKgCo2e)}
+              {row.unestimatedCount > 0 && (
+                <span className="block text-xs text-ink-muted">
+                  {row.unestimatedCount} not estimated
+                </span>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 /** Exclusions grouped by their documented reason (Chapter 9). */
 function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
   if (exclusions.length === 0) {
@@ -637,7 +718,15 @@ function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
                     <td className="py-1.5 pr-3 whitespace-nowrap text-ink-muted">
                       {formatPeriod(row.periodStart, row.periodEnd)}
                     </td>
-                    <td className="py-1.5 text-ink-muted">{row.exclusionDetail ?? ''}</td>
+                    <td className="py-1.5 pr-3 text-ink-muted">
+                      {row.exclusionDetail ?? ''}
+                      {row.exclusionJustification && (
+                        <span className="block">{row.exclusionJustification}</span>
+                      )}
+                    </td>
+                    <td className="py-1.5 text-right whitespace-nowrap text-ink-muted tabular-nums">
+                      {row.estimatedKgCo2e === null ? '' : `~${formatCo2e(row.estimatedKgCo2e)}`}
+                    </td>
                   </tr>
                 ))}
               </tbody>

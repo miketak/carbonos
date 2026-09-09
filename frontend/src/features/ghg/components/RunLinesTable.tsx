@@ -35,7 +35,13 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
                 <span className="block text-xs text-ink-muted">
                   {categoryLabel(line.category)}
                   {line.evidenceRef ? ` · ${line.evidenceRef}` : ''}
+                  {line.dataQualityTier !== null ? ` · tier ${line.dataQualityTier}` : ''}
                 </span>
+                {line.evidenceFiles && (
+                  <span className="block text-xs text-ink-muted">
+                    Evidence: {line.evidenceFiles}
+                  </span>
+                )}
                 {line.leaseType && (
                   <span className="block text-xs text-ink-muted">
                     {leaseLabels[line.leaseType]}

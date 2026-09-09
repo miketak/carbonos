@@ -34,6 +34,9 @@ export function ReportMetadataCard({
   const [assuranceLevel, setAssuranceLevel] = useState<AssuranceLevel>(inventory.assuranceLevel)
   const [assuranceProvider, setAssuranceProvider] = useState(inventory.assuranceProvider ?? '')
   const [assuranceStatement, setAssuranceStatement] = useState(inventory.assuranceStatement ?? '')
+  const [uncertaintyStatement, setUncertaintyStatement] = useState(
+    inventory.uncertaintyStatement ?? '',
+  )
   const [metrics, setMetrics] = useState<IntensityMetricInput[]>(intensityMetrics)
   const [metricName, setMetricName] = useState('')
   const [metricValue, setMetricValue] = useState('')
@@ -47,6 +50,7 @@ export function ReportMetadataCard({
         assuranceLevel,
         assuranceProvider: assuranceProvider.trim() === '' ? undefined : assuranceProvider,
         assuranceStatement: assuranceStatement.trim() === '' ? undefined : assuranceStatement,
+        uncertaintyStatement: uncertaintyStatement.trim() === '' ? undefined : uncertaintyStatement,
         intensityMetrics: metrics,
       },
       {
@@ -96,6 +100,23 @@ export function ReportMetadataCard({
           disabled={!editable}
           onChange={(event) => setAssuranceStatement(event.target.value)}
         />
+        <label className="flex flex-col gap-1.5 md:col-span-2">
+          <span className="text-sm font-medium">Uncertainty statement (optional)</span>
+          <textarea
+            aria-label="Uncertainty statement"
+            value={uncertaintyStatement}
+            disabled={!editable}
+            maxLength={1000}
+            rows={3}
+            placeholder="Fuel data are metered; the cyanide estimate rests on supplier averages."
+            onChange={(event) => setUncertaintyStatement(event.target.value)}
+            className="w-full rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-sm focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60"
+          />
+          <span className="text-xs text-ink-muted">
+            Printed with the report's data-quality table (ISO 14064-1 asks for a description of
+            uncertainty).
+          </span>
+        </label>
         <div className="md:col-span-2">
           <p className="text-sm font-medium">Intensity denominators</p>
           <p className="text-xs text-ink-muted">

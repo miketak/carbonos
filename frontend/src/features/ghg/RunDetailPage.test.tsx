@@ -166,6 +166,8 @@ const report: Report = {
       periodEnd: '2025-08-31',
       exclusionReason: 'METHODOLOGY',
       exclusionDetail: null,
+      exclusionJustification: 'emulsion explosive: no published factor; ANFO study pending',
+      estimatedKgCo2e: 8400,
     },
     {
       id: 'ex-2',
@@ -178,6 +180,8 @@ const report: Report = {
       periodEnd: '2025-01-15',
       exclusionReason: 'OUTSIDE_BOUNDARY',
       exclusionDetail: 'Sankofa Gold plc: member from 2025-07-01',
+      exclusionJustification: null,
+      estimatedKgCo2e: null,
     },
   ],
   lines: [
@@ -197,6 +201,10 @@ const report: Report = {
       scopeJustification: null,
       proxy: false,
       proxyJustification: null,
+      dataQuality: 'MEASURED',
+      dataQualityTier: 1,
+      uncertaintyPercent: 2,
+      evidenceFiles: 'invoice-2938.pdf',
       scope: 'SCOPE_1',
       category: 'MOBILE_COMBUSTION',
       leaseType: null,
@@ -294,6 +302,42 @@ const report: Report = {
     },
   ],
   intensity: [{ name: 'Gold produced', value: 1000, unit: 'oz', tCo2ePerUnit: 0.001946 }],
+  exclusionSummary: [
+    {
+      reason: 'METHODOLOGY',
+      recordCount: 1,
+      estimatedKgCo2e: 8400,
+      estimatedTCo2e: 8.4,
+      unestimatedCount: 0,
+    },
+    {
+      reason: 'OUTSIDE_BOUNDARY',
+      recordCount: 1,
+      estimatedKgCo2e: 0,
+      estimatedTCo2e: 0,
+      unestimatedCount: 1,
+    },
+  ],
+  dataQuality: {
+    byTier: [
+      {
+        tier: 1,
+        label: 'Metered or invoiced primary data',
+        lineCount: 1,
+        scope1KgCo2e: 1064,
+        scope2KgCo2e: 0,
+        scope3KgCo2e: 0,
+        totalKgCo2e: 1064,
+        sharePercent: 100,
+      },
+    ],
+    weightedUncertaintyPercent: 2,
+    linesWithUncertainty: 1,
+    lineCount: 1,
+    statement:
+      'Data quality follows the Scope 3 Standard tiers: 100% of the total rests on tier 1 data.',
+    uncertaintyStatement: 'Fuel data are metered; the cyanide estimate rests on supplier averages.',
+  },
   run: {
     id: 'run-1',
     inventoryId: 'inv-1',
@@ -441,9 +485,9 @@ test('prints the operational boundary declaration and the exclusions grouped by 
   expect(within(exclusions).getByText(/Operations excluded from the boundary/)).toBeInTheDocument()
   expect(within(exclusions).getByText('Takoradi Port Loadout')).toBeInTheDocument()
   expect(within(exclusions).getByText('Associate: no operational control')).toBeInTheDocument()
-  expect(within(exclusions).getByText(/Methodology exclusion/)).toBeInTheDocument()
+  expect(within(exclusions).getAllByText(/Methodology exclusion/).length).toBeGreaterThan(0)
   expect(within(exclusions).getByText('ANFO explosives consumed')).toBeInTheDocument()
-  expect(within(exclusions).getByText(/Outside boundary/)).toBeInTheDocument()
+  expect(within(exclusions).getAllByText(/Outside boundary/).length).toBeGreaterThan(0)
   expect(
     within(exclusions).getByText('Sankofa Gold plc: member from 2025-07-01'),
   ).toBeInTheDocument()
@@ -573,4 +617,22 @@ test('offers the report as a PDF, the lines and exclusions as CSV, and the froze
     'href',
     '/api/ghg/runs/run-1/inputs.json',
   )
+})
+
+test('prints the data-quality table and the exclusions with their justification and magnitude (spec 04.4)', async () => {
+  renderRunDetailPage()
+
+  const quality = await screen.findByRole('table', { name: 'Data quality by tier' })
+  expect(within(quality).getByText('Metered or invoiced primary data')).toBeInTheDocument()
+  expect(within(quality).getByText('100%')).toBeInTheDocument()
+  expect(
+    screen.getByText('Fuel data are metered; the cyanide estimate rests on supplier averages.'),
+  ).toBeInTheDocument()
+  const summary = screen.getByRole('table', { name: 'Exclusions by reason' })
+  expect(within(summary).getByText('8.4 t CO₂e')).toBeInTheDocument()
+  expect(within(summary).getByText('1 not estimated')).toBeInTheDocument()
+  expect(
+    screen.getByText('emulsion explosive: no published factor; ANFO study pending'),
+  ).toBeInTheDocument()
+  expect(screen.getByText('Evidence: invoice-2938.pdf')).toBeInTheDocument()
 })
