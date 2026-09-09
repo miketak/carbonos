@@ -25,17 +25,19 @@ public class GhgService {
 	private final FacilityRepository facilities;
 	private final EmissionFactorRepository emissionFactors;
 	private final ActivityRecordRepository activities;
+	private final SourceStreamRepository streams;
 	private final GhgRunLineRepository runLines;
 	private final GhgAccess access;
 
 	GhgService(OrganizationRepository organizations, LegalEntityRepository entities, FacilityRepository facilities,
 			EmissionFactorRepository emissionFactors, ActivityRecordRepository activities,
-			GhgRunLineRepository runLines, GhgAccess access) {
+			SourceStreamRepository streams, GhgRunLineRepository runLines, GhgAccess access) {
 		this.organizations = organizations;
 		this.entities = entities;
 		this.facilities = facilities;
 		this.emissionFactors = emissionFactors;
 		this.activities = activities;
+		this.streams = streams;
 		this.runLines = runLines;
 		this.access = access;
 	}
@@ -247,6 +249,77 @@ public class GhgService {
 		facilities.delete(facility);
 	}
 
+	// --- source streams (spec 04.3) ----------------------------------------------
+
+	@Transactional(readOnly = true)
+	public List<SourceStream> listStreams(UUID organizationId) {
+		getOrganization(organizationId);
+		return streams.findAllByFacilityOrganizationIdOrderByNameAsc(organizationId);
+	}
+
+	@Transactional(readOnly = true)
+	public List<SourceStream> listStreamsOfFacility(UUID facilityId) {
+		getFacility(facilityId);
+		return streams.findAllByFacilityIdOrderByNameAsc(facilityId);
+	}
+
+	/** The facts of a stream as a request states them. */
+	public record StreamFacts(String name, StreamKind kind, String fuel, String meterOrSupplier,
+			boolean contractorOperated, String note) {
+	}
+
+	public SourceStream createStream(UUID facilityId, StreamFacts facts) {
+		var facility = getFacility(facilityId);
+		var trimmed = facts.name().trim();
+		if (streams.existsByFacilityIdAndNameIgnoreCase(facilityId, trimmed)) {
+			throw new GhgRuleViolationException("'" + facility.getName() + "' already has a stream named '" + trimmed + "'.");
+		}
+		return streams.save(new SourceStream(facility, trimmed, facts.kind(), trimToNull(facts.fuel()),
+				trimToNull(facts.meterOrSupplier()), facts.contractorOperated(), trimToNull(facts.note())));
+	}
+
+	public SourceStream updateStream(UUID id, StreamFacts facts) {
+		var stream = getStream(id);
+		var trimmed = facts.name().trim();
+		if (!trimmed.equalsIgnoreCase(stream.getName())
+				&& streams.existsByFacilityIdAndNameIgnoreCase(stream.getFacility().getId(), trimmed)) {
+			throw new GhgRuleViolationException("'" + stream.getFacility().getName() + "' already has a stream named '"
+					+ trimmed + "'.");
+		}
+		stream.update(trimmed, facts.kind(), trimToNull(facts.fuel()), trimToNull(facts.meterOrSupplier()),
+				facts.contractorOperated(), trimToNull(facts.note()));
+		return stream;
+	}
+
+	/** A stream with records is part of the register the facts are filed under; it cannot be deleted. */
+	public void deleteStream(UUID id) {
+		var stream = getStream(id);
+		if (activities.existsByStreamId(id)) {
+			throw new GhgRuleViolationException("'" + stream.getName()
+					+ "' has activity records. Move them to another stream before deleting it.");
+		}
+		streams.delete(stream);
+	}
+
+	private SourceStream getStream(UUID id) {
+		var stream = streams.findById(id).orElseThrow(() -> GhgNotFoundException.stream(id));
+		access.check(stream.getFacility().getOrganization());
+		return stream;
+	}
+
+	/** The stream a record names must belong to the record's facility. */
+	private SourceStream requireStreamOfFacility(UUID streamId, Facility facility) {
+		if (streamId == null) {
+			return null;
+		}
+		var stream = streams.findById(streamId).orElseThrow(() -> GhgNotFoundException.stream(streamId));
+		if (!stream.getFacility().getId().equals(facility.getId())) {
+			throw new GhgRuleViolationException("The stream '" + stream.getName() + "' belongs to '"
+					+ stream.getFacility().getName() + "', not to '" + facility.getName() + "'.");
+		}
+		return stream;
+	}
+
 	// --- emission factors ---------------------------------------------------
 
 	@Transactional(readOnly = true)
@@ -262,14 +335,15 @@ public class GhgService {
 		return activities.findAllByFacilityOrganizationIdOrderByPeriodEndDesc(organizationId);
 	}
 
-	public ActivityRecord createActivity(UUID organizationId, UUID facilityId, String activityType,
+	public ActivityRecord createActivity(UUID organizationId, UUID facilityId, UUID streamId, String activityType,
 			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
 			String evidenceRef, DataQuality dataQuality, String note) {
 		getOrganization(organizationId);
 		var facility = requireFacilityInOrganization(facilityId, organizationId);
 		requirePeriod(periodStart, periodEnd);
-		return activities.save(new ActivityRecord(facility, activityType.trim(), quantity, unit.trim(), periodStart,
-				periodEnd, trimToNull(dataSource), trimToNull(evidenceRef), dataQuality, trimToNull(note)));
+		return activities.save(new ActivityRecord(facility, requireStreamOfFacility(streamId, facility),
+				activityType.trim(), quantity, unit.trim(), periodStart, periodEnd, trimToNull(dataSource),
+				trimToNull(evidenceRef), dataQuality, trimToNull(note)));
 	}
 
 	/**
@@ -277,15 +351,16 @@ public class GhgService {
 	 * unaffected (they snapshot); inventory views see the corrected fact and
 	 * their validation gates re-evaluate against it.
 	 */
-	public ActivityRecord updateActivity(UUID id, UUID facilityId, String activityType, BigDecimal quantity,
-			String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef,
-			DataQuality dataQuality, String note) {
+	public ActivityRecord updateActivity(UUID id, UUID facilityId, UUID streamId, String activityType,
+			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
+			String evidenceRef, DataQuality dataQuality, String note) {
 		var activity = getActivity(id);
 		var organizationId = activity.getFacility().getOrganization().getId();
 		var facility = requireFacilityInOrganization(facilityId, organizationId);
 		requirePeriod(periodStart, periodEnd);
-		activity.update(facility, activityType.trim(), quantity, unit.trim(), periodStart, periodEnd,
-				trimToNull(dataSource), trimToNull(evidenceRef), dataQuality, trimToNull(note));
+		activity.update(facility, requireStreamOfFacility(streamId, facility), activityType.trim(), quantity,
+				unit.trim(), periodStart, periodEnd, trimToNull(dataSource), trimToNull(evidenceRef), dataQuality,
+				trimToNull(note));
 		return activity;
 	}
 

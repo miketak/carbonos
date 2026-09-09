@@ -47,7 +47,11 @@ public final class RunCsv {
 				new Column<>("market_covered_kwh", GhgRunLine::getMarketCoveredKwh),
 				new Column<>("market_balance_kwh", GhgRunLine::getMarketBalanceKwh),
 				new Column<>("market_balance_basis", GhgRunLine::getMarketBalanceBasis),
-				new Column<>("market_note", GhgRunLine::getMarketNote), new Column<>("period_note", GhgRunLine::getPeriodNote));
+				new Column<>("market_note", GhgRunLine::getMarketNote), new Column<>("period_note", GhgRunLine::getPeriodNote),
+				new Column<>("stream", GhgRunLine::getStreamName),
+				new Column<>("scope_justification", GhgRunLine::getScopeJustification),
+				new Column<>("proxy_factor", GhgRunLine::isProxy),
+				new Column<>("proxy_justification", GhgRunLine::getProxyJustification));
 		return render(columns, run.getLines());
 	}
 

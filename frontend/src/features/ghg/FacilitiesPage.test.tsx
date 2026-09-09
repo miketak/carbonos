@@ -7,7 +7,7 @@ import type { Entity, Facility } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import { createFacility, listEntities, listFacilities } from './api'
+import { createFacility, createStream, listEntities, listFacilities, listStreams } from './api'
 
 const own: Entity = {
   id: 'ent-1',
@@ -71,6 +71,8 @@ function renderPage() {
 
 beforeEach(() => {
   vi.mocked(listFacilities).mockReset()
+  vi.mocked(listStreams).mockReset().mockResolvedValue([])
+  vi.mocked(createStream).mockReset()
   vi.mocked(listEntities).mockReset()
   vi.mocked(createFacility).mockReset()
   vi.mocked(listFacilities).mockResolvedValue([pit, plant])

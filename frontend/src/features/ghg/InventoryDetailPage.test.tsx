@@ -186,6 +186,8 @@ const unclassified: Assignment = {
   activityId: 'act-1',
   facilityId: 'fac-1',
   facilityName: 'Tema Plant',
+  streamId: null,
+  streamName: null,
   activityType: 'Diesel consumption',
   quantity: 12500,
   unit: 'litre',
@@ -193,6 +195,11 @@ const unclassified: Assignment = {
   periodEnd: '2025-03-15',
   dataQuality: 'MEASURED',
   evidenceRef: 'INV-2938',
+  streamKind: null,
+  contractorOperated: null,
+  defaultScope: null,
+  defaultCategory: null,
+  allowedCategories: null,
   included: true,
   exclusionReason: null,
   exclusionDetail: null,
@@ -202,6 +209,9 @@ const unclassified: Assignment = {
   leaseType: null,
   emissionFactorId: null,
   factorName: null,
+  scopeJustification: null,
+  proxy: false,
+  proxyJustification: null,
 }
 
 const classified: Assignment = {
@@ -211,6 +221,9 @@ const classified: Assignment = {
   category: 'MOBILE_COMBUSTION',
   emissionFactorId: 'ef-1',
   factorName: 'Diesel',
+  scopeJustification: null,
+  proxy: false,
+  proxyJustification: null,
 }
 
 const blockedReport: ValidationReport = {
@@ -442,6 +455,11 @@ test('an automatic exclusion says why in words', async () => {
   vi.mocked(listAssignments).mockResolvedValue([
     {
       ...unclassified,
+      streamKind: null,
+      contractorOperated: null,
+      defaultScope: null,
+      defaultCategory: null,
+      allowedCategories: null,
       included: false,
       exclusionReason: 'OUTSIDE_BOUNDARY',
       exclusionDetail: 'Tema JV: member from 2025-07-01',
