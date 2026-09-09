@@ -26,7 +26,7 @@ inventories, boundaries, versions or the lifecycle.
 
 1. Open **Inventories** and create **2025 Operational**: 2025-01-01 to
    2025-12-31, operational control, with **Start with every operation the
-   approach includes** ticked (the default).
+   approach includes in the boundary** ticked (the default).
 2. Open its boundary.
 
 **Expected result:** E0 and E1 are in the boundary with all their
@@ -62,7 +62,7 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. In 2025 Operational, untick S5 (the exploration camp).
 2. Open the pre-flight (the launch section).
 
-**Expected result:** S5's row shows the reason control. The BOUNDARY gate
+**Expected result:** S5's row shows the reason control. The **Reporting boundary** gate
 blocks: S5 is neither in the boundary nor excluded with a reason.
 
 Verdict: ☐ pass ☐ fail. Notes:
@@ -74,7 +74,7 @@ Verdict: ☐ pass ☐ fail. Notes:
 2. On E2, choose **Methodology exclusion** with the detail "Associate: no
    operational control".
 
-**Expected result:** both rows show their reason. The BOUNDARY gate no
+**Expected result:** both rows show their reason. The **Reporting boundary** gate no
 longer lists them.
 
 Verdict: ☐ pass ☐ fail. Notes:
@@ -94,7 +94,7 @@ Verdict: ☐ pass ☐ fail. Notes:
 2. Open **Legal entities**.
 
 **Expected result:** the boundary shows 45% for E1 and the version will
-record it; the entity record still says 40%, and the BOUNDARY gate warns
+record it; the entity record still says 40%, and the **Reporting boundary** gate warns
 about the drift.
 
 Verdict: ☐ pass ☐ fail. Notes:
@@ -155,8 +155,8 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 ### D1. A second inventory copies the first
 
-1. Create **2025 Equity** with equity share and **Copy the view from**
-   2025 Operational.
+1. Create **2025 Equity** with equity share and **Copy the view from (optional)**
+   set to 2025 Operational.
 
 **Expected result:** the pre-population checkbox is disabled once a source
 is chosen. The new inventory's boundary matches 2025 Operational

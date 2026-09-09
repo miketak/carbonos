@@ -30,7 +30,9 @@ the text says so. At the end, fill in the sign-off table and file one issue
 per failed case.
 
 The procedures name specs under `specs/`. When a case and a spec disagree,
-the spec is the reference; report the difference.
+the spec is the reference; report the difference. Pre-flight gates are
+named as the panel prints them: **Reporting boundary**, **Activity data
+completeness**, **Classification**, **Emission factors** and **Base year**.
 
 ## The procedures
 

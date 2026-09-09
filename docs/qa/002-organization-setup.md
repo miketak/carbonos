@@ -66,6 +66,21 @@ equity share and financial control, 100% under operational control.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
+### B2a. Out-of-range percentages are refused inline
+
+1. Start adding an entity and type 150 in **Economic interest (%)**.
+   Save.
+2. Change it to 60 and type 20 in **Legal ownership (%)**. Do not save;
+   cancel the dialog.
+
+**Expected result:** after step 1 the dialog stays open, the field is
+outlined as invalid and reads "Economic interest must be between 0 and
+100." under it; nothing is created. After step 2 a note under the fields
+says the two percentages differ by 40 points and that equity share follows
+economic interest; the note does not block saving.
+
+Verdict: ☐ pass ☐ fail. Notes:
+
 ### B3. An associate consolidated by decision
 
 1. Add E2 with the facts in the table: acquired on 2025-07-01, financial
@@ -225,8 +240,9 @@ Verdict: ☐ pass ☐ fail. Notes:
    emissions, per tonne, 170 kg CO2e, source "Supplier technical data sheet
    2025", data year 2025, valid from 2025-01-01, **not approved**.
 
-**Expected result:** the factor is listed as the organization's own and
-marked not approved. (Procedure 5 shows the gate refusing it until it is
+**Expected result:** the factor is listed as the organization's own
+without the **Approved** badge, because **Approved for use in runs** was
+left unticked. (Procedure 5 shows the gate refusing it until it is
 approved.)
 
 Verdict: ☐ pass ☐ fail. Notes:

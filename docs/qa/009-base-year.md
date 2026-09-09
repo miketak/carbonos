@@ -19,6 +19,8 @@ section.
 
 - 2025 Operational published as procedure 8 leaves it, and the 2026
   inventory created there.
+- Procedure 4 leaves an inventory named 2025 Equity; case B1a adds one
+  for 2026, so read the names carefully.
 
 ## A. Designation
 
@@ -43,7 +45,22 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 **Expected result:** a flagged candidate names the facility removed and
 its share of base-year emissions, and says whether it is above the 5%
-threshold. The 2026 inventory's BASE_YEAR gate warns until it is decided.
+threshold. The 2026 inventory's **Base year** gate warns until it is decided.
+
+Verdict: ☐ pass ☐ fail. Notes:
+
+### B1a. The hold applies only to inventories that report against the base year
+
+1. Create **2026 Equity view**: equity share, 2026-01-01 to 2026-12-31.
+2. Create **2024 Corporate**: operational control, 2024-01-01 to
+   2024-12-31.
+3. Read the **Base year** gate of each, and of 2026 Corporate.
+
+**Expected result:** while a candidate above the threshold is undecided,
+only 2026 Corporate (the base year's approach, a later period) is blocked.
+The equity view's gate warns and says it is not held because it is an
+equity share view and the base year is operational control; the 2024
+draft's gate warns and says its period does not follow the 2025 base year.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -99,7 +116,10 @@ Verdict: ☐ pass ☐ fail. Notes:
 **Expected result:** the base-year section states the year, the reason,
 the threshold and the convention, lists the candidates with their
 decisions, and shows the emissions profile from the base year to 2026
-with the recalculated base beside the original.
+with the recalculated base beside the original. The profile lists only
+inventories with the base year's approach and GWP set; 2026 Equity view
+appears under **Other views** with "Equity share / AR5", not as a year of
+the series. The PDF prints the same two tables.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
