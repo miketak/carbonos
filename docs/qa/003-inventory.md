@@ -44,7 +44,10 @@ Table 1 derivation, the seeded factor library, or admin user creation in the
 > does not clean up. On staging that is harmless: the organization is
 > tenant-scoped and invisible to everyone else. To clear it, delete the
 > *organization* (facilities and inventories cascade with it); individual
-> facilities carrying activity data refuse deletion by design (J2).
+> facilities carrying activity data refuse deletion by design (J2). To start
+> from a clean staging instead, run `make db-wipe ENV=staging` from the repo
+> root: it rebuilds the schema and leaves only the seeded admin, so section A
+> starts from scratch.
 
 ---
 

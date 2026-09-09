@@ -69,9 +69,12 @@ Java 25 (Temurin) is installed via SDKMAN; non-login shells may need
 Makefile shortcuts (repo root): `make dev-up` / `make dev-down` (whole dev
 environment in a tmux "dev-console" window, or a "carbonos" session when
 outside tmux: backend on top, Postgres logs bottom-left, Vite bottom-right),
-`make db-up`, `make backend`, `make frontend`,
-`make verify` (full DoD), and `make admin EMAIL=.. PASSWORD=.. [NAME=..]` to
-create or password-reset a local admin user. The backend also seeds an initial
+`make db-up`, `make db-reset` (drop the local volumes and start again),
+`make backend`, `make frontend`, `make verify` (full DoD),
+`make admin EMAIL=.. PASSWORD=.. [NAME=..]` to create or password-reset a
+local admin user, and `make db-wipe ENV=staging` to wipe a Railway
+environment's database and rebuild it from the migrations (production needs
+`ARGS=--yes-production` and a typed confirmation). The backend also seeds an initial
 admin at startup when `CARBONOS_ADMIN_EMAIL` and `CARBONOS_ADMIN_PASSWORD` are
 set (idempotent; the canonical mechanism for Railway).
 
