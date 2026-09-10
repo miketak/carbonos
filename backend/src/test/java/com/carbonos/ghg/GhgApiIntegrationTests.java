@@ -805,7 +805,8 @@ class GhgApiIntegrationTests {
 						 "meterOrSupplier": "Rocksure dispensing log", "contractorOperated": true}"""))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.defaultScope").value("SCOPE_3"))
-			.andExpect(jsonPath("$.defaultCategory").value("UPSTREAM_TRANSPORT")));
+			// a contractor's mobile plant on site is a purchased service, not upstream transport (spec 04.3)
+			.andExpect(jsonPath("$.defaultCategory").value("PURCHASED_GOODS_SERVICES")));
 		String fleetId = JsonPath.read(fleet, "$.id");
 		var landfill = body(mvc
 			.perform(post("/api/ghg/facilities/" + pit + "/streams").with(asMember()).with(csrf())
@@ -867,7 +868,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[?(@.id == '" + gensetAssignment + "')].scope").value("SCOPE_1"))
 			.andExpect(jsonPath("$[?(@.id == '" + gensetAssignment + "')].category").value("STATIONARY_COMBUSTION"))
 			.andExpect(jsonPath("$[?(@.id == '" + fleetAssignment + "')].scope").value("SCOPE_3"))
-			.andExpect(jsonPath("$[?(@.id == '" + fleetAssignment + "')].category").value("UPSTREAM_TRANSPORT"));
+			.andExpect(jsonPath("$[?(@.id == '" + fleetAssignment + "')].category").value("PURCHASED_GOODS_SERVICES"));
 		// a category outside the stream's kind is refused; the landfill factor in scope 1 needs a reason
 		classifyAs(wasteAssignment, LANDFILL_FACTOR, "SCOPE_3", "BUSINESS_TRAVEL").andExpect(status().isConflict());
 		classifyAs(wasteAssignment, LANDFILL_FACTOR, "SCOPE_1", "FUGITIVE_EMISSIONS").andExpect(status().isOk());
@@ -3097,6 +3098,10 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[?(@.activityId == '" + duplicate + "')].exclusionReason").value("RECORD_REMOVED"))
 			.andExpect(jsonPath("$[?(@.activityId == '" + duplicate + "')].exclusionDetail")
 				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("entered twice"))));
+		// a removed record stays out for good: the gate must not call its exclusion stale (QA walkthrough regression)
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[1].findings[*].message")
+				.value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("no longer holds")))));
 
 		// facilities and entities are removed with a reason and stay as tombstones
 		var depot = createFacility(orgId, "Kumasi Depot");

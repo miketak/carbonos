@@ -25,8 +25,8 @@ public record CreateActivityRequest( //
 		@NotNull @Positive @Digits(integer = 11, fraction = 3) BigDecimal quantity, //
 		@NotBlank @Size(max = 30) String unit, //
 		// the period the quantity was consumed or emitted over (spec 04.2); a reading is a one-day period
-		@NotNull @PastOrPresent LocalDate periodStart, //
-		@NotNull @PastOrPresent LocalDate periodEnd, //
+		@NotNull @PastOrPresent(message = "The period start cannot be after today.") LocalDate periodStart, //
+		@NotNull @PastOrPresent(message = "The period end cannot be after today.") LocalDate periodEnd, //
 		@Size(max = 120) String dataSource, //
 		@Size(max = 150) String evidenceRef, //
 		@NotNull DataQuality dataQuality, //

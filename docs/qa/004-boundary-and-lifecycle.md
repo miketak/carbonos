@@ -50,8 +50,11 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Start a new inventory with the period 2025-01-01 to 2026-06-30.
 
-**Expected result:** the form says the period is 18 months and names the
-fiscal-year label; it can still be saved. Cancel.
+**Expected result:** the form says "This period is 18 months. Chapter 9
+expects an annual inventory; keep it only if the period is deliberate."
+and can still be saved. (A twelve-month period that does not start in
+January, 2025-07-01 to 2026-06-30, shows the fiscal-year label FY2025/26
+instead.) Cancel.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -62,15 +65,19 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. In 2025 Operational, untick S5 (the exploration camp).
 2. Open the pre-flight (the launch section).
 
-**Expected result:** S5's row shows the reason control. The **Reporting boundary** gate
-blocks: S5 is neither in the boundary nor excluded with a reason.
+**Expected result:** S5's row shows the reason control ("Why is it left
+out?"). The **Reporting boundary** gate blocks: "'Nkran Exploration Camp'
+(Sankofa Gold plc) is neither in the boundary nor excluded with a reason.
+Tick it in, or record why it is left out.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
 ### B2. Recording the reasons
 
-1. On S5, choose **Not applicable** with the detail "Exploration only; no
-   fuel or power in 2025".
+1. On S5, choose **Not applicable** with the detail "Exploration camp;
+   LPG only, screened at under 0.2% of the total". (S5 carries the two
+   April LPG records of procedure 3, so the detail must not claim the camp
+   used no fuel.)
 2. On E2, choose **Methodology exclusion** with the detail "Associate: no
    operational control".
 
@@ -93,9 +100,15 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. On E1's row, set the economic interest to 45 for this inventory only.
 2. Open **Legal entities**.
 
-**Expected result:** the boundary shows 45% for E1 and the version will
-record it; the entity record still says 40%, and the **Reporting boundary** gate warns
-about the drift.
+**Expected result:** the boundary shows E1's economic interest as 45% and
+the version will record it. E1's accounting share stays **100%**: under
+operational control Table 1 gives the operator 100% whatever its interest
+(Corporate Standard chapter 3), so the override changes nothing in this
+inventory's arithmetic and only matters in the equity view of D1. The
+entity record still says 40%, and the **Reporting boundary** gate warns:
+"Tarkwa Gold JV Ltd's treatment (joint venture, 45%, operated) differs
+from the entity record (joint venture, 40%, operated). Review the
+boundary.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -116,11 +129,21 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 ### C2. A frozen inventory refuses writes
 
-1. Try to change the boundary, the declaration, an instrument, and the
-   inventory's period.
+1. Look at the boundary checkboxes, the declaration and the instruments
+   card; look for the **Edit inventory** button in the header.
+2. If you can alter requests, send a boundary change (`PUT
+   /api/ghg/inventories/{id}/boundary/entities/{entityId}`) and a period
+   change (`PUT /api/ghg/inventories/{id}`).
 
-**Expected result:** each is refused with a message that the inventory is
-frozen and must be reopened. Runs are allowed (procedure 7).
+**Expected result:** the page disables every boundary, declaration and
+instrument control and hides the instrument form; **Edit inventory**
+(name, period, purpose, straddle treatment, approach, GWP set) is shown
+on drafts only. The lifecycle bar says the inventory is frozen and must
+be reopened as a draft to change either. The requests of step 2 are
+refused (409) with "The inventory is frozen. Reopen it as a draft to
+change it." and "The period, consolidation approach and GWP set cannot
+change while the inventory is frozen. Reopen it as a draft first." Runs
+are allowed (procedure 7).
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -129,7 +152,9 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Click **Reopen as draft**, tick S5 back in, and freeze again.
 
 **Expected result:** version 2 is cut; version 1 stays readable and
-unchanged.
+unchanged. Every freeze cuts a new version, even when nothing changed:
+procedures 5 and 6 each end with a freeze, so the first run in procedure
+7 cites version 4.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -146,8 +171,10 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Create **Empty test** without pre-population and try to freeze it.
 
-**Expected result:** refused: the boundary is empty. Delete the inventory
-afterwards.
+**Expected result:** **Freeze inventory** is disabled ("Add at least one
+facility first") and the **Reporting boundary** gate says "The
+organizational boundary is empty: add at least one facility." Delete the
+inventory afterwards.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -159,9 +186,15 @@ Verdict: ☐ pass ☐ fail. Notes:
    set to 2025 Operational.
 
 **Expected result:** the pre-population checkbox is disabled once a source
-is chosen. The new inventory's boundary matches 2025 Operational
-(including the E1 override and the S5 exclusion), and the page says how
-many decisions it inherited.
+is chosen (the source is listed as "2025 Operational (2025)"). The new
+inventory's boundary matches 2025 Operational as C3 left it: S5 in, the
+E1 override at 45% (which under equity share is now E1's accounting
+share), and the E2 exclusion with its copied reason (its facility reads
+"left out with the entity: Methodology exclusion"). The header reads
+"View copied from 2025 Operational: 0 decisions inherited, 5 records of
+this period the source never decided on" (no record was classified yet).
+(Under equity share E2 could be in at 30%; the copy keeps the source's
+decision, which is what this case checks.)
 
 Verdict: ☐ pass ☐ fail. Notes:
 

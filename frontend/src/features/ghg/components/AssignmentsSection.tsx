@@ -190,7 +190,14 @@ function ClassifyControls({
       ? factor.dimension === dimension || bridged(factor)
       : factor.unit.toLowerCase() === assignment.unit.toLowerCase(),
   )
-  const selected = factors.find((factor) => factor.id === assignment.emissionFactorId)
+  // a per-litre factor on a mass record (or the reverse) cannot be sent without a density (spec 02.2):
+  // hold the pick locally until the density is chosen, then send both together
+  const [pendingFactorId, setPendingFactorId] = useState<string | null>(null)
+  // a proxy flag is only sent together with its justification (the backend refuses one without)
+  const [proxyTicked, setProxyTicked] = useState(false)
+  const selected = factors.find(
+    (factor) => factor.id === (assignment.emissionFactorId ?? pendingFactorId),
+  )
   // keep the current classification visible even if it no longer matches
   const options =
     selected && !compatible.some((factor) => factor.id === selected.id)
@@ -202,6 +209,28 @@ function ClassifyControls({
   const scope = assignment.scope ?? selected?.defaultScope ?? 'SCOPE_1'
   const leased = assignment.leaseType !== null
   const scopeLocked = !!selected && !selected.scopeAgnostic && !leased
+  // spec 04.3: the stream's default when the record has one, else the factor's
+  const defaultScope = assignment.defaultScope ?? selected?.defaultScope ?? null
+  const departs = !!selected && !leased && !!assignment.scope && assignment.scope !== defaultScope
+  // what the current classification carries, so a justification or proxy flag does not drop it
+  const current = (): ClassifyInput =>
+    assignment.leaseType
+      ? {
+          emissionFactorId: selected!.id,
+          leaseType: assignment.leaseType,
+          densityId: assignment.densityId ?? undefined,
+        }
+      : {
+          emissionFactorId: selected!.id,
+          scope: assignment.scope ?? undefined,
+          category: assignment.category ?? undefined,
+          densityId: assignment.densityId ?? undefined,
+        }
+  const carry = {
+    scopeJustification: assignment.scopeJustification ?? undefined,
+    proxy: assignment.proxy || undefined,
+    proxyJustification: assignment.proxyJustification ?? undefined,
+  }
 
   return (
     <div className="flex flex-col gap-1 md:w-80">
@@ -212,11 +241,20 @@ function ClassifyControls({
         disabled={!editable}
         onChange={(event) => {
           const factor = factors.find((candidate) => candidate.id === event.target.value)
+          if (!factor) return
+          if (needsDensity(units, assignment.unit, factor.unit) && !assignment.densityId) {
+            setPendingFactorId(factor.id)
+            return
+          }
+          setPendingFactorId(null)
           if (factor)
             onClassify({
               emissionFactorId: factor.id,
-              scope: factor.defaultScope,
-              category: factor.defaultCategory,
+              // spec 04.3: the record's stream fixes the default scope; the factor only suggests one
+              scope: assignment.defaultScope ?? factor.defaultScope,
+              category: assignment.defaultScope
+                ? (assignment.defaultCategory ?? factor.defaultCategory)
+                : factor.defaultCategory,
               densityId: needsDensity(units, assignment.unit, factor.unit)
                 ? (assignment.densityId ?? undefined)
                 : undefined,
@@ -242,8 +280,10 @@ function ClassifyControls({
             if (factor)
               onClassify({
                 emissionFactorId: factor.id,
-                scope: factor.defaultScope,
-                category: factor.defaultCategory,
+                scope: assignment.defaultScope ?? factor.defaultScope,
+                category: assignment.defaultScope
+                  ? (assignment.defaultCategory ?? factor.defaultCategory)
+                  : factor.defaultCategory,
               })
           }}
         >
@@ -264,19 +304,28 @@ function ClassifyControls({
         </p>
       )}
       {preview && <p className="text-xs text-ink-muted tabular-nums">{preview}</p>}
+      {selected && densityNeeded && !assignment.densityId && (
+        <p className="text-xs text-amber-700">
+          {assignment.unit} meets a factor per {selected.unit}: choose the density that converts
+          between them to finish classifying.
+        </p>
+      )}
       {selected && densityNeeded && (
         <select
           aria-label={`${assignment.activityType} density`}
           value={assignment.densityId ?? ''}
           disabled={!editable}
-          onChange={(event) =>
+          onChange={(event) => {
+            setPendingFactorId(null)
             onClassify({
               emissionFactorId: selected.id,
-              scope: assignment.scope ?? selected.defaultScope,
-              category: assignment.category ?? selected.defaultCategory,
+              scope: assignment.scope ?? assignment.defaultScope ?? selected.defaultScope,
+              category:
+                assignment.category ?? assignment.defaultCategory ?? selected.defaultCategory,
               densityId: event.target.value === '' ? undefined : event.target.value,
+              ...carry,
             })
-          }
+          }}
           className={selectClasses}
         >
           <option value="">Choose the density that converts…</option>
@@ -365,16 +414,101 @@ function ClassifyControls({
           {scopeLocked && (
             <p className="w-full text-xs text-ink-muted">This factor's scope is inherent.</p>
           )}
-          {assignment.scope && assignment.scope !== selected.defaultScope && (
+          {assignment.scope && defaultScope && assignment.scope !== defaultScope && (
             <p className="w-full text-xs text-ink-muted">
-              '{selected.name}' suggests {scopeLabels[selected.defaultScope]}
+              {assignment.defaultScope ? 'The stream' : `'${selected.name}'`} suggests{' '}
+              {scopeLabels[defaultScope]}
               {leased ? ' (leased asset, Appendix F)' : ''}.
             </p>
+          )}
+          {departs && (
+            <JustificationInput
+              label={`${assignment.activityType} scope justification`}
+              value={assignment.scopeJustification}
+              placeholder="Why the scope departs from the default (at least 10 characters)"
+              minLength={10}
+              editable={editable}
+              onSave={(text) => onClassify({ ...current(), ...carry, scopeJustification: text })}
+            />
+          )}
+          <label className="flex w-full items-center gap-2 text-xs text-ink-muted">
+            <input
+              type="checkbox"
+              aria-label={`${assignment.activityType} proxy factor`}
+              checked={assignment.proxy || proxyTicked}
+              disabled={!editable}
+              onChange={(event) => {
+                setProxyTicked(event.target.checked)
+                if (!event.target.checked && assignment.proxy)
+                  onClassify({
+                    ...current(),
+                    ...carry,
+                    proxy: false,
+                    proxyJustification: undefined,
+                  })
+              }}
+              className="h-4 w-4 accent-teal-deep"
+            />
+            Proxy factor: stands in for one that is not published or not yet approved
+          </label>
+          {(assignment.proxy || proxyTicked) && (
+            <JustificationInput
+              label={`${assignment.activityType} proxy justification`}
+              value={assignment.proxyJustification}
+              placeholder="What the factor stands in for (at least 5 characters)"
+              minLength={5}
+              editable={editable}
+              onSave={(text) =>
+                onClassify({ ...current(), ...carry, proxy: true, proxyJustification: text })
+              }
+            />
           )}
           {assignment.category && (
             <p className="w-full text-xs text-ink-muted">{categoryLabel(assignment.category)}</p>
           )}
         </div>
+      )}
+    </div>
+  )
+}
+
+/** A short reason saved when the field loses focus and the text is long enough (spec 04.3). */
+function JustificationInput({
+  label,
+  value,
+  placeholder,
+  minLength,
+  editable,
+  onSave,
+}: {
+  label: string
+  value: string | null
+  placeholder: string
+  minLength: number
+  editable: boolean
+  onSave: (text: string) => void
+}) {
+  const [text, setText] = useState(value ?? '')
+  const tooShort = text.trim().length > 0 && text.trim().length < minLength
+  return (
+    <div className="flex w-full flex-col gap-1">
+      <input
+        aria-label={label}
+        value={text}
+        placeholder={placeholder}
+        maxLength={500}
+        disabled={!editable}
+        aria-invalid={tooShort}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={() => {
+          if (text.trim().length >= minLength && text.trim() !== (value ?? '')) onSave(text.trim())
+        }}
+        className={`${selectClasses} w-full`}
+      />
+      {tooShort && (
+        <p role="alert" className="text-xs font-medium text-red-600">
+          At least {minLength} characters.
+        </p>
       )}
     </div>
   )

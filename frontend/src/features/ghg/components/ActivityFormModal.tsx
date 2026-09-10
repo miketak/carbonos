@@ -4,8 +4,8 @@ import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
-import { checkNumber, collectErrors } from '../../../lib/validate'
-import { useCreateActivity, useUnitsQuery, useUpdateActivity } from '../useGhg'
+import { checkNumber, collectErrors, withoutError } from '../../../lib/validate'
+import { useCreateActivity, useStreamsQuery, useUnitsQuery, useUpdateActivity } from '../useGhg'
 import type { Activity, DataQuality, Facility, Unit } from '../api'
 import { tierLabels } from '../format'
 import { findUnit, groupUnits } from '../units'
@@ -18,7 +18,7 @@ const qualityLabels: Record<DataQuality, string> = {
   CALCULATED: 'Calculated',
 }
 
-/** Records or corrects an organizational fact — what happened, where, and the evidence. */
+/** Records or corrects an organizational fact: what happened, where, and the evidence. */
 export function ActivityFormModal({
   organizationId,
   facilities,
@@ -36,7 +36,11 @@ export function ActivityFormModal({
   const update = useUpdateActivity(organizationId)
   const mutation = activity ? update : create
   const unitsQuery = useUnitsQuery(organizationId)
+  const streamsQuery = useStreamsQuery(organizationId)
   const [facilityId, setFacilityId] = useState(activity?.facilityId ?? facilities[0]?.id ?? '')
+  // the source stream the record belongs to (spec 04.3); it fixes the factor picker and the default scope
+  const [streamId, setStreamId] = useState(activity?.streamId ?? '')
+  const streams = (streamsQuery.data ?? []).filter((stream) => stream.facilityId === facilityId)
   const [activityType, setActivityType] = useState(activity?.activityType ?? '')
   const [quantity, setQuantity] = useState(activity ? String(activity.quantity) : '')
   const [unit, setUnit] = useState(activity?.unit ?? '')
@@ -69,6 +73,7 @@ export function ActivityFormModal({
     if (invalid) return
     const input = {
       facilityId,
+      streamId: streamId || undefined,
       activityType,
       quantity: Number(quantity),
       unit,
@@ -97,12 +102,33 @@ export function ActivityFormModal({
         <SelectField
           label="Facility"
           value={facilityId}
-          onChange={(event) => setFacilityId(event.target.value)}
+          onChange={(event) => {
+            setFacilityId(event.target.value)
+            setStreamId('')
+          }}
           error={errors?.facilityId}
         >
           {facilities.map((facility) => (
             <option key={facility.id} value={facility.id}>
               {facility.name}
+            </option>
+          ))}
+        </SelectField>
+        <SelectField
+          label="Stream (optional)"
+          value={streamId}
+          onChange={(event) => setStreamId(event.target.value)}
+          error={errors?.streamId}
+          hint={
+            streams.length === 0
+              ? 'This facility has no source streams yet; register them under Facilities.'
+              : 'The source the record belongs to; it fixes the factors offered and the default scope.'
+          }
+        >
+          <option value="">No stream</option>
+          {streams.map((stream) => (
+            <option key={stream.id} value={stream.id}>
+              {stream.name}
             </option>
           ))}
         </SelectField>
@@ -119,7 +145,10 @@ export function ActivityFormModal({
             label="Quantity"
             type="number"
             value={quantity}
-            onChange={(event) => setQuantity(event.target.value)}
+            onChange={(event) => {
+              setQuantity(event.target.value)
+              setClientErrors((current) => withoutError(current, 'quantity'))
+            }}
             error={errors?.quantity}
             required
           />
@@ -203,7 +232,10 @@ export function ActivityFormModal({
           min="0"
           step="0.1"
           value={uncertainty}
-          onChange={(event) => setUncertainty(event.target.value)}
+          onChange={(event) => {
+            setUncertainty(event.target.value)
+            setClientErrors((current) => withoutError(current, 'uncertaintyPercent'))
+          }}
           error={errors?.uncertaintyPercent}
           hint="The report weights it by emissions into the uncertainty statement."
         />

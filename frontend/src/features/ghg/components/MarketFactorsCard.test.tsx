@@ -175,3 +175,31 @@ test('answers the eight criteria one at a time and records the certificate (spec
     vintage: 2025,
   })
 })
+
+test('editing a recorded instrument loads it into the form and saving replaces it', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listMarketFactors).mockResolvedValue([ppa])
+  renderWithProviders(<MarketFactorsCard organizationId="org-1" inventory={inventory} />)
+
+  await user.click(
+    await screen.findByRole('button', { name: 'Edit instrument for Obuom Processing Plant' }),
+  )
+  expect(screen.getByLabelText('Source')).toHaveValue('Obuom solar PPA 2025')
+  expect(screen.getByLabelText('Covered quantity (MWh)')).toHaveValue(20000)
+  expect(screen.getByLabelText('Certificate or contract reference')).toHaveValue(
+    'IREC-GH-2025-0417',
+  )
+  expect(screen.getByLabelText('Criterion 3')).toHaveValue('true')
+
+  await user.clear(screen.getByLabelText('Covered quantity (MWh)'))
+  await user.type(screen.getByLabelText('Covered quantity (MWh)'), '60000')
+  await user.click(screen.getByRole('button', { name: 'Add instrument' }))
+  await waitFor(() => expect(setMarketFactor).toHaveBeenCalledTimes(1))
+  expect(vi.mocked(setMarketFactor).mock.calls[0][1]).toBe('fac-1')
+  expect(vi.mocked(setMarketFactor).mock.calls[0][2]).toMatchObject({
+    source: 'Obuom solar PPA 2025',
+    coveredKwh: 60000000,
+    certificateId: 'IREC-GH-2025-0417',
+    retirementDate: '2026-01-15',
+  })
+})

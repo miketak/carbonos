@@ -42,6 +42,7 @@ import {
   publishInventory,
   reopenInventory,
   supersedeInventory,
+  updateInventory,
   excludeFacility,
   setBoundaryTreatment,
   setEntityTreatment,
@@ -350,6 +351,7 @@ beforeEach(() => {
   vi.mocked(withdrawFinal).mockReset()
   vi.mocked(publishInventory).mockReset()
   vi.mocked(supersedeInventory).mockReset()
+  vi.mocked(updateInventory).mockReset()
   vi.mocked(setBoundaryTreatment).mockReset()
   vi.mocked(setEntityTreatment).mockReset()
   vi.mocked(setOperationalBoundary).mockReset()
@@ -1130,4 +1132,40 @@ test('a declared category can say why it is not quantified this year (spec 07.6)
       ],
     }),
   )
+})
+
+test('a draft can be edited: the straddle treatment is saved through the API (spec 04.2)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(updateInventory).mockResolvedValue({ ...inventory, straddleTreatment: 'BLOCK' })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: 'Edit inventory' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Edit inventory' })
+  expect(within(dialog).getByLabelText('Name')).toHaveValue('2025 Corporate Inventory')
+  expect(within(dialog).queryByLabelText(/copy the view from/i)).not.toBeInTheDocument()
+  await user.selectOptions(within(dialog).getByLabelText(/records that straddle/i), 'BLOCK')
+  await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+  await waitFor(() => expect(updateInventory).toHaveBeenCalledTimes(1))
+  expect(vi.mocked(updateInventory).mock.calls[0][0]).toBe('inv-1')
+  expect(vi.mocked(updateInventory).mock.calls[0][1]).toMatchObject({
+    name: '2025 Corporate Inventory',
+    periodStart: '2025-01-01',
+    periodEnd: '2025-12-31',
+    consolidationApproach: 'EQUITY_SHARE',
+    gwpSet: 'AR5',
+    straddleTreatment: 'BLOCK',
+  })
+  expect(await screen.findByText(/2025 Corporate Inventory updated/)).toBeInTheDocument()
+})
+
+test('a frozen inventory offers no edit button', async () => {
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'FROZEN',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  renderPage()
+  await screen.findByRole('button', { name: /reopen as draft/i })
+  expect(screen.queryByRole('button', { name: 'Edit inventory' })).not.toBeInTheDocument()
 })

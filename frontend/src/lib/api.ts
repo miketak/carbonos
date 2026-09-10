@@ -31,7 +31,7 @@ let csrfBootstrap: Promise<unknown> | undefined
 /**
  * The backend enforces CSRF even on public POSTs, and the XSRF cookie only
  * exists after some API response has set it. On a fresh browser the very
- * first mutation (login, request access) would 403 — so fetch any endpoint
+ * first mutation (login, request access) would 403, so fetch any endpoint
  * once to seed the cookie.
  */
 async function ensureCsrfCookie(): Promise<void> {

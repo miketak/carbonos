@@ -86,7 +86,7 @@ function SetupChecklist({
     },
     {
       title: 'Record activity data',
-      detail: 'What happened: fuel burned, electricity bought — no accounting treatment yet.',
+      detail: 'What happened: fuel burned, electricity bought; no accounting treatment yet.',
       done: activityCount > 0,
       to: 'activity',
       cta: 'Record activity',

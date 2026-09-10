@@ -43,8 +43,11 @@ Verdict: ☐ pass ☐ fail. Notes:
 2. Read the pre-flight.
 
 **Expected result:** the row reads "Not applied: 1 unanswered" with the
-eight outcomes listed. The **Emission factors** gate warns "1 of the eight
-criteria not yet answered" and says the market-based figure falls back.
+eight outcomes listed ("1 met · 2 met · 3 unanswered ..."). The
+**Emission factors** gate warns "The instrument for Tarkwa Processing
+Plant does not meet the Scope 2 Quality Criteria (1 of the eight criteria
+not yet answered): the market-based figure falls back to
+location-based.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -59,20 +62,24 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 ### A3. All eight met applies the instrument
 
-1. Edit the instrument: answer criterion 3 **Met**, retirement date
-   2026-01-15. Save.
+1. Click **Edit** on the instrument's row (it loads the row into the
+   form), answer criterion 3 **Met**, set the retirement date 2026-01-15
+   and click **Add instrument** (one instrument per facility: saving
+   replaces it).
 
 **Expected result:** the row reads "All eight met" with the certificate,
-registry, vintage and retirement date; the gate warning is gone.
+registry, vintage and "retired 2026-01-15"; the gate warning is gone.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
 ### A4. Coverage beyond the electricity warns
 
-1. Edit the instrument's covered quantity to 60,000 MWh.
+1. Edit the instrument's covered quantity to 60,000 MWh and save.
 
-**Expected result:** the gate warns that the instrument covers more than
-the facility's scope 2 electricity in its period. Set it back to 20,000.
+**Expected result:** the gate warns "The instrument for Tarkwa Processing
+Plant covers 60,000,000 kWh but the facility's scope 2 electricity in its
+period is 48,500,000 kWh: the excess covers nothing." Set it back to
+20,000.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -80,8 +87,12 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Set the instrument's period to 2025-01-01 to 2025-06-30.
 
-**Expected result:** no error now; procedure 7 shows the July record priced
-at the balance factor. Set the period back to blank.
+**Expected result:** no error, but the same warning now says the
+facility's scope 2 electricity in the period is 0 kWh: R2 is dated July,
+so no S2 electricity falls between January and June and the instrument
+would cover nothing in a run. Set the period back to blank; the warning
+goes and the instrument covers R2 again, which is what section C and
+procedure 7 assume.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -110,13 +121,18 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Choose **Yes** with 0.52 kg CO2e/kWh and save.
 
-**Expected result:** saved; a "yes" without a factor is refused.
+**Expected result:** saved ("Residual mix recorded."); a "yes" without a
+factor is refused with "A residual mix that is available needs its factor
+in kg CO2e per kWh.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
 ## C. Arithmetic (checked in procedure 7)
 
-Freeze the inventory. Procedure 7 checks the figures this setup produces:
+Freeze the inventory (this cuts boundary version 4). Procedure 7 checks
+the figures this setup produces (Scope 2 Guidance section 6.2: the
+instrument applies to the MWh it covers, the balance takes the residual
+mix):
 
 - S2: 20,000 MWh covered at 0, the balance 28,500 MWh at the residual mix
   0.52 → 14,820,000 kg market-based against 48,500,000 × 0.441 =

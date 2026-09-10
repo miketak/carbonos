@@ -67,7 +67,8 @@ export function FacilityFormModal({
 
   return (
     <Modal title={facility ? 'Edit facility' : 'Add facility'} onClose={onClose}>
-      <form onSubmit={submit} className="flex flex-col gap-4">
+      {/* noValidate: the backend's "lease ends before it starts" prints under the field instead of a native tooltip */}
+      <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <InputField
           label="Name"
           value={name}

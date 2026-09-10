@@ -33,8 +33,10 @@ calculation, the report composite, the PDF or the CSV exports.
 
 1. In the launch section, keep the proposed label "Run 001" and launch.
 
-**Expected result:** the run page opens. The run cites boundary version 2
-and is attributed to you as prepared by.
+**Expected result:** the run page opens with "13 lines". The run cites
+boundary version 4 (versions 1 and 2 in procedure 4, 3 at the end of
+procedure 5, 4 at the end of procedure 6: every freeze cuts one) and is
+attributed to you as prepared by.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -44,15 +46,24 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 | Line | Expected |
 | --- | --- |
-| Haul fleet diesel (R1, corrected to 1,200,000 US-gallon) | 1,200,000 × 3.785411784 = 4,542,494.14 litre × 2.66 = 12,083,034.42 kg |
+| Haul fleet diesel (R1, corrected to 1,200,000 US-gallon) | 1,200,000 × 3.785411784 = 4,542,494.1408 litre × 2.66 = 12,083,034.415 kg; the three evidence attachments listed |
 | Contract mining fleet diesel (R13) | 2,100,000 × 2.66 = 5,586,000 kg, scope 3 |
-| Diesel by tanker (R17) | 12,000 kg ÷ 0.8325 = 14,414.414 litre × 2.66 = 38,342.342 kg, with the note printed |
+| Light vehicle fleet petrol (R3) | 120,000 × 2.162 = 259,440 kg, scope 3, with the justification printed |
+| Diesel by tanker (R17) | 12,000 kg ÷ 0.8325 = 14,414.414414 litre × 2.66 = 38,342.342 kg, with the note "12 tonne = 12000 kg ÷ 0.8325 kg/litre = 14414.414414 litre (density of Diesel (GOIL, 2025 CoA))" |
 | Diesel in drums | 5 × 200 = 1,000 litre × 2.66 = 2,660 kg, "1 drum = 200 litre" |
-| Straddling diesel (R19) | 10,000 × 2.66 × 50% = 13,300 kg, "pro-rated: 31 of 62 days" |
-| Mill grid electricity (R2) | 48,500,000 × 0.441 = 21,388,500 kg; market-based as written down in procedure 6 |
+| Straddling diesel (R19) | 10,000 × 2.66 × 50% = 13,300 kg, "pro-rated: 31 of 62 days inside the reporting period and the membership window (50%)" |
+| ANFO explosives (R11) | 8,400 × 170 = 1,428,000 kg, scope 1 process, proxy flag and justification printed |
+| Chiller refrigerant top-up (R6) | 45 kg × 1,624.21 = 73,089.45 kg, HFCs 45 kg of gas in the by-gas columns (AR5: 0.23 × 677 + 0.25 × 3,170 + 0.52 × 1,300) |
+| Camp LPG (two records) | 18,000 × 1.557 = 28,026 kg each |
+| Mill grid electricity (R2) | 48,500,000 × 0.441 = 21,388,500 kg; market-based 14,820,000 kg as written down in procedure 6, with the note "20,000,000 kWh at 0 kg/kWh (certificate); 28,500,000 kWh at 0.52 kg/kWh (residual mix)" |
+| Office grid electricity (R4) | 210,000 × 0.441 = 92,610 kg; market-based 109,200 kg |
+| Warehouse grid electricity (R18) | 5,000 × 0.441 = 2,205 kg; market-based 5,000 × 0.52 = 2,600 kg |
 
 **Expected result:** every figure matches to the kilogram; every line shows
-its factor, its share and its conversion.
+its factor, its share and its conversion. The totals are scope 1
+13,694,478.207 kg, scope 2 location-based 21,483,315 kg (market-based
+14,931,800 kg), scope 3 5,845,440 kg, total 41,023,233.207 kg (the total
+uses the location-based figure).
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -61,9 +72,13 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Launch "Run 002". Void it with the reason "Duplicate of run 001".
 2. Launch again.
 
-**Expected result:** the voided run stays listed, struck through, with your
-name and the reason; the new run is **003**. A run designated final cannot
-be voided until the designation is withdrawn with a reason.
+**Expected result:** the void dialog keeps its button disabled until a
+reason is typed; the voided run stays listed, struck through and marked
+VOIDED, with your name and the reason; the new run is **003**. Mark run
+003 final: its **Void…** button disappears until **Withdraw final
+designation** is used with a reason (at least 5 characters); withdraw it
+again before going on, since procedure 8 designates the final run
+itself.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -72,8 +87,10 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Under **Activity data**, correct R1 back to 1,250,000 with a reason.
 2. Reopen the run 001 page.
 
-**Expected result:** run 001 still reads 1,200,000; the inventory's gate
-now flags nothing (the fact changed, the run did not).
+**Expected result:** the toast says "Record corrected. Past runs are
+unaffected."; run 001 still reads 1,200,000; the inventory's gate now
+flags nothing (the fact changed, the run did not). Later runs pick the
+new quantity up: from run 004 on the total is 41,526,693 kg.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -83,14 +100,18 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Read the run 003 report top to bottom.
 
-**Expected result:** report header; company and boundary version;
-operational boundary with the declaration table (investments "declared,
-not quantified" with its reason; purchased goods and services with its
+**Expected result:** the numbered sections 00 to 10: report header;
+company and organizational boundary with the version; operational
+boundary with the declaration table (investments "declared, not
+quantified" with its reason; purchased goods and services with its
 lines); reporting period; emissions by scope with scope 2 both ways and
-the market basis; scope 3 by category; by facility, entity and country;
-each gas in mass and CO2e; biogenic CO2; base year; methodology with the
-factor table and the data-quality table; exclusions with the per-reason
-summary and each justification; snapshot lines.
+the market basis, scope 3 by category, by facility, entity and country,
+and the intensity once B4 adds one; each gas in mass and CO2e; biogenic
+CO2; base year ("No base year designated" until procedure 8); methodology
+with the factor table and the data-quality table; exclusions with the
+per-reason summary (Outside reporting period 73 records, Outside boundary
+1, Methodology exclusion 1 with 259 t, Record removed 1) and each
+justification; snapshot lines.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -110,9 +131,11 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Under the inventory's report header, enter an uncertainty statement and
    save; launch run 004 and read its methodology section.
 
-**Expected result:** the table shows each tier's share (tier 1 for the
-metered lines, tier 4 for the estimated ones); the statement you typed is
-printed with it.
+**Expected result:** the table shows each tier's share (tier 1, 11
+lines, 99.9%; tier 3, the calculated camp LPG record; tier 4, the
+estimated one); the paragraph above it ends "1 of 13 lines record a
+quantitative uncertainty; weighted by emissions it is ±2% for those
+lines." and the statement you typed is printed with it.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -121,9 +144,9 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Add the denominator "Gold produced", 120,000 oz, and an approver name;
    launch run 005.
 
-**Expected result:** the header names the approver; the intensity section
-gives t CO2e per oz to six decimals, equal to the total in tonnes divided
-by 120,000.
+**Expected result:** the header names the approver; the **Intensity**
+section reads "0.346056 t CO₂e per oz of gold produced (120,000 oz)",
+equal to 41,526.693 t divided by 120,000.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -135,7 +158,8 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 **Expected result:** the same sections as the page, in the same order, with
 the data-quality table, the declaration table, the instrument outcomes and
-the exclusion summary. Downloading it twice gives the same content.
+the exclusion summary. Downloading it twice gives the same content (the
+same size, about 17 kB).
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -143,10 +167,12 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Download `lines.csv` and open it in the spreadsheet.
 
-**Expected result:** one row per line with record id, evidence reference,
-evidence files, factor id, converted quantity, conversion factor, density
-and conversion note, share, period share, kg per gas, market columns,
-data quality and tier. Recompute one line's kg CO2e from its columns.
+**Expected result:** one row per line with `record_id`, `evidence_ref`,
+`evidence_files`, `factor_id`, `converted_quantity`, `conversion_factor`,
+`density_material`, `density_kg_per_litre`, `conversion_note`,
+`accounting_share`, `period_share`, the kg per gas, the `market_*`
+columns, `data_quality` and `data_quality_tier`. Recompute one line's kg
+CO2e from its columns.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -154,9 +180,10 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Download `exclusions.csv` and `inputs.json`.
 
-**Expected result:** the exclusions file carries each justification and
-estimated magnitude; the JSON carries the boundary version, the factor set
-as applied, the instruments and the residual mix.
+**Expected result:** the exclusions file carries each reason, detail,
+justification and `estimated_kg_co2e`; the JSON carries `boundaryVersion`,
+`factors` (six, as applied), `instruments` (one) and the residual mix
+(0.52).
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -166,9 +193,11 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Open the report of the voided run 002 and its PDF.
 
-**Expected result:** a VOIDED banner with the reason on the page. The PDF
-prints the reason once on its first page and "VOIDED: this run must not
-be relied on" on every page; the figures are still shown.
+**Expected result:** the page carries the banner "This run is voided and
+must not be relied on. Voided by <you> on <date>: Duplicate of run 001.
+The figures are kept on the record as calculated." The PDF prints the
+reason once on its first page and "VOIDED: this run must not be relied
+on" on every page; the figures are still shown.
 
 Verdict: ☐ pass ☐ fail. Notes:
 

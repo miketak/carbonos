@@ -14,7 +14,7 @@ const EXPO_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
 let splashListener: (() => void) | null = null
 
-/** Ask the mounted SplashGate to play the splash — called right after a successful login. */
+/** Ask the mounted SplashGate to play the splash; called right after a successful login. */
 export function triggerSplash() {
   splashListener?.()
 }
@@ -39,7 +39,7 @@ export function SplashGate() {
 /**
  * "Core power-up": two arcs rotate in and lock into an instrument ring, the
  * core ignites with one bloom, and the solid gradient wordmark wipes in below.
- * Pure DOM + CSS animations — the global reduced-motion rule collapses every
+ * Pure DOM + CSS animations; the global reduced-motion rule collapses every
  * phase to the finished lockup instantly.
  */
 export function SplashScreen({ onDone }: { onDone: () => void }) {

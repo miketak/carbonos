@@ -133,6 +133,8 @@ export function BaseYearPage() {
 }
 
 function Designation({ baseYear }: { baseYear: BaseYear }) {
+  const runsQuery = useRunsQuery(baseYear.inventoryId)
+  const baseRun = runsQuery.data?.find((run) => run.id === baseYear.baseRunId)
   return (
     <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
       <div>
@@ -145,6 +147,11 @@ function Designation({ baseYear }: { baseYear: BaseYear }) {
           <Link to={`../inventories/${baseYear.inventoryId}`} className="font-semibold text-link">
             {baseYear.inventoryName}
           </Link>
+          {baseRun && (
+            <span className="block text-xs text-ink-muted">
+              Base-year run: {baseRun.label} · {formatCo2e(baseRun.totalKgCo2e)}
+            </span>
+          )}
           {!baseYear.baseRunId && (
             <span className="block text-xs text-amber-700">
               No final run yet: designate one so structural changes can be weighed against it.
@@ -307,6 +314,10 @@ function RecalculationHistory({
 }) {
   const [decision, setDecision] = useState<Decision>(null)
   const toast = useToast()
+  // the base-year inventory's runs, so a recalculated candidate can name the run it rests on
+  const runsQuery = useRunsQuery(baseYear.inventoryId)
+  const runLabel = (runId: string) =>
+    runsQuery.data?.find((run) => run.id === runId)?.label ?? 'a run of the base-year inventory'
 
   return (
     <GlassCard className="p-6">
@@ -387,6 +398,9 @@ function RecalculationHistory({
                   ? `, ${new Date(recalculation.decidedAt).toLocaleString()}`
                   : ''}
                 {recalculation.decisionNote ? ` · ${recalculation.decisionNote}` : ''}
+                {recalculation.status === 'RECALCULATED' && recalculation.runId
+                  ? ` · recalculated base: ${runLabel(recalculation.runId)}`
+                  : ''}
               </p>
             )}
           </li>

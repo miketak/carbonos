@@ -21,6 +21,11 @@ facilities, streams, units, densities or the factor library.
 
 - An account that owns an organization (procedure 1 leaves the Newcomer as
   the owner of **Sankofa Gold plc**; otherwise sign in and create it).
+- If procedure 1 ran, remove its scratch objects first so they do not
+  land in the boundary and the activity view later: reopen the inventory
+  **QA scratch** as a draft and delete it, remove the record "QA scratch
+  diesel" with a reason, then remove the facility **QA scratch site** with
+  a reason.
 - Nothing else. This procedure builds the company the later ones use.
 
 ## A. The scenario
@@ -52,8 +57,9 @@ camp and a leased warehouse.
 1. Open **Legal entities**.
 
 **Expected result:** Sankofa Gold plc is listed as the reporting company:
-subsidiary, 100%, operated, 100% under every approach. Its edit form only
-renames it; it cannot be removed.
+subsidiary, 100%, operated, 100% under every approach. Its edit form
+takes only a name, the acquisition and disposal dates and a jurisdiction
+(no relationship or percentages); the row has no Remove button.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -75,9 +81,10 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 **Expected result:** after step 1 the dialog stays open, the field is
 outlined as invalid and reads "Economic interest must be between 0 and
-100." under it; nothing is created. After step 2 a note under the fields
-says the two percentages differ by 40 points and that equity share follows
-economic interest; the note does not block saving.
+100." under it; nothing is created. After step 2 the message is gone
+(the value is valid again) and a note under the fields says the two
+percentages differ by 40 points and that equity share follows economic
+interest; the note does not block saving.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -97,11 +104,13 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 ### B4. The retired relationship names are refused
 
-1. Edit E1 and, in the browser's developer tools, change the relationship
-   value sent to `WHOLLY_OWNED` (or ask a developer to send it).
+1. Edit E1 and, in the browser's developer tools, change the
+   `relationshipType` sent in the `PUT /api/ghg/entities/{id}` request to
+   `WHOLLY_OWNED` (or ask a developer to send it).
 
-**Expected result:** the request is refused with a message naming the
-replacement row. Skip this case if you cannot alter the request.
+**Expected result:** the request is refused (422) with "WHOLLY_OWNED was
+renamed SUBSIDIARY (a group company or subsidiary under financial
+control)." Skip this case if you cannot alter the request.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -111,10 +120,11 @@ Verdict: ☐ pass ☐ fail. Notes:
    remove it.
 2. Try to remove E1.
 
-**Expected result:** the removal dialog asks for a reason and refuses an
-empty one; after a reason the entity disappears from the list. E1 cannot
-be removed once S2 exists under it (the message says it still has
-facilities).
+**Expected result:** the removal dialog asks for a reason and keeps its
+Remove button disabled until one is typed; after a reason the entity
+disappears from the list. E1 cannot be removed once S2 exists under it:
+"'Tarkwa Gold JV Ltd' still has facilities. Move them to another entity
+before deleting it." (Run the second step after C1.)
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -154,15 +164,18 @@ Verdict: ☐ pass ☐ fail. Notes:
 ### D1. Streams with their default classification
 
 1. On S1, open **Source streams** and add: **Haul fleet** (mobile
-   combustion, fuel Diesel, owned) and **Contract mining fleet** (mobile
-   combustion, fuel Diesel, **operated by a contractor**).
+   combustion, fuel Diesel, owned), **Contract mining fleet** (mobile
+   combustion, fuel Diesel, **operated by a contractor**) and **Standby
+   gensets** (stationary combustion, fuel Diesel, owned; no record will
+   ever name it, which procedure 5 D2 relies on).
 2. On S2 add **Mill grid supply** (purchased electricity, meter ECG-TKW-01).
 3. On S5 add **Camp LPG** (stationary combustion, fuel LPG).
 
 **Expected result:** each stream shows its default scope and category: the
 owned haul fleet scope 1 mobile combustion, the contractor fleet **scope 3
-purchased goods and services**, the mill supply scope 2 purchased
-electricity, the camp LPG scope 1 stationary combustion.
+purchased goods and services**, the gensets scope 1 stationary
+combustion, the mill supply scope 2 purchased electricity, the camp LPG
+scope 1 stationary combustion.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -170,7 +183,8 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. On S1, add another stream named **Haul fleet**.
 
-**Expected result:** refused as a duplicate on that facility.
+**Expected result:** refused with "'Obuasi Ridge Open Pit' already has a
+stream named 'Haul fleet'.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -193,8 +207,9 @@ Verdict: ☐ pass ☐ fail. Notes:
    source "GOIL certificate of analysis, batch 2025-03".
 2. Record it again with the same material.
 
-**Expected result:** the first is listed without the typical flag; the
-second is refused as a duplicate material.
+**Expected result:** the first is listed without the typical flag and
+with a Delete button the typical rows lack; the second is refused with
+"A density for 'Diesel (GOIL, 2025 CoA)' already exists.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -204,7 +219,8 @@ Verdict: ☐ pass ☐ fail. Notes:
 2. Try to define **litre** as a custom unit.
 
 **Expected result:** the drum is listed as `1 drum = 200 litre`. The
-registered code is refused inline.
+registered code is refused inline with "'litre' is already a registered
+unit.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -215,22 +231,28 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Open **Emission factors** and read the shared library.
 
 **Expected result:** every factor cites a publication, a table and a data
-year; none says "approx.". The Ghana grid factor says it is a secondary
-estimate and points to the Ember figure. Library factors offer no edit or
-delete action.
+year; none says "approx.". The Ghana grid factor (**Grid electricity
+(Ghana, Ecoriv 2025)**, 0.441 kg CO2e/kWh) says it is a secondary estimate
+and points to the Ember figure. Library factors offer no edit or delete
+action.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
 ### F2. Importing a pack
 
-1. Import the **sector-mining** pack.
+1. Import the **Sector pack: mining (Ghana and West Africa)** pack (the
+   Import pack button on its card; the button's accessible name carries
+   the pack's name).
 2. Import it again.
 
-**Expected result:** the first import reports the number of factors
-created; the second reports them as updated, not created again. The
-organization's factors now include refrigerants with a blend composition,
-fuels per tonne and per litre, and the Ghana grid by year, each with its
-citation and URL.
+**Expected result:** the first import reports "53 factors added, 0
+updated"; the second "0 factors added, 53 updated". The organization's
+factors now include refrigerants with a blend composition, diesel per
+tonne and per litre, explosives, and the Ghana grid by year, each with its
+citation and URL. One row, the derived Ghana T&D loss factor, arrives
+**Not approved** with an Approve button; leave it. (Every other pack is
+importable too; do not import them, or the factor pickers of procedure 5
+fill with rows the cases do not name.)
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -251,9 +273,11 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Find the imported R-407C factor.
 
-**Expected result:** it shows a blend composition (HFC-32, HFC-125,
-HFC-134a by mass) and a CO2e per kg stated under AR5. (Procedure 7 shows
-the AR6 figure differ.)
+**Expected result:** the row **Refrigerant R-407C leakage** shows "1624
+kg CO2e/kg", the blend "23% HFC-32, 25% HFC-125, 52% HFC-134a" and a
+source naming IPCC AR5. The run derives the figure from the composition
+and the inventory's GWP set: 0.23 × 677 + 0.25 × 3,170 + 0.52 × 1,300 =
+1,624.21 kg CO2e per kg under AR5 (procedure 7 A2 checks the line).
 
 Verdict: ☐ pass ☐ fail. Notes:
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { approveAccessRequest, denyAccessRequest, listAccessRequests } from './api'
+import { usersQueryKey } from './useUsers'
 
 export const accessRequestsKey = ['access-requests'] as const
 
@@ -11,7 +12,12 @@ export function useApproveAccessRequest() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => approveAccessRequest(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: accessRequestsKey }),
+    // approval creates the pending account, so the users list changes too
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: accessRequestsKey }),
+        queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+      ]),
   })
 }
 

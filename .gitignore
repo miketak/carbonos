@@ -21,3 +21,6 @@ __pycache__/
 .vale/styles/*
 !.vale/styles/config/
 !.vale/styles/CarbonOS/
+
+# Playwright MCP output (browser sessions)
+.playwright-mcp/

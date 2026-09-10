@@ -163,14 +163,42 @@ public final class ReportPdf {
 			}
 			else {
 				var b = report.baseYear();
+				var convention = switch (b.structuralChangeConvention()) {
+					case TRANSACTION_DATE -> "mid-year structural changes from the transaction date (membership windows)";
+					case WHOLE_YEAR -> "mid-year structural changes for the whole year, as the Standard recommends";
+				};
 				document.add(new Paragraph(b.periodLabel() + " (" + b.inventoryName() + "), significance threshold "
-						+ b.thresholdPercent() + "%, " + b.structuralChangeConvention() + ". " + b.reason()
-						+ (b.originalBase() == null ? "" : " Base-year emissions: " + tonnes(b.originalBase().totalKgCo2e().movePointLeft(3)) + " t CO2e."), BODY));
+						+ b.thresholdPercent() + "% applied to each change and to the cumulative effect, " + convention + ". "
+						+ "Why this year: " + b.reason()
+						+ (b.originalBase() == null ? "" : " Base-year emissions (" + b.originalBase().label() + "): "
+								+ tonnes(b.originalBase().totalKgCo2e().movePointLeft(3)) + " t CO2e."), BODY));
+				if (!b.recalculations().isEmpty()) {
+					// spec 06.1: the report shows every candidate with the decision taken on it
+					subheading(document, "Recalculation history");
+					for (var entry : b.recalculations()) {
+						var decision = entry.decision();
+						var text = new StringBuilder(decision.status().name()).append(": ").append(decision.reason());
+						if (decision.decisionNote() != null) {
+							text.append(" Decision: ").append(decision.decisionNote()).append('.');
+						}
+						if (decision.decidedBy() != null) {
+							text.append(" Decided by ").append(decision.decidedBy()).append('.');
+						}
+						if (entry.recalculatedBase() != null) {
+							text.append(" Recalculated base (").append(entry.recalculatedBase().label()).append("): ")
+								.append(tonnes(entry.recalculatedBase().totalKgCo2e().movePointLeft(3))).append(" t CO2e.");
+						}
+						document.add(new Paragraph(text.toString(), SMALL));
+					}
+				}
 				if (!b.profile().isEmpty()) {
-					var profile = table(3, 20, 50, 30);
-					head(profile, "Period", "Inventory", "Final run (t CO2e)");
+					subheading(document, "Emissions profile over time");
+					var profile = table(4, 14, 42, 22, 22);
+					head(profile, "Period", "Inventory", "Final run (t CO2e)", "Recalculated (t CO2e)");
 					for (var p : b.profile()) {
-						row(profile, p.periodLabel(), p.name(), p.totalKgCo2e() == null ? "not yet final" : tonnes(p.totalKgCo2e().movePointLeft(3)));
+						row(profile, p.periodLabel(), p.name(),
+								p.totalKgCo2e() == null ? "not yet final" : tonnes(p.totalKgCo2e().movePointLeft(3)),
+								p.recalculatedTotalKgCo2e() == null ? "" : tonnes(p.recalculatedTotalKgCo2e().movePointLeft(3)));
 					}
 					document.add(profile);
 				}

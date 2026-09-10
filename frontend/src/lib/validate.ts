@@ -58,3 +58,16 @@ export function collectErrors(
 function lower(label: string): string {
   return label.charAt(0).toLowerCase() + label.slice(1)
 }
+
+/**
+ * The errors without `field`, or undefined once none is left; forms call it
+ * when a field changes so a message does not outlive the value it described.
+ */
+export function withoutError(
+  errors: Record<string, string> | undefined,
+  field: string,
+): Record<string, string> | undefined {
+  if (!errors || !(field in errors)) return errors
+  const { [field]: _dropped, ...rest } = errors
+  return Object.keys(rest).length === 0 ? undefined : rest
+}

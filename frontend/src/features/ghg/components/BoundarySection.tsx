@@ -346,6 +346,9 @@ function ExclusionControl({
   onClear: () => void
 }) {
   const [detail, setDetail] = useState(exclusion?.detail ?? '')
+  // the reason chosen in this session: the exclusion prop arrives only after the refetch, and a
+  // detail typed and blurred before that must not be lost
+  const [chosenReason, setChosenReason] = useState<ExclusionReason | ''>(exclusion?.reason ?? '')
   if (exclusion && !editable) {
     return (
       <span className="text-xs text-ink-muted">
@@ -363,6 +366,7 @@ function ExclusionControl({
         aria-label={label}
         value={exclusion?.reason ?? ''}
         onChange={(event) => {
+          setChosenReason(event.target.value as ExclusionReason | '')
           if (event.target.value === '') onClear()
           else
             onExclude({
@@ -388,9 +392,10 @@ function ExclusionControl({
         maxLength={500}
         onChange={(event) => setDetail(event.target.value)}
         onBlur={() => {
-          if (exclusion && (detail.trim() || '') !== (exclusion.detail ?? ''))
+          const reason = exclusion?.reason ?? chosenReason
+          if (reason && (detail.trim() || '') !== (exclusion?.detail ?? ''))
             onExclude({
-              reason: exclusion.reason,
+              reason,
               detail: detail.trim() === '' ? undefined : detail,
             })
         }}

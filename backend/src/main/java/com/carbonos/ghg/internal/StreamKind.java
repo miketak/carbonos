@@ -48,8 +48,10 @@ public enum StreamKind {
 		if (!contractorOperated) {
 			return categories.getFirst();
 		}
+		// spec 04.3: a contractor's source is purchased goods and services, except a transport stream, which
+		// is upstream transport; a contractor's mobile plant on site (a mining fleet) is a purchased service
 		return switch (this) {
-			case TRANSPORT, MOBILE_COMBUSTION -> ActivityCategory.UPSTREAM_TRANSPORT;
+			case TRANSPORT -> ActivityCategory.UPSTREAM_TRANSPORT;
 			case TRAVEL -> ActivityCategory.BUSINESS_TRAVEL;
 			case COMMUTING -> ActivityCategory.EMPLOYEE_COMMUTING;
 			case WASTE -> ActivityCategory.WASTE_GENERATED;

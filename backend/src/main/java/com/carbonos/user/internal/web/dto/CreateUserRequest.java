@@ -1,5 +1,6 @@
 package com.carbonos.user.internal.web.dto;
 
+import com.carbonos.user.internal.PasswordPolicy;
 import com.carbonos.user.internal.UserRole;
 
 import jakarta.validation.constraints.Email;
@@ -11,5 +12,5 @@ public record CreateUserRequest( //
 		@NotBlank @Email @Size(max = 320) String email, //
 		@NotBlank @Size(max = 100) String displayName, //
 		@NotNull UserRole role, //
-		@NotBlank @Size(min = 8, max = 72) String temporaryPassword) {
+		@NotBlank @Size(min = 12, max = 72, message = PasswordPolicy.RULE) String temporaryPassword) {
 }

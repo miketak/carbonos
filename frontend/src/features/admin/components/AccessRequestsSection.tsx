@@ -25,7 +25,7 @@ export function AccessRequestsSection() {
       onSuccess: () =>
         toast(
           action === 'approve'
-            ? `${request.displayName} approved — setup email sent.`
+            ? `${request.displayName} approved; setup email sent.`
             : `${request.displayName} denied.`,
         ),
       onError: (error) =>

@@ -46,7 +46,7 @@ completeness**, **Classification**, **Emission factors** and **Base year**.
 | 6 | [Scope 2 instruments](006-scope2-instruments.md) | Market-based scope 2 rests on instruments that pass the Quality Criteria, and the report says so either way. | 45 min |
 | 7 | [Runs, reports and exports](007-runs-reports-and-exports.md) | A run is a reproducible snapshot, the report carries every Chapter 9 element, and the exports match the page. | 75 min |
 | 8 | [Publication and corrections](008-publication-and-corrections.md) | A published report never changes, what came after is shown apart, and a correction inherits the view with a reason. | 45 min |
-| 9 | [Base year and recalculation](009-base-year.md) | The base year is designated with its policy, structural changes are detected, and manual candidates are weighed. | 45 min |
+| 9 | [Base year and recalculation](009-base-year.md) | The base year is designated with its policy, structural changes are detected, and manual candidates are weighed. | 60 min |
 
 ## Shared scenario
 

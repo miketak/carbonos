@@ -4,7 +4,7 @@ import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
-import { checkNumber, collectErrors } from '../../../lib/validate'
+import { checkNumber, collectErrors, withoutError } from '../../../lib/validate'
 import { relationshipLabels } from '../format'
 import { useCreateEntity, useEntitiesQuery, useUpdateEntity } from '../useGhg'
 import type { Entity, RelationshipType } from '../api'
@@ -155,7 +155,10 @@ export function EntityFormModal({
               max="100"
               step="0.01"
               value={economicInterest}
-              onChange={(event) => setEconomicInterest(event.target.value)}
+              onChange={(event) => {
+                setEconomicInterest(event.target.value)
+                setClientErrors((current) => withoutError(current, 'economicInterestPercent'))
+              }}
               error={errors?.economicInterestPercent}
               hint="The share of risks and rewards; what equity share accounts for."
               required
@@ -167,7 +170,10 @@ export function EntityFormModal({
               max="100"
               step="0.01"
               value={legalOwnership}
-              onChange={(event) => setLegalOwnership(event.target.value)}
+              onChange={(event) => {
+                setLegalOwnership(event.target.value)
+                setClientErrors((current) => withoutError(current, 'legalOwnershipPercent'))
+              }}
               error={errors?.legalOwnershipPercent}
               hint="For disclosure; equity share follows economic interest, where substance overrides form."
             />

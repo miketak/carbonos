@@ -119,7 +119,7 @@ test('imports a pack and approves a factor', async () => {
   const user = userEvent.setup()
   renderPage()
 
-  await user.click(await screen.findByRole('button', { name: 'Import pack' }))
+  await user.click(await screen.findByRole('button', { name: /^Import pack/ }))
   await waitFor(() => expect(importFactorPack).toHaveBeenCalledWith('org-1', 'sector-mining'))
   expect(await screen.findByText(/53 factors added, 0 updated/)).toBeInTheDocument()
 

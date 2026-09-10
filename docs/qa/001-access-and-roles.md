@@ -42,8 +42,10 @@ Verdict: ☐ pass ☐ fail. Notes:
 2. Approve the Newcomer's request.
 3. Open the Users list.
 
-**Expected result:** the request shows APPROVED. The Users list already
-lists the Newcomer with the state **PENDING**.
+**Expected result:** a toast confirms the approval and the setup email;
+the request leaves the queue (the card lists pending requests only, so it
+reads "No pending requests"). The Users list already lists the Newcomer
+with the state **Pending activation**.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -77,7 +79,7 @@ Verdict: ☐ pass ☐ fail. Notes:
 that plays after sign-in shows the wordmark, a progress bar and "Loading
 your workspace"; it makes no claim about verifying or calibrating
 anything, and a click skips it. The Users list now shows the account
-ACTIVE and the request COMPLETED.
+**Active**.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -97,7 +99,8 @@ Verdict: ☐ pass ☐ fail. Notes:
    `short1`.
 2. Repeat with `Analyst-pass-2026`.
 
-**Expected result:** the first is refused with the password rule; the
+**Expected result:** the first is refused with the password rule under
+the field ("At least 12 characters, with a letter and a digit."); the
 second creates the account. Repeat for the Auditor alias with
 `Auditor-pass-2026`.
 
@@ -142,23 +145,32 @@ Verdict: ☐ pass ☐ fail. Notes:
 ### B4. A preparer works but cannot publish
 
 1. In the normal window, sign in as the Analyst. Open Sankofa Gold plc.
-2. Add a facility, record one activity, create an inventory and freeze it.
-3. Try to designate a final run or publish (procedure 7 covers the full
-   flow; here only the refusal matters).
+2. Add the facility **QA scratch site**, record one activity on it
+   ("QA scratch diesel", 100 litre, any date in 2025), create the inventory
+   **QA scratch** (2025, operational control) and freeze it.
+3. Launch a run (allowed for a preparer), then click **Mark as final**
+   on it. Note that **Publish** stays disabled ("Designate a final run
+   first") until a run is final, so a preparer never reaches it.
 
-**Expected result:** every write in step 2 succeeds. Step 3 is refused with
-a message naming the role needed (REVIEWER or OWNER).
+Procedure 2 removes these three scratch objects before it builds the
+scenario, so keep the names.
+
+**Expected result:** every write in step 2 succeeds and the run launches.
+Step 3 is refused with "This action needs the REVIEWER or OWNER role in
+the organization.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
 ### B5. A verifier reads everything and changes nothing
 
 1. Sign in as the Auditor in another context and open the organization.
-2. Open the facility, the activity data, the inventory and its report
-   page; try to record an activity and to change the inventory.
+2. Open the facility, the activity data and the inventory; try to record
+   an activity and to change the inventory.
 
-**Expected result:** every page opens and every export downloads. Each
-write is refused with a message naming the role needed.
+**Expected result:** every page opens, including the run page of B4. The
+buttons are still shown; each write is refused on submit with "This
+action needs the PREPARER, REVIEWER or OWNER role in the organization."
+(Exports are checked in procedure 7.)
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -167,9 +179,10 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. As the Newcomer, change the Analyst's role to **REVIEWER**.
 2. Try to remove yourself, then try to change your own role to PREPARER.
 
-**Expected result:** the role change applies at once (the Analyst can now
-designate a final run). Both attempts on the last owner are refused with a
-message that the organization needs at least one owner.
+**Expected result:** the role change applies at once and silently (no
+toast; the Analyst can now designate a final run). Both attempts on the
+last owner are refused with "'Sankofa Gold plc' needs at least one
+owner.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -178,8 +191,9 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. As the Newcomer, open the inventory the Analyst created and scroll to
    **History**.
 
-**Expected result:** the Analyst's email is on the freeze, the review and
-each classification; the Newcomer's email is on nothing they did not do.
+**Expected result:** the Analyst's email is on the freeze and on the run
+launch (the two inventory acts B4 performed); the Newcomer's email is on
+nothing they did not do.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -187,8 +201,9 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. As the admin, open the GHG home.
 
-**Expected result:** the admin sees every organization, with the role
-shown as ADMIN where they are not a member, and can open Sankofa Gold plc.
+**Expected result:** the admin sees every organization and can open
+Sankofa Gold plc; its overview's **Members** card reads "Your role:
+ADMIN" although the admin is not listed as a member.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
