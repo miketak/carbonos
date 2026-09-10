@@ -13,3 +13,11 @@
 
 # Local scratch
 temp/
+
+# engineering docs site (make docs) and its Python toolchain
+site/
+.venv/
+__pycache__/
+.vale/styles/*
+!.vale/styles/config/
+!.vale/styles/CarbonOS/

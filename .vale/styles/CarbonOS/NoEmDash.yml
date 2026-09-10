@@ -1,0 +1,7 @@
+extends: existence
+message: "Do not use an em-dash. Use a colon, a semicolon, a comma, parentheses, or a full stop."
+link: https://github.com/miketak/carbonos/blob/main/CLAUDE.md#writing-style
+level: error
+nonword: true
+tokens:
+  - '—'

@@ -1,0 +1,62 @@
+# Engineering docs: the strict site build is the check; Vale is advisory.
+# Nothing is published. Runs only when docs, specs, or the docs toolchain change.
+name: Docs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "specs/**"
+      - "mkdocs.yml"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".python-version"
+      - ".vale.ini"
+      - ".vale/**"
+      - ".github/workflows/docs.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "specs/**"
+      - "mkdocs.yml"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".python-version"
+      - ".vale.ini"
+      - ".vale/**"
+      - ".github/workflows/docs.yml"
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Docs / strict build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Vale diffs against the pull request base
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install the docs toolchain
+        run: uv sync --locked
+      - name: Build the site (strict)
+        run: uv run mkdocs build --strict
+      - name: Install Vale
+        continue-on-error: true
+        run: |
+          curl -sSL https://github.com/errata-ai/vale/releases/download/v3.9.6/vale_3.9.6_Linux_64-bit.tar.gz \
+            | tar -xz -C /usr/local/bin vale
+          vale --version
+      - name: Vale (advisory)
+        continue-on-error: true
+        run: make vale BASE=origin/${{ github.base_ref || 'main' }}
