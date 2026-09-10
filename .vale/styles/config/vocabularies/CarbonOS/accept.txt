@@ -1,10 +1,12 @@
 ADR
 ADRs
 API
+APIs
 Actuator
 Antora
 Appendix F
 CI
+CLI
 CSRF
 CSV
 CarbonOS
@@ -68,17 +70,23 @@ admin
 backend
 backend's
 config
+datasource
 dev
 eGRID
 frontend
 frontend's
 healthcheck
+idempotently
 lockfile
 monorepo
 nav
 npm
+nullable
+nvm
 onboarding
 oxlint
+plc
+proxying
 psql
 pymdownx
 repo
@@ -88,7 +96,10 @@ symlinks
 tmux
 toolchain
 toolchains
+untracked
 uv
 venv
+verifier
+verifiers
 vitest
 watchdog
