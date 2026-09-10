@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset db-wipe backend frontend admin verify dev-up dev-down docs docs-serve docs-check vale
+.PHONY: help db-up db-down db-reset db-wipe backend frontend admin verify dev-up dev-down docs docs-serve docs-check vale qa-docs
 
 # git ref the docs checks diff against
 BASE ?= origin/main
@@ -56,3 +56,6 @@ vale:             ## Vale (advisory) on markdown changed against $(BASE); skips 
 	  vale sync >/dev/null; \
 	  files=$$( { git diff --name-only --diff-filter=ACMR "$$(git merge-base $(BASE) HEAD)" -- '*.md'; git ls-files --others --exclude-standard -- '*.md'; } | sort -u); \
 	  if [ -n "$$files" ]; then vale --no-exit $$files; else echo "no markdown changed against $(BASE)"; fi
+
+qa-docs:          ## export docs/qa as DOCX under build/qa-docs, ready to upload to Google Drive (needs pandoc)
+	uv run --locked python scripts/publish_qa_docs.py --out build/qa-docs

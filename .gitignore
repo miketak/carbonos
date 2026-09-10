@@ -24,3 +24,4 @@ __pycache__/
 
 # Playwright MCP output (browser sessions)
 .playwright-mcp/
+/build/

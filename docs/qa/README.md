@@ -34,6 +34,25 @@ the spec is the reference; report the difference. Pre-flight gates are
 named as the panel prints them: **Reporting boundary**, **Activity data
 completeness**, **Classification**, **Emission factors** and **Base year**.
 
+## Where to fill in your verdicts
+
+The maintainer exports the procedures as Google Docs into the **CarbonOS
+QA** Drive folder before a test round (`make qa-docs`, then an upload; see
+the how-to "Publish the QA procedures" in the engineering docs). Ask for the
+link.
+
+1. Open the procedure and choose **File > Make a copy** into your own Drive,
+   named `<document> - <your name> - <date>`.
+2. Tick the verdicts and write your notes in the copy. The line under the
+   title ("Version v0.6.0 (5b27661), built ...") is the value for
+   "Procedure and version tested" in the sign-off table.
+3. File one issue per failed case with the **QA failure** template at
+   https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml.
+4. Share the filled copy with the maintainer when the run is complete.
+
+Keep the published documents as they are; make your copy rather than
+editing them.
+
 ## The procedures
 
 | # | Procedure | Objective | Time |
