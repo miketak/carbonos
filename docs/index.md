@@ -22,10 +22,19 @@ one kind of question, so you can tell from the section which page you need.
 
 ## Start here
 
-- New to the project? Start with the first-week tutorial once it lands; until
-  then, read [spec 00, Principles and domain model](specs/00-principles-and-domain-model.md)
-  and the [QA procedures](reference/qa/README.md), which walk the product the
-  way a user meets it.
+- New to the project? Start with [Your first week](tutorials/first-week.md).
+  It runs the system, walks the product with the QA procedures, traces a
+  request, and ships a change.
+- Doing a specific job? The how-to guides cover the
+  [dev environment](how-to/set-up-the-dev-environment.md),
+  [the checks](how-to/run-the-checks.md),
+  [shipping a change](how-to/ship-a-change.md),
+  [writing a spec](how-to/write-a-spec.md),
+  [adding a migration](how-to/add-a-migration.md), and
+  [deploying and releasing](how-to/deploy-and-release.md).
+- Want the why? Read [Architecture](explanation/architecture.md),
+  [The spec workflow](explanation/spec-workflow.md), and
+  [The inventory lifecycle](explanation/inventory-lifecycle.md).
 - Looking for what the product must do? The [specs](specs/README.md) are the
   reference. Every non-trivial feature starts as a spec and stays in step
   with the code.

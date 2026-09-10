@@ -3,7 +3,9 @@
 # (see docs/adr/0001-use-material-for-mkdocs-with-uv.md).
 site_name: CarbonOS engineering docs
 site_description: How CarbonOS is built, run, verified, and changed.
-site_url: https://miketak.github.io/carbonos/
+# Served locally for now; point this at the published address when the site
+# gets one. It also sets the path mkdocs serve mounts the site on.
+site_url: http://127.0.0.1:8000/
 repo_url: https://github.com/miketak/carbonos
 repo_name: miketak/carbonos
 edit_uri: edit/main/docs/
@@ -86,7 +88,23 @@ plugins:
 
 nav:
   - Home: index.md
+  - Tutorials:
+      - tutorials/first-week.md
+  - How-to guides:
+      - how-to/set-up-the-dev-environment.md
+      - how-to/run-the-checks.md
+      - how-to/ship-a-change.md
+      - how-to/write-a-spec.md
+      - how-to/add-a-migration.md
+      - how-to/deploy-and-release.md
   - Reference:
+      - reference/index.md
+      - reference/makefile.md
+      - reference/ci.md
+      - reference/backend-modules.md
+      - reference/frontend-structure.md
+      - reference/environments.md
+      - reference/conventions.md
       - Specs:
           - specs/README.md
           - "00 Principles and domain model": specs/00-principles-and-domain-model.md
@@ -144,4 +162,8 @@ nav:
           - adr/0001-use-material-for-mkdocs-with-uv.md
       - Reviews:
           - reviews/2026-09-08-ghg-officer-ui-audit.md
+  - Explanation:
+      - explanation/architecture.md
+      - explanation/spec-workflow.md
+      - explanation/inventory-lifecycle.md
   - Contributing to docs: contributing-to-docs.md

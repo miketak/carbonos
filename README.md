@@ -34,9 +34,9 @@ make docs-serve        # http://127.0.0.1:8000, reloads on save
 make docs-check        # strict build plus prose lint, before a pull request
 ```
 
-Start at `docs/index.md`. The specs under `specs/` and the QA procedures
-under `docs/qa/` are part of the site. `docs/contributing-to-docs.md` is the
-house style.
+Start at `docs/index.md`, or with `docs/tutorials/first-week.md` if you are
+new. The specs under `specs/` and the QA procedures under `docs/qa/` are
+part of the site. `docs/contributing-to-docs.md` is the house style.
 
 ## Tests & quality gates
 
@@ -56,54 +56,9 @@ Trunk-based flow:
   deploys to the Railway **production** environment (optionally gated by a
   required-reviewer rule on the GitHub `production` environment).
 
-### One-time Railway setup
-
-1. Create a Railway project with two environments: `staging` and `production`.
-2. In **each** environment, create three services:
-   - `backend`: root directory `/backend`, builds from its `Dockerfile`
-   - `frontend`: root directory `/frontend`, builds from its `Dockerfile`
-   - PostgreSQL database (Railway plugin/service)
-
-   The root directory setting matters: `railway up` uploads the repo root, and
-   each service picks out its subdirectory from that upload.
-3. Configure `backend` service variables (per environment), using Railway
-   references to the Postgres service:
-   - `DATABASE_URL` = `jdbc:postgresql://${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}`
-   - `DATABASE_USERNAME` = `${{Postgres.PGUSER}}`
-   - `DATABASE_PASSWORD` = `${{Postgres.PGPASSWORD}}`
-   - Set the healthcheck path to `/actuator/health`.
-4. Configure `frontend` service variables (per environment):
-   - `VITE_API_URL` = the backend's public URL (for example `https://backend-staging.up.railway.app`)
-5. Create a **project token** for each environment
-   (Project Settings > Tokens, the token is environment-scoped) and add them as
-   GitHub repository secrets:
-   - `RAILWAY_STAGING_TOKEN`
-   - `RAILWAY_PRODUCTION_TOKEN`
-6. (Recommended) In GitHub > Settings > Environments > `production`, add
-   yourself as a required reviewer so production deploys need manual approval.
-7. Disable Railway's own GitHub auto-deploy for these services. GitHub
-   Actions owns deployment (`railway up`), so double deploys would result.
-
-### Wiping an environment's database
-
-The Railway Postgres services have no public proxy, so the wipe runs `psql`
-inside the Postgres container over `railway ssh`. One-time setup: sign in with
-`railway login` and register a key with
-`railway ssh keys add -k ~/.ssh/id_ed25519.pub`. Then:
-
-```bash
-make db-wipe ENV=staging            # prompts you to type "staging"
-make db-wipe ENV=staging ARGS=--yes # no prompt
-```
-
-The script checks that the container really belongs to the environment you
-named, prints what the database holds, drops and recreates the `public`
-schema, redeploys `backend` so Flyway migrates from V1 and the startup seeder
-recreates the admin, and waits until the health endpoint reports UP. Every
-account, organization and run is gone; the seeded admin is the only user left.
-Production requires `ARGS=--yes-production` and typing `production` at the
-prompt, which cannot be skipped. Locally, `make db-reset` drops the compose
-volumes instead.
+The one-time Railway setup, the environment addresses and variables, and
+the database wipe procedure are in the engineering docs:
+`docs/how-to/deploy-and-release.md` and `docs/reference/environments.md`.
 
 ## Releasing
 
