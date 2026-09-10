@@ -1,0 +1,147 @@
+# CarbonOS engineering docs. Build with `make docs`, serve with `make docs-serve`.
+# The configuration stays portable: Material for MkDocs today, Zensical later
+# (see docs/adr/0001-use-material-for-mkdocs-with-uv.md).
+site_name: CarbonOS engineering docs
+site_description: How CarbonOS is built, run, verified, and changed.
+site_url: https://miketak.github.io/carbonos/
+repo_url: https://github.com/miketak/carbonos
+repo_name: miketak/carbonos
+edit_uri: edit/main/docs/
+docs_dir: docs
+site_dir: site
+
+# docs/specs is a symlink to ../specs; watchdog does not follow symlinks, so
+# live reload needs the real path.
+watch:
+  - specs
+
+# The real docs/qa is served through the docs/reference/qa symlink, where its
+# `../../specs/NN.md` links resolve. Building it in place as well would render
+# every procedure twice and break those links under --strict.
+exclude_docs: |
+  /qa/
+
+not_in_nav: |
+  /specs/TEMPLATE.md
+  /adr/TEMPLATE.md
+
+# Every warning fails `mkdocs build --strict`: a page missing from the nav, a
+# broken relative link, or an unknown anchor.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Reference:
+      - Specs:
+          - specs/README.md
+          - "00 Principles and domain model": specs/00-principles-and-domain-model.md
+          - "01 Identity and access":
+              - specs/01-identity-and-access.md
+              - specs/01.1-access-requests.md
+              - specs/01.2-organization-membership-and-roles.md
+          - "02 Organization and facts":
+              - specs/02-organization-and-facts.md
+              - specs/02.1-emission-factor-library.md
+              - specs/02.2-units-densities-and-custom-units.md
+          - "03 Organizational boundary":
+              - specs/03-organizational-boundary.md
+              - specs/03.1-legal-entities-and-table-1.md
+              - specs/03.2-effective-dated-membership.md
+              - specs/03.3-table-1-completeness.md
+              - specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md
+          - "04 Operational boundary and classification":
+              - specs/04-operational-boundary-and-classification.md
+              - specs/04.1-scope-as-accounting-decision.md
+              - specs/04.2-activity-periods-and-pro-rating.md
+              - specs/04.3-source-streams-and-scope-choice.md
+              - specs/04.4-activity-data-quality-evidence-and-corrections.md
+              - specs/04.5-bulk-import-and-activity-register.md
+          - "05 Inventories and calculation":
+              - specs/05-inventories-and-calculation.md
+              - specs/05.1-inventory-lifecycle-and-run-snapshots.md
+              - specs/05.2-run-numbering-and-voiding.md
+              - specs/05.3-inheritance-and-the-published-record.md
+          - "06 Tracking emissions over time":
+              - specs/06-tracking-emissions-over-time.md
+              - specs/06.1-recalculation-policy-conformance.md
+          - "07 Reporting and verification":
+              - specs/07-reporting-and-verification.md
+              - specs/07.1-reporting-completeness.md
+              - specs/07.2-required-disclosures.md
+              - specs/07.3-scope-2-instrument-coverage.md
+              - specs/07.4-report-tables-factors-and-metadata.md
+              - specs/07.5-report-export.md
+              - specs/07.6-scope2-instrument-criteria-and-scope3-crosscheck.md
+          - "08 Form validation and UI polish": specs/08-form-validation-and-ui-polish.md
+      - QA procedures:
+          - reference/qa/README.md
+          - reference/qa/001-access-and-roles.md
+          - reference/qa/002-organization-setup.md
+          - reference/qa/003-activity-data.md
+          - reference/qa/004-boundary-and-lifecycle.md
+          - reference/qa/005-classification-and-preflight.md
+          - reference/qa/006-scope2-instruments.md
+          - reference/qa/007-runs-reports-and-exports.md
+          - reference/qa/008-publication-and-corrections.md
+          - reference/qa/009-base-year.md
+      - Decision records:
+          - adr/README.md
+          - adr/0001-use-material-for-mkdocs-with-uv.md
+      - Reviews:
+          - reviews/2026-09-08-ghg-officer-ui-audit.md
+  - Contributing to docs: contributing-to-docs.md

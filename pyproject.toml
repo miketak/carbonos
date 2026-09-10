@@ -1,0 +1,13 @@
+[project]
+name = "carbonos-tooling"
+version = "0.0.0"
+description = "Repository-level Python tooling for CarbonOS: the engineering docs site"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+docs = ["mkdocs>=1.6.1,<2", "mkdocs-material>=9.6,<10"]
+
+[tool.uv]
+package = false
+default-groups = ["docs"]

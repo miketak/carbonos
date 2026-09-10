@@ -8,7 +8,7 @@ deployed to Railway. Specs live in `specs/`.
 **Backend: modular monolith via Spring Modulith.**
 
 - Each business capability is one top-level package under `com.carbonos`
-  (= one Spring Modulith module), e.g. `com.carbonos.contact`.
+  (= one Spring Modulith module), for example `com.carbonos.contact`.
 - A module's public API lives in its root package (or a `@NamedInterface`);
   implementation details go in `internal/` sub-packages. Other modules must
   never import another module's internals; `ModularityTests` fails the build
@@ -47,6 +47,24 @@ deployed to Railway. Specs live in `specs/`.
    - Schema changes have a Flyway migration.
    - Spec status/index updated.
 
+## Documentation
+
+Engineering docs live in `docs/` as a Material for MkDocs site organized by
+Diátaxis: `tutorials/`, `how-to/`, `reference/`, `explanation/`, plus
+`docs/adr/` for decision records. `specs/` and `docs/qa/` are part of the
+site through symlinks and stay where they are. `docs/contributing-to-docs.md`
+is the house style (Google developer documentation style, Mermaid diagrams
+with `accTitle` and `accDescr`, front matter `owner` and `last_reviewed`).
+
+- `make docs-serve` serves the site with live reload; `make docs` builds it
+  strictly; `make docs-check` is the Definition of Done for a docs change.
+- A new page, spec, or QA procedure must be added to `nav` in `mkdocs.yml`,
+  or the strict build fails.
+- When a change alters how engineers build, run, verify, or ship the system,
+  update the affected how-to or reference page in the same PR.
+- Tooling and cross-cutting structure decisions get an ADR
+  (`docs/adr/TEMPLATE.md`).
+
 ## Commands
 
 ```bash
@@ -61,6 +79,9 @@ npm run dev                       # dev server on :5173, proxies /api -> :8080
 npm test                          # vitest
 npm run lint && npm run format    # oxlint + prettier
 npm run build                     # type-check + production build
+
+make docs-serve                   # engineering docs on :8000 (needs uv)
+make docs-check                   # strict docs build + Vale
 ```
 
 Java 25 (Temurin) is installed via SDKMAN; non-login shells may need
@@ -84,7 +105,7 @@ set (idempotent; the canonical mechanism for Railway).
   commit messages, PR descriptions, code comments, and UI copy. Use a colon,
   a semicolon, a comma, parentheses, or a full stop instead. En-dashes in
   numeric ranges (`2-3 hours`, `F1-F10`) are fine.
-- The exception is text quoted verbatim from somewhere else, e.g. a product
+- The exception is text quoted verbatim from somewhere else, for example a product
   string a QA script tells a tester to look for. Don't silently alter a quote
   to satisfy the rule; quote the clause before the dash, or describe the rest.
 

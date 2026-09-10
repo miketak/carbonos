@@ -7,11 +7,14 @@ Monorepo for CarbonOS:
 | `backend/`  | Spring Boot 4 modular monolith (Java 25, Maven, PostgreSQL) |
 | `frontend/` | React 19 SPA (TypeScript, Vite)                             |
 | `specs/`    | Feature specifications (spec-first workflow)                |
+| `docs/`     | Engineering docs site (`make docs-serve`) and QA procedures |
+| `Makefile`  | Every day-to-day command; `make help` lists them            |
 | `CLAUDE.md` | Architecture rules, workflow, and Definition of Done        |
 
 ## Getting started
 
-Prerequisites: Docker, Node 22+, JDK 25 (or run Maven through Docker — see `CLAUDE.md`).
+Prerequisites: Docker, Node 22+, JDK 25 through SDKMAN, and uv for the docs
+site. `make help` lists every command.
 
 ```bash
 docker compose up -d                                        # local Postgres
@@ -20,6 +23,20 @@ docker compose up -d                                        # local Postgres
 ```
 
 Health check: http://localhost:8080/actuator/health
+
+## Documentation
+
+The engineering docs explain how the system is built, run, verified, and
+changed. They build from the Markdown in this repository:
+
+```bash
+make docs-serve        # http://127.0.0.1:8000, reloads on save
+make docs-check        # strict build plus prose lint, before a pull request
+```
+
+Start at `docs/index.md`. The specs under `specs/` and the QA procedures
+under `docs/qa/` are part of the site. `docs/contributing-to-docs.md` is the
+house style.
 
 ## Tests & quality gates
 
@@ -32,7 +49,7 @@ Health check: http://localhost:8080/actuator/health
 
 Trunk-based flow:
 
-- **PR → `main`**: `.github/workflows/staging.yml` runs all quality gates.
+- **PR to `main`**: `.github/workflows/staging.yml` runs all quality gates.
 - **Merge to `main`**: same workflow deploys backend + frontend to the Railway
   **staging** environment.
 - **Tag `vX.Y.Z`**: `.github/workflows/production.yml` re-runs the gates and
@@ -43,8 +60,8 @@ Trunk-based flow:
 
 1. Create a Railway project with two environments: `staging` and `production`.
 2. In **each** environment, create three services:
-   - `backend` — root directory `/backend`, builds from its `Dockerfile`
-   - `frontend` — root directory `/frontend`, builds from its `Dockerfile`
+   - `backend`: root directory `/backend`, builds from its `Dockerfile`
+   - `frontend`: root directory `/frontend`, builds from its `Dockerfile`
    - PostgreSQL database (Railway plugin/service)
 
    The root directory setting matters: `railway up` uploads the repo root, and
@@ -56,16 +73,16 @@ Trunk-based flow:
    - `DATABASE_PASSWORD` = `${{Postgres.PGPASSWORD}}`
    - Set the healthcheck path to `/actuator/health`.
 4. Configure `frontend` service variables (per environment):
-   - `VITE_API_URL` = the backend's public URL (e.g. `https://backend-staging.up.railway.app`)
+   - `VITE_API_URL` = the backend's public URL (for example `https://backend-staging.up.railway.app`)
 5. Create a **project token** for each environment
-   (Project Settings → Tokens, token is environment-scoped) and add them as
+   (Project Settings > Tokens, the token is environment-scoped) and add them as
    GitHub repository secrets:
    - `RAILWAY_STAGING_TOKEN`
    - `RAILWAY_PRODUCTION_TOKEN`
-6. (Recommended) In GitHub → Settings → Environments → `production`, add
+6. (Recommended) In GitHub > Settings > Environments > `production`, add
    yourself as a required reviewer so production deploys need manual approval.
-7. Disable Railway's own GitHub auto-deploy for these services — GitHub
-   Actions owns deployment (`railway up`), so double-deploys would result.
+7. Disable Railway's own GitHub auto-deploy for these services. GitHub
+   Actions owns deployment (`railway up`), so double deploys would result.
 
 ### Wiping an environment's database
 
