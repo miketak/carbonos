@@ -34,8 +34,8 @@ export function RequestAccessModal({ onClose }: { onClose: () => void }) {
     return (
       <Modal title="Request received" onClose={onClose}>
         <p className="text-sm text-ink-muted">
-          Thanks, {displayName.trim() || 'there'} — your request is with our team. Once it's
-          approved you'll get an email at <strong>{email}</strong> with a link to set your password.
+          Thanks, {displayName.trim() || 'there'}. Your request is with our team. Once it's approved
+          you'll get an email at <strong>{email}</strong> with a link to set your password.
         </p>
         <div className="mt-6 flex justify-end">
           <Button onClick={onClose}>Done</Button>

@@ -33,8 +33,10 @@ records, the import, evidence or the register.
    Measured, tier **1**, uncertainty 2.
 
 **Expected result:** the row shows the period, the stream under the
-activity, "Tier 1 · Measured" and "±2%". The period start cannot be after
-today, and the end cannot precede the start.
+activity, "Tier 1 · Measured" and "±2%". A period start after today is
+refused under the date fields ("The period start cannot be after
+today."), and an end before the start with "Must not be before the period
+start.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -55,7 +57,9 @@ Verdict: ☐ pass ☐ fail. Notes:
    quality **Estimated**, tier left as "Follow the method".
 
 **Expected result:** the row shows Tier 4 · Estimated. Recording the same
-facts again with quality Calculated shows Tier 3.
+facts again with quality Calculated shows Tier 3. (Both records stay;
+procedure 5 classifies both and procedure 7 expects the two tiers in the
+data-quality table.)
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -65,7 +69,9 @@ Verdict: ☐ pass ☐ fail. Notes:
    **Unregistered unit…** and typed `tonne ANFO`, 2025-08-31.
 
 **Expected result:** the form says an unregistered unit only matches a
-factor in the identical unit and points to **Units**. The record saves.
+factor in the identical unit and to define it under Units as a multiple
+of a registered one. The record saves and the row reads "8,400 tonne
+ANFO".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -73,8 +79,8 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. Record: S1, "Diesel in drums", 5 **drum**, 2025-04-01.
 
-**Expected result:** the unit picker offers drum with its definition
-`1 drum = 200 litre`; the record saves.
+**Expected result:** the unit picker offers "Drum (200 L) (drum), 1 drum =
+200 litre"; the record saves.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -99,9 +105,10 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Record a duplicate of the camp LPG record, then click **Remove** on it.
 2. Confirm with the reason "Entered twice from the same log".
 
-**Expected result:** the dialog refuses an empty reason; after the reason,
-the record leaves the list. (Procedure 5 shows an inventory that had
-reviewed it excluding it as a removed record.)
+**Expected result:** the dialog keeps Remove disabled until a reason is
+typed; after the reason, the record leaves the list ("Activity removed.").
+(Procedure 5 shows an inventory that had reviewed it excluding it as a
+removed record.)
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -109,8 +116,9 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 1. On **Facilities**, try to remove S1 with a reason.
 
-**Expected result:** refused with a message that it has recorded activity
-data.
+**Expected result:** refused with "'Obuasi Ridge Open Pit' has recorded
+activity data. Facts are the audit trail: remove or reassign its activity
+records before deleting the facility.".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -125,8 +133,9 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 **Expected result:** the two files and the link are listed with your email
 and the date; the file names download; the link opens in a new tab. The
-binary is refused with a message naming the accepted types. The record's
-row now says "3 attachments".
+binary is refused with "Attach a PDF, an image (PNG, JPEG, WebP), a
+spreadsheet (XLSX, XLS, CSV) or a text file." The record's row now says
+"3 attachments".
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -135,7 +144,7 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Copy a file's download URL from the dialog.
 2. Open it in a context signed in as a user who is not a member.
 
-**Expected result:** not found.
+**Expected result:** not found (a 404 problem detail).
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -153,16 +162,21 @@ Verdict: ☐ pass ☐ fail. Notes:
 
 ### D2. A file with a bad row imports nothing
 
-1. In the spreadsheet, fill twelve rows: one per month of 2025 for S2,
-   stream Mill grid supply, "Mill grid electricity", 4000 MWh each, period
-   the whole month, source "ECG invoice", evidence `ECG-2025-MM`, quality
-   MEASURED, tier 1.
+1. In the spreadsheet, fill twelve rows: one per month of **2024** for
+   S2, stream Mill grid supply, "Mill grid electricity", 4000 MWh plus the
+   month number (4001 for January, 4012 for December, so E1 has
+   quantities to sort), period the whole month, source "ECG invoice",
+   evidence `ECG-2024-MM`, quality MEASURED, tier 1. (2024, not 2025: the
+   2025 inventories of the later procedures exclude these rows as outside
+   the reporting period, so the July 2025 record of procedure 5 stays the
+   mill's only 2025 electricity and the scope 2 arithmetic of procedures 6
+   and 7 holds.)
 2. In row 5, replace the quantity with `4,0O0` (a letter O). Save as CSV
    and import it.
 
-**Expected result:** "Nothing imported: 1 row rejected", naming row 6 (the
-header is row 1) and "quantity '4,0O0' is not a number". The register is
-unchanged.
+**Expected result:** "Nothing imported: 1 row rejected. Fix them and
+upload the file again.", naming row 6 (the header is row 1) and
+"quantity '4,0O0' is not a number". The register is unchanged.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -171,8 +185,10 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Fix row 5 and import the file.
 2. Import the same file again.
 
-**Expected result:** "12 records imported". The second import rejects all
-twelve rows as duplicates and imports nothing.
+**Expected result:** the dialog closes and the register grows by twelve.
+The second import rejects all twelve rows ("duplicate: the same facility,
+activity, quantity, unit and period already exist on file or earlier in
+this file") and imports nothing.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -181,8 +197,8 @@ Verdict: ☐ pass ☐ fail. Notes:
 1. Import a one-row file whose facility is "Obuasi Depot" and whose stream
    is "Gensets".
 
-**Expected result:** rejected, naming the facility that does not exist
-(the stream is checked only once the facility resolves).
+**Expected result:** rejected with "no facility named 'Obuasi Depot'" (the
+stream is checked only once the facility resolves).
 
 Verdict: ☐ pass ☐ fail. Notes:
 
@@ -194,20 +210,24 @@ Verdict: ☐ pass ☐ fail. Notes:
 2. Clear it, choose facility S2 and stream Mill grid supply.
 3. Sort by quantity and flip the direction.
 
-**Expected result:** the search narrows the list to the LPG record; the
-filters show the twelve imported rows; the sort reorders them and the
-direction button flips the order.
+**Expected result:** the search narrows the list to the two camp LPG
+records; the filters show the twelve imported rows (once a facility is
+chosen the stream list shows only that facility's streams); the sort
+reorders them by quantity and the direction button (labelled "Sort
+ascending" or "Sort descending") flips the order.
 
 Verdict: ☐ pass ☐ fail. Notes:
 
 ### E2. Paging
 
-1. Import a file of 60 more rows (any facility, distinct evidence
-   references so none is a duplicate).
+1. Import a file of 60 more rows (any facility, periods in 2024 so the
+   later procedures exclude them, distinct evidence references so none is
+   a duplicate).
 2. Clear the filters.
 
-**Expected result:** the register shows 50 rows, "page 1 of 2", and
-**Next** shows the rest. The overview's record count matches the total.
+**Expected result:** the register shows 50 rows and the footer "77
+records, page 1 of 2"; **Next** shows the remaining 27. (The overview
+shows a tick on "Record activity data", not a count.)
 
 Verdict: ☐ pass ☐ fail. Notes:
 

@@ -39,7 +39,7 @@ class AccessRequestEmails {
 				%s/set-password?token=%s
 
 				Measure. Certify. Sustain.
-				— The ECORIV team
+				The ECORIV team
 				""".formatted(event.displayName(), appBaseUrl, event.setupToken()));
 	}
 
@@ -52,7 +52,7 @@ class AccessRequestEmails {
 				to grant access at this time. You are welcome to request access again
 				in the future.
 
-				— The ECORIV team
+				The ECORIV team
 				""".formatted(event.displayName()));
 	}
 

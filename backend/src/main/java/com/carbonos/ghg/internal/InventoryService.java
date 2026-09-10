@@ -1369,9 +1369,10 @@ public class InventoryService {
 				continue;
 			}
 			var activity = assignment.getActivity();
+			// a removed record stays out for good (spec 04.4); only period and boundary reasons can lapse
 			var inPeriod = inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd());
-			var stillOutside = !inPeriod || !membership(treatments, approach, activity.getFacility().getId(),
-					activity.getPeriodStart(), activity.getPeriodEnd()).member();
+			var stillOutside = activity.isDeleted() || !inPeriod || !membership(treatments, approach,
+					activity.getFacility().getId(), activity.getPeriodStart(), activity.getPeriodEnd()).member();
 			if (!stillOutside) {
 				completenessFindings.add(new Finding(Severity.WARNING,
 						"'" + activity.getActivityType() + "' (" + activity.period().describe()

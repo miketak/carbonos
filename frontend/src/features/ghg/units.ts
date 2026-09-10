@@ -53,7 +53,7 @@ export function unitDimension(units: Unit[], code: string): Dimension | null {
 /**
  * Converts a quantity between two registered units of the same dimension,
  * mirroring the backend (qty × toCanonical(from) / toCanonical(to)). Returns
- * null when either unit is custom or they differ in dimension — the caller then
+ * null when either unit is custom or they differ in dimension; the caller then
  * shows no preview and relies on the backend to reconcile.
  */
 export function convertQuantity(

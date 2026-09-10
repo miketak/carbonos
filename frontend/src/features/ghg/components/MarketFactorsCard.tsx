@@ -5,7 +5,7 @@ import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { useToast } from '../../../components/toast'
 import { fieldErrors, problemDetail } from '../../../lib/api'
-import { checkNumber, collectErrors } from '../../../lib/validate'
+import { checkNumber, collectErrors, withoutError } from '../../../lib/validate'
 import { instrumentLabels } from '../format'
 import {
   useFacilitiesQuery,
@@ -75,6 +75,28 @@ export function MarketFactorsCard({
 
   const chosenFacility = facilityId || facilities[0]?.id || ''
   const errors = clientErrors ?? fieldErrors(set.error)
+
+  /** Loads a recorded instrument into the form; saving replaces it (one per facility). */
+  const edit = (entry: MarketFactor) => {
+    setFacilityId(entry.facilityId)
+    setInstrument(entry.instrumentType)
+    setFactor(String(entry.kgCo2ePerKwh))
+    setSource(entry.source)
+    setCriteria(
+      entry.criteria.map((criterion) =>
+        criterion.answer === 'MET' ? true : criterion.answer === 'NOT_MET' ? false : null,
+      ),
+    )
+    setCertificateId(entry.certificateId ?? '')
+    setRegistry(entry.registry ?? '')
+    setVintage(entry.vintage === null ? '' : String(entry.vintage))
+    setRetirementDate(entry.retirementDate ?? '')
+    setQualityNotes(entry.qualityNotes ?? '')
+    setCoveredMwh(entry.coveredKwh === null ? '' : String(entry.coveredKwh / 1000))
+    setPeriodStart(entry.periodStart ?? '')
+    setPeriodEnd(entry.periodEnd ?? '')
+    setClientErrors(undefined)
+  }
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -212,6 +234,16 @@ export function MarketFactorsCard({
                     {editable && (
                       <Button
                         variant="ghost"
+                        className="px-2 py-1 text-xs"
+                        aria-label={`Edit instrument for ${entry.facilityName}`}
+                        onClick={() => edit(entry)}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    {editable && (
+                      <Button
+                        variant="ghost"
                         className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                         aria-label={`Remove instrument for ${entry.facilityName}`}
                         onClick={() =>
@@ -267,7 +299,10 @@ export function MarketFactorsCard({
             min="0"
             step="0.000001"
             value={factor}
-            onChange={(event) => setFactor(event.target.value)}
+            onChange={(event) => {
+              setFactor(event.target.value)
+              setClientErrors((current) => withoutError(current, 'kgCo2ePerKwh'))
+            }}
             error={errors?.kgCo2ePerKwh}
             required
           />
@@ -284,7 +319,10 @@ export function MarketFactorsCard({
             min="0.001"
             step="0.001"
             value={coveredMwh}
-            onChange={(event) => setCoveredMwh(event.target.value)}
+            onChange={(event) => {
+              setCoveredMwh(event.target.value)
+              setClientErrors((current) => withoutError(current, 'coveredKwh'))
+            }}
             error={errors?.coveredKwh}
             hint="The megawatt-hours the instrument covers; the balance takes the residual mix or grid average."
             required
@@ -321,7 +359,10 @@ export function MarketFactorsCard({
             min="1990"
             max="2100"
             value={vintage}
-            onChange={(event) => setVintage(event.target.value)}
+            onChange={(event) => {
+              setVintage(event.target.value)
+              setClientErrors((current) => withoutError(current, 'vintage'))
+            }}
             error={errors?.vintage}
           />
           <InputField
@@ -449,7 +490,10 @@ function ResidualMix({ inventory, editable }: { inventory: Inventory; editable: 
         step="0.000001"
         value={factor}
         disabled={!editable || available !== 'true'}
-        onChange={(event) => setFactor(event.target.value)}
+        onChange={(event) => {
+          setFactor(event.target.value)
+          setFactorError(undefined)
+        }}
         error={factorError ?? fieldErrors(set.error)?.kgCo2ePerKwh}
       />
       {editable && (

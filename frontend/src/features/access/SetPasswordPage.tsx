@@ -73,8 +73,8 @@ export function SetPasswordPage() {
         {token === '' || infoQuery.isError ? (
           <div className="text-center">
             <p className="text-sm text-ink-muted">
-              This link is invalid or has expired. Access links are valid for 7 days — you can
-              always request access again.
+              This link is invalid or has expired. Access links are valid for 7 days; you can always
+              request access again.
             </p>
             <Link
               to="/"
@@ -91,7 +91,7 @@ export function SetPasswordPage() {
         ) : (
           <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
             <p className="text-sm text-ink-muted">
-              Welcome, <strong>{infoQuery.data.displayName}</strong> — choose a password for{' '}
+              Welcome, <strong>{infoQuery.data.displayName}</strong>. Choose a password for{' '}
               <strong>{infoQuery.data.email}</strong>.
             </p>
             <InputField

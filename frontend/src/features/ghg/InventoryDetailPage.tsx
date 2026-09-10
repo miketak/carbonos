@@ -12,6 +12,7 @@ import { AssignmentsSection } from './components/AssignmentsSection'
 import { ApproachBadge, InventoryStatusBadge } from './components/badges'
 import { BoundarySection } from './components/BoundarySection'
 import { Breadcrumb } from './components/Breadcrumb'
+import { InventoryFormModal } from './components/InventoryFormModal'
 import { LifecycleBar } from './components/LifecycleBar'
 import { MarketFactorsCard } from './components/MarketFactorsCard'
 import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
@@ -38,6 +39,8 @@ export function InventoryDetailPage() {
   const inventoryQuery = useInventoryQuery(inventoryId)
   const boundaryQuery = useBoundaryQuery(inventoryId)
   const inheritanceQuery = useInheritanceQuery(inventoryId)
+  const toast = useToast()
+  const [editing, setEditing] = useState(false)
 
   if (inventoryQuery.isPending) {
     return (
@@ -84,6 +87,16 @@ export function InventoryDetailPage() {
           <span className="inline-block rounded-full border border-teal/20 px-2.5 py-0.5 font-mono text-xs font-bold tracking-widest whitespace-nowrap text-ink-muted">
             GWP {inventory.gwpSet}
           </span>
+          {editable && (
+            <Button
+              variant="ghost"
+              className="px-3 py-1 text-xs"
+              onClick={() => setEditing(true)}
+              title="Name, period, purpose, straddle treatment, approach and GWP set"
+            >
+              Edit inventory
+            </Button>
+          )}
         </div>
         <p className="mt-1 text-sm text-ink-muted">
           {inventory.periodStart} → {inventory.periodEnd}
@@ -129,6 +142,17 @@ export function InventoryDetailPage() {
       <div className="animate-fade-up" style={{ '--stagger': 1 } as CSSProperties}>
         <LifecycleBar inventory={inventory} inBoundaryCount={inBoundaryCount} />
       </div>
+      {editing && (
+        <InventoryFormModal
+          organizationId={organizationId}
+          inventory={inventory}
+          onClose={() => setEditing(false)}
+          onSaved={(message) => {
+            setEditing(false)
+            toast(message)
+          }}
+        />
+      )}
       <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
         <BoundarySection inventory={inventory} />
       </div>

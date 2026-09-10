@@ -221,6 +221,7 @@ export function EmissionFactorsPage() {
                   <Button
                     variant="ghost"
                     className="px-3 py-1 text-xs"
+                    aria-label={`Import pack ${pack.name}`}
                     busy={importPack.isPending && importPack.variables === pack.id}
                     onClick={() =>
                       importPack.mutate(pack.id, {

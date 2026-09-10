@@ -10,7 +10,7 @@ export function useProfileQuery() {
   return useQuery({ queryKey: profileQueryKey, queryFn: getProfile })
 }
 
-/** The avatar as a Blob (null when none) — fetched, not <img src>, so the
+/** The avatar as a Blob (null when none); fetched, not <img src>, so the
  * session cookie always rides along and invalidation busts the cache. */
 export function useAvatarQuery(enabled: boolean) {
   return useQuery({ queryKey: avatarQueryKey, queryFn: fetchAvatar, enabled, retry: false })
@@ -25,7 +25,7 @@ function useProfileMutation<TInput>(
     mutationFn,
     onSuccess: (profile) => {
       queryClient.setQueryData(profileQueryKey, profile)
-      // the header shows the session's displayName — keep it fresh
+      // the header shows the session's displayName; keep it fresh
       void queryClient.invalidateQueries({ queryKey: sessionQueryKey })
       if (invalidateAvatar) void queryClient.invalidateQueries({ queryKey: avatarQueryKey })
     },
