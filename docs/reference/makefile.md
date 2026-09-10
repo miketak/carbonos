@@ -26,6 +26,7 @@ does the same.
 | `docs-serve` | Serves the docs on http://127.0.0.1:8000 with live reload. | uv |
 | `docs-check` | `docs`, then `vale`. The Definition of Done for a docs change. | uv, Vale (optional) |
 | `vale [BASE=<ref>]` | Runs Vale on the Markdown changed against `BASE` (default `origin/main`), including untracked files. Skips when Vale is not installed. | Vale |
+| `qa-docs` | Exports the QA procedures as DOCX under `build/qa-docs/`, ready to upload to the QA team's Drive folder. | uv, pandoc |
 
 Targets that need an argument refuse to run without it and print their
 usage. The Python environment for the docs targets is created under

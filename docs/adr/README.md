@@ -44,3 +44,4 @@ form.
 | Number | Title | Status | Date |
 | --- | --- | --- | --- |
 | [0001](0001-use-material-for-mkdocs-with-uv.md) | Use Material for MkDocs, managed by uv, for the engineering docs | accepted | 2026-09-09 |
+| [0002](0002-publish-qa-procedures-to-google-docs-with-pandoc.md) | Publish the QA procedures to Google Docs with pandoc and the Drive API | proposed | 2026-09-10 |
