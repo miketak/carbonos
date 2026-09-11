@@ -1,16 +1,17 @@
-# Staging pipeline (trunk-based):
-#   - Pull requests to main  -> quality gates only (build + tests, no deploy)
-#   - Push to main           -> quality gates, then deploy to Railway "staging" environment
-name: Staging
+# CI (trunk-based): the quality gates, and nothing else.
+#   - Every pull request, whatever its base -> backend and frontend checks
+#   - Push to main                          -> the same checks
+# Nothing deploys from main. Releases are tags: a release candidate
+# (v1.2.3-rc.4) runs qa.yml, the version tag (v1.2.3) runs release.yml.
+name: CI
 
 on:
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 
 concurrency:
-  group: staging-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -53,24 +54,3 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
-
-  deploy-staging:
-    name: Deploy to Railway (staging)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [backend-checks, frontend-checks]
-    runs-on: ubuntu-latest
-    environment:
-      name: staging
-    env:
-      # Railway project token scoped to the "staging" environment
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-      # Run from the repo root: the CLI uploads the current directory, and each
-      # Railway service selects its subdirectory via its rootDirectory setting.
-      - name: Deploy backend
-        run: railway up --service backend --ci
-      - name: Deploy frontend
-        run: railway up --service frontend --ci

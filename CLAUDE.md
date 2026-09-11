@@ -112,12 +112,14 @@ set (idempotent; the canonical mechanism for Railway).
 ## Git & releases
 
 - Trunk-based: short-lived branches → PR → `main`. Direct pushes to `main`
-  are for the repo owner only; everything else goes through a PR so the
-  staging workflow's checks run.
+  are for the repo owner only; everything else goes through a PR so the CI
+  checks run. The ruleset requires the two check jobs and a PR to merge.
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
-- Merge to `main` ⇒ auto-deploy to Railway **staging**.
-- Tag `vX.Y.Z` ⇒ deploy to Railway **production** (gated by the GitHub
-  `production` environment).
+- Merge to `main` ⇒ CI only. Nothing deploys from `main`.
+- Tag `vX.Y.Z-rc.N` ⇒ deploy to Railway **qa** (the testers' environment).
+  Approving the `qa-signoff` job tags `vX.Y.Z` and starts the Release run.
+- Tag `vX.Y.Z` ⇒ deploy to Railway **staging** (the rehearsal), then
+  **production** after the approval on the GitHub `production` environment.
 - CI must be green before merging; never merge with failing checks.
 
 ## Versions

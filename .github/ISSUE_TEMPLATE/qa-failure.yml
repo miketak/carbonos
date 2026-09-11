@@ -35,7 +35,7 @@ body:
     id: version
     attributes:
       label: Version tested
-      description: The line under the document's title, for example "Version v0.6.0 (5b27661), built 2026-09-10".
+      description: The line under the document's title, for example "Version v0.7.0-rc.1 (5b27661), built 2026-09-10".
     validations:
       required: true
   - type: textarea

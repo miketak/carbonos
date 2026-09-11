@@ -1,21 +1,22 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-11
 ---
 
 # Ship a change
 
 CarbonOS is trunk-based: short-lived branches, a pull request into `main`,
-green checks, a squash merge, and an automatic deploy to staging. This guide
-takes one change through that path.
+green checks, a squash merge. The merge deploys nothing; the change reaches
+the testers with the next release candidate tag. This guide takes one
+change through that path.
 
 ```mermaid
 flowchart LR
-    accTitle: How a change reaches staging
-    accDescr: A branch becomes a pull request, CI runs the checks, a squash merge lands on main, and the merge deploys to staging.
+    accTitle: How a change reaches main and then qa
+    accDescr: A branch becomes a pull request, CI runs the checks, a squash merge lands on main, and the next release candidate tag deploys main to qa.
     branch[Branch from main] --> pr[Pull request] --> ci{Checks green?}
     ci -- no --> fix[Fix and push] --> ci
-    ci -- yes --> merge[Squash merge] --> staging[Deploy to staging]
+    ci -- yes --> merge[Squash merge] --> rc[Next rc tag deploys qa]
 ```
 
 ## Before you begin
@@ -70,19 +71,16 @@ flowchart LR
 2. In the description, say what the change does, which spec it implements,
    and how you verified it.
 3. Wait for the checks. The backend check takes the longest, about ten
-   minutes.
+   minutes. Checks run on every pull request, whichever branch it targets,
+   so a stacked pull request is checked too.
 
-    A red check blocks the merge. Fix the cause and push; the checks run
-    again.
+    A red check blocks the merge: the ruleset on `main` requires both
+    check jobs. Fix the cause and push; the checks run again.
 
 ## Merge
 
 1. Squash-merge the pull request. The squash keeps `main` at one commit
-   per change.
-2. Within a few minutes, the `Staging` workflow deploys the backend and
-   the frontend to the Railway staging environment.
-3. Open the staging frontend and confirm your change is there. See
-   [Environments](../reference/environments.md) for the addresses.
-
-Releases to production are a separate step; see
-[Deploy and release](deploy-and-release.md).
+   per change. `CI` runs once more on `main`; nothing deploys.
+2. The change reaches the testers when the next release candidate is
+   tagged, and reaches staging and production when that candidate is
+   approved. See [Deploy and release](deploy-and-release.md).

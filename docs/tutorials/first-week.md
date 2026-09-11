@@ -114,7 +114,9 @@ do what a user does, with the QA procedures as your script.
 3. Follow [Ship a change](../how-to/ship-a-change.md): a branch, a
    conventional commit, a pull request, green checks, a squash merge.
 
-    Within a few minutes of the merge, the change is on staging.
+    The merge deploys nothing; the change reaches the testers with the
+    next release candidate tag. See
+    [Deploy and release](../how-to/deploy-and-release.md).
 
 ## Day 5: pick real work
 

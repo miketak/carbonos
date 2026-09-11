@@ -47,21 +47,25 @@ part of the site. `docs/contributing-to-docs.md` is the house style.
 
 ## Deployment (Railway)
 
-Trunk-based flow:
+Trunk-based flow with tagged releases:
 
-- **PR to `main`**: `.github/workflows/staging.yml` runs all quality gates.
-- **Merge to `main`**: same workflow deploys backend + frontend to the Railway
-  **staging** environment.
-- **Tag `vX.Y.Z`**: `.github/workflows/production.yml` re-runs the gates and
-  deploys to the Railway **production** environment (optionally gated by a
-  required-reviewer rule on the GitHub `production` environment).
+- **Any PR**: `.github/workflows/ci.yml` runs all quality gates. Merging to
+  `main` runs them again and deploys nothing.
+- **Tag `vX.Y.Z-rc.N`**: `.github/workflows/qa.yml` re-runs the gates, deploys
+  the Railway **qa** environment for the testers, then waits for the QA
+  sign-off approval, which tags `vX.Y.Z`.
+- **Tag `vX.Y.Z`**: `.github/workflows/release.yml` re-runs the gates, deploys
+  the Railway **staging** environment as a rehearsal, then deploys
+  **production** after the approval on the GitHub `production` environment.
 
 The one-time Railway setup, the environment addresses and variables, and
-the database wipe procedure are in the engineering docs:
+the database wipe and copy procedures are in the engineering docs:
 `docs/how-to/deploy-and-release.md` and `docs/reference/environments.md`.
 
 ## Releasing
 
 ```bash
-git tag v0.1.0 && git push origin v0.1.0
+git tag v0.7.0-rc.1 && git push origin v0.7.0-rc.1   # to qa
+# testers approve; approve the qa-signoff job: it tags v0.7.0 and deploys staging
+# approve the production job on the Release run
 ```

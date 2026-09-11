@@ -1,0 +1,111 @@
+# Release pipeline: a version tag (v1.2.3) re-runs the quality gates, deploys
+# the tagged commit to Railway "staging" (the production rehearsal), then waits
+# on the GitHub "production" environment; approving that job deploys
+# production. The QA workflow creates the tag and starts this run after the
+# QA sign-off; a tag pushed by hand starts it too.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: Release / the ref is a version tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the ref
+        run: |
+          case "${GITHUB_REF}" in
+            refs/tags/v[0-9]*.[0-9]*.[0-9]*) echo "Releasing ${GITHUB_REF_NAME}." ;;
+            *) echo "::error::Run the Release workflow on a version tag (v1.2.3), not on ${GITHUB_REF}."; exit 1 ;;
+          esac
+
+  backend-checks:
+    name: Backend / build & test
+    needs: guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Build and test (includes ModularityTests)
+        working-directory: backend
+        run: ./mvnw -B verify
+
+  frontend-checks:
+    name: Frontend / lint, test & build
+    needs: guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+      - name: Check formatting
+        working-directory: frontend
+        run: npm run format:check
+      - name: Test
+        working-directory: frontend
+        run: npm test
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  deploy-staging:
+    name: Deploy to Railway (staging)
+    needs: [backend-checks, frontend-checks]
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    env:
+      # Railway project token scoped to the "staging" environment
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      # Run from the repo root: the CLI uploads the current directory, and each
+      # Railway service selects its subdirectory via its rootDirectory setting.
+      - name: Deploy backend
+        run: railway up --service backend --ci
+      - name: Deploy frontend
+        run: railway up --service frontend --ci
+      - name: Summary
+        run: echo "${GITHUB_REF_NAME} is on staging. Approve the production job once the rehearsal passes." >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-production:
+    name: Deploy to Railway (production)
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    # the required reviewer on this environment gates the production deploy
+    environment:
+      name: production
+    env:
+      # Railway project token scoped to the "production" environment
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy backend
+        run: railway up --service backend --ci
+      - name: Deploy frontend
+        run: railway up --service frontend --ci

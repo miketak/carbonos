@@ -1,13 +1,15 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-11
 ---
 
 # Environments
 
-CarbonOS runs in three places: your machine, the Railway staging
-environment that every merge to `main` deploys to, and the Railway
-production environment that a version tag deploys to.
+CarbonOS runs in four places: your machine, the Railway qa environment
+that a release candidate tag deploys to for the testers, the Railway
+staging environment that the approved version deploys to as a rehearsal,
+and the Railway production environment that a second approval deploys to.
+Nothing deploys from a merge to `main`.
 
 ```mermaid
 flowchart LR
@@ -20,18 +22,20 @@ flowchart LR
     be --> smtp["SMTP (Gmail)"]
 ```
 
-## The three environments
+## The four environments
 
-| | Local | Staging | Production |
-| --- | --- | --- | --- |
-| Frontend | http://localhost:5173 | https://frontend-staging-2e61.up.railway.app | https://frontend-production-3228.up.railway.app |
-| Backend | http://localhost:8080 | https://backend-staging-641b.up.railway.app | https://backend-production-14df8.up.railway.app |
-| Deployed by | you | merge to `main` | tag `v*` with approval |
-| Database | compose Postgres 17 on 5433 | Railway Postgres | Railway Postgres |
-| Object storage | MinIO on 9000 | Railway bucket | Railway bucket |
-| Mail | Mailpit on 1025, UI on 8025 | Gmail SMTP | Gmail SMTP |
-| Administrator | `make admin` | seeded from variables | seeded from variables |
-| Wipe | `make db-reset` | `make db-wipe ENV=staging` | `make db-wipe ENV=production ARGS=--yes-production` |
+| | Local | QA | Staging | Production |
+| --- | --- | --- | --- | --- |
+| Frontend | http://localhost:5173 | see the Railway dashboard until the domain is recorded here | https://frontend-staging-2e61.up.railway.app | https://frontend-production-3228.up.railway.app |
+| Backend | http://localhost:8080 | see the Railway dashboard | https://backend-staging-641b.up.railway.app | https://backend-production-14df8.up.railway.app |
+| Deployed by | you | tag `vX.Y.Z-rc.N` | the QA sign-off, which tags `vX.Y.Z` | approval of the production job on that run |
+| Who uses it | you | the testers | a rehearsal of the release | nobody yet |
+| Database | compose Postgres 17 on 5433 | Railway Postgres | Railway Postgres | Railway Postgres |
+| Object storage | MinIO on 9000 | Railway bucket | Railway bucket | Railway bucket |
+| Mail | Mailpit on 1025, UI on 8025 | Gmail SMTP | Gmail SMTP | Gmail SMTP |
+| Administrator | `make admin` | seeded from variables | seeded from variables | seeded from variables |
+| Wipe | `make db-reset` | `make db-wipe ENV=qa` | `make db-wipe ENV=staging` | `make db-wipe ENV=production ARGS=--yes-production` |
+| Copy from another | | `make env-copy FROM=staging TO=qa` | | never a target |
 
 Health for any backend is `GET /actuator/health`.
 
