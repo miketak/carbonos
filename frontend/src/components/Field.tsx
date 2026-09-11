@@ -1,5 +1,10 @@
 import { useId } from 'react'
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
+import type {
+  ComponentPropsWithRef,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react'
 
 const controlClasses =
   'w-full rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-dark-teal transition-colors duration-150 placeholder:text-ink-muted focus:border-bright-teal focus:ring-2 focus:ring-bright-teal/40 focus:outline-none disabled:opacity-50'
@@ -29,7 +34,7 @@ function FieldShell({ label, error, hint, htmlFor, children }: FieldShellProps) 
   )
 }
 
-interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputFieldProps extends ComponentPropsWithRef<'input'> {
   label: string
   error?: string
   hint?: string
@@ -59,6 +64,28 @@ export function SelectField({ label, error, hint, id, children, ...props }: Sele
       <select id={fieldId} className={controlClasses} aria-invalid={!!error} {...props}>
         {children}
       </select>
+    </FieldShell>
+  )
+}
+
+interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label: string
+  error?: string
+  hint?: string
+}
+
+export function TextAreaField({ label, error, hint, id, ...props }: TextAreaFieldProps) {
+  const generatedId = useId()
+  const fieldId = id ?? generatedId
+  return (
+    <FieldShell label={label} error={error} hint={hint} htmlFor={fieldId}>
+      <textarea
+        id={fieldId}
+        className={controlClasses}
+        aria-invalid={!!error}
+        rows={3}
+        {...props}
+      />
     </FieldShell>
   )
 }

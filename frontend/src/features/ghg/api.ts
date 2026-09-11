@@ -376,20 +376,41 @@ export interface DensityInput {
   note?: string
 }
 
+/** Where a record stands on its way to review (spec 04.6): computed, never set. */
+export type ActivityStatus = 'READY' | 'NEEDS_ATTENTION' | 'DRAFT'
+
+/** What a record still lacks (spec 04.6); the last one is informational and leaves the status alone. */
+export type ReadinessIssue =
+  | 'MISSING_QUANTITY'
+  | 'MISSING_UNIT'
+  | 'MISSING_PERIOD'
+  | 'NO_STREAM'
+  | 'NO_DATA_SOURCE'
+  | 'NO_EVIDENCE'
+  | 'EVIDENCE_REFERENCE_ONLY'
+
 /** An organizational fact: no scope, category, or factor (spec 05). */
 export interface Activity {
   id: string
+  /** The human-readable number, unique in the organization: ACT-0001 (spec 04.6). */
+  recordNo: number
+  recordRef: string
+  /** A draft is a hand-entered stub that may still lack quantity, unit or period (spec 04.6). */
+  draft: boolean
+  status: ActivityStatus
+  issues: ReadinessIssue[]
   facilityId: string
   facilityName: string
   /** The source stream the record belongs to (spec 04.3); optional. */
   streamId: string | null
   streamName: string | null
   activityType: string
-  quantity: number
-  unit: string
+  /** Null only on a draft that has none yet (spec 04.6). */
+  quantity: number | null
+  unit: string | null
   /** The period the quantity was consumed or emitted over; a reading is a one-day period (spec 04.2). */
-  periodStart: string
-  periodEnd: string
+  periodStart: string | null
+  periodEnd: string | null
   dataSource: string | null
   evidenceRef: string | null
   dataQuality: DataQuality
@@ -405,6 +426,10 @@ export interface Activity {
   removeReason: string | null
   evidenceCount: number
   revisionCount: number
+  /** The CSV import the record came from and its row in that file (spec 04.6). */
+  importBatchId: string | null
+  importRow: number | null
+  createdAt: string
 }
 
 /** A file or link attached to a record or an instrument (spec 04.4). */
@@ -422,7 +447,8 @@ export interface Evidence {
 /** One correction or the removal of a record: who, when, why, each field's old and new value (spec 04.4). */
 export interface ActivityRevision {
   id: string
-  kind: 'CORRECTED' | 'REMOVED'
+  /** ENTERED is a draft entered as a fact (spec 04.6). */
+  kind: 'CORRECTED' | 'REMOVED' | 'ENTERED'
   reason: string
   changes: { field: string; before: string | null; after: string | null }[]
   changedBy: string
@@ -430,13 +456,15 @@ export interface ActivityRevision {
 }
 
 export interface ActivityInput {
+  /** Save as a draft: quantity, unit and period may be left out (spec 04.6). */
+  draft?: boolean
   facilityId: string
   streamId?: string
   activityType: string
-  quantity: number
-  unit: string
-  periodStart: string
-  periodEnd: string
+  quantity?: number
+  unit?: string
+  periodStart?: string
+  periodEnd?: string
   dataSource?: string
   evidenceRef?: string
   dataQuality: DataQuality
@@ -799,6 +827,8 @@ export interface Run {
 export interface RunLine {
   id: string
   activityId: string
+  /** ACT-0001 as the record was numbered when the run was launched; empty on runs before that (spec 04.6). */
+  recordRef: string
   facilityId: string | null
   facilityName: string
   /** The facility's legal entity and country as they stood at run time (spec 07.4). */
@@ -864,6 +894,7 @@ export interface RunLine {
 export interface RunExclusion {
   id: string
   activityId: string
+  recordRef: string
   facilityName: string
   activityType: string
   quantity: number
@@ -911,6 +942,8 @@ export interface CoverageRow {
   activityType: string | null
   months: string[]
   coveredMonths: string[]
+  /** Months a draft's period touches: data expected, not received (spec 04.6). */
+  pendingMonths: string[]
 }
 
 /** One page of a register (spec 04.5). */
@@ -928,16 +961,107 @@ export interface ActivityQuery {
   streamId?: string
   from?: string
   to?: string
-  sort?: 'periodEnd' | 'periodStart' | 'facility' | 'activityType' | 'quantity' | 'createdAt'
+  /** The readiness tab (spec 04.6). */
+  status?: ActivityStatus
+  sort?:
+    | 'periodEnd'
+    | 'periodStart'
+    | 'facility'
+    | 'activityType'
+    | 'quantity'
+    | 'createdAt'
+    | 'recordNo'
   dir?: 'asc' | 'desc'
   page?: number
   size?: number
 }
 
-/** The outcome of a CSV import: every row, or none with each rejected row named (spec 04.5). */
+/** How the records that match the search and filters divide by readiness (spec 04.6). */
+export interface ActivityCounts {
+  total: number
+  ready: number
+  readyWithDocument: number
+  needsAttention: number
+  drafts: number
+}
+
+export interface ActivityPage extends Page<Activity> {
+  counts: ActivityCounts
+}
+
+/** A row of a CSV as it would import, with its readiness (spec 04.6). */
+export interface ImportPreviewRow {
+  row: number
+  facilityName: string
+  streamName: string | null
+  activityType: string
+  quantity: number
+  unit: string
+  periodStart: string
+  periodEnd: string
+  dataSource: string | null
+  evidenceRef: string | null
+  dataQuality: DataQuality
+  dataQualityTier: number
+  status: ActivityStatus
+  issues: ReadinessIssue[]
+}
+
+/**
+ * The outcome of a CSV import: every row, or none with each rejected row
+ * named (spec 04.5). A dry run carries the rows, the control totals and the
+ * warnings and saves nothing (spec 04.6).
+ */
 export interface ActivityImportResult {
+  dryRun: boolean
+  batchId: string | null
   imported: number
   rejected: { row: number; message: string }[]
+  rows: ImportPreviewRow[]
+  totals: {
+    facilityName: string
+    streamName: string | null
+    unit: string
+    rows: number
+    quantity: number
+  }[]
+  warnings: { row: number; message: string }[]
+}
+
+/** A source document with the record it stands behind (spec 04.6). */
+export interface EvidenceDocument extends Evidence {
+  activityId: string
+  recordNo: number
+  recordRef: string
+  activityType: string
+  streamName: string | null
+  facilityId: string
+  facilityName: string
+  periodStart: string | null
+  periodEnd: string | null
+  evidenceRef: string | null
+  recordRemoved: boolean
+}
+
+export type DocumentFilter = 'ALL' | 'LINK_ONLY' | 'ORPHANED'
+
+export interface EvidenceQuery {
+  q?: string
+  facilityId?: string
+  filter?: DocumentFilter
+  page?: number
+  size?: number
+}
+
+/** The file a CSV import came from, kept with its digest (spec 04.6). */
+export interface ImportBatch {
+  id: string
+  fileName: string
+  sha256: string
+  rowCount: number
+  sizeBytes: number
+  importedBy: string
+  importedAt: string
 }
 
 export type AssignmentStatus = 'INCLUDED' | 'EXCLUDED' | 'UNCLASSIFIED'
@@ -1562,23 +1686,36 @@ function queryString(params: Record<string, string | number | undefined>): strin
 export function searchActivities(
   organizationId: string,
   query: ActivityQuery,
-): Promise<Page<Activity>> {
-  return api<Page<Activity>>(
+): Promise<ActivityPage> {
+  return api<ActivityPage>(
     `/api/ghg/organizations/${organizationId}/activities/page${queryString({ ...query })}`,
   )
 }
 
-/** Bulk entry from a CSV file: all rows or none (spec 04.5). */
+export function getActivity(id: string): Promise<Activity> {
+  return api<Activity>(`/api/ghg/activities/${id}`)
+}
+
+/** Bulk entry from a CSV file: all rows or none (spec 04.5); a dry run previews without saving (spec 04.6). */
 export function importActivities(
   organizationId: string,
   file: File,
+  options: { dryRun?: boolean } = {},
 ): Promise<ActivityImportResult> {
   const body = new FormData()
   body.append('file', file)
-  return api<ActivityImportResult>(`/api/ghg/organizations/${organizationId}/activities/import`, {
-    method: 'POST',
-    body,
-  })
+  return api<ActivityImportResult>(
+    `/api/ghg/organizations/${organizationId}/activities/import${options.dryRun ? '?dryRun=true' : ''}`,
+    { method: 'POST', body },
+  )
+}
+
+export function listImportBatches(organizationId: string): Promise<ImportBatch[]> {
+  return api<ImportBatch[]>(`/api/ghg/organizations/${organizationId}/import-batches`)
+}
+
+export function importBatchFileUrl(batchId: string): string {
+  return `/api/ghg/import-batches/${batchId}/file`
 }
 
 export function activityImportTemplateUrl(organizationId: string): string {
@@ -1649,6 +1786,21 @@ export function deleteEvidence(id: string): Promise<void> {
 /** Where a file downloads from (a link opens its own URL). */
 export function evidenceDownloadUrl(id: string): string {
   return `/api/ghg/evidence/${id}`
+}
+
+/** The organization's source documents, paged (spec 04.6). */
+export function searchEvidence(
+  organizationId: string,
+  query: EvidenceQuery,
+): Promise<Page<EvidenceDocument>> {
+  return api<Page<EvidenceDocument>>(
+    `/api/ghg/organizations/${organizationId}/evidence/page${queryString({ ...query })}`,
+  )
+}
+
+/** The evidence index for the verifier's pack (spec 04.6). */
+export function evidenceIndexUrl(organizationId: string): string {
+  return `/api/ghg/organizations/${organizationId}/evidence/index.csv`
 }
 
 // --- inventories --------------------------------------------------------------

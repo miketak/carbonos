@@ -13,7 +13,8 @@ const fieldLabels: Record<string, string> = {
   periodStart: 'Period start',
   periodEnd: 'Period end',
   dataSource: 'Data source',
-  evidenceRef: 'Evidence ref',
+  evidenceRef: 'Document reference',
+  draft: 'Draft',
   dataQuality: 'Data quality',
   dataQualityTier: 'Quality tier',
   uncertaintyPercent: 'Uncertainty %',
@@ -43,7 +44,11 @@ export function ActivityHistoryModal({
             <li key={revision.id} className="border-b border-teal/10 pb-3 last:border-0">
               <p>
                 <span className="font-semibold">
-                  {revision.kind === 'REMOVED' ? 'Removed' : 'Corrected'}
+                  {revision.kind === 'REMOVED'
+                    ? 'Removed'
+                    : revision.kind === 'ENTERED'
+                      ? 'Entered from a draft'
+                      : 'Corrected'}
                 </span>
                 <span className="text-ink-muted">
                   {' '}

@@ -8,6 +8,7 @@ import type {
   InventoryStatus,
   LeaseType,
   MarketInstrument,
+  ReadinessIssue,
   RelationshipType,
   Scope2MarketBasis,
   StreamKind,
@@ -147,6 +148,57 @@ export const exclusionLabels: Record<ExclusionReason, string> = {
   METHODOLOGY: 'Methodology exclusion',
   OTHER: 'Other documented reason',
   RECORD_REMOVED: 'Record removed',
+}
+
+/** What a record still lacks (spec 04.6), as the status pill and the drawer name it. */
+export const activityIssueLabels: Record<ReadinessIssue, string> = {
+  MISSING_QUANTITY: 'Missing quantity',
+  MISSING_UNIT: 'Missing unit',
+  MISSING_PERIOD: 'Missing period',
+  NO_STREAM: 'No stream',
+  NO_DATA_SOURCE: 'Missing source',
+  NO_EVIDENCE: 'Needs evidence',
+  EVIDENCE_REFERENCE_ONLY: 'Reference only, nothing attached',
+}
+
+const monthNames = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
+
+/** "Aug 2026" for a YYYY-MM value. */
+export function formatMonth(month: string): string {
+  const [year, index] = month.split('-')
+  return `${monthNames[Number(index) - 1] ?? index} ${year}`
+}
+
+/** The first and last day of a YYYY-MM month, for the register's period filter. */
+export function monthBounds(month: string): { from: string; to: string } {
+  const [year, index] = month.split('-').map(Number)
+  const last = new Date(Date.UTC(year, index, 0)).getUTCDate()
+  return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, '0')}` }
+}
+
+/** A record's period as the register prints it: the month when it is one, the dates otherwise. */
+export function formatRecordPeriod(start: string | null, end: string | null): string {
+  if (start === null || end === null) return 'No period'
+  const { from, to } = monthBounds(start.slice(0, 7))
+  if (start === from && end === to) return formatMonth(start.slice(0, 7))
+  return formatPeriod(start, end)
+}
+
+export function formatQuantity(quantity: number | null): string {
+  return quantity === null ? 'Missing' : quantity.toLocaleString()
 }
 
 /** The five data quality tiers of spec 04.4, after the Scope 3 Standard's indicators. */
