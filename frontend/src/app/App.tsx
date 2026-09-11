@@ -7,6 +7,7 @@ import { RequireAuth } from '../features/auth/RequireAuth'
 import { SplashGate } from '../features/auth/SplashScreen'
 import { HomePage } from '../features/home/HomePage'
 import { ActivityPage } from '../features/ghg/ActivityPage'
+import { SourceDocumentsPage } from '../features/ghg/SourceDocumentsPage'
 import { BaseYearPage } from '../features/ghg/BaseYearPage'
 import { EntitiesPage } from '../features/ghg/EntitiesPage'
 import { EmissionFactorsPage } from '../features/ghg/EmissionFactorsPage'
@@ -58,6 +59,7 @@ export function App() {
           <Route path="entities" element={<EntitiesPage />} />
           <Route path="facilities" element={<FacilitiesPage />} />
           <Route path="activity" element={<ActivityPage />} />
+          <Route path="activity/documents" element={<SourceDocumentsPage />} />
           <Route path="inventories" element={<InventoriesPage />} />
           <Route path="inventories/:inventoryId" element={<InventoryDetailPage />} />
           <Route path="inventories/:inventoryId/runs/:runId" element={<RunDetailPage />} />

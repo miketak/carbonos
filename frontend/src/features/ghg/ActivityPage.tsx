@@ -18,6 +18,7 @@ import { Breadcrumb } from './components/Breadcrumb'
 import { CompletenessBanner } from './components/CompletenessBanner'
 import { ImportActivitiesModal } from './components/ImportActivitiesModal'
 import { RemoveDialog } from './components/RemoveDialog'
+import { ViewSwitch } from './components/ViewSwitch'
 import {
   useActivityPageQuery,
   useDeleteActivity,
@@ -29,6 +30,7 @@ import type { Activity } from './api'
 type Dialog =
   | { kind: 'import' }
   | { kind: 'remove'; activity: Activity }
+  | { kind: 'bulkRemove'; ids: string[] }
   | { kind: 'history'; activity: Activity }
   | null
 
@@ -65,6 +67,8 @@ export function ActivityPage() {
   const toast = useToast()
   const [dialog, setDialog] = useState<Dialog>(null)
   const [cursorId, setCursorId] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [removing, setRemoving] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const activities = activitiesQuery.data?.items
@@ -134,7 +138,8 @@ export function ActivityPage() {
             separately how it is accounted for.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <ViewSwitch organizationId={organizationId} />
           <Button
             variant="ghost"
             className="px-4 py-1.5 text-sm"
@@ -264,6 +269,18 @@ export function ActivityPage() {
               activities={activities}
               openId={filters.record}
               cursorId={effectiveCursorId}
+              selected={selected}
+              onToggle={(id, checked) =>
+                setSelected((current) => {
+                  const next = new Set(current)
+                  if (checked) next.add(id)
+                  else next.delete(id)
+                  return next
+                })
+              }
+              onToggleAll={(checked) =>
+                setSelected(checked ? new Set(activities.map((a) => a.id)) : new Set())
+              }
               onOpen={(activity) => set({ record: activity.id })}
             />
           )}
@@ -296,13 +313,33 @@ export function ActivityPage() {
                   </Button>
                 </>
               )}
-              {!drawerOpen && (
-                <span>
-                  Select a row to edit
-                  <Kbd>j</Kbd>
-                  <Kbd>k</Kbd>
-                  <Kbd>↵</Kbd>
+              {selected.size > 0 ? (
+                <span className="flex items-center gap-2">
+                  <span>{selected.size} selected</span>
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                    onClick={() => setDialog({ kind: 'bulkRemove', ids: [...selected] })}
+                  >
+                    Remove {selected.size} selected
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-1 text-xs"
+                    onClick={() => setSelected(new Set())}
+                  >
+                    Clear
+                  </Button>
                 </span>
+              ) : (
+                !drawerOpen && (
+                  <span>
+                    Select a row to edit
+                    <Kbd>j</Kbd>
+                    <Kbd>k</Kbd>
+                    <Kbd>↵</Kbd>
+                  </span>
+                )
               )}
             </span>
           </div>
@@ -360,6 +397,39 @@ export function ActivityPage() {
               },
             )
           }
+        />
+      )}
+      {dialog?.kind === 'bulkRemove' && (
+        <RemoveDialog
+          title={`Remove ${dialog.ids.length} record${dialog.ids.length === 1 ? '' : 's'}?`}
+          description="Each record stays on file as removed, with your name, the date and this one reason. A record a run calculated cannot be removed and is left in place."
+          busy={removing}
+          onClose={() => setDialog(null)}
+          onConfirm={async (reason) => {
+            setRemoving(true)
+            const failed: string[] = []
+            for (const id of dialog.ids) {
+              try {
+                await deleteActivity.mutateAsync({ id, reason })
+              } catch (error) {
+                const record = activities?.find((a) => a.id === id)
+                failed.push(`${record?.recordRef ?? id}: ${problemDetail(error) ?? 'not removed'}`)
+              }
+            }
+            setRemoving(false)
+            setDialog(null)
+            setSelected(new Set())
+            if (
+              filters.record &&
+              dialog.ids.includes(filters.record) &&
+              !failed.some((f) => f.startsWith(filters.record ?? ''))
+            ) {
+              set({ record: null })
+            }
+            const removed = dialog.ids.length - failed.length
+            if (failed.length === 0) toast(`${removed} record${removed === 1 ? '' : 's'} removed.`)
+            else toast(`${removed} removed. Not removed: ${failed.join('; ')}`, 'error')
+          }}
         />
       )}
       {dialog?.kind === 'history' && (

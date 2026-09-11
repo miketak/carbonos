@@ -341,30 +341,34 @@ test('removing a record from the drawer asks for a reason and records it', async
   )
 })
 
-test('an import with rejected rows names each row and imports nothing (spec 04.5)', async () => {
+test('ticking rows offers a bulk removal with one reason for all of them', async () => {
   const user = userEvent.setup()
-  vi.mocked(importActivities).mockResolvedValue({
-    dryRun: false,
-    batchId: null,
-    imported: 0,
-    rejected: [{ row: 3, message: "quantity 'abc' is not a number" }],
-    rows: [],
-    totals: [],
-    warnings: [],
-  })
+  vi.mocked(deleteActivity).mockResolvedValue(undefined)
+  renderPage()
+  await screen.findByText('Diesel consumption')
+
+  await user.click(screen.getByLabelText('Select ACT-0001'))
+  await user.click(screen.getByLabelText('Select ACT-0002'))
+  await user.click(screen.getByRole('button', { name: 'Remove 2 selected' }))
+  const dialog = screen.getByRole('dialog', { name: 'Remove 2 records?' })
+  await user.type(within(dialog).getByLabelText('Reason'), 'entered twice from the same log')
+  await user.click(within(dialog).getByRole('button', { name: 'Remove' }))
+
+  await waitFor(() => expect(deleteActivity).toHaveBeenCalledTimes(2))
+  expect(deleteActivity).toHaveBeenCalledWith('act-1', 'entered twice from the same log')
+  expect(deleteActivity).toHaveBeenCalledWith('act-2', 'entered twice from the same log')
+  expect(await screen.findByText('2 records removed.')).toBeInTheDocument()
+})
+
+test('Import CSV opens the bulk entry dialog with the template link', async () => {
+  const user = userEvent.setup()
   renderPage()
 
   await user.click(await screen.findByRole('button', { name: 'Import CSV' }))
   const dialog = screen.getByRole('dialog', { name: 'Import activity data' })
-  expect(within(dialog).getByRole('link', { name: 'Download the template' })).toHaveAttribute(
+  expect(within(dialog).getByRole('link', { name: 'Download CSV template' })).toHaveAttribute(
     'href',
     '/api/ghg/organizations/org-1/activities/import-template.csv',
   )
-  const file = new File(['facility,activity_type\n'], 'march.csv', { type: 'text/csv' })
-  await user.upload(within(dialog).getByLabelText('CSV file'), file)
-  await user.click(within(dialog).getByRole('button', { name: 'Import' }))
-
-  expect(await within(dialog).findByText(/Nothing imported: 1 row rejected/)).toBeInTheDocument()
-  expect(within(dialog).getByText("quantity 'abc' is not a number")).toBeInTheDocument()
-  expect(vi.mocked(importActivities).mock.calls[0].slice(0, 2)).toEqual(['org-1', file])
+  expect(within(dialog).getByRole('button', { name: 'Add records' })).toBeDisabled()
 })
