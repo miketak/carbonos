@@ -9,7 +9,7 @@
 -- Tables with any other header are left alone.
 
 local HEADER = { "Step", "Action", "Expected result", "Pass/Fail", "Notes" }
-local WIDTHS = { 0.05, 0.30, 0.34, 0.09, 0.22 }
+local WIDTHS = { 0.04, 0.26, 0.30, 0.08, 0.32 }
 
 local function is_step_table(tbl)
   local rows = tbl.head.rows

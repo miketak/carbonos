@@ -38,7 +38,7 @@ flowchart LR
   reference document, so the script writes it after the conversion). Each
   case is a table with the columns Step, Action, Expected result, Pass/Fail
   and Notes; `scripts/qa-docs/step-tables.lua` recognises that header and
-  fixes the column widths (5, 30, 34, 9 and 22 percent), so the action and
+  fixes the column widths (4, 26, 30, 8 and 32 percent), so the action and
   the expected result get the room and the Notes column is wide enough to
   write in. Change `PAGE_MARGIN` or the `WIDTHS` table to adjust them.
 - Every table gets a 1 pt grid after pandoc runs (`add_table_borders` in
