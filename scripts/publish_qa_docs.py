@@ -3,9 +3,9 @@
 
 Converts docs/qa/README.md and docs/qa/NNN-*.md with pandoc: the H1 becomes the
 title, a subtitle carries the git ref and build date, relative links point at
-GitHub, and every table gets an outline. Upload the files to the shared Drive
-folder by hand; Drive converts them to Google Docs. See
-docs/how-to/publish-qa-procedures.md.
+GitHub, the pages are landscape so the step tables have room, and every table
+gets an outline. Upload the files to the shared Drive folder by hand; Drive
+converts them to Google Docs. See docs/how-to/publish-qa-procedures.md.
 """
 
 from __future__ import annotations
@@ -23,11 +23,22 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 QA_DIR = REPO_ROOT / "docs" / "qa"
-LUA_FILTER = REPO_ROOT / "scripts" / "qa-docs" / "github-links.lua"
+LUA_FILTERS = [
+    REPO_ROOT / "scripts" / "qa-docs" / "github-links.lua",
+    REPO_ROOT / "scripts" / "qa-docs" / "step-tables.lua",
+]
 REPO_URL = "https://github.com/miketak/carbonos"
 # Table borders in eighths of a point: pandoc's default table style rules only the top and
 # bottom, so the sign-off and scenario tables would import into Google Docs without an outline.
 TABLE_BORDER_EIGHTHS = 8
+# Page setup in twentieths of a point (twips): A4 landscape with 2 cm margins, so a step table
+# has room for the action, the expected result and a Notes column a tester can write in.
+# pandoc 3.1 writes an empty sectPr whatever the reference document says, so the page is set
+# after the conversion.
+PAGE_WIDTH = 16838
+PAGE_HEIGHT = 11906
+PAGE_MARGIN = 1134
+TEXT_WIDTH = PAGE_WIDTH - 2 * PAGE_MARGIN
 
 
 @dataclass(frozen=True)
@@ -116,7 +127,7 @@ def build(out_dir: Path) -> list[tuple[str, Path]]:
             "--from=gfm+yaml_metadata_block",
             "--to=docx",
             "--shift-heading-level-by=-1",
-            f"--lua-filter={LUA_FILTER}",
+            *(f"--lua-filter={lua_filter}" for lua_filter in LUA_FILTERS),
             f"--metadata=repo_url:{REPO_URL}",
             f"--metadata=git_ref:{info.ref}",
             f"--metadata=source_path:{source.relative_to(REPO_ROOT).as_posix()}",
@@ -124,11 +135,62 @@ def build(out_dir: Path) -> list[tuple[str, Path]]:
             f"--output={target}",
         ]
         subprocess.run(command, check=True, cwd=REPO_ROOT)
+        set_page_layout(target)
         add_table_borders(target)
         built.append((doc_name(source), target))
         print(f"built {_display(target)}  ->  {doc_name(source)}")
     print(f"{len(built)} documents, {info.subtitle}")
     return built
+
+
+def _rewrite_document(docx: Path, transform) -> None:
+    """Applies transform to word/document.xml and writes the DOCX back with the same entries."""
+    with zipfile.ZipFile(docx) as archive:
+        entries = {info.filename: archive.read(info.filename) for info in archive.infolist()}
+        infos = archive.infolist()
+    document = entries["word/document.xml"].decode("utf-8")
+    entries["word/document.xml"] = transform(document).encode("utf-8")
+    with zipfile.ZipFile(docx, "w", zipfile.ZIP_DEFLATED) as archive:
+        for info in infos:
+            archive.writestr(info.filename, entries[info.filename])
+
+
+def set_page_layout(docx: Path) -> int:
+    """Makes the pages A4 landscape and stretches the full-width tables over the text width.
+
+    Returns the number of tables whose grid was rescaled. pandoc emits a full-width table
+    (tblW 100%) with a grid computed for a 5.5 inch text block; Google Docs sizes the
+    columns from that grid, so it is scaled to the landscape text width to match.
+    """
+    section = (
+        f'<w:sectPr><w:pgSz w:w="{PAGE_WIDTH}" w:h="{PAGE_HEIGHT}" w:orient="landscape"/>'
+        f'<w:pgMar w:top="{PAGE_MARGIN}" w:right="{PAGE_MARGIN}" w:bottom="{PAGE_MARGIN}" '
+        f'w:left="{PAGE_MARGIN}" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr>'
+    )
+    grid_col = re.compile(r'<w:gridCol w:w="(\d+)"\s*/>')
+    rescaled = 0
+
+    def scale_grid(match: re.Match[str]) -> str:
+        nonlocal rescaled
+        table = match.group(0)
+        if '<w:tblW w:type="pct"' not in table:
+            return table
+        widths = [int(w) for w in grid_col.findall(table)]
+        total = sum(widths)
+        if not total:
+            return table
+        rescaled += 1
+        scaled = iter(round(w * TEXT_WIDTH / total) for w in widths)
+        return grid_col.sub(lambda _: f'<w:gridCol w:w="{next(scaled)}" />', table)
+
+    def transform(document: str) -> str:
+        document = re.sub(r"<w:tblPr>.*?</w:tblGrid>", scale_grid, document, flags=re.S)
+        body_end = document.rfind("</w:body>")
+        head = re.sub(r"<w:sectPr\s*/>|<w:sectPr>.*?</w:sectPr>", "", document[:body_end], flags=re.S)
+        return head + section + document[body_end:]
+
+    _rewrite_document(docx, transform)
+    return rescaled
 
 
 def add_table_borders(docx: Path, eighths: int = TABLE_BORDER_EIGHTHS) -> int:
@@ -149,15 +211,9 @@ def add_table_borders(docx: Path, eighths: int = TABLE_BORDER_EIGHTHS) -> int:
         changed += 1
         return anchor.sub(lambda m: borders + m.group(0), props, count=1)
 
-    with zipfile.ZipFile(docx) as archive:
-        entries = {info.filename: archive.read(info.filename) for info in archive.infolist()}
-        infos = archive.infolist()
-    document = entries["word/document.xml"].decode("utf-8")
-    document = re.sub(r"<w:tblPr>.*?</w:tblPr>", with_borders, document, flags=re.S)
-    entries["word/document.xml"] = document.encode("utf-8")
-    with zipfile.ZipFile(docx, "w", zipfile.ZIP_DEFLATED) as archive:
-        for info in infos:
-            archive.writestr(info.filename, entries[info.filename])
+    _rewrite_document(
+        docx, lambda document: re.sub(r"<w:tblPr>.*?</w:tblPr>", with_borders, document, flags=re.S)
+    )
     return changed
 
 

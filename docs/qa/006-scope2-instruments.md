@@ -25,107 +25,64 @@ factors, the residual mix, the criteria or the scope 2 arithmetic.
 
 ### A0. A negative factor is refused inline
 
-1. On the instruments card, type -0.1 in **kg CO2e per kWh**, a source,
-   and 20,000 MWh covered. Add.
-
-**Expected result:** the form stays put, with "kg CO₂e per kWh must be 0
-or more." under the factor; nothing is recorded and no toast appears. Clear
-the factor.
-
-Verdict: ☐ pass ☐ fail. Notes:
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On the instruments card, type -0.1 in **kg CO2e per kWh**, a source, and 20,000 MWh covered. Add. | The form stays put, with "kg CO₂e per kWh must be 0 or more." under the factor; nothing is recorded and no toast appears. | | |
+| 2 | Clear the factor. | | | |
 
 ### A1. An instrument with a criterion unanswered is not applied
 
-1. On the instruments card, add for S2: certificate, 0 kg CO2e/kWh,
-   source "I-REC(E) Ghana 2025", covered 20,000 MWh, certificate
-   IREC-GH-2025-0417, registry I-TRACK, vintage 2025, and answer criteria
-   1, 2, 4, 5, 6, 7 and 8 as **Met**, leaving 3 unanswered.
-2. Read the pre-flight.
-
-**Expected result:** the row reads "Not applied: 1 unanswered" with the
-eight outcomes listed ("1 met · 2 met · 3 unanswered ..."). The
-**Emission factors** gate warns "The instrument for Tarkwa Processing
-Plant does not meet the Scope 2 Quality Criteria (1 of the eight criteria
-not yet answered): the market-based figure falls back to
-location-based.".
-
-Verdict: ☐ pass ☐ fail. Notes:
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On the instruments card, add for S2: certificate, 0 kg CO2e/kWh, source "I-REC(E) Ghana 2025", covered 20,000 MWh, certificate IREC-GH-2025-0417, registry I-TRACK, vintage 2025, and answer criteria 1, 2, 4, 5, 6, 7 and 8 as **Met**, leaving 3 unanswered. | The row reads "Not applied: 1 unanswered" with the eight outcomes listed ("1 met · 2 met · 3 unanswered ..."). | | |
+| 2 | Read the pre-flight. | The **Emission factors** gate warns "The instrument for Tarkwa Processing Plant does not meet the Scope 2 Quality Criteria (1 of the eight criteria not yet answered): the market-based figure falls back to location-based.". | | |
 
 ### A2. Evidence attaches to an instrument
 
-1. Click **Evidence** on the instrument and attach the PDF as the
-   retirement statement.
-
-**Expected result:** the file is listed with your email and the date.
-
-Verdict: ☐ pass ☐ fail. Notes:
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Click **Evidence** on the instrument and attach the PDF as the retirement statement. | The file is listed with your email and the date. | | |
 
 ### A3. All eight met applies the instrument
 
-1. Click **Edit** on the instrument's row (it loads the row into the
-   form), answer criterion 3 **Met**, set the retirement date 2026-01-15
-   and click **Add instrument** (one instrument per facility: saving
-   replaces it).
-
-**Expected result:** the row reads "All eight met" with the certificate,
-registry, vintage and "retired 2026-01-15"; the gate warning is gone.
-
-Verdict: ☐ pass ☐ fail. Notes:
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Click **Edit** on the instrument's row (it loads the row into the form), answer criterion 3 **Met**, set the retirement date 2026-01-15 and click **Add instrument** (one instrument per facility: saving replaces it). | The row reads "All eight met" with the certificate, registry, vintage and "retired 2026-01-15"; the gate warning is gone. | | |
 
 ### A4. Coverage beyond the electricity warns
 
-1. Edit the instrument's covered quantity to 60,000 MWh and save.
-
-**Expected result:** the gate warns "The instrument for Tarkwa Processing
-Plant covers 60,000,000 kWh but the facility's scope 2 electricity in its
-period is 48,500,000 kWh: the excess covers nothing." Set it back to
-20,000.
-
-Verdict: ☐ pass ☐ fail. Notes:
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Edit the instrument's covered quantity to 60,000 MWh and save. | The gate warns "The instrument for Tarkwa Processing Plant covers 60,000,000 kWh but the facility's scope 2 electricity in its period is 48,500,000 kWh: the excess covers nothing." | | |
+| 2 | Set it back to 20,000. | | | |
 
 ### A5. A record outside the instrument's period is uncovered
 
-1. Set the instrument's period to 2025-01-01 to 2025-06-30.
-
-**Expected result:** no error, but the same warning now says the
-facility's scope 2 electricity in the period is 0 kWh: R2 is dated July,
-so no S2 electricity falls between January and June and the instrument
-would cover nothing in a run. Set the period back to blank; the warning
-goes and the instrument covers R2 again, which is what section C and
-procedure 7 assume.
-
-Verdict: ☐ pass ☐ fail. Notes:
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Set the instrument's period to 2025-01-01 to 2025-06-30. | No error, but the same warning now says the facility's scope 2 electricity in the period is 0 kWh: R2 is dated July, so no S2 electricity falls between January and June and the instrument would cover nothing in a run. | | |
+| 2 | Set the period back to blank. | The warning goes and the instrument covers R2 again, which is what section C and procedure 7 assume. | | |
 
 ## B. The residual mix
 
 ### B1. The disclosure is required either way
 
-1. Read the pre-flight before touching the residual mix.
-
-**Expected result:** a warning that the inventory does not say whether a
-residual mix is available.
-
-Verdict: ☐ pass ☐ fail. Notes:
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Read the pre-flight before touching the residual mix. | A warning that the inventory does not say whether a residual mix is available. | | |
 
 ### B2. Not available
 
-1. Choose **No residual mix is available** and save.
-
-**Expected result:** the warning is gone; the report (procedure 7) prints
-the double-counting disclosure and prices uncovered kWh at the grid
-average.
-
-Verdict: ☐ pass ☐ fail. Notes:
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Choose **No residual mix is available** and save. | The warning is gone; the report (procedure 7) prints the double-counting disclosure and prices uncovered kWh at the grid average. | | |
 
 ### B3. Available with a factor
 
-1. Choose **Yes** with 0.52 kg CO2e/kWh and save.
-
-**Expected result:** saved ("Residual mix recorded."); a "yes" without a
-factor is refused with "A residual mix that is available needs its factor
-in kg CO2e per kWh.".
-
-Verdict: ☐ pass ☐ fail. Notes:
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Choose **Yes** with 0.52 kg CO2e/kWh and save. | Saved ("Residual mix recorded."). | | |
+| 2 | Save a "yes" without a factor. | Refused with "A residual mix that is available needs its factor in kg CO2e per kWh.". | | |
 
 ## C. Arithmetic (checked in procedure 7)
 
