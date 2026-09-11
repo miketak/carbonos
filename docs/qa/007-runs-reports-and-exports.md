@@ -109,7 +109,7 @@ calculation, the report composite, the PDF or the CSV exports.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Download `lines.csv` and open it in the spreadsheet. | One row per line with `record_id`, `evidence_ref`, `evidence_files`, `factor_id`, `converted_quantity`, `conversion_factor`, `density_material`, `density_kg_per_litre`, `conversion_note`, `accounting_share`, `period_share`, the kg per gas, the `market_*` columns, `data_quality` and `data_quality_tier`. | | |
+| 1 | Download `lines.csv` and open it in the spreadsheet. | One row per line with `record_id`, `record_ref` (ACT-0001), `evidence_ref`, `evidence_files`, `factor_id`, `converted_quantity`, `conversion_factor`, `density_material`, `density_kg_per_litre`, `conversion_note`, `accounting_share`, `period_share`, the kg per gas, the `market_*` columns, `data_quality` and `data_quality_tier`. | | |
 | 2 | Recompute one line's kg CO2e from its columns. | The recomputed figure matches. | | |
 
 ### C3. Exclusions and frozen inputs
