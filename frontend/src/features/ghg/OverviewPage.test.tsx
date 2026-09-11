@@ -149,7 +149,13 @@ beforeEach(() => {
 
 test('walks a new organization from facts to a final inventory', async () => {
   vi.mocked(listFacilities).mockResolvedValue([])
-  vi.mocked(searchActivities).mockResolvedValue({ items: [], page: 0, size: 1, total: 0 })
+  vi.mocked(searchActivities).mockResolvedValue({
+    items: [],
+    page: 0,
+    size: 1,
+    total: 0,
+    counts: { total: 0, ready: 0, readyWithDocument: 0, needsAttention: 0, drafts: 0 },
+  })
   vi.mocked(listInventories).mockResolvedValue([])
   renderOverviewPage()
 
@@ -192,11 +198,20 @@ test('points at inventories once facts exist', async () => {
         removeReason: null,
         evidenceCount: 0,
         revisionCount: 0,
+        recordNo: 1,
+        recordRef: 'ACT-0001',
+        draft: false,
+        status: 'NEEDS_ATTENTION',
+        issues: ['NO_STREAM'],
+        importBatchId: null,
+        importRow: null,
+        createdAt: '2026-08-02T00:00:00Z',
       },
     ],
     page: 0,
     size: 1,
     total: 1,
+    counts: { total: 1, ready: 0, readyWithDocument: 0, needsAttention: 1, drafts: 0 },
   })
   vi.mocked(listInventories).mockResolvedValue([])
   renderOverviewPage()
@@ -235,11 +250,20 @@ test('shows the headline inventory with its final run once one exists', async ()
         removeReason: null,
         evidenceCount: 0,
         revisionCount: 0,
+        recordNo: 1,
+        recordRef: 'ACT-0001',
+        draft: false,
+        status: 'NEEDS_ATTENTION',
+        issues: ['NO_STREAM'],
+        importBatchId: null,
+        importRow: null,
+        createdAt: '2026-08-02T00:00:00Z',
       },
     ],
     page: 0,
     size: 1,
     total: 1,
+    counts: { total: 1, ready: 0, readyWithDocument: 0, needsAttention: 1, drafts: 0 },
   })
   vi.mocked(listInventories).mockResolvedValue([inventory])
   vi.mocked(listRuns).mockResolvedValue([run])

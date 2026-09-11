@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  addEvidenceLink,
   addMember,
   changeMemberRole,
   classifyAssignment,
@@ -14,7 +15,6 @@ import {
   createFacility,
   createInventory,
   createOrganization,
-  addEvidenceLink,
   createStream,
   decideRecalculation,
   deleteActivity,
@@ -33,6 +33,7 @@ import {
   executeRun,
   finalizeRun,
   freezeInventory,
+  getActivity,
   getBaseYear,
   getBoundary,
   getBoundaryVersion,
@@ -48,23 +49,22 @@ import {
   listActivities,
   listActivityRevisions,
   listAssignments,
-  searchActivities,
-  searchAssignments,
   listAuditEvents,
   listBoundaryVersions,
   listCoverage,
   listCustomUnits,
   listDensities,
   listEmissionFactors,
-  listEvidence,
-  listFactorPacks,
   listEntities,
+  listEvidence,
   listFacilities,
+  listFactorPacks,
+  listImportBatches,
   listInventories,
-  listMembers,
   listMarketFactors,
-  listOrganizations,
+  listMembers,
   listOrganizationUnits,
+  listOrganizations,
   listRuns,
   listStreams,
   listUnits,
@@ -75,6 +75,9 @@ import {
   removeMarketFactor,
   removeMember,
   reopenInventory,
+  searchActivities,
+  searchAssignments,
+  searchEvidence,
   setBaseYear,
   setBoundaryTreatment,
   setEntityTreatment,
@@ -111,6 +114,7 @@ import type {
   EmissionFactorInput,
   EntityInput,
   EvidenceOwner,
+  EvidenceQuery,
   ExcludeInput,
   FacilityInput,
   InventoryInput,
@@ -143,6 +147,10 @@ export const activityPageKey = (orgId: string, query: ActivityQuery) =>
 export const assignmentPageKey = (inventoryId: string, query: AssignmentQuery) =>
   ['ghg', 'assignments', inventoryId, 'page', query] as const
 export const revisionsKey = (activityId: string) => ['ghg', 'revisions', activityId] as const
+export const activityKey = (activityId: string) => ['ghg', 'activity', activityId] as const
+export const evidencePageKey = (orgId: string, query: EvidenceQuery) =>
+  ['ghg', 'evidence-page', orgId, query] as const
+export const importBatchesKey = (orgId: string) => ['ghg', 'import-batches', orgId] as const
 export const evidenceKey = (owner: EvidenceOwner) =>
   ['ghg', 'evidence', 'activityId' in owner ? owner.activityId : owner.marketFactorId] as const
 export const inventoriesKey = (orgId: string) => ['ghg', 'inventories', orgId] as const
@@ -369,12 +377,40 @@ export function useActivityPageQuery(orgId: string, query: ActivityQuery) {
   })
 }
 
+/** One record on its own, for a drawer opened from a link (spec 04.6). */
+export function useActivityQuery(activityId: string | null) {
+  return useQuery({
+    queryKey: activityKey(activityId ?? ''),
+    queryFn: () => getActivity(activityId ?? ''),
+    enabled: activityId !== null,
+  })
+}
+
 export function useImportActivities(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (file: File) => importActivities(orgId, file),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) }),
+    mutationFn: ({ file, dryRun }: { file: File; dryRun?: boolean }) =>
+      importActivities(orgId, file, { dryRun }),
+    onSuccess: (result) => {
+      if (result.dryRun) return
+      void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['ghg', 'evidence-page', orgId] })
+      void queryClient.invalidateQueries({ queryKey: importBatchesKey(orgId) })
+    },
   })
+}
+
+/** The organization's source documents, paged (spec 04.6). */
+export function useEvidencePageQuery(orgId: string, query: EvidenceQuery) {
+  return useQuery({
+    queryKey: evidencePageKey(orgId, query),
+    queryFn: () => searchEvidence(orgId, query),
+    placeholderData: (previous) => previous,
+  })
+}
+
+export function useImportBatchesQuery(orgId: string) {
+  return useQuery({ queryKey: importBatchesKey(orgId), queryFn: () => listImportBatches(orgId) })
 }
 
 export function useInventoriesQuery(orgId: string) {
@@ -572,7 +608,11 @@ export function useUpdateActivity(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: ActivityInput }) => updateActivity(id, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) }),
+    onSuccess: (_, { id }) => {
+      void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: activityKey(id) })
+      void queryClient.invalidateQueries({ queryKey: revisionsKey(id) })
+    },
   })
 }
 
@@ -608,6 +648,10 @@ function useEvidenceMutation<TArgs, TResult>(
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: evidenceKey(owner) })
       void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['ghg', 'evidence-page', orgId] })
+      if ('activityId' in owner) {
+        void queryClient.invalidateQueries({ queryKey: activityKey(owner.activityId) })
+      }
     },
   })
 }

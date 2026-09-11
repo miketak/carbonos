@@ -821,6 +821,7 @@ test('shows which months of the period have data per facility and activity', asy
       activityType: 'Diesel consumption',
       months: ['2025-01', '2025-02', '2025-03'],
       coveredMonths: ['2025-03'],
+      pendingMonths: [],
     },
   ])
   renderPage()
@@ -970,6 +971,7 @@ test('the coverage matrix names streams and flags one with no data (spec 04.5)',
       activityType: null,
       months: ['2025-01', '2025-02'],
       coveredMonths: ['2025-01'],
+      pendingMonths: [],
     },
     {
       facilityId: 'fac-1',
@@ -979,6 +981,7 @@ test('the coverage matrix names streams and flags one with no data (spec 04.5)',
       activityType: null,
       months: ['2025-01', '2025-02'],
       coveredMonths: [],
+      pendingMonths: [],
     },
   ])
   renderPage()

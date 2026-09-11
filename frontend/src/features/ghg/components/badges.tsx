@@ -1,5 +1,6 @@
-import type { ConsolidationApproach, GhgScope, Inventory } from '../api'
-import { approachLabels, scopeLabels } from '../format'
+import { StatusPill } from '../../../components/StatusPill'
+import type { Activity, ConsolidationApproach, GhgScope, Inventory } from '../api'
+import { activityIssueLabels, approachLabels, scopeLabels } from '../format'
 
 const scopeStyles: Record<GhgScope, string> = {
   SCOPE_1: 'bg-dark-teal text-white',
@@ -50,5 +51,39 @@ export function InventoryStatusBadge({
     >
       {label}
     </span>
+  )
+}
+
+/**
+ * A record's readiness (spec 04.6): Ready, Draft, or the first thing it
+ * lacks with the rest in the tooltip. Completeness, not assurance.
+ */
+export function ActivityStatusPill({
+  activity,
+}: {
+  activity: Pick<Activity, 'status' | 'issues'>
+}) {
+  const blocking = activity.issues.filter((issue) => issue !== 'EVIDENCE_REFERENCE_ONLY')
+  const all = activity.issues.map((issue) => activityIssueLabels[issue]).join(', ')
+  if (activity.status === 'READY') {
+    return (
+      <StatusPill tone="ready" title={all || 'All completeness checks passed'}>
+        Ready
+      </StatusPill>
+    )
+  }
+  if (activity.status === 'DRAFT') {
+    return (
+      <StatusPill tone="draft" title={all || 'A draft; not yet a fact'}>
+        Draft
+      </StatusPill>
+    )
+  }
+  const first = blocking[0]
+  return (
+    <StatusPill tone="attention" title={all}>
+      {first ? activityIssueLabels[first] : 'Needs attention'}
+      {blocking.length > 1 ? ` +${blocking.length - 1}` : ''}
+    </StatusPill>
   )
 }

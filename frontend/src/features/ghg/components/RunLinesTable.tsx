@@ -27,7 +27,14 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
               <td className="px-3 py-2">{line.facilityName}</td>
               <td className="px-3 py-2">
                 {line.activityType && (
-                  <span className="block font-medium">{line.activityType}</span>
+                  <span className="block font-medium">
+                    {line.recordRef ? (
+                      <span className="mr-1 font-mono text-xs text-ink-muted">
+                        {line.recordRef}
+                      </span>
+                    ) : null}
+                    {line.activityType}
+                  </span>
                 )}
                 <span className={line.activityType ? 'text-xs text-ink-muted' : 'font-medium'}>
                   {line.factorName}

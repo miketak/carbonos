@@ -948,7 +948,8 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
       <h3 className="text-sm font-semibold">Period coverage</h3>
       <p className="text-xs text-ink-muted">
         Months of the reporting period with data from included records, per facility and stream. A
-        stream with no data at all shows every month empty.
+        stream with no data at all shows every month empty; a half circle is a draft still to be
+        entered.
       </p>
       <div className="mt-2 overflow-x-auto">
         <table aria-label="Period coverage" className="w-full text-left text-xs">
@@ -979,13 +980,19 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
                 </td>
                 {months.map((month) => {
                   const covered = row.coveredMonths.includes(month)
+                  // spec 04.6: a draft's month is pending, data expected but not received
+                  const pending = !covered && row.pendingMonths.includes(month)
                   return (
                     <td
                       key={month}
-                      title={`${row.streamName ?? row.activityType}, ${month}: ${covered ? 'data' : 'no data'}`}
-                      className={`px-1 py-1 text-center ${covered ? 'text-dark-teal' : 'text-red-500'}`}
+                      title={`${row.streamName ?? row.activityType}, ${month}: ${
+                        covered ? 'data' : pending ? 'draft on file, data expected' : 'no data'
+                      }`}
+                      className={`px-1 py-1 text-center ${
+                        covered ? 'text-dark-teal' : pending ? 'text-amber-600' : 'text-red-500'
+                      }`}
                     >
-                      {covered ? '●' : '○'}
+                      {covered ? '●' : pending ? '◐' : '○'}
                     </td>
                   )
                 })}

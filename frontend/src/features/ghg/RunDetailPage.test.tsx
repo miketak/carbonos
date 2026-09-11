@@ -175,6 +175,7 @@ const report: Report = {
     {
       id: 'ex-1',
       activityId: 'act-9',
+      recordRef: 'ACT-0001',
       facilityName: 'Tema Plant',
       activityType: 'ANFO explosives consumed',
       quantity: 8400,
@@ -189,6 +190,7 @@ const report: Report = {
     {
       id: 'ex-2',
       activityId: 'act-10',
+      recordRef: 'ACT-0001',
       facilityName: 'Nkran Camp',
       activityType: 'Camp LPG',
       quantity: 500,
@@ -205,6 +207,7 @@ const report: Report = {
     {
       id: 'line-1',
       activityId: 'act-1',
+      recordRef: 'ACT-0001',
       facilityId: 'fac-1',
       facilityName: 'Tema Plant',
       entityId: null,

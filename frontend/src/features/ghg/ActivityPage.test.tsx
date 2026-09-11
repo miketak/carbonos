@@ -1,9 +1,15 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { ActivityPage } from './ActivityPage'
-import type { Activity, Facility, Unit } from './api'
+import type {
+  Activity,
+  ActivityPage as ActivityPageResult,
+  Facility,
+  SourceStream,
+  Unit,
+} from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
@@ -11,6 +17,7 @@ vi.setConfig({ testTimeout: 30000 })
 
 import {
   deleteActivity,
+  getActivity,
   importActivities,
   listStreams,
   searchActivities,
@@ -49,17 +56,38 @@ const facility: Facility = {
   createdAt: '2026-08-01T00:00:00Z',
 }
 
-const diesel: Activity = {
-  id: 'act-1',
+const gensets: SourceStream = {
+  id: 'str-1',
   facilityId: 'fac-1',
   facilityName: 'Nkran Mine',
-  streamId: null,
-  streamName: null,
+  name: 'Standby gensets',
+  kind: 'STATIONARY_COMBUSTION',
+  fuel: 'Diesel',
+  meterOrSupplier: 'Tank meter 3',
+  contractorOperated: false,
+  note: null,
+  defaultScope: 'SCOPE_1',
+  defaultCategory: 'STATIONARY_COMBUSTION',
+  allowedCategories: ['STATIONARY_COMBUSTION'],
+  createdAt: '2026-08-01T00:00:00Z',
+}
+
+const diesel: Activity = {
+  id: 'act-1',
+  recordNo: 1,
+  recordRef: 'ACT-0001',
+  draft: false,
+  status: 'READY',
+  issues: [],
+  facilityId: 'fac-1',
+  facilityName: 'Nkran Mine',
+  streamId: 'str-1',
+  streamName: 'Standby gensets',
   activityType: 'Diesel consumption',
   quantity: 1000,
   unit: 'litre',
-  periodStart: '2025-03-15',
-  periodEnd: '2025-03-15',
+  periodStart: '2025-03-01',
+  periodEnd: '2025-03-31',
   dataSource: 'Fuel invoice',
   evidenceRef: 'INV-2938',
   dataQuality: 'MEASURED',
@@ -73,11 +101,49 @@ const diesel: Activity = {
   removeReason: null,
   evidenceCount: 1,
   revisionCount: 1,
+  importBatchId: null,
+  importRow: null,
+  createdAt: '2026-08-02T00:00:00Z',
 }
 
-function renderPage() {
+const lpg: Activity = {
+  ...diesel,
+  id: 'act-2',
+  recordNo: 2,
+  recordRef: 'ACT-0002',
+  status: 'NEEDS_ATTENTION',
+  issues: ['NO_STREAM', 'NO_EVIDENCE'],
+  streamId: null,
+  streamName: null,
+  activityType: 'LPG cylinders',
+  quantity: 120,
+  unit: 'kg',
+  evidenceRef: null,
+  evidenceCount: 0,
+  revisionCount: 0,
+}
+
+function page(items: Activity[]): ActivityPageResult {
+  const ready = items.filter((item) => item.status === 'READY').length
+  return {
+    items,
+    page: 0,
+    size: 50,
+    total: items.length,
+    counts: {
+      total: items.length,
+      ready,
+      readyWithDocument: items.filter((item) => item.status === 'READY' && item.evidenceCount > 0)
+        .length,
+      needsAttention: items.length - ready,
+      drafts: items.filter((item) => item.draft).length,
+    },
+  }
+}
+
+function renderPage(route = '/app/ghg/org-1/activity') {
   return renderWithProviders(<ActivityPage />, {
-    route: '/app/ghg/org-1/activity',
+    route,
     path: '/app/ghg/:organizationId/activity',
   })
 }
@@ -85,8 +151,9 @@ function renderPage() {
 beforeEach(() => {
   vi.mocked(searchActivities)
     .mockReset()
-    .mockResolvedValue({ items: [diesel], page: 0, size: 50, total: 1 })
-  vi.mocked(listStreams).mockReset().mockResolvedValue([])
+    .mockResolvedValue(page([diesel, lpg]))
+  vi.mocked(getActivity).mockReset().mockResolvedValue(diesel)
+  vi.mocked(listStreams).mockReset().mockResolvedValue([gensets])
   vi.mocked(importActivities).mockReset()
   vi.mocked(listFacilities).mockReset().mockResolvedValue([facility])
   vi.mocked(listOrganizationUnits).mockReset().mockResolvedValue(units)
@@ -120,73 +187,52 @@ beforeEach(() => {
   vi.mocked(deleteActivity).mockReset()
 })
 
-test('shows each record with its quality tier, uncertainty and evidence count', async () => {
+test('the register shows each record with its number, stream, period, quantity and readiness', async () => {
   renderPage()
 
   expect(await screen.findByText('Diesel consumption')).toBeInTheDocument()
-  expect(screen.getByText('Tier 1 · Measured')).toBeInTheDocument()
-  expect(screen.getByText('±2%')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: '1 attachment' })).toBeInTheDocument()
-})
-
-test('a correction needs a reason before it can be saved, and sends it', async () => {
-  const user = userEvent.setup()
-  vi.mocked(updateActivity).mockResolvedValue({ ...diesel, quantity: 1200 })
-  renderPage()
-
-  await user.click(await screen.findByRole('button', { name: 'Correct' }))
-  const dialog = screen.getByRole('dialog', { name: 'Correct record' })
-  const save = within(dialog).getByRole('button', { name: 'Save correction' })
-  expect(save).toBeDisabled()
-  await user.type(
-    within(dialog).getByLabelText('Reason for the correction'),
-    'dispensing log reconciled with the supplier invoice',
+  expect(screen.getByText('Standby gensets · ACT-0001')).toBeInTheDocument()
+  expect(screen.getAllByText('Mar 2025')).toHaveLength(2)
+  expect(screen.getByTitle('All completeness checks passed')).toHaveTextContent('Ready')
+  expect(screen.getByText('No stream +1')).toBeInTheDocument()
+  expect(screen.getByText('1 of 2 records ready')).toBeInTheDocument()
+  expect(screen.getByText(', 1 with a document on file')).toBeInTheDocument()
+  expect(screen.getByRole('progressbar', { name: 'Record completeness' })).toHaveAttribute(
+    'aria-valuenow',
+    '50',
   )
-  expect(save).toBeEnabled()
-  await user.click(save)
-
-  await waitFor(() => expect(updateActivity).toHaveBeenCalled())
-  expect(vi.mocked(updateActivity).mock.calls[0][1]).toMatchObject({
-    quantity: 1000,
-    reason: 'dispensing log reconciled with the supplier invoice',
-  })
-})
-
-test('removing a record asks for a reason and records it', async () => {
-  const user = userEvent.setup()
-  vi.mocked(deleteActivity).mockResolvedValue(undefined)
-  renderPage()
-
-  await user.click(await screen.findByRole('button', { name: 'Remove' }))
-  const dialog = screen.getByRole('dialog', { name: 'Remove Diesel consumption?' })
-  const confirm = within(dialog).getByRole('button', { name: 'Remove' })
-  expect(confirm).toBeDisabled()
-  await user.type(within(dialog).getByLabelText('Reason'), 'entered twice from the same log')
-  await user.click(confirm)
-
-  await waitFor(() =>
-    expect(deleteActivity).toHaveBeenCalledWith('act-1', 'entered twice from the same log'),
-  )
-})
-
-test('the evidence dialog lists the attached files and the history shows old and new values', async () => {
-  const user = userEvent.setup()
-  renderPage()
-
-  await user.click(await screen.findByRole('button', { name: '1 attachment' }))
-  const evidence = screen.getByRole('dialog', { name: 'Evidence for Diesel consumption' })
-  expect(await within(evidence).findByText('invoice-2938.pdf')).toHaveAttribute(
-    'href',
-    '/api/ghg/evidence/ev-1',
-  )
-  await user.click(within(evidence).getByRole('button', { name: 'Close' }))
-
-  await user.click(screen.getByRole('button', { name: 'History (1)' }))
-  const history = screen.getByRole('dialog', { name: 'History of Diesel consumption' })
+  expect(screen.getByRole('tab', { name: 'Needs attention 1' })).toBeInTheDocument()
   expect(
-    await within(history).findByText('dispensing log reconciled with the supplier invoice'),
+    screen.getByText('Review status reflects completeness, not assurance.'),
   ).toBeInTheDocument()
-  expect(within(history).getByText('900')).toBeInTheDocument()
+})
+
+test('the tabs and "Resolve n items" ask the server for a readiness, and the month picker for a period', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await screen.findByText('Diesel consumption')
+
+  await user.click(screen.getByRole('tab', { name: 'Ready 1' }))
+  await waitFor(() =>
+    expect(searchActivities).toHaveBeenLastCalledWith(
+      'org-1',
+      expect.objectContaining({ status: 'READY', page: 0, size: 50 }),
+    ),
+  )
+  await user.click(screen.getByRole('button', { name: /Resolve 1 item/ }))
+  await waitFor(() =>
+    expect(searchActivities).toHaveBeenLastCalledWith(
+      'org-1',
+      expect.objectContaining({ status: 'NEEDS_ATTENTION' }),
+    ),
+  )
+  fireEvent.change(screen.getByLabelText('Period'), { target: { value: '2026-08' } })
+  await waitFor(() =>
+    expect(searchActivities).toHaveBeenLastCalledWith(
+      'org-1',
+      expect.objectContaining({ from: '2026-08-01', to: '2026-08-31' }),
+    ),
+  )
 })
 
 test('searching the register asks the server with the query and sort (spec 04.5)', async () => {
@@ -203,11 +249,108 @@ test('searching the register asks the server with the query and sort (spec 04.5)
   )
 })
 
+test('a row opens the drawer, and a correction needs a reason before it is sent', async () => {
+  const user = userEvent.setup()
+  vi.mocked(updateActivity).mockResolvedValue({ ...diesel, quantity: 1200 })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: 'Diesel consumption' }))
+  const drawer = screen.getByRole('dialog', { name: 'Diesel consumption' })
+  expect(within(drawer).getByText('Edit activity')).toBeInTheDocument()
+  expect(within(drawer).getByText('ACT-0001')).toBeInTheDocument()
+  expect(within(drawer).getByText('All completeness checks passed.')).toBeInTheDocument()
+  expect(
+    within(drawer)
+      .getByText(/Stream default:/)
+      .closest('p'),
+  ).toHaveTextContent(
+    "Scope 1 · Stationary combustion. Scope is confirmed in each inventory's review.",
+  )
+  const save = within(drawer).getByRole('button', { name: 'Save & next →' })
+  expect(save).toBeDisabled()
+  await user.type(
+    within(drawer).getByLabelText('Reason for the correction *'),
+    'dispensing log reconciled with the supplier invoice',
+  )
+  expect(save).toBeEnabled()
+  await user.click(save)
+
+  await waitFor(() => expect(updateActivity).toHaveBeenCalled())
+  expect(vi.mocked(updateActivity).mock.calls[0][1]).toMatchObject({
+    draft: false,
+    quantity: 1000,
+    unit: 'litre',
+    reason: 'dispensing log reconciled with the supplier invoice',
+  })
+})
+
+test('keys: n adds, / searches, j and Enter open the next row, and nothing fires while typing', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await screen.findByText('Diesel consumption')
+
+  await user.keyboard('/')
+  expect(screen.getByLabelText('Search')).toHaveFocus()
+  await user.keyboard('j')
+  expect(screen.getByLabelText('Search')).toHaveValue('j')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+  act(() => (document.activeElement as HTMLElement | null)?.blur())
+  await user.keyboard('n')
+  expect(await screen.findByRole('dialog', { name: 'New activity' })).toBeInTheDocument()
+  await user.keyboard('{Escape}')
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+  await user.keyboard('jj{Enter}')
+  expect(await screen.findByRole('dialog', { name: 'LPG cylinders' })).toBeInTheDocument()
+})
+
+test('the drawer opens from ?record= and its Evidence tab and history read the record', async () => {
+  const user = userEvent.setup()
+  renderPage('/app/ghg/org-1/activity?record=act-1')
+
+  const drawer = await screen.findByRole('dialog', { name: 'Diesel consumption' })
+  await user.click(within(drawer).getByRole('tab', { name: 'Evidence 1' }))
+  expect(await within(drawer).findByText('invoice-2938.pdf')).toHaveAttribute(
+    'href',
+    '/api/ghg/evidence/ev-1',
+  )
+  await user.click(within(drawer).getByRole('button', { name: 'History (1)' }))
+  const history = screen.getByRole('dialog', { name: 'History of Diesel consumption' })
+  expect(
+    await within(history).findByText('dispensing log reconciled with the supplier invoice'),
+  ).toBeInTheDocument()
+  expect(within(history).getByText('900')).toBeInTheDocument()
+})
+
+test('removing a record from the drawer asks for a reason and records it', async () => {
+  const user = userEvent.setup()
+  vi.mocked(deleteActivity).mockResolvedValue(undefined)
+  renderPage('/app/ghg/org-1/activity?record=act-1')
+
+  const drawer = await screen.findByRole('dialog', { name: 'Diesel consumption' })
+  await user.click(within(drawer).getByRole('button', { name: 'Remove' }))
+  const dialog = screen.getByRole('dialog', { name: 'Remove Diesel consumption?' })
+  const confirm = within(dialog).getByRole('button', { name: 'Remove' })
+  expect(confirm).toBeDisabled()
+  await user.type(within(dialog).getByLabelText('Reason'), 'entered twice from the same log')
+  await user.click(confirm)
+
+  await waitFor(() =>
+    expect(deleteActivity).toHaveBeenCalledWith('act-1', 'entered twice from the same log'),
+  )
+})
+
 test('an import with rejected rows names each row and imports nothing (spec 04.5)', async () => {
   const user = userEvent.setup()
   vi.mocked(importActivities).mockResolvedValue({
+    dryRun: false,
+    batchId: null,
     imported: 0,
     rejected: [{ row: 3, message: "quantity 'abc' is not a number" }],
+    rows: [],
+    totals: [],
+    warnings: [],
   })
   renderPage()
 
@@ -223,5 +366,5 @@ test('an import with rejected rows names each row and imports nothing (spec 04.5
 
   expect(await within(dialog).findByText(/Nothing imported: 1 row rejected/)).toBeInTheDocument()
   expect(within(dialog).getByText("quantity 'abc' is not a number")).toBeInTheDocument()
-  expect(importActivities).toHaveBeenCalledWith('org-1', file)
+  expect(vi.mocked(importActivities).mock.calls[0].slice(0, 2)).toEqual(['org-1', file])
 })
