@@ -125,7 +125,8 @@ bucket_sync() {
     return 1
   fi
   mkdir -p "$work/bucket"
-  local args=(--rm -v "$work/bucket:/bucket" -e AWS_ACCESS_KEY_ID="$key" -e AWS_SECRET_ACCESS_KEY="$secret" -e AWS_DEFAULT_REGION="${region:-auto}")
+  # run as the current user so the temp directory can be removed afterwards
+  local args=(--rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$work/bucket:/bucket" -e AWS_ACCESS_KEY_ID="$key" -e AWS_SECRET_ACCESS_KEY="$secret" -e AWS_DEFAULT_REGION="${region:-auto}")
   if [[ "$direction" == down ]]; then
     docker run "${args[@]}" "$AWS_IMAGE" s3 sync "s3://$bucket" /bucket --endpoint-url "$endpoint" --no-progress
   else
