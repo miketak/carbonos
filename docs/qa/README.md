@@ -23,11 +23,14 @@ the area it covers.
 
 ## How to read a procedure
 
-Each case has numbered steps, an **Expected result**, and a verdict line.
-Tick pass or fail and write a note on every case, even a passing one, when
-you saw anything odd. A case that fails does not stop the procedure unless
-the text says so. At the end, fill in the sign-off table and file one issue
-per failed case.
+Each case is a table with one row per step: the **Action** to take, the
+**Expected result** to check, a **Pass/Fail** cell and a **Notes** cell.
+Type `PASS` or `FAIL` in the Pass/Fail cell of every step that has an
+expected result (a step with an empty expected result is setup: do it and
+move on). Write a note on any step where you saw something odd, even a
+passing one. A case fails when any of its steps fails; a failed case does
+not stop the procedure unless the text says so. At the end, fill in the
+sign-off table and file one issue per failed case.
 
 The procedures name specs under `specs/`. When a case and a spec disagree,
 the spec is the reference; report the difference. Pre-flight gates are
@@ -43,9 +46,10 @@ link.
 
 1. Open the procedure and choose **File > Make a copy** into your own Drive,
    named `<document> - <your name> - <date>`.
-2. Tick the verdicts and write your notes in the copy. The line under the
-   title ("Version v0.6.0 (5b27661), built ...") is the value for
-   "Procedure and version tested" in the sign-off table.
+2. Type `PASS` or `FAIL` and your notes in the table cells of the copy. The
+   pages are landscape so the cells have room. The line under the title
+   ("Version v0.6.0 (5b27661), built ...") is the value for "Procedure and
+   version tested" in the sign-off table.
 3. File one issue per failed case with the **QA failure** template at
    https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml.
 4. Share the filled copy with the maintainer when the run is complete.
