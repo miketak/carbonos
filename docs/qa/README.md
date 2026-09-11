@@ -10,7 +10,7 @@ covers.
 ## Before you start
 
 - **App:** the qa frontend address in
-  [Environments](../reference/environments.md); the line under a page's
+  [Environments](../environments.md); the line under a page's
   title names the candidate you are testing.
 - **Accounts:** an ADMIN account whose password you hold, and two or three
   email addresses you can read (a Gmail address with plus-aliases such as
