@@ -167,14 +167,17 @@ export function ActivityPage() {
             onChange={(tab) => set({ tab })}
           />
         </div>
-        <div className="grid gap-2 border-b border-teal/10 px-4 py-3 md:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] md:items-end">
-          <InputField
-            ref={searchRef}
-            label="Search"
-            placeholder="Find an activity, facility, stream, reference or ACT-0001"
-            value={filters.q}
-            onChange={(event) => set({ q: event.target.value })}
-          />
+        {/* wraps rather than squeezes when the drawer takes the right third of the page */}
+        <div className="flex flex-wrap items-end gap-2 border-b border-teal/10 px-4 py-3 [&>*]:min-w-[10rem] [&>*]:flex-1">
+          <div className="min-w-[16rem] flex-[3]">
+            <InputField
+              ref={searchRef}
+              label="Search"
+              placeholder="Find an activity, facility, stream, reference or ACT-0001"
+              value={filters.q}
+              onChange={(event) => set({ q: event.target.value })}
+            />
+          </div>
           <SelectField
             label="Facility"
             value={filters.facility}
@@ -200,7 +203,9 @@ export function ActivityPage() {
               </option>
             ))}
           </SelectField>
-          <MonthField label="Period" value={filters.month} onChange={(month) => set({ month })} />
+          <div className="min-w-[15rem]">
+            <MonthField label="Period" value={filters.month} onChange={(month) => set({ month })} />
+          </div>
           <SelectField
             label="Sort by"
             value={filters.sort}
@@ -215,7 +220,7 @@ export function ActivityPage() {
           <Button
             type="button"
             variant="ghost"
-            className="px-3 py-2 text-sm"
+            className="!min-w-0 !flex-none px-3 py-2 text-sm"
             aria-label={filters.dir === 'desc' ? 'Sort ascending' : 'Sort descending'}
             onClick={() => set({ dir: filters.dir === 'desc' ? 'asc' : 'desc' })}
           >
