@@ -1,0 +1,113 @@
+# QA pipeline: a release candidate tag (v1.2.3-rc.4) re-runs the quality
+# gates, deploys the tagged commit to the Railway "qa" environment, then waits
+# on the GitHub "qa-signoff" environment. Approving that job is the QA
+# sign-off: the workflow tags the same commit v1.2.3 and starts the Release
+# workflow, which deploys staging and, after a second approval, production.
+# A candidate that fails QA is left unapproved; the fix lands on main and
+# gets the next rc number.
+name: QA
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
+
+concurrency:
+  group: qa
+  cancel-in-progress: false
+
+jobs:
+  backend-checks:
+    name: Backend / build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Build and test (includes ModularityTests)
+        working-directory: backend
+        run: ./mvnw -B verify
+
+  frontend-checks:
+    name: Frontend / lint, test & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+      - name: Check formatting
+        working-directory: frontend
+        run: npm run format:check
+      - name: Test
+        working-directory: frontend
+        run: npm test
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  deploy-qa:
+    name: Deploy to Railway (qa)
+    needs: [backend-checks, frontend-checks]
+    runs-on: ubuntu-latest
+    environment:
+      name: qa
+    env:
+      # Railway project token scoped to the "qa" environment
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_QA_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      # Run from the repo root: the CLI uploads the current directory, and each
+      # Railway service selects its subdirectory via its rootDirectory setting.
+      - name: Deploy backend
+        run: railway up --service backend --ci
+      - name: Deploy frontend
+        run: railway up --service frontend --ci
+      - name: Summary
+        run: echo "Candidate ${GITHUB_REF_NAME} is on qa. Approve the sign-off job once the testers approve it." >> "$GITHUB_STEP_SUMMARY"
+
+  sign-off:
+    name: QA sign-off (tags the release)
+    needs: deploy-qa
+    runs-on: ubuntu-latest
+    # the required reviewer on this environment is the QA sign-off
+    environment:
+      name: qa-signoff
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag the approved candidate and start the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rc="${GITHUB_REF_NAME}"
+          release="${rc%-rc.*}"
+          if git ls-remote --exit-code --tags origin "refs/tags/${release}" >/dev/null 2>&1; then
+            echo "::error::${release} already exists. A version is released once; cut a new candidate under the next version."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${release}" -m "Release ${release}, approved from ${rc}" "${GITHUB_SHA}"
+          git push origin "refs/tags/${release}"
+          # a tag pushed with the workflow token starts no workflow on its own;
+          # dispatching is the one event that does
+          gh workflow run release.yml --ref "${release}"
+          echo "Tagged ${release} on ${GITHUB_SHA} and started the Release workflow." >> "$GITHUB_STEP_SUMMARY"

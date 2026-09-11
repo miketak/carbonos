@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-11
 ---
 
 # Conventions
@@ -11,14 +11,17 @@ enforced version of this page; when they differ, `CLAUDE.md` wins.
 ## Branches and commits
 
 - Trunk-based. Short-lived branches, a pull request to `main`, a squash
-  merge. Direct pushes to `main` are for the repository owner only.
+  merge. Direct pushes to `main` are for the repository owner only; the
+  ruleset requires a pull request and the two check jobs for everyone else.
 - Branch names carry the commit type: `feat/`, `fix/`, `chore/`,
   `docs/`, `refactor/`, `test/`.
 - Conventional commits: `type: subject` with the subject in sentence case
   and the imperative mood, then a body that says what changed and why.
 - CI must be green before a merge. Never merge with a failing check, and
   never weaken a check to make one pass.
-- Merge to `main` deploys staging; a `vX.Y.Z` tag deploys production.
+- Nothing deploys from `main`. A `vX.Y.Z-rc.N` tag deploys qa; the QA
+  sign-off tags `vX.Y.Z`, which deploys staging and, after an approval,
+  production. See [Deploy and release](../how-to/deploy-and-release.md).
 
 ## Versions
 

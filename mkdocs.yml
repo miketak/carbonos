@@ -162,6 +162,7 @@ nav:
           - adr/README.md
           - adr/0001-use-material-for-mkdocs-with-uv.md
           - adr/0002-publish-qa-procedures-to-google-docs-with-pandoc.md
+          - adr/0003-promote-releases-through-qa-staging-and-production.md
       - Reviews:
           - reviews/2026-09-08-ghg-officer-ui-audit.md
   - Explanation:

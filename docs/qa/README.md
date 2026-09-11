@@ -1,13 +1,17 @@
 # QA procedures
 
-Manual test procedures for CarbonOS on **staging**. Each procedure has one
-objective, takes a human 30 to 90 minutes, and can be run on its own. Run
-them in order when you test a release; run one on its own after a change to
-the area it covers.
+Manual test procedures for CarbonOS on the **qa** environment, which holds
+the release candidate under test (`v0.7.0-rc.1` and so on) and moves only
+when a new candidate is tagged. Each procedure has one objective, takes a
+human 30 to 90 minutes, and can be run on its own. Run them in order when
+you test a candidate; run one on its own after a change to the area it
+covers.
 
 ## Before you start
 
-- **App:** https://frontend-staging-2e61.up.railway.app
+- **App:** the qa frontend address in
+  [Environments](../environments.md); the line under a page's
+  title names the candidate you are testing.
 - **Accounts:** an ADMIN account whose password you hold, and two or three
   email addresses you can read (a Gmail address with plus-aliases such as
   `you+qa1@gmail.com` works; mail arrives in the base inbox).
@@ -16,7 +20,7 @@ the area it covers.
 - **A calculator.** Several procedures check arithmetic against figures you
   compute by hand.
 - **A clean slate, if you want one.** From the repo root,
-  `make db-wipe ENV=staging` rebuilds the staging database from the
+  `make db-wipe ENV=qa` rebuilds the qa database from the
   migrations and leaves only the seeded admin. Without it, the procedures
   still work: every organization is tenant-scoped and invisible to other
   users, so old test data does not get in the way.

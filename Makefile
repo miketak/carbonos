@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset db-wipe backend frontend admin verify dev-up dev-down docs docs-serve docs-check vale qa-docs
+.PHONY: help db-up db-down db-reset db-wipe env-copy backend frontend admin verify dev-up dev-down docs docs-serve docs-check vale qa-docs
 
 # git ref the docs checks diff against
 BASE ?= origin/main
@@ -26,6 +26,10 @@ db-reset:         ## wipe the local compose database (drops the volumes) and sta
 db-wipe:          ## wipe a Railway environment's database: make db-wipe ENV=staging [ARGS=--yes]
 	@test -n "$(ENV)" || { echo "Usage: make db-wipe ENV=staging [ARGS=--yes|--yes-production]"; exit 1; }
 	./scripts/wipe-railway-db.sh "$(ENV)" $(ARGS)
+
+env-copy:         ## copy a Railway environment's database and bucket into another: make env-copy FROM=staging TO=qa [ARGS=--yes]
+	@test -n "$(FROM)" -a -n "$(TO)" || { echo "Usage: make env-copy FROM=staging TO=qa [ARGS=--yes]"; exit 1; }
+	./scripts/copy-railway-env.sh "$(FROM)" "$(TO)" $(ARGS)
 
 backend:          ## run Spring Boot with the local profile (sources SDKMAN for Java 25)
 	cd backend && source "$$HOME/.sdkman/bin/sdkman-init.sh" && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
