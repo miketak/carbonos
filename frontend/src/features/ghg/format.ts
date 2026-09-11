@@ -197,6 +197,13 @@ export function formatRecordPeriod(start: string | null, end: string | null): st
   return formatPeriod(start, end)
 }
 
+/** An instant as "2026-09-11 08:11", the register's date form with the time, in the viewer's zone. */
+export function formatDateTime(iso: string): string {
+  const date = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 export function formatQuantity(quantity: number | null): string {
   return quantity === null ? 'Missing' : quantity.toLocaleString()
 }

@@ -37,7 +37,10 @@ export function CompletenessBanner({
               </span>
             )}
           </p>
-          <p className="text-xs text-ink-muted">Complete records make review easier.</p>
+          <p className="text-xs text-ink-muted">
+            Complete records make review easier. Ready means the figures, a stream, a source and
+            evidence are present; nothing here has been verified.
+          </p>
         </div>
       </div>
       <div className="flex items-center gap-4">

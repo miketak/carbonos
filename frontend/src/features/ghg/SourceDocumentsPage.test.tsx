@@ -29,6 +29,7 @@ const invoice: EvidenceDocument = {
   periodEnd: '2025-03-31',
   evidenceRef: 'INV-2938',
   recordRemoved: false,
+  calculated: true,
 }
 
 const orphan: EvidenceDocument = {
@@ -42,6 +43,7 @@ const orphan: EvidenceDocument = {
   recordRef: 'ACT-0002',
   activityType: 'Grid electricity',
   recordRemoved: true,
+  calculated: false,
 }
 
 beforeEach(() => {
@@ -59,6 +61,8 @@ beforeEach(() => {
         sizeBytes: 2048,
         importedBy: 'kojo@ecoriv.test',
         importedAt: '2026-09-02T10:00:00Z',
+        firstRecordRef: 'ACT-0003',
+        lastRecordRef: 'ACT-0015',
       },
     ])
   vi.mocked(listFacilities).mockReset().mockResolvedValue([])
@@ -88,7 +92,10 @@ test('lists each document with its record, the imported files, and the index dow
     'href',
     '/api/ghg/import-batches/batch-1/file',
   )
-  expect(screen.getByText(/13 rows/)).toBeInTheDocument()
+  expect(screen.getByText(/13 rows \(ACT-0003 to ACT-0015\)/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Remove invoice-2938.pdf' })).not.toBeInTheDocument()
+  expect(screen.getByText('on a calculated run')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Remove ECG bill (SharePoint)' })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Download evidence index (CSV)' })).toHaveAttribute(
     'href',
     '/api/ghg/organizations/org-1/evidence/index.csv',

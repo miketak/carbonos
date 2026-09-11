@@ -5,6 +5,7 @@ import { InputField } from '../../../components/Field'
 import { useToast } from '../../../components/toast'
 import { fieldErrors, problemDetail } from '../../../lib/api'
 import { evidenceDownloadUrl } from '../api'
+import { formatDateTime } from '../format'
 import type { EvidenceOwner } from '../api'
 import {
   useAddEvidenceLink,
@@ -93,7 +94,7 @@ export function EvidencePanel({
                 )}
                 <span className="block text-xs text-ink-muted">
                   {item.kind === 'FILE' ? `file, ${formatSize(item.sizeBytes)}` : 'link'} ·{' '}
-                  {item.uploadedBy}, {new Date(item.uploadedAt).toLocaleDateString()}
+                  {item.uploadedBy}, {formatDateTime(item.uploadedAt)}
                 </span>
               </span>
               {editable && (

@@ -65,8 +65,8 @@ public class EvidenceService {
 		ALL, LINK_ONLY, ORPHANED
 	}
 
-	/** One page of an organization's record evidence, newest first. */
-	public record DocumentPage(List<Evidence> items, int page, int size, long total) {
+	/** One page of an organization's record evidence, newest first, and which records a run has calculated. */
+	public record DocumentPage(List<Evidence> items, int page, int size, long total, java.util.Set<UUID> calculated) {
 	}
 
 	/**
@@ -113,16 +113,26 @@ public class EvidenceService {
 				item.getActivity().getStream().getName();
 			}
 		}
-		return new DocumentPage(found.getContent(), found.getNumber(), bounded, found.getTotalElements());
+		var activityIds = found.getContent().stream().map(Evidence::getActivityId).distinct().toList();
+		var calculated = activityIds.isEmpty() ? java.util.Set.<UUID>of() : runLines.calculatedActivityIds(activityIds);
+		return new DocumentPage(found.getContent(), found.getNumber(), bounded, found.getTotalElements(), calculated);
+	}
+
+	/** An import with the range of record numbers it produced. */
+	public record BatchSummary(ImportBatch batch, Integer firstRecordNo, Integer lastRecordNo) {
 	}
 
 	/** The files each import came from (spec 04.6), newest first. */
 	@Transactional(readOnly = true)
-	public List<ImportBatch> importBatches(UUID organizationId) {
+	public List<BatchSummary> importBatches(UUID organizationId) {
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.check(organization);
-		return batches.findAllByOrganizationIdOrderByImportedAtDesc(organizationId);
+		return batches.findAllByOrganizationIdOrderByImportedAtDesc(organizationId).stream().map(batch -> {
+			var range = activities.recordRange(batch.getId());
+			var row = range.isEmpty() ? new Object[] { null, null } : range.getFirst();
+			return new BatchSummary(batch, (Integer) row[0], (Integer) row[1]);
+		}).toList();
 	}
 
 	/** The CSV as it was uploaded, for download. */

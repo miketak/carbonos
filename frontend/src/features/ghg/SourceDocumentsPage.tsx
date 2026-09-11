@@ -10,7 +10,7 @@ import type { DocumentFilter, EvidenceDocument, EvidenceQuery } from './api'
 import { Breadcrumb } from './components/Breadcrumb'
 import { formatSize } from './components/EvidencePanel'
 import { ViewSwitch } from './components/ViewSwitch'
-import { formatRecordPeriod } from './format'
+import { formatDateTime, formatRecordPeriod } from './format'
 import {
   useDeleteEvidence,
   useEvidencePageQuery,
@@ -141,10 +141,15 @@ export function SourceDocumentsPage() {
                   {batch.fileName}
                 </a>
                 <span className="text-xs text-ink-muted">
-                  {batch.rowCount} row{batch.rowCount === 1 ? '' : 's'} ·{' '}
-                  {formatSize(batch.sizeBytes)} · {batch.importedBy},{' '}
-                  {new Date(batch.importedAt).toLocaleDateString()} · sha256{' '}
-                  <span className="font-mono">{batch.sha256.slice(0, 12)}</span>
+                  {batch.rowCount} row{batch.rowCount === 1 ? '' : 's'}
+                  {batch.firstRecordRef
+                    ? ` (${batch.firstRecordRef}${batch.lastRecordRef !== batch.firstRecordRef ? ` to ${batch.lastRecordRef}` : ''})`
+                    : ''}{' '}
+                  · {formatSize(batch.sizeBytes)} · {batch.importedBy},{' '}
+                  {formatDateTime(batch.importedAt)} · sha256{' '}
+                  <span className="font-mono" title={batch.sha256}>
+                    {batch.sha256.slice(0, 12)}…
+                  </span>
                 </span>
               </li>
             ))}
@@ -300,21 +305,27 @@ function DocumentCard({
         </p>
         <div className="mt-auto flex items-center justify-between text-xs text-ink-muted">
           <span>
-            {item.uploadedBy}, {new Date(item.uploadedAt).toLocaleDateString()}
+            {item.uploadedBy}, {formatDateTime(item.uploadedAt)}
           </span>
-          <button
-            type="button"
-            aria-label={`Remove ${item.name}`}
-            className="text-red-600 hover:underline"
-            onClick={() =>
-              remove.mutate(item.id, {
-                onError: (error) =>
-                  toast(problemDetail(error) ?? 'Could not remove the document.', 'error'),
-              })
-            }
-          >
-            remove
-          </button>
+          {item.calculated ? (
+            <span title="A run has calculated this record; its evidence stays on file so the run remains traceable.">
+              on a calculated run
+            </span>
+          ) : (
+            <button
+              type="button"
+              aria-label={`Remove ${item.name}`}
+              className="text-red-600 hover:underline"
+              onClick={() =>
+                remove.mutate(item.id, {
+                  onError: (error) =>
+                    toast(problemDetail(error) ?? 'Could not remove the document.', 'error'),
+                })
+              }
+            >
+              remove
+            </button>
+          )}
         </div>
       </GlassCard>
     </li>

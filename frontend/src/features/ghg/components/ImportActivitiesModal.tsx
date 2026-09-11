@@ -238,6 +238,9 @@ export function ImportActivitiesModal({
           <section>
             <h3 className="text-sm font-semibold">
               {preview.rows.length} record{preview.rows.length === 1 ? '' : 's'} to add
+              <span className="ml-2 text-xs font-normal text-ink-muted">
+                Row numbers count the header as row 1, as the spreadsheet does.
+              </span>
             </h3>
             <div className="mt-1 max-h-64 overflow-y-auto">
               <table aria-label="Records to add" className="w-full text-left text-xs">
