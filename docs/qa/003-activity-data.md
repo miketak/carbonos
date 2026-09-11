@@ -73,7 +73,7 @@ two tiers in the data-quality table.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Look at the banner above the tabs. | "n of m records ready" with the share as a bar labelled "Record completeness", and "Resolve k items →" where k is the number not ready. The footnote reads "Review status reflects completeness, not assurance." | | |
+| 1 | Look at the banner above the tabs. | "n of m records ready" with the share as a bar labelled "Record completeness", the line "Ready means the figures, a stream, a source and evidence are present; nothing here has been verified.", and "Resolve k items →" where k is the number not ready. The footnote reads "Review status reflects completeness, not assurance." | | |
 | 2 | Open the ANFO record (click its row). | The pill reads "No stream +2" and the check box in the drawer lists No stream, Missing source and Needs evidence. | | |
 | 3 | Choose the stream Explosives, type the data source "Magazine register" and the document reference "MAG-08-2025", give a reason and click **Save**. | The pill turns **Ready**; the drawer says "All completeness checks passed." and that it cites a reference with nothing attached. The banner's ready count rises by one. | | |
 | 4 | Click **Resolve k items →**. | The **Needs attention** tab is selected and only records that are not ready are listed. Click **All records**. | | |
@@ -221,7 +221,7 @@ The overview shows a tick on "Record activity data", not a count.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Source documents** in the switch beside the buttons. | A page headed "Source documents": an "Imported files" card listing each CSV with its rows, size, who and when and the start of its sha256, then a card per document with kind and size, facility and period, and "ACT-00nn · activity →". | | |
+| 1 | Click **Source documents** in the switch beside the buttons. | A page headed "Source documents": an "Imported files" card listing each CSV with its rows and the records they became (ACT-00nn to ACT-00mm), size, who and when, and the start of its sha256 (the full digest on hover), then a card per document with kind and size, facility and period, and "ACT-00nn · activity →". | | |
 | 2 | Click the record link on the haul fleet invoice. | The register opens with that record in the drawer. | | |
 | 3 | Back on Source documents, search `invoice`, then choose **Links only** under Show. | The search narrows to the PDF; the filter lists the SharePoint link alone. | | |
 | 4 | Choose **Record removed**. | The documents of the LPG duplicate removed in D2 (if any were attached) are listed with the record struck through and "(record removed)"; otherwise "No documents match". | | |
@@ -231,7 +231,7 @@ The overview shows a tick on "Record activity data", not a count.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | After procedure 7 has run the inventory, click **remove** on a document of a record that run calculated. | Refused with "A run has calculated this record; its evidence stays on file so the run remains traceable.". | | |
+| 1 | After procedure 7 has run the inventory, look at a document of a record that run calculated. | The card offers no **remove**; it reads "on a calculated run" and its tooltip says the evidence stays on file so the run remains traceable. | | |
 
 ## Sign-off
 
