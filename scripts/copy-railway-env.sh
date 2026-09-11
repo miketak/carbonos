@@ -4,7 +4,9 @@
 # so a new environment (qa) starts where an existing one (staging) is.
 # Usage:
 #
-#   scripts/copy-railway-env.sh <from-env> <to-env>
+#   scripts/copy-railway-env.sh <from-env> <to-env> [--yes]
+#
+#   --yes   skip the interactive prompt
 #
 # The Railway Postgres services have no public proxy, so the copy streams
 # pg_dump out of the source container and psql into the target container
@@ -25,12 +27,14 @@ DB_SERVICE=${DB_SERVICE:-Postgres}
 BACKEND_SERVICE=${BACKEND_SERVICE:-backend}
 AWS_IMAGE=${AWS_IMAGE:-amazon/aws-cli:2.22.35}
 
-if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 <from-env> <to-env>" >&2
+if [[ $# -lt 2 ]]; then
+  echo "Usage: $0 <from-env> <to-env> [--yes]" >&2
   exit 1
 fi
 FROM=$1
 TO=$2
+YES=false
+[[ "${3:-}" == "--yes" ]] && YES=true
 if [[ "$FROM" == "$TO" ]]; then
   echo "Source and target are the same environment." >&2
   exit 1
@@ -85,10 +89,12 @@ trap 'rm -rf "$work"' EXIT
 
 echo "Source '$FROM' holds: $(summary "$FROM")"
 echo "Target '$TO' holds:   $(summary "$TO") (its public schema is replaced)"
-read -r -p "Type the target environment name to continue: " typed </dev/tty
-if [[ "$typed" != "$TO" ]]; then
-  echo "Confirmation did not match. Nothing was changed." >&2
-  exit 1
+if [[ "$YES" != true ]]; then
+  read -r -p "Type the target environment name to continue: " typed </dev/tty
+  if [[ "$typed" != "$TO" ]]; then
+    echo "Confirmation did not match. Nothing was changed." >&2
+    exit 1
+  fi
 fi
 
 echo "Dumping '$FROM'."
