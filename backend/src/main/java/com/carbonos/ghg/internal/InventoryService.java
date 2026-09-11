@@ -764,7 +764,7 @@ public class InventoryService {
 		var inherited = all.stream().filter(InventoryAssignment::isInherited).count();
 		var decided = all.stream().map(a -> a.getActivity().getId()).collect(Collectors.toSet());
 		var undecided = activities
-			.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(inventory.getOrganization().getId())
+			.findAllByOrganizationIdAndDeletedAtIsNullAndDraftFalseOrderByPeriodEndDesc(inventory.getOrganization().getId())
 			.stream()
 			.filter(activity -> !decided.contains(activity.getId())
 					&& inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd()))
@@ -1008,7 +1008,7 @@ public class InventoryService {
 
 		var created = 0;
 		for (var activity : activities
-			.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(inventory.getOrganization().getId())) {
+			.findAllByOrganizationIdAndDeletedAtIsNullAndDraftFalseOrderByPeriodEndDesc(inventory.getOrganization().getId())) {
 			if (existing.contains(activity.getId())) {
 				continue;
 			}
@@ -1279,7 +1279,7 @@ public class InventoryService {
 			.map(assignment -> assignment.getActivity().getId())
 			.collect(Collectors.toSet());
 		var orgActivities = activities
-			.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(inventory.getOrganization().getId());
+			.findAllByOrganizationIdAndDeletedAtIsNullAndDraftFalseOrderByPeriodEndDesc(inventory.getOrganization().getId());
 		var baseYear = baseYears.of(inventory.getOrganization().getId()).orElse(null);
 		var wholeYear = baseYear != null
 				&& baseYear.getStructuralChangeConvention() == StructuralChangeConvention.WHOLE_YEAR;
@@ -1379,6 +1379,35 @@ public class InventoryService {
 								+ ") is excluded for a reason that no longer holds: run \"Review activity data\"."));
 			}
 		}
+		var attachedEvidence = evidence
+			.findAllByActivityIdIn(included.stream().map(a -> a.getActivity().getId()).toList())
+			.stream()
+			.map(Evidence::getActivityId)
+			.collect(Collectors.toSet());
+		// spec 04.6: a draft at a facility in the boundary is a known source with data outstanding
+		var boundaryFacilityIds = treatments.stream()
+			.flatMap(t -> t.getFacilities().stream())
+			.map(member -> member.getFacility().getId())
+			.collect(Collectors.toSet());
+		var pendingDrafts = activities
+			.findAllByOrganizationIdAndDeletedAtIsNullAndDraftTrueOrderByCreatedAtAsc(inventory.getOrganization().getId())
+			.stream()
+			.filter(draft -> boundaryFacilityIds.contains(draft.getFacility().getId()))
+			.filter(draft -> draft.period() == null
+					|| inventory.overlaps(draft.getPeriodStart(), draft.getPeriodEnd()))
+			.toList();
+		if (!pendingDrafts.isEmpty()) {
+			var listed = pendingDrafts.stream()
+				.limit(10)
+				.map(draft -> draft.getRecordRef() + " '" + draft.getActivityType() + "' at "
+						+ draft.getFacility().getName() + " ("
+						+ (draft.period() == null ? "no period" : draft.period().describe()) + ")")
+				.collect(Collectors.joining(", "));
+			completenessFindings.add(new Finding(Severity.WARNING, pendingDrafts.size() + " draft record"
+					+ (pendingDrafts.size() == 1 ? " is" : "s are") + " not entered: " + listed
+					+ (pendingDrafts.size() > 10 ? ", and " + (pendingDrafts.size() - 10) + " more" : "")
+					+ ". Complete or remove them before the run."));
+		}
 		for (var assignment : included) {
 			var activity = assignment.getActivity();
 			if (activity.isDeleted()) {
@@ -1414,9 +1443,16 @@ public class InventoryService {
 					}
 				}
 			}
-			if (activity.getEvidenceRef() == null) {
+			// spec 04.6: the gate and the register judge evidence the same way, through ActivityReadiness
+			var readiness = ActivityReadiness.of(activity, attachedEvidence.contains(activity.getId()));
+			if (readiness.issues().contains(ActivityReadiness.Issue.NO_EVIDENCE)) {
 				completenessFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType() + "' ("
-						+ activity.period().describe() + ") has no evidence reference."));
+						+ activity.period().describe() + ") has no evidence: no reference and nothing attached."));
+			}
+			else if (readiness.issues().contains(ActivityReadiness.Issue.EVIDENCE_REFERENCE_ONLY)) {
+				completenessFindings.add(new Finding(Severity.INFO, "'" + activity.getActivityType() + "' ("
+						+ activity.period().describe() + ") cites " + activity.getEvidenceRef()
+						+ " but nothing is attached."));
 			}
 			if (activity.getDataQuality() != DataQuality.MEASURED || activity.getDataQualityTier() >= 4) {
 				completenessFindings.add(new Finding(Severity.INFO,
@@ -1792,7 +1828,7 @@ public class InventoryService {
 	 * at all shows as empty months.
 	 */
 	public record CoverageRow(UUID facilityId, String facilityName, UUID streamId, String streamName,
-			String activityType, List<String> months, List<String> coveredMonths) {
+			String activityType, List<String> months, List<String> coveredMonths, List<String> pendingMonths) {
 	}
 
 	@Transactional(readOnly = true)
@@ -1815,8 +1851,29 @@ public class InventoryService {
 			if (boundaryFacilityIds.contains(stream.getFacility().getId())) {
 				var key = stream.getFacility().getId() + "|stream|" + stream.getId();
 				rows.put(key, new CoverageRow(stream.getFacility().getId(), stream.getFacility().getName(),
-						stream.getId(), stream.getName(), null, labels, List.of()));
+						stream.getId(), stream.getName(), null, labels, List.of(), List.of()));
 				covered.put(key, new java.util.TreeSet<>());
+			}
+		}
+		// spec 04.6: a draft with a period marks its months as pending (data expected, not received)
+		var pending = new java.util.LinkedHashMap<String, java.util.TreeSet<String>>();
+		for (var draft : activities
+			.findAllByOrganizationIdAndDeletedAtIsNullAndDraftTrueOrderByCreatedAtAsc(inventory.getOrganization().getId())) {
+			if (draft.period() == null || !boundaryFacilityIds.contains(draft.getFacility().getId())) {
+				continue;
+			}
+			var stream = draft.getStream();
+			var key = stream != null ? draft.getFacility().getId() + "|stream|" + stream.getId()
+					: draft.getFacility().getId() + "|type|" + draft.getActivityType().toLowerCase(Locale.ROOT);
+			rows.computeIfAbsent(key, k -> new CoverageRow(draft.getFacility().getId(),
+					draft.getFacility().getName(), stream == null ? null : stream.getId(),
+					stream == null ? null : stream.getName(), stream == null ? draft.getActivityType() : null, labels,
+					List.of(), List.of()));
+			var set = pending.computeIfAbsent(key, k -> new java.util.TreeSet<>());
+			for (var month : months) {
+				if (draft.period().overlaps(month.atDay(1), month.atEndOfMonth())) {
+					set.add(month.toString());
+				}
 			}
 		}
 		for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
@@ -1830,7 +1887,7 @@ public class InventoryService {
 			rows.computeIfAbsent(key, k -> new CoverageRow(activity.getFacility().getId(),
 					activity.getFacility().getName(), stream == null ? null : stream.getId(),
 					stream == null ? null : stream.getName(), stream == null ? activity.getActivityType() : null, labels,
-					List.of()));
+					List.of(), List.of()));
 			var set = covered.computeIfAbsent(key, k -> new java.util.TreeSet<>());
 			for (var month : months) {
 				if (activity.period().overlaps(month.atDay(1), month.atEndOfMonth())) {
@@ -1842,7 +1899,8 @@ public class InventoryService {
 			.stream()
 			.map(entry -> new CoverageRow(entry.getValue().facilityId(), entry.getValue().facilityName(),
 					entry.getValue().streamId(), entry.getValue().streamName(), entry.getValue().activityType(), labels,
-					List.copyOf(covered.get(entry.getKey()))))
+					List.copyOf(covered.getOrDefault(entry.getKey(), new java.util.TreeSet<>())),
+					List.copyOf(pending.getOrDefault(entry.getKey(), new java.util.TreeSet<>()))))
 			.sorted(java.util.Comparator.comparing(CoverageRow::facilityName)
 				.thenComparing(row -> row.streamName() != null ? row.streamName() : row.activityType(),
 						String.CASE_INSENSITIVE_ORDER))

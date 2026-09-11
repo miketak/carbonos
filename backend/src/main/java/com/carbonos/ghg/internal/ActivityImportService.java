@@ -1,13 +1,18 @@
 package com.carbonos.ghg.internal;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -19,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.carbonos.media.MediaStorage;
 import com.carbonos.media.MediaStorageException;
 
 /**
@@ -26,7 +32,9 @@ import com.carbonos.media.MediaStorageException;
  * is validated first and nothing is imported while any row is rejected, so a
  * corrected file can be uploaded again without doubling records. A row that
  * repeats a record already on file, or another row of the file, is rejected
- * as a duplicate.
+ * as a duplicate. A dry run (spec 04.6) returns the same validation with each
+ * row's readiness, control totals and warnings, and saves nothing; a real
+ * import keeps the file with its digest so every record traces to its row.
  */
 @Service
 @Transactional
@@ -42,21 +50,41 @@ public class ActivityImportService {
 	public record Rejection(int row, String message) {
 	}
 
-	public record Result(int imported, List<Rejection> rejected) {
+	/** A row as it would import (spec 04.6): what a reviewer would see, with its readiness. */
+	public record PreviewRow(int row, String facilityName, String streamName, String activityType,
+			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
+			String evidenceRef, DataQuality dataQuality, int dataQualityTier, ActivityReadiness readiness) {
+	}
+
+	/** Rows and summed quantity per facility, stream and unit: the totals to check against the sheet's footer. */
+	public record Total(String facilityName, String streamName, String unit, int rows, BigDecimal quantity) {
+	}
+
+	/** Something worth a look before committing, not a reason to reject the row. */
+	public record Warning(int row, String message) {
+	}
+
+	public record Result(boolean dryRun, UUID batchId, int imported, List<Rejection> rejected, List<PreviewRow> rows,
+			List<Total> totals, List<Warning> warnings) {
 	}
 
 	private final OrganizationRepository organizations;
 	private final FacilityRepository facilities;
 	private final SourceStreamRepository streams;
 	private final ActivityRecordRepository activities;
+	private final ImportBatchRepository batches;
+	private final MediaStorage media;
 	private final GhgAccess access;
 
 	ActivityImportService(OrganizationRepository organizations, FacilityRepository facilities,
-			SourceStreamRepository streams, ActivityRecordRepository activities, GhgAccess access) {
+			SourceStreamRepository streams, ActivityRecordRepository activities, ImportBatchRepository batches,
+			MediaStorage media, GhgAccess access) {
 		this.organizations = organizations;
 		this.facilities = facilities;
 		this.streams = streams;
 		this.activities = activities;
+		this.batches = batches;
+		this.media = media;
 		this.access = access;
 	}
 
@@ -66,24 +94,85 @@ public class ActivityImportService {
 				+ "Nkran Mine,Standby gensets,Diesel consumption,12500,litre,2025-03-01,2025-03-31,Fuel register,INV-2938,MEASURED,1,2,March dispensing\r\n";
 	}
 
-	public Result importFile(UUID organizationId, MultipartFile file) {
+	/** Validates the file and reports what would import; saves nothing (spec 04.6). */
+	@Transactional(readOnly = true)
+	public Result preview(UUID organizationId, MultipartFile file) {
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.checkWrite(organization);
+		var parsed = parse(organizationId, read(file));
+		return new Result(true, null, 0, parsed.rejected(), parsed.rows(), parsed.totals(), parsed.warnings());
+	}
+
+	public Result importFile(UUID organizationId, MultipartFile file) {
+		// row-locked: the records take a block of numbers from the organization's counter (spec 04.6)
+		var organization = organizations.lockById(organizationId)
+			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
+		access.checkWrite(organization);
+		var bytes = read(file);
+		var parsed = parse(organizationId, bytes);
+		if (!parsed.rejected().isEmpty()) {
+			return new Result(false, null, 0, parsed.rejected(), List.of(), parsed.totals(), parsed.warnings());
+		}
+		var fileName = file.getOriginalFilename() == null || file.getOriginalFilename().isBlank() ? "import.csv"
+				: file.getOriginalFilename().replaceAll("[\\\\/]", "_");
+		var batch = batches.save(new ImportBatch(organizationId, fileName, sha256(bytes), parsed.accepted().size(),
+				bytes.length, access.currentUserEmail()));
+		var first = organization.allocateRecordNumbers(parsed.accepted().size());
+		var records = new ArrayList<ActivityRecord>(parsed.accepted().size());
+		for (var i = 0; i < parsed.accepted().size(); i++) {
+			var accepted = parsed.accepted().get(i);
+			var record = new ActivityRecord(first + i, false, accepted.facility(), accepted.stream(),
+					accepted.activityType(), accepted.quantity(), accepted.unit(), accepted.periodStart(),
+					accepted.periodEnd(), accepted.dataSource(), accepted.evidenceRef(), accepted.dataQuality(),
+					accepted.note(), accepted.dataQualityTier(), accepted.uncertaintyPercent());
+			record.fromImport(batch.getId(), accepted.row());
+			records.add(record);
+		}
+		activities.saveAll(records);
+		// the file is kept after the rows are fixed: a failed put rolls the import back (ISO 14064-1 section 8.3)
+		media.put(batch.getStorageKey(), new ByteArrayInputStream(bytes), bytes.length, "text/csv");
+		return new Result(false, batch.getId(), records.size(), List.of(), List.of(), parsed.totals(),
+				parsed.warnings());
+	}
+
+	/** A row that passed validation, before it is numbered and saved. */
+	private record Accepted(int row, Facility facility, SourceStream stream, String activityType,
+			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
+			String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
+			BigDecimal uncertaintyPercent) {
+	}
+
+	private record Parsed(List<Rejection> rejected, List<Accepted> accepted, List<PreviewRow> rows,
+			List<Total> totals, List<Warning> warnings) {
+	}
+
+	private static byte[] read(MultipartFile file) {
 		if (file.isEmpty()) {
 			throw new GhgFieldException("file", "Choose a CSV file to import.");
 		}
 		if (file.getSize() > MAX_BYTES) {
 			throw new GhgFieldException("file", "The file is larger than 5 MB.");
 		}
-		String text;
 		try {
-			text = new String(file.getBytes(), StandardCharsets.UTF_8);
+			return file.getBytes();
 		}
 		catch (IOException ex) {
 			throw new MediaStorageException("Failed to read the uploaded file", ex);
 		}
-		var table = CsvTable.parse(text);
+	}
+
+	private static String sha256(byte[] bytes) {
+		try {
+			return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+		}
+		catch (NoSuchAlgorithmException ex) {
+			throw new IllegalStateException("SHA-256 is not available", ex);
+		}
+	}
+
+	private Parsed parse(UUID organizationId, byte[] bytes) {
+		var table = CsvTable.parse(new String(bytes, StandardCharsets.UTF_8));
 		if (table.header().isEmpty()) {
 			throw new GhgFieldException("file", "The file is empty. Download the template and fill it in.");
 		}
@@ -103,13 +192,25 @@ public class ActivityImportService {
 			streamsByFacility.computeIfAbsent(stream.getFacility().getId(), k -> new HashMap<>())
 				.put(stream.getName().toLowerCase(Locale.ROOT), stream);
 		}
-		var existing = activities.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(organizationId)
+		// facts only: a draft is a stub, not something a row could duplicate (spec 04.6)
+		var existing = activities.findAllByOrganizationIdAndDeletedAtIsNullAndDraftFalseOrderByPeriodEndDesc(organizationId)
 			.stream()
 			.map(a -> key(a.getFacility().getId(), a.getActivityType(), a.getQuantity(), a.getUnit(), a.getPeriodStart(),
 					a.getPeriodEnd()))
 			.collect(Collectors.toCollection(HashSet::new));
+		// a draft the row may be completing: same facility, activity and period (spec 04.6)
+		var drafts = new HashMap<String, ActivityRecord>();
+		for (var draft : activities
+			.findAllByOrganizationIdAndDeletedAtIsNullAndDraftTrueOrderByCreatedAtAsc(organizationId)) {
+			drafts.put(draft.getFacility().getId() + "|" + draft.getActivityType().trim().toLowerCase(Locale.ROOT) + "|"
+					+ draft.getPeriodStart() + "|" + draft.getPeriodEnd(), draft);
+		}
 		var rejected = new ArrayList<Rejection>();
-		var accepted = new ArrayList<ActivityRecord>();
+		var accepted = new ArrayList<Accepted>();
+		var previews = new ArrayList<PreviewRow>();
+		var warnings = new ArrayList<Warning>();
+		var totals = new LinkedHashMap<String, Total>();
+		var unitsByStream = new HashMap<String, java.util.Set<String>>();
 		var today = LocalDate.now();
 		for (var row : table.rows()) {
 			var cells = new Cells(table.header(), row.cells());
@@ -216,15 +317,42 @@ public class ActivityImportService {
 				rejected.add(new Rejection(row.number(), String.join("; ", problems)));
 				continue;
 			}
-			accepted.add(new ActivityRecord(facility, stream, activityType.trim(), quantity, unit.trim(), start, end,
-					blankToNull(cells.get("data_source")), blankToNull(cells.get("evidence_ref")), quality,
-					blankToNull(cells.get("note")), tier, uncertainty));
+			var item = new Accepted(row.number(), facility, stream, activityType.trim(), quantity, unit.trim(), start,
+					end, blankToNull(cells.get("data_source")), blankToNull(cells.get("evidence_ref")), quality,
+					blankToNull(cells.get("note")), tier, uncertainty);
+			accepted.add(item);
+			var record = new ActivityRecord(0, false, facility, stream, item.activityType(), quantity, item.unit(),
+					start, end, item.dataSource(), item.evidenceRef(), quality, item.note(), tier, uncertainty);
+			previews.add(new PreviewRow(row.number(), facility.getName(), stream == null ? null : stream.getName(),
+					item.activityType(), quantity, item.unit(), start, end, item.dataSource(), item.evidenceRef(),
+					quality, record.getDataQualityTier(), ActivityReadiness.of(record, false)));
+			var totalKey = facility.getId() + "|" + (stream == null ? "" : stream.getId()) + "|"
+					+ item.unit().toLowerCase(Locale.ROOT);
+			totals.merge(totalKey,
+					new Total(facility.getName(), stream == null ? null : stream.getName(), item.unit(), 1, quantity),
+					(a, b) -> new Total(a.facilityName(), a.streamName(), a.unit(), a.rows() + b.rows(),
+							a.quantity().add(b.quantity())));
+			var draft = drafts.get(facility.getId() + "|" + item.activityType().toLowerCase(Locale.ROOT) + "|" + start
+					+ "|" + end);
+			if (draft != null) {
+				warnings.add(new Warning(row.number(), "matches draft " + draft.getRecordRef()
+						+ " (same facility, activity and period): the draft stays on file, complete or remove it"));
+			}
+			if (stream != null) {
+				var seen = unitsByStream.computeIfAbsent(stream.getId().toString(), k -> new java.util.TreeSet<>());
+				seen.add(item.unit().toLowerCase(Locale.ROOT));
+				if (seen.size() > 1) {
+					warnings.add(new Warning(row.number(), "'" + stream.getName() + "' mixes units in this file: "
+							+ String.join(", ", seen)));
+				}
+			}
+			if (start.plusMonths(1).isBefore(end.plusDays(1))) {
+				warnings.add(new Warning(row.number(), "the period is longer than one month (" + start + " to " + end
+						+ "); monthly rows make the coverage matrix and cut-off checks precise"));
+			}
 		}
-		if (!rejected.isEmpty()) {
-			return new Result(0, List.copyOf(rejected));
-		}
-		activities.saveAll(accepted);
-		return new Result(accepted.size(), List.of());
+		return new Parsed(List.copyOf(rejected), List.copyOf(accepted), List.copyOf(previews),
+				List.copyOf(totals.values()), List.copyOf(warnings));
 	}
 
 	private static LocalDate date(String value, String field, List<String> problems) {

@@ -16,15 +16,20 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.carbonos.ghg.internal.EvidenceService;
+import com.carbonos.ghg.internal.EvidenceService.DocumentFilter;
 import com.carbonos.ghg.internal.EvidenceService.Owner;
+import com.carbonos.ghg.internal.web.dto.EvidenceDocumentResponse;
 import com.carbonos.ghg.internal.web.dto.EvidenceLinkRequest;
 import com.carbonos.ghg.internal.web.dto.EvidenceResponse;
+import com.carbonos.ghg.internal.web.dto.ImportBatchResponse;
+import com.carbonos.ghg.internal.web.dto.PageResponse;
 
 import jakarta.validation.Valid;
 
@@ -71,6 +76,48 @@ class EvidenceController {
 	@ResponseStatus(HttpStatus.CREATED)
 	EvidenceResponse linkForInstrument(@PathVariable UUID id, @Valid @RequestBody EvidenceLinkRequest body) {
 		return EvidenceResponse.from(evidenceService.attachLink(Owner.marketFactor(id), body.name(), body.url()));
+	}
+
+	/** The organization's source documents, paged (spec 04.6). */
+	@GetMapping("/organizations/{organizationId}/evidence/page")
+	PageResponse<EvidenceDocumentResponse> documents(@PathVariable UUID organizationId,
+			@RequestParam(required = false) String q, @RequestParam(required = false) UUID facilityId,
+			@RequestParam(defaultValue = "ALL") DocumentFilter filter, @RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "24") int size) {
+		var result = evidenceService.pageOfOrganization(organizationId, q, facilityId, filter, page, size);
+		return new PageResponse<>(result.items().stream().map(EvidenceDocumentResponse::from).toList(),
+				result.page(), result.size(), result.total());
+	}
+
+	/** The evidence index for the verifier's pack (spec 04.6). */
+	@GetMapping(value = "/organizations/{organizationId}/evidence/index.csv", produces = "text/csv")
+	ResponseEntity<byte[]> index(@PathVariable UUID organizationId) {
+		return ResponseEntity.ok()
+			.contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+			.header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+				.filename("evidence-index.csv", StandardCharsets.UTF_8)
+				.build()
+				.toString())
+			.body(evidenceService.index(organizationId).getBytes(StandardCharsets.UTF_8));
+	}
+
+	/** The files each CSV import came from (spec 04.6). */
+	@GetMapping("/organizations/{organizationId}/import-batches")
+	List<ImportBatchResponse> importBatches(@PathVariable UUID organizationId) {
+		return evidenceService.importBatches(organizationId).stream().map(ImportBatchResponse::from).toList();
+	}
+
+	@GetMapping("/import-batches/{id}/file")
+	ResponseEntity<InputStreamResource> importFile(@PathVariable UUID id) {
+		var download = evidenceService.openImport(id);
+		return ResponseEntity.ok()
+			.contentType(MediaType.parseMediaType(download.media().contentType()))
+			.contentLength(download.media().contentLength())
+			.header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+				.filename(download.batch().getFileName(), StandardCharsets.UTF_8)
+				.build()
+				.toString())
+			.body(new InputStreamResource(download.media().content()));
 	}
 
 	/** The file itself, as an attachment. */

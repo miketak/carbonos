@@ -54,6 +54,10 @@ public class GhgRunLine {
 	@Column(name = "activity_id", nullable = false)
 	private UUID activityId;
 
+	// the record's number when the run was launched (spec 04.6); null on lines of runs before V34
+	@Column(name = "record_no")
+	private Integer recordNo;
+
 	@Column(name = "facility_id")
 	private UUID facilityId;
 
@@ -261,6 +265,7 @@ public class GhgRunLine {
 		this.id = UUID.randomUUID();
 		this.run = run;
 		this.activityId = activity.getId();
+		this.recordNo = activity.getRecordNo();
 		this.facilityId = activity.getFacility().getId();
 		this.facilityName = activity.getFacility().getName();
 		this.entityId = activity.getFacility().getEntity().getId();
@@ -321,6 +326,15 @@ public class GhgRunLine {
 
 	public UUID getActivityId() {
 		return activityId;
+	}
+
+	public Integer getRecordNo() {
+		return recordNo;
+	}
+
+	/** {@code ACT-0001}, or empty on a line of a run before V34. */
+	public String getRecordRef() {
+		return ActivityRecord.ref(recordNo);
 	}
 
 	public UUID getFacilityId() {

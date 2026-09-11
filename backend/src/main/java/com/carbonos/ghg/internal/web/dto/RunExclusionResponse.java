@@ -8,12 +8,13 @@ import com.carbonos.ghg.internal.ExclusionReason;
 import com.carbonos.ghg.internal.GhgRunExclusion;
 
 /** An assignment a run left out, with the activity's facts and the documented reason (spec 05.1). */
-public record RunExclusionResponse(UUID id, UUID activityId, String facilityName, String activityType,
+public record RunExclusionResponse(UUID id, UUID activityId, String recordRef, String facilityName, String activityType,
 		BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, ExclusionReason exclusionReason,
 		String exclusionDetail, String exclusionJustification, BigDecimal estimatedKgCo2e) {
 
 	public static RunExclusionResponse from(GhgRunExclusion exclusion) {
-		return new RunExclusionResponse(exclusion.getId(), exclusion.getActivityId(), exclusion.getFacilityName(),
+		return new RunExclusionResponse(exclusion.getId(), exclusion.getActivityId(), exclusion.getRecordRef(),
+				exclusion.getFacilityName(),
 				exclusion.getActivityType(), exclusion.getQuantity(), exclusion.getUnit(),
 				exclusion.getPeriodStart(), exclusion.getPeriodEnd(), exclusion.getExclusionReason(),
 				exclusion.getExclusionDetail(), exclusion.getExclusionJustification(), exclusion.getEstimatedKgCo2e());

@@ -26,10 +26,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.ghg.internal.ActivityImportService;
+import com.carbonos.ghg.internal.ActivityStatus;
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.web.dto.ActivityImportResponse;
+import com.carbonos.ghg.internal.web.dto.ActivityPageResponse;
 import com.carbonos.ghg.internal.web.dto.ActivityResponse;
-import com.carbonos.ghg.internal.web.dto.PageResponse;
 import com.carbonos.ghg.internal.web.dto.ActivityRevisionResponse;
 import com.carbonos.ghg.internal.web.dto.CreateActivityRequest;
 
@@ -49,32 +50,32 @@ class ActivityController {
 
 	@GetMapping("/organizations/{organizationId}/activities")
 	List<ActivityResponse> list(@PathVariable UUID organizationId) {
-		return ghgService.listActivities(organizationId)
-			.stream()
-			.map(summary -> ActivityResponse.from(summary.activity(), summary.evidenceCount(),
-					summary.revisionCount()))
-			.toList();
+		return ghgService.listActivities(organizationId).stream().map(ActivityResponse::from).toList();
 	}
 
-	/** The register searched, filtered, sorted and paged (spec 04.5). */
+	/** The register searched, filtered, sorted and paged (spec 04.5), with the counts by readiness (spec 04.6). */
 	@GetMapping("/organizations/{organizationId}/activities/page")
-	PageResponse<ActivityResponse> page(@PathVariable UUID organizationId, @RequestParam(required = false) String q,
+	ActivityPageResponse page(@PathVariable UUID organizationId, @RequestParam(required = false) String q,
 			@RequestParam(required = false) UUID facilityId, @RequestParam(required = false) UUID streamId,
 			@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+			@RequestParam(required = false) ActivityStatus status,
 			@RequestParam(defaultValue = "periodEnd") String sort, @RequestParam(defaultValue = "desc") String dir,
 			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
-		var result = ghgService.searchActivities(organizationId, new GhgService.ActivityQuery(q, facilityId, streamId,
-				from, to, sort, !"asc".equalsIgnoreCase(dir), page, size));
-		return new PageResponse<>(result.items()
-			.stream()
-			.map(summary -> ActivityResponse.from(summary.activity(), summary.evidenceCount(), summary.revisionCount()))
-			.toList(), result.page(), result.size(), result.total());
+		return ActivityPageResponse.from(ghgService.searchActivities(organizationId, new GhgService.ActivityQuery(q,
+				facilityId, streamId, from, to, status, sort, !"asc".equalsIgnoreCase(dir), page, size)));
 	}
 
-	/** Bulk entry from a CSV file: all rows or none (spec 04.5). */
+	@GetMapping("/activities/{id}")
+	ActivityResponse get(@PathVariable UUID id) {
+		return ActivityResponse.from(ghgService.summary(id));
+	}
+
+	/** Bulk entry from a CSV file: all rows or none (spec 04.5); a dry run previews without saving (spec 04.6). */
 	@PostMapping(path = "/organizations/{organizationId}/activities/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	ActivityImportResponse importFile(@PathVariable UUID organizationId, @RequestPart("file") MultipartFile file) {
-		return ActivityImportResponse.from(imports.importFile(organizationId, file));
+	ActivityImportResponse importFile(@PathVariable UUID organizationId, @RequestPart("file") MultipartFile file,
+			@RequestParam(defaultValue = "false") boolean dryRun) {
+		return ActivityImportResponse
+			.from(dryRun ? imports.preview(organizationId, file) : imports.importFile(organizationId, file));
 	}
 
 	@GetMapping(value = "/organizations/{organizationId}/activities/import-template.csv", produces = "text/csv")
@@ -95,13 +96,18 @@ class ActivityController {
 		var activity = ghgService.createActivity(organizationId, body.toFacts());
 		URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/ghg/activities/{id}")
 			.buildAndExpand(activity.getId()).toUri();
-		return ResponseEntity.created(location).body(ActivityResponse.from(activity));
+		return ResponseEntity.created(location).body(ActivityResponse.from(ghgService.summary(activity.getId())));
 	}
 
-	/** A correction: the new facts and the reason (spec 04.4); the revision history keeps the old values. */
+	/**
+	 * A correction: the new facts and the reason (spec 04.4); the revision history
+	 * keeps the old values. A draft is edited without a reason and entered as a
+	 * fact with an ENTERED revision (spec 04.6).
+	 */
 	@PutMapping("/activities/{id}")
 	ActivityResponse update(@PathVariable UUID id, @Valid @RequestBody CreateActivityRequest body) {
-		return ActivityResponse.from(ghgService.updateActivity(id, body.toFacts(), body.reason()));
+		var activity = ghgService.updateActivity(id, body.toFacts(), body.reason());
+		return ActivityResponse.from(ghgService.summary(activity.getId()));
 	}
 
 	@GetMapping("/activities/{id}/revisions")

@@ -12,7 +12,7 @@ import com.carbonos.ghg.internal.MarketInstrument;
 import com.carbonos.ghg.internal.Scope;
 import com.carbonos.ghg.internal.Scope2MarketBasis;
 
-public record RunLineResponse(UUID id, UUID activityId, UUID facilityId, String facilityName, UUID entityId,
+public record RunLineResponse(UUID id, UUID activityId, String recordRef, UUID facilityId, String facilityName, UUID entityId,
 		String entityName, String country, String activityType, String evidenceRef, UUID factorId, String factorName,
 		String streamName, String scopeJustification, boolean proxy, String proxyJustification,
 		DataQuality dataQuality, Integer dataQualityTier, BigDecimal uncertaintyPercent, String evidenceFiles,
@@ -26,7 +26,7 @@ public record RunLineResponse(UUID id, UUID activityId, UUID facilityId, String 
 		BigDecimal marketBalanceKgCo2ePerKwh, Scope2MarketBasis marketBalanceBasis) {
 
 	public static RunLineResponse from(GhgRunLine line) {
-		return new RunLineResponse(line.getId(), line.getActivityId(), line.getFacilityId(), line.getFacilityName(),
+		return new RunLineResponse(line.getId(), line.getActivityId(), line.getRecordRef(), line.getFacilityId(), line.getFacilityName(),
 				line.getEntityId(), line.getEntityName(), line.getCountry(), line.getActivityType(),
 				line.getEvidenceRef(), line.getFactorId(), line.getFactorName(), line.getStreamName(),
 				line.getScopeJustification(), line.isProxy(), line.getProxyJustification(), line.getDataQuality(),

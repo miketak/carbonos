@@ -32,6 +32,26 @@ public class ActivityRecord {
 	@Id
 	private UUID id;
 
+	// the organization, denormalized from the facility (a correction never moves a record across
+	// organizations), so the record number is unique per organization (spec 04.6)
+	@Column(name = "organization_id", nullable = false, updatable = false)
+	private UUID organizationId;
+
+	// the human-readable number, ACT-0001 in the UI and the exports; never reused (spec 04.6)
+	@Column(name = "record_no", nullable = false, updatable = false)
+	private int recordNo;
+
+	// a draft is a hand-entered stub that may still lack quantity, unit or period (spec 04.6)
+	@Column(nullable = false)
+	private boolean draft;
+
+	// the CSV import the record came from and its row in that file (spec 04.6)
+	@Column(name = "import_batch_id", updatable = false)
+	private UUID importBatchId;
+
+	@Column(name = "import_row", updatable = false)
+	private Integer importRow;
+
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "facility_id", nullable = false)
 	private Facility facility;
@@ -44,17 +64,18 @@ public class ActivityRecord {
 	@JoinColumn(name = "stream_id")
 	private SourceStream stream;
 
-	@Column(nullable = false, precision = 14, scale = 3)
+	// null only on a draft (spec 04.6); the database checks that a fact carries all four
+	@Column(precision = 14, scale = 3)
 	private BigDecimal quantity;
 
-	@Column(nullable = false, length = 30)
+	@Column(length = 30)
 	private String unit;
 
 	// the period the quantity was consumed or emitted over (spec 04.2); a reading is a one-day period
-	@Column(name = "period_start", nullable = false)
+	@Column(name = "period_start")
 	private LocalDate periodStart;
 
-	@Column(name = "period_end", nullable = false)
+	@Column(name = "period_end")
 	private LocalDate periodEnd;
 
 	@Column(name = "data_source", length = 120)
@@ -95,10 +116,14 @@ public class ActivityRecord {
 	protected ActivityRecord() {
 	}
 
-	ActivityRecord(Facility facility, SourceStream stream, String activityType, BigDecimal quantity, String unit,
-			LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality,
-			String note, Integer dataQualityTier, BigDecimal uncertaintyPercent) {
+	ActivityRecord(int recordNo, boolean draft, Facility facility, SourceStream stream, String activityType,
+			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
+			String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
+			BigDecimal uncertaintyPercent) {
 		this.id = UUID.randomUUID();
+		this.organizationId = facility.getOrganization().getId();
+		this.recordNo = recordNo;
+		this.draft = draft;
 		this.dataQualityTier = dataQualityTier == null ? DataQualityTier.defaultFor(dataQuality) : dataQualityTier;
 		this.uncertaintyPercent = uncertaintyPercent;
 		this.facility = facility;
@@ -116,6 +141,40 @@ public class ActivityRecord {
 
 	public UUID getId() {
 		return id;
+	}
+
+	public UUID getOrganizationId() {
+		return organizationId;
+	}
+
+	public int getRecordNo() {
+		return recordNo;
+	}
+
+	/** The number as the UI and the exports print it: {@code ACT-0001}. */
+	public String getRecordRef() {
+		return ref(recordNo);
+	}
+
+	public static String ref(Integer recordNo) {
+		return recordNo == null ? "" : String.format("ACT-%04d", recordNo);
+	}
+
+	public boolean isDraft() {
+		return draft;
+	}
+
+	public UUID getImportBatchId() {
+		return importBatchId;
+	}
+
+	public Integer getImportRow() {
+		return importRow;
+	}
+
+	void fromImport(UUID batchId, int row) {
+		this.importBatchId = batchId;
+		this.importRow = row;
 	}
 
 	public Facility getFacility() {
@@ -146,8 +205,9 @@ public class ActivityRecord {
 		return periodEnd;
 	}
 
+	/** The period, or null on a draft that has none yet. */
 	DatePeriod period() {
-		return new DatePeriod(periodStart, periodEnd);
+		return periodStart == null || periodEnd == null ? null : new DatePeriod(periodStart, periodEnd);
 	}
 
 	public String getDataSource() {
@@ -206,17 +266,19 @@ public class ActivityRecord {
 	}
 
 	/** The fields a correction would change, before it is applied, for the revision history. */
-	List<Change> changesTo(Facility facility, SourceStream stream, String activityType, BigDecimal quantity,
-			String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef,
-			DataQuality dataQuality, String note, int dataQualityTier, BigDecimal uncertaintyPercent) {
+	List<Change> changesTo(boolean draft, Facility facility, SourceStream stream, String activityType,
+			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
+			String evidenceRef, DataQuality dataQuality, String note, int dataQualityTier,
+			BigDecimal uncertaintyPercent) {
 		var changes = new ArrayList<Change>();
+		diff(changes, "draft", String.valueOf(this.draft), String.valueOf(draft));
 		diff(changes, "facility", this.facility.getName(), facility.getName());
 		diff(changes, "stream", this.stream == null ? null : this.stream.getName(), stream == null ? null : stream.getName());
 		diff(changes, "activityType", this.activityType, activityType);
 		diff(changes, "quantity", plain(this.quantity), plain(quantity));
 		diff(changes, "unit", this.unit, unit);
-		diff(changes, "periodStart", this.periodStart.toString(), periodStart.toString());
-		diff(changes, "periodEnd", this.periodEnd.toString(), periodEnd.toString());
+		diff(changes, "periodStart", text(this.periodStart), text(periodStart));
+		diff(changes, "periodEnd", text(this.periodEnd), text(periodEnd));
 		diff(changes, "dataSource", this.dataSource, dataSource);
 		diff(changes, "evidenceRef", this.evidenceRef, evidenceRef);
 		diff(changes, "dataQuality", this.dataQuality.name(), dataQuality.name());
@@ -236,10 +298,34 @@ public class ActivityRecord {
 		return value == null ? null : value.stripTrailingZeros().toPlainString();
 	}
 
+	private static String text(Object value) {
+		return value == null ? null : value.toString();
+	}
+
+	/** Every field as a value, for the revision that records a draft's entry as a fact (spec 04.6). */
+	List<Change> entered() {
+		var changes = new ArrayList<Change>();
+		changes.add(new Change("draft", "true", "false"));
+		diff(changes, "stream", null, this.stream == null ? null : this.stream.getName());
+		diff(changes, "activityType", null, this.activityType);
+		diff(changes, "quantity", null, plain(this.quantity));
+		diff(changes, "unit", null, this.unit);
+		diff(changes, "periodStart", null, text(this.periodStart));
+		diff(changes, "periodEnd", null, text(this.periodEnd));
+		diff(changes, "dataSource", null, this.dataSource);
+		diff(changes, "evidenceRef", null, this.evidenceRef);
+		diff(changes, "dataQuality", null, this.dataQuality.name());
+		diff(changes, "dataQualityTier", null, String.valueOf(this.dataQualityTier));
+		diff(changes, "uncertaintyPercent", null, plain(this.uncertaintyPercent));
+		diff(changes, "note", null, this.note);
+		return changes;
+	}
+
 	/** In-place correction (CORRECT-01); runs snapshot, so history is unaffected. */
-	void update(Facility facility, SourceStream stream, String activityType, BigDecimal quantity, String unit,
-			LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality,
-			String note, int dataQualityTier, BigDecimal uncertaintyPercent) {
+	void update(boolean draft, Facility facility, SourceStream stream, String activityType, BigDecimal quantity,
+			String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef,
+			DataQuality dataQuality, String note, int dataQualityTier, BigDecimal uncertaintyPercent) {
+		this.draft = draft;
 		this.dataQualityTier = dataQualityTier;
 		this.uncertaintyPercent = uncertaintyPercent;
 		this.facility = facility;
