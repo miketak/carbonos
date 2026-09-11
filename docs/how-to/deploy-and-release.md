@@ -114,14 +114,13 @@ the prompt, which cannot be skipped.
 ## Copy one environment into another
 
 `make env-copy FROM=staging TO=qa` copies staging's database and bucket
-into qa, so testers continue with their accounts and data. Both Postgres
-services need a TCP proxy for the copy (service > Settings > Networking in
-the Railway dashboard), which sets `DATABASE_PUBLIC_URL`; remove the
-proxies afterwards. The script drops the target's schema first, dumps and
-restores with a `postgres:17` container, then copies the bucket through
-the AWS CLI container. Run it before the target's first deploy, or after
-`make db-wipe` on the target, so the schema versions match. Production is
-never a target.
+into qa, so testers continue with their accounts and data. The database
+streams out of the source Postgres container and into the target's over
+`railway ssh`, so nothing restarts on either side; the bucket is copied
+through the AWS CLI container. The script drops the target's schema first
+and asks you to type the target's name. Run it before the target's first
+deploy, or after `make db-wipe` on the target, so the schema versions
+match. Production is never a target.
 
 ## One-time Railway setup
 
