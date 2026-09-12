@@ -16,8 +16,8 @@ flowchart TB
     accDescr: app wires routing and providers; features hold pages, components and queries per backend module; components is shared UI; lib is shared infrastructure that every feature calls.
     app["src/app\nApp.tsx routes, providers.tsx"]
     features["src/features/*\nauth, access, admin, profile, ghg, home"]
-    components["src/components\nButton, Field, Modal, GlassCard, toast"]
-    lib["src/lib\napi(), validate, useCountUp"]
+    components["src/components\nButton, Field, Modal, Drawer, Tabs, GlassCard, toast"]
+    lib["src/lib\napi(), validate, useCountUp, useShortcuts"]
     app --> features
     features --> components
     features --> lib
@@ -30,8 +30,8 @@ flowchart TB
 | --- | --- | --- |
 | `src/app` | `App.tsx` (routes), `providers.tsx` (TanStack Query client, router, toasts) | Wiring only. |
 | `src/features/<name>` | Pages, feature components under `components/`, `api.ts` (typed calls), `use<Name>.ts` (TanStack Query hooks), tests beside the code | A feature never imports another feature's internals. |
-| `src/components` | Shared UI: `Button`, `InputField` and `SelectField`, `Modal`, `GlassCard`, `Skeleton`, the toast host | No business logic. |
-| `src/lib` | `api.ts` (the fetch wrapper), `validate.ts` (numeric checks), `useCountUp.ts` | Shared infrastructure only. |
+| `src/components` | Shared UI: `Button`, `InputField`, `SelectField` and `TextAreaField`, `Modal`, `Drawer` (a panel beside the page), `Tabs`, `StatusPill`, `MonthField`, `ProgressBar`, `GlassCard`, `Skeleton`, the toast host | No business logic. |
+| `src/lib` | `api.ts` (the fetch wrapper), `validate.ts` (numeric checks), `useCountUp.ts`, `useShortcuts.ts` (single-key page shortcuts that stay quiet while typing) | Shared infrastructure only. |
 | `src/test` | Render helpers with providers, the API mock | |
 
 ## Feature to module
@@ -42,7 +42,7 @@ flowchart TB
 | `access` | `user` | Request access, set password |
 | `admin` | `user` | Users list and administration |
 | `profile` | `user`, `media` | Profile and avatar |
-| `ghg` | `ghg` | Organizations, overview, entities, facilities, activity data, units, emission factors, inventories, inventory detail, run detail, base year |
+| `ghg` | `ghg` | Organizations, overview, entities, facilities, activity data and its source documents, units, emission factors, inventories, inventory detail, run detail, base year |
 | `home` | none | Landing |
 
 ## The API wrapper
