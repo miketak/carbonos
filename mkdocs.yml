@@ -166,6 +166,7 @@ nav:
           - adr/0003-promote-releases-through-qa-staging-and-production.md
       - Reviews:
           - reviews/2026-09-08-ghg-officer-ui-audit.md
+          - reviews/2026-09-11-ghg-officer-ui-audit.md
   - Explanation:
       - explanation/architecture.md
       - explanation/spec-workflow.md
