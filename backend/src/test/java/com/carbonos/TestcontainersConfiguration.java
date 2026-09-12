@@ -20,7 +20,9 @@ public class TestcontainersConfiguration {
 
 	@Bean
 	MinIOContainer minioContainer() {
-		return new MinIOContainer(DockerImageName.parse("minio/minio:RELEASE.2025-04-22T22-12-26Z"));
+		// MinIO publishes its images on quay.io; Docker Hub refuses pulls of minio/minio since 2026-09
+		return new MinIOContainer(DockerImageName.parse("quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z")
+			.asCompatibleSubstituteFor("minio/minio"));
 	}
 
 	@Bean
