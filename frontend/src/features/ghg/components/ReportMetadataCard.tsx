@@ -8,8 +8,9 @@ import { problemDetail } from '../../../lib/api'
 import { useSetReportMetadata } from '../useGhg'
 import type { AssuranceLevel, Inventory, IntensityMetricInput } from '../api'
 
+/** The words the PDF prints too: `ReportLabels.java` in the backend's ghg export package carries the same labels (spec 07.8). */
 export const assuranceLabels: Record<AssuranceLevel, string> = {
-  UNVERIFIED: 'Unverified',
+  UNVERIFIED: 'Not verified',
   LIMITED: 'Limited assurance',
   REASONABLE: 'Reasonable assurance',
 }

@@ -142,14 +142,16 @@ const report: Report = {
     ],
   },
   byGas: [
-    { gas: 'CO2', kg: 1934.3, kgCo2e: 1934.3, tonnes: 1.934, tCo2e: 1.934 },
-    { gas: 'CH4', kg: 0.1, kgCo2e: 2.8, tonnes: 0, tCo2e: 0.003 },
-    { gas: 'N2O', kg: 0.04, kgCo2e: 10.6, tonnes: 0, tCo2e: 0.011 },
-    { gas: 'HFCs', kg: 0, kgCo2e: 0, tonnes: 0, tCo2e: 0 },
-    { gas: 'PFCs', kg: 0, kgCo2e: 0, tonnes: 0, tCo2e: 0 },
-    { gas: 'SF6', kg: 0, kgCo2e: 0, tonnes: 0, tCo2e: 0 },
-    { gas: 'NF3', kg: 0, kgCo2e: 0, tonnes: 0, tCo2e: 0 },
+    { gas: 'CO2', kg: 1934.3, kgCo2e: 1934.3, tonnes: 1.934, tCo2e: 1.934, factors: [] },
+    { gas: 'CH4', kg: 0.1, kgCo2e: 2.8, tonnes: 0, tCo2e: 0.003, factors: [] },
+    { gas: 'N2O', kg: 0.04, kgCo2e: 10.6, tonnes: 0, tCo2e: 0.011, factors: [] },
+    { gas: 'HFCs', kg: 0, kgCo2e: 0, tonnes: 0, tCo2e: 0, factors: [] },
+    { gas: 'PFCs', kg: 0, kgCo2e: 0, tonnes: 0, tCo2e: 0, factors: [] },
+    { gas: 'SF6', kg: 0, kgCo2e: 0, tonnes: 0, tCo2e: 0, factors: [] },
+    { gas: 'NF3', kg: 0, kgCo2e: 0, tonnes: 0, tCo2e: 0, factors: [] },
   ],
+  byGasTotalKgCo2e: 1946,
+  byGasTotalTCo2e: 1.946,
   biogenicCo2Kg: 18000,
   biogenicCo2T: 18,
   baseYear: null,
@@ -256,6 +258,7 @@ const report: Report = {
         pfcsKgCo2e: 0,
         sf6Kg: 0,
         nf3Kg: 0,
+        co2eUnsplitKg: 0,
       },
       biogenicCo2Kg: 0,
       blendGwpSource: null,
@@ -407,6 +410,7 @@ const report: Report = {
       pfcsKgCo2e: 0,
       sf6Kg: 0,
       nf3Kg: 0,
+      co2eUnsplitKg: 0,
     },
     biogenicCo2Kg: 18000,
     isFinal: false,
@@ -495,9 +499,51 @@ test('reports scope 2 market-based beside location-based, each gas, and biogenic
   expect(
     within(gases).getByText(/blends are converted from their component gases/),
   ).toBeInTheDocument()
+  // spec 07.7: the table foots to section 04; with no CO2e-only line there is no reconciling row
+  expect(
+    within(gases).getByText('Total (scope 2 location-based), ties to section 04').closest('tr'),
+  ).toHaveTextContent('1.946 t CO₂e')
+  expect(within(gases).queryByText(/without a gas split/)).not.toBeInTheDocument()
+  expect(within(gases).queryByText(/not separable/)).not.toBeInTheDocument()
 
   expect(screen.getByText(/of biogenic CO₂, reported separately/)).toBeInTheDocument()
   expect(screen.getByText('18.000 t')).toBeInTheDocument()
+})
+
+test('lists CO2e-only factors on one reconciling row that foots to the total (spec 07.7)', async () => {
+  vi.mocked(getReport).mockResolvedValue({
+    ...report,
+    byGas: [
+      ...report.byGas,
+      {
+        gas: 'CO2E_UNSPLIT',
+        kg: null,
+        kgCo2e: 469,
+        tonnes: null,
+        tCo2e: 0.469,
+        factors: ['Grid electricity, Ghana (Ember 2024)', 'Waste to landfill'],
+      },
+    ],
+    byGasTotalKgCo2e: 2415,
+    byGasTotalTCo2e: 2.415,
+  })
+  renderRunDetailPage()
+
+  const gases = (await screen.findByRole('heading', { name: /emissions by gas/i })).closest('div')!
+  const row = within(gases)
+    .getByText('CO₂e from factors without a gas split', { selector: 'td' })
+    .closest('tr')!
+  expect(row).toHaveTextContent(/not separable.*0\.469 t CO₂e/)
+  expect(
+    within(gases).getByText(/Grid electricity, Ghana \(Ember 2024\); Waste to landfill/),
+  ).toBeInTheDocument()
+  expect(within(gases).getByText(/Their CO₂, CH₄ and N₂O are not separable/)).toBeInTheDocument()
+  expect(
+    within(gases).getByText('Total (scope 2 location-based), ties to section 04').closest('tr'),
+  ).toHaveTextContent('2.415 t CO₂e')
+  expect(
+    within(gases).getByText(/market-based scope 2 figure is not split by gas/),
+  ).toBeInTheDocument()
 })
 
 test('names every assessment report when a blend kept another one', async () => {

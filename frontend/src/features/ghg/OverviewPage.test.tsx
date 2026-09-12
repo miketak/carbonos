@@ -105,6 +105,7 @@ const run: Run = {
     pfcsKgCo2e: 0,
     sf6Kg: 0,
     nf3Kg: 0,
+    co2eUnsplitKg: 0,
   },
   biogenicCo2Kg: 0,
   isFinal: true,
