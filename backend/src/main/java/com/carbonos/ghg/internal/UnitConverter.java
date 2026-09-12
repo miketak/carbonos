@@ -67,6 +67,10 @@ public class UnitConverter {
 				"imperial-gallon");
 		put(defs, "scf", "Standard cubic foot", Dimension.VOLUME, "0.028316846592", "standard cubic foot", "ft3",
 				"cubic-foot");
+		// spec 02.4: the IPCC flaring defaults are published per 10^3 m3 and per 10^6 m3 of throughput;
+		// a factor per thousand cubic metres keeps components a per-m3 row would round away
+		put(defs, "1000m3", "Thousand cubic metres", Dimension.VOLUME, "1000", "1000 m3", "thousand-m3", "10^3 m3",
+				"e3m3");
 
 		// MASS — canonical base: kg
 		put(defs, "kg", "Kilogram", Dimension.MASS, "1", "kgs", "kilogram", "kilograms", "kilo");
@@ -91,6 +95,11 @@ public class UnitConverter {
 		put(defs, "tonne-km", "Tonne-kilometre", Dimension.FREIGHT, "1", "tonne.km", "tkm", "t-km", "tonne km");
 		put(defs, "short-ton-mile", "Short ton-mile", Dimension.FREIGHT, "1.459972", "ton-mile", "short ton-mile",
 				"ton-miles");
+
+		// AREA, canonical base hectare (land clearing, spec 02.4)
+		put(defs, "hectare", "Hectare", Dimension.AREA, "1", "hectares", "ha");
+		put(defs, "km2", "Square kilometre", Dimension.AREA, "100", "square-kilometre", "sq-km");
+		put(defs, "m2", "Square metre", Dimension.AREA, "0.0001", "square-metre", "sqm");
 
 		// COUNT — things counted, not measured: hotel nights
 		put(defs, "room-night", "Room-night", Dimension.COUNT, "1", "room per night", "room night", "room-nights",

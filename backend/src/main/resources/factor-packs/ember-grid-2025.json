@@ -28,7 +28,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Benin (BEN) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BEN:2020",
@@ -49,7 +53,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Benin (BEN) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BEN:2021",
@@ -70,7 +78,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Benin (BEN) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BEN:2022",
@@ -91,7 +103,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Benin (BEN) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BEN:2023",
@@ -112,7 +128,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Benin (BEN) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BEN:2024",
@@ -133,7 +153,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Benin (BEN) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BFA:2019",
@@ -154,7 +178,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Burkina Faso (BFA) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BFA:2020",
@@ -175,7 +203,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Burkina Faso (BFA) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BFA:2021",
@@ -196,7 +228,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Burkina Faso (BFA) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BFA:2022",
@@ -217,7 +253,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Burkina Faso (BFA) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BFA:2023",
@@ -238,7 +278,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Burkina Faso (BFA) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:BFA:2024",
@@ -259,7 +303,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Burkina Faso (BFA) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CMR:2019",
@@ -280,7 +328,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Cameroon (CMR) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CMR:2020",
@@ -301,7 +353,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Cameroon (CMR) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CMR:2021",
@@ -322,7 +378,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Cameroon (CMR) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CMR:2022",
@@ -343,7 +403,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Cameroon (CMR) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CMR:2023",
@@ -364,7 +428,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Cameroon (CMR) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CMR:2024",
@@ -385,7 +453,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Cameroon (CMR) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CHN:2019",
@@ -406,7 +478,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / China (CHN) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CHN:2020",
@@ -427,7 +503,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / China (CHN) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CHN:2021",
@@ -448,7 +528,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / China (CHN) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CHN:2022",
@@ -469,7 +553,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / China (CHN) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CHN:2023",
@@ -490,7 +578,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / China (CHN) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CHN:2024",
@@ -511,7 +603,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / China (CHN) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CHN:2025",
@@ -532,7 +628,11 @@
    "dataYear": 2025,
    "sourceDetail": "Electricity (national grid, generation-based) / China (CHN) / data year 2025; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CIV:2019",
@@ -553,7 +653,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Cote d'Ivoire (CIV) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CIV:2020",
@@ -574,7 +678,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Cote d'Ivoire (CIV) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CIV:2021",
@@ -595,7 +703,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Cote d'Ivoire (CIV) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CIV:2022",
@@ -616,7 +728,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Cote d'Ivoire (CIV) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CIV:2023",
@@ -637,7 +753,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Cote d'Ivoire (CIV) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:CIV:2024",
@@ -658,7 +778,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Cote d'Ivoire (CIV) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:FRA:2019",
@@ -679,7 +803,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / France (FRA) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:FRA:2020",
@@ -700,7 +828,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / France (FRA) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:FRA:2021",
@@ -721,7 +853,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / France (FRA) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:FRA:2022",
@@ -742,7 +878,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / France (FRA) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:FRA:2023",
@@ -763,7 +903,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / France (FRA) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:FRA:2024",
@@ -784,7 +928,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / France (FRA) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:FRA:2025",
@@ -805,7 +953,11 @@
    "dataYear": 2025,
    "sourceDetail": "Electricity (national grid, generation-based) / France (FRA) / data year 2025; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:DEU:2019",
@@ -826,7 +978,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Germany (DEU) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:DEU:2020",
@@ -847,7 +1003,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Germany (DEU) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:DEU:2021",
@@ -868,7 +1028,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Germany (DEU) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:DEU:2022",
@@ -889,7 +1053,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Germany (DEU) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:DEU:2023",
@@ -910,7 +1078,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Germany (DEU) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:DEU:2024",
@@ -931,7 +1103,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Germany (DEU) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:DEU:2025",
@@ -952,7 +1128,11 @@
    "dataYear": 2025,
    "sourceDetail": "Electricity (national grid, generation-based) / Germany (DEU) / data year 2025; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GHA:2019",
@@ -973,7 +1153,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GHA:2020",
@@ -994,7 +1178,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GHA:2021",
@@ -1015,7 +1203,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GHA:2022",
@@ -1036,7 +1228,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GHA:2023",
@@ -1057,7 +1253,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GHA:2024",
@@ -1078,7 +1278,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GIN:2019",
@@ -1099,7 +1303,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Guinea (GIN) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GIN:2020",
@@ -1120,7 +1328,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Guinea (GIN) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GIN:2021",
@@ -1141,7 +1353,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Guinea (GIN) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GIN:2022",
@@ -1162,7 +1378,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Guinea (GIN) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GIN:2023",
@@ -1183,7 +1403,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Guinea (GIN) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GIN:2024",
@@ -1204,7 +1428,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Guinea (GIN) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:IND:2019",
@@ -1225,7 +1453,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / India (IND) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:IND:2020",
@@ -1246,7 +1478,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / India (IND) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:IND:2021",
@@ -1267,7 +1503,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / India (IND) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:IND:2022",
@@ -1288,7 +1528,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / India (IND) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:IND:2023",
@@ -1309,7 +1553,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / India (IND) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:IND:2024",
@@ -1330,7 +1578,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / India (IND) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:IND:2025",
@@ -1351,7 +1603,11 @@
    "dataYear": 2025,
    "sourceDetail": "Electricity (national grid, generation-based) / India (IND) / data year 2025; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:KEN:2019",
@@ -1372,7 +1628,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Kenya (KEN) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:KEN:2020",
@@ -1393,7 +1653,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Kenya (KEN) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:KEN:2021",
@@ -1414,7 +1678,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Kenya (KEN) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:KEN:2022",
@@ -1435,7 +1703,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Kenya (KEN) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:KEN:2023",
@@ -1456,7 +1728,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Kenya (KEN) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:KEN:2024",
@@ -1477,7 +1753,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Kenya (KEN) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:KEN:2025",
@@ -1498,7 +1778,11 @@
    "dataYear": 2025,
    "sourceDetail": "Electricity (national grid, generation-based) / Kenya (KEN) / data year 2025; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:LBR:2019",
@@ -1519,7 +1803,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Liberia (LBR) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:LBR:2020",
@@ -1540,7 +1828,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Liberia (LBR) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:LBR:2021",
@@ -1561,7 +1853,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Liberia (LBR) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:LBR:2022",
@@ -1582,7 +1878,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Liberia (LBR) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:LBR:2023",
@@ -1603,7 +1903,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Liberia (LBR) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:LBR:2024",
@@ -1624,7 +1928,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Liberia (LBR) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:MLI:2019",
@@ -1645,7 +1953,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Mali (MLI) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:MLI:2020",
@@ -1666,7 +1978,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Mali (MLI) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:MLI:2021",
@@ -1687,7 +2003,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Mali (MLI) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:MLI:2022",
@@ -1708,7 +2028,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Mali (MLI) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:MLI:2023",
@@ -1729,7 +2053,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Mali (MLI) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:MLI:2024",
@@ -1750,7 +2078,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Mali (MLI) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:NGA:2019",
@@ -1771,7 +2103,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Nigeria (NGA) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:NGA:2020",
@@ -1792,7 +2128,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Nigeria (NGA) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:NGA:2021",
@@ -1813,7 +2153,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Nigeria (NGA) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:NGA:2022",
@@ -1834,7 +2178,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Nigeria (NGA) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:NGA:2023",
@@ -1855,7 +2203,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Nigeria (NGA) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:NGA:2024",
@@ -1876,7 +2228,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Nigeria (NGA) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:NGA:2025",
@@ -1897,7 +2253,11 @@
    "dataYear": 2025,
    "sourceDetail": "Electricity (national grid, generation-based) / Nigeria (NGA) / data year 2025; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SEN:2019",
@@ -1918,7 +2278,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Senegal (SEN) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SEN:2020",
@@ -1939,7 +2303,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Senegal (SEN) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SEN:2021",
@@ -1960,7 +2328,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Senegal (SEN) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SEN:2022",
@@ -1981,7 +2353,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Senegal (SEN) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SEN:2023",
@@ -2002,7 +2378,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Senegal (SEN) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SEN:2024",
@@ -2023,7 +2403,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Senegal (SEN) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SLE:2019",
@@ -2044,7 +2428,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Sierra Leone (SLE) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SLE:2020",
@@ -2065,7 +2453,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Sierra Leone (SLE) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SLE:2021",
@@ -2086,7 +2478,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Sierra Leone (SLE) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SLE:2022",
@@ -2107,7 +2503,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Sierra Leone (SLE) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SLE:2023",
@@ -2128,7 +2528,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Sierra Leone (SLE) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:SLE:2024",
@@ -2149,7 +2553,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Sierra Leone (SLE) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ZAF:2019",
@@ -2170,7 +2578,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / South Africa (ZAF) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ZAF:2020",
@@ -2191,7 +2603,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / South Africa (ZAF) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ZAF:2021",
@@ -2212,7 +2628,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / South Africa (ZAF) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ZAF:2022",
@@ -2233,7 +2653,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / South Africa (ZAF) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ZAF:2023",
@@ -2254,7 +2678,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / South Africa (ZAF) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ZAF:2024",
@@ -2275,7 +2703,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / South Africa (ZAF) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ZAF:2025",
@@ -2296,7 +2728,11 @@
    "dataYear": 2025,
    "sourceDetail": "Electricity (national grid, generation-based) / South Africa (ZAF) / data year 2025; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TZA:2019",
@@ -2317,7 +2753,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Tanzania (the United Republic of) (TZA) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TZA:2020",
@@ -2338,7 +2778,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Tanzania (the United Republic of) (TZA) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TZA:2021",
@@ -2359,7 +2803,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Tanzania (the United Republic of) (TZA) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TZA:2022",
@@ -2380,7 +2828,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Tanzania (the United Republic of) (TZA) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TZA:2023",
@@ -2401,7 +2853,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Tanzania (the United Republic of) (TZA) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TZA:2024",
@@ -2422,7 +2878,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Tanzania (the United Republic of) (TZA) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TGO:2019",
@@ -2443,7 +2903,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Togo (TGO) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TGO:2020",
@@ -2464,7 +2928,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Togo (TGO) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TGO:2021",
@@ -2485,7 +2953,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Togo (TGO) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TGO:2022",
@@ -2506,7 +2978,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Togo (TGO) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TGO:2023",
@@ -2527,7 +3003,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Togo (TGO) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:TGO:2024",
@@ -2548,7 +3028,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Togo (TGO) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ARE:2019",
@@ -2569,7 +3053,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / United Arab Emirates (ARE) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ARE:2020",
@@ -2590,7 +3078,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / United Arab Emirates (ARE) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ARE:2021",
@@ -2611,7 +3103,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / United Arab Emirates (ARE) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ARE:2022",
@@ -2632,7 +3128,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / United Arab Emirates (ARE) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ARE:2023",
@@ -2653,7 +3153,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / United Arab Emirates (ARE) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:ARE:2024",
@@ -2674,7 +3178,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / United Arab Emirates (ARE) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GBR:2019",
@@ -2695,7 +3203,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / United Kingdom (GBR) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GBR:2020",
@@ -2716,7 +3228,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / United Kingdom (GBR) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GBR:2021",
@@ -2737,7 +3253,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / United Kingdom (GBR) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GBR:2022",
@@ -2758,7 +3278,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / United Kingdom (GBR) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GBR:2023",
@@ -2779,7 +3303,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / United Kingdom (GBR) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GBR:2024",
@@ -2800,7 +3328,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / United Kingdom (GBR) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:GBR:2025",
@@ -2821,7 +3353,11 @@
    "dataYear": 2025,
    "sourceDetail": "Electricity (national grid, generation-based) / United Kingdom (GBR) / data year 2025; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:USA:2019",
@@ -2842,7 +3378,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / United States (USA) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:USA:2020",
@@ -2863,7 +3403,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / United States (USA) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:USA:2021",
@@ -2884,7 +3428,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / United States (USA) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:USA:2022",
@@ -2905,7 +3453,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / United States (USA) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:USA:2023",
@@ -2926,7 +3478,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / United States (USA) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:USA:2024",
@@ -2947,7 +3503,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / United States (USA) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "EMBER:grid:USA:2025",
@@ -2968,7 +3528,11 @@
    "dataYear": 2025,
    "sourceDetail": "Electricity (national grid, generation-based) / United States (USA) / data year 2025; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   }
  ]
 }

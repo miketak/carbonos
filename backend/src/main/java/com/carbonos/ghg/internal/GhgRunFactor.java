@@ -81,6 +81,22 @@ public class GhgRunFactor {
 	@Column(nullable = false, length = 500)
 	private String source;
 
+	// spec 02.3: the publication behind the factor, snapshotted so the table reads the same later
+	@Column(name = "publication_year")
+	private Integer publicationYear;
+
+	@Column(name = "data_year")
+	private Integer dataYear;
+
+	/** The pack tags as they stood at launch, comma separated; null on a run before V38. */
+	@Column(length = 200)
+	private String packs;
+
+	// spec 02.4: whether the factor's emissions belong in a scope at all
+	@Enumerated(EnumType.STRING)
+	@Column(name = "reporting_basis", nullable = false, length = 30)
+	private ReportingBasis reportingBasis = ReportingBasis.SCOPES;
+
 	protected GhgRunFactor() {
 	}
 
@@ -104,6 +120,11 @@ public class GhgRunFactor {
 		this.blendComposition = factor.describeBlend();
 		this.blendGwpSource = factor.blendGwpSourceFor(gwp);
 		this.source = factor.getSource();
+		this.publicationYear = factor.getPublicationYear();
+		this.dataYear = factor.getDataYear();
+		var tags = String.join(", ", factor.getPacks());
+		this.packs = tags.isEmpty() ? null : tags.length() > 200 ? tags.substring(0, 197) + "..." : tags;
+		this.reportingBasis = factor.getReportingBasis();
 	}
 
 	public UUID getId() {
@@ -176,5 +197,23 @@ public class GhgRunFactor {
 
 	public String getSource() {
 		return source;
+	}
+
+	public Integer getPublicationYear() {
+		return publicationYear;
+	}
+
+	public Integer getDataYear() {
+		return dataYear;
+	}
+
+	/** The pack tags the factor carried at launch, in order; empty when the run predates spec 02.3. */
+	public java.util.List<String> getPacks() {
+		return packs == null || packs.isBlank() ? java.util.List.of()
+				: java.util.Arrays.stream(packs.split(",")).map(String::trim).filter(tag -> !tag.isEmpty()).toList();
+	}
+
+	public ReportingBasis getReportingBasis() {
+		return reportingBasis;
 	}
 }

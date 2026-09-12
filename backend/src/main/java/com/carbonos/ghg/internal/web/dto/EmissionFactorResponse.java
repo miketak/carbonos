@@ -2,12 +2,14 @@ package com.carbonos.ghg.internal.web.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import com.carbonos.ghg.internal.ActivityCategory;
 import com.carbonos.ghg.internal.Dimension;
 import com.carbonos.ghg.internal.EmissionFactor;
 import com.carbonos.ghg.internal.GwpSet;
+import com.carbonos.ghg.internal.ReportingBasis;
 import com.carbonos.ghg.internal.Scope;
 
 public record EmissionFactorResponse(UUID id, UUID organizationId, String name, Scope defaultScope,
@@ -15,7 +17,8 @@ public record EmissionFactorResponse(UUID id, UUID organizationId, String name, 
 		BigDecimal kgCo2ePerUnit, Gases gases, BigDecimal biogenicCo2KgPerUnit, GwpSet gwpSet, String blendGwpSource,
 		String blendComposition, boolean ch4Fossil, boolean co2eOnly, String source, String sourceUrl,
 		Integer publicationYear, Integer dataYear, LocalDate validFrom, LocalDate validTo, String note,
-		boolean approved, String pack, String packCode, String gridRegion) {
+		boolean approved, String pack, List<String> packs, String packCode, String gridRegion,
+		ReportingBasis reportingBasis) {
 
 	/** kg of each gas per unit; for the HFC and PFC blends also the kg CO2e the source applied (spec 07.2). */
 	public record Gases(BigDecimal co2, BigDecimal ch4, BigDecimal n2o, BigDecimal hfcs, BigDecimal pfcs,
@@ -32,6 +35,7 @@ public record EmissionFactorResponse(UUID id, UUID organizationId, String name, 
 				factor.getBiogenicCo2KgPerUnit(), GwpSet.AR5, factor.getBlendGwpSource(), factor.describeBlend(),
 				factor.isCh4Fossil(), factor.isCo2eOnly(), factor.getSource(), factor.getSourceUrl(),
 				factor.getPublicationYear(), factor.getDataYear(), factor.getValidFrom(), factor.getValidTo(),
-				factor.getNote(), factor.isApproved(), factor.getPack(), factor.getPackCode(), factor.getGridRegion());
+				factor.getNote(), factor.isApproved(), factor.getPack(), factor.getPacks(), factor.getPackCode(),
+				factor.getGridRegion(), factor.getReportingBasis());
 	}
 }

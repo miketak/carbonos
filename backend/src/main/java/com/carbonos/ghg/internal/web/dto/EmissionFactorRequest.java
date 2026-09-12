@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.carbonos.ghg.internal.ActivityCategory;
+import com.carbonos.ghg.internal.ReportingBasis;
 import com.carbonos.ghg.internal.Scope;
 
 import jakarta.validation.constraints.Digits;
@@ -40,5 +41,7 @@ public record EmissionFactorRequest( //
 		LocalDate validFrom, //
 		LocalDate validTo, //
 		@Size(max = 500) String note, //
-		Boolean approved) {
+		Boolean approved, //
+		// spec 02.4: SCOPES unless the factor is a Montreal Protocol gas
+		ReportingBasis reportingBasis) {
 }

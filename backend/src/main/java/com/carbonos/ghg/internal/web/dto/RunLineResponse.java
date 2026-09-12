@@ -9,6 +9,7 @@ import com.carbonos.ghg.internal.DataQuality;
 import com.carbonos.ghg.internal.GhgRunLine;
 import com.carbonos.ghg.internal.LeaseType;
 import com.carbonos.ghg.internal.MarketInstrument;
+import com.carbonos.ghg.internal.ReportingBasis;
 import com.carbonos.ghg.internal.Scope;
 import com.carbonos.ghg.internal.Scope2MarketBasis;
 
@@ -23,7 +24,7 @@ public record RunLineResponse(UUID id, UUID activityId, String recordRef, UUID f
 		BigDecimal periodShare, String periodNote, BigDecimal kgCo2e, RunResponse.ByGas byGas, BigDecimal biogenicCo2Kg, String blendGwpSource,
 		BigDecimal marketBasedKgCo2e, BigDecimal marketFactorKgCo2ePerKwh, MarketInstrument marketInstrument,
 		String marketNote, BigDecimal marketCoveredKwh, BigDecimal marketBalanceKwh,
-		BigDecimal marketBalanceKgCo2ePerKwh, Scope2MarketBasis marketBalanceBasis) {
+		BigDecimal marketBalanceKgCo2ePerKwh, Scope2MarketBasis marketBalanceBasis, ReportingBasis reportingBasis) {
 
 	public static RunLineResponse from(GhgRunLine line) {
 		return new RunLineResponse(line.getId(), line.getActivityId(), line.getRecordRef(), line.getFacilityId(), line.getFacilityName(),
@@ -43,6 +44,6 @@ public record RunLineResponse(UUID id, UUID activityId, String recordRef, UUID f
 				line.getBiogenicCo2Kg(), line.getBlendGwpSource(), line.getMarketBasedKgCo2e(),
 				line.getMarketFactorKgCo2ePerKwh(), line.getMarketInstrument(), line.getMarketNote(),
 				line.getMarketCoveredKwh(), line.getMarketBalanceKwh(), line.getMarketBalanceKgCo2ePerKwh(),
-				line.getMarketBalanceBasis());
+				line.getMarketBalanceBasis(), line.getReportingBasis());
 	}
 }

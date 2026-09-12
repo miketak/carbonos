@@ -28,7 +28,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2020",
@@ -49,7 +53,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2021",
@@ -70,7 +78,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2022",
@@ -91,7 +103,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2023",
@@ -112,7 +128,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2024",
@@ -133,7 +153,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:td-losses",
@@ -154,7 +178,13 @@
    "dataYear": 2024,
    "sourceDetail": "Scope 3 category 3: the 2024 Ember intensity of 0.468809 kg CO2e/kWh times the share lost in transmission and distribution (20% of generation, Energy Commission National Energy Statistics, system losses), per kWh consumed",
    "approved": false,
-   "notes": "Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure."
+   "notes": "Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure.",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "Energy Commission of Ghana, National Energy Statistics (system losses), applied to the Ember generation intensity",
+   "sourceUrl": "https://www.energycom.gov.gh/",
+   "publicationYear": 2025
   }
  ]
 }

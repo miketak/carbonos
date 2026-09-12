@@ -3,16 +3,24 @@ package com.carbonos.ghg.internal;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 /**
@@ -133,6 +141,18 @@ public class EmissionFactor {
 	@Column(name = "pack_code", length = 200)
 	private String packCode;
 
+	// spec 02.3: every pack that delivered this publication row, apart from its provenance
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "ghg_emission_factor_packs", joinColumns = @JoinColumn(name = "factor_id"))
+	@Column(name = "pack", nullable = false, length = 60)
+	@BatchSize(size = 200)
+	private Set<String> packs = new LinkedHashSet<>();
+
+	// spec 02.4: a non-Kyoto gas is reported outside the scopes, never inside one
+	@Enumerated(EnumType.STRING)
+	@Column(name = "reporting_basis", nullable = false, length = 30)
+	private ReportingBasis reportingBasis = ReportingBasis.SCOPES;
+
 	// the grid a location-based electricity factor serves (spec 03.4)
 	@Column(name = "grid_region", length = 40)
 	private String gridRegion;
@@ -162,6 +182,9 @@ public class EmissionFactor {
 		this.organizationId = organizationId;
 		this.pack = pack;
 		this.packCode = packCode;
+		if (pack != null) {
+			this.packs.add(pack);
+		}
 		update(name, defaultScope, defaultCategory, scopeAgnostic, unit, kgCo2ePerUnit, gases, blendComposition,
 				blendGwpSource, provenance, approved);
 	}
@@ -243,6 +266,33 @@ public class EmissionFactor {
 
 	public String getPackCode() {
 		return packCode;
+	}
+
+	/** Every pack that delivered this publication row, in alphabetical order (spec 02.3). */
+	public List<String> getPacks() {
+		return packs.stream().sorted().toList();
+	}
+
+	/**
+	 * Records that a pack delivered this row. The first tag also becomes
+	 * {@code pack}, which older clients still read.
+	 */
+	void addPack(String pack) {
+		if (pack == null || pack.isBlank()) {
+			return;
+		}
+		packs.add(pack);
+		if (this.pack == null) {
+			this.pack = pack;
+		}
+	}
+
+	public ReportingBasis getReportingBasis() {
+		return reportingBasis;
+	}
+
+	void setReportingBasis(ReportingBasis reportingBasis) {
+		this.reportingBasis = reportingBasis == null ? ReportingBasis.SCOPES : reportingBasis;
 	}
 
 	public String getGridRegion() {

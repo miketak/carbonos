@@ -7,7 +7,7 @@
  "gwpBasis": "AR5",
  "license": "US Government work, public domain",
  "retrieved": "2026-09-08",
- "notes": "Kilograms of gas leaked. Blends with a recorded composition are converted with the inventory GWP set; Montreal Protocol gases (R-22, CFCs) are not Kyoto gases and are shown for separate disclosure.",
+ "notes": "Kilograms of gas leaked. Blends with a recorded composition are converted with the inventory GWP set. HCFC-22 (R-22) comes from the DESNZ 2026 table: it is a Montreal Protocol gas, not a Kyoto gas, so its mass is reported outside the scopes with the CO2e DESNZ publishes for information.",
  "factors": [
   {
    "code": "EPA:GWP:HFC-23",
@@ -31,6 +31,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CHF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -55,6 +59,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH2F2",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -79,6 +87,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH3F",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -103,6 +115,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CHF2CF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -127,6 +143,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CHF2CHF2",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -151,6 +171,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH2FCF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -175,6 +199,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH2FCHF2",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -199,6 +227,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH3CF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -223,6 +255,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH2FCH2F",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -247,6 +283,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH3CHF2",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -271,6 +311,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH3CH2F",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -295,6 +339,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CF3CHFCF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -319,6 +367,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH2FCF2CF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -343,6 +395,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CHF2CHFCF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -367,6 +423,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CF3CH2CF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -391,6 +451,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH2FCF2CHF2",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -415,6 +479,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CHF2CH2CF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -439,6 +507,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CH3CF2CH2CF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -463,6 +535,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CF3CHFCHFCF2CF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -487,6 +563,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): SF6",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -511,6 +591,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): NF3",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -535,6 +619,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): CF4",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -559,6 +647,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): C2F6",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -583,6 +675,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): C3F8",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -607,6 +703,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): c-C4F8",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -631,6 +731,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): C4F10",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -655,6 +759,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): C5F12",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -679,6 +787,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): C6F14",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -703,6 +815,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): C10F18",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -727,6 +843,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 53% HCFC-22 , 34% HCFC-124 , 13% HFC-152a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -751,6 +871,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 61% HCFC-22 , 28% HCFC-124 , 11% HFC-152a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -775,6 +899,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 33% HCFC-22 , 52% HCFC-124 , 15% HFC-152a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -799,6 +927,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 38% HCFC-22 , 60% HFC-125 , 2% propane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -823,6 +955,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 60% HCFC-22 , 38% HFC-125 , 2% propane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -847,6 +983,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 56% HCFC-22 , 39% PFC-218 , 5% propane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -871,6 +1011,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 44% HFC-125 , 4% HFC-134a , 52% HFC-143a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -895,6 +1039,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 20% HFC-32 , 40% HFC-125 , 40% HFC-134a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -919,6 +1067,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 10% HFC-32 , 70% HFC-125 , 20% HFC-134a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -943,6 +1095,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 23% HFC-32 , 25% HFC-125 , 52% HFC-134a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -967,6 +1123,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 15% HFC-32 , 15% HFC-125 , 70% HFC-134a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -991,6 +1151,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 47% HCFC-22 , 7% HFC-125 , 46% HFC-143a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1015,6 +1179,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 50% HFC-32 , 50% HFC-125",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -1039,6 +1207,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 45% HFC-32 , 55% HFC-125",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -1063,6 +1235,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 87.5% HCFC-22 , 11% HFC-152a , 1.5% propylene",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1087,6 +1263,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 94% HCFC-22 , 3% HFC-152a , 3% propylene",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1111,6 +1291,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 46.6% HFC-125 , 50% HFC-134a , 3.4% butane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1135,6 +1319,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 85.1% HFC-125 , 11.5% HFC-134a , 3.4% isobutane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1159,6 +1347,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 65.1% HFC-125 , 31.5% HFC-134a , 3.4% isobutane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1183,6 +1375,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 50.5% HFC-125 , 47% HFC-134a , 1% butane , 0.9% isobutane , 0.6% isopentane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1207,6 +1403,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 5.1% HFC-125 , 93% HFC-134a , 1.3% butane , 0.6% isobutane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1231,6 +1431,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 77.5% HFC-125 , 20% HFC-143a , 1.9% isobutane , 0.6% propane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1255,6 +1459,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 63.2% HFC-125 , 16% HFC-134a , 18% HFC-143a , 2.8% isobutane",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1279,6 +1487,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 50% HFC-125 , 50% HFC-143a",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -1303,6 +1515,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 39% HFC-23 , 61% PFC-116",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
   },
   {
@@ -1327,7 +1543,36 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 46% HFC-23 , 54% PFC-116",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
+  },
+  {
+   "code": "DEFRA:Refrigerant_other:Montreal_protocol_products_HCFC-22_R22_chlorodifluoromethane:Emissions_including_only_non-Kyoto_products:kg",
+   "name": "HCFC-22 (R-22)",
+   "defaultScope": "SCOPE_1",
+   "defaultCategory": "FUGITIVE_EMISSIONS",
+   "scopeAgnostic": false,
+   "unit": "kg",
+   "kgCo2ePerUnit": 1760.0,
+   "co2": 0,
+   "ch4": 0,
+   "ch4Fossil": true,
+   "n2o": 0,
+   "hfcsKg": 1,
+   "blendComposition": null,
+   "blendGwpSource": "AR5",
+   "biogenicCo2": 0.0,
+   "dataYear": 2026,
+   "sourceDetail": "Refrigerant & other / Montreal protocol products / HCFC-22/R22 = chlorodifluoromethane / Emissions including only non-Kyoto products",
+   "approved": true,
+   "notes": "A Montreal Protocol gas, not a Kyoto gas. Its mass is reported outside the scopes as optional information under Chapter 4 and Chapter 9, with the CO2e DESNZ publishes on the AR5 basis; no scope total includes it.",
+   "reportingBasis": "OUTSIDE_SCOPES_NON_KYOTO",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   }
  ]
 }

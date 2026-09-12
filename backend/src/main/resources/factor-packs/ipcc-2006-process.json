@@ -28,7 +28,13 @@
    "dataYear": 2006,
    "sourceDetail": "Volume 3, Chapter 2, Section 2.2.1.2, equation 2.4: 0.510 t CO2 per t clinker before the cement kiln dust correction",
    "approved": true,
-   "notes": ""
+   "notes": "",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use)",
+   "sourceUrl": "https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol3.html",
+   "publicationYear": 2006
   },
   {
    "code": "IPCC:2006:lime-high-calcium",
@@ -49,7 +55,13 @@
    "dataYear": 2006,
    "sourceDetail": "Volume 3, Chapter 2, Table 2.4: 0.75 t CO2 per t high-calcium lime (stoichiometric ratio 0.785 at 100% CaO)",
    "approved": true,
-   "notes": ""
+   "notes": "",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use)",
+   "sourceUrl": "https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol3.html",
+   "publicationYear": 2006
   },
   {
    "code": "IPCC:2006:lime-dolomitic",
@@ -70,7 +82,13 @@
    "dataYear": 2006,
    "sourceDetail": "Volume 3, Chapter 2, Table 2.4: 0.77 t CO2 per t dolomitic lime",
    "approved": true,
-   "notes": ""
+   "notes": "",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use)",
+   "sourceUrl": "https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol3.html",
+   "publicationYear": 2006
   },
   {
    "code": "IPCC:2006:glass",
@@ -91,7 +109,13 @@
    "dataYear": 2006,
    "sourceDetail": "Volume 3, Chapter 2, Section 2.4.2.1: 0.20 t CO2 per t glass at the default cullet ratio",
    "approved": true,
-   "notes": ""
+   "notes": "",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use)",
+   "sourceUrl": "https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol3.html",
+   "publicationYear": 2006
   },
   {
    "code": "IPCC:2006:ammonia",
@@ -112,7 +136,13 @@
    "dataYear": 2006,
    "sourceDetail": "Volume 3, Chapter 3, Table 3.1: 1.694 t CO2 per t NH3, modern conventional natural gas reforming",
    "approved": true,
-   "notes": ""
+   "notes": "",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use)",
+   "sourceUrl": "https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol3.html",
+   "publicationYear": 2006
   }
  ]
 }

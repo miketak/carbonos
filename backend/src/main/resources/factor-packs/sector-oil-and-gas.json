@@ -7,7 +7,7 @@
  "gwpBasis": "AR5",
  "license": "See each factor's source pack",
  "retrieved": "2026-09-09",
- "notes": "Fuels burned on site and offshore, gas flaring and venting per volume, refrigerants, well-to-tank, transport. Methane from venting and fugitives: use the site gas composition with the GWP set (1 kg CH4 at 28 under AR5), which the refrigerants pack does not carry; flaring per m3 needs the gas composition.",
+ "notes": "Fuels burned on site and offshore, flaring, refrigerants including HCFC-22 (a Montreal Protocol gas, reported outside the scopes), well-to-tank and transport. Methane, nitrous oxide, carbon dioxide, SF6 and NF3 emitted as themselves are in the shared library, one kilogram of gas per kilogram, so a vented or fugitive mass derived from the site gas composition follows the inventory's GWP set (1 kg CH4 is 28 kg CO2e under AR5 and 29.8 under AR6). Flaring ships four unapproved rows: the IPCC Tier 1 production-based defaults per thousand cubic metres of gas produced and per cubic metre of oil produced, the IPCC per-cubic-metre-flared default at 98% efficiency and a typical gas analysis, and a DESNZ natural-gas proxy that assumes complete combustion. Confirm the segment and the composition before approving one.",
  "factors": [
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_CNG:tonnes",
@@ -28,7 +28,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / CNG",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_CNG:litres",
@@ -49,7 +53,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / CNG",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_CNG:kWh_Gross_CV",
@@ -70,7 +78,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / CNG",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_LNG:tonnes",
@@ -91,7 +103,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / LNG",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_LNG:litres",
@@ -112,7 +128,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / LNG",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_LNG:kWh_Gross_CV",
@@ -133,7 +153,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / LNG",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_Natural_gas:tonnes",
@@ -154,7 +178,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / Natural gas",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_Natural_gas:cubic_metres",
@@ -175,7 +203,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / Natural gas",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_Natural_gas:kWh_Gross_CV",
@@ -196,7 +228,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / Natural gas",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_Natural_gas_100_mineral_blend_:tonnes",
@@ -217,7 +253,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / Natural gas (100% mineral blend)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_Natural_gas_100_mineral_blend_:cubic_metres",
@@ -238,7 +278,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / Natural gas (100% mineral blend)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Gaseous_fuels_Natural_gas_100_mineral_blend_:kWh_Gross_CV",
@@ -259,7 +303,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Gaseous fuels / Natural gas (100% mineral blend)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Aviation_turbine_fuel:tonnes",
@@ -280,7 +328,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Aviation turbine fuel",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Aviation_turbine_fuel:litres",
@@ -301,7 +353,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Aviation turbine fuel",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Aviation_turbine_fuel:kWh_Gross_CV",
@@ -322,7 +378,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Aviation turbine fuel",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Diesel_100_mineral_diesel_:tonnes",
@@ -343,7 +403,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Diesel (100% mineral diesel)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Diesel_100_mineral_diesel_:litres",
@@ -364,7 +428,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Diesel (100% mineral diesel)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Diesel_100_mineral_diesel_:kWh_Gross_CV",
@@ -385,7 +453,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Diesel (100% mineral diesel)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Fuel_oil:tonnes",
@@ -406,7 +478,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Fuel oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Fuel_oil:litres",
@@ -427,7 +503,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Fuel oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Fuel_oil:kWh_Gross_CV",
@@ -448,7 +528,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Fuel oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Naphtha:tonnes",
@@ -469,7 +553,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Naphtha",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Naphtha:litres",
@@ -490,7 +578,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Naphtha",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Naphtha:kWh_Gross_CV",
@@ -511,7 +603,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Naphtha",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Refinery_miscellaneous:tonnes",
@@ -532,7 +628,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Refinery miscellaneous",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Refinery_miscellaneous:kWh_Gross_CV",
@@ -553,7 +653,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Refinery miscellaneous",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Marine_gas_oil:tonnes",
@@ -574,7 +678,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Marine gas oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Marine_gas_oil:litres",
@@ -595,7 +703,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Marine gas oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Marine_gas_oil:kWh_Gross_CV",
@@ -616,7 +728,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Marine gas oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Marine_fuel_oil:tonnes",
@@ -637,7 +753,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Marine fuel oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Marine_fuel_oil:litres",
@@ -658,7 +778,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Marine fuel oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:Fuels:Liquid_fuels_Marine_fuel_oil:kWh_Gross_CV",
@@ -679,7 +803,11 @@
    "dataYear": 2026,
    "sourceDetail": "Fuels / Liquid fuels / Marine fuel oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Gaseous_fuels_Natural_gas:tonnes",
@@ -700,7 +828,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Gaseous fuels / Natural gas",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Gaseous_fuels_Natural_gas:cubic_metres",
@@ -721,7 +853,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Gaseous fuels / Natural gas",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Gaseous_fuels_Natural_gas:kWh_Gross_CV",
@@ -742,7 +878,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Gaseous fuels / Natural gas",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Gaseous_fuels_Natural_gas_100_mineral_blend_:tonnes",
@@ -763,7 +903,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Gaseous fuels / Natural gas (100% mineral blend)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Gaseous_fuels_Natural_gas_100_mineral_blend_:cubic_metres",
@@ -784,7 +928,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Gaseous fuels / Natural gas (100% mineral blend)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Gaseous_fuels_Natural_gas_100_mineral_blend_:kWh_Gross_CV",
@@ -805,7 +953,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Gaseous fuels / Natural gas (100% mineral blend)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Liquid_fuels_Diesel_100_mineral_diesel_:tonnes",
@@ -826,7 +978,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Liquid fuels / Diesel (100% mineral diesel)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Liquid_fuels_Diesel_100_mineral_diesel_:litres",
@@ -847,7 +1003,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Liquid fuels / Diesel (100% mineral diesel)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Liquid_fuels_Diesel_100_mineral_diesel_:kWh_Gross_CV",
@@ -868,7 +1028,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Liquid fuels / Diesel (100% mineral diesel)",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Liquid_fuels_Fuel_oil:tonnes",
@@ -889,7 +1053,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Liquid fuels / Fuel oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Liquid_fuels_Fuel_oil:litres",
@@ -910,7 +1078,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Liquid fuels / Fuel oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "DEFRA:WTT-_fuels:Liquid_fuels_Fuel_oil:kWh_Gross_CV",
@@ -931,7 +1103,11 @@
    "dataYear": 2026,
    "sourceDetail": "WTT- fuels / Liquid fuels / Fuel oil",
    "approved": true,
-   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265)."
+   "notes": "UK Government conversion factors 2026. CH4/N2O mass derived from CO2e components using AR5 GWPs (28, 265).",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "EPA:Stationary_combustion:Natural_Gas:Natural_Gas_heat_content_0.001026_mmBtu_per_scf_HHV_:mmBtu",
@@ -952,7 +1128,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Natural Gas / Natural Gas; heat content 0.001026 mmBtu per scf (HHV)",
    "approved": true,
-   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Natural_Gas:Natural_Gas_per_scf:scf",
@@ -973,7 +1153,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Natural Gas / Natural Gas; per scf",
    "approved": true,
-   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Propane_Gas:Other_Fuels_-_Gaseous_heat_content_0.002516_mmBtu_per_scf_HHV_:mmBtu",
@@ -994,7 +1178,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Propane Gas / Other Fuels - Gaseous; heat content 0.002516 mmBtu per scf (HHV)",
    "approved": true,
-   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Propane_Gas:Other_Fuels_-_Gaseous_per_scf:scf",
@@ -1015,7 +1203,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Propane Gas / Other Fuels - Gaseous; per scf",
    "approved": true,
-   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Crude_Oil:Petroleum_Products_heat_content_0.138_mmBtu_per_gallon_HHV_:mmBtu",
@@ -1036,7 +1228,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Crude Oil / Petroleum Products; heat content 0.138 mmBtu per gallon (HHV)",
    "approved": true,
-   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Crude_Oil:Petroleum_Products_per_gallon:gallon",
@@ -1057,7 +1253,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Crude Oil / Petroleum Products; per gallon",
    "approved": true,
-   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Distillate_Fuel_Oil_No._2:Petroleum_Products_heat_content_0.138_mmBtu_per_gallon_HHV_:mmBtu",
@@ -1078,7 +1278,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Distillate Fuel Oil No. 2 / Petroleum Products; heat content 0.138 mmBtu per gallon (HHV)",
    "approved": true,
-   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Distillate_Fuel_Oil_No._2:Petroleum_Products_per_gallon:gallon",
@@ -1099,7 +1303,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Distillate Fuel Oil No. 2 / Petroleum Products; per gallon",
    "approved": true,
-   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Kerosene:Petroleum_Products_heat_content_0.135_mmBtu_per_gallon_HHV_:mmBtu",
@@ -1120,7 +1328,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Kerosene / Petroleum Products; heat content 0.135 mmBtu per gallon (HHV)",
    "approved": true,
-   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Kerosene:Petroleum_Products_per_gallon:gallon",
@@ -1141,7 +1353,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Kerosene / Petroleum Products; per gallon",
    "approved": true,
-   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Kerosene-Type_Jet_Fuel:Petroleum_Products_heat_content_0.135_mmBtu_per_gallon_HHV_:mmBtu",
@@ -1162,7 +1378,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Kerosene-Type Jet Fuel / Petroleum Products; heat content 0.135 mmBtu per gallon (HHV)",
    "approved": true,
-   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Kerosene-Type_Jet_Fuel:Petroleum_Products_per_gallon:gallon",
@@ -1183,7 +1403,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Kerosene-Type Jet Fuel / Petroleum Products; per gallon",
    "approved": true,
-   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Residual_Fuel_Oil_No._6:Petroleum_Products_heat_content_0.15_mmBtu_per_gallon_HHV_:mmBtu",
@@ -1204,7 +1428,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Residual Fuel Oil No. 6 / Petroleum Products; heat content 0.15 mmBtu per gallon (HHV)",
    "approved": true,
-   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per mmBtu HHV. 40 CFR Part 98 Tables C-1, C-2. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Stationary_combustion:Residual_Fuel_Oil_No._6:Petroleum_Products_per_gallon:gallon",
@@ -1225,7 +1453,11 @@
    "dataYear": 2025,
    "sourceDetail": "Stationary combustion / Residual Fuel Oil No. 6 / Petroleum Products; per gallon",
    "approved": true,
-   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes."
+   "notes": "Per physical unit. 40 CFR Part 98. Biomass CO2 is biogenic: report outside scopes.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "EPA:Mobile_combustion_CO2:Kerosene-Type_Jet_Fuel:CO2_only_add_CH4_N2O_from_Tables_3-5:gallon",
@@ -1246,7 +1478,11 @@
    "dataYear": 2025,
    "sourceDetail": "Mobile combustion CO2 / Kerosene-Type Jet Fuel / CO2 only; add CH4/N2O from Tables 3-5",
    "approved": true,
-   "notes": "40 CFR Part 98. Biodiesel/ethanol CO2 is biogenic."
+   "notes": "40 CFR Part 98. Biodiesel/ethanol CO2 is biogenic.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025
   },
   {
    "code": "IPCC:2006:ammonia",
@@ -1267,7 +1503,13 @@
    "dataYear": 2006,
    "sourceDetail": "Volume 3, Chapter 3, Table 3.1: 1.694 t CO2 per t NH3, modern conventional natural gas reforming",
    "approved": true,
-   "notes": ""
+   "notes": "",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use)",
+   "sourceUrl": "https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol3.html",
+   "publicationYear": 2006
   },
   {
    "code": "EPA:GWP:Sulfur_hexafluoride",
@@ -1291,6 +1533,10 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): SF6",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0). Composition includes a component with no Kyoto potential or not in the species table; the CO2e is kept on the AR5 basis."
   },
   {
@@ -1315,7 +1561,144 @@
    "dataYear": 2025,
    "sourceDetail": "EPA Hub Tables 11-12 (IPCC AR5 GWP100): 50% HFC-32 , 50% HFC-125",
    "approved": true,
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "US EPA GHG Emission Factors Hub Tables 11-12 (IPCC AR5 100-yr GWPs)",
+   "sourceUrl": "https://www.epa.gov/system/files/other-files/2025-01/ghg-emission-factors-hub-2025.xlsx",
+   "publicationYear": 2025,
    "notes": "100-year GWP as published in the EPA Hub (IPCC AR5). Blends: weighted by composition; Montreal-protocol components excluded (GWP 0)."
+  },
+  {
+   "code": "DEFRA:Refrigerant_other:Montreal_protocol_products_HCFC-22_R22_chlorodifluoromethane:Emissions_including_only_non-Kyoto_products:kg",
+   "name": "HCFC-22 (R-22)",
+   "defaultScope": "SCOPE_1",
+   "defaultCategory": "FUGITIVE_EMISSIONS",
+   "scopeAgnostic": false,
+   "unit": "kg",
+   "kgCo2ePerUnit": 1760.0,
+   "co2": 0,
+   "ch4": 0,
+   "ch4Fossil": true,
+   "n2o": 0,
+   "hfcsKg": 1,
+   "blendComposition": null,
+   "blendGwpSource": "AR5",
+   "biogenicCo2": 0.0,
+   "dataYear": 2026,
+   "sourceDetail": "Refrigerant & other / Montreal protocol products / HCFC-22/R22 = chlorodifluoromethane / Emissions including only non-Kyoto products",
+   "approved": true,
+   "notes": "A Montreal Protocol gas, not a Kyoto gas. Its mass is reported outside the scopes as optional information under Chapter 4 and Chapter 9, with the CO2e DESNZ publishes on the AR5 basis; no scope total includes it.",
+   "reportingBasis": "OUTSIDE_SCOPES_NON_KYOTO",
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
+  },
+  {
+   "code": "IPCC:2006:flaring-gas-production",
+   "name": "Flaring, gas production (per 1000 m3 gas produced)",
+   "defaultScope": "SCOPE_1",
+   "defaultCategory": "STATIONARY_COMBUSTION",
+   "scopeAgnostic": false,
+   "unit": "1000m3",
+   "kgCo2ePerUnit": 1.226845,
+   "co2": 1.2,
+   "ch4": 0.00076,
+   "ch4Fossil": true,
+   "n2o": 2.1e-05,
+   "hfcsKg": 0,
+   "blendComposition": null,
+   "blendGwpSource": null,
+   "biogenicCo2": 0,
+   "dataYear": 2006,
+   "sourceDetail": "Volume 2, Chapter 4, Table 4.2.4 (developed countries), Gas Production, Flaring (IPCC code 1.B.2.b.ii): CH4 7.6E-07, CO2 1.2E-03 and N2O 2.1E-08 Gg per 10^6 m3 of gas produced. 1 Gg per 10^6 m3 is 1 kg per m3, so per 1,000 m3 produced the values are CO2 1.2, CH4 0.00076 and N2O 0.000021 kg. Table 4.2.5 (developing countries and economies in transition) carries the same figures as the lower bound of its range, up to CH4 1.0E-06, CO2 1.6E-03 and N2O 2.9E-08",
+   "approved": false,
+   "notes": "A production-based Tier 1 default: it applies to the gas produced, not to the volume flared. Confirm the segment and the flaring practice before approving it. Where the flared volume is metered, use a per-cubic-metre-flared row instead.",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 2 (Energy), Chapter 4 (Fugitive Emissions)",
+   "sourceUrl": "https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol2.html",
+   "publicationYear": 2006
+  },
+  {
+   "code": "IPCC:2006:flaring-oil-production",
+   "name": "Flaring, oil production (per m3 oil produced)",
+   "defaultScope": "SCOPE_1",
+   "defaultCategory": "STATIONARY_COMBUSTION",
+   "scopeAgnostic": false,
+   "unit": "m3",
+   "kgCo2ePerUnit": 41.8696,
+   "co2": 41.0,
+   "ch4": 0.025,
+   "ch4Fossil": true,
+   "n2o": 0.00064,
+   "hfcsKg": 0,
+   "blendComposition": null,
+   "blendGwpSource": null,
+   "biogenicCo2": 0,
+   "dataYear": 2006,
+   "sourceDetail": "Volume 2, Chapter 4, Table 4.2.4 (developed countries), Oil Production, Conventional Oil, Flaring (IPCC code 1.B.2.a.ii): CH4 2.5E-05, CO2 4.1E-02 and N2O 6.4E-07 Gg per 10^3 m3 of conventional oil produced. 1 Gg per 10^3 m3 is 1,000 kg per m3, so per m3 produced the values are CO2 41, CH4 0.025 and N2O 0.00064 kg. Table 4.2.5 carries the same figures as the lower bound of its range",
+   "approved": false,
+   "notes": "A production-based Tier 1 default: it applies to the oil produced, not to the volume flared. Confirm the segment and the amount of gas conserved before approving it.",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 2 (Energy), Chapter 4 (Fugitive Emissions)",
+   "sourceUrl": "https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol2.html",
+   "publicationYear": 2006
+  },
+  {
+   "code": "IPCC:2006:flaring-per-m3-flared",
+   "name": "Flared gas, per m3 flared (IPCC default composition)",
+   "defaultScope": "SCOPE_1",
+   "defaultCategory": "STATIONARY_COMBUSTION",
+   "scopeAgnostic": false,
+   "unit": "m3",
+   "kgCo2ePerUnit": 2.342095,
+   "co2": 2.0,
+   "ch4": 0.012,
+   "ch4Fossil": true,
+   "n2o": 2.3e-05,
+   "hfcsKg": 0,
+   "blendComposition": null,
+   "blendGwpSource": null,
+   "biogenicCo2": 0,
+   "dataYear": 2006,
+   "sourceDetail": "Volume 2, Chapter 4, Table 4.2.5, footnote (e): the emission factors for direct estimation of CH4, CO2 and N2O emissions from reported flared volumes are 0.012, 2.0 and 0.000023 Gg respectively per 10^6 m3 of gas flared, at a flaring efficiency of 98% and a typical gas analysis at a gas processing plant (91.9% CH4, 0.58% CO2, 0.68% N2 and 6.84% non-methane hydrocarbons by volume). 1 Gg per 10^6 m3 is 1 kg per m3",
+   "approved": false,
+   "notes": "Use this row where the flared volume is metered. It assumes the IPCC default composition and 98% flaring efficiency, so the 2% that escapes uncombusted is already in the CH4 component. A site with a measured composition enters a supplier-specific factor instead.",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 2 (Energy), Chapter 4 (Fugitive Emissions)",
+   "sourceUrl": "https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol2.html",
+   "publicationYear": 2006
+  },
+  {
+   "code": "PROXY:2026:flared-gas-as-natural-gas",
+   "name": "Flared gas, per m3 flared, as natural gas fully combusted (proxy)",
+   "defaultScope": "SCOPE_1",
+   "defaultCategory": "STATIONARY_COMBUSTION",
+   "scopeAgnostic": false,
+   "unit": "m3",
+   "kgCo2ePerUnit": 2.02633,
+   "co2": 2.02231,
+   "ch4": 0.0001096428571,
+   "ch4Fossil": true,
+   "n2o": 3.58490566e-06,
+   "hfcsKg": 0,
+   "blendComposition": null,
+   "blendGwpSource": null,
+   "biogenicCo2": 0,
+   "dataYear": 2026,
+   "sourceDetail": "Fuels, Gaseous fuels: Natural gas, per cubic metre (2.02633 kg CO2e, of which CO2 2.02231, CH4 0.00010964 and N2O 0.00000358), applied to the volume flared",
+   "approved": false,
+   "notes": "A proxy, not a flaring factor: it assumes complete combustion of a natural-gas composition, so it understates the methane a real flare lets through. Record the uncombusted fraction separately against the methane row, or use the IPCC per-cubic-metre-flared row.",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file",
+   "sourceUrl": "https://assets.publishing.service.gov.uk/media/6a6c9748862aaf18d9c62ac9/ghg-conversion-factors-2026-flat-format-revised.xlsx",
+   "publicationYear": 2026
   },
   {
    "code": "GHANA:grid:GHA:2019",
@@ -1336,7 +1719,11 @@
    "dataYear": 2019,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2019; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2020",
@@ -1357,7 +1744,11 @@
    "dataYear": 2020,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2020; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2021",
@@ -1378,7 +1769,11 @@
    "dataYear": 2021,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2021; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2022",
@@ -1399,7 +1794,11 @@
    "dataYear": 2022,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2022; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2023",
@@ -1420,7 +1819,11 @@
    "dataYear": 2023,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2023; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:grid:GHA:2024",
@@ -1441,7 +1844,11 @@
    "dataYear": 2024,
    "sourceDetail": "Electricity (national grid, generation-based) / Ghana (GHA) / data year 2024; location-based; generation mix incl. only domestic generation",
    "approved": true,
-   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split."
+   "notes": "Ember Yearly Electricity Data (CC BY 4.0). Generation-weighted intensity of domestic generation; excludes imports and T&D losses. Secondary source: prefer a national or IFI grid factor when published. CO2e only: the source publishes no gas split.",
+   "reportingBasis": "SCOPES",
+   "sourcePublication": "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh)",
+   "sourceUrl": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv",
+   "publicationYear": 2025
   },
   {
    "code": "GHANA:td-losses",
@@ -1462,7 +1869,13 @@
    "dataYear": 2024,
    "sourceDetail": "Scope 3 category 3: the 2024 Ember intensity of 0.468809 kg CO2e/kWh times the share lost in transmission and distribution (20% of generation, Energy Commission National Energy Statistics, system losses), per kWh consumed",
    "approved": false,
-   "notes": "Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure."
+   "notes": "Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure.",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "Energy Commission of Ghana, National Energy Statistics (system losses), applied to the Ember generation intensity",
+   "sourceUrl": "https://www.energycom.gov.gh/",
+   "publicationYear": 2025
   }
  ]
 }

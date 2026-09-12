@@ -53,17 +53,22 @@ public final class ReportPdf {
 	static final String MARKET_BASED_NOTE = "The market-based scope 2 figure is not split by gas; its instruments and "
 			+ "balance are in section 04.";
 
+	/** The sentence under the block of gases outside the scopes (spec 02.4), as the page prints it. */
+	static final String OUTSIDE_SCOPES_RULE = "Reported separately as optional information under Chapter 4 and "
+			+ "Chapter 9; not included in any scope.";
+
 	/** The section headings in document order, for the layout test. */
 	static final List<String> HEADINGS = List.of("Report", "1. Company and organizational boundary",
 			"2. Operational boundary", "3. Reporting period", "4. Emissions by scope (tonnes CO2e)",
-			"5. Emissions by gas", "6. Biogenic CO2", "7. Base year", "8. Methodology and emission factors",
+			"5. Emissions by gas", "6. Biogenic CO2", "6a. Gases outside the scopes (Montreal Protocol)",
+			"7. Base year", "8. Methodology and emission factors",
 			"8a. Data quality and uncertainty", "9. Exclusions", "10. Snapshot lines (kg CO2e)");
 
 	/** The subheadings that introduce a table, for the layout test. */
 	static final List<String> TABLE_SUBHEADINGS = List.of("Scope 3 by category (declared and reported)", "By facility",
-			"By legal entity", "By country", "Emissions profile over time", "Other views of the same periods",
-			"Emission factors applied", "Emissions by data quality tier", "Operations left out of the boundary",
-			"Records left out of the run");
+			"By legal entity", "By country", "Gases reported outside the scopes", "Emissions profile over time",
+			"Other views of the same periods", "Emission factors applied", "Emissions by data quality tier",
+			"Operations left out of the boundary", "Records left out of the run");
 
 	private ReportPdf() {
 	}
@@ -209,6 +214,39 @@ public final class ReportPdf {
 
 			paragraph(document, "6. Biogenic CO2", tonnes(report.biogenicCo2T()) + " t of biogenic CO2, reported outside the scopes.");
 
+			// spec 02.4: a Montreal Protocol gas is not a Kyoto gas; its mass is disclosed, its CO2e for information only
+			var outside = report.outsideScopes() == null ? List.<ReportResponse.OutsideScopesRow>of()
+					: report.outsideScopes();
+			if (outside.isEmpty()) {
+				paragraph(document, "6a. Gases outside the scopes (Montreal Protocol)",
+						"No gases outside the scopes were reported. " + OUTSIDE_SCOPES_RULE);
+			}
+			else {
+				paragraph(document, "6a. Gases outside the scopes (Montreal Protocol)", OUTSIDE_SCOPES_RULE);
+				var nonKyoto = titled("Gases reported outside the scopes", SMALL_BOLD, 28, 14, 20, 20, 18);
+				head(nonKyoto, "Gas", "Mass (kg)", "Basis", "CO2e for information", "Records");
+				for (var row : outside) {
+					var informational = row.kgCo2eInformational() == null ? "not quantified"
+							: plain(row.kgCo2eInformational()) + " kg CO2e"
+									+ (row.informationalGwpSource() == null ? ""
+											: ", " + row.informationalGwpSource() + " as published");
+					row(nonKyoto, row.gas(), plain(row.kg()), ReportLabels.label(row.basis()), informational,
+							row.recordRefs() == null ? "" : String.join(", ", row.recordRefs()));
+				}
+				document.add(nonKyoto);
+				// the potentials are the source's; a non-Kyoto gas has none in the inventory's set
+				var published = outside.stream()
+					.map(ReportResponse.OutsideScopesRow::informationalGwpSource)
+					.filter(java.util.Objects::nonNull)
+					.distinct()
+					.filter(basis -> !basis.equals(report.methodology().gwpSet().name()))
+					.toList();
+				if (!published.isEmpty()) {
+					document.add(new Paragraph(String.join(" and ", published) + " potentials as published; not restated to "
+							+ report.methodology().gwpSet().name() + ".", SMALL));
+				}
+			}
+
 			if (report.baseYear() == null) {
 				paragraph(document, "7. Base year", "No base year designated.");
 			}
@@ -271,11 +309,13 @@ public final class ReportPdf {
 			}
 
 			paragraph(document, "8. Methodology and emission factors", report.methodology().statement());
-			var factors = titled("Emission factors applied", SMALL_BOLD, 26, 14, 30, 8, 22);
-			head(factors, "Factor", "kg CO2e / unit", "Gases (kg per unit)", "GWP", "Source");
+			// spec 02.3: the publication with its years is the source; the packs that delivered it stand apart
+			var factors = titled("Emission factors applied", SMALL_BOLD, 24, 13, 26, 8, 11, 18);
+			head(factors, "Factor", "kg CO2e / unit", "Gases (kg per unit)", "GWP", "Packs", "Source (publication)");
 			for (var f : report.factors()) {
 				row(factors, f.name(), plain(f.kgCo2ePerUnit()) + " / " + f.unit(), gasSplit(f), ReportLabels.label(f.gwpSet()),
-						f.source());
+						f.packs() == null || f.packs().isEmpty() ? "entered by hand" : String.join(", ", f.packs()),
+						f.source() + years(f));
 			}
 			document.add(factors);
 
@@ -356,6 +396,18 @@ public final class ReportPdf {
 	}
 
 	/** The footing figure (spec 07.7), summed from the rows for a snapshot stored before the field existed. */
+	/** " (published 2006, data year 2006)", or what is known of it; empty when the factor cites no year. */
+	private static String years(ReportResponse.FactorRow f) {
+		var parts = new ArrayList<String>();
+		if (f.publicationYear() != null) {
+			parts.add("published " + f.publicationYear());
+		}
+		if (f.dataYear() != null) {
+			parts.add("data year " + f.dataYear());
+		}
+		return parts.isEmpty() ? "" : " (" + String.join(", ", parts) + ")";
+	}
+
 	private static BigDecimal byGasTotal(ReportResponse report) {
 		if (report.byGasTotalTCo2e() != null) {
 			return report.byGasTotalTCo2e();

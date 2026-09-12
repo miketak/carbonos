@@ -1372,6 +1372,12 @@ public class InventoryService {
 						+ "') can be classified into.");
 			}
 		}
+		// spec 02.4: a Montreal Protocol gas is not a Kyoto gas; it never sits in scope 2 or scope 3
+		if (!factor.getReportingBasis().inScopes() && chosenScope != Scope.SCOPE_1 && leaseType == null) {
+			throw new GhgRuleViolationException("'" + factor.getName()
+					+ "' is a gas outside the scopes (Montreal Protocol) and is reported separately, never in "
+					+ scopeName(chosenScope) + ". Classify it as scope 1, or choose a Kyoto-gas factor.");
+		}
 		var departs = leaseType == null && chosenScope != defaultScope;
 		var justification = trimToNull(scopeJustification);
 		if (proxy && trimToNull(proxyJustification) == null) {
@@ -1881,6 +1887,26 @@ public class InventoryService {
 				factorFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType() + "' at "
 						+ activity.getFacility().getName() + " has a market-based factor per kWh but is recorded in "
 						+ describeUnit(units, activityUnit) + ": the market-based figure falls back to location-based."));
+			}
+		}
+		// spec 02.4: the report owes a block of its own for gases outside the scopes, and a scope other
+		// than scope 1 on such a line is an error unless a lease type derived it
+		var outsideScopes = included.stream()
+			.filter(InventoryAssignment::isClassified)
+			.filter(assignment -> !assignment.getEmissionFactor().getReportingBasis().inScopes())
+			.toList();
+		if (!outsideScopes.isEmpty()) {
+			factorFindings.add(new Finding(Severity.WARNING, outsideScopes.size() + " record"
+					+ (outsideScopes.size() == 1 ? " uses" : "s use") + " a factor for a gas outside the scopes "
+					+ "(Montreal Protocol). Its mass is reported in the block 'Gases outside the scopes (Montreal "
+					+ "Protocol)' with the CO2e its source publishes for information, and no scope total includes it."));
+		}
+		for (var assignment : outsideScopes) {
+			if (assignment.getScope() != Scope.SCOPE_1 && assignment.getLeaseType() == null) {
+				factorFindings.add(new Finding(Severity.ERROR, "'" + assignment.getActivity().getActivityType()
+						+ "' uses '" + assignment.getEmissionFactor().getName()
+						+ "', a gas outside the scopes, but is classified as " + scopeName(assignment.getScope())
+						+ ". Classify it as scope 1; the scope is informational on a line outside the scopes."));
 			}
 		}
 		if (inventory.getResidualMixAvailable() == null) {

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -44,9 +45,20 @@ class EmissionFactorController {
 		return ghgService.listEmissionFactors().stream().map(this::toResponse).toList();
 	}
 
+	/**
+	 * The shared library and the organization's own factors (spec 02.1), with
+	 * the picker's filters (spec 02.3): {@code includeUnapproved=false} hides
+	 * rows a preparer must not pick unseen, {@code q} searches name,
+	 * publication and pack tag.
+	 */
 	@GetMapping("/organizations/{organizationId}/emission-factors")
-	List<EmissionFactorResponse> list(@PathVariable UUID organizationId) {
-		return ghgService.listEmissionFactors(organizationId).stream().map(this::toResponse).toList();
+	List<EmissionFactorResponse> list(@PathVariable UUID organizationId,
+			@RequestParam(defaultValue = "true") boolean includeUnapproved,
+			@RequestParam(required = false) String q) {
+		return ghgService.listEmissionFactors(organizationId, includeUnapproved, q)
+			.stream()
+			.map(this::toResponse)
+			.toList();
 	}
 
 	@PostMapping("/organizations/{organizationId}/emission-factors")
@@ -94,7 +106,8 @@ class EmissionFactorController {
 				body.dataYear(), body.validFrom(), body.validTo(), body.note());
 		return new GhgService.FactorFacts(body.name(), body.defaultScope(), body.defaultCategory(),
 				Boolean.TRUE.equals(body.scopeAgnostic()), body.unit(), body.kgCo2ePerUnit(), gases,
-				body.blendComposition(), body.blendGwpSource(), provenance, body.approved() == null || body.approved());
+				body.blendComposition(), body.blendGwpSource(), provenance, body.approved() == null || body.approved(),
+				body.reportingBasis());
 	}
 
 	private static BigDecimal nz(BigDecimal value) {

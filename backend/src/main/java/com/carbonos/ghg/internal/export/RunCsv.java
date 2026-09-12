@@ -28,6 +28,8 @@ public final class RunCsv {
 				new Column<>("evidence_ref", GhgRunLine::getEvidenceRef),
 				new Column<>("period_start", GhgRunLine::getPeriodStart), new Column<>("period_end", GhgRunLine::getPeriodEnd),
 				new Column<>("scope", GhgRunLine::getScope), new Column<>("category", GhgRunLine::getCategory),
+				// spec 02.4: SCOPES, or OUTSIDE_SCOPES_NON_KYOTO for a line no scope total includes
+				new Column<>("reporting_basis", GhgRunLine::getReportingBasis),
 				new Column<>("lease_type", GhgRunLine::getLeaseType), new Column<>("quantity", GhgRunLine::getQuantity),
 				new Column<>("unit", GhgRunLine::getUnit), new Column<>("factor_id", GhgRunLine::getFactorId),
 				new Column<>("factor", GhgRunLine::getFactorName), new Column<>("factor_unit", GhgRunLine::getFactorUnit),
