@@ -18,6 +18,7 @@ import { MarketFactorsCard } from './components/MarketFactorsCard'
 import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
 import { PreflightPanel } from './components/PreflightPanel'
 import { ReportMetadataCard } from './components/ReportMetadataCard'
+import { UpstreamRulesCard } from './components/UpstreamRulesCard'
 import { RoleButton } from './components/RoleButton'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
 import { actionLabels, approachLabels, exclusionLabels, formatCo2e } from './format'
@@ -214,6 +215,7 @@ export function InventoryDetailPage() {
         />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 5 } as CSSProperties}>
+        <UpstreamRulesCard organizationId={organizationId} inventory={inventory} myRole={myRole} />
         <MarketFactorsCard organizationId={organizationId} inventory={inventory} myRole={myRole} />
         <ReportMetadataCard
           key={`header-${inventory.status}`}

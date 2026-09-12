@@ -18,6 +18,7 @@ import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.Inventory;
 import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.InventoryStatus;
+import com.carbonos.ghg.internal.OrganizationUnits;
 import com.carbonos.ghg.internal.web.dto.AuditEventResponse;
 import com.carbonos.ghg.internal.web.dto.ReportResponse;
 
@@ -35,10 +36,12 @@ public class ReportAssembler {
 	private final InventoryService inventoryService;
 	private final GhgService ghgService;
 	private final BaseYearService baseYearService;
+	private final OrganizationUnits organizationUnits;
 	private final ObjectMapper mapper;
 
 	ReportAssembler(InventoryService inventoryService, GhgService ghgService, BaseYearService baseYearService,
-			ObjectMapper mapper) {
+			OrganizationUnits organizationUnits, ObjectMapper mapper) {
+		this.organizationUnits = organizationUnits;
 		this.inventoryService = inventoryService;
 		this.ghgService = ghgService;
 		this.baseYearService = baseYearService;
@@ -93,7 +96,8 @@ public class ReportAssembler {
 		return ReportResponse.of(run, inventory, organization, version, baseYear, baseRun, recalculatedRuns, profile,
 				inventoryService.marketFactors(inventory.getId()), inventoryService.predecessors(inventory.getId()),
 				successor, inventoryService.intensityMetrics(inventory.getId()),
-				inventoryService.listBoundaryVersions(inventory.getId()).size());
+				inventoryService.listBoundaryVersions(inventory.getId()).size(),
+				organizationUnits.forOrganization(organization.getId()));
 	}
 
 	/** Later acts, later inventories and facts that changed since the run was published (spec 05.3). */

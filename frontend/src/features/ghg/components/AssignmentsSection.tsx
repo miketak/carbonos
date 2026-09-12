@@ -14,6 +14,7 @@ import {
   formatCo2e,
   formatPeriod,
   isAutomaticReason,
+  isOutsideScopesReason,
   manualExclusionReasons,
   leaseLabels,
   publicationLine,
@@ -81,7 +82,11 @@ function StatusPills({
         {assignment.exclusionJustification && (
           <span className="font-normal text-slate-500">
             {assignment.exclusionJustification}
-            {assignment.estimatedKgCo2e !== null
+            {/* spec 04.8: a record nobody sized reads as "not estimated", never as ~0 */}
+            {assignment.gas !== null ? `; ${assignment.gas}, outside the scopes` : ''}
+            {assignment.estimateState === 'NOT_ESTIMATED' ? '; not estimated' : ''}
+            {assignment.estimateState === 'EMITS_NOTHING' ? '; emits nothing' : ''}
+            {assignment.estimateState === 'ESTIMATED' && assignment.estimatedKgCo2e !== null
               ? `; about ${formatCo2e(assignment.estimatedKgCo2e)} left out`
               : ''}
           </span>
@@ -239,7 +244,8 @@ function ClassifyControls({
   const preview = selected ? conversionPreview(units, assignment, selected, density) : null
   const scope = assignment.scope ?? selected?.defaultScope ?? 'SCOPE_1'
   const leased = assignment.leaseType !== null
-  const scopeLocked = !!selected && !selected.scopeAgnostic && !leased
+  // spec 04.7 (finding F34): any factor can be used in any scope with a justification; only a
+  // lease type fixes the scope, because Appendix F derives it (spec 04.1)
   // spec 04.3: the stream's default when the record has one, else the factor's
   const defaultScope = assignment.defaultScope ?? selected?.defaultScope ?? null
   const departs = !!selected && !leased && !!assignment.scope && assignment.scope !== defaultScope
@@ -480,7 +486,7 @@ function ClassifyControls({
           <select
             aria-label={`${assignment.activityType} scope`}
             value={scope}
-            disabled={!editable || scopeLocked || leased}
+            disabled={!editable || leased}
             onChange={(event) => {
               const chosen = event.target.value as GhgScope
               onClassify({
@@ -549,9 +555,6 @@ function ClassifyControls({
               </option>
             ))}
           </select>
-          {scopeLocked && (
-            <p className="w-full text-xs text-ink-muted">This factor's scope is inherent.</p>
-          )}
           {assignment.scope && defaultScope && assignment.scope !== defaultScope && (
             <p className="w-full text-xs text-ink-muted">
               {assignment.defaultScope ? 'The stream' : `'${selected.name}'`} suggests{' '}
@@ -662,28 +665,56 @@ function JustificationInput({
  */
 function ExcludeMenu({
   assignment,
+  units,
   onExclude,
 }: {
   assignment: Assignment
+  units: Unit[]
   onExclude: (input: ExcludeInput) => void
 }) {
   const [open, setOpen] = useState(false)
   const [chosen, setChosen] = useState<ExclusionReason | null>(null)
   const [justification, setJustification] = useState('')
   const [estimated, setEstimated] = useState('')
+  // spec 04.8: the three states a preparer can answer with, so nobody types a false zero
+  const [notEstimated, setNotEstimated] = useState(false)
+  const [emitsNothing, setEmitsNothing] = useState(false)
+  const [gas, setGas] = useState('')
   const ref = useRef<HTMLDivElement>(null)
+  const montreal = chosen !== null && isOutsideScopesReason(chosen)
+  const magnitudeAnswered = montreal || notEstimated || emitsNothing || estimated.trim() !== ''
+
+  const reset = () => {
+    setChosen(null)
+    setJustification('')
+    setEstimated('')
+    setNotEstimated(false)
+    setEmitsNothing(false)
+    setGas('')
+  }
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (!chosen) return
-    onExclude({
-      reason: chosen,
-      justification: justification.trim(),
-      estimatedKgCo2e: Number(estimated),
-    })
-    setChosen(null)
-    setJustification('')
-    setEstimated('')
+    onExclude(
+      montreal
+        ? { reason: chosen, justification: justification.trim(), gas: gas.trim() }
+        : notEstimated
+          ? { reason: chosen, justification: justification.trim(), notEstimated: true }
+          : emitsNothing
+            ? {
+                reason: chosen,
+                justification: justification.trim(),
+                estimatedKgCo2e: 0,
+                emitsNothing: true,
+              }
+            : {
+                reason: chosen,
+                justification: justification.trim(),
+                estimatedKgCo2e: Number(estimated),
+              },
+    )
+    reset()
   }
 
   useEffect(() => {
@@ -720,21 +751,27 @@ function ExcludeMenu({
           <p className="border-b border-teal/10 px-3 py-2 text-xs font-semibold text-ink-muted">
             Exclude: reason
           </p>
-          {manualExclusionReasons.map((value) => (
-            <button
-              key={value}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false)
-                if (isAutomaticReason(value)) onExclude({ reason: value })
-                else setChosen(value)
-              }}
-              className="block w-full px-3 py-2 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
-            >
-              {exclusionLabels[value]}
-            </button>
-          ))}
+          {/* spec 04.8: the Montreal reason reports a mass of gas, so it needs a mass unit */}
+          {manualExclusionReasons
+            .filter(
+              (value) =>
+                !isOutsideScopesReason(value) || unitDimension(units, assignment.unit) === 'MASS',
+            )
+            .map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false)
+                  if (isAutomaticReason(value)) onExclude({ reason: value })
+                  else setChosen(value)
+                }}
+                className="block w-full px-3 py-2 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
+              >
+                {exclusionLabels[value]}
+              </button>
+            ))}
         </div>
       )}
       {chosen && (
@@ -753,29 +790,70 @@ function ExcludeMenu({
             required
             onChange={(event) => setJustification(event.target.value)}
           />
-          <InputField
-            label="Estimated emissions left out (kg CO₂e)"
-            type="number"
-            min="0"
-            step="0.001"
-            value={estimated}
-            required
-            hint="0 when the record emits nothing; the report totals these per reason."
-            onChange={(event) => setEstimated(event.target.value)}
-          />
+          {montreal ? (
+            <InputField
+              label="Gas"
+              placeholder="HCFC-22"
+              value={gas}
+              maxLength={60}
+              required
+              hint="The mass this record holds is reported in the block Gases outside the scopes (Montreal Protocol), never as CO₂e."
+              onChange={(event) => setGas(event.target.value)}
+            />
+          ) : (
+            <>
+              <InputField
+                label="Estimated emissions left out (kg CO₂e)"
+                type="number"
+                min="0"
+                step="0.001"
+                value={estimated}
+                disabled={notEstimated || emitsNothing}
+                hint="The report totals these per reason."
+                onChange={(event) => setEstimated(event.target.value)}
+              />
+              <label className="flex items-center gap-2 text-xs text-ink-muted">
+                <input
+                  type="checkbox"
+                  aria-label="This record emits nothing"
+                  checked={emitsNothing}
+                  disabled={notEstimated}
+                  onChange={(event) => {
+                    setEmitsNothing(event.target.checked)
+                    if (event.target.checked) setEstimated('0')
+                  }}
+                  className="h-4 w-4 accent-teal-deep"
+                />
+                This record emits nothing
+              </label>
+              <label className="flex items-center gap-2 text-xs text-ink-muted">
+                <input
+                  type="checkbox"
+                  aria-label="Not estimated"
+                  checked={notEstimated}
+                  disabled={emitsNothing}
+                  onChange={(event) => {
+                    setNotEstimated(event.target.checked)
+                    if (event.target.checked) setEstimated('')
+                  }}
+                  className="h-4 w-4 accent-teal-deep"
+                />
+                Not estimated: there is no basis to size this record
+              </label>
+            </>
+          )}
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="px-2.5 py-1 text-xs"
-              onClick={() => setChosen(null)}
-            >
+            <Button type="button" variant="ghost" className="px-2.5 py-1 text-xs" onClick={reset}>
               Cancel
             </Button>
             <Button
               type="submit"
               className="px-2.5 py-1 text-xs"
-              disabled={justification.trim().length < 10 || estimated.trim() === ''}
+              disabled={
+                justification.trim().length < 10 ||
+                !magnitudeAnswered ||
+                (montreal && gas.trim() === '')
+              }
             >
               Exclude
             </Button>
@@ -1079,7 +1157,11 @@ export function AssignmentsSection({
                     </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       {assignment.included && writable && (
-                        <ExcludeMenu assignment={assignment} onExclude={onExclude(assignment)} />
+                        <ExcludeMenu
+                          assignment={assignment}
+                          units={units}
+                          onExclude={onExclude(assignment)}
+                        />
                       )}
                     </td>
                   </tr>
@@ -1147,7 +1229,11 @@ export function AssignmentsSection({
                     />
                     {writable && (
                       <div>
-                        <ExcludeMenu assignment={assignment} onExclude={onExclude(assignment)} />
+                        <ExcludeMenu
+                          assignment={assignment}
+                          units={units}
+                          onExclude={onExclude(assignment)}
+                        />
                       </div>
                     )}
                   </>

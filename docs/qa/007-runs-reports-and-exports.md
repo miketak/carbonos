@@ -92,7 +92,24 @@ the mining pack.
 | 5 | Compare the scope 1 total and the by-gas footing with the run before it. | Neither moved: no scope total, no by-gas row and no intensity figure counts the 85 kg or its CO2e. In the snapshot lines the R-22 line carries the mark **Outside the scopes**. | | |
 | 6 | Reopen the inventory, delete the R-22 record with a reason, and re-freeze. | The rest of the procedure runs on the figures the earlier cases wrote down. | | |
 
-### B2. Scope 2 disclosures
+### B1b. Derived category 3 lines and the exclusion states (specs 04.7, 04.8)
+
+This case sets up its own state, reads one scratch run, and undoes it, so
+run 003 and every figure the other cases check stay where they are.
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Reopen **2025 Operational** as a draft with the reason "scratch run for the category 3 and exclusion checks". Declare **3. Fuel- and energy-related activities**, add the **Well-to-tank diesel** factor and the well-to-tank rule of procedure 5 case E3, re-exclude R8 as **Methodology exclusion** with **Not estimated**, and exclude R6 as **Outside the scopes: Montreal Protocol gas** with the gas "HCFC-22". Freeze and launch **Run 004**. | The run is created. | | |
+| 2 | Read section 05, scope 3 by category. | **3. Fuel- and energy-related activities** carries a figure and a line count, one derived line per included scope 1 diesel line, and the declaration table no longer reads it as "declared, not quantified". | | |
+| 3 | Read section 10, the snapshot lines. | Each derived line is marked **Derived line** and says which line it rides on, for example "well-to-tank of ACT-0012 Haul fleet diesel". A derived line carries no market-based figure and no lease type. | | |
+| 4 | Read section 05, each gas, and its footing row. | The row "Total (scope 2 location-based), ties to section 04" still equals the section 04 total with the derived lines present: a derived line whose upstream factor publishes a gas split feeds the gas rows, and one whose factor publishes CO2e only feeds "CO₂e from factors without a gas split". | | |
+| 5 | Read section 08, methodology. | A list **Upstream rules (category 3)** names the rule, its kind and how many lines it derived, and the statement says transmission and distribution losses are computed on every kilowatt-hour consumed, at the location-based factor. | | |
+| 6 | Read section 09, the per-reason summary. | **Methodology exclusion** reads "1 not estimated" and never "0 kg CO₂e"; **Outside the scopes: Montreal Protocol gas** reads "see Gases outside the scopes (Montreal Protocol)"; R8's own row reads "not estimated". | | |
+| 7 | Read section 6a. | A row reads the gas "HCFC-22", 45 kg, the basis "Recorded mass of an excluded record", "not quantified" for the CO2e, and R6's record reference. The scope totals are unchanged by it. | | |
+| 8 | Download `lines.csv` and `exclusions.csv`. | Each derived line's row carries `derived_from_line_id` (the parent line's id, which appears as another row's `line_id`) and `derived_kind`. The exclusions file carries `estimate_state` `NOT_ESTIMATED` with an empty `estimated_kg_co2e` for R8, and the gas for R6. | | |
+| 9 | Void run 004 with the reason "scratch run for the category 3 and exclusion checks", reopen the draft, remove the rule, undeclare category 3, restore R8's sized exclusion and R6's classification as procedure 5 leaves them, and freeze again. | The view is back where procedure 5 left it and run 003 stands untouched. | | |
+
+### B2. Scope 2 disclosures### B2. Scope 2 disclosures
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
@@ -126,14 +143,14 @@ the mining pack.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Download `lines.csv` and open it in the spreadsheet. | One row per line with `record_id`, `record_ref` (ACT-0001), `evidence_ref`, `evidence_files`, `factor_id`, `reporting_basis` (`SCOPES` on every line of this dataset), `converted_quantity`, `conversion_factor`, `density_material`, `density_kg_per_litre`, `conversion_note`, `accounting_share`, `period_share`, the kg per gas, `co2e_unsplit_kg` (0 on every line of this dataset: no factor publishes CO2e only), the `market_*` columns, `data_quality` and `data_quality_tier`. | | |
+| 1 | Download `lines.csv` and open it in the spreadsheet. | One row per line with `record_id`, `record_ref` (ACT-0001), `evidence_ref`, `evidence_files`, `factor_id`, `reporting_basis` (`SCOPES` on every line of this dataset), `converted_quantity`, `conversion_factor`, `density_material`, `density_kg_per_litre`, `conversion_note`, `accounting_share`, `period_share`, the kg per gas, `co2e_unsplit_kg` (0 on every line of this dataset: no factor publishes CO2e only), the `market_*` columns, `data_quality` and `data_quality_tier`. The first three columns are `line_id`, `derived_from_line_id` and `derived_kind`: empty on a line a record produced directly. | | |
 | 2 | Recompute one line's kg CO2e from its columns. | The recomputed figure matches. | | |
 
 ### C3. Exclusions and frozen inputs
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Download `exclusions.csv`. | The exclusions file carries each reason, detail, justification and `estimated_kg_co2e`. | | |
+| 1 | Download `exclusions.csv`. | The exclusions file carries each reason, detail, justification, `estimated_kg_co2e`, `estimate_state` and `gas`. `estimated_kg_co2e` is empty and `estimate_state` reads `NOT_ESTIMATED` for a record nobody sized, `0` with `EMITS_NOTHING` for one stated to emit nothing, and the figure with `ESTIMATED` otherwise. | | |
 | 2 | Download `inputs.json`. | The JSON carries `boundaryVersion`, `factors` (six, as applied), `instruments` (one) and the residual mix (0.52). | | |
 
 ## D. Voided runs in the report

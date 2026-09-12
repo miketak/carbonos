@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   addEvidenceLink,
   addMember,
+  addUpstreamRule,
   changeMemberRole,
   classifyAssignment,
   clearBaseYear,
@@ -69,12 +70,14 @@ import {
   listRuns,
   listStreams,
   listUnits,
+  listUpstreamRules,
   publishInventory,
   raiseRecalculation,
   removeBoundaryTreatment,
   removeEntityTreatment,
   removeMarketFactor,
   removeMember,
+  removeUpstreamRule,
   reopenInventory,
   searchActivities,
   searchAssignments,
@@ -129,6 +132,7 @@ import type {
   ReportMetadataInput,
   ResidualMixInput,
   SourceStreamInput,
+  UpstreamRuleInput,
 } from './api'
 
 export const organizationsKey = ['ghg', 'organizations'] as const
@@ -164,6 +168,8 @@ export const boundaryVersionsKey = (inventoryId: string) =>
 export const boundaryVersionKey = (id: string) => ['ghg', 'boundary-version', id] as const
 export const marketFactorsKey = (inventoryId: string) =>
   ['ghg', 'market-factors', inventoryId] as const
+export const upstreamRulesKey = (inventoryId: string) =>
+  ['ghg', 'upstream-rules', inventoryId] as const
 export const assignmentsKey = (inventoryId: string) => ['ghg', 'assignments', inventoryId] as const
 export const validationKey = (inventoryId: string) => ['ghg', 'validation', inventoryId] as const
 export const runsKey = (inventoryId: string) => ['ghg', 'runs', inventoryId] as const
@@ -740,6 +746,7 @@ function useInventoryScopedMutation<TArgs, TResult>(
       void queryClient.invalidateQueries({ queryKey: coverageKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: marketFactorsKey(inventoryId) })
+      void queryClient.invalidateQueries({ queryKey: upstreamRulesKey(inventoryId) })
       // the inventory carries the lifecycle status, which the header renders
       void queryClient.invalidateQueries({ queryKey: inventoryKey(inventoryId) })
     },
@@ -893,6 +900,26 @@ export function useSetMarketFactor(inventoryId: string) {
 export function useRemoveMarketFactor(inventoryId: string) {
   return useInventoryScopedMutation(inventoryId, (facilityId: string) =>
     removeMarketFactor(inventoryId, facilityId),
+  )
+}
+
+/** The upstream rules that derive category 3 lines from the view's own records (spec 04.7). */
+export function useUpstreamRulesQuery(inventoryId: string) {
+  return useQuery({
+    queryKey: upstreamRulesKey(inventoryId),
+    queryFn: () => listUpstreamRules(inventoryId),
+  })
+}
+
+export function useAddUpstreamRule(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, (input: UpstreamRuleInput) =>
+    addUpstreamRule(inventoryId, input),
+  )
+}
+
+export function useRemoveUpstreamRule(inventoryId: string) {
+  return useInventoryScopedMutation(inventoryId, (ruleId: string) =>
+    removeUpstreamRule(inventoryId, ruleId),
   )
 }
 

@@ -22,6 +22,7 @@ import {
   instrumentLabels,
   marketBasisLabels,
   outsideScopesBasisLabels,
+  upstreamRuleKindPhrases,
   publicationLine,
   scopeLabels,
 } from './format'
@@ -643,6 +644,21 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
           GWP set: IPCC {methodology.gwpSet}, 100-year. Assessment reports used:{' '}
           {methodology.assessmentReports.join(', ')}.
         </p>
+        {/* spec 04.7: the rules that quantified category 3, and how many lines each derived */}
+        {methodology.upstreamRules && methodology.upstreamRules.length > 0 && (
+          <div className="mt-3">
+            <h3 className="text-sm font-semibold">Upstream rules (category 3)</h3>
+            <ul className="mt-1 list-disc pl-5 text-sm text-ink-muted">
+              {methodology.upstreamRules.map((rule) => (
+                <li key={`${rule.primaryFactorName}-${rule.upstreamFactorName}-${rule.kind}`}>
+                  {rule.primaryFactorName} → {rule.upstreamFactorName} (
+                  {upstreamRuleKindPhrases[rule.kind]}, {rule.lineCount} line
+                  {rule.lineCount === 1 ? '' : 's'})
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <FactorTable factors={report.factors} />
         <DataQualityBlock dataQuality={report.dataQuality} />
       </Section>
@@ -917,12 +933,39 @@ function ExclusionSummaryTable({ summary }: { summary: Report['exclusionSummary'
           <tr key={row.reason} className="border-b border-teal/5 last:border-0">
             <td className="py-1.5 pr-3">{exclusionLabels[row.reason]}</td>
             <td className="py-1.5 pr-3 text-right tabular-nums">{row.recordCount}</td>
+            {/* spec 04.8: a record nobody sized never prints as a bare 0 */}
             <td className="py-1.5 text-right tabular-nums">
-              {formatCo2e(row.estimatedKgCo2e)}
-              {row.unestimatedCount > 0 && (
-                <span className="block text-xs text-ink-muted">
-                  {row.unestimatedCount} not estimated
+              {row.reason === 'OUTSIDE_SCOPES_NON_KYOTO' ? (
+                <span className="text-xs text-ink-muted">
+                  see Gases outside the scopes (Montreal Protocol)
                 </span>
+              ) : (
+                <>
+                  {row.estimatedCount > 0 && (
+                    <>
+                      {formatCo2e(row.estimatedKgCo2e)}
+                      <span className="block text-xs text-ink-muted">
+                        estimated over {row.estimatedCount} record
+                        {row.estimatedCount === 1 ? '' : 's'}
+                      </span>
+                    </>
+                  )}
+                  {row.emitsNothingCount > 0 && (
+                    <span className="block text-xs text-ink-muted">
+                      {row.emitsNothingCount} emits nothing
+                    </span>
+                  )}
+                  {row.unestimatedCount > 0 && (
+                    <span className="block text-xs text-ink-muted">
+                      {row.unestimatedCount} not estimated
+                    </span>
+                  )}
+                  {row.estimatedCount === 0 &&
+                    row.emitsNothingCount === 0 &&
+                    row.unestimatedCount === 0 && (
+                      <span className="text-xs text-ink-muted">not estimated</span>
+                    )}
+                </>
               )}
             </td>
           </tr>
@@ -974,7 +1017,12 @@ function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
                       )}
                     </td>
                     <td className="py-1.5 text-right whitespace-nowrap text-ink-muted tabular-nums">
-                      {row.estimatedKgCo2e === null ? '' : `~${formatCo2e(row.estimatedKgCo2e)}`}
+                      {row.estimateState === 'NOT_ESTIMATED' && 'not estimated'}
+                      {row.estimateState === 'EMITS_NOTHING' && 'emits nothing'}
+                      {row.estimateState === 'ESTIMATED' &&
+                        row.estimatedKgCo2e !== null &&
+                        `~${formatCo2e(row.estimatedKgCo2e)}`}
+                      {row.gas !== null && row.gas}
                     </td>
                   </tr>
                 ))}

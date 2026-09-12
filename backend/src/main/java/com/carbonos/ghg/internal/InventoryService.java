@@ -44,6 +44,9 @@ public class InventoryService {
 
 	private static final String KWH = "kWh";
 
+	/** What V41 wrote on an exclusion whose zero magnitude was a placeholder, not an answer (spec 04.8). */
+	static final String PLACEHOLDER_MAGNITUDE = "magnitude entered before the three states existed; confirm or size it";
+
 	private final OrganizationRepository organizations;
 	private final LegalEntityRepository entities;
 	private final FacilityRepository facilities;
@@ -65,6 +68,7 @@ public class InventoryService {
 	private final DensityRepository densities;
 	private final EvidenceRepository evidence;
 	private final SourceStreamRepository streams;
+	private final UpstreamRuleRepository upstreamRules;
 	private final ObjectMapper json;
 
 	InventoryService(OrganizationRepository organizations, LegalEntityRepository entities,
@@ -75,7 +79,9 @@ public class InventoryService {
 			MarketFactorRepository marketFactors, GhgRunRepository runs, GhgAuditEventRepository auditEvents,
 			IntensityMetricRepository intensityMetrics, BaseYearService baseYears, ApplicationEventPublisher events,
 			GhgAccess access, OrganizationUnits organizationUnits, DensityRepository densities,
-			EvidenceRepository evidence, SourceStreamRepository streams, ObjectMapper json) {
+			EvidenceRepository evidence, SourceStreamRepository streams, UpstreamRuleRepository upstreamRules,
+			ObjectMapper json) {
+		this.upstreamRules = upstreamRules;
 		this.streams = streams;
 		this.json = json;
 		this.organizationUnits = organizationUnits;
@@ -915,6 +921,11 @@ public class InventoryService {
 		for (var metric : intensityMetrics.findAllByInventoryIdOrderByName(sourceId)) {
 			intensityMetrics.save(new IntensityMetric(target, metric.getName(), metric.getValue(), metric.getUnit()));
 		}
+		// spec 04.7: the upstream rules belong to the view, so a copy and a correction carry them
+		for (var rule : upstreamRules.findAllByInventoryIdOrderByCreatedAtAsc(sourceId)) {
+			upstreamRules.save(new UpstreamRule(target, rule.getPrimaryFactor(), rule.getUpstreamFactor(),
+					rule.getKind(), rule.getCreatedBy()));
+		}
 		var rederived = 0;
 		if (withAssignments) {
 			var copies = new ArrayList<InventoryAssignment>();
@@ -1103,6 +1114,96 @@ public class InventoryService {
 		var factor = marketFactors.findByInventoryIdAndFacilityId(inventoryId, facilityId)
 			.orElseThrow(() -> GhgNotFoundException.marketFactor(facilityId));
 		marketFactors.delete(factor);
+	}
+
+	// --- upstream rules (spec 04.7) -------------------------------------------
+
+	/** A rule with the records it would derive a line from, for the inventory's card. */
+	public record UpstreamRuleView(UpstreamRule rule, long matchingLines) {
+	}
+
+	@Transactional(readOnly = true)
+	public List<UpstreamRuleView> upstreamRules(UUID inventoryId) {
+		get(inventoryId);
+		var rules = upstreamRules.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
+		if (rules.isEmpty()) {
+			return List.of();
+		}
+		var all = assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
+		return rules.stream().map(rule -> new UpstreamRuleView(rule, matching(all, rule).count())).toList();
+	}
+
+	/** The included scope 1 or scope 2 assignments a rule derives a line from (spec 04.7). */
+	private static java.util.stream.Stream<InventoryAssignment> matching(List<InventoryAssignment> all,
+			UpstreamRule rule) {
+		return all.stream().filter(assignment -> derives(assignment, rule));
+	}
+
+	/**
+	 * Whether a rule fires for an assignment: it is included, classified with
+	 * the rule's primary factor, and stored in scope 1 or scope 2. A primary
+	 * line already in scope 3 produces nothing, because its upstream emissions
+	 * belong to the other company's own category 3.
+	 */
+	private static boolean derives(InventoryAssignment assignment, UpstreamRule rule) {
+		return assignment.isIncluded() && assignment.isClassified()
+				&& assignment.getEmissionFactor().getId().equals(rule.getPrimaryFactor().getId())
+				&& (assignment.getScope() == Scope.SCOPE_1 || assignment.getScope() == Scope.SCOPE_2);
+	}
+
+	/**
+	 * Records a rule (spec 04.7). The upstream factor's unit must convert from
+	 * the primary factor's, because the derived line rides on the quantity the
+	 * primary line already converted.
+	 */
+	public UpstreamRule addUpstreamRule(UUID inventoryId, UUID primaryFactorId, UUID upstreamFactorId,
+			UpstreamRuleKind kind) {
+		var inventory = get(inventoryId);
+		access.checkWrite(inventory.getOrganization());
+		requireEditable(inventory);
+		var organizationId = inventory.getOrganization().getId();
+		var primary = requireFactor(primaryFactorId, organizationId);
+		var upstream = requireFactor(upstreamFactorId, organizationId);
+		if (!upstream.isApproved()) {
+			throw new GhgFieldException("upstreamFactorId", "'" + upstream.getName()
+					+ "' is not approved. Approve it under Emission factors, or choose another.");
+		}
+		var units = organizationUnits.forOrganization(organizationId);
+		if (!units.canConvert(primary.getUnit(), upstream.getUnit())) {
+			throw new GhgFieldException("upstreamFactorId", "'" + upstream.getName() + "' is per "
+					+ upstream.getUnit() + ", which does not convert from '" + primary.getName() + "' per "
+					+ primary.getUnit() + ". Choose an upstream factor in a unit the primary factor converts to.");
+		}
+		if (upstreamRules.existsByInventoryIdAndPrimaryFactorIdAndKind(inventoryId, primaryFactorId, kind)) {
+			throw new GhgRuleViolationException("'" + primary.getName() + "' already carries a "
+					+ kind.phrase() + " rule in this inventory.");
+		}
+		var rule = upstreamRules
+			.save(new UpstreamRule(inventory, primary, upstream, kind, access.currentUserEmail()));
+		record(inventory, null, GhgAuditEvent.Action.REVIEWED,
+				"upstream rule added: " + rule.describe() + " (" + kind.phrase() + ")");
+		return rule;
+	}
+
+	public void removeUpstreamRule(UUID inventoryId, UUID ruleId) {
+		var inventory = get(inventoryId);
+		access.checkWrite(inventory.getOrganization());
+		requireEditable(inventory);
+		var rule = upstreamRules.findById(ruleId).orElseThrow(() -> GhgNotFoundException.upstreamRule(ruleId));
+		if (!rule.getInventory().getId().equals(inventoryId)) {
+			throw GhgNotFoundException.upstreamRule(ruleId);
+		}
+		upstreamRules.delete(rule);
+		record(inventory, null, GhgAuditEvent.Action.REVIEWED, "upstream rule removed: " + rule.describe());
+	}
+
+	private EmissionFactor requireFactor(UUID factorId, UUID organizationId) {
+		var factor = emissionFactors.findById(factorId)
+			.orElseThrow(() -> GhgNotFoundException.emissionFactor(factorId));
+		if (factor.getOrganizationId() != null && !factor.getOrganizationId().equals(organizationId)) {
+			throw GhgNotFoundException.emissionFactor(factorId);
+		}
+		return factor;
 	}
 
 	// --- membership ---------------------------------------------------------------
@@ -1398,6 +1499,17 @@ public class InventoryService {
 	 */
 	public InventoryAssignment exclude(UUID assignmentId, ExclusionReason reason, String justification,
 			BigDecimal estimatedKgCo2e) {
+		return exclude(assignmentId, reason, justification, estimatedKgCo2e, false, false, null);
+	}
+
+	/**
+	 * With the three states of spec 04.8: a positive magnitude, zero with the
+	 * statement that the record emits nothing, or not estimated. A false zero
+	 * reads as a sized exclusion when nothing was sized, so it is refused. The
+	 * Montreal Protocol reason records the gas instead of a magnitude.
+	 */
+	public InventoryAssignment exclude(UUID assignmentId, ExclusionReason reason, String justification,
+			BigDecimal estimatedKgCo2e, boolean notEstimated, boolean emitsNothing, String gas) {
 		var assignment = getAssignment(assignmentId);
 		var inventory = assignment.getInventory();
 		requireEditable(inventory);
@@ -1406,19 +1518,50 @@ public class InventoryService {
 					"'Record removed' is the reason the review records for a removed record; choose another reason.");
 		}
 		var words = trimToNull(justification);
+		var gasName = trimToNull(gas);
+		var activity = assignment.getActivity();
 		if (!reason.isAutomatic()) {
-			// spec 04.4: Chapter 9 wants each exclusion justified and its magnitude estimated
+			// spec 04.4: Chapter 9 wants each exclusion justified
 			if (words == null || words.length() < 10) {
 				throw new GhgFieldException("justification",
 						"A record exclusion needs a justification of at least 10 characters.");
 			}
-			if (estimatedKgCo2e == null || estimatedKgCo2e.signum() < 0) {
-				throw new GhgFieldException("estimatedKgCo2e",
-						"Estimate the emissions left out, in kg CO2e (0 when the record emits nothing).");
+		}
+		if (reason.isOutsideScopes()) {
+			// spec 04.8: the block of spec 02.4 takes a mass of gas, not a CO2e figure
+			var units = organizationUnits.forOrganization(inventory.getOrganization().getId());
+			if (!units.canConvert(activity.getUnit(), "kg")) {
+				throw new GhgFieldException("reason", "'" + activity.getActivityType() + "' is recorded in "
+						+ activity.getUnit() + ". A gas outside the scopes is reported as a mass: record the "
+						+ "kilograms of gas, or convert the record through a density first.");
+			}
+			if (gasName == null || gasName.length() > 60) {
+				throw new GhgFieldException("gas", "Name the gas reported outside the scopes, for example HCFC-22 "
+						+ "(1 to 60 characters).");
+			}
+			if (estimatedKgCo2e != null || notEstimated || emitsNothing) {
+				throw new GhgFieldException("estimatedKgCo2e", "A gas outside the scopes is reported as a mass, "
+						+ "never as CO2e: the block prints the kilograms the record holds.");
+			}
+		}
+		else if (!reason.isAutomatic()) {
+			// spec 04.8: exactly one of a positive number, zero with the statement, or not estimated
+			var sized = estimatedKgCo2e != null && estimatedKgCo2e.signum() > 0;
+			var zero = estimatedKgCo2e != null && estimatedKgCo2e.signum() == 0;
+			if (estimatedKgCo2e != null && estimatedKgCo2e.signum() < 0) {
+				throw new GhgFieldException("estimatedKgCo2e", "The emissions left out cannot be negative.");
+			}
+			var answers = (sized ? 1 : 0) + (zero && emitsNothing ? 1 : 0) + (notEstimated ? 1 : 0);
+			if (answers != 1 || (sized && (notEstimated || emitsNothing)) || (zero && !emitsNothing)) {
+				throw new GhgFieldException("estimatedKgCo2e", "Type the emissions left out, tick 'This record "
+						+ "emits nothing', or choose 'Not estimated'.");
+			}
+			if (gasName != null) {
+				throw new GhgFieldException("gas", "A gas is recorded only with the reason 'Outside the scopes: "
+						+ "Montreal Protocol gas'.");
 			}
 		}
 		String detail = null;
-		var activity = assignment.getActivity();
 		if (reason == ExclusionReason.OUTSIDE_PERIOD
 				&& !inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd())) {
 			detail = "reporting period " + inventory.getPeriodStart() + " to " + inventory.getPeriodEnd();
@@ -1429,7 +1572,8 @@ public class InventoryService {
 					activity.getPeriodEnd());
 			detail = membership.member() ? null : membership.detail();
 		}
-		assignment.exclude(reason, detail, words, reason.isAutomatic() ? null : estimatedKgCo2e);
+		var magnitude = reason.isAutomatic() || reason.isOutsideScopes() || notEstimated ? null : estimatedKgCo2e;
+		assignment.exclude(reason, detail, words, magnitude, reason.isOutsideScopes() ? gasName : null);
 		return assignment;
 	}
 
@@ -1690,6 +1834,43 @@ public class InventoryService {
 								+ ") is excluded for a reason that no longer holds: run \"Review activity data\"."));
 			}
 		}
+		// spec 04.8: a zero entered before the three states existed is a placeholder, not an answer
+		var placeholders = allAssignments.stream()
+			.filter(assignment -> !assignment.isIncluded() && assignment.getExclusionReason() != null
+					&& !assignment.getExclusionReason().isAutomatic()
+					&& PLACEHOLDER_MAGNITUDE.equals(assignment.getExclusionDetail()))
+			.toList();
+		if (!placeholders.isEmpty()) {
+			completenessFindings.add(new Finding(Severity.WARNING, placeholders.size() + " exclusion"
+					+ (placeholders.size() == 1 ? " has a " : "s have a ") + PLACEHOLDER_MAGNITUDE + ": "
+					+ placeholders.stream()
+						.limit(10)
+						.map(assignment -> assignment.getActivity().getRecordRef() + " '"
+								+ assignment.getActivity().getActivityType() + "'")
+						.collect(Collectors.joining(", "))
+					+ "."));
+		}
+		// spec 04.8: a record excluded as a Montreal Protocol gas that a factor could calculate instead
+		for (var assignment : allAssignments) {
+			if (assignment.isIncluded() || assignment.getExclusionReason() == null
+					|| !assignment.getExclusionReason().isOutsideScopes()) {
+				continue;
+			}
+			var activity = assignment.getActivity();
+			var named = assignment.getGas() == null ? "" : assignment.getGas().toLowerCase(Locale.ROOT);
+			var candidate = emissionFactors
+				.findAllByOrganizationIdIsNullOrOrganizationIdOrderByDefaultScopeAscNameAsc(inventory.getOrganization().getId())
+				.stream()
+				.filter(factor -> !factor.getReportingBasis().inScopes() && factor.isApproved())
+				.filter(factor -> !named.isBlank() && factor.getName().toLowerCase(Locale.ROOT).contains(named))
+				.filter(factor -> units.canConvert(activity.getUnit(), factor.getUnit()))
+				.findFirst();
+			if (candidate.isPresent()) {
+				completenessFindings.add(new Finding(Severity.INFO, activity.getRecordRef() + " "
+						+ activity.getActivityType() + " is excluded as a Montreal Protocol gas; a factor exists "
+						+ "that would report it as a calculated line ('" + candidate.get().getName() + "')."));
+			}
+		}
 		var attachedEvidence = evidence
 			.findAllByActivityIdIn(included.stream().map(a -> a.getActivity().getId()).toList())
 			.stream()
@@ -1806,6 +1987,17 @@ public class InventoryService {
 			}
 		}
 
+		// spec 04.7: the rules of the view, and the scope 1 or scope 2 records each one derives a line from
+		var rules = upstreamRules.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId);
+		var firingRules = rules.stream().filter(rule -> matching(allAssignments, rule).findAny().isPresent()).toList();
+		if (!rules.isEmpty()) {
+			classificationFindings.add(new Finding(Severity.INFO, rules.size() + " upstream rule"
+					+ (rules.size() == 1 ? "" : "s") + ": "
+					+ rules.stream().map(rule -> rule.describe() + " (" + rule.getKind().phrase() + ")")
+						.collect(Collectors.joining("; "))
+					+ "."));
+		}
+
 		// spec 07.6: a declared scope 3 category with no lines, and lines in a category not declared
 		var declared = new java.util.LinkedHashSet<>(inventory.getScope3Categories());
 		var notQuantified = inventory.getScope3NotQuantified()
@@ -1815,7 +2007,19 @@ public class InventoryService {
 		var quantified = included.stream()
 			.filter(assignment -> assignment.getScope() == Scope.SCOPE_3 && assignment.getCategory() != null)
 			.map(InventoryAssignment::getCategory)
-			.collect(Collectors.toSet());
+			.collect(Collectors.toCollection(java.util.HashSet::new));
+		// spec 04.7: a rule that matches an included scope 1 or scope 2 factor quantifies category 3,
+		// so the cross-check stops reading it as declared but not quantified
+		if (!firingRules.isEmpty()) {
+			quantified.add(ActivityCategory.FUEL_ENERGY_RELATED);
+		}
+		else if (declared.contains(ActivityCategory.FUEL_ENERGY_RELATED)
+				&& !notQuantified.contains(ActivityCategory.FUEL_ENERGY_RELATED)
+				&& !quantified.contains(ActivityCategory.FUEL_ENERGY_RELATED)) {
+			classificationFindings.add(new Finding(Severity.WARNING, "Fuel- and energy-related activities is "
+					+ "declared, but no upstream rule matches a scope 1 or scope 2 factor in this view; add a rule "
+					+ "or say why category 3 is not quantified."));
+		}
 		for (var category : declared) {
 			if (!quantified.contains(category) && !notQuantified.contains(category)) {
 				classificationFindings.add(new Finding(Severity.WARNING, "Scope 3 " + categoryName(category)
@@ -2066,6 +2270,11 @@ public class InventoryService {
 				.thenComparing(a -> a.getActivity().getPeriodEnd())
 				.thenComparing(a -> a.getActivity().getCreatedAt()))
 			.toList();
+		// spec 04.7: the rules of the view, grouped by the primary factor they ride on
+		var rulesByFactor = new java.util.LinkedHashMap<UUID, List<UpstreamRule>>();
+		for (var rule : upstreamRules.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
+			rulesByFactor.computeIfAbsent(rule.getPrimaryFactor().getId(), key -> new ArrayList<>()).add(rule);
+		}
 		for (var assignment : ordered) {
 			if (!assignment.isIncluded()) {
 				run.addExclusion(new GhgRunExclusion(run, assignment));
@@ -2113,11 +2322,21 @@ public class InventoryService {
 			}
 			var files = evidenceByActivity.get(activity.getId());
 			var evidenceFiles = files == null ? null : String.join(", ", files);
-			run.addLine(new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, period,
+			var line = new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, period,
 					kgCo2e, gases, market, evidenceFiles != null && evidenceFiles.length() > 1000
 							? evidenceFiles.substring(0, 997) + "..." : evidenceFiles,
 					conversion.note() != null && conversion.note().length() > 500
-							? conversion.note().substring(0, 497) + "..." : conversion.note()));
+							? conversion.note().substring(0, 497) + "..." : conversion.note());
+			run.addLine(line);
+			// spec 04.7: the category 3 lines that ride on this one, right after it
+			if (assignment.getScope() == Scope.SCOPE_1 || assignment.getScope() == Scope.SCOPE_2) {
+				for (var rule : rulesByFactor.getOrDefault(factor.getId(), List.of())) {
+					var upstream = rule.getUpstreamFactor();
+					factorsUsed.putIfAbsent(upstream.getId(), upstream);
+					run.addLine(derivedLine(run, assignment, line, rule, units, gwp, convertedQuantity,
+							conversionFactor, share, periodShare, period, evidenceFiles, market));
+				}
+			}
 		}
 		// spec 07.4: the frozen factor set behind the report's factor table
 		for (var factor : factorsUsed.values()) {
@@ -2127,6 +2346,52 @@ public class InventoryService {
 		record(inventory, run, GhgAuditEvent.Action.RUN_LAUNCHED, "run " + run.getRunNo() + " '" + run.getLabel() + "' launched");
 		events.publishEvent(new GhgRunCompleted(run.getId(), inventoryId, run.getTotalKgCo2e()));
 		return run;
+	}
+
+	/**
+	 * One derived category 3 line (spec 04.7): the primary line's record,
+	 * facility, entity, country, period, quantity, accounting share and period
+	 * share, priced at the upstream factor's rate under the run's GWP set. It
+	 * carries the primary line's stream, tier, uncertainty and evidence, is a
+	 * proxy only when the primary line is, and never carries a market-based
+	 * figure, an instrument or a lease type.
+	 */
+	private static GhgRunLine derivedLine(GhgRun run, InventoryAssignment assignment, GhgRunLine primary,
+			UpstreamRule rule, UnitConverter.Scoped units, GwpSet gwp, BigDecimal primaryConvertedQuantity,
+			BigDecimal primaryConversionFactor, BigDecimal share, BigDecimal periodShare, GhgRunLine.Period period,
+			String evidenceFiles, GhgRunLine.Market market) {
+		var upstream = rule.getUpstreamFactor();
+		var primaryUnit = assignment.getEmissionFactor().getUnit();
+		// the rule refused a pair whose units do not convert, so the ratio always exists
+		var ratio = units.canConvert(primaryUnit, upstream.getUnit()) ? units.ratio(primaryUnit, upstream.getUnit())
+				: BigDecimal.ONE;
+		var converted = primaryConvertedQuantity.multiply(ratio, MathContext.DECIMAL64);
+		var perUnit = upstream.kgCo2ePerUnit(gwp);
+		var counted = converted.multiply(periodShare);
+		var kgCo2e = round(counted.multiply(perUnit).multiply(share));
+		var gases = new GhgRunLine.Gases(gas(counted, upstream.getCo2KgPerUnit(), share),
+				gas(counted, upstream.getCh4KgPerUnit(), share), gas(counted, upstream.getN2oKgPerUnit(), share),
+				gas(counted, upstream.hfcsKgCo2ePerUnit(gwp), share), gas(counted, upstream.pfcsKgCo2ePerUnit(gwp), share),
+				gas(counted, upstream.getSf6KgPerUnit(), share), gas(counted, upstream.getNf3KgPerUnit(), share),
+				gas(counted, upstream.getBiogenicCo2KgPerUnit(), share), gas(counted, upstream.getHfcsKgPerUnit(), share),
+				gas(counted, upstream.getPfcsKgPerUnit(), share), upstream.blendGwpSourceFor(gwp),
+				upstream.isCh4Fossil());
+		var note = new StringBuilder(rule.getKind().phrase()).append(" of ");
+		var ref = primary.getRecordRef();
+		if (ref != null && !ref.isBlank()) {
+			note.append(ref).append(' ');
+		}
+		note.append(primary.getActivityType() == null ? primary.getFacilityName() : primary.getActivityType());
+		// the Scope 3 Standard computes losses from the electricity consumed and is silent on the
+		// market-based balance: this inventory prices every consumed kilowatt-hour at the location-based factor
+		if (rule.getKind() == UpstreamRuleKind.TRANSMISSION_AND_DISTRIBUTION && market != null
+				&& market.instrument() != null) {
+			note.append("; on the consumed kWh, not the market-based balance");
+		}
+		var derived = new GhgRunLine.Derived(primary.getId(), rule.getKind(), note.toString());
+		return new GhgRunLine(run, assignment, converted,
+				primaryConversionFactor.multiply(ratio, MathContext.DECIMAL64), perUnit, share, period, kgCo2e, gases,
+				null, evidenceFiles, null, upstream, ActivityCategory.FUEL_ENERGY_RELATED, derived);
 	}
 
 	/**

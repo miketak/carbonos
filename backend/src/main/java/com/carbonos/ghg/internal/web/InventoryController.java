@@ -46,6 +46,8 @@ import com.carbonos.ghg.internal.web.dto.ReasonRequest;
 import com.carbonos.ghg.internal.web.dto.ReportMetadataRequest;
 import com.carbonos.ghg.internal.web.dto.ResidualMixRequest;
 import com.carbonos.ghg.internal.web.dto.SupersedeRequest;
+import com.carbonos.ghg.internal.web.dto.UpstreamRuleRequest;
+import com.carbonos.ghg.internal.web.dto.UpstreamRuleResponse;
 import com.carbonos.ghg.internal.web.dto.ValidationReportResponse;
 
 import jakarta.validation.Valid;
@@ -309,6 +311,26 @@ class InventoryController {
 		inventoryService.removeMarketFactor(id, facilityId);
 	}
 
+	// --- upstream rules (spec 04.7) ---------------------------------------------
+
+	@GetMapping("/inventories/{id}/upstream-rules")
+	List<UpstreamRuleResponse> upstreamRules(@PathVariable UUID id) {
+		return inventoryService.upstreamRules(id).stream().map(UpstreamRuleResponse::from).toList();
+	}
+
+	@PostMapping("/inventories/{id}/upstream-rules")
+	@ResponseStatus(HttpStatus.CREATED)
+	UpstreamRuleResponse addUpstreamRule(@PathVariable UUID id, @Valid @RequestBody UpstreamRuleRequest body) {
+		var rule = inventoryService.addUpstreamRule(id, body.primaryFactorId(), body.upstreamFactorId(), body.kind());
+		return UpstreamRuleResponse.from(new InventoryService.UpstreamRuleView(rule, 0));
+	}
+
+	@DeleteMapping("/inventories/{id}/upstream-rules/{ruleId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void removeUpstreamRule(@PathVariable UUID id, @PathVariable UUID ruleId) {
+		inventoryService.removeUpstreamRule(id, ruleId);
+	}
+
 	// --- assignments --------------------------------------------------------
 
 	@GetMapping("/inventories/{id}/assignments")
@@ -350,7 +372,8 @@ class InventoryController {
 	@PutMapping("/assignments/{id}/exclude")
 	AssignmentResponse exclude(@PathVariable UUID id, @Valid @RequestBody ExcludeRequest body) {
 		return AssignmentResponse.from(inventoryService.exclude(id, body.reason(), body.justification(),
-				body.estimatedKgCo2e()));
+				body.estimatedKgCo2e(), Boolean.TRUE.equals(body.notEstimated()),
+				Boolean.TRUE.equals(body.emitsNothing()), body.gas()));
 	}
 
 	@PutMapping("/assignments/{id}/include")

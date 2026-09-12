@@ -31,6 +31,13 @@ public class GhgRunLine {
 			boolean ch4Fossil) {
 	}
 
+	/**
+	 * What makes a line a derived one (spec 04.7): the primary line it rides
+	 * on, the kind of upstream emissions it carries, and why in words.
+	 */
+	record Derived(UUID fromLineId, UpstreamRuleKind kind, String note) {
+	}
+
 	/** The record's period and how much of it the run counted (spec 04.2). */
 	record Period(LocalDate start, LocalDate end, long days, long coveredDays, BigDecimal share, String note) {
 	}
@@ -142,6 +149,17 @@ public class GhgRunLine {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "reporting_basis", nullable = false, length = 30)
 	private ReportingBasis reportingBasis = ReportingBasis.SCOPES;
+
+	// spec 04.7: a category 3 line an upstream rule derived from a scope 1 or scope 2 line
+	@Column(name = "derived_from_line_id")
+	private UUID derivedFromLineId;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "derived_kind", length = 40)
+	private UpstreamRuleKind derivedKind;
+
+	@Column(name = "derived_note", length = 500)
+	private String derivedNote;
 
 	@Column(nullable = false, precision = 14, scale = 3)
 	private BigDecimal quantity;
@@ -256,6 +274,20 @@ public class GhgRunLine {
 	GhgRunLine(GhgRun run, InventoryAssignment assignment, BigDecimal convertedQuantity, BigDecimal conversionFactor,
 			BigDecimal kgCo2ePerUnit, BigDecimal weight, Period period, BigDecimal kgCo2e, Gases gases, Market market,
 			String evidenceFiles, String conversionNote) {
+		this(run, assignment, convertedQuantity, conversionFactor, kgCo2ePerUnit, weight, period, kgCo2e, gases, market,
+				evidenceFiles, conversionNote, null, null, null);
+	}
+
+	/**
+	 * A derived category 3 line (spec 04.7): the primary line's record, shares
+	 * and period with the upstream factor's rate, pointing back at the line it
+	 * rides on. It never carries a market-based figure, an instrument or a
+	 * lease type.
+	 */
+	GhgRunLine(GhgRun run, InventoryAssignment assignment, BigDecimal convertedQuantity, BigDecimal conversionFactor,
+			BigDecimal kgCo2ePerUnit, BigDecimal weight, Period period, BigDecimal kgCo2e, Gases gases, Market market,
+			String evidenceFiles, String conversionNote, EmissionFactor override, ActivityCategory categoryOverride,
+			Derived derived) {
 		var activity = assignment.getActivity();
 		this.conversionNote = conversionNote;
 		if (assignment.getDensity() != null) {
@@ -266,7 +298,7 @@ public class GhgRunLine {
 		this.dataQualityTier = activity.getDataQualityTier();
 		this.uncertaintyPercent = activity.getUncertaintyPercent();
 		this.evidenceFiles = evidenceFiles;
-		var factor = assignment.getEmissionFactor();
+		var factor = override != null ? override : assignment.getEmissionFactor();
 		this.id = UUID.randomUUID();
 		this.run = run;
 		this.activityId = activity.getId();
@@ -284,10 +316,15 @@ public class GhgRunLine {
 		this.scopeJustification = assignment.getScopeJustification();
 		this.proxy = assignment.isProxy();
 		this.proxyJustification = assignment.getProxyJustification();
-		this.scope = assignment.getScope();
-		this.category = assignment.getCategory();
-		this.leaseType = assignment.getLeaseType();
+		this.scope = derived == null ? assignment.getScope() : Scope.SCOPE_3;
+		this.category = categoryOverride != null ? categoryOverride : assignment.getCategory();
+		this.leaseType = derived == null ? assignment.getLeaseType() : null;
 		this.reportingBasis = factor.getReportingBasis();
+		if (derived != null) {
+			this.derivedFromLineId = derived.fromLineId();
+			this.derivedKind = derived.kind();
+			this.derivedNote = derived.note();
+		}
 		this.quantity = activity.getQuantity();
 		this.unit = activity.getUnit();
 		this.factorUnit = factor.getUnit();
@@ -439,6 +476,25 @@ public class GhgRunLine {
 
 	public ReportingBasis getReportingBasis() {
 		return reportingBasis;
+	}
+
+	/** The primary line this one rides on (spec 04.7), or null on a line a record produced directly. */
+	public UUID getDerivedFromLineId() {
+		return derivedFromLineId;
+	}
+
+	public UpstreamRuleKind getDerivedKind() {
+		return derivedKind;
+	}
+
+	/** "well-to-tank of ACT-0012 Fleet diesel", with the instrument clause where one applies. */
+	public String getDerivedNote() {
+		return derivedNote;
+	}
+
+	/** Whether an upstream rule derived this line rather than a record producing it directly. */
+	public boolean isDerived() {
+		return derivedKind != null;
 	}
 
 	/**

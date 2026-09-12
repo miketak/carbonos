@@ -42,6 +42,8 @@ import {
   listEmissionFactors,
   listFacilities,
   listMarketFactors,
+  listUpstreamRules,
+  addUpstreamRule,
   listRuns,
   listOrganizationUnits,
   publishInventory,
@@ -261,6 +263,8 @@ const unclassified: Assignment = {
   exclusionDetail: null,
   exclusionJustification: null,
   estimatedKgCo2e: null,
+  estimateState: null,
+  gas: null,
   classified: false,
   scope: null,
   category: null,
@@ -438,6 +442,8 @@ beforeEach(() => {
   vi.mocked(listOrganizationUnits).mockReset().mockResolvedValue(units)
   vi.mocked(listDensities).mockReset().mockResolvedValue([])
   vi.mocked(listMarketFactors).mockReset().mockResolvedValue([])
+  vi.mocked(listUpstreamRules).mockReset().mockResolvedValue([])
+  vi.mocked(addUpstreamRule).mockReset()
   vi.mocked(listFacilities).mockReset().mockResolvedValue([])
   vi.mocked(syncAssignments).mockReset()
   vi.mocked(classifyAssignment).mockReset()
@@ -1605,4 +1611,213 @@ test('a preparer sees Create correction disabled with the role it needs (spec 01
   await waitFor(() => expect(correction).toBeDisabled())
   expect(correction).toHaveAttribute('title', 'Needs the Reviewer or Owner role.')
   expect(correction).toHaveAccessibleDescription('Needs the Reviewer or Owner role.')
+})
+
+test('the upstream rules card lists the rules and adds one (spec 04.7)', async () => {
+  const user = userEvent.setup()
+  const gridFactor: EmissionFactor = {
+    ...dieselFactor,
+    id: 'ef-2',
+    name: 'Grid electricity (Ghana)',
+    defaultScope: 'SCOPE_2',
+    defaultCategory: 'PURCHASED_ELECTRICITY',
+    unit: 'kWh',
+    dimension: 'ENERGY',
+  }
+  const wtt: EmissionFactor = {
+    ...dieselFactor,
+    id: 'ef-3',
+    name: 'Well-to-tank diesel',
+    defaultScope: 'SCOPE_3',
+    defaultCategory: 'FUEL_ENERGY_RELATED',
+  }
+  vi.mocked(listEmissionFactors).mockResolvedValue([dieselFactor, gridFactor, wtt])
+  vi.mocked(listUpstreamRules).mockResolvedValue([
+    {
+      id: 'ur-1',
+      primaryFactorId: 'ef-1',
+      primaryFactorName: 'Diesel',
+      upstreamFactorId: 'ef-3',
+      upstreamFactorName: 'Well-to-tank diesel',
+      kind: 'WELL_TO_TANK',
+      matchingLines: 14,
+    },
+  ])
+  vi.mocked(addUpstreamRule).mockResolvedValue({
+    id: 'ur-2',
+    primaryFactorId: 'ef-2',
+    primaryFactorName: 'Grid electricity (Ghana)',
+    upstreamFactorId: 'ef-3',
+    upstreamFactorName: 'Well-to-tank diesel',
+    kind: 'TRANSMISSION_AND_DISTRIBUTION',
+    matchingLines: 0,
+  })
+  renderPage()
+
+  const table = await screen.findByRole('table', { name: 'Upstream rules' })
+  expect(within(table).getByText('Well-to-tank diesel')).toBeInTheDocument()
+  expect(within(table).getByText('14')).toBeInTheDocument()
+
+  const form = screen.getByRole('form', { name: 'Add an upstream rule' })
+  await user.selectOptions(within(form).getByLabelText('Primary factor'), 'ef-2')
+  await user.selectOptions(within(form).getByLabelText('Upstream factor'), 'ef-3')
+  await user.selectOptions(within(form).getByLabelText('Kind'), 'TRANSMISSION_AND_DISTRIBUTION')
+  await user.click(within(form).getByRole('button', { name: 'Add rule' }))
+
+  await waitFor(() =>
+    expect(addUpstreamRule).toHaveBeenCalledWith('inv-1', {
+      primaryFactorId: 'ef-2',
+      upstreamFactorId: 'ef-3',
+      kind: 'TRANSMISSION_AND_DISTRIBUTION',
+    }),
+  )
+})
+
+test('the scope select is enabled for a scope 2 factor and asks why the scope departs (finding F34)', async () => {
+  const user = userEvent.setup()
+  const gridFactor: EmissionFactor = {
+    ...dieselFactor,
+    id: 'ef-2',
+    name: 'Grid electricity (Ghana)',
+    defaultScope: 'SCOPE_2',
+    defaultCategory: 'PURCHASED_ELECTRICITY',
+    // the lock the screen kept: a factor that is not scope-agnostic (specs 04.1, 04.3, 04.7)
+    scopeAgnostic: false,
+    unit: 'kWh',
+    dimension: 'ENERGY',
+  }
+  const classified: Assignment = {
+    ...unclassified,
+    activityType: 'Tenant electricity',
+    unit: 'kWh',
+    classified: true,
+    emissionFactorId: 'ef-2',
+    factorName: 'Grid electricity (Ghana)',
+    scope: 'SCOPE_2',
+    category: 'PURCHASED_ELECTRICITY',
+  }
+  const departed: Assignment = {
+    ...classified,
+    scope: 'SCOPE_3',
+    category: 'DOWNSTREAM_LEASED_ASSETS',
+  }
+  vi.mocked(listEmissionFactors).mockResolvedValue([dieselFactor, gridFactor])
+  // the view refetches after the classification, and then the record sits in scope 3
+  vi.mocked(searchAssignments)
+    .mockResolvedValueOnce(pageOf([classified]))
+    .mockResolvedValue(pageOf([departed]))
+  vi.mocked(classifyAssignment).mockResolvedValue(departed)
+  renderPage()
+
+  // the view renders each row twice (the narrow and the wide layout); either copy will do
+  const scope = (await screen.findAllByLabelText('Tenant electricity scope'))[0]
+  expect(scope).toBeEnabled()
+  expect(screen.queryByText("This factor's scope is inherent.")).not.toBeInTheDocument()
+
+  await user.selectOptions(scope, 'SCOPE_3')
+  await waitFor(() =>
+    expect(classifyAssignment).toHaveBeenCalledWith(
+      'as-1',
+      expect.objectContaining({ scope: 'SCOPE_3' }),
+    ),
+  )
+  // spec 04.3: a scope that departs from the factor's default asks for a justification
+  expect(
+    (await screen.findAllByLabelText('Tenant electricity scope justification'))[0],
+  ).toBeInTheDocument()
+})
+
+test('an exclusion is sized, stated to emit nothing, or not estimated (spec 04.8)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(excludeAssignment).mockResolvedValue({
+    ...unclassified,
+    included: false,
+    exclusionReason: 'METHODOLOGY',
+    exclusionJustification: 'no published factor for sodium cyanide; supplier study pending',
+    estimateState: 'NOT_ESTIMATED',
+  })
+  renderPage()
+
+  await user.click((await screen.findAllByRole('button', { name: /exclude…/i }))[0])
+  await user.click(screen.getAllByRole('menuitem', { name: 'Methodology exclusion' })[0])
+  const form = screen.getByRole('form', { name: /justification/i })
+  await user.type(
+    within(form).getByLabelText('Justification'),
+    'no published factor for sodium cyanide; supplier study pending',
+  )
+  // nothing can be sent until one of the three answers is given
+  expect(within(form).getByRole('button', { name: 'Exclude' })).toBeDisabled()
+  await user.click(within(form).getByLabelText('Not estimated'))
+  expect(within(form).getByLabelText(/Estimated emissions left out/)).toBeDisabled()
+  await user.click(within(form).getByRole('button', { name: 'Exclude' }))
+
+  await waitFor(() =>
+    expect(excludeAssignment).toHaveBeenCalledWith('as-1', {
+      reason: 'METHODOLOGY',
+      justification: 'no published factor for sodium cyanide; supplier study pending',
+      notEstimated: true,
+    }),
+  )
+})
+
+test('a Montreal Protocol gas is excluded with the gas, and only on a mass record (spec 04.8)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listOrganizationUnits).mockResolvedValue([
+    ...units,
+    {
+      code: 'kg',
+      label: 'Kilogram',
+      dimension: 'MASS',
+      toCanonical: 1,
+      custom: false,
+      definition: null,
+    },
+  ])
+  const topUp: Assignment = {
+    ...unclassified,
+    activityType: 'R-22 top-up',
+    quantity: 85,
+    unit: 'kg',
+  }
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([topUp]))
+  vi.mocked(excludeAssignment).mockResolvedValue({
+    ...topUp,
+    included: false,
+    exclusionReason: 'OUTSIDE_SCOPES_NON_KYOTO',
+    exclusionJustification: 'HCFC-22 is a Montreal Protocol gas, reported outside the scopes',
+    gas: 'HCFC-22',
+  })
+  renderPage()
+
+  await user.click((await screen.findAllByRole('button', { name: /exclude…/i }))[0])
+  await user.click(
+    screen.getAllByRole('menuitem', { name: 'Outside the scopes: Montreal Protocol gas' })[0],
+  )
+  const form = screen.getByRole('form', { name: /justification/i })
+  await user.type(
+    within(form).getByLabelText('Justification'),
+    'HCFC-22 is a Montreal Protocol gas, reported outside the scopes',
+  )
+  // the dialog asks for the gas, never a magnitude
+  expect(within(form).queryByLabelText(/Estimated emissions left out/)).not.toBeInTheDocument()
+  await user.type(within(form).getByLabelText('Gas'), 'HCFC-22')
+  await user.click(within(form).getByRole('button', { name: 'Exclude' }))
+
+  await waitFor(() =>
+    expect(excludeAssignment).toHaveBeenCalledWith('as-1', {
+      reason: 'OUTSIDE_SCOPES_NON_KYOTO',
+      justification: 'HCFC-22 is a Montreal Protocol gas, reported outside the scopes',
+      gas: 'HCFC-22',
+    }),
+  )
+})
+
+test('the Montreal reason is not offered for a record that is not a mass (spec 04.8)', async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click((await screen.findAllByRole('button', { name: /exclude…/i }))[0])
+  expect(
+    screen.queryByRole('menuitem', { name: 'Outside the scopes: Montreal Protocol gas' }),
+  ).not.toBeInTheDocument()
 })

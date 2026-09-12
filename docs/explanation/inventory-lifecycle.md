@@ -30,7 +30,7 @@ stateDiagram-v2
 
 | State | You can | You cannot |
 | --- | --- | --- |
-| `DRAFT` | Edit the boundary, the operational boundary declaration, market instruments, and every classification and exclusion. | Launch a run. The pre-flight gates report on a draft, but the launch waits for a freeze. Freeze while an included record is unclassified, departs from its default scope without a justification, disagrees with Appendix F, or is a draft at a facility in the boundary: the freeze is refused (409) and names the records. |
+| `DRAFT` | Edit the boundary, the operational boundary declaration, market instruments, upstream rules, and every classification and exclusion. | Launch a run. The pre-flight gates report on a draft, but the launch waits for a freeze. Freeze while an included record is unclassified, departs from its default scope without a justification, disagrees with Appendix F, or is a draft at a facility in the boundary: the freeze is refused (409) and names the records. |
 | `FROZEN` | Launch runs, void a run with a reason, read everything, reopen with a reason of at least 10 characters. | Change anything the run reads. Every such write returns 409 until the inventory is reopened. |
 | `FINAL` | Publish. Withdraw the designation with a reason and go back to `FROZEN`. | Reopen. The final run's numbers are what the reviewer approved; changing the boundary under them would make the designation meaningless. |
 | `PUBLISHED` | Read the report exactly as it was published, see what came after it in a separate block, and create a correction. | Change anything. Facts corrected at organization level after publication show as "changed since publication" on the published view and do not alter it. |
@@ -84,8 +84,8 @@ must keep meaning the same thing. Numbers are never reused.
 
 Once a report is published, the verifier's opinion attaches to that
 document. A correction therefore starts as a new draft that inherits the
-published inventory's boundary, instruments, declaration, and every
-classification and exclusion, each marked as inherited, and it records the
+published inventory's boundary, instruments, declaration, upstream rules, and
+every classification and exclusion, each marked as inherited, and it records the
 reason it exists. The published inventory points at its correction and the
 correction's report says what changed against the published run: lines
 added, removed and changed, and the difference in tonnes. Nothing about

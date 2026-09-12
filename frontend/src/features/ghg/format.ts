@@ -3,6 +3,7 @@ import type {
   AuditEvent,
   BoundaryVersionSummary,
   ConsolidationApproach,
+  ExclusionEstimateState,
   ExclusionReason,
   FacilityType,
   GateResult,
@@ -17,6 +18,7 @@ import type {
   Scope2MarketBasis,
   StreamKind,
   StructuralChangeConvention,
+  UpstreamRuleKind,
 } from './api'
 
 // The label dictionaries below are also the PDF's: `ReportLabels.java` in the backend's ghg export
@@ -200,6 +202,26 @@ export const exclusionLabels: Record<ExclusionReason, string> = {
   METHODOLOGY: 'Methodology exclusion',
   OTHER: 'Other documented reason',
   RECORD_REMOVED: 'Record removed',
+  OUTSIDE_SCOPES_NON_KYOTO: 'Outside the scopes: Montreal Protocol gas',
+}
+
+/** The kind of upstream emissions an upstream rule derives (spec 04.7). */
+export const upstreamRuleKindLabels: Record<UpstreamRuleKind, string> = {
+  WELL_TO_TANK: 'Well-to-tank (upstream emissions of the fuel)',
+  TRANSMISSION_AND_DISTRIBUTION: 'Transmission and distribution losses',
+}
+
+/** "well-to-tank" or "transmission and distribution losses", mid-sentence. */
+export const upstreamRuleKindPhrases: Record<UpstreamRuleKind, string> = {
+  WELL_TO_TANK: 'well-to-tank',
+  TRANSMISSION_AND_DISTRIBUTION: 'transmission and distribution losses',
+}
+
+/** What a manual exclusion says about the emissions it leaves out (spec 04.8). */
+export const estimateStateLabels: Record<ExclusionEstimateState, string> = {
+  ESTIMATED: 'Estimated',
+  EMITS_NOTHING: 'Emits nothing',
+  NOT_ESTIMATED: 'Not estimated',
 }
 
 /** What a record still lacks (spec 04.6), as the status pill and the drawer name it. */
@@ -278,7 +300,13 @@ export const manualExclusionReasons: ExclusionReason[] = [
   'NOT_APPLICABLE',
   'METHODOLOGY',
   'OTHER',
+  'OUTSIDE_SCOPES_NON_KYOTO',
 ]
+
+/** The reason that records a gas reported outside the scopes instead of a magnitude (spec 04.8). */
+export function isOutsideScopesReason(reason: ExclusionReason): boolean {
+  return reason === 'OUTSIDE_SCOPES_NON_KYOTO'
+}
 
 /** Whether the review computes the detail for a reason, so no justification is asked (spec 04.4). */
 export function isAutomaticReason(reason: ExclusionReason): boolean {

@@ -343,8 +343,24 @@ public final class ReportPdf {
 				exclusionsHeading = null;
 				head(summary, "Reason", "Records", "Estimated t CO2e left out");
 				for (var x : report.exclusionSummary()) {
-					row(summary, ReportLabels.label(x.reason()), String.valueOf(x.recordCount()), tonnes(x.estimatedTCo2e())
-							+ (x.unestimatedCount() == 0 ? "" : " (" + x.unestimatedCount() + " not estimated)"));
+					// spec 04.8: a record that was not sized never prints as a bare zero
+					var states = new java.util.ArrayList<String>();
+					if (x.estimatedCount() > 0) {
+						states.add(tonnes(x.estimatedTCo2e()) + " estimated over " + x.estimatedCount() + " record"
+								+ (x.estimatedCount() == 1 ? "" : "s"));
+					}
+					if (x.emitsNothingCount() > 0) {
+						states.add(x.emitsNothingCount() + " emits nothing");
+					}
+					if (x.unestimatedCount() > 0) {
+						states.add(x.unestimatedCount() + " not estimated");
+					}
+					if (x.reason() == com.carbonos.ghg.internal.ExclusionReason.OUTSIDE_SCOPES_NON_KYOTO) {
+						states.clear();
+						states.add("see 6a, Gases outside the scopes");
+					}
+					row(summary, ReportLabels.label(x.reason()), String.valueOf(x.recordCount()),
+							states.isEmpty() ? "not estimated" : String.join(", ", states));
 				}
 				document.add(summary);
 			}
@@ -367,8 +383,9 @@ public final class ReportPdf {
 					row(recs, ref(x.recordRef()) + x.activityType(), x.facilityName(), plain(x.quantity()) + " " + x.unit(),
 							ReportLabels.period(x.periodStart(), x.periodEnd()),
 							ReportLabels.label(x.exclusionReason()) + (x.exclusionDetail() == null ? "" : ": " + x.exclusionDetail())
-									+ (x.exclusionJustification() == null ? "" : ". " + x.exclusionJustification()),
-							x.estimatedKgCo2e() == null ? "" : plain(x.estimatedKgCo2e()));
+									+ (x.exclusionJustification() == null ? "" : ". " + x.exclusionJustification())
+									+ (x.gas() == null ? "" : " Gas: " + x.gas() + "."),
+							estimate(x));
 				}
 				document.add(recs);
 			}
@@ -376,7 +393,9 @@ public final class ReportPdf {
 			var lines = titled("10. Snapshot lines (kg CO2e)", H2, 18, 22, 9, 15, 12, 8, 16);
 			head(lines, "Facility", "Record / factor", "Scope", "Quantity", "kg CO2e / unit", "Share", "kg CO2e");
 			for (var l : report.lines()) {
-				row(lines, l.facilityName(), ref(l.recordRef()) + nvl(l.activityType(), "") + "\n" + l.factorName(),
+				// spec 04.7: a derived category 3 line says which line it rides on
+				row(lines, l.facilityName(), ref(l.recordRef()) + nvl(l.activityType(), "") + "\n" + l.factorName()
+						+ (l.derivedNote() == null ? "" : "\n" + l.derivedNote()),
 						ReportLabels.label(l.scope()),
 						plain(l.quantity()) + " " + l.unit() + (l.convertedQuantity().compareTo(l.quantity()) == 0 ? ""
 								: " = " + plain(l.convertedQuantity()) + " " + l.factorUnit())
@@ -393,6 +412,19 @@ public final class ReportPdf {
 			throw new IllegalStateException("Could not render the report", ex);
 		}
 		return out.toByteArray();
+	}
+
+	/** What one exclusion says about the emissions it leaves out (spec 04.8), never a bare zero. */
+	private static String estimate(com.carbonos.ghg.internal.web.dto.RunExclusionResponse x) {
+		if (x.estimateState() == null) {
+			return x.exclusionReason() == com.carbonos.ghg.internal.ExclusionReason.OUTSIDE_SCOPES_NON_KYOTO
+					? "see 6a" : "";
+		}
+		return switch (x.estimateState()) {
+			case ESTIMATED -> plain(x.estimatedKgCo2e());
+			case EMITS_NOTHING -> "emits nothing";
+			case NOT_ESTIMATED -> "not estimated";
+		};
 	}
 
 	/** The footing figure (spec 07.7), summed from the rows for a snapshot stored before the field existed. */

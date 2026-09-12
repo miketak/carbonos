@@ -53,8 +53,14 @@ public class InventoryAssignment {
 	@Column(name = "exclusion_justification", length = 500)
 	private String exclusionJustification;
 
+	// a positive number, or zero with "this record emits nothing" stated, or null for
+	// "not estimated": a deliberate answer either way, which the review never fills in (spec 04.8)
 	@Column(name = "estimated_kg_co2e", precision = 18, scale = 3)
 	private BigDecimal estimatedKgCo2e;
+
+	// the gas a record excluded as a Montreal Protocol gas holds, reported outside the scopes (spec 04.8)
+	@Column(length = 60)
+	private String gas;
 
 	// copied from another inventory's decision about the same record (spec 05.3)
 	@Column(nullable = false)
@@ -118,6 +124,7 @@ public class InventoryAssignment {
 		this.exclusionDetail = source.exclusionDetail;
 		this.exclusionJustification = source.exclusionJustification;
 		this.estimatedKgCo2e = source.estimatedKgCo2e;
+		this.gas = source.gas;
 		this.scope = source.scope;
 		this.category = source.category;
 		this.leaseType = source.leaseType;
@@ -163,6 +170,15 @@ public class InventoryAssignment {
 
 	public BigDecimal getEstimatedKgCo2e() {
 		return estimatedKgCo2e;
+	}
+
+	public String getGas() {
+		return gas;
+	}
+
+	/** What the exclusion says about the emissions it leaves out (spec 04.8); null where none is asked. */
+	public ExclusionEstimateState getEstimateState() {
+		return ExclusionEstimateState.of(exclusionReason, estimatedKgCo2e);
 	}
 
 	public Scope getScope() {
@@ -226,15 +242,16 @@ public class InventoryAssignment {
 	}
 
 	void exclude(ExclusionReason reason, String detail) {
-		exclude(reason, detail, null, null);
+		exclude(reason, detail, null, null, null);
 	}
 
-	void exclude(ExclusionReason reason, String detail, String justification, BigDecimal estimatedKgCo2e) {
+	void exclude(ExclusionReason reason, String detail, String justification, BigDecimal estimatedKgCo2e, String gas) {
 		this.included = false;
 		this.exclusionReason = reason;
 		this.exclusionDetail = detail;
 		this.exclusionJustification = justification;
 		this.estimatedKgCo2e = estimatedKgCo2e;
+		this.gas = gas;
 	}
 
 	void include() {
@@ -243,5 +260,6 @@ public class InventoryAssignment {
 		this.exclusionDetail = null;
 		this.exclusionJustification = null;
 		this.estimatedKgCo2e = null;
+		this.gas = null;
 	}
 }

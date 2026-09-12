@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -2002,7 +2003,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(put("/api/ghg/assignments/"
 				+ JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + waste + "')].id").getFirst()
 				+ "/exclude").with(asMember()).with(csrf()).contentType("application/json").content("""
-						{"reason": "NOT_APPLICABLE", "justification": "not a source of this inventory", "estimatedKgCo2e": 0}"""))
+						{"reason": "NOT_APPLICABLE", "justification": "not a source of this inventory", "estimatedKgCo2e": 0, "emitsNothing": true}"""))
 			.andExpect(status().isOk());
 		freeze(ar6Id);
 		run(ar6Id, "Run 001").andExpect(status().isCreated())
@@ -2723,7 +2724,9 @@ class GhgApiIntegrationTests {
 			.andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/csv"))));
 		var rows = csv.split("\r\n");
 		// spec 02.4: reporting_basis follows the category, so a verifier reads the basis beside the scope
-		assertThat(rows[0]).startsWith("line_id,record_id,record_ref,facility_id,facility,legal_entity,country,activity_type,evidence_ref,"
+		// spec 04.7: the parent line and the kind of upstream emissions come straight after the line id
+		assertThat(rows[0]).startsWith("line_id,derived_from_line_id,derived_kind,record_id,record_ref,facility_id,"
+				+ "facility,legal_entity,country,activity_type,evidence_ref,"
 				+ "period_start,period_end,scope,category,reporting_basis,lease_type,quantity,unit,factor_id,factor,"
 				+ "factor_unit,converted_quantity,conversion_factor,kg_co2e_per_unit,gwp_set,accounting_share,"
 				+ "period_days,covered_days,period_share,kg_co2e,");
@@ -3039,7 +3042,7 @@ class GhgApiIntegrationTests {
 		var ar6Listing = body(mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/assignments").with(asMember())));
 		mvc.perform(put("/api/ghg/assignments/" + JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + fuel + "')].id").getFirst()
 				+ "/exclude").with(asMember()).with(csrf()).contentType("application/json").content("""
-						{"reason": "NOT_APPLICABLE", "justification": "not a source of this inventory", "estimatedKgCo2e": 0}"""))
+						{"reason": "NOT_APPLICABLE", "justification": "not a source of this inventory", "estimatedKgCo2e": 0, "emitsNothing": true}"""))
 			.andExpect(status().isOk());
 		freeze(ar6Id);
 		// AR6: 0.23 x 771 + 0.25 x 3,740 + 0.52 x 1,530 = 177.33 + 935 + 795.6 = 1,907.93 per kg; 10 kg = 19,079.3
@@ -3473,7 +3476,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.estimatedKgCo2e").value(8400.0));
 		mvc.perform(put("/api/ghg/assignments/" + mediaAssignment + "/exclude").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"reason": "NOT_APPLICABLE", "justification": "grinding media wear is not a combustion source", "estimatedKgCo2e": 0}"""))
+					{"reason": "NOT_APPLICABLE", "justification": "grinding media wear is not a combustion source", "estimatedKgCo2e": 0, "emitsNothing": true}"""))
 			.andExpect(status().isOk());
 		classify(dieselAssignment, DIESEL_FACTOR);
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/report-metadata").with(asMember()).with(csrf())
@@ -4036,7 +4039,7 @@ class GhgApiIntegrationTests {
 		String julyInCorrection = JsonPath.<List<String>>read(correctionListing2, "$[?(@.activityId == '" + laterRecord + "')].id").getFirst();
 		mvc.perform(put("/api/ghg/assignments/" + julyInCorrection + "/exclude").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"reason": "DUPLICATE", "justification": "entered twice from the same dispensing log", "estimatedKgCo2e": 0}"""))
+					{"reason": "DUPLICATE", "justification": "entered twice from the same dispensing log", "estimatedKgCo2e": 0, "emitsNothing": true}"""))
 			.andExpect(status().isOk());
 		freeze(correctionId);
 		var correctedRun = runAndGetId(correctionId, "Corrected run");
@@ -5102,5 +5105,284 @@ class GhgApiIntegrationTests {
 		var ar6Run = runAndGetId(ar6Id, "Run 001");
 		mvc.perform(get("/api/ghg/runs/" + ar6Run + "/report").with(asMember()))
 			.andExpect(jsonPath("$.run.scope1KgCo2e").value(357600.0));
+	}
+
+	/**
+	 * Spec 04.7: an upstream rule derives a category 3 line from every included
+	 * scope 1 or scope 2 line its primary factor produced, and only from those.
+	 */
+	@Test
+	void upstreamRulesDeriveCategory3LinesFromScope1AndScope2Lines() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var pit = createFacility(orgId, "Asante Open Pit");
+		// the upstream factors: per litre of diesel, and per kWh of grid electricity
+		var wtt = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Well-to-tank diesel", "defaultScope": "SCOPE_3",
+						 "defaultCategory": "FUEL_ENERGY_RELATED", "unit": "litre", "kgCo2ePerUnit": 0.6,
+						 "co2KgPerUnit": 0.58, "ch4KgPerUnit": 0.0005, "source": "DEFRA 2025 WTT"}"""))
+			.andExpect(status().isCreated()));
+		String wttId = JsonPath.read(wtt, "$.id");
+		var td = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "T&D losses, Ghana", "defaultScope": "SCOPE_3",
+						 "defaultCategory": "FUEL_ENERGY_RELATED", "unit": "kWh", "kgCo2ePerUnit": 0.09,
+						 "source": "Ember 2024 losses"}"""))
+			.andExpect(status().isCreated()));
+		String tdId = JsonPath.read(td, "$.id");
+
+		var diesel = createActivity(orgId, pit, "Fleet diesel", "1000", "litre", "2025-03-31");
+		var power = createActivity(orgId, pit, "Grid electricity", "6400", "kWh", "2025-03-31");
+		var hired = createActivity(orgId, pit, "Contractor diesel", "500", "litre", "2025-04-30");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/operational-boundary").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"scope3Categories": ["FUEL_ENERGY_RELATED", "PURCHASED_GOODS_SERVICES"]}"""))
+			.andExpect(status().isOk());
+		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, power), GRID_FACTOR);
+		// the contractor's fuel is already a scope 3 figure: its upstream emissions are the contractor's category 3
+		mvc.perform(put("/api/ghg/assignments/" + syncAndGetAssignmentId(inventoryId, hired) + "/classify")
+			.with(asMember()).with(csrf()).contentType("application/json").content("""
+					{"emissionFactorId": "%s", "scope": "SCOPE_3", "category": "PURCHASED_GOODS_SERVICES",
+					 "scopeJustification": "Contractor-owned fleet, purchased as a service"}""".formatted(DIESEL_FACTOR)))
+			.andExpect(status().isOk());
+
+		// a pair whose units do not convert is refused, and so is a second rule of the same kind
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "WELL_TO_TANK"}"""
+				.formatted(DIESEL_FACTOR, tdId)))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.upstreamFactorId").exists());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "WELL_TO_TANK"}"""
+				.formatted(DIESEL_FACTOR, wttId)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.primaryFactorName").value("Diesel (100% mineral diesel)"))
+			.andExpect(jsonPath("$.upstreamFactorName").value("Well-to-tank diesel"));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "WELL_TO_TANK"}"""
+				.formatted(DIESEL_FACTOR, wttId)))
+			.andExpect(status().isConflict());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "TRANSMISSION_AND_DISTRIBUTION"}"""
+				.formatted(GRID_FACTOR, tdId)))
+			.andExpect(status().isCreated());
+		// the card counts the included scope 1 and scope 2 records each rule applies to
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2))
+			.andExpect(jsonPath("$[0].matchingLines").value(1))
+			.andExpect(jsonPath("$[1].matchingLines").value(1));
+
+		// an I-REC covering the head-office kilowatt-hours: the losses still ride on all of them
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + pit).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0, "source": "I-REC 2025",
+					 "meetsQualityCriteria": true, "coveredKwh": 6400}"""))
+			.andExpect(status().isOk());
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/residual-mix").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"available": false}"""))
+			.andExpect(status().isOk());
+		// the cross-check reads category 3 as quantified, and the gate lists the rules
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'WARNING')].message").value(org.hamcrest.Matchers
+				.not(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers
+					.containsString("Fuel- and energy-related activities is declared, but no upstream rule")))))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'INFO')].message").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.containsString("2 upstream rules"))));
+
+		freeze(inventoryId);
+		// a frozen inventory refuses a rule
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "TRANSMISSION_AND_DISTRIBUTION"}"""
+				.formatted(DIESEL_FACTOR, wttId)))
+			.andExpect(status().isConflict());
+
+		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated()));
+		String runId = JsonPath.read(detail, "$.run.id");
+		// five lines: three primary and two derived; the scope 3 primary derives nothing
+		List<String> derivedNotes = JsonPath.<List<String>>read(detail, "$.lines[*].derivedNote")
+			.stream()
+			.filter(java.util.Objects::nonNull)
+			.toList();
+		assertThat(derivedNotes).hasSize(2);
+		assertThat(derivedNotes).anySatisfy(note -> assertThat(note).contains("well-to-tank of", "Fleet diesel"));
+		assertThat(derivedNotes).anySatisfy(note -> assertThat(note)
+			.contains("transmission and distribution losses of", "Grid electricity",
+					"on the consumed kWh, not the market-based balance"));
+		var report = body(mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			// the well-to-tank split rules its stated total (0.58 + 0.0005 x 28 = 0.594 per litre):
+			// 1,000 litre x 0.594 + 6,400 kWh x 0.09 = 1,170 kg, plus the contractor's 500 x 2.66 = 1,330
+			.andExpect(jsonPath("$.byScope3Category[?(@.category == 'FUEL_ENERGY_RELATED')].lineCount")
+				.value(org.hamcrest.Matchers.hasItem(2)))
+			.andExpect(jsonPath("$.byScope3Category[?(@.category == 'FUEL_ENERGY_RELATED')].kgCo2e")
+				.value(org.hamcrest.Matchers.hasItem(1170.0)))
+			.andExpect(jsonPath("$.run.scope3KgCo2e").value(2500.0))
+			.andExpect(jsonPath("$.methodology.upstreamRules.length()").value(2)));
+		// every derived line names the primary line it rides on, and is scope 3 category 3
+		List<String> parents = JsonPath.<List<String>>read(report, "$.lines[*].derivedFromLineId")
+			.stream()
+			.filter(java.util.Objects::nonNull)
+			.toList();
+		assertThat(parents).hasSize(2);
+		List<String> allLineIds = JsonPath.read(report, "$.lines[*].id");
+		assertThat(allLineIds).containsAll(parents);
+		// a derived line is scope 3 category 3, with no lease type and no market-based figure
+		for (var parentId : parents) {
+			var derived = JsonPath.<List<Map<String, Object>>>read(report,
+					"$.lines[?(@.derivedFromLineId == '" + parentId + "')]");
+			assertThat(derived).hasSize(1);
+			assertThat(derived.getFirst()).containsEntry("scope", "SCOPE_3")
+				.containsEntry("category", "FUEL_ENERGY_RELATED");
+			assertThat(derived.getFirst().get("leaseType")).isNull();
+			assertThat(derived.getFirst().get("marketBasedKgCo2e")).isNull();
+		}
+		// the by-gas table still foots to the total with the derived lines present
+		var byGasTotal = JsonPath.<Number>read(report, "$.byGasTotalKgCo2e").doubleValue();
+		var total = JsonPath.<Number>read(report, "$.run.totalKgCo2e").doubleValue();
+		assertThat(byGasTotal).isCloseTo(total, org.assertj.core.data.Offset.offset(0.01));
+		// the calculation file names the parent line and the kind
+		var csv = body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember())));
+		assertThat(csv.lines().findFirst().orElseThrow())
+			.startsWith("line_id,derived_from_line_id,derived_kind,record_id");
+		assertThat(csv).contains("WELL_TO_TANK", "TRANSMISSION_AND_DISTRIBUTION", parents.getFirst());
+
+		// a correction carries the rules with the view
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"runId": "%s"}""".formatted(runId))).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var correction = body(mvc
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"reason": "the diesel invoice was restated after the audit"}"""))
+			.andExpect(status().isCreated()));
+		String correctionId = JsonPath.read(correction, "$.id");
+		mvc.perform(get("/api/ghg/inventories/" + correctionId + "/upstream-rules").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2));
+	}
+
+	/**
+	 * Spec 04.8: a manual exclusion is sized, stated to emit nothing, or not
+	 * estimated, and a Montreal Protocol gas a record holds is reported in the
+	 * block outside the scopes rather than as a false zero.
+	 */
+	@Test
+	void aManualExclusionIsSizedStatedAsNothingOrNotEstimatedAndAMontrealGasIsReportedOutsideTheScopes()
+			throws Exception {
+		var orgId = createOrganization("Asante Gold (exclusions)");
+		var pit = createFacility(orgId, "Asante Open Pit");
+		var diesel = createActivity(orgId, pit, "Fleet diesel", "1000", "litre", "2025-03-31");
+		var cyanide = createActivity(orgId, pit, "Sodium cyanide purchased", "3200", "tonne", "2025-04-30");
+		var twin = createActivity(orgId, pit, "Fleet diesel (duplicate entry)", "1000", "litre", "2025-03-31");
+		var topUp = createActivity(orgId, pit, "R-22 top-up", "85", "kg", "2025-05-31");
+		var haulage = createActivity(orgId, pit, "Haulage, tonne-km", "1200", "tonne-km", "2025-06-30");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		var cyanideId = syncAndGetAssignmentId(inventoryId, cyanide);
+		var twinId = syncAndGetAssignmentId(inventoryId, twin);
+		var topUpId = syncAndGetAssignmentId(inventoryId, topUp);
+		var haulageId = syncAndGetAssignmentId(inventoryId, haulage);
+
+		// 0 without the statement is refused: a false zero reads as a sized exclusion
+		mvc.perform(put("/api/ghg/assignments/" + cyanideId + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "METHODOLOGY", "justification": "no published factor for sodium cyanide",
+					 "estimatedKgCo2e": 0}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.estimatedKgCo2e")
+				.value("Type the emissions left out, tick 'This record emits nothing', or choose 'Not estimated'."));
+		mvc.perform(put("/api/ghg/assignments/" + cyanideId + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "METHODOLOGY", "justification": "no published factor for sodium cyanide; supplier study pending",
+					 "notEstimated": true}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.estimateState").value("NOT_ESTIMATED"))
+			.andExpect(jsonPath("$.estimatedKgCo2e").doesNotExist());
+		// the statement makes zero an answer
+		mvc.perform(put("/api/ghg/assignments/" + twinId + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "DUPLICATE", "justification": "counted under the March fleet diesel record",
+					 "estimatedKgCo2e": 0, "emitsNothing": true}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.estimateState").value("EMITS_NOTHING"))
+			.andExpect(jsonPath("$.estimatedKgCo2e").value(0));
+		// a sized exclusion keeps its number
+		mvc.perform(put("/api/ghg/assignments/" + haulageId + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "NOT_APPLICABLE", "justification": "haulage is billed to the customer, not the mine",
+					 "estimatedKgCo2e": 8400}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.estimateState").value("ESTIMATED"));
+
+		// the Montreal reason needs a gas, refuses a magnitude, and needs a mass unit
+		mvc.perform(put("/api/ghg/assignments/" + topUpId + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "OUTSIDE_SCOPES_NON_KYOTO",
+					 "justification": "HCFC-22 is a Montreal Protocol gas, reported outside the scopes"}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.gas").exists());
+		mvc.perform(put("/api/ghg/assignments/" + topUpId + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "OUTSIDE_SCOPES_NON_KYOTO", "gas": "HCFC-22", "estimatedKgCo2e": 100,
+					 "justification": "HCFC-22 is a Montreal Protocol gas, reported outside the scopes"}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.estimatedKgCo2e").exists());
+		mvc.perform(put("/api/ghg/assignments/" + haulageId + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "OUTSIDE_SCOPES_NON_KYOTO", "gas": "HCFC-22",
+					 "justification": "HCFC-22 is a Montreal Protocol gas, reported outside the scopes"}"""))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.reason").exists());
+		mvc.perform(put("/api/ghg/assignments/" + topUpId + "/exclude").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "OUTSIDE_SCOPES_NON_KYOTO", "gas": "HCFC-22",
+					 "justification": "HCFC-22 is a Montreal Protocol gas, reported outside the scopes"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.gas").value("HCFC-22"))
+			.andExpect(jsonPath("$.estimateState").doesNotExist());
+
+		freeze(inventoryId);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		var report = body(mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			// the R-22 mass lands in the block of spec 02.4 on its recorded mass, with no CO2e
+			.andExpect(jsonPath("$.outsideScopes[?(@.gas == 'HCFC-22')].kg")
+				.value(org.hamcrest.Matchers.hasItem(85.0)))
+			.andExpect(jsonPath("$.outsideScopes[?(@.gas == 'HCFC-22')].basis")
+				.value(org.hamcrest.Matchers.hasItem("RECORDED_MASS")))
+			.andExpect(jsonPath("$.outsideScopes[?(@.gas == 'HCFC-22')].kgCo2eInformational")
+				.value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.nullValue())))
+			// the scope totals are the diesel line alone
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.exclusionSummary[?(@.reason == 'METHODOLOGY')].unestimatedCount")
+				.value(org.hamcrest.Matchers.hasItem(1)))
+			.andExpect(jsonPath("$.exclusionSummary[?(@.reason == 'METHODOLOGY')].estimatedCount")
+				.value(org.hamcrest.Matchers.hasItem(0)))
+			.andExpect(jsonPath("$.exclusionSummary[?(@.reason == 'DUPLICATE')].emitsNothingCount")
+				.value(org.hamcrest.Matchers.hasItem(1)))
+			.andExpect(jsonPath("$.exclusionSummary[?(@.reason == 'OUTSIDE_SCOPES_NON_KYOTO')].recordCount")
+				.value(org.hamcrest.Matchers.hasItem(1))));
+		assertThat(JsonPath.<List<Object>>read(report,
+				"$.exclusions[?(@.exclusionReason == 'METHODOLOGY')].estimatedKgCo2e"))
+			.containsOnlyNulls();
+		// the exclusions file carries the three states and the gas
+		var csv = body(mvc.perform(get("/api/ghg/runs/" + runId + "/exclusions.csv").with(asMember())));
+		assertThat(csv.lines().findFirst().orElseThrow()).endsWith(",estimated_kg_co2e,estimate_state,gas");
+		assertThat(csv).contains("NOT_ESTIMATED", "EMITS_NOTHING", "ESTIMATED", "HCFC-22");
+		assertThat(csv.lines().filter(line -> line.contains("NOT_ESTIMATED")).findFirst().orElseThrow())
+			.contains(",,NOT_ESTIMATED,");
+		// the PDF renders with the three states present
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember())).andExpect(status().isOk());
 	}
 }

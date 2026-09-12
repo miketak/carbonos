@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.carbonos.ghg.internal.ActivityCategory;
 import com.carbonos.ghg.internal.DataQuality;
+import com.carbonos.ghg.internal.ExclusionEstimateState;
 import com.carbonos.ghg.internal.ExclusionReason;
 import com.carbonos.ghg.internal.InventoryAssignment;
 import com.carbonos.ghg.internal.InventoryService;
@@ -20,7 +21,7 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 		ActivityCategory defaultCategory, List<ActivityCategory> allowedCategories, String activityType, BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd,
 		DataQuality dataQuality, int dataQualityTier, BigDecimal uncertaintyPercent,
 		String evidenceRef, boolean included, ExclusionReason exclusionReason, String exclusionDetail,
-		String exclusionJustification, BigDecimal estimatedKgCo2e,
+		String exclusionJustification, BigDecimal estimatedKgCo2e, ExclusionEstimateState estimateState, String gas,
 		boolean classified, Scope scope, ActivityCategory category, LeaseType leaseType, UUID emissionFactorId,
 		String factorName, String scopeJustification, boolean proxy, String proxyJustification, UUID densityId,
 		String densityMaterial, BigDecimal densityKgPerLitre, LeaseType inheritedLeaseType, UUID suggestedFactorId,
@@ -79,6 +80,7 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 				evidenceRef,
 				assignment.isIncluded(), assignment.getExclusionReason(), assignment.getExclusionDetail(),
 				assignment.getExclusionJustification(), assignment.getEstimatedKgCo2e(),
+				assignment.getEstimateState(), assignment.getGas(),
 				assignment.isClassified(), assignment.getScope(), assignment.getCategory(),
 				assignment.getLeaseType(), factor == null ? null : factor.getId(),
 				factor == null ? null : factor.getName(), assignment.getScopeJustification(), assignment.isProxy(),
