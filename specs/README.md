@@ -40,8 +40,8 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
 | 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |
 | 05.3 | [Inheritance between inventories and the published record](05.3-inheritance-and-the-published-record.md) | Ch. 1, 5, 9, 10 | Implemented |
-| 05.4 | [Copying a view across consolidation approaches](05.4-copying-a-view-across-consolidation-approaches.md) | Ch. 3, 9, App. F | Approved |
-| 05.5 | [Review at scale and deliberate lifecycle acts](05.5-review-at-scale-and-deliberate-lifecycle-acts.md) | Ch. 7, 9, ISO 14064-1 | Approved |
+| 05.4 | [Copying a view across consolidation approaches](05.4-copying-a-view-across-consolidation-approaches.md) | Ch. 3, 9, App. F | Implemented |
+| 05.5 | [Review at scale and deliberate lifecycle acts](05.5-review-at-scale-and-deliberate-lifecycle-acts.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
 | 06 | [Tracking emissions over time](06-tracking-emissions-over-time.md) | Ch. 5 | Implemented |
 | 06.1 | [Recalculation policy conformance](06.1-recalculation-policy-conformance.md) | Ch. 5, 9 | Implemented |
 | 07 | [Reporting and verification](07-reporting-and-verification.md) | Ch. 9, 10 | Implemented |
@@ -104,7 +104,7 @@ GHG Protocol's requirement words. In particular:
   not a sentence.
 - **Sentence case** for titles and headings. **Bold** for UI labels a tester
   will see; code font for identifiers, enum values, paths, and payloads.
-- **Plain words.** Write *for example* and *that is*, not *e.g.* and *i.e.*.
+- **Plain words.** Write *for example* and *that is*, not `e.g.` and `i.e.`.
   Avoid *etc.*, *via*, and *in order to*. Do not point with *above* or
   *below*; name the table or section. Avoid idiom and figurative language,
   because readers and translators outside the team must be able to follow.

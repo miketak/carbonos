@@ -14,7 +14,9 @@ gates block a run that would misstate the inventory.
 [spec 03.4](../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md)
 (suggestions and leases), [spec 05](../../specs/05-inventories-and-calculation.md)
 (gates) and [spec 07.6](../../specs/07.6-scope2-instrument-criteria-and-scope3-crosscheck.md)
-(the declaration cross-check).
+(the declaration cross-check), and
+[spec 05.5](../../specs/05.5-review-at-scale-and-deliberate-lifecycle-acts.md)
+(the filters, the factor as text, the freeze gate).
 
 **Estimated time:** 90 minutes.
 
@@ -70,9 +72,17 @@ imported in procedure 2, **Refrigerant R-407C leakage**.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Search for `diesel`; filter by facility S2; filter by status Unclassified. | Each narrows the list; the counts in the status filter do not change. | | |
+| 1 | Search for `diesel`; filter by facility S2; filter by status Unclassified. | Each narrows the list; the counts in the status filter do not change (they describe the whole view, not the page). | | |
+| 2 | Clear them, then set **Scope** to "Scope 2", **Stream** to "Tarkwa Processing Plant · Mill grid supply", **Lease** to "Operating lease (leased in)", and pick a **Category** (the list follows the chosen scope). | Each narrows the list the same way; with nothing classified yet the scope, category and lease filters return "No records match the search or the filters." Come back to them after section B. | | |
+| 3 | Look at any row. | No factor list is rendered: an unclassified row offers **Choose factor…**; a classified row prints its factor as text. | | |
 
 ## B. Classification as a decision
+
+To classify a record, click **Choose factor…** on its row (**Change
+factor…** once a factor is chosen), narrow the list with the search box and
+pick the factor. The row then prints the factor with its unit, its pack tag
+when a pack delivered it and "not approved" when it is not, and the scope,
+category and lease controls appear under it.
 
 ### B1. A stream sets the default and a contractor lands in scope 3
 
@@ -197,14 +207,21 @@ estimate is of the right order.
 
 ## F. Ready to launch
 
-### F1. Every gate passes or warns
+### F1. The freeze waits for a clean classification
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Before classifying the remaining records, click **Freeze inventory**. | The dialog lists the five gates first (**Classification** with as many errors as records are still unclassified) and its **Freeze inventory** button is disabled with "<n> records are not classified; classify or exclude them first", naming up to five of them by record number ("ACT-00nn 'Mill grid electricity' at Tarkwa Processing Plant is not classified"). A direct request is refused (409) with the same records under `errors.records`. | | |
+| 2 | Cancel. | | | |
+
+### F2. Every gate passes or warns
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Classify every remaining included record: the grid factor for R2 and R4, **LPG** for both camp LPG records at S5 (S5 is in since procedure 4 C3), the landfill factor for R8 only if you re-included it, and R6 and R11 as B7 left them. | | | |
 | 2 | Read the pre-flight. | Only the draft hold remains ("The inventory is a draft. Freeze it to enable a run."); the warnings are those this procedure expects (typical density if still chosen, the residual-mix disclosure of procedure 6, evidence references missing where you left them). | | |
-| 3 | Freeze the inventory. | This cuts boundary version 3. | | |
-| 4 | Reopen it as a draft for procedure 6. | | | |
+| 3 | Click **Freeze inventory**. | The gate summary reads "passes" for **Classification** and the button is enabled. Confirm: this cuts boundary version 3 and the lifecycle bar reads "Boundary version 3". | | |
+| 4 | Click **Reopen as draft**, give the reason "Instruments to add in procedure 6" and confirm. | The inventory is a draft for procedure 6; the **History** reads "reopened as a draft: Instruments to add in procedure 6" and version 3 in the version history carries the reopen line. | | |
 
 ## Sign-off
 

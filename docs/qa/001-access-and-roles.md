@@ -107,7 +107,7 @@ on staging. The development team covers it.
 | 1 | In the normal window, sign in as the Analyst. Open Sankofa Gold plc. | The organization opens. | | |
 | 2 | Add the facility **QA scratch site**, record one activity on it ("QA scratch diesel", 100 litre, any date in 2025), create the inventory **QA scratch** (2025, operational control) and freeze it. | Every write succeeds. | | |
 | 3 | Launch a run (allowed for a preparer). | The run launches. | | |
-| 4 | Click **Mark as final** on the run. | Refused with "This action needs the REVIEWER or OWNER role in the organization.". **Publish** stays disabled ("Designate a final run first") until a run is final, so a preparer never reaches it. | | |
+| 4 | Look at **Mark as final** on the run. | The button is disabled with the tooltip "Needs the Reviewer or Owner role." (spec 05.5; a direct request is refused with "This action needs the REVIEWER or OWNER role in the organization."). **Publish** stays disabled ("Designate a final run first") until a run is final, so a preparer never reaches it. | | |
 
 Procedure 2 removes these three scratch objects before it builds the
 scenario, so keep the names.

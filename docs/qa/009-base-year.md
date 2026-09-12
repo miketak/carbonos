@@ -38,7 +38,7 @@ section.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | In 2026 Corporate (pre-populated with E0 and E1 and all their facilities; E2 is outside and, as in procedure 4, needs its reason before a run: **Methodology exclusion**, "Associate: no operational control"), untick S2, the Tarkwa plant. Unticking E1's only facility unticks E1, so the reason control is on E1's row: **Methodology exclusion**, "JV interest sold in January 2026". Freeze. | The inventory freezes. | | |
+| 1 | In 2026 Corporate (pre-populated with E0 and E1 and all their facilities; E2 is outside and, as in procedure 4, needs its reason before a run: **Methodology exclusion**, "Associate: no operational control"), untick S2, the Tarkwa plant. Unticking E1's only facility unticks E1, so the reason control is on E1's row: **Not applicable**, "JV interest sold in January 2026" (E1 still holds 100% under operational control in Table 1, so a methodology exclusion would be a gate error, spec 05.4; a sale is "no operation in the period", which the gate discloses). Freeze. | The inventory freezes (the dialog shows the gates first; nothing is under review, so nothing blocks). The **Reporting boundary** gate warns "Tarkwa Gold JV Ltd is excluded as not applicable in the period but holds a 100% share under this approach: the report discloses the exclusion." | | |
 | 2 | Return to **Base year**. | A FLAGGED candidate reads "structural change: Tarkwa Processing Plant removed; 51.77% of base-year emissions, above the 5% threshold, recalculation required". The 2026 inventory's **Base year** gate blocks with the same sentence until it is decided. | | |
 
 The share is the plant's lines in run 006 (R2 21,388,500 kg, R17
@@ -60,7 +60,7 @@ here.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Reopen 2026, also untick S4 with the reason "Sold in January 2026", and freeze again. | A second candidate reads "Accra Head Office removed; 0.22% of base-year emissions on its own, 51.99% together with 1 earlier change since the 2025 base year, above the 5% threshold, recalculation required" (92,610 kg over the same total; chapter 5: the cumulative effect of small changes counts). | | |
+| 1 | Reopen 2026 (reason "Office sold; boundary to change"), also untick S4 with the reason **Not applicable**, "Sold in January 2026", and freeze again. | The **Reporting boundary** gate warns that "'Accra Head Office' (Sankofa Gold plc) is excluded as not applicable in the period while Sankofa Gold plc holds a 100% share under this approach". A second candidate reads "Accra Head Office removed; 0.22% of base-year emissions on its own, 51.99% together with 1 earlier change since the 2025 base year, above the 5% threshold, recalculation required" (92,610 kg over the same total; chapter 5: the cumulative effect of small changes counts). | | |
 
 ### B3. Deciding
 
