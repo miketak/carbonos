@@ -82,7 +82,7 @@ class ReportPdfLayoutTest {
 	void theTextReadsInWordsAndReaderDates() throws Exception {
 		// the extractor wraps lines where the page does, so whitespace is normalised before reading
 		var text = String.join("\n", pages(ReportPdf.render(report(3)))).replaceAll("\\s+", " ");
-		assertThat(text).contains("Asante Gold Resources Ltd, operational control approach (Corporate Standard, chapter 3). Boundary version 3.")
+		assertThat(text).contains("Asante Gold Resources Ltd, operational control approach (Corporate Standard, chapter 3). Boundary version 3 of 3.")
 			.contains("Scopes covered: Scope 1, Scope 2, Scope 3. Scope 3 categories declared: 1. Purchased goods and services, "
 					+ "3. Fuel- and energy-related activities, 5. Waste generated in operations, 6. Business travel, "
 					+ "7. Employee commuting.")
