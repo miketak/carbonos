@@ -15,7 +15,13 @@ export type ExclusionReason =
 export type ValidationGate =
   'BOUNDARY' | 'COMPLETENESS' | 'CLASSIFICATION' | 'EMISSION_FACTOR' | 'BASE_YEAR'
 export type Dimension =
-  'ENERGY' | 'VOLUME' | 'MASS' | 'DISTANCE' | 'PASSENGER_DISTANCE' | 'FREIGHT' | 'COUNT'
+  'ENERGY' | 'VOLUME' | 'MASS' | 'DISTANCE' | 'PASSENGER_DISTANCE' | 'FREIGHT' | 'AREA' | 'COUNT'
+/**
+ * Whether a factor's emissions belong in the scopes at all (spec 02.4).
+ * Chapter 4 counts the seven Kyoto gas groups; a Montreal Protocol gas is
+ * reported separately, outside every scope.
+ */
+export type ReportingBasis = 'SCOPES' | 'OUTSIDE_SCOPES_NON_KYOTO'
 export type GateStatus = 'PASSED' | 'WARNINGS' | 'BLOCKED'
 export type FindingSeverity = 'ERROR' | 'WARNING' | 'INFO'
 /**
@@ -299,10 +305,16 @@ export interface EmissionFactor {
   validTo: string | null
   note: string | null
   approved: boolean
+  /** The first pack that delivered the factor; `packs` carries every tag (spec 02.3). */
   pack: string | null
+  /** Every pack that delivered this publication row, alphabetical (spec 02.3). */
+  packs: string[]
+  /** The publication row identifier: the factor's identity within an organization (spec 02.3). */
   packCode: string | null
   /** The grid a location-based electricity factor serves (spec 03.4). */
   gridRegion: string | null
+  /** SCOPES, or OUTSIDE_SCOPES_NON_KYOTO for a Montreal Protocol gas (spec 02.4). */
+  reportingBasis: ReportingBasis
 }
 
 export interface EmissionFactorInput {
@@ -331,6 +343,18 @@ export interface EmissionFactorInput {
   validTo?: string
   note?: string
   approved?: boolean
+  reportingBasis?: ReportingBasis
+}
+
+/**
+ * What an import did (spec 02.3): rows created, rows refreshed, and rows
+ * another pack had already delivered that only gained this pack's tag.
+ */
+export interface FactorPackImport {
+  pack: string
+  created: number
+  updated: number
+  tagged: number
 }
 
 /** A shipped, importable factor pack (spec 02.1). */
@@ -932,6 +956,8 @@ export interface RunLine {
   kgCo2e: number
   byGas: ByGas
   biogenicCo2Kg: number
+  /** SCOPES, or OUTSIDE_SCOPES_NON_KYOTO for a line no scope total includes (spec 02.4). */
+  reportingBasis: ReportingBasis
   /** The assessment report behind the line's blend potentials, when the factor carries a blend. */
   blendGwpSource: string | null
   marketBasedKgCo2e: number | null
@@ -1358,6 +1384,8 @@ export interface Report {
   byGasTotalTCo2e: number | null
   biogenicCo2Kg: number
   biogenicCo2T: number
+  /** Gases outside the scopes (spec 02.4); absent on a report snapshot taken before it existed. */
+  outsideScopes?: OutsideScopesRow[]
   baseYear: {
     year: number
     periodLabel: string
@@ -1514,7 +1542,30 @@ export interface FactorRow {
   biogenicCo2: number
   blendComposition: string | null
   blendGwpSource: string | null
+  /** The publication the factor comes from, with its years and the packs that delivered it (spec 02.3). */
   source: string
+  publicationYear: number | null
+  dataYear: number | null
+  /** Absent on a run launched before spec 02.3. */
+  packs?: string[]
+  /** Absent on a run launched before spec 02.4. */
+  reportingBasis?: ReportingBasis
+}
+
+/**
+ * One gas reported outside the scopes (spec 02.4): a Montreal Protocol gas the
+ * inventory emitted, its mass, whether a factor calculated it or a record's
+ * mass was excluded, and the CO2e the source publishes for information on its
+ * own GWP basis, never rescaled.
+ */
+export interface OutsideScopesRow {
+  gas: string
+  kg: number
+  basis: 'FACTOR' | 'RECORDED_MASS'
+  kgCo2eInformational: number | null
+  informationalGwpSource: string | null
+  factorName: string | null
+  recordRefs: string[]
 }
 
 // --- organizations ---------------------------------------------------------
@@ -1661,9 +1712,20 @@ export function deleteStream(id: string): Promise<void> {
 
 // --- emission factors --------------------------------------------------------
 
-/** The shared library and the organization's own factors together (spec 02.1). */
-export function listEmissionFactors(organizationId: string): Promise<EmissionFactor[]> {
-  return api<EmissionFactor[]>(`/api/ghg/organizations/${organizationId}/emission-factors`)
+/**
+ * The shared library and the organization's own factors together (spec 02.1),
+ * with the picker's filters (spec 02.3): `includeUnapproved: false` hides rows
+ * a preparer must not pick unseen, `q` searches name, publication and tag.
+ */
+export function listEmissionFactors(
+  organizationId: string,
+  options?: { includeUnapproved?: boolean; q?: string },
+): Promise<EmissionFactor[]> {
+  const query = new URLSearchParams()
+  if (options?.includeUnapproved === false) query.set('includeUnapproved', 'false')
+  if (options?.q) query.set('q', options.q)
+  const suffix = query.size > 0 ? `?${query.toString()}` : ''
+  return api<EmissionFactor[]>(`/api/ghg/organizations/${organizationId}/emission-factors${suffix}`)
 }
 
 export function createEmissionFactor(
@@ -1706,8 +1768,8 @@ export function listFactorPacks(): Promise<FactorPack[]> {
 export function importFactorPack(
   organizationId: string,
   packId: string,
-): Promise<{ pack: string; created: number; updated: number }> {
-  return api<{ pack: string; created: number; updated: number }>(
+): Promise<FactorPackImport> {
+  return api<FactorPackImport>(
     `/api/ghg/organizations/${organizationId}/factor-packs/${packId}/import`,
     { method: 'POST' },
   )

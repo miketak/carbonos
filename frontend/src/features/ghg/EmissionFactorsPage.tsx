@@ -10,7 +10,7 @@ import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
 import { ScopeBadge } from './components/badges'
 import { RoleButton } from './components/RoleButton'
-import { categoriesForScope, categoryLabel, scopeLabels } from './format'
+import { categoriesForScope, categoryLabel, reportingBasisLabels, scopeLabels } from './format'
 import { mayWrite, WRITE_TOOLTIP } from './roles'
 import {
   useCreateEmissionFactor,
@@ -21,7 +21,13 @@ import {
   useOrganizationQuery,
   useSetFactorApproval,
 } from './useGhg'
-import type { ActivityCategory, EmissionFactor, GhgScope, Organization } from './api'
+import type {
+  ActivityCategory,
+  EmissionFactor,
+  GhgScope,
+  Organization,
+  ReportingBasis,
+} from './api'
 
 /** "CO2 2.6307 · CH4 0.0001 (fossil) · N2O 0.0001", listing only the gases the factor carries (spec 07.1). */
 function gasSplit(factor: EmissionFactor): string {
@@ -83,6 +89,7 @@ function FactorTable({
           <th className="px-4 py-3 font-semibold">Factor value</th>
           <th className="px-4 py-3 font-semibold">Gases (kg per unit)</th>
           <th className="px-4 py-3 font-semibold">Source and vintage</th>
+          <th className="px-4 py-3 font-semibold">Packs</th>
           <th className="px-4 py-3 font-semibold">Status</th>
           {editable && <th className="px-4 py-3" />}
         </tr>
@@ -92,8 +99,10 @@ function FactorTable({
           <tr key={factor.id} className="border-b border-teal/5 last:border-0">
             <td className="px-4 py-3">
               <span className="font-medium">{factor.name}</span>
-              {factor.pack && (
-                <span className="block text-xs text-ink-muted">pack {factor.pack}</span>
+              {factor.reportingBasis === 'OUTSIDE_SCOPES_NON_KYOTO' && (
+                <span className="block text-xs text-amber-800">
+                  {reportingBasisLabels[factor.reportingBasis]}
+                </span>
               )}
             </td>
             <td className="px-4 py-3">
@@ -118,6 +127,24 @@ function FactorTable({
                 provenance(factor)
               )}
               {factor.note && <span className="block">{factor.note}</span>}
+            </td>
+            {/* spec 02.3: the packs that delivered the row, always apart from its source */}
+            <td className="px-4 py-3 text-xs">
+              {factor.packs.length === 0 ? (
+                <span className="text-ink-muted">entered by hand</span>
+              ) : (
+                <span className="flex flex-wrap gap-1">
+                  {factor.packs.map((pack) => (
+                    <span
+                      key={pack}
+                      className="rounded-full border border-teal/30 px-1.5 text-ink-muted"
+                      title="Delivered by a factor pack"
+                    >
+                      {pack}
+                    </span>
+                  ))}
+                </span>
+              )}
             </td>
             <td className="px-4 py-3">
               {factor.approved ? (
@@ -245,7 +272,8 @@ export function EmissionFactorsPage() {
                       importPack.mutate(pack.id, {
                         onSuccess: (result) =>
                           toast(
-                            `${pack.name}: ${result.created} factors added, ${result.updated} updated.`,
+                            `${pack.name}: ${result.created} factors added, ${result.updated} updated, ` +
+                              `${result.tagged} already held from another pack and tagged.`,
                           ),
                         onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                       })
@@ -334,6 +362,8 @@ function FactorFormModal({
   const [validFrom, setValidFrom] = useState('')
   const [validTo, setValidTo] = useState('')
   const [approved, setApproved] = useState(true)
+  // spec 02.4: a Montreal Protocol gas is disclosed outside the scopes, never inside one
+  const [reportingBasis, setReportingBasis] = useState<ReportingBasis>('SCOPES')
   const errors = fieldErrors(create.error)
   const generalError = create.isError && !errors ? refusalMessage(create.error, myRole) : undefined
 
@@ -358,6 +388,7 @@ function FactorFormModal({
         validFrom: validFrom === '' ? undefined : validFrom,
         validTo: validTo === '' ? undefined : validTo,
         approved,
+        reportingBasis,
       },
       { onSuccess: (factor) => onSaved(factor.name) },
     )
@@ -490,6 +521,23 @@ function FactorFormModal({
           value={validTo}
           onChange={(event) => setValidTo(event.target.value)}
         />
+        <div className="md:col-span-2">
+          <SelectField
+            label="Reporting basis"
+            value={reportingBasis}
+            onChange={(event) => setReportingBasis(event.target.value as ReportingBasis)}
+          >
+            {(Object.keys(reportingBasisLabels) as ReportingBasis[]).map((value) => (
+              <option key={value} value={value}>
+                {reportingBasisLabels[value]}
+              </option>
+            ))}
+          </SelectField>
+          <p className="mt-1 text-xs text-ink-muted">
+            Chapter 4 counts the seven Kyoto gas groups. A Montreal Protocol gas (HCFC-22, a CFC, a
+            halon) is reported separately as optional information; no scope total includes it.
+          </p>
+        </div>
         <label className="flex items-center gap-2 text-sm md:col-span-2">
           <input
             type="checkbox"

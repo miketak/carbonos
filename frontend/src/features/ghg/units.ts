@@ -8,6 +8,7 @@ export const DIMENSION_ORDER: Dimension[] = [
   'DISTANCE',
   'PASSENGER_DISTANCE',
   'FREIGHT',
+  'AREA',
   'COUNT',
 ]
 
@@ -18,6 +19,7 @@ export const DIMENSION_LABELS: Record<Dimension, string> = {
   DISTANCE: 'Distance',
   PASSENGER_DISTANCE: 'Passenger-distance',
   FREIGHT: 'Freight (tonne-distance)',
+  AREA: 'Area',
   COUNT: 'Count',
 }
 

@@ -10,7 +10,9 @@ import type {
   InventoryStatus,
   LeaseType,
   MarketInstrument,
+  OutsideScopesRow,
   ReadinessIssue,
+  ReportingBasis,
   RelationshipType,
   Scope2MarketBasis,
   StreamKind,
@@ -36,6 +38,11 @@ export function formatTonnes(tonnes: number): string {
 /** Metric tonnes of a gas to three decimals. */
 export function formatTonnesOfGas(tonnes: number): string {
   return `${tonnes.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} t`
+}
+
+/** Kilograms, always in kilograms: a mass of gas the report states as the source publishes it. */
+export function formatExactKg(kg: number): string {
+  return `${kg.toLocaleString(undefined, { maximumFractionDigits: 3 })} kg`
 }
 
 /** Kilograms of a gas, in tonnes above one tonne. */
@@ -151,6 +158,37 @@ export const instrumentLabels: Record<MarketInstrument, string> = {
   CONTRACT: 'Power purchase contract',
   CERTIFICATE: 'Energy attribute certificate',
   RESIDUAL_MIX: 'Residual mix',
+}
+
+/**
+ * Whether a factor's emissions belong in the scopes (spec 02.4). The same
+ * words as `ReportLabels` in `ghg/internal/export`, so the page and the PDF
+ * agree; a change here is a change there.
+ */
+export const reportingBasisLabels: Record<ReportingBasis, string> = {
+  SCOPES: 'Counted in the scopes',
+  OUTSIDE_SCOPES_NON_KYOTO: 'Outside the scopes (Montreal Protocol, not a Kyoto gas)',
+}
+
+/** Where an outside-the-scopes row comes from (spec 02.4). */
+export const outsideScopesBasisLabels: Record<OutsideScopesRow['basis'], string> = {
+  FACTOR: 'Calculated with a factor',
+  RECORDED_MASS: 'Recorded mass of an excluded record',
+}
+
+/**
+ * A factor's publication and the packs that delivered it, as the picker and
+ * the factors page print them under the name (spec 02.3).
+ */
+export function publicationLine(factor: {
+  source: string
+  publicationYear: number | null
+  dataYear: number | null
+}): string {
+  const years = []
+  if (factor.publicationYear !== null) years.push(`published ${factor.publicationYear}`)
+  if (factor.dataYear !== null) years.push(`data year ${factor.dataYear}`)
+  return years.length > 0 ? `${factor.source} (${years.join(', ')})` : factor.source
 }
 
 export const exclusionLabels: Record<ExclusionReason, string> = {

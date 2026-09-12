@@ -16,6 +16,7 @@ import {
   isAutomaticReason,
   manualExclusionReasons,
   leaseLabels,
+  publicationLine,
   scopeLabels,
 } from '../format'
 import { mayWrite, WRITE_TOOLTIP } from '../roles'
@@ -200,9 +201,12 @@ function ClassifyControls({
   const [pendingFactorId, setPendingFactorId] = useState<string | null>(null)
   // a proxy flag is only sent together with its justification (the backend refuses one without)
   const [proxyTicked, setProxyTicked] = useState(false)
-  // spec 05.5: a row shows its factor as text; the picker opens on demand (spec 02.3 replaces its contents)
+  // spec 05.5: a row shows its factor as text; the picker opens on demand, with the grouped,
+  // searchable contents of spec 02.3
   const [pickerOpen, setPickerOpen] = useState(false)
   const [factorSearch, setFactorSearch] = useState('')
+  // spec 02.3: an unapproved factor is hidden until asked for, so nobody picks one without seeing it
+  const [showUnapproved, setShowUnapproved] = useState(false)
   const selected = factors.find(
     (factor) => factor.id === (assignment.emissionFactorId ?? pendingFactorId),
   )
@@ -212,12 +216,24 @@ function ClassifyControls({
       ? [selected, ...compatible]
       : compatible
   const needle = factorSearch.trim().toLowerCase()
-  const shown =
-    needle === ''
-      ? options
-      : options.filter((factor) =>
-          `${factor.name} ${factor.pack ?? ''} ${factor.source}`.toLowerCase().includes(needle),
-        )
+  const shown = options
+    .filter((factor) => showUnapproved || factor.approved || factor.id === selected?.id)
+    .filter(
+      (factor) =>
+        needle === '' ||
+        `${factor.name} ${factor.packs.join(' ')} ${factor.source}`.toLowerCase().includes(needle),
+    )
+  const hiddenUnapproved = options.filter(
+    (factor) => !factor.approved && factor.id !== selected?.id,
+  ).length
+  // spec 02.3: the organization's own factors first, then the shared library
+  const groups = [
+    {
+      label: 'This organization',
+      factors: shown.filter((factor) => factor.organizationId !== null),
+    },
+    { label: 'Shared library', factors: shown.filter((factor) => factor.organizationId === null) },
+  ].filter((group) => group.factors.length > 0)
   const density = densities.find((candidate) => candidate.id === assignment.densityId)
   const densityNeeded = !!selected && needsDensity(units, assignment.unit, selected.unit)
   const preview = selected ? conversionPreview(units, assignment, selected, density) : null
@@ -253,14 +269,15 @@ function ClassifyControls({
         <p className="text-sm">
           <span className="font-medium">{selected.name}</span>
           <span className="text-ink-muted"> (/{selected.unit})</span>
-          {selected.pack && (
+          {selected.packs.map((pack) => (
             <span
+              key={pack}
               className="ml-1 rounded-full border border-teal/30 px-1.5 text-xs text-ink-muted"
               title="Delivered by a factor pack"
             >
-              {selected.pack}
+              {pack}
             </span>
-          )}
+          ))}
           {!selected.approved && (
             <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
               not approved
@@ -293,52 +310,91 @@ function ClassifyControls({
         <div
           role="group"
           aria-label={`Factor picker for ${assignment.activityType}`}
-          className="flex flex-col gap-1"
+          className="flex flex-col gap-1 rounded-md border border-line p-2"
         >
           <input
             aria-label={`Search factors for ${assignment.activityType}`}
             value={factorSearch}
-            placeholder="Search by name, pack or source"
+            placeholder="Search by name, publication or pack"
             onChange={(event) => setFactorSearch(event.target.value)}
             className={selectClasses}
           />
-          {/* DR-04: wide enough not to truncate the factor + unit; teal border marks it as the primary action */}
-          <select
+          <label className="flex items-center gap-1.5 text-xs text-ink-muted">
+            <input
+              type="checkbox"
+              checked={showUnapproved}
+              onChange={(event) => setShowUnapproved(event.target.checked)}
+            />
+            Show unapproved
+            {hiddenUnapproved > 0 && !showUnapproved && ` (${hiddenUnapproved} hidden)`}
+          </label>
+          {/* DR-04: each option carries its publication and tags, so two factors of the same
+              name and unit never read alike (spec 02.3) */}
+          <div
             aria-label={`Classify ${assignment.activityType}`}
-            value={assignment.emissionFactorId ?? ''}
-            size={Math.min(8, Math.max(2, shown.length + 1))}
-            onChange={(event) => {
-              const factor = factors.find((candidate) => candidate.id === event.target.value)
-              if (!factor) return
-              setPickerOpen(false)
-              setFactorSearch('')
-              if (needsDensity(units, assignment.unit, factor.unit) && !assignment.densityId) {
-                setPendingFactorId(factor.id)
-                return
-              }
-              setPendingFactorId(null)
-              onClassify({
-                emissionFactorId: factor.id,
-                // spec 04.3: the record's stream fixes the default scope; the factor only suggests one
-                scope: assignment.defaultScope ?? factor.defaultScope,
-                category: assignment.defaultScope
-                  ? (assignment.defaultCategory ?? factor.defaultCategory)
-                  : factor.defaultCategory,
-                densityId: needsDensity(units, assignment.unit, factor.unit)
-                  ? (assignment.densityId ?? undefined)
-                  : undefined,
-              })
-            }}
-            className={selectClasses}
+            className="max-h-64 overflow-y-auto rounded-md border border-line"
           >
-            <option value="">Select emission factor…</option>
-            {shown.map((factor) => (
-              <option key={factor.id} value={factor.id}>
-                {factor.name} (/{factor.unit}){factor.pack ? ` · ${factor.pack}` : ''}
-                {factor.approved ? '' : ' · not approved'}
-              </option>
+            {groups.length === 0 && (
+              <p className="p-2 text-xs text-ink-muted">No factor matches this search.</p>
+            )}
+            {groups.map((group) => (
+              <div key={group.label}>
+                <p className="sticky top-0 bg-surface-muted px-2 py-1 text-xs font-semibold text-ink-muted">
+                  {group.label}
+                </p>
+                <ul>
+                  {group.factors.map((factor) => (
+                    <li key={factor.id}>
+                      <button
+                        type="button"
+                        aria-pressed={factor.id === assignment.emissionFactorId}
+                        className={`w-full px-2 py-1.5 text-left hover:bg-surface-muted ${
+                          factor.id === assignment.emissionFactorId ? 'bg-surface-muted' : ''
+                        }`}
+                        onClick={() => {
+                          setPickerOpen(false)
+                          setFactorSearch('')
+                          if (
+                            needsDensity(units, assignment.unit, factor.unit) &&
+                            !assignment.densityId
+                          ) {
+                            setPendingFactorId(factor.id)
+                            return
+                          }
+                          setPendingFactorId(null)
+                          onClassify({
+                            emissionFactorId: factor.id,
+                            // spec 04.3: the record's stream fixes the default scope; the factor only suggests one
+                            scope: assignment.defaultScope ?? factor.defaultScope,
+                            category: assignment.defaultScope
+                              ? (assignment.defaultCategory ?? factor.defaultCategory)
+                              : factor.defaultCategory,
+                            densityId: needsDensity(units, assignment.unit, factor.unit)
+                              ? (assignment.densityId ?? undefined)
+                              : undefined,
+                          })
+                        }}
+                      >
+                        <span className="text-sm">
+                          <span className="font-medium">{factor.name}</span>
+                          <span className="text-ink-muted"> (/{factor.unit})</span>
+                          {!factor.approved && (
+                            <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
+                              unapproved
+                            </span>
+                          )}
+                        </span>
+                        <span className="block text-xs text-ink-muted">
+                          {publicationLine(factor)}
+                          {factor.packs.length > 0 && ` · ${factor.packs.join(', ')}`}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </select>
+          </div>
           <button
             type="button"
             className="self-start text-xs text-ink-muted hover:underline"

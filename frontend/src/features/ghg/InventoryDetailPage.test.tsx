@@ -9,6 +9,7 @@ import type {
   BoundaryEntity,
   BoundaryVersion,
   BoundaryVersionSummary,
+  EmissionFactor,
   Inventory,
   Run,
   Unit,
@@ -378,6 +379,49 @@ function renderPage() {
   })
 }
 
+/** The shared-library diesel row every picker test starts from. */
+const dieselFactor: EmissionFactor = {
+  id: 'ef-1',
+  organizationId: null,
+  name: 'Diesel',
+  defaultScope: 'SCOPE_1',
+  defaultCategory: 'MOBILE_COMBUSTION',
+  scopeAgnostic: true,
+  unit: 'litre',
+  dimension: 'VOLUME',
+  kgCo2ePerUnit: 2.66,
+  gases: {
+    co2: 2.6307,
+    ch4: 0.0001,
+    n2o: 0.0001,
+    hfcs: 0,
+    pfcs: 0,
+    sf6: 0,
+    nf3: 0,
+    hfcsKg: 0,
+    pfcsKg: 0,
+  },
+  biogenicCo2KgPerUnit: 0,
+  gwpSet: 'AR5',
+  blendGwpSource: null,
+  blendComposition: null,
+  ch4Fossil: true,
+  co2eOnly: false,
+  source: 'DEFRA 2025',
+  sourceUrl: null,
+  publicationYear: 2025,
+  dataYear: 2025,
+  validFrom: null,
+  validTo: null,
+  note: null,
+  approved: true,
+  pack: null,
+  packs: [],
+  packCode: null,
+  gridRegion: null,
+  reportingBasis: 'SCOPES',
+}
+
 beforeEach(() => {
   vi.mocked(getInventory).mockReset().mockResolvedValue(inventory)
   vi.mocked(getBoundary).mockReset().mockResolvedValue(boundary)
@@ -421,49 +465,7 @@ beforeEach(() => {
   vi.mocked(setEntityTreatment).mockReset()
   vi.mocked(setOperationalBoundary).mockReset()
   vi.mocked(excludeFacility).mockReset()
-  vi.mocked(listEmissionFactors)
-    .mockReset()
-    .mockResolvedValue([
-      {
-        id: 'ef-1',
-        organizationId: null,
-        name: 'Diesel',
-        defaultScope: 'SCOPE_1',
-        defaultCategory: 'MOBILE_COMBUSTION',
-        scopeAgnostic: true,
-        unit: 'litre',
-        dimension: 'VOLUME',
-        kgCo2ePerUnit: 2.66,
-        gases: {
-          co2: 2.6307,
-          ch4: 0.0001,
-          n2o: 0.0001,
-          hfcs: 0,
-          pfcs: 0,
-          sf6: 0,
-          nf3: 0,
-          hfcsKg: 0,
-          pfcsKg: 0,
-        },
-        biogenicCo2KgPerUnit: 0,
-        gwpSet: 'AR5',
-        blendGwpSource: null,
-        blendComposition: null,
-        ch4Fossil: true,
-        co2eOnly: false,
-        source: 'DEFRA 2025',
-        sourceUrl: null,
-        publicationYear: 2025,
-        dataYear: 2025,
-        validFrom: null,
-        validTo: null,
-        note: null,
-        approved: true,
-        pack: null,
-        packCode: null,
-        gridRegion: null,
-      },
-    ])
+  vi.mocked(listEmissionFactors).mockReset().mockResolvedValue([dieselFactor])
 })
 
 test('renders entities with their share and facilities, assignments, and holds the launch', async () => {
@@ -541,17 +543,65 @@ test('setting a membership window sends the effective date to the entity treatme
   )
 })
 
+test('the picker groups its options, cites each publication and hides unapproved rows (spec 02.3)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listEmissionFactors).mockResolvedValue([
+    dieselFactor,
+    {
+      ...dieselFactor,
+      id: 'ef-own',
+      organizationId: 'org-1',
+      name: 'Diesel',
+      source: 'GOIL fuel analysis certificate 2025-03',
+      publicationYear: 2025,
+      dataYear: 2025,
+      pack: 'sector-mining',
+      packs: ['sector-mining'],
+      packCode: 'GOIL:diesel',
+      approved: false,
+    },
+  ])
+  renderPage()
+
+  await user.click((await screen.findAllByRole('button', { name: /choose factor/i }))[0])
+  const picker = screen.getAllByLabelText('Classify Diesel consumption')[0]
+  // the two factors share a name and unit; the publication line tells them apart
+  expect(within(picker).getByText('Shared library')).toBeInTheDocument()
+  expect(
+    within(picker).getByText(/DEFRA 2025 \(published 2025, data year 2025\)/),
+  ).toBeInTheDocument()
+  // the unapproved row is hidden until the toggle reveals it
+  expect(within(picker).queryByText('This organization')).not.toBeInTheDocument()
+  await user.click(screen.getAllByLabelText(/Show unapproved/)[0])
+  expect(within(picker).getByText('This organization')).toBeInTheDocument()
+  expect(within(picker).getByText('unapproved')).toBeInTheDocument()
+  expect(
+    within(picker).getByText(/GOIL fuel analysis certificate.*sector-mining/),
+  ).toBeInTheDocument()
+  // the search covers the pack tag as well as the name and the publication
+  await user.type(
+    screen.getAllByLabelText('Search factors for Diesel consumption')[0],
+    'sector-mining',
+  )
+  expect(within(picker).queryByText('Shared library')).not.toBeInTheDocument()
+  expect(within(picker).getByText('This organization')).toBeInTheDocument()
+})
+
 test('classifying an assignment sends the factor with its default scope and category', async () => {
   const user = userEvent.setup()
   vi.mocked(classifyAssignment).mockResolvedValue(classified)
   renderPage()
 
-  // spec 05.5: no factor select renders until asked for; the picker opens on demand
+  // spec 05.5: no factor list renders until asked for; the picker opens on demand
   expect(screen.queryByLabelText('Classify Diesel consumption')).not.toBeInTheDocument()
   await user.click((await screen.findAllByRole('button', { name: /choose factor/i }))[0])
-  await user.selectOptions(
-    (await screen.findAllByLabelText('Classify Diesel consumption'))[0],
-    'ef-1',
+  await user.click(
+    within((await screen.findAllByLabelText('Classify Diesel consumption'))[0]).getByRole(
+      'button',
+      {
+        name: /Diesel/,
+      },
+    ),
   )
   await waitFor(() =>
     expect(classifyAssignment).toHaveBeenCalledWith('as-1', {
@@ -1079,8 +1129,10 @@ test('the activity view suggests the grid factor of the facility and names an in
       note: null,
       approved: true,
       pack: 'ember-grid-2025',
+      packs: ['ember-grid-2025'],
       packCode: 'EMBER:grid:GHA:2024',
       gridRegion: 'GHA',
+      reportingBasis: 'SCOPES',
     },
   ])
   vi.mocked(searchAssignments).mockResolvedValue(
@@ -1394,7 +1446,7 @@ test('the activity view filters by scope, category, stream and lease, and shows 
   expect(screen.getAllByLabelText('Classify Diesel consumption')[0]).toBeInTheDocument()
   await user.type(screen.getAllByLabelText('Search factors for Diesel consumption')[0], 'grid')
   expect(
-    within(screen.getAllByLabelText('Classify Diesel consumption')[0]).queryByText(/^Diesel/),
+    within(screen.getAllByLabelText('Classify Diesel consumption')[0]).queryByText('Diesel'),
   ).not.toBeInTheDocument()
 
   await user.selectOptions(screen.getByLabelText('Scope'), 'SCOPE_2')

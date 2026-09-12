@@ -54,6 +54,12 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
                     {leaseLabels[line.leaseType]}
                   </span>
                 )}
+                {/* spec 02.4: no scope total includes this line; the report discloses it apart */}
+                {line.reportingBasis === 'OUTSIDE_SCOPES_NON_KYOTO' && (
+                  <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
+                    Outside the scopes
+                  </span>
+                )}
               </td>
               <td className="px-3 py-2">
                 <ScopeBadge scope={line.scope} />
