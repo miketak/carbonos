@@ -45,6 +45,7 @@ export const importActivities = vi.fn()
 export const activityImportTemplateUrl = vi.fn(
   (orgId: string) => `/api/ghg/organizations/${orgId}/activities/import-template.csv`,
 )
+export const getActivity = vi.fn()
 export const createActivity = vi.fn()
 export const updateActivity = vi.fn()
 export const deleteActivity = vi.fn()
@@ -53,6 +54,14 @@ export const listEvidence = vi.fn()
 export const uploadEvidence = vi.fn()
 export const addEvidenceLink = vi.fn()
 export const deleteEvidence = vi.fn()
+export const searchEvidence = vi.fn()
+export const evidenceIndexUrl = vi.fn(
+  (organizationId: string) => `/api/ghg/organizations/${organizationId}/evidence/index.csv`,
+)
+export const listImportBatches = vi.fn()
+export const importBatchFileUrl = vi.fn(
+  (batchId: string) => `/api/ghg/import-batches/${batchId}/file`,
+)
 export const evidenceDownloadUrl = vi.fn((id: string) => `/api/ghg/evidence/${id}`)
 export const listInventories = vi.fn()
 export const getInventory = vi.fn()

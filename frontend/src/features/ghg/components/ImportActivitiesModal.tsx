@@ -95,12 +95,15 @@ export function ImportActivitiesModal({
           busy={importActivities.isPending}
           onClick={() => {
             if (!file) return
-            importActivities.mutate(file, {
-              onSuccess: (outcome) => {
-                setResult(outcome)
-                if (outcome.rejected.length === 0) onImported(outcome.imported)
+            importActivities.mutate(
+              { file },
+              {
+                onSuccess: (outcome) => {
+                  setResult(outcome)
+                  if (outcome.rejected.length === 0) onImported(outcome.imported)
+                },
               },
-            })
+            )
           }}
         >
           Import
