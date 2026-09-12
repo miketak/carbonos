@@ -34,8 +34,8 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 04.4 | [Activity data quality, evidence, corrections, and justified exclusions](04.4-activity-data-quality-evidence-and-corrections.md) | Ch. 7, 9, Scope 3 Standard Ch. 7, ISO 14064-1 | Implemented |
 | 04.5 | [Bulk import and the activity register](04.5-bulk-import-and-activity-register.md) | Ch. 7, ISO 14064-1 | Implemented |
 | 04.6 | [The activity register as a workspace: drafts, readiness, record numbers and source documents](04.6-activity-register-drafts-readiness-and-source-documents.md) | Ch. 7, 9, ISO 14064-1, ISO 14064-3 | Implemented |
-| 04.7 | [Derived fuel- and energy-related lines, and the scope select unlocked](04.7-derived-fuel-and-energy-related-lines.md) | Scope 3 Standard cat. 3, Ch. 4, App. F | Approved |
-| 04.8 | [Exclusions without a false zero, and gases outside the scopes](04.8-exclusions-without-a-false-zero-and-gases-outside-the-scopes.md) | Ch. 4, 9, Scope 3 Standard Ch. 11 | Approved |
+| 04.7 | [Derived fuel- and energy-related lines, and the scope select unlocked](04.7-derived-fuel-and-energy-related-lines.md) | Scope 3 Standard cat. 3, Ch. 4, App. F | Implemented |
+| 04.8 | [Exclusions without a false zero, and gases outside the scopes](04.8-exclusions-without-a-false-zero-and-gases-outside-the-scopes.md) | Ch. 4, 9, Scope 3 Standard Ch. 11 | Implemented |
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
 | 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |
@@ -57,9 +57,9 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 
 A chapter spec (`NN`) describes one stage of the workflow as it is today. A
 sub-spec (`NN.M`) is a branch of that stage that deserves its own document.
-Every spec listed is implemented as of 2026-09-09, except the sub-specs
-from the audit of 2026-09-11 that the table still marks `Approved`; 01.3,
-01.4, 02.3, 02.4, 05.4, 05.5, 07.7 and 07.8 were implemented on 2026-09-12. Sub-specs 03.3, 06.1 and
+Every spec listed is implemented as of 2026-09-09; the ten sub-specs from the
+audit of 2026-09-11 (01.3, 01.4, 02.3, 02.4, 04.7, 04.8, 05.4, 05.5, 07.7 and
+07.8) were implemented on 2026-09-12. Sub-specs 03.3, 06.1 and
 07.2 come from a conformance review of the set against the Standard on
 2026-09-08; the conformance table in spec 00 records what each closed.
 Sub-specs from 07.3 onward close tickets of the GHG officer audit backlog in

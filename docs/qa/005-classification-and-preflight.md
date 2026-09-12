@@ -108,6 +108,14 @@ scope, category and lease controls appear under it.
 | 2 | Open the pre-flight. | The **Classification** gate blocks ("... is classified in scope 3; 'Petrol (100% mineral petrol)' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1."). | | |
 | 3 | Type the justification "Fleet operated by a contractor from May" and let the field lose focus. | The gate is silent. | | |
 
+### B2a. The scope select is enabled for every factor (spec 04.7, finding F34)
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Open R2 (mill electricity), classified with the Ghana grid factor, and read the scope select. | The select is enabled and the sentence "This factor's scope is inherent." is nowhere on the row. | | |
+| 2 | Change its scope to scope 3 and the category to **13. Downstream leased assets**. | The row says the stream or the factor suggests Scope 2 and shows a **scope justification** field; the **Classification** gate blocks until at least 10 characters are recorded. | | |
+| 3 | Record "consumed by the tenant at the asset leased out" and let the field lose focus, then set the scope back to scope 2, purchased electricity. | The gate is silent, and the classification returns to scope 2. | | |
+
 ### B3. A proxy factor is flagged
 
 | Step | Action | Expected result | Pass/Fail | Notes |
@@ -158,17 +166,36 @@ Procedure 7 checks both lines.
 
 ## C. Exclusions with a reason
 
-### C1. A manual exclusion needs a justification and a magnitude
+### C1. A manual exclusion needs a justification and one of three answers
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On R8 (waste), click **Exclude…** and choose **Methodology exclusion**. | The exclusion form opens. | | |
-| 2 | Submit with a 5-character justification. | The form's Exclude button stays disabled with the short justification, and again with an empty magnitude. | | |
+| 1 | On R8 (waste), click **Exclude…** and choose **Methodology exclusion**. | The exclusion form opens with a justification, a magnitude field, and the two statements "This record emits nothing" and "Not estimated: there is no basis to size this record". | | |
+| 2 | Submit with a 5-character justification. | The form's Exclude button stays disabled with the short justification, and again while the magnitude is empty and neither statement is ticked. | | |
 | 3 | Then submit with "domestic waste; the library's commercial and industrial landfill factor does not fit; supplier study pending" and 259000 kg CO2e. | The record shows "Excluded · Methodology exclusion", the justification and "about 259 t CO₂e left out". | | |
 
 The magnitude is the nearest library factor applied by hand: 640 short ton
 × 0.907185 = 580.6 tonne × 446.2 kg CO2e per tonne = 259,063 kg, so the
 estimate is of the right order.
+
+### C1a. Not estimated is an answer, and a false zero is refused (spec 04.8)
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Re-include R8, click **Exclude…**, choose **Methodology exclusion**, type "domestic waste; no published factor fits; supplier study pending", and leave the magnitude empty. | Exclude stays disabled: one of the three answers is needed. | | |
+| 2 | Tick **Not estimated: there is no basis to size this record** and submit. | The magnitude field greys out, Exclude becomes available, and the record then reads "Excluded · Methodology exclusion", the justification and "; not estimated". It never reads "about 0 kg CO₂e". | | |
+| 3 | Re-include R8, exclude it again with the same reason and justification, and this time tick **This record emits nothing**. | The magnitude fills with 0 and the record reads "; emits nothing". | | |
+| 4 | Re-include R8 and restore the exclusion of C1: the same justification and 259000 kg CO2e. | The record reads "about 259 t CO₂e left out" again, as later procedures expect. | | |
+
+### C1b. A Montreal Protocol gas is reported outside the scopes (spec 04.8)
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On R3 (petrol, in litres), click **Exclude…** and read the menu. | **Outside the scopes: Montreal Protocol gas** is not offered: the block reports a mass of gas, so the reason needs a mass unit. Close the menu. | | |
+| 2 | On R6 (chiller refrigerant top-up, 45 kg), click **Exclude…**. | The reason is offered. | | |
+| 3 | Choose it and read the form. | It asks for a justification and for a **Gas**, and for no magnitude at all. | | |
+| 4 | Type "HCFC-22 is a Montreal Protocol gas, reported outside the scopes", type "HCFC-22" in **Gas**, and submit. | The record reads "Excluded · Outside the scopes: Montreal Protocol gas" with the justification and "; HCFC-22, outside the scopes". | | |
+| 5 | Re-include R6 and classify it with **Refrigerant R-407C leakage** again. | R6 is back as B7 left it, which procedures 7 and 9 depend on. | | |
 
 ### C2. An automatic reason keeps its computed detail
 
@@ -213,6 +240,25 @@ estimate is of the right order.
 | --- | --- | --- | --- | --- |
 | 1 | Declare purchased goods and services too, and for investments enter "the associate reports its own inventory; equity share to be quantified from its 2025 report". Save. | Both warnings are gone. | | |
 | 2 | Enter a reason shorter than 10 characters in **15. Investments: why not quantified this year**. | Refused with "Say why INVESTMENTS is not quantified (at least 10 characters).". | | |
+
+### E3. An upstream rule quantifies category 3 (spec 04.7)
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Declare **3. Fuel- and energy-related activities** in the declaration card and save. | | | |
+| 2 | Read the **Classification** gate. | A warning "Fuel- and energy-related activities is declared, but no upstream rule matches a scope 1 or scope 2 factor in this view; add a rule or say why category 3 is not quantified." | | |
+| 3 | Under **Emission factors**, add an organization factor **Well-to-tank diesel**, per litre, scope 3, category 3, 0.6 kg CO2e per litre, source "DEFRA 2025 well-to-tank", and approve it. | | | |
+| 4 | On the inventory page, open the **Upstream rules** card, choose **Diesel (100% mineral diesel)** as the primary factor, **Well-to-tank diesel** as the upstream factor, the kind **Well-to-tank (upstream emissions of the fuel)**, and click **Add rule**. | The rule appears in the table with the number of included scope 1 and scope 2 records it applies to. | | |
+| 5 | Add a second rule pairing **Diesel (100% mineral diesel)** with **Grid electricity (Ghana, Ecoriv 2025)**. | Refused: the upstream factor is per kWh, which does not convert from a factor per litre. | | |
+| 6 | Add the well-to-tank rule a second time. | Refused: one primary factor carries at most one rule of each kind. | | |
+| 7 | Read the **Classification** gate again. | The warning is gone, and an information line reads "1 upstream rule: Diesel (100% mineral diesel) → Well-to-tank diesel (well-to-tank)." | | |
+
+### E4. An upstream rule is part of the view (spec 04.7)
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Freeze the inventory and read the **Upstream rules** card. | The card lists the rule and offers no way to add or remove one: the rules are frozen with the view. | | |
+| 2 | Reopen the inventory as a draft, remove the rule and undeclare category 3. | The card is empty again. Procedure 7 reads figures that no derived line contributes to, so leave the view without a rule; procedure 7 case B1b adds one of its own. | | |
 
 ## F. Ready to launch
 
