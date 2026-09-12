@@ -51,14 +51,15 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 07.4 | [Report tables, factor table and report metadata](07.4-report-tables-factors-and-metadata.md) | Ch. 9, 10 | Implemented |
 | 07.5 | [Report export](07.5-report-export.md) | Ch. 9, 10 | Implemented |
 | 07.6 | [Scope 2 instrument criteria and the scope 3 declaration cross-check](07.6-scope2-instrument-criteria-and-scope3-crosscheck.md) | Scope 2 Guidance Ch. 7, Scope 3 Standard Ch. 11 | Implemented |
-| 07.7 | [Emissions by gas that tie to the total](07.7-emissions-by-gas-that-ties-to-the-total.md) | Ch. 5, 7, 9 | Approved |
-| 07.8 | [PDF readability](07.8-pdf-readability.md) | Ch. 9, 10 | Approved |
+| 07.7 | [Emissions by gas that tie to the total](07.7-emissions-by-gas-that-ties-to-the-total.md) | Ch. 5, 7, 9 | Implemented |
+| 07.8 | [PDF readability](07.8-pdf-readability.md) | Ch. 9, 10 | Implemented |
 | 08 | [Form validation and UI polish](08-form-validation-and-ui-polish.md) | Ch. 1 (credibility, transparency) | Implemented |
 
 A chapter spec (`NN`) describes one stage of the workflow as it is today. A
 sub-spec (`NN.M`) is a branch of that stage that deserves its own document.
-Every spec listed is implemented as of 2026-09-09, except the ten `Draft`
-sub-specs from the audit of 2026-09-11 named in the next paragraph. Sub-specs 03.3, 06.1 and
+Every spec listed is implemented as of 2026-09-09, except the sub-specs
+from the audit of 2026-09-11 that the table still marks `Approved`; 07.7 and
+07.8 were implemented on 2026-09-12. Sub-specs 03.3, 06.1 and
 07.2 come from a conformance review of the set against the Standard on
 2026-09-08; the conformance table in spec 00 records what each closed.
 Sub-specs from 07.3 onward close tickets of the GHG officer audit backlog in

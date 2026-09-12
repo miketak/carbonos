@@ -19,12 +19,13 @@ public record RunResponse(UUID id, UUID inventoryId, int runNo, String label, Lo
 		String voidReason, UUID boundaryVersionId, Integer boundaryVersionNo, String createdBy, Instant createdAt) {
 
 	/**
-	 * Totals per gas: kg of each gas, the fossil part of the methane, and for the
-	 * HFC and PFC blends also their kg CO2e under the run's set.
+	 * Totals per gas: kg of each gas, the fossil part of the methane, for the
+	 * HFC and PFC blends also their kg CO2e under the run's set, and the CO2e
+	 * of the lines whose factor published no gas split (spec 07.7).
 	 */
 	public record ByGas(BigDecimal co2Kg, BigDecimal ch4Kg, BigDecimal ch4FossilKg, BigDecimal n2oKg,
 			BigDecimal hfcsKg, BigDecimal pfcsKg, BigDecimal hfcsKgCo2e, BigDecimal pfcsKgCo2e, BigDecimal sf6Kg,
-			BigDecimal nf3Kg) {
+			BigDecimal nf3Kg, BigDecimal co2eUnsplitKg) {
 	}
 
 	public static RunResponse from(GhgRun run) {
@@ -35,7 +36,7 @@ public record RunResponse(UUID id, UUID inventoryId, int runNo, String label, Lo
 				run.getScope2MarketBasedKgCo2e(), run.getScope2MarketBasis(),
 				new ByGas(run.getCo2Kg(), run.getCh4Kg(), run.getCh4FossilKg(), run.getN2oKg(), run.getHfcsKg(),
 						run.getPfcsKg(),
-						run.getHfcsKgCo2e(), run.getPfcsKgCo2e(), run.getSf6Kg(), run.getNf3Kg()),
+						run.getHfcsKgCo2e(), run.getPfcsKgCo2e(), run.getSf6Kg(), run.getNf3Kg(), run.co2eUnsplitKg()),
 				run.getBiogenicCo2Kg(), run.getId().equals(inventory.getFinalRunId()), run.isVoided(),
 				run.getVoidedAt(), run.getVoidedBy(), run.getVoidReason(), run.getBoundaryVersionId(),
 				run.getBoundaryVersionNo(), run.getCreatedBy(), run.getCreatedAt());

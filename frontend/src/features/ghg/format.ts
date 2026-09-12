@@ -15,6 +15,9 @@ import type {
   StructuralChangeConvention,
 } from './api'
 
+// The label dictionaries below are also the PDF's: `ReportLabels.java` in the backend's ghg export
+// package carries the same words, so the page and the PDF say the same thing (spec 07.8).
+
 /** kg below one tonne, tonnes above: inventories are usually read in tCO2e. */
 export function formatCo2e(kg: number): string {
   if (Math.abs(kg) >= 1000) {

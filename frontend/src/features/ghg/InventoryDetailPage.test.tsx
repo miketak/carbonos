@@ -752,6 +752,7 @@ test('a run is voided with a reason, never deleted, and keeps its number', async
       pfcsKgCo2e: 0,
       sf6Kg: 0,
       nf3Kg: 0,
+      co2eUnsplitKg: 0,
     },
     biogenicCo2Kg: 0,
     isFinal: false,

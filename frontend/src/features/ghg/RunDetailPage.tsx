@@ -167,6 +167,10 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
     (category) => !operationalBoundary.scope3Categories.includes(category),
   )
   const gases = report.byGas.filter((gas) => gas.gas === 'CO2' || gas.kg !== 0 || gas.kgCo2e !== 0)
+  // spec 07.7: the reconciling row for factors that publish CO2e only, and the footing that ties to section 04
+  const unsplit = report.byGas.find((gas) => gas.gas === 'CO2E_UNSPLIT')
+  const byGasTotalTCo2e =
+    report.byGasTotalTCo2e ?? report.byGas.reduce((sum, gas) => sum + gas.tCo2e, 0)
   const failingInstruments = emissions.marketInstruments.filter(
     (instrument) => !instrument.meetsQualityCriteria,
   )
@@ -485,13 +489,43 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
           <tbody>
             {gases.map((gas) => (
               <tr key={gas.gas} className="border-b border-teal/5 last:border-0">
-                <td className="py-1.5 font-medium">{gas.gas}</td>
-                <td className="py-1.5 text-right tabular-nums">{formatKg(gas.kg)}</td>
+                <td className="py-1.5 font-medium">
+                  {gas.gas === 'CO2E_UNSPLIT' ? 'CO₂e from factors without a gas split' : gas.gas}
+                </td>
+                <td className="py-1.5 text-right tabular-nums">
+                  {gas.kg === null ? (
+                    <span className="text-ink-muted">not separable</span>
+                  ) : (
+                    formatKg(gas.kg)
+                  )}
+                </td>
                 <td className="py-1.5 text-right tabular-nums">{formatTonnes(gas.tCo2e)}</td>
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr className="border-t border-teal/10 font-semibold">
+              <td className="py-1.5" colSpan={2}>
+                Total (scope 2 location-based), ties to section 04
+              </td>
+              <td className="py-1.5 text-right tabular-nums">{formatTonnes(byGasTotalTCo2e)}</td>
+            </tr>
+          </tfoot>
         </table>
+        <p className="mt-1 text-xs text-ink-muted">
+          The market-based scope 2 figure is not split by gas; its instruments and balance are in
+          section 04.
+        </p>
+        {unsplit && (
+          <p className="mt-2 text-xs text-ink-muted">
+            <span className="font-semibold">CO₂e from factors without a gas split</span>
+            {(unsplit.factors ?? []).length > 0
+              ? `: ${(unsplit.factors ?? []).join('; ')}. `
+              : '. '}
+            Factors that publish CO₂e only are listed on one row. Their CO₂, CH₄ and N₂O are not
+            separable; the source did not publish them.
+          </p>
+        )}
         <p className="mt-2 text-xs text-ink-muted">
           Each gas in mass and in CO₂e under IPCC {methodology.gwpSet} 100-year potentials.
           {methodology.gwpSet === 'AR6'
@@ -904,7 +938,7 @@ function ReportHeaderBlock({ header }: { header: Report['header'] }) {
     [
       'Assurance',
       header.assuranceLevel === 'UNVERIFIED'
-        ? 'Unverified'
+        ? assuranceLabels.UNVERIFIED
         : `${assuranceLabels[header.assuranceLevel]}${header.assuranceProvider ? ` by ${header.assuranceProvider}` : ''}${header.assuranceStatement ? ` (${header.assuranceStatement})` : ''}`,
     ],
   ]

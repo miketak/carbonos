@@ -788,6 +788,8 @@ export interface ByGas {
   pfcsKgCo2e: number
   sf6Kg: number
   nf3Kg: number
+  /** CO2e of the lines whose factor published no gas split (spec 07.7): the by-gas table's reconciling row. */
+  co2eUnsplitKg: number
 }
 
 export interface Run {
@@ -1275,8 +1277,22 @@ export interface Report {
     residualMixDisclosure: string
     marketInstruments: MarketFactor[]
   }
-  /** Mass of each gas and its CO2e under the run's GWP set, in kilograms and in tonnes. */
-  byGas: { gas: string; kg: number; kgCo2e: number; tonnes: number; tCo2e: number }[]
+  /**
+   * Mass of each gas and its CO2e under the run's GWP set, in kilograms and in tonnes, then the
+   * reconciling row `CO2E_UNSPLIT` (no mass, the factors it comes from) when a line's factor published
+   * CO2e only (spec 07.7). `factors` is absent on snapshots published before the row existed.
+   */
+  byGas: {
+    gas: string
+    kg: number | null
+    kgCo2e: number
+    tonnes: number | null
+    tCo2e: number
+    factors?: string[]
+  }[]
+  /** The footing figure of the by-gas table, which ties to `emissions.totalKgCo2e`; null on older snapshots. */
+  byGasTotalKgCo2e: number | null
+  byGasTotalTCo2e: number | null
   biogenicCo2Kg: number
   biogenicCo2T: number
   baseYear: {

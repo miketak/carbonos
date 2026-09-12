@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.Hibernate;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -151,6 +153,13 @@ public class GhgRun {
 	@OrderBy("kgCo2e DESC")
 	private List<GhgRunLine> lines = new ArrayList<>();
 
+	// spec 07.7: the CO2e of the lines whose factor published no gas split, derived from the lines' stored
+	// columns (see GhgRunLine.isUnsplit) so a listing does not load every line; nothing is stored for it
+	@Formula("(select coalesce(sum(l.kg_co2e), 0) from ghg_run_lines l where l.run_id = id and l.kg_co2e <> 0"
+			+ " and l.co2_kg = 0 and l.ch4_kg = 0 and l.n2o_kg = 0 and l.hfcs_kg_co2e = 0 and l.pfcs_kg_co2e = 0"
+			+ " and l.sf6_kg = 0 and l.nf3_kg = 0)")
+	private BigDecimal co2eUnsplitKgLoaded;
+
 	@OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("exclusionReason ASC, periodEnd ASC")
 	private List<GhgRunExclusion> exclusions = new ArrayList<>();
@@ -234,6 +243,34 @@ public class GhgRun {
 
 	public BigDecimal getPfcsKg() {
 		return pfcsKg;
+	}
+
+	/**
+	 * CO2e of the lines whose factor published CO2e only (spec 07.7): the by-gas
+	 * table's reconciling row. Summed from the lines when they are loaded (a
+	 * detail, a report, a run just launched), else read by the formula.
+	 */
+	public BigDecimal co2eUnsplitKg() {
+		if (Hibernate.isInitialized(lines)) {
+			return lines.stream().map(GhgRunLine::co2eUnsplitKg).reduce(BigDecimal.ZERO, BigDecimal::add);
+		}
+		return co2eUnsplitKgLoaded == null ? BigDecimal.ZERO : co2eUnsplitKgLoaded;
+	}
+
+	/** The factors behind the reconciling row, largest contribution first (spec 07.7). */
+	public List<String> unsplitFactorNames() {
+		var byFactor = new java.util.LinkedHashMap<String, BigDecimal>();
+		for (var line : lines) {
+			if (line.isUnsplit()) {
+				byFactor.merge(line.getFactorName(), line.getKgCo2e(), BigDecimal::add);
+			}
+		}
+		return byFactor.entrySet()
+			.stream()
+			.sorted(java.util.Map.Entry.<String, BigDecimal>comparingByValue().reversed()
+				.thenComparing(java.util.Map.Entry.comparingByKey()))
+			.map(java.util.Map.Entry::getKey)
+			.toList();
 	}
 
 	/** Every assessment report behind this run's CO2e: the run's set, plus any blend source that differs. */

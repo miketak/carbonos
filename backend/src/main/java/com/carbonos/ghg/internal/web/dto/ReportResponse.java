@@ -36,13 +36,17 @@ import com.carbonos.ghg.internal.StructuralChangeConvention;
  * year with its recalculation history, methodology, exclusions, and the lines.
  */
 public record ReportResponse(Company company, OperationalBoundary operationalBoundary, Period period,
-		Emissions emissions, List<Gas> byGas, BigDecimal biogenicCo2Kg, BigDecimal biogenicCo2T,
+		Emissions emissions, List<Gas> byGas, BigDecimal byGasTotalKgCo2e, BigDecimal byGasTotalTCo2e,
+		BigDecimal biogenicCo2Kg, BigDecimal biogenicCo2T,
 		BaseYearSection baseYear, Methodology methodology, List<BoundaryExclusionResponse> boundaryExclusions,
 		List<RunExclusionResponse> exclusions, List<RunLineResponse> lines, RunResponse run, Header header,
 		List<CategoryFigure> byScope3Category, List<Breakdown> byFacility, List<Breakdown> byEntity,
 		List<Breakdown> byCountry, List<FactorRow> factors, List<Intensity> intensity,
 		List<ExclusionSummary> exclusionSummary, DataQualitySection dataQuality, SincePublication sincePublication,
 		Correction correction) {
+
+	/** The by-gas table's reconciling row (spec 07.7): CO2e of the lines whose factor published no gas split. */
+	public static final String CO2E_UNSPLIT = "CO2E_UNSPLIT";
 
 	/** What happened after publication (spec 05.3): later acts, later inventories, facts that changed. */
 	public record SincePublication(List<AuditEventResponse> events, List<LaterInventory> laterInventories,
@@ -62,9 +66,10 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 
 	/** The same report with the blocks that describe what came after (spec 05.3). */
 	public ReportResponse withAfter(SincePublication sincePublication, Correction correction) {
-		return new ReportResponse(company, operationalBoundary, period, emissions, byGas, biogenicCo2Kg, biogenicCo2T,
-				baseYear, methodology, boundaryExclusions, exclusions, lines, run, header, byScope3Category, byFacility,
-				byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality, sincePublication, correction);
+		return new ReportResponse(company, operationalBoundary, period, emissions, byGas, byGasTotalKgCo2e,
+				byGasTotalTCo2e, biogenicCo2Kg, biogenicCo2T, baseYear, methodology, boundaryExclusions, exclusions, lines,
+				run, header, byScope3Category, byFacility, byEntity, byCountry, factors, intensity, exclusionSummary,
+				dataQuality, sincePublication, correction);
 	}
 
 	/**
@@ -76,18 +81,19 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				: new Period(period.periodStart(), period.periodEnd(), period.inventoryName(), period.status(),
 						period.publishedAt(), supersededById);
 		if (header == null) {
-			return new ReportResponse(company, operationalBoundary, p, emissions, byGas, biogenicCo2Kg, biogenicCo2T,
-					baseYear, methodology, boundaryExclusions, exclusions, lines, run, header, byScope3Category,
-					byFacility, byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality, sincePublication,
-					correction);
+			return new ReportResponse(company, operationalBoundary, p, emissions, byGas, byGasTotalKgCo2e,
+					byGasTotalTCo2e, biogenicCo2Kg, biogenicCo2T, baseYear, methodology, boundaryExclusions, exclusions,
+					lines, run, header, byScope3Category, byFacility, byEntity, byCountry, factors, intensity,
+					exclusionSummary, dataQuality, sincePublication, correction);
 		}
 		var h = new Header(header.organizationName(), header.address(), header.contact(), header.periodLabel(),
 				header.periodStart(), header.periodEnd(), header.preparedBy(), header.preparedAt(), header.approvedBy(),
 				header.publishedBy(), header.publishedAt(), header.version(), header.supersedes(), supersededBy,
 				header.assuranceLevel(), header.assuranceProvider(), header.assuranceStatement());
-		return new ReportResponse(company, operationalBoundary, p, emissions, byGas, biogenicCo2Kg, biogenicCo2T,
-				baseYear, methodology, boundaryExclusions, exclusions, lines, run, h, byScope3Category, byFacility,
-				byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality, sincePublication, correction);
+		return new ReportResponse(company, operationalBoundary, p, emissions, byGas, byGasTotalKgCo2e, byGasTotalTCo2e,
+				biogenicCo2Kg, biogenicCo2T, baseYear, methodology, boundaryExclusions, exclusions, lines, run, h,
+				byScope3Category, byFacility, byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality,
+				sincePublication, correction);
 	}
 
 	/** The records left out under one reason, with the emissions the accountant estimated for them (spec 04.4). */
@@ -165,10 +171,24 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			List<MarketFactorResponse> marketInstruments) {
 	}
 
-	/** One of the seven gases: mass of the gas and CO2e, in kilograms and in tonnes. */
-	public record Gas(String gas, BigDecimal kg, BigDecimal kgCo2e, BigDecimal tonnes, BigDecimal tCo2e) {
+	/**
+	 * One row of the by-gas table (spec 07.7): one of the seven gases, mass and
+	 * CO2e in kilograms and in tonnes, or the reconciling row {@link #CO2E_UNSPLIT}
+	 * with no mass and the names of the factors it comes from.
+	 */
+	public record Gas(String gas, BigDecimal kg, BigDecimal kgCo2e, BigDecimal tonnes, BigDecimal tCo2e,
+			List<String> factors) {
 		static Gas of(String gas, BigDecimal kg, BigDecimal kgCo2e) {
-			return new Gas(gas, kg, kgCo2e, ReportResponse.tonnes(kg), ReportResponse.tonnes(kgCo2e));
+			return new Gas(gas, kg, kgCo2e, ReportResponse.tonnes(kg), ReportResponse.tonnes(kgCo2e), List.of());
+		}
+
+		static Gas unsplit(BigDecimal kgCo2e, List<String> factors) {
+			return new Gas(CO2E_UNSPLIT, null, kgCo2e, null, ReportResponse.tonnes(kgCo2e), factors);
+		}
+
+		/** Whether this is the reconciling row rather than one of the seven gases. */
+		public boolean isUnsplit() {
+			return CO2E_UNSPLIT.equals(gas);
 		}
 	}
 
@@ -270,12 +290,18 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			}
 		}
 		var gwp = run.getGwpSet();
-		var byGas = List.of(Gas.of("CO2", run.getCo2Kg(), run.getCo2Kg()),
+		var byGas = new ArrayList<>(List.of(Gas.of("CO2", run.getCo2Kg(), run.getCo2Kg()),
 				Gas.of("CH4", run.getCh4Kg(), run.ch4KgCo2e()),
 				Gas.of("N2O", run.getN2oKg(), run.getN2oKg().multiply(gwp.n2o())),
 				Gas.of("HFCs", run.getHfcsKg(), run.getHfcsKgCo2e()), Gas.of("PFCs", run.getPfcsKg(), run.getPfcsKgCo2e()),
 				Gas.of("SF6", run.getSf6Kg(), run.getSf6Kg().multiply(gwp.sf6())),
-				Gas.of("NF3", run.getNf3Kg(), run.getNf3Kg().multiply(gwp.nf3())));
+				Gas.of("NF3", run.getNf3Kg(), run.getNf3Kg().multiply(gwp.nf3()))));
+		// spec 07.7: lines whose factor published CO2e only sit on one reconciling row, so the table foots
+		var unsplitKg = run.co2eUnsplitKg();
+		if (unsplitKg.signum() != 0) {
+			byGas.add(Gas.unsplit(unsplitKg, run.unsplitFactorNames()));
+		}
+		var byGasTotalKg = byGas.stream().map(Gas::kgCo2e).reduce(BigDecimal.ZERO, BigDecimal::add);
 		var sources = run.getLines().stream().map(line -> line.getFactorName()).distinct().sorted().toList();
 		var reports = run.assessmentReports();
 		var blendReports = reports.stream().skip(1).toList();
@@ -364,7 +390,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 						run.getScope2MarketBasis(), baseYearScope2Method, baseYearProxy, residualMixAvailable,
 						inventory.getResidualMixKgCo2ePerKwh(), residualMixDisclosure,
 						marketFactors.stream().map(MarketFactorResponse::from).toList()),
-				byGas, run.getBiogenicCo2Kg(), tonnes(run.getBiogenicCo2Kg()), baseYearSection,
+				List.copyOf(byGas), byGasTotalKg, tonnes(byGasTotalKg), run.getBiogenicCo2Kg(),
+				tonnes(run.getBiogenicCo2Kg()), baseYearSection,
 				new Methodology(gwp, run.getConsolidationApproach(), sources, reports, blendReports.size() > 0,
 						statement),
 				version == null ? List.of()

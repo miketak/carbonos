@@ -553,6 +553,21 @@ public class GhgRunLine {
 		return ch4Kg.multiply(gwp.ch4(ch4Fossil));
 	}
 
+	/**
+	 * Whether the line's factor published CO2e only (spec 07.7): it counts in
+	 * the scope totals but no gas column carries it, so the by-gas table lists
+	 * it on the reconciling row. Derived from the stored columns, never stored.
+	 */
+	public boolean isUnsplit() {
+		return kgCo2e.signum() != 0 && co2Kg.signum() == 0 && ch4Kg.signum() == 0 && n2oKg.signum() == 0
+				&& hfcsKgCo2e.signum() == 0 && pfcsKgCo2e.signum() == 0 && sf6Kg.signum() == 0 && nf3Kg.signum() == 0;
+	}
+
+	/** The line's kg CO2e when it is unsplit, else zero: the CSV column and the reconciling row sum this. */
+	public BigDecimal co2eUnsplitKg() {
+		return isUnsplit() ? kgCo2e : BigDecimal.ZERO;
+	}
+
 	public String getMarketNote() {
 		return marketNote;
 	}
