@@ -56,6 +56,11 @@ export function InventoryFormModal({
   const [copyFromInventoryId, setCopyFromInventoryId] = useState('')
   const inventoriesQuery = useInventoriesQuery(organizationId)
   const periodMonths = wholeMonths(periodStart, periodEnd)
+  // spec 05.4: across approaches the boundary follows from Table 1, not from the source's decisions
+  const source = (inventoriesQuery.data ?? []).find(
+    (candidate) => candidate.id === copyFromInventoryId,
+  )
+  const rebuilds = !!source && source.consolidationApproach !== approach
 
   const errors = fieldErrors(mutation.error)
   const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
@@ -187,6 +192,15 @@ export function InventoryFormModal({
                 </option>
               ))}
             </SelectField>
+            {rebuilds && (
+              <p role="status" className="text-xs text-amber-700">
+                {source.name} is under {approachLabels[source.consolidationApproach].toLowerCase()}.
+                Under {approachLabels[approach].toLowerCase()} the boundary is rebuilt from Table 1:
+                every entity with a share joins with its facilities, the source's computed
+                exclusions are dropped and listed, and leased assignments take their Appendix F
+                scope under this approach. The decisions themselves are kept.
+              </p>
+            )}
             <label className="flex items-start gap-2 text-sm">
               <input
                 type="checkbox"

@@ -1,13 +1,6 @@
 import { GlassCard } from '../../../components/GlassCard'
-import type { GateResult, GateStatus, ValidationReport } from '../api'
-
-const gateLabels: Record<GateResult['gate'], string> = {
-  BOUNDARY: 'Reporting boundary',
-  COMPLETENESS: 'Activity data completeness',
-  CLASSIFICATION: 'Classification',
-  EMISSION_FACTOR: 'Emission factors',
-  BASE_YEAR: 'Base year',
-}
+import { gateLabels } from '../format'
+import type { GateStatus, ValidationReport } from '../api'
 
 const statusStyles: Record<GateStatus, { ring: string; label: string; text: string }> = {
   PASSED: { ring: 'border-teal bg-teal-deep text-white', label: 'PASS', text: 'text-link' },

@@ -243,9 +243,13 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         {company.boundaryVersion ? (
           <>
             <p className="mt-2 text-sm text-ink-muted">
-              Boundary version {company.boundaryVersion.version.versionNo}: the organizational
-              boundary this run computed its accounting shares from, exactly as it stood when frozen
-              (Corporate Standard, chapter 3).
+              Boundary version {company.boundaryVersion.version.versionNo}
+              {report.header.boundaryVersionCount
+                ? ` of ${report.header.boundaryVersionCount}`
+                : ''}
+              : the organizational boundary this run computed its accounting shares from, exactly as
+              it stood when frozen (Corporate Standard, chapter 3). The report version in the header
+              counts corrections, not freezes.
             </p>
             <BoundaryVersionPanel versionId={company.boundaryVersion.version.id} />
           </>
@@ -932,8 +936,14 @@ function ReportHeaderBlock({ header }: { header: Report['header'] }) {
         : 'not published',
     ],
     [
-      'Version',
+      'Report version',
       `${header.version}${header.supersedes.length > 0 ? `, supersedes ${header.supersedes.join(', ')}` : ''}${header.supersededBy ? `; superseded by ${header.supersededBy}` : ''}`,
+    ],
+    [
+      'Final designated',
+      header.finalDesignatedBy
+        ? `by ${header.finalDesignatedBy}${header.finalDesignatedAt ? ` on ${new Date(header.finalDesignatedAt).toLocaleDateString()}` : ''}${header.finalNote ? `: ${header.finalNote}` : ''}`
+        : 'not designated',
     ],
     [
       'Assurance',

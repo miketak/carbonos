@@ -751,6 +751,7 @@ export function useFreezeInventory(inventoryId: string) {
 function useLifecycleMutation<TArgs, TResult>(
   inventoryId: string,
   mutationFn: (args: TArgs) => Promise<TResult>,
+  alsoInvalidate: readonly (readonly unknown[])[] = [],
 ) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -761,12 +762,20 @@ function useLifecycleMutation<TArgs, TResult>(
       void queryClient.invalidateQueries({ queryKey: runsKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: auditEventsKey(inventoryId) })
       void queryClient.invalidateQueries({ queryKey: ['ghg', 'inventories'] })
+      for (const key of alsoInvalidate) {
+        void queryClient.invalidateQueries({ queryKey: key })
+      }
     },
   })
 }
 
+/** Reopening needs a reason (spec 05.5); the superseded version then records who reopened it and why. */
 export function useReopenInventory(inventoryId: string) {
-  return useLifecycleMutation(inventoryId, () => reopenInventory(inventoryId))
+  return useLifecycleMutation(
+    inventoryId,
+    (reason: string) => reopenInventory(inventoryId, reason),
+    [boundaryVersionsKey(inventoryId)],
+  )
 }
 
 export function useWithdrawFinal(inventoryId: string) {
@@ -914,7 +923,9 @@ export function useExecuteRun(inventoryId: string) {
 }
 
 export function useFinalizeRun(inventoryId: string) {
-  return useLifecycleMutation(inventoryId, (runId: string) => finalizeRun(runId))
+  return useLifecycleMutation(inventoryId, ({ runId, note }: { runId: string; note?: string }) =>
+    finalizeRun(runId, note),
+  )
 }
 
 export function useVoidRun(inventoryId: string) {

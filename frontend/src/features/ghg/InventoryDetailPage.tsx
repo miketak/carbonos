@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
-import { InputField } from '../../components/Field'
+import { InputField, TextAreaField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
 import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
@@ -19,7 +19,7 @@ import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
 import { PreflightPanel } from './components/PreflightPanel'
 import { ReportMetadataCard } from './components/ReportMetadataCard'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
-import { formatCo2e } from './format'
+import { approachLabels, exclusionLabels, formatCo2e } from './format'
 import {
   useBoundaryQuery,
   useInheritanceQuery,
@@ -28,10 +28,28 @@ import {
   useExecuteRun,
   useFinalizeRun,
   useInventoryQuery,
+  useOrganizationQuery,
   useRunsQuery,
   useValidationQuery,
 } from './useGhg'
-import type { AuditEvent, Inventory, Run } from './api'
+import type { AuditEvent, DroppedExclusion, Inventory, Organization, Run } from './api'
+
+/** The approve set of spec 01.4: who may designate a final run, publish, or create a correction. */
+const APPROVE_ROLES: ReadonlyArray<Organization['myRole']> = ['REVIEWER', 'OWNER', 'ADMIN']
+const APPROVE_TOOLTIP = 'Needs the Reviewer or Owner role.'
+
+/** "Wassa Gold Associates: Methodology exclusion dropped, 30% equity share under this approach" (spec 05.4). */
+export function describeDroppedExclusion(
+  dropped: DroppedExclusion,
+  approach: Inventory['consolidationApproach'],
+): string {
+  const who = dropped.facilityName ?? dropped.entityName ?? 'an operation'
+  const share =
+    approach === 'EQUITY_SHARE'
+      ? `${dropped.sharePercent}% equity share under this approach`
+      : `${dropped.sharePercent}% share under this approach`
+  return `${who}: ${exclusionLabels[dropped.reason]} dropped, ${share}`
+}
 
 /** One inventory's workspace: lifecycle, boundary, declaration, activity view, instruments, runs. */
 export function InventoryDetailPage() {
@@ -39,6 +57,7 @@ export function InventoryDetailPage() {
   const inventoryQuery = useInventoryQuery(inventoryId)
   const boundaryQuery = useBoundaryQuery(inventoryId)
   const inheritanceQuery = useInheritanceQuery(inventoryId)
+  const organizationQuery = useOrganizationQuery(organizationId)
   const toast = useToast()
   const [editing, setEditing] = useState(false)
 
@@ -66,6 +85,9 @@ export function InventoryDetailPage() {
 
   const inventory = inventoryQuery.data
   const editable = inventory.status === 'DRAFT'
+  // the role is a display concern (spec 01.4): unknown while loading means the server decides
+  const myRole = organizationQuery.data?.myRole ?? null
+  const inheritance = inheritanceQuery.data
   const inBoundaryCount =
     boundaryQuery.data?.reduce(
       (count, entity) => count + entity.facilities.filter((facility) => facility.inBoundary).length,
@@ -113,23 +135,46 @@ export function InventoryDetailPage() {
             </Link>
           </p>
         )}
-        {inheritanceQuery.data && (
+        {inheritance && (
           <p className="mt-1 text-sm text-ink-muted">
             {inventory.correctionReason ? 'Correction of ' : 'View copied from '}
             <Link
-              to={`../${inheritanceQuery.data.sourceInventoryId}`}
+              to={`../${inheritance.sourceInventoryId}`}
               relative="path"
               className="font-semibold text-link"
             >
-              {inheritanceQuery.data.sourceName ?? 'another inventory'}
+              {inheritance.sourceName ?? 'another inventory'}
             </Link>
-            : {inheritanceQuery.data.inherited} decision
-            {inheritanceQuery.data.inherited === 1 ? '' : 's'} inherited
-            {inheritanceQuery.data.undecided > 0
-              ? `, ${inheritanceQuery.data.undecided} record${inheritanceQuery.data.undecided === 1 ? '' : 's'} of this period the source never decided on`
+            : {inheritance.inherited} decision
+            {inheritance.inherited === 1 ? '' : 's'} inherited
+            {inheritance.undecided > 0
+              ? `, ${inheritance.undecided} record${inheritance.undecided === 1 ? '' : 's'} of this period the source never decided on`
               : ''}
             .{inventory.correctionReason ? ` Reason: ${inventory.correctionReason}` : ''}
+            {inheritance.boundaryRebuilt &&
+              ` Boundary rebuilt from Table 1 under ${approachLabels[inventory.consolidationApproach].toLowerCase()}` +
+                (inheritance.leaseRederived > 0
+                  ? `; ${inheritance.leaseRederived} leased assignment${inheritance.leaseRederived === 1 ? '' : 's'} moved scope under Appendix F.`
+                  : '.')}
           </p>
+        )}
+        {inheritance && inheritance.droppedExclusions.length > 0 && editable && (
+          <div className="mt-1 text-sm text-amber-700">
+            <p>
+              {inheritance.droppedExclusions.length} boundary exclusion
+              {inheritance.droppedExclusions.length === 1 ? '' : 's'} of the source{' '}
+              {inheritance.droppedExclusions.length === 1 ? 'was' : 'were'} dropped: the operation
+              holds a share under this approach and joins the boundary. Record a reason again if it
+              should stay out.
+            </p>
+            <ul aria-label="Dropped exclusions" className="list-disc pl-5 text-xs">
+              {inheritance.droppedExclusions.map((dropped) => (
+                <li key={`${dropped.entityId ?? ''}:${dropped.facilityId ?? ''}`}>
+                  {describeDroppedExclusion(dropped, inventory.consolidationApproach)}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         {inventory.status === 'PUBLISHED' && (
           <p className="mt-1 text-sm text-amber-700">
@@ -175,7 +220,7 @@ export function InventoryDetailPage() {
         />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 6 } as CSSProperties}>
-        <LaunchSection inventory={inventory} />
+        <LaunchSection inventory={inventory} myRole={myRole} />
       </div>
     </div>
   )
@@ -183,7 +228,13 @@ export function InventoryDetailPage() {
 
 // --- launch + runs -----------------------------------------------------------
 
-function LaunchSection({ inventory }: { inventory: Inventory }) {
+function LaunchSection({
+  inventory,
+  myRole,
+}: {
+  inventory: Inventory
+  myRole: Organization['myRole']
+}) {
   const inventoryId = inventory.id
   const validationQuery = useValidationQuery(inventoryId)
   const runsQuery = useRunsQuery(inventoryId)
@@ -199,10 +250,14 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
   const label = customLabel ?? `Run ${String(nextRunNo).padStart(3, '0')}`
   const [voiding, setVoiding] = useState<Run | null>(null)
   const [voidReason, setVoidReason] = useState('')
+  // spec 05.5: the final designation is confirmed, names the run and its total, and takes a review note
+  const [finalizing, setFinalizing] = useState<Run | null>(null)
+  const [finalNote, setFinalNote] = useState('')
 
   const report = validationQuery.data
   const canDesignate = inventory.status === 'FROZEN' || inventory.status === 'FINAL'
   const canVoid = inventory.status !== 'PUBLISHED'
+  const mayApprove = myRole === null || APPROVE_ROLES.includes(myRole)
 
   return (
     <div className="grid items-start gap-6 xl:grid-cols-2">
@@ -297,16 +352,21 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
                   <Button
                     variant="ghost"
                     className="px-2 py-1 text-xs"
-                    onClick={() =>
-                      finalize.mutate(run.id, {
-                        onSuccess: () => toast(`${run.label} designated final.`),
-                        onError: (error) =>
-                          toast(problemDetail(error) ?? 'Could not finalize.', 'error'),
-                      })
-                    }
+                    disabled={!mayApprove}
+                    title={mayApprove ? undefined : APPROVE_TOOLTIP}
+                    aria-describedby={mayApprove ? undefined : `final-role-${run.id}`}
+                    onClick={() => {
+                      setFinalNote('')
+                      setFinalizing(run)
+                    }}
                   >
                     Mark as final
                   </Button>
+                )}
+                {!mayApprove && run.id !== inventory.finalRunId && canDesignate && !run.voided && (
+                  <span id={`final-role-${run.id}`} className="sr-only">
+                    {APPROVE_TOOLTIP}
+                  </span>
                 )}
                 {canVoid && !run.voided && run.id !== inventory.finalRunId && (
                   <Button
@@ -326,6 +386,55 @@ function LaunchSection({ inventory }: { inventory: Inventory }) {
         </ul>
         <HistoryList events={eventsQuery.data ?? []} />
       </GlassCard>
+
+      {finalizing && (
+        <Modal title={`Mark ${finalizing.label} as final?`} onClose={() => setFinalizing(null)}>
+          <p className="text-sm text-ink-muted">
+            Run #{String(finalizing.runNo).padStart(3, '0')} ({formatCo2e(finalizing.totalKgCo2e)})
+            becomes this inventory's final run: the report and the base year attach to it, and the
+            inventory can be published. The designation, your name and your note are recorded in the
+            history and printed in the report header.
+          </p>
+          <div className="mt-4">
+            <TextAreaField
+              label="Review note (optional)"
+              placeholder="What the review checked, for example: reconciled against the fuel ledger"
+              value={finalNote}
+              onChange={(event) => setFinalNote(event.target.value)}
+              maxLength={500}
+              rows={3}
+              hint={`${finalNote.length}/500 characters`}
+            />
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setFinalizing(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              busy={finalize.isPending}
+              onClick={() =>
+                finalize.mutate(
+                  {
+                    runId: finalizing.id,
+                    note: finalNote.trim() === '' ? undefined : finalNote.trim(),
+                  },
+                  {
+                    onSuccess: () => {
+                      toast(`${finalizing.label} designated final.`)
+                      setFinalizing(null)
+                    },
+                    onError: (error) =>
+                      toast(problemDetail(error) ?? 'Could not finalize.', 'error'),
+                  },
+                )
+              }
+            >
+              Mark as final
+            </Button>
+          </div>
+        </Modal>
+      )}
 
       {voiding && (
         <Modal title={`Void ${voiding.label}?`} onClose={() => setVoiding(null)}>

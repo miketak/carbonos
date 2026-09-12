@@ -414,7 +414,11 @@ function BoundaryHistory({ inventoryId }: { inventoryId: string }) {
   if (versions.length === 0) return null
   return (
     <div className="mt-6 border-t border-teal/10 pt-4">
-      <h3 className="text-sm font-semibold">Version history</h3>
+      <h3 className="text-sm font-semibold">Boundary version history</h3>
+      <p className="text-xs text-ink-muted">
+        One boundary version per freeze (the report version counts corrections, spec 07.4). A
+        version superseded by a reopen says who reopened it and why.
+      </p>
       <ul className="mt-2 flex flex-col gap-2">
         {versions.map((version) => (
           <li key={version.id}>
@@ -424,11 +428,17 @@ function BoundaryHistory({ inventoryId }: { inventoryId: string }) {
               onClick={() => setOpenId(openId === version.id ? null : version.id)}
               className="w-full rounded-lg px-2 py-1 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
             >
-              <span className="font-mono font-semibold">v{version.versionNo}</span> ·{' '}
-              {describeFreeze(version)} · {version.entityCount}{' '}
+              <span className="font-mono font-semibold">Boundary version {version.versionNo}</span>{' '}
+              · {describeFreeze(version)} · {version.entityCount}{' '}
               {version.entityCount === 1 ? 'entity' : 'entities'}, {version.facilityCount}{' '}
               {version.facilityCount === 1 ? 'facility' : 'facilities'}
             </button>
+            {version.reopenedAt && (
+              <p className="px-2 text-xs text-ink-muted">
+                Reopened by {version.reopenedBy ?? 'unknown'} on{' '}
+                {new Date(version.reopenedAt).toLocaleString()}: {version.reopenReason}
+              </p>
+            )}
             {openId === version.id && <BoundaryVersionPanel versionId={version.id} />}
           </li>
         ))}
