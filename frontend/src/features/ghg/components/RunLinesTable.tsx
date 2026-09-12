@@ -54,6 +54,17 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
                     {leaseLabels[line.leaseType]}
                   </span>
                 )}
+                {/* spec 04.7: a line an upstream rule derived, and the line it rides on */}
+                {line.derivedKind !== null && (
+                  <span className="mt-0.5 block">
+                    <span className="inline-block rounded-full bg-teal/15 px-1.5 text-xs font-semibold text-dark-teal">
+                      Derived line
+                    </span>
+                    {line.derivedNote && (
+                      <span className="block text-xs text-ink-muted">{line.derivedNote}</span>
+                    )}
+                  </span>
+                )}
                 {/* spec 02.4: no scope total includes this line; the report discloses it apart */}
                 {line.reportingBasis === 'OUTSIDE_SCOPES_NON_KYOTO' && (
                   <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">

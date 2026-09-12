@@ -165,6 +165,7 @@ const report: Report = {
     assessmentReports: ['AR5'],
     multipleAssessmentReports: false,
     statement: 'Emissions were calculated as activity data multiplied by an emission factor.',
+    upstreamRules: [],
   },
   boundaryExclusions: [
     {
@@ -191,6 +192,8 @@ const report: Report = {
       exclusionDetail: null,
       exclusionJustification: 'emulsion explosive: no published factor; ANFO study pending',
       estimatedKgCo2e: 8400,
+      estimateState: 'ESTIMATED',
+      gas: null,
     },
     {
       id: 'ex-2',
@@ -206,6 +209,8 @@ const report: Report = {
       exclusionDetail: 'Sankofa Gold plc: member from 2025-07-01',
       exclusionJustification: null,
       estimatedKgCo2e: null,
+      estimateState: null,
+      gas: null,
     },
   ],
   lines: [
@@ -274,6 +279,9 @@ const report: Report = {
       marketBalanceKwh: null,
       marketBalanceKgCo2ePerKwh: null,
       marketBalanceBasis: null,
+      derivedFromLineId: null,
+      derivedKind: null,
+      derivedNote: null,
     },
   ],
   header: {
@@ -365,6 +373,8 @@ const report: Report = {
       estimatedKgCo2e: 8400,
       estimatedTCo2e: 8.4,
       unestimatedCount: 0,
+      estimatedCount: 1,
+      emitsNothingCount: 0,
     },
     {
       reason: 'OUTSIDE_BOUNDARY',
@@ -372,6 +382,8 @@ const report: Report = {
       estimatedKgCo2e: 0,
       estimatedTCo2e: 0,
       unestimatedCount: 1,
+      estimatedCount: 0,
+      emitsNothingCount: 0,
     },
   ],
   dataQuality: {
@@ -917,4 +929,134 @@ test('a verifier still gets every download and export link, and the page offers 
   )
   // the report is a read: it carries no write or lifecycle control for any role to be gated on
   expect(screen.queryAllByRole('button')).toHaveLength(0)
+})
+
+test('a derived category 3 line names the line it rides on (spec 04.7)', async () => {
+  const primary = report.lines[0]
+  vi.mocked(getReport).mockResolvedValue({
+    ...report,
+    lines: [
+      primary,
+      {
+        ...primary,
+        id: 'line-2',
+        factorName: 'Well-to-tank diesel',
+        scope: 'SCOPE_3',
+        category: 'FUEL_ENERGY_RELATED',
+        kgCo2e: 600,
+        derivedFromLineId: primary.id,
+        derivedKind: 'WELL_TO_TANK',
+        derivedNote: 'well-to-tank of ACT-0001 Diesel consumption',
+      },
+    ],
+    methodology: {
+      ...report.methodology,
+      upstreamRules: [
+        {
+          primaryFactorName: 'Diesel',
+          upstreamFactorName: 'Well-to-tank diesel',
+          kind: 'WELL_TO_TANK',
+          lineCount: 1,
+        },
+      ],
+    },
+  })
+  renderRunDetailPage()
+
+  expect(await screen.findByText('Derived line')).toBeInTheDocument()
+  expect(screen.getByText('well-to-tank of ACT-0001 Diesel consumption')).toBeInTheDocument()
+  const rules = screen.getByText('Upstream rules (category 3)').nextElementSibling!
+  expect(rules.textContent?.replace(/\s+/g, ' ')).toContain(
+    'Diesel → Well-to-tank diesel (well-to-tank, 1 line)',
+  )
+})
+
+test('an exclusion nobody sized reads as not estimated, never as a zero (spec 04.8)', async () => {
+  vi.mocked(getReport).mockResolvedValue({
+    ...report,
+    exclusions: [
+      {
+        ...report.exclusions[0],
+        estimatedKgCo2e: null,
+        estimateState: 'NOT_ESTIMATED',
+      },
+      {
+        ...report.exclusions[0],
+        id: 'ex-3',
+        activityType: 'Fleet diesel (duplicate entry)',
+        exclusionReason: 'DUPLICATE',
+        exclusionJustification: 'counted under the March fleet diesel record',
+        estimatedKgCo2e: 0,
+        estimateState: 'EMITS_NOTHING',
+      },
+      {
+        ...report.exclusions[0],
+        id: 'ex-4',
+        activityType: 'R-22 top-up',
+        exclusionReason: 'OUTSIDE_SCOPES_NON_KYOTO',
+        exclusionJustification: 'HCFC-22 is a Montreal Protocol gas, reported outside the scopes',
+        estimatedKgCo2e: null,
+        estimateState: null,
+        gas: 'HCFC-22',
+      },
+    ],
+    exclusionSummary: [
+      {
+        reason: 'METHODOLOGY',
+        recordCount: 1,
+        estimatedKgCo2e: 0,
+        estimatedTCo2e: 0,
+        unestimatedCount: 1,
+        estimatedCount: 0,
+        emitsNothingCount: 0,
+      },
+      {
+        reason: 'DUPLICATE',
+        recordCount: 1,
+        estimatedKgCo2e: 0,
+        estimatedTCo2e: 0,
+        unestimatedCount: 0,
+        estimatedCount: 0,
+        emitsNothingCount: 1,
+      },
+      {
+        reason: 'OUTSIDE_SCOPES_NON_KYOTO',
+        recordCount: 1,
+        estimatedKgCo2e: 0,
+        estimatedTCo2e: 0,
+        unestimatedCount: 0,
+        estimatedCount: 0,
+        emitsNothingCount: 0,
+      },
+    ],
+    outsideScopes: [
+      {
+        gas: 'HCFC-22',
+        kg: 85,
+        basis: 'RECORDED_MASS',
+        kgCo2eInformational: null,
+        informationalGwpSource: null,
+        factorName: null,
+        recordRefs: ['ACT-0001'],
+      },
+    ],
+  })
+  renderRunDetailPage()
+
+  const summary = await screen.findByRole('table', { name: 'Exclusions by reason' })
+  expect(within(summary).getByText('1 not estimated')).toBeInTheDocument()
+  expect(within(summary).getByText('1 emits nothing')).toBeInTheDocument()
+  expect(
+    within(summary).getByText('see Gases outside the scopes (Montreal Protocol)'),
+  ).toBeInTheDocument()
+  expect(within(summary).queryByText('0 kg CO₂e')).not.toBeInTheDocument()
+  // the record's own row says so in words, and the mass sits in the block of spec 02.4
+  expect(screen.getByText('not estimated')).toBeInTheDocument()
+  expect(screen.getByText('emits nothing')).toBeInTheDocument()
+  const row = screen
+    .getAllByText('HCFC-22')
+    .map((node) => node.closest('tr'))
+    .find((candidate) => candidate?.textContent?.includes('Recorded mass'))!
+  expect(row).toHaveTextContent('85 kg')
+  expect(row).toHaveTextContent('not quantified')
 })

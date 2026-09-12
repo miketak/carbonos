@@ -12,6 +12,13 @@ export type ExclusionReason =
   | 'METHODOLOGY'
   | 'OTHER'
   | 'RECORD_REMOVED'
+  | 'OUTSIDE_SCOPES_NON_KYOTO'
+
+/** What a manual exclusion says about the emissions it leaves out (spec 04.8). */
+export type ExclusionEstimateState = 'ESTIMATED' | 'EMITS_NOTHING' | 'NOT_ESTIMATED'
+
+/** The kind of upstream emissions a rule derives for category 3 (spec 04.7). */
+export type UpstreamRuleKind = 'WELL_TO_TANK' | 'TRANSMISSION_AND_DISTRIBUTION'
 export type ValidationGate =
   'BOUNDARY' | 'COMPLETENESS' | 'CLASSIFICATION' | 'EMISSION_FACTOR' | 'BASE_YEAR'
 export type Dimension =
@@ -522,7 +529,30 @@ export interface ActivityInput {
 export interface ExcludeInput {
   reason: ExclusionReason
   justification?: string
+  /** A positive number, or 0 together with emitsNothing; omitted for 'Not estimated' (spec 04.8). */
   estimatedKgCo2e?: number
+  notEstimated?: boolean
+  emitsNothing?: boolean
+  /** The gas a record excluded as a Montreal Protocol gas holds (spec 04.8). */
+  gas?: string
+}
+
+/** A rule that derives category 3 lines from the lines a primary factor produces (spec 04.7). */
+export interface UpstreamRule {
+  id: string
+  primaryFactorId: string
+  primaryFactorName: string
+  upstreamFactorId: string
+  upstreamFactorName: string
+  kind: UpstreamRuleKind
+  /** How many included scope 1 or scope 2 records the rule derives a line from. */
+  matchingLines: number
+}
+
+export interface UpstreamRuleInput {
+  primaryFactorId: string
+  upstreamFactorId: string
+  kind: UpstreamRuleKind
 }
 
 export interface Inventory {
@@ -788,6 +818,10 @@ export interface Assignment {
   /** A manual exclusion's justification and the emissions it leaves out (spec 04.4). */
   exclusionJustification: string | null
   estimatedKgCo2e: number | null
+  /** Sized, stated to emit nothing, or not estimated; null for a computed reason (spec 04.8). */
+  estimateState: ExclusionEstimateState | null
+  /** The Montreal Protocol gas the record holds, when that is the reason (spec 04.8). */
+  gas: string | null
   classified: boolean
   scope: GhgScope | null
   category: ActivityCategory | null
@@ -970,6 +1004,10 @@ export interface RunLine {
   marketBalanceKwh: number | null
   marketBalanceKgCo2ePerKwh: number | null
   marketBalanceBasis: Scope2MarketBasis | null
+  /** The primary line a derived category 3 line rides on (spec 04.7); null on a primary line. */
+  derivedFromLineId: string | null
+  derivedKind: UpstreamRuleKind | null
+  derivedNote: string | null
 }
 
 /** An assignment a run left out, with the activity's facts and the documented reason (spec 05.1). */
@@ -987,6 +1025,9 @@ export interface RunExclusion {
   exclusionDetail: string | null
   exclusionJustification: string | null
   estimatedKgCo2e: number | null
+  /** Sized, stated to emit nothing, or not estimated; null for a computed reason (spec 04.8). */
+  estimateState: ExclusionEstimateState | null
+  gas: string | null
 }
 
 /** One recorded act on an inventory (spec 05.2). */
@@ -1411,6 +1452,13 @@ export interface Report {
     assessmentReports: string[]
     multipleAssessmentReports: boolean
     statement: string
+    /** The upstream rules the run applied, read back from the lines they derived (spec 04.7). */
+    upstreamRules: {
+      primaryFactorName: string
+      upstreamFactorName: string
+      kind: UpstreamRuleKind
+      lineCount: number
+    }[]
   }
   /** Operations left out of the boundary, as the version froze them (spec 07.2). */
   boundaryExclusions: BoundaryExclusionEntry[]
@@ -1465,6 +1513,9 @@ export interface Report {
     estimatedKgCo2e: number
     estimatedTCo2e: number
     unestimatedCount: number
+    /** How many records carry each of the three answers of spec 04.8. */
+    estimatedCount: number
+    emitsNothingCount: number
   }[]
   /** The share of each scope resting on each data quality tier (spec 04.4). */
   dataQuality: {
@@ -2189,6 +2240,28 @@ export function setResidualMix(inventoryId: string, input: ResidualMixInput): Pr
   return api<Inventory>(`/api/ghg/inventories/${inventoryId}/residual-mix`, {
     method: 'PUT',
     body: JSON.stringify(input),
+  })
+}
+
+// --- upstream rules (spec 04.7) -------------------------------------------------
+
+export function listUpstreamRules(inventoryId: string): Promise<UpstreamRule[]> {
+  return api<UpstreamRule[]>(`/api/ghg/inventories/${inventoryId}/upstream-rules`)
+}
+
+export function addUpstreamRule(
+  inventoryId: string,
+  input: UpstreamRuleInput,
+): Promise<UpstreamRule> {
+  return api<UpstreamRule>(`/api/ghg/inventories/${inventoryId}/upstream-rules`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function removeUpstreamRule(inventoryId: string, ruleId: string): Promise<void> {
+  return api<void>(`/api/ghg/inventories/${inventoryId}/upstream-rules/${ruleId}`, {
+    method: 'DELETE',
   })
 }
 
