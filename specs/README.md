@@ -20,8 +20,8 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 02 | [Organization and facts](02-organization-and-facts.md) | Ch. 6, 7 | Implemented |
 | 02.1 | [Emission factor library, provenance and packs](02.1-emission-factor-library.md) | Ch. 6, 9, Scope 2 Guidance | Implemented |
 | 02.2 | [Units, densities, and custom units](02.2-units-densities-and-custom-units.md) | Ch. 6, 7 | Implemented |
-| 02.3 | [Factor identity across packs](02.3-factor-identity-across-packs.md) | Ch. 1, 7, 9 | Approved |
-| 02.4 | [Sector pack completeness: gases as themselves, flaring, Montreal Protocol gases, purchased goods](02.4-sector-pack-completeness.md) | Ch. 4, 6, 9, Scope 3 Standard cat. 1 | Approved |
+| 02.3 | [Factor identity across packs](02.3-factor-identity-across-packs.md) | Ch. 1, 7, 9 | Implemented |
+| 02.4 | [Sector pack completeness: gases as themselves, flaring, Montreal Protocol gases, purchased goods](02.4-sector-pack-completeness.md) | Ch. 4, 6, 9, Scope 3 Standard cat. 1 | Implemented |
 | 03 | [Organizational boundary](03-organizational-boundary.md) | Ch. 3 | Implemented |
 | 03.1 | [Legal entities and Table 1](03.1-legal-entities-and-table-1.md) | Ch. 3 | Implemented |
 | 03.2 | [Effective-dated membership](03.2-effective-dated-membership.md) | Ch. 3, 5 | Implemented |
@@ -59,7 +59,7 @@ A chapter spec (`NN`) describes one stage of the workflow as it is today. A
 sub-spec (`NN.M`) is a branch of that stage that deserves its own document.
 Every spec listed is implemented as of 2026-09-09, except the sub-specs
 from the audit of 2026-09-11 that the table still marks `Approved`; 01.3,
-01.4, 07.7 and 07.8 were implemented on 2026-09-12. Sub-specs 03.3, 06.1 and
+01.4, 02.3, 02.4, 05.4, 05.5, 07.7 and 07.8 were implemented on 2026-09-12. Sub-specs 03.3, 06.1 and
 07.2 come from a conformance review of the set against the Standard on
 2026-09-08; the conformance table in spec 00 records what each closed.
 Sub-specs from 07.3 onward close tickets of the GHG officer audit backlog in

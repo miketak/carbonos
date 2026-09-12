@@ -52,6 +52,27 @@ This guide adds one migration and proves it.
    real rows before it deploys. CI runs migrations on an empty database
    only, so it cannot catch a data-dependent mistake.
 
+    Copy the seeded local database inside the container, apply the
+    migrations it has not seen in order, then the one you wrote:
+
+    ```bash
+    docker compose exec -T postgres createdb -U carbonos -T carbonos carbonos_replay
+    docker compose exec -T postgres psql -U carbonos -d carbonos_replay -v ON_ERROR_STOP=1 \
+        -f - < backend/src/main/resources/db/migration/V41__your_migration.sql
+    ```
+
+    Count the rows the migration touches before and after, and check every
+    assertion the spec makes about what the rewrite must produce: the rows
+    that survive, the foreign keys that were re-pointed, and the figures
+    that must not move. Report the counts, not just that it ran. Then
+    `docker compose exec -T postgres dropdb -U carbonos carbonos_replay`.
+
+    `psql -f` runs each statement in its own transaction while Flyway wraps
+    the whole file in one, so a temporary table declared `ON COMMIT DROP`
+    disappears between statements on replay. Drop such a table explicitly
+    at the end of the migration instead; it then behaves the same either
+    way.
+
 ## Rules that never bend
 
 - Never edit a migration that has been applied anywhere. Add a new one.

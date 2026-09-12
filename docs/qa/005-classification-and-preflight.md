@@ -80,9 +80,18 @@ imported in procedure 2, **Refrigerant R-407C leakage**.
 
 To classify a record, click **Choose factor…** on its row (**Change
 factor…** once a factor is chosen), narrow the list with the search box and
-pick the factor. The row then prints the factor with its unit, its pack tag
-when a pack delivered it and "not approved" when it is not, and the scope,
-category and lease controls appear under it.
+click the factor. The row then prints the factor with its unit, a tag for
+every pack that delivered it and "not approved" when it is not, and the
+scope, category and lease controls appear under it.
+
+### B0. What the picker shows
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Open the picker on R1 (haul fleet diesel) and read it before typing anything. | The options are grouped, **This organization** first and **Shared library** after it. Each option prints the factor name and its unit on one line, then the publication with its years and the pack tags in a muted line under it, for example "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file: Fuels / Liquid fuels / Diesel (100% mineral diesel) (published 2026, data year 2026) · sector-mining". | | |
+| 2 | Look for the derived Ghana T&D loss factor, which is not approved. | It is not listed, and the checkbox reads **Show unapproved** with a count of the rows it hides. | | |
+| 3 | Tick **Show unapproved**. | The unapproved rows appear, each with an **unapproved** mark beside its name, so nothing can be picked without seeing that it is unapproved. | | |
+| 4 | Type `sector-mining` in the search box. | The list narrows to rows that pack delivered: the search covers the pack tag as well as the name and the publication. Clear it before classifying. | | |
 
 ### B1. A stream sets the default and a contractor lands in scope 3
 

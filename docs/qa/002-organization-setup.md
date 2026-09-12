@@ -169,17 +169,28 @@ its boundary, refuses removal; procedure 3 checks the first.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Import the **Sector pack: mining (Ghana and West Africa)** pack (the Import pack button on its card; the button's accessible name carries the pack's name). | The import reports "53 factors added, 0 updated". The organization's factors now include refrigerants with a blend composition, diesel per tonne and per litre, explosives, and the Ghana grid by year, each with its citation and URL. One row, the derived Ghana T&D loss factor, arrives **Not approved** with an Approve button; leave it. | | |
-| 2 | Import it again. | The second import reports "0 factors added, 53 updated". | | |
+| 1 | Import the **Sector pack: mining (Ghana and West Africa)** pack (the Import pack button on its card; the button's accessible name carries the pack's name). | The import reports "56 factors added, 0 updated, 0 already held from another pack and tagged". The organization's factors now include refrigerants with a blend composition, diesel per tonne and per litre, explosives, and the Ghana grid by year, each citing the publication it comes from (not the pack) with its URL. Six rows arrive **Not approved** with an Approve button: the derived Ghana T&D loss factor, the four supplier-factor templates (quicklime, cement, sodium cyanide, grinding media) and the land-clearing row. Leave them. | | |
+| 2 | Import it again. | The second import reports "0 factors added, 56 updated, 0 already held from another pack and tagged". | | |
+| 3 | Read the **Packs** column of any imported row, and its **Source and vintage** column. | The pack tag sits in the Packs column on its own; the Source column names the publication, for example "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use): Volume 3, Chapter 2, Table 2.4 ...", published 2006, not the sector pack or the year 2026. | | |
+| 4 | Read the row **HCFC-22 (R-22)**. | Under the name it says "Outside the scopes (Montreal Protocol, not a Kyoto gas)". | | |
 
-Every other pack is importable too; do not import them, or the factor
+### F2a. A second pack tags a row it shares, it never copies it
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Import **Refrigerants and other fluorinated gases (EPA Hub, IPCC AR5)**. | The import reports rows added and a non-zero count for "already held from another pack and tagged": the refrigerant rows the mining pack delivered are tagged, not copied. | | |
+| 2 | Search the factor table for **Refrigerant R-410A leakage**. | Exactly one row carries that name among the organization's own factors, and its Packs column lists both `refrigerants-ar5` and `sector-mining`. | | |
+
+Then remove nothing: the rest of procedure 2 and procedure 5 expect both
+packs. Every other pack is importable too; do not import them, or the factor
 pickers of procedure 5 fill with rows the cases do not name.
 
 ### F3. An organization's own factor with provenance
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Add a factor **Emulsion explosive (supplier)**: scope 1 process emissions, per tonne, 170 kg CO2e, source "Supplier technical data sheet 2025", data year 2025, valid from 2025-01-01, **not approved**. | The factor is listed as the organization's own without the **Approved** badge, because **Approved for use in runs** was left unticked. | | |
+| 1 | Add a factor **Emulsion explosive (supplier)**: scope 1 process emissions, per tonne, 170 kg CO2e, source "Supplier technical data sheet 2025", data year 2025, valid from 2025-01-01, leaving **Reporting basis** on "Counted in the scopes", **not approved**. | The factor is listed as the organization's own without the **Approved** badge, because **Approved for use in runs** was left unticked. Its Packs column reads "entered by hand". | | |
+| 2 | Open **Add factor** again and read the **Reporting basis** field. | It offers "Counted in the scopes" and "Outside the scopes (Montreal Protocol, not a Kyoto gas)", with a note that Chapter 4 counts the seven Kyoto gas groups and that a Montreal Protocol gas is reported separately. Cancel without saving. | | |
 
 Procedure 5 shows the gate refusing it until it is approved.
 
