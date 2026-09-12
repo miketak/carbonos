@@ -17,9 +17,9 @@ public interface OrganizationRepository extends JpaRepository<Organization, UUID
 	@Query("select o from Organization o where o.id = :id")
 	Optional<Organization> lockById(UUID id);
 
-	boolean existsByNameIgnoreCase(String name);
+	/** Whether a live organization carries the name; a removed one has released it (spec 01.3). */
+	boolean existsByNameIgnoreCaseAndDeletedAtIsNull(String name);
 
-	List<Organization> findAllByOrderByCreatedAtAsc();
-
-	List<Organization> findAllByOwnerUserIdOrderByCreatedAtAsc(UUID ownerUserId);
+	/** Every live organization, for the administrators' support list (spec 01.3). */
+	List<Organization> findAllByDeletedAtIsNullOrderByCreatedAtAsc();
 }

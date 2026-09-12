@@ -35,6 +35,11 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Member", id);
 	}
 
+	static GhgNotFoundException supportAccess(UUID organizationId) {
+		return new GhgNotFoundException("Support access", organizationId,
+				"is not held on organization " + organizationId);
+	}
+
 	static GhgNotFoundException pack(String id) {
 		return new GhgNotFoundException("Factor pack", null, id);
 	}

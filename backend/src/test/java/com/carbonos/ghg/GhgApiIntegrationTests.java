@@ -110,6 +110,9 @@ class GhgApiIntegrationTests {
 	@Autowired
 	org.springframework.jdbc.core.JdbcTemplate jdbc;
 
+	@Autowired
+	com.carbonos.ghg.internal.SupportAccessService supportAccessService;
+
 	@BeforeEach
 	void resetGhgData() {
 		baseYears.deleteAll();
@@ -143,6 +146,11 @@ class GhgApiIntegrationTests {
 
 	RequestPostProcessor asAdmin() {
 		return user(new AuthenticatedUser(UUID.randomUUID(), "ama@ecoriv.com", "irrelevant", "ADMIN", true));
+	}
+
+	/** A real platform administrator account, so support access can resolve its email (spec 01.3). */
+	RequestPostProcessor asAdmin(com.carbonos.user.internal.User account) {
+		return user(new AuthenticatedUser(account.getId(), account.getEmail(), "irrelevant", "ADMIN", true));
 	}
 
 	// --- helpers ------------------------------------------------------------
@@ -1255,9 +1263,9 @@ class GhgApiIntegrationTests {
 					{"reason": "Stranger void"}"""))
 			.andExpect(status().isNotFound());
 
-		// platform admins retain oversight
-		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asAdmin())).andExpect(status().isOk());
-		mvc.perform(get("/api/ghg/runs/" + runId).with(asAdmin())).andExpect(status().isOk());
+		// a platform administrator is an outsider too, until support access is assumed (spec 01.3)
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asAdmin())).andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/runs/" + runId).with(asAdmin())).andExpect(status().isNotFound());
 	}
 
 	// --- audit-trail guards (TRACE-01/02) ------------------------------------
@@ -3145,6 +3153,212 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isNoContent());
 		mvc.perform(get("/api/ghg/organizations/" + orgId).with(as(abena))).andExpect(status().isNotFound());
 	}
+
+	// --- organization confidentiality, support access and deletion (spec 01.3) ---
+
+	@Test
+	void anAdministratorIsAnOutsiderUntilSupportAccessIsAssumed() throws Exception {
+		var admin = userService.create("support@ecoriv.com", "Ama Support",
+				com.carbonos.user.internal.UserRole.ADMIN, "support-passw0rd");
+		var orgId = createOrganization("Sankofa Gold plc");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
+		var inventoryId = createInventory(orgId, "FY2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+
+		// an administrator who is not a member is an outsider: nothing listed, 404 everywhere
+		mvc.perform(get("/api/ghg/organizations").with(asAdmin(admin))).andExpect(jsonPath("$.length()").value(0));
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asAdmin(admin))).andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asAdmin(admin)))
+			.andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/members").with(asAdmin(admin)))
+			.andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asAdmin(admin))).andExpect(status().isNotFound());
+
+		// the administrators' list finds it: owners and member count, no inventory data
+		mvc.perform(get("/api/admin/organizations").with(asMember())).andExpect(status().isForbidden());
+		mvc.perform(get("/api/admin/organizations").with(asAdmin(admin)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].name").value("Sankofa Gold plc"))
+			.andExpect(jsonPath("$[0].ownerEmails[0]").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$[0].memberCount").value(1))
+			.andExpect(jsonPath("$[0].facilityCount").doesNotExist());
+
+		// assuming access needs a reason, and is an administrator's act
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/support-access").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "ticket 4512: preparer cannot open the run"}"""))
+			.andExpect(status().isForbidden());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/support-access").with(asAdmin(admin)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "ticket"}"""))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.reason").value("Give a reason of at least 10 characters."));
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/support-access").with(asAdmin(admin)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "ticket 4512: preparer cannot open the run"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.adminEmail").value("support@ecoriv.com"))
+			.andExpect(jsonPath("$.reason").value("ticket 4512: preparer cannot open the run"))
+			.andExpect(jsonPath("$.expiresAt").exists());
+
+		// the organization is now the administrator's to work in, with ADMIN as the role
+		mvc.perform(get("/api/ghg/organizations").with(asAdmin(admin)))
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].myRole").value("ADMIN"));
+		mvc.perform(get("/api/admin/organizations").with(asAdmin(admin)))
+			.andExpect(jsonPath("$[0].supportAccess.reason").value("ticket 4512: preparer cannot open the run"));
+		// the owners read who holds it and why on their overview
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asMember()))
+			.andExpect(jsonPath("$.myRole").value("OWNER"))
+			.andExpect(jsonPath("$.supportAccess[0].adminEmail").value("support@ecoriv.com"))
+			.andExpect(jsonPath("$.supportAccess[0].reason").value("ticket 4512: preparer cannot open the run"));
+
+		// an act under support access is the administrator's own, marked as such
+		var assignment = syncAndGetAssignmentId(inventoryId, diesel);
+		mvc.perform(put("/api/ghg/assignments/" + assignment + "/classify").with(asAdmin(admin)).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s"}""".formatted(DIESEL_FACTOR)))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.action == 'CLASSIFIED')].actor")
+				.value(org.hamcrest.Matchers.hasItem("support@ecoriv.com")))
+			.andExpect(jsonPath("$[?(@.action == 'CLASSIFIED')].reason")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("under support access"))));
+
+		// support access never grants deletion or membership changes
+		mvc.perform(delete("/api/ghg/organizations/" + orgId).with(asAdmin(admin)).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Sankofa Gold plc", "reason": "tidying the tenant up after the case"}"""))
+			.andExpect(status().isForbidden());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asAdmin(admin)).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "support@ecoriv.com", "role": "PREPARER"}"""))
+			.andExpect(status().isForbidden());
+
+		// the organization's own history carries the grant
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("ADMIN_ACCESS_ASSUMED"))
+			.andExpect(jsonPath("$[0].actor").value("support@ecoriv.com"))
+			.andExpect(jsonPath("$[0].reason").value("ticket 4512: preparer cannot open the run"));
+
+		// ending it makes the administrator an outsider again
+		mvc.perform(delete("/api/ghg/organizations/" + orgId + "/support-access").with(asAdmin(admin)).with(csrf()))
+			.andExpect(status().isNoContent());
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asAdmin(admin))).andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations").with(asAdmin(admin))).andExpect(jsonPath("$.length()").value(0));
+		mvc.perform(delete("/api/ghg/organizations/" + orgId + "/support-access").with(asAdmin(admin)).with(csrf()))
+			.andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("ADMIN_ACCESS_ENDED"));
+
+		// an expired grant behaves as an ended one, and the expiry is recorded
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/support-access").with(asAdmin(admin)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "ticket 4602: second look at the frozen run"}"""))
+			.andExpect(status().isCreated());
+		jdbc.update("update ghg_support_access set expires_at = now() - interval '1 minute' where ended_at is null");
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asAdmin(admin))).andExpect(status().isNotFound());
+		supportAccessService.expireGrants();
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("ADMIN_ACCESS_EXPIRED"))
+			.andExpect(jsonPath("$[0].actor").value("support@ecoriv.com"));
+
+		// a member has no need of support access
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "support@ecoriv.com", "role": "VERIFIER"}"""))
+			.andExpect(status().isCreated());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/support-access").with(asAdmin(admin)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "ticket 4701: the same case reopened"}"""))
+			.andExpect(status().isConflict());
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asAdmin(admin)))
+			.andExpect(jsonPath("$.myRole").value("VERIFIER"));
+	}
+
+	@Test
+	void anOrganizationWithAPublishedInventoryCannotBeDeleted() throws Exception {
+		var adjoa = userService.create("adjoa@tenant.test", "Adjoa Mensah",
+				com.carbonos.user.internal.UserRole.MEMBER, "analyst-passw0rd");
+		var orgId = createOrganization("Asante Gold Resources Ltd");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
+		var inventoryId = createInventory(orgId, "FY2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+
+		// the published record stands in the way, and the problem detail names it
+		mvc.perform(delete("/api/ghg/organizations/" + orgId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Asante Gold Resources Ltd", "reason": "test tenant created for the walkthrough"}"""))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.title").value("Organization cannot be deleted"))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("FY2025 Corporate: Published")))
+			.andExpect(jsonPath("$.blockingInventories[0].name").value("FY2025 Corporate"))
+			.andExpect(jsonPath("$.blockingInventories[0].status").value("PUBLISHED"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asMember())).andExpect(status().isOk());
+
+		// a draft-only organization: only an owner deletes it, and only by typing its name and a reason
+		var tenantId = createOrganization("Walkthrough Tenant");
+		var temaPlant = createFacility(tenantId, "Tema Plant");
+		mvc.perform(post("/api/ghg/organizations/" + tenantId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "adjoa@tenant.test", "role": "PREPARER"}"""))
+			.andExpect(status().isCreated());
+		mvc.perform(delete("/api/ghg/organizations/" + tenantId).with(as(adjoa)).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Walkthrough Tenant", "reason": "test tenant created for the walkthrough"}"""))
+			.andExpect(status().isForbidden());
+		mvc.perform(delete("/api/ghg/organizations/" + tenantId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "walkthrough tenant", "reason": "test tenant created for the walkthrough"}"""))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.name").value("Type the organization's name exactly to confirm."));
+		mvc.perform(delete("/api/ghg/organizations/" + tenantId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Walkthrough Tenant", "reason": "typo"}"""))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.reason").value("Give a reason of at least 10 characters."));
+		mvc.perform(delete("/api/ghg/organizations/" + tenantId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Walkthrough Tenant", "reason": "test tenant created for the walkthrough, no client data"}"""))
+			.andExpect(status().isNoContent());
+
+		// it is gone from every list and every URL under it, for its members too
+		mvc.perform(get("/api/ghg/organizations").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].name").value("Asante Gold Resources Ltd"));
+		mvc.perform(get("/api/ghg/organizations").with(as(adjoa))).andExpect(jsonPath("$.length()").value(0));
+		mvc.perform(get("/api/ghg/organizations/" + tenantId).with(asMember())).andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + tenantId + "/facilities").with(asMember()))
+			.andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + tenantId + "/inventories").with(asMember()))
+			.andExpect(status().isNotFound());
+
+		// the tombstone stays, nothing under it was cascaded, and the name is free again
+		var tenant = UUID.fromString(tenantId);
+		assertThat(jdbc.queryForObject("select deleted_by from ghg_organizations where id = ?", String.class, tenant))
+			.isEqualTo("kojo@ecoriv.com");
+		assertThat(jdbc.queryForObject("select delete_reason from ghg_organizations where id = ?", String.class,
+				tenant))
+			.isEqualTo("test tenant created for the walkthrough, no client data");
+		assertThat(jdbc.queryForObject("select count(*) from ghg_facilities where id = ?", Integer.class,
+				UUID.fromString(temaPlant)))
+			.isEqualTo(1);
+		assertThat(jdbc.queryForObject(
+				"select count(*) from ghg_audit_events where organization_id = ? and action = 'ORGANIZATION_DELETED'",
+				Integer.class, tenant))
+			.isEqualTo(1);
+		createOrganization("Walkthrough Tenant");
+	}
+
 	// --- data quality, evidence, corrections and justified exclusions (spec 04.4) --------------
 
 	@Test

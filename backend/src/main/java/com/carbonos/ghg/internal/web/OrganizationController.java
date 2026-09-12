@@ -19,8 +19,13 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.Organization;
+import com.carbonos.ghg.internal.SupportAccessService;
+import com.carbonos.ghg.internal.web.dto.AuditEventResponse;
+import com.carbonos.ghg.internal.web.dto.DeleteOrganizationRequest;
 import com.carbonos.ghg.internal.web.dto.OrganizationRequest;
 import com.carbonos.ghg.internal.web.dto.OrganizationResponse;
+import com.carbonos.ghg.internal.web.dto.SupportAccessRequest;
+import com.carbonos.ghg.internal.web.dto.SupportAccessResponse;
 
 import jakarta.validation.Valid;
 
@@ -29,9 +34,11 @@ import jakarta.validation.Valid;
 class OrganizationController {
 
 	private final GhgService ghgService;
+	private final SupportAccessService supportAccess;
 
-	OrganizationController(GhgService ghgService) {
+	OrganizationController(GhgService ghgService, SupportAccessService supportAccess) {
 		this.ghgService = ghgService;
+		this.supportAccess = supportAccess;
 	}
 
 	@GetMapping
@@ -57,14 +64,35 @@ class OrganizationController {
 		return toResponse(ghgService.updateOrganization(id, body.name(), body.address(), body.contact()));
 	}
 
+	/** Removes the organization with a tombstone (spec 01.3): the owner types the name and a reason. */
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	void delete(@PathVariable UUID id) {
-		ghgService.deleteOrganization(id);
+	void delete(@PathVariable UUID id, @Valid @RequestBody DeleteOrganizationRequest body) {
+		ghgService.deleteOrganization(id, body.name(), body.reason());
+	}
+
+	/** The organization-level history (spec 01.3): support access and the deletion. */
+	@GetMapping("/{id}/events")
+	List<AuditEventResponse> events(@PathVariable UUID id) {
+		return ghgService.organizationEvents(id).stream().map(AuditEventResponse::from).toList();
+	}
+
+	/** A platform administrator assumes support access for 24 hours (spec 01.3). */
+	@PostMapping("/{id}/support-access")
+	@ResponseStatus(HttpStatus.CREATED)
+	SupportAccessResponse assumeSupportAccess(@PathVariable UUID id, @Valid @RequestBody SupportAccessRequest body) {
+		return SupportAccessResponse.from(supportAccess.assume(id, body.reason()));
+	}
+
+	@DeleteMapping("/{id}/support-access")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void endSupportAccess(@PathVariable UUID id) {
+		supportAccess.end(id);
 	}
 
 	private OrganizationResponse toResponse(Organization organization) {
 		return OrganizationResponse.from(organization, ghgService.facilityCount(organization.getId()),
-				ghgService.roleIn(organization));
+				ghgService.roleIn(organization),
+				ghgService.activeSupportAccess(organization).stream().map(SupportAccessResponse::from).toList());
 	}
 }

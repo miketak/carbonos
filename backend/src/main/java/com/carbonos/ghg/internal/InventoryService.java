@@ -740,8 +740,8 @@ public class InventoryService {
 		}
 		var run = runs.findById(inventory.getFinalRunId()).orElse(null);
 		inventory.withdrawFinal();
-		auditEvents.save(new GhgAuditEvent(inventoryId, run, GhgAuditEvent.Action.FINAL_WITHDRAWN,
-				access.currentUserId(), access.currentUserEmail(), reason.trim()));
+		auditEvents.save(new GhgAuditEvent(inventory, run, GhgAuditEvent.Action.FINAL_WITHDRAWN,
+				access.currentUserId(), access.currentUserEmail(), access.attributed(inventory.getOrganization(), reason.trim())));
 		return inventory;
 	}
 
@@ -2123,8 +2123,8 @@ public class InventoryService {
 			throw new GhgRuleViolationException("Run " + run.getRunNo() + " is already voided.");
 		}
 		run.markVoid(access.currentUserId(), access.currentUserEmail(), reason.trim());
-		auditEvents.save(new GhgAuditEvent(inventory.getId(), run, GhgAuditEvent.Action.RUN_VOIDED,
-				access.currentUserId(), access.currentUserEmail(), reason.trim()));
+		auditEvents.save(new GhgAuditEvent(inventory, run, GhgAuditEvent.Action.RUN_VOIDED,
+				access.currentUserId(), access.currentUserEmail(), access.attributed(inventory.getOrganization(), reason.trim())));
 		return run;
 	}
 
@@ -2312,8 +2312,8 @@ public class InventoryService {
 
 	/** One line of the inventory's history (spec 01.2): the act, who did it, and a detail. */
 	private void record(Inventory inventory, GhgRun run, GhgAuditEvent.Action action, String detail) {
-		auditEvents.save(new GhgAuditEvent(inventory.getId(), run, action, access.currentUserId(),
-				access.currentUserEmail(), detail));
+		auditEvents.save(new GhgAuditEvent(inventory, run, action, access.currentUserId(),
+				access.currentUserEmail(), access.attributed(inventory.getOrganization(), detail)));
 	}
 
 	// --- helpers -------------------------------------------------------------
