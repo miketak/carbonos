@@ -15,9 +15,13 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 01 | [Identity and access](01-identity-and-access.md) | | Implemented |
 | 01.1 | [Access requests](01.1-access-requests.md) | | Implemented |
 | 01.2 | [Organization membership, roles and attribution](01.2-organization-membership-and-roles.md) | Ch. 7 | Implemented |
+| 01.3 | [Organization confidentiality and deletion safeguards](01.3-organization-confidentiality-and-deletion-safeguards.md) | Ch. 7, 9, ISO 14064-1 | Approved |
+| 01.4 | [Role-aware UI and visible refusals](01.4-role-aware-ui-and-visible-refusals.md) | Ch. 7 | Approved |
 | 02 | [Organization and facts](02-organization-and-facts.md) | Ch. 6, 7 | Implemented |
 | 02.1 | [Emission factor library, provenance and packs](02.1-emission-factor-library.md) | Ch. 6, 9, Scope 2 Guidance | Implemented |
 | 02.2 | [Units, densities, and custom units](02.2-units-densities-and-custom-units.md) | Ch. 6, 7 | Implemented |
+| 02.3 | [Factor identity across packs](02.3-factor-identity-across-packs.md) | Ch. 1, 7, 9 | Approved |
+| 02.4 | [Sector pack completeness: gases as themselves, flaring, Montreal Protocol gases, purchased goods](02.4-sector-pack-completeness.md) | Ch. 4, 6, 9, Scope 3 Standard cat. 1 | Approved |
 | 03 | [Organizational boundary](03-organizational-boundary.md) | Ch. 3 | Implemented |
 | 03.1 | [Legal entities and Table 1](03.1-legal-entities-and-table-1.md) | Ch. 3 | Implemented |
 | 03.2 | [Effective-dated membership](03.2-effective-dated-membership.md) | Ch. 3, 5 | Implemented |
@@ -30,10 +34,14 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 04.4 | [Activity data quality, evidence, corrections, and justified exclusions](04.4-activity-data-quality-evidence-and-corrections.md) | Ch. 7, 9, Scope 3 Standard Ch. 7, ISO 14064-1 | Implemented |
 | 04.5 | [Bulk import and the activity register](04.5-bulk-import-and-activity-register.md) | Ch. 7, ISO 14064-1 | Implemented |
 | 04.6 | [The activity register as a workspace: drafts, readiness, record numbers and source documents](04.6-activity-register-drafts-readiness-and-source-documents.md) | Ch. 7, 9, ISO 14064-1, ISO 14064-3 | Implemented |
+| 04.7 | [Derived fuel- and energy-related lines, and the scope select unlocked](04.7-derived-fuel-and-energy-related-lines.md) | Scope 3 Standard cat. 3, Ch. 4, App. F | Approved |
+| 04.8 | [Exclusions without a false zero, and gases outside the scopes](04.8-exclusions-without-a-false-zero-and-gases-outside-the-scopes.md) | Ch. 4, 9, Scope 3 Standard Ch. 11 | Approved |
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
 | 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |
 | 05.3 | [Inheritance between inventories and the published record](05.3-inheritance-and-the-published-record.md) | Ch. 1, 5, 9, 10 | Implemented |
+| 05.4 | [Copying a view across consolidation approaches](05.4-copying-a-view-across-consolidation-approaches.md) | Ch. 3, 9, App. F | Approved |
+| 05.5 | [Review at scale and deliberate lifecycle acts](05.5-review-at-scale-and-deliberate-lifecycle-acts.md) | Ch. 7, 9, ISO 14064-1 | Approved |
 | 06 | [Tracking emissions over time](06-tracking-emissions-over-time.md) | Ch. 5 | Implemented |
 | 06.1 | [Recalculation policy conformance](06.1-recalculation-policy-conformance.md) | Ch. 5, 9 | Implemented |
 | 07 | [Reporting and verification](07-reporting-and-verification.md) | Ch. 9, 10 | Implemented |
@@ -43,15 +51,22 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 07.4 | [Report tables, factor table and report metadata](07.4-report-tables-factors-and-metadata.md) | Ch. 9, 10 | Implemented |
 | 07.5 | [Report export](07.5-report-export.md) | Ch. 9, 10 | Implemented |
 | 07.6 | [Scope 2 instrument criteria and the scope 3 declaration cross-check](07.6-scope2-instrument-criteria-and-scope3-crosscheck.md) | Scope 2 Guidance Ch. 7, Scope 3 Standard Ch. 11 | Implemented |
+| 07.7 | [Emissions by gas that tie to the total](07.7-emissions-by-gas-that-ties-to-the-total.md) | Ch. 5, 7, 9 | Approved |
+| 07.8 | [PDF readability](07.8-pdf-readability.md) | Ch. 9, 10 | Approved |
 | 08 | [Form validation and UI polish](08-form-validation-and-ui-polish.md) | Ch. 1 (credibility, transparency) | Implemented |
 
 A chapter spec (`NN`) describes one stage of the workflow as it is today. A
 sub-spec (`NN.M`) is a branch of that stage that deserves its own document.
-Every spec listed is implemented as of 2026-09-09. Sub-specs 03.3, 06.1 and
+Every spec listed is implemented as of 2026-09-09, except the ten `Draft`
+sub-specs from the audit of 2026-09-11 named in the next paragraph. Sub-specs 03.3, 06.1 and
 07.2 come from a conformance review of the set against the Standard on
 2026-09-08; the conformance table in spec 00 records what each closed.
 Sub-specs from 07.3 onward close tickets of the GHG officer audit backlog in
 `todo.md` (each ticket names its spec).
+Sub-specs 01.3, 01.4, 02.3, 02.4, 04.7, 04.8, 05.4, 05.5, 07.7, and 07.8 come
+from the second audit of 2026-09-11
+(`docs/reviews/2026-09-11-ghg-officer-ui-audit.md`); its Top 10 to spec
+table is in `todo.md`.
 Chapters 8 (reductions) and 11 (targets) of the Standard have no spec yet.
 
 ## Lifecycle

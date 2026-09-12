@@ -251,6 +251,9 @@ to cover what the first pass could not:
 - Real mouse click on "Create correction" (T-26).
 - Volume: thousands of records (T-18).
 - Email deliverability beyond Mailpit, password reset, and the effect of disabling a user on the audit trail.
+- After the second audit (2026-09-11): retest the ten specs listed under
+  "Second audit (2026-09-11): Top 10 to spec", in particular the by-gas
+  table footing, the equity-share copy, the PDF, and support access.
 
 ## Traceability matrix
 
@@ -322,3 +325,22 @@ to cover what the first pass could not:
 | 8 | F29 | T-12 |
 | 9 | F12, F13, F14, F22 | T-14, T-15, T-16, T-17 |
 | 10 | F26, F27, F10 | T-11 |
+
+## Second audit (2026-09-11): Top 10 to spec
+
+The findings refer to the report of 11 September 2026
+(`docs/reviews/2026-09-11-ghg-officer-ui-audit.md`), not to the numbering
+of the first audit used in the sections before this one.
+
+| Priority | Findings | Spec |
+|---|---|---|
+| 1 | F45, F44 | 07.7 |
+| 2 | F37, F30 | 05.4 |
+| 3 | F48 | 07.8 |
+| 4 | F3, F6 | 01.3 |
+| 5 | F2, F4 | 01.4 |
+| 6 | F22, F23 | 02.3 |
+| 7 | F41, F34 | 04.7 |
+| 8 | F35, F26 | 04.8 (factor rows in 02.4) |
+| 9 | F56 | 02.4 |
+| 10 | F36, F43, F54, F31 | 05.5 |
