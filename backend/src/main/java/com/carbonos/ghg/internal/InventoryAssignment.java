@@ -213,6 +213,18 @@ public class InventoryAssignment {
 		this.proxyJustification = proxyJustification;
 	}
 
+	/**
+	 * Re-derives a leased assignment's scope and category under another
+	 * approach (spec 05.4, Appendix F); the factor and the rest stay. Returns
+	 * whether the scope moved.
+	 */
+	boolean rederive(Scope scope, ActivityCategory category) {
+		var moved = this.scope != scope;
+		this.scope = scope;
+		this.category = category;
+		return moved;
+	}
+
 	void exclude(ExclusionReason reason, String detail) {
 		exclude(reason, detail, null, null);
 	}

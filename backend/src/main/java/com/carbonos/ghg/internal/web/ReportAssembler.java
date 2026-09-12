@@ -92,7 +92,8 @@ public class ReportAssembler {
 				: inventoryService.get(inventory.getSupersededById());
 		return ReportResponse.of(run, inventory, organization, version, baseYear, baseRun, recalculatedRuns, profile,
 				inventoryService.marketFactors(inventory.getId()), inventoryService.predecessors(inventory.getId()),
-				successor, inventoryService.intensityMetrics(inventory.getId()));
+				successor, inventoryService.intensityMetrics(inventory.getId()),
+				inventoryService.listBoundaryVersions(inventory.getId()).size());
 	}
 
 	/** Later acts, later inventories and facts that changed since the run was published (spec 05.3). */

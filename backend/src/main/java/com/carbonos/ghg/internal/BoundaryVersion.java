@@ -66,6 +66,19 @@ public class BoundaryVersion {
 	@Column(name = "frozen_at", nullable = false, updatable = false)
 	private Instant frozenAt;
 
+	// spec 05.5: the reopen that superseded this version, with its reason; null while the version is current
+	@Column(name = "reopened_by_user_id")
+	private UUID reopenedByUserId;
+
+	@Column(name = "reopened_by", length = 320)
+	private String reopenedBy;
+
+	@Column(name = "reopened_at")
+	private Instant reopenedAt;
+
+	@Column(name = "reopen_reason", length = 500)
+	private String reopenReason;
+
 	// a Set: the version is read with its entries and their facilities in one
 	// join-fetch, and a bag would repeat each entry once per facility
 	@OneToMany(mappedBy = "version", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -176,6 +189,30 @@ public class BoundaryVersion {
 
 	public Instant getFrozenAt() {
 		return frozenAt;
+	}
+
+	/** Records the reopen that supersedes this version: who, when, and why (spec 05.5). */
+	void recordReopen(UUID userId, String email, String reason) {
+		this.reopenedByUserId = userId;
+		this.reopenedBy = email;
+		this.reopenedAt = Instant.now();
+		this.reopenReason = reason;
+	}
+
+	public UUID getReopenedByUserId() {
+		return reopenedByUserId;
+	}
+
+	public String getReopenedBy() {
+		return reopenedBy;
+	}
+
+	public Instant getReopenedAt() {
+		return reopenedAt;
+	}
+
+	public String getReopenReason() {
+		return reopenReason;
 	}
 
 	/** The operations this version recorded as left out, entity name then facility name. */

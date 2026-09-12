@@ -127,6 +127,20 @@ public class Inventory {
 	@Column(name = "published_report", columnDefinition = "text")
 	private String publishedReport;
 
+	// spec 05.4: what a copy across approaches did (boundary rebuilt, leases re-derived, exclusions dropped), as JSON
+	@Column(name = "inheritance_notes", columnDefinition = "text")
+	private String inheritanceNotes;
+
+	// spec 05.5: who designated the final run, when, and the reviewer's note
+	@Column(name = "final_designated_by", length = 320)
+	private String finalDesignatedBy;
+
+	@Column(name = "final_designated_at")
+	private Instant finalDesignatedAt;
+
+	@Column(name = "final_note", length = 500)
+	private String finalNote;
+
 	@Column(name = "published_at")
 	private Instant publishedAt;
 
@@ -350,6 +364,26 @@ public class Inventory {
 		this.publishedReport = publishedReport;
 	}
 
+	public String getInheritanceNotes() {
+		return inheritanceNotes;
+	}
+
+	void setInheritanceNotes(String inheritanceNotes) {
+		this.inheritanceNotes = inheritanceNotes;
+	}
+
+	public String getFinalDesignatedBy() {
+		return finalDesignatedBy;
+	}
+
+	public Instant getFinalDesignatedAt() {
+		return finalDesignatedAt;
+	}
+
+	public String getFinalNote() {
+		return finalNote;
+	}
+
 	public Instant getPublishedAt() {
 		return publishedAt;
 	}
@@ -395,13 +429,20 @@ public class Inventory {
 		this.status = InventoryStatus.DRAFT;
 	}
 
-	void designateFinal(UUID runId) {
+	/** Records the final run with who designated it, when, and the review note (spec 05.5). */
+	void designateFinal(UUID runId, String designatedBy, String note) {
 		this.finalRunId = runId;
+		this.finalDesignatedBy = designatedBy;
+		this.finalDesignatedAt = Instant.now();
+		this.finalNote = note;
 		this.status = InventoryStatus.FINAL;
 	}
 
 	void withdrawFinal() {
 		this.finalRunId = null;
+		this.finalDesignatedBy = null;
+		this.finalDesignatedAt = null;
+		this.finalNote = null;
 		this.status = InventoryStatus.FROZEN;
 	}
 

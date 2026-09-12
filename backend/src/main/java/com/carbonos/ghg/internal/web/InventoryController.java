@@ -20,6 +20,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.Inventory;
+import com.carbonos.ghg.internal.Scope;
+import com.carbonos.ghg.internal.ActivityCategory;
+import com.carbonos.ghg.internal.LeaseType;
 import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.web.dto.AssignmentPageResponse;
 import com.carbonos.ghg.internal.web.dto.AssignmentResponse;
@@ -33,6 +36,7 @@ import com.carbonos.ghg.internal.web.dto.BoundaryVersionSummaryResponse;
 import com.carbonos.ghg.internal.web.dto.ClassifyRequest;
 import com.carbonos.ghg.internal.web.dto.ExcludeRequest;
 import com.carbonos.ghg.internal.web.dto.FinalizeRequest;
+import com.carbonos.ghg.internal.web.dto.ReopenRequest;
 import com.carbonos.ghg.internal.web.dto.InventoryRequest;
 import com.carbonos.ghg.internal.web.dto.InventoryResponse;
 import com.carbonos.ghg.internal.web.dto.MarketFactorRequest;
@@ -217,14 +221,16 @@ class InventoryController {
 		return BoundaryVersionResponse.from(inventoryService.freeze(id));
 	}
 
+	/** Reopening needs a reason (spec 05.5); the version it supersedes records it. */
 	@PostMapping("/inventories/{id}/reopen")
-	InventoryResponse reopen(@PathVariable UUID id) {
-		return InventoryResponse.from(inventoryService.reopen(id));
+	InventoryResponse reopen(@PathVariable UUID id, @RequestBody(required = false) ReopenRequest body) {
+		return InventoryResponse.from(inventoryService.reopen(id, body == null ? null : body.reason()));
 	}
 
+	/** Designates the final run, with the reviewer's optional note (spec 05.5). */
 	@PostMapping("/inventories/{id}/finalize")
 	InventoryResponse finalizeInventory(@PathVariable UUID id, @Valid @RequestBody FinalizeRequest body) {
-		return InventoryResponse.from(inventoryService.designateFinal(id, body.runId()));
+		return InventoryResponse.from(inventoryService.designateFinal(id, body.runId(), body.note()));
 	}
 
 	@PostMapping("/inventories/{id}/withdraw-final")
@@ -320,9 +326,11 @@ class InventoryController {
 	@GetMapping("/inventories/{id}/assignments/page")
 	AssignmentPageResponse assignmentsPage(@PathVariable UUID id, @RequestParam(required = false) String q,
 			@RequestParam(required = false) UUID facilityId, @RequestParam(required = false) String status,
+			@RequestParam(required = false) Scope scope, @RequestParam(required = false) ActivityCategory category,
+			@RequestParam(required = false) UUID streamId, @RequestParam(required = false) LeaseType leaseType,
 			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
-		var result = inventoryService.searchAssignments(id,
-				new InventoryService.AssignmentQuery(q, facilityId, status, page, size));
+		var result = inventoryService.searchAssignments(id, new InventoryService.AssignmentQuery(q, facilityId, status,
+				scope, category, streamId, leaseType, page, size));
 		return AssignmentPageResponse.from(result, inventoryService.suggestions(result.items()),
 				inventoryService.publishedFacts(inventoryService.get(id)));
 	}
@@ -354,6 +362,6 @@ class InventoryController {
 
 	@GetMapping("/inventories/{id}/validation")
 	ValidationReportResponse validation(@PathVariable UUID id) {
-		return ValidationReportResponse.from(inventoryService.validate(id));
+		return ValidationReportResponse.from(inventoryService.validate(id), inventoryService.freezeBlockers(id));
 	}
 }

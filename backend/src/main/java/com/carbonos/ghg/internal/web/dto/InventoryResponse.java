@@ -23,7 +23,7 @@ public record InventoryResponse(UUID id, UUID organizationId, String name, Local
 		List<Inventory.NotQuantified> scope3NotQuantified,
 		Boolean residualMixAvailable, BigDecimal residualMixKgCo2ePerKwh, UUID finalRunId,
 		InventoryStatus status, UUID supersededById, UUID copiedFromId, String correctionReason, Instant publishedAt,
-		UUID currentBoundaryVersionId,
+		String finalDesignatedBy, Instant finalDesignatedAt, String finalNote, UUID currentBoundaryVersionId,
 		Integer currentBoundaryVersionNo, Instant createdAt) {
 
 	public static InventoryResponse from(Inventory inventory) {
@@ -36,7 +36,8 @@ public record InventoryResponse(UUID id, UUID organizationId, String name, Local
 				inventory.getScope3NotQuantified(),
 				inventory.getResidualMixAvailable(), inventory.getResidualMixKgCo2ePerKwh(), inventory.getFinalRunId(), inventory.getStatus(), inventory.getSupersededById(),
 				inventory.getCopiedFromId(), inventory.getCorrectionReason(),
-				inventory.getPublishedAt(), inventory.getCurrentBoundaryVersionId(),
+				inventory.getPublishedAt(), inventory.getFinalDesignatedBy(), inventory.getFinalDesignatedAt(),
+				inventory.getFinalNote(), inventory.getCurrentBoundaryVersionId(),
 				inventory.getCurrentBoundaryVersionNo(), inventory.getCreatedAt());
 	}
 }

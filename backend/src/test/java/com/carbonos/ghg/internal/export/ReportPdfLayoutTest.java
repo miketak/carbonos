@@ -163,10 +163,10 @@ class ReportPdfLayoutTest {
 				UUID.randomUUID(), 3, "officer@review.test", PREPARED_AT);
 		var header = new ReportResponse.Header(ORGANIZATION, "Accra, Ghana", "sustainability@asante.test", "FY2025", START,
 				END, "officer@review.test", PREPARED_AT, null, null, null, 1, List.of(), null, AssuranceLevel.UNVERIFIED,
-				null, null);
+				null, null, null, null, null, 3, 3);
 		var version = new BoundaryVersionResponse(
 				new BoundaryVersionSummaryResponse(UUID.randomUUID(), 3, ConsolidationApproach.OPERATIONAL_CONTROL, 2, 2,
-						UUID.randomUUID(), "officer@review.test", PREPARED_AT),
+						UUID.randomUUID(), "officer@review.test", PREPARED_AT, null, null, null),
 				List.of(new BoundaryVersionEntryResponse(ENTITY_ID, ORGANIZATION, RelationshipType.SUBSIDIARY,
 						new BigDecimal("100"), true, true, new BigDecimal("100"), List.of(), BigDecimal.ONE,
 						"group company or subsidiary under financial control; operational control: 100% (operator)", null,

@@ -20,6 +20,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import tools.jackson.databind.ObjectMapper;
+
 import com.carbonos.ghg.GhgRunCompleted;
 import com.carbonos.ghg.InventoryPublished;
 import com.carbonos.ghg.internal.Validation.Finding;
@@ -63,6 +65,7 @@ public class InventoryService {
 	private final DensityRepository densities;
 	private final EvidenceRepository evidence;
 	private final SourceStreamRepository streams;
+	private final ObjectMapper json;
 
 	InventoryService(OrganizationRepository organizations, LegalEntityRepository entities,
 			FacilityRepository facilities, ActivityRecordRepository activities,
@@ -72,8 +75,9 @@ public class InventoryService {
 			MarketFactorRepository marketFactors, GhgRunRepository runs, GhgAuditEventRepository auditEvents,
 			IntensityMetricRepository intensityMetrics, BaseYearService baseYears, ApplicationEventPublisher events,
 			GhgAccess access, OrganizationUnits organizationUnits, DensityRepository densities,
-			EvidenceRepository evidence, SourceStreamRepository streams) {
+			EvidenceRepository evidence, SourceStreamRepository streams, ObjectMapper json) {
 		this.streams = streams;
+		this.json = json;
 		this.organizationUnits = organizationUnits;
 		this.densities = densities;
 		this.evidence = evidence;
@@ -158,22 +162,28 @@ public class InventoryService {
 			return inventory;
 		}
 		if (prefillBoundary) {
-			var facilitiesByEntity = facilities
-				.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(organizationId)
-				.stream()
-				.collect(Collectors.groupingBy(facility -> facility.getEntity().getId()));
-			for (var entity : entities
-				.findAllByOrganizationIdAndDeletedAtIsNullOrderByReportingCompanyDescCreatedAtAsc(organizationId)) {
-				var members = facilitiesByEntity.getOrDefault(entity.getId(), List.of());
-				if (members.isEmpty() || entity.share(approach).signum() == 0) {
-					continue;
-				}
-				var treatment = new BoundaryTreatment(inventory, entity);
-				members.forEach(treatment::includeFacility);
-				boundaryTreatments.save(treatment);
-			}
+			prefillBoundary(inventory);
 		}
 		return inventory;
+	}
+
+	/** Every entity with a share under the inventory's approach joins with all its facilities (spec 03.4). */
+	private void prefillBoundary(Inventory inventory) {
+		var organizationId = inventory.getOrganization().getId();
+		var approach = inventory.getConsolidationApproach();
+		var facilitiesByEntity = facilities.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(organizationId)
+			.stream()
+			.collect(Collectors.groupingBy(facility -> facility.getEntity().getId()));
+		for (var entity : entities
+			.findAllByOrganizationIdAndDeletedAtIsNullOrderByReportingCompanyDescCreatedAtAsc(organizationId)) {
+			var members = facilitiesByEntity.getOrDefault(entity.getId(), List.of());
+			if (members.isEmpty() || entity.share(approach).signum() == 0) {
+				continue;
+			}
+			var treatment = new BoundaryTreatment(inventory, entity);
+			members.forEach(treatment::includeFacility);
+			boundaryTreatments.save(treatment);
+		}
 	}
 
 	public Inventory update(UUID id, String name, LocalDate periodStart, LocalDate periodEnd, String purpose,
@@ -196,11 +206,40 @@ public class InventoryService {
 						+ "while the inventory is frozen. Reopen it as a draft first.");
 			}
 		}
+		var approachChanged = approach != inventory.getConsolidationApproach();
 		inventory.update(name.trim(), periodStart, periodEnd, trimToNull(purpose), baseYear, approach, effectiveGwp);
 		if (straddleTreatment != null) {
 			inventory.setStraddleTreatment(straddleTreatment);
 		}
+		if (approachChanged) {
+			// spec 05.4: Appendix F is derived, never inherited; a draft's leased assignments follow the approach
+			rederiveLeases(inventory, assignments.findAllByInventoryIdOrderByCreatedAtAsc(id));
+		}
 		return inventory;
+	}
+
+	/** The scope and category Appendix F derives for a leased assignment under an approach (spec 04.1, 05.4). */
+	static LeaseType.Derived derivedFor(InventoryAssignment assignment, ConsolidationApproach approach) {
+		if (assignment.getLeaseType() == null || !assignment.isClassified()) {
+			return null;
+		}
+		var stream = assignment.getActivity().getStream();
+		var factor = assignment.getEmissionFactor();
+		var defaultScope = stream != null ? stream.defaultScope() : factor.getDefaultScope();
+		var defaultCategory = stream != null ? stream.defaultCategory() : factor.getDefaultCategory();
+		return assignment.getLeaseType().derive(approach, defaultScope, defaultCategory);
+	}
+
+	/** Re-derives every leased assignment under the inventory's approach; returns how many changed scope. */
+	private static int rederiveLeases(Inventory inventory, List<InventoryAssignment> all) {
+		var moved = 0;
+		for (var assignment : all) {
+			var derived = derivedFor(assignment, inventory.getConsolidationApproach());
+			if (derived != null && assignment.rederive(derived.scope(), derived.category())) {
+				moved++;
+			}
+		}
+		return moved;
 	}
 
 	public void delete(UUID id) {
@@ -390,6 +429,95 @@ public class InventoryService {
 			.toList();
 	}
 
+	/**
+	 * Spec 05.4: Chapter 3 gives no methodology ground for leaving a consolidated
+	 * operation out. An excluded entity (or every facility of one) that holds a
+	 * share under the approach is an error unless the reason is one Chapter 9
+	 * accepts as a disclosure (no emitting operation, no operation in the
+	 * period), which warns; a partial facility exclusion warns and names the
+	 * facility.
+	 */
+	private List<Finding> excludedWithAShare(Inventory inventory) {
+		var approach = inventory.getConsolidationApproach();
+		var findings = new ArrayList<Finding>();
+		var exclusions = boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(inventory.getId());
+		var facilityCounts = facilities
+			.findAllByOrganizationIdAndDeletedAtIsNullOrderByCreatedAtAsc(inventory.getOrganization().getId())
+			.stream()
+			.collect(Collectors.groupingBy(facility -> facility.getEntity().getId(), Collectors.counting()));
+		var facilityExclusions = exclusions.stream()
+			.filter(exclusion -> !exclusion.isWholeEntity())
+			.collect(Collectors.groupingBy(exclusion -> exclusion.getEntity().getId()));
+		for (var exclusion : exclusions) {
+			if (!exclusion.isWholeEntity()) {
+				continue;
+			}
+			var entity = exclusion.getEntity();
+			var share = entity.share(approach);
+			if (share.signum() == 0) {
+				continue;
+			}
+			if (isDisclosure(exclusion.getReason())) {
+				findings.add(new Finding(Severity.WARNING, entity.getName() + " is excluded as "
+						+ reasonName(exclusion.getReason()) + " but holds a " + sharePhrase(share, approach)
+						+ " under this approach: the report discloses the exclusion."));
+			}
+			else {
+				findings.add(new Finding(Severity.ERROR, entity.getName() + " is excluded but holds a "
+						+ sharePhrase(share, approach) + " under this approach. Include it, or record why it emits nothing."));
+			}
+		}
+		for (var entry : facilityExclusions.entrySet()) {
+			var entity = entry.getValue().getFirst().getEntity();
+			var share = entity.share(approach);
+			if (share.signum() == 0) {
+				continue;
+			}
+			var excludedAll = entry.getValue().size() >= facilityCounts.getOrDefault(entity.getId(), 0L);
+			if (excludedAll) {
+				var reasons = entry.getValue().stream().map(BoundaryExclusion::getReason).toList();
+				if (reasons.stream().allMatch(InventoryService::isDisclosure)) {
+					findings.add(new Finding(Severity.WARNING, "Every facility of " + entity.getName()
+							+ " is excluded as " + reasonName(reasons.getFirst()) + " but it holds a "
+							+ sharePhrase(share, approach) + " under this approach: the report discloses the exclusions."));
+				}
+				else {
+					findings.add(new Finding(Severity.ERROR, "Every facility of " + entity.getName()
+							+ " is excluded but it holds a " + sharePhrase(share, approach)
+							+ " under this approach. Include them, or record why they emit nothing."));
+				}
+				continue;
+			}
+			for (var exclusion : entry.getValue()) {
+				findings.add(new Finding(Severity.WARNING, "'" + exclusion.getFacility().getName() + "' ("
+						+ entity.getName() + ") is excluded as " + reasonName(exclusion.getReason()) + " while "
+						+ entity.getName() + " holds a " + sharePhrase(share, approach)
+						+ " under this approach: the report discloses the exclusion."));
+			}
+		}
+		return findings;
+	}
+
+	private static boolean isDisclosure(ExclusionReason reason) {
+		return reason == ExclusionReason.NON_GHG || reason == ExclusionReason.NOT_APPLICABLE;
+	}
+
+	private static String reasonName(ExclusionReason reason) {
+		return switch (reason) {
+			case NON_GHG -> "a non-GHG operation";
+			case NOT_APPLICABLE -> "not applicable in the period";
+			case METHODOLOGY -> "a methodology exclusion";
+			case DUPLICATE -> "a duplicate";
+			default -> reason.name().toLowerCase().replace('_', ' ');
+		};
+	}
+
+	/** "30% equity share" or "100% share under operational control", for the gate texts (spec 05.4). */
+	static String sharePhrase(BigDecimal share, ConsolidationApproach approach) {
+		var pct = percent(share).toPlainString() + "%";
+		return approach == ConsolidationApproach.EQUITY_SHARE ? pct + " equity share" : pct + " share";
+	}
+
 	/** The parents' contribution to an entity's share: each parent's treatment in this inventory when present, else its facts. */
 	static EntityChain chainOf(LegalEntity entity, ConsolidationApproach approach,
 			Map<UUID, BoundaryTreatment> treatments) {
@@ -523,6 +651,11 @@ public class InventoryService {
 			throw new GhgRuleViolationException(
 					"The organizational boundary is empty. Add at least one facility before freezing it.");
 		}
+		// spec 05.5: the freeze waits for a clean classification and for the drafts at facilities in the boundary
+		var blockers = freezeBlockers(inventory, treatments);
+		if (!blockers.isEmpty()) {
+			throw new FreezeBlockedException(blockers);
+		}
 		var previous = boundaryVersions.findTopByInventoryIdOrderByVersionNoDesc(inventoryId)
 			.flatMap(latest -> boundaryVersions.findWithEntriesById(latest.getId()));
 		var nextNo = previous.map(latest -> latest.getVersionNo() + 1).orElse(1);
@@ -537,10 +670,18 @@ public class InventoryService {
 		return version;
 	}
 
-	/** Reopens a frozen inventory for editing. Versions already cut are untouched. */
-	public Inventory reopen(UUID inventoryId) {
+	/**
+	 * Reopens a frozen inventory for editing, with a reason (spec 05.5). Versions
+	 * already cut are untouched; the current one records who reopened it and why.
+	 */
+	public Inventory reopen(UUID inventoryId, String reason) {
 		var inventory = get(inventoryId);
 		access.checkWrite(inventory.getOrganization());
+		var why = trimToNull(reason);
+		if (why == null || why.length() < 10) {
+			throw new GhgFieldException("reason", "Reopening needs a reason of at least 10 characters: "
+					+ "what the draft will change. The next freeze cuts a new boundary version.");
+		}
 		switch (inventory.getStatus()) {
 			case DRAFT -> throw new GhgRuleViolationException("The inventory is already a draft.");
 			case FINAL -> throw new GhgRuleViolationException(
@@ -548,17 +689,29 @@ public class InventoryService {
 			case PUBLISHED -> throw new GhgRuleViolationException(
 					"A published inventory cannot change. Create a correction that supersedes it.");
 			case FROZEN -> {
+				if (inventory.getCurrentBoundaryVersionId() != null) {
+					boundaryVersions.findById(inventory.getCurrentBoundaryVersionId())
+						.ifPresent(version -> version.recordReopen(access.currentUserId(), access.currentUserEmail(), why));
+				}
 				inventory.reopen();
-				record(inventory, null, GhgAuditEvent.Action.REOPENED, "reopened as a draft");
+				record(inventory, null, GhgAuditEvent.Action.REOPENED, "reopened as a draft: " + why);
 			}
 		}
 		return inventory;
 	}
 
-	/** Designates a run as the final one of its inventory, which moves the inventory to FINAL. */
-	public Inventory designateFinal(UUID inventoryId, UUID runId) {
+	/**
+	 * Designates a run as the final one of its inventory, which moves the
+	 * inventory to FINAL. The reviewer's note, who designated and when are
+	 * recorded on the inventory and the audit event (spec 05.5).
+	 */
+	public Inventory designateFinal(UUID inventoryId, UUID runId, String note) {
 		var inventory = get(inventoryId);
 		access.checkApprove(inventory.getOrganization());
+		var reviewNote = trimToNull(note);
+		if (reviewNote != null && reviewNote.length() > 500) {
+			throw new GhgFieldException("note", "The review note is at most 500 characters.");
+		}
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
 			throw new GhgRuleViolationException("A published inventory's final run cannot change.");
 		}
@@ -572,8 +725,9 @@ public class InventoryService {
 		if (run.isVoided()) {
 			throw new GhgRuleViolationException("Run " + run.getRunNo() + " is voided and cannot be designated final.");
 		}
-		inventory.designateFinal(runId);
-		record(inventory, run, GhgAuditEvent.Action.FINAL_DESIGNATED, "run " + run.getRunNo() + " designated final");
+		inventory.designateFinal(runId, access.currentUserEmail(), reviewNote);
+		record(inventory, run, GhgAuditEvent.Action.FINAL_DESIGNATED,
+				"run " + run.getRunNo() + " designated final" + (reviewNote == null ? "" : ": " + reviewNote));
 		return inventory;
 	}
 
@@ -704,25 +858,33 @@ public class InventoryService {
 	 */
 	private void copyView(Inventory source, Inventory target, boolean withAssignments) {
 		var sourceId = source.getId();
+		var approach = target.getConsolidationApproach();
+		// spec 05.4: across approaches the boundary follows from Table 1, not from the source's decisions
+		var rebuild = approach != source.getConsolidationApproach();
 		target.setOperationalBoundary(source.getScope3Categories(), source.getScope3ExclusionsRationale());
 		target.setReportMetadata(source.getApprovedBy(), source.getAssuranceLevel(), source.getAssuranceProvider(),
 				source.getAssuranceStatement(), source.getUncertaintyStatement());
-		for (var treatment : boundaryTreatments.findAllByInventoryId(sourceId)) {
-			if (treatment.getEntity().isDeleted()) {
-				continue;
-			}
-			var copy = new BoundaryTreatment(target, treatment.getEntity());
-			copy.update(treatment.getRelationshipType(), treatment.getEconomicInterestPercent(),
-					treatment.isOperatedByCompany(), treatment.isControlledByCompany(), treatment.getEffectiveFrom(),
-					treatment.getEffectiveTo());
-			copy.setFinancialControlOverride(treatment.getFinancialControlOverride());
-			treatment.getFacilities()
-				.stream()
-				.map(BoundaryFacility::getFacility)
-				.filter(facility -> !facility.isDeleted())
-				.forEach(copy::includeFacility);
-			if (!copy.getFacilities().isEmpty()) {
-				boundaryTreatments.save(copy);
+		if (rebuild) {
+			prefillBoundary(target);
+		}
+		else {
+			for (var treatment : boundaryTreatments.findAllByInventoryId(sourceId)) {
+				if (treatment.getEntity().isDeleted()) {
+					continue;
+				}
+				var copy = new BoundaryTreatment(target, treatment.getEntity());
+				copy.update(treatment.getRelationshipType(), treatment.getEconomicInterestPercent(),
+						treatment.isOperatedByCompany(), treatment.isControlledByCompany(), treatment.getEffectiveFrom(),
+						treatment.getEffectiveTo());
+				copy.setFinancialControlOverride(treatment.getFinancialControlOverride());
+				treatment.getFacilities()
+					.stream()
+					.map(BoundaryFacility::getFacility)
+					.filter(facility -> !facility.isDeleted())
+					.forEach(copy::includeFacility);
+				if (!copy.getFacilities().isEmpty()) {
+					boundaryTreatments.save(copy);
+				}
 			}
 		}
 		for (var factor : marketFactors.findAllByInventoryId(sourceId)) {
@@ -731,26 +893,70 @@ public class InventoryService {
 					factor.getQualityNotes(), factor.coverage()));
 		}
 		target.setResidualMix(source.getResidualMixAvailable(), source.getResidualMixKgCo2ePerKwh());
+		var dropped = new ArrayList<DroppedExclusion>();
 		for (var exclusion : boundaryExclusions.findAllByInventoryIdOrderByCreatedAtAsc(sourceId)) {
+			if (rebuild) {
+				// a computed exclusion belongs to the source's approach; a hand-typed one stays only where the
+				// operation is still at 0% (else the rebuilt boundary holds it and the reader is told what was dropped)
+				var entity = exclusion.getEntity();
+				var share = entity.share(approach);
+				if (isComputedDetail(exclusion.getDetail()) || share.signum() != 0) {
+					dropped.add(new DroppedExclusion(exclusion.isWholeEntity() ? entity.getId() : null,
+							exclusion.isWholeEntity() ? entity.getName() : null,
+							exclusion.getFacility() == null ? null : exclusion.getFacility().getId(),
+							exclusion.getFacility() == null ? null : exclusion.getFacility().getName(),
+							exclusion.getReason(), exclusion.getDetail(), percent(share)));
+					continue;
+				}
+			}
 			boundaryExclusions.save(new BoundaryExclusion(target, exclusion.isWholeEntity() ? exclusion.getEntity() : null,
 					exclusion.getFacility(), exclusion.getReason(), exclusion.getDetail()));
 		}
 		for (var metric : intensityMetrics.findAllByInventoryIdOrderByName(sourceId)) {
 			intensityMetrics.save(new IntensityMetric(target, metric.getName(), metric.getValue(), metric.getUnit()));
 		}
+		var rederived = 0;
 		if (withAssignments) {
+			var copies = new ArrayList<InventoryAssignment>();
 			for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(sourceId)) {
 				if (assignment.getActivity().isDeleted()) {
 					continue;
 				}
-				assignments.save(new InventoryAssignment(target, assignment));
+				copies.add(assignments.save(new InventoryAssignment(target, assignment)));
 			}
+			// spec 05.4: Appendix F is derived under the target's approach, never inherited
+			rederived = rederiveLeases(target, copies);
 		}
+		if (rebuild) {
+			target.setInheritanceNotes(json.writeValueAsString(new InheritanceNotes(true, rederived, List.copyOf(dropped))));
+		}
+	}
+
+	/** A detail the source computed for its own approach, such as "0% under operational control" (spec 05.4). */
+	static boolean isComputedDetail(String detail) {
+		return detail != null && detail.toLowerCase(Locale.ROOT)
+			.matches(".*\\b0\\s*%.*under (equity share|operational control|financial control).*");
+	}
+
+	private static BigDecimal percent(BigDecimal share) {
+		var percent = share.movePointRight(2).stripTrailingZeros();
+		return percent.scale() < 0 ? percent.setScale(0) : percent;
+	}
+
+	/** A boundary exclusion the copy left behind, and the share that made it moot (spec 05.4). */
+	public record DroppedExclusion(UUID entityId, String entityName, UUID facilityId, String facilityName,
+			ExclusionReason reason, String detail, BigDecimal sharePercent) {
+	}
+
+	/** What a copy across approaches did, as recorded at creation (spec 05.4). */
+	public record InheritanceNotes(boolean boundaryRebuilt, int leaseRederived, List<DroppedExclusion> droppedExclusions) {
+		static final InheritanceNotes NONE = new InheritanceNotes(false, 0, List.of());
 	}
 
 	/** What an inventory inherited from its source, and how many records the source never decided on (spec 05.3). */
 	public record Inheritance(UUID sourceInventoryId, String sourceName, long inherited, long undecided,
-			String correctionReason) {
+			String correctionReason, boolean boundaryRebuilt, int leaseRederived,
+			List<DroppedExclusion> droppedExclusions) {
 	}
 
 	@Transactional(readOnly = true)
@@ -769,8 +975,11 @@ public class InventoryService {
 			.filter(activity -> !decided.contains(activity.getId())
 					&& inventory.overlaps(activity.getPeriodStart(), activity.getPeriodEnd()))
 			.count();
+		var notes = inventory.getInheritanceNotes() == null ? InheritanceNotes.NONE
+				: json.readValue(inventory.getInheritanceNotes(), InheritanceNotes.class);
 		return Optional.of(new Inheritance(inventory.getCopiedFromId(), source == null ? null : source.getName(),
-				inherited, undecided, inventory.getCorrectionReason()));
+				inherited, undecided, inventory.getCorrectionReason(), notes.boundaryRebuilt(), notes.leaseRederived(),
+				notes.droppedExclusions()));
 	}
 
 	/** Keeps the report exactly as it was published (spec 05.3); the web layer renders it. */
@@ -949,7 +1158,8 @@ public class InventoryService {
 	}
 
 	/** The activity view's search, filters and page (spec 04.5); status is INCLUDED, EXCLUDED or UNCLASSIFIED. */
-	public record AssignmentQuery(String q, UUID facilityId, String status, int page, int size) {
+	public record AssignmentQuery(String q, UUID facilityId, String status, Scope scope, ActivityCategory category,
+			UUID streamId, LeaseType leaseType, int page, int size) {
 	}
 
 	public record AssignmentPage(List<InventoryAssignment> items, int page, int size, long total, long included,
@@ -967,6 +1177,20 @@ public class InventoryService {
 		var matching = all.stream().filter(a -> {
 			var activity = a.getActivity();
 			if (query.facilityId() != null && !activity.getFacility().getId().equals(query.facilityId())) {
+				return false;
+			}
+			// spec 05.5: review at scale filters by the classification too
+			if (query.scope() != null && a.getScope() != query.scope()) {
+				return false;
+			}
+			if (query.category() != null && a.getCategory() != query.category()) {
+				return false;
+			}
+			if (query.streamId() != null
+					&& (activity.getStream() == null || !activity.getStream().getId().equals(query.streamId()))) {
+				return false;
+			}
+			if (query.leaseType() != null && a.getLeaseType() != query.leaseType()) {
 				return false;
 			}
 			if (query.status() != null) {
@@ -1268,6 +1492,86 @@ public class InventoryService {
 	// --- validation gates ----------------------------------------------------
 
 	@Transactional(readOnly = true)
+	/**
+	 * How a leased assignment's stored scope disagrees with Appendix F under the
+	 * approach (spec 05.4), or null when it agrees or the assignment is not leased.
+	 */
+	static String leaseDisagreement(InventoryAssignment assignment, ConsolidationApproach approach) {
+		var derived = derivedFor(assignment, approach);
+		if (derived == null
+				|| derived.scope() == assignment.getScope() && derived.category() == assignment.getCategory()) {
+			return null;
+		}
+		return "is a leased asset (" + assignment.getLeaseType().name().toLowerCase().replace('_', ' ')
+				+ ") stored in " + scopeName(assignment.getScope()) + ", but Appendix F under "
+				+ approach.name().toLowerCase().replace('_', ' ') + " puts it in " + scopeName(derived.scope()) + " ("
+				+ categoryName(derived.category()) + "). Save its classification again to re-derive it.";
+	}
+
+	/** A record that stops the freeze (spec 05.5): the record, and the problem in words. */
+	public record FreezeBlocker(UUID activityId, String recordRef, String activityType, String facilityName,
+			String problem) {
+	}
+
+	@Transactional(readOnly = true)
+	public List<FreezeBlocker> freezeBlockers(UUID inventoryId) {
+		var inventory = get(inventoryId);
+		return freezeBlockers(inventory, boundaryTreatments.findAllByInventoryId(inventoryId));
+	}
+
+	/**
+	 * Spec 05.5: the freeze waits for a clean classification (an included record
+	 * without a factor, a scope departure without its justification, a leased
+	 * assignment whose scope disagrees with Appendix F) and for the drafts at
+	 * facilities in the boundary whose period overlaps the inventory's. Boundary
+	 * omissions keep allowing the freeze (spec 07.2).
+	 */
+	private List<FreezeBlocker> freezeBlockers(Inventory inventory, List<BoundaryTreatment> treatments) {
+		var approach = inventory.getConsolidationApproach();
+		var blockers = new ArrayList<FreezeBlocker>();
+		for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventory.getId())) {
+			if (!assignment.isIncluded()) {
+				continue;
+			}
+			var activity = assignment.getActivity();
+			String problem = null;
+			if (!assignment.isClassified()) {
+				problem = "is not classified";
+			}
+			else {
+				var stream = activity.getStream();
+				var defaultScope = stream != null ? stream.defaultScope()
+						: assignment.getEmissionFactor().getDefaultScope();
+				if (assignment.getLeaseType() == null && assignment.getScope() != defaultScope
+						&& assignment.getScopeJustification() == null) {
+					problem = "is classified in " + scopeName(assignment.getScope()) + " without a justification";
+				}
+				else if (leaseDisagreement(assignment, approach) != null) {
+					problem = "is a leased asset whose stored scope disagrees with Appendix F";
+				}
+			}
+			if (problem != null) {
+				blockers.add(new FreezeBlocker(activity.getId(), activity.getRecordRef(), activity.getActivityType(),
+						activity.getFacility().getName(), problem));
+			}
+		}
+		var boundaryFacilityIds = treatments.stream()
+			.flatMap(t -> t.getFacilities().stream())
+			.map(member -> member.getFacility().getId())
+			.collect(Collectors.toSet());
+		for (var draft : activities
+			.findAllByOrganizationIdAndDeletedAtIsNullAndDraftTrueOrderByCreatedAtAsc(inventory.getOrganization().getId())) {
+			if (!boundaryFacilityIds.contains(draft.getFacility().getId())) {
+				continue;
+			}
+			if (draft.period() != null && inventory.overlaps(draft.getPeriodStart(), draft.getPeriodEnd())) {
+				blockers.add(new FreezeBlocker(draft.getId(), draft.getRecordRef(), draft.getActivityType(),
+						draft.getFacility().getName(), "is a draft with data outstanding"));
+			}
+		}
+		return blockers;
+	}
+
 	public Report validate(UUID inventoryId) {
 		var inventory = get(inventoryId);
 		var units = organizationUnits.forOrganization(inventory.getOrganization().getId());
@@ -1355,6 +1659,7 @@ public class InventoryService {
 						+ "Tick it in, or record why it is left out."));
 			}
 		}
+		boundaryFindings.addAll(excludedWithAShare(inventory));
 
 		var completenessFindings = new ArrayList<Finding>();
 		var unreviewed = orgActivities.stream()
@@ -1486,6 +1791,12 @@ public class InventoryService {
 						+ " defaults to " + scopeName(defaultScope)
 						+ ". Record why (a justification of at least 10 characters), or classify it in "
 						+ scopeName(defaultScope) + "."));
+			}
+			// spec 05.4: a leased assignment's stored scope is always the Appendix F derivation
+			var disagreement = leaseDisagreement(assignment, approach);
+			if (disagreement != null) {
+				classificationFindings.add(new Finding(Severity.ERROR, "'" + activity.getActivityType() + "' ("
+						+ activity.getFacility().getName() + ") " + disagreement));
 			}
 		}
 
