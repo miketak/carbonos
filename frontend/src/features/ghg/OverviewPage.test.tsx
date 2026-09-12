@@ -24,6 +24,7 @@ const organization: Organization = {
   address: null,
   contact: null,
   facilityCount: 1,
+  supportAccess: [],
   createdAt: '2026-08-01T00:00:00Z',
 }
 

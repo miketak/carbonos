@@ -1,5 +1,6 @@
 import type {
   ActivityCategory,
+  AuditEvent,
   BoundaryVersionSummary,
   ConsolidationApproach,
   ExclusionReason,
@@ -322,4 +323,23 @@ export function describeWindow(from: string | null, to: string | null): string |
   if (!to) return `member from ${from}`
   if (!from) return `member until ${to}`
   return `member from ${from} until ${to}`
+}
+
+/** Every recorded act: an inventory's (spec 05.2) and an organization's (spec 01.3). */
+export const actionLabels: Record<AuditEvent['action'], string> = {
+  RUN_VOIDED: 'Run voided',
+  FINAL_WITHDRAWN: 'Final designation withdrawn',
+  CLASSIFIED: 'Record classified',
+  REVIEWED: 'Activity data reviewed',
+  FROZEN: 'Inventory frozen',
+  REOPENED: 'Inventory reopened',
+  RUN_LAUNCHED: 'Run launched',
+  FINAL_DESIGNATED: 'Final run designated',
+  PUBLISHED: 'Published',
+  CORRECTION_CREATED: 'Correction created',
+  HEADER_SAVED: 'Report header saved',
+  ADMIN_ACCESS_ASSUMED: 'Support access assumed',
+  ADMIN_ACCESS_ENDED: 'Support access ended',
+  ADMIN_ACCESS_EXPIRED: 'Support access expired',
+  ORGANIZATION_DELETED: 'Organization removed',
 }

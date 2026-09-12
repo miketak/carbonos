@@ -55,3 +55,40 @@ export function approveAccessRequest(id: string): Promise<AccessRequest> {
 export function denyAccessRequest(id: string): Promise<AccessRequest> {
   return api<AccessRequest>(`/api/admin/access-requests/${id}/deny`, { method: 'POST' })
 }
+
+// --- organizations and support access (spec 01.3) ---------------------------
+
+export interface SupportAccessGrant {
+  adminEmail: string
+  grantedAt: string
+  expiresAt: string
+  reason: string
+}
+
+/** How support staff find an organization they are not a member of. No inventory data. */
+export interface AdminOrganization {
+  id: string
+  name: string
+  ownerEmails: string[]
+  memberCount: number
+  /** The caller's own grant, when they hold one. */
+  supportAccess: SupportAccessGrant | null
+}
+
+export function listAdminOrganizations(): Promise<AdminOrganization[]> {
+  return api<AdminOrganization[]>('/api/admin/organizations')
+}
+
+export function assumeSupportAccess(
+  organizationId: string,
+  reason: string,
+): Promise<SupportAccessGrant> {
+  return api<SupportAccessGrant>(`/api/ghg/organizations/${organizationId}/support-access`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function endSupportAccess(organizationId: string): Promise<void> {
+  return api<void>(`/api/ghg/organizations/${organizationId}/support-access`, { method: 'DELETE' })
+}

@@ -406,6 +406,7 @@ beforeEach(() => {
     address: null,
     contact: null,
     facilityCount: 3,
+    supportAccess: [],
     createdAt: '2026-08-01T00:00:00Z',
   })
   vi.mocked(listStreams).mockReset().mockResolvedValue([])
@@ -1284,6 +1285,7 @@ test('marking a run final is confirmed with a note by a reviewer (spec 05.5)', a
     address: null,
     contact: null,
     facilityCount: 3,
+    supportAccess: [],
     createdAt: '2026-08-01T00:00:00Z',
   })
   vi.mocked(listRuns).mockResolvedValue([run])
@@ -1328,6 +1330,7 @@ test('a preparer sees Mark as final disabled with the role it needs (spec 01.4, 
     address: null,
     contact: null,
     facilityCount: 3,
+    supportAccess: [],
     createdAt: '2026-08-01T00:00:00Z',
   })
   vi.mocked(listRuns).mockResolvedValue([run])

@@ -22,6 +22,7 @@ const organizations: Organization[] = [
     address: null,
     contact: null,
     facilityCount: 2,
+    supportAccess: [],
     createdAt: '2026-08-29T00:00:00Z',
   },
   {
@@ -31,6 +32,7 @@ const organizations: Organization[] = [
     address: null,
     contact: null,
     facilityCount: 0,
+    supportAccess: [],
     createdAt: '2026-08-29T00:00:00Z',
   },
 ]

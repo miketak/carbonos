@@ -121,15 +121,28 @@ export interface OrganizationMember {
   createdAt: string
 }
 
+/** A platform administrator's live support grant on an organization (spec 01.3). */
+export interface SupportAccessGrant {
+  adminEmail: string
+  grantedAt: string
+  expiresAt: string
+  reason: string
+}
+
 export interface Organization {
   id: string
   name: string
-  /** The caller's role, or ADMIN for a platform administrator (spec 01.2). */
+  /**
+   * The caller's role (spec 01.2); ADMIN is a platform administrator holding
+   * active support access (spec 01.3), never a bare platform role.
+   */
   myRole: OrgRole | 'ADMIN' | null
   /** The reporting entity's address and contact for the report header (spec 07.4). */
   address: string | null
   contact: string | null
   facilityCount: number
+  /** The support grants in force, for the organization's owners to read (spec 01.3). */
+  supportAccess: SupportAccessGrant[]
   createdAt: string
 }
 
@@ -137,6 +150,12 @@ export interface OrganizationInput {
   name: string
   address?: string
   contact?: string
+}
+
+/** Spec 01.3: the organization's name typed exactly, and why it is being removed. */
+export interface DeleteOrganizationInput {
+  name: string
+  reason: string
 }
 
 /** What a facility is (spec 03.4). */
@@ -959,6 +978,10 @@ export interface AuditEvent {
     | 'PUBLISHED'
     | 'CORRECTION_CREATED'
     | 'HEADER_SAVED'
+    | 'ADMIN_ACCESS_ASSUMED'
+    | 'ADMIN_ACCESS_ENDED'
+    | 'ADMIN_ACCESS_EXPIRED'
+    | 'ORGANIZATION_DELETED'
   runId: string | null
   runNo: number | null
   actor: string
@@ -1518,8 +1541,17 @@ export function updateOrganization(id: string, input: OrganizationInput): Promis
   })
 }
 
-export function deleteOrganization(id: string): Promise<void> {
-  return api<void>(`/api/ghg/organizations/${id}`, { method: 'DELETE' })
+/** Removes an organization with a tombstone (spec 01.3): the owner types its name and a reason. */
+export function deleteOrganization(id: string, input: DeleteOrganizationInput): Promise<void> {
+  return api<void>(`/api/ghg/organizations/${id}`, {
+    method: 'DELETE',
+    body: JSON.stringify(input),
+  })
+}
+
+/** The organization's own history (spec 01.3): support access assumed, ended and expired. */
+export function listOrganizationEvents(organizationId: string): Promise<AuditEvent[]> {
+  return api<AuditEvent[]>(`/api/ghg/organizations/${organizationId}/events`)
 }
 
 // --- members (spec 01.2) ---------------------------------------------------------

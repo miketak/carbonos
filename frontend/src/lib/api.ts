@@ -103,3 +103,25 @@ export function problemDetail(error: unknown): string | undefined {
   }
   return undefined
 }
+
+/**
+ * What to show the user when a mutation is refused (spec 01.4). Every page
+ * prints the same wording, so a 403, a 404, a 409 and a dead connection read
+ * the same wherever the action happened.
+ */
+export function refusalMessage(error: unknown, myRole?: string | null): string {
+  const unreachable = 'CarbonOS could not reach the server. Try again.'
+  if (!(error instanceof ApiError) || error.status >= 500) return unreachable
+  const detail = problemDetail(error)
+  if (error.status === 403) {
+    const sentence = detail ?? 'This action needs a role you do not hold in the organization.'
+    return myRole === 'VERIFIER'
+      ? `Your role is read-only in this organization. ${sentence}`
+      : sentence
+  }
+  if (error.status === 404) {
+    const missing = 'The item was not found. It may have been removed by someone else.'
+    return detail ? `${missing} ${detail}` : missing
+  }
+  return detail ?? 'The change was refused.'
+}

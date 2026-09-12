@@ -19,7 +19,7 @@ import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
 import { PreflightPanel } from './components/PreflightPanel'
 import { ReportMetadataCard } from './components/ReportMetadataCard'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
-import { approachLabels, exclusionLabels, formatCo2e } from './format'
+import { actionLabels, approachLabels, exclusionLabels, formatCo2e } from './format'
 import {
   useBoundaryQuery,
   useInheritanceQuery,
@@ -482,20 +482,6 @@ function LaunchSection({
       )}
     </div>
   )
-}
-
-export const actionLabels: Record<AuditEvent['action'], string> = {
-  RUN_VOIDED: 'Run voided',
-  FINAL_WITHDRAWN: 'Final designation withdrawn',
-  CLASSIFIED: 'Record classified',
-  REVIEWED: 'Activity data reviewed',
-  FROZEN: 'Inventory frozen',
-  REOPENED: 'Inventory reopened',
-  RUN_LAUNCHED: 'Run launched',
-  FINAL_DESIGNATED: 'Final run designated',
-  PUBLISHED: 'Published',
-  CORRECTION_CREATED: 'Correction created',
-  HEADER_SAVED: 'Report header saved',
 }
 
 /** The recorded acts on the inventory (spec 05.2), newest first. */

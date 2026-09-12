@@ -63,6 +63,7 @@ import {
   listInventories,
   listMarketFactors,
   listMembers,
+  listOrganizationEvents,
   listOrganizationUnits,
   listOrganizations,
   listRuns,
@@ -110,6 +111,7 @@ import type {
   BoundaryTreatmentInput,
   ClassifyInput,
   CustomUnitInput,
+  DeleteOrganizationInput,
   DensityInput,
   EmissionFactorInput,
   EntityInput,
@@ -167,6 +169,10 @@ export const validationKey = (inventoryId: string) => ['ghg', 'validation', inve
 export const runsKey = (inventoryId: string) => ['ghg', 'runs', inventoryId] as const
 export const coverageKey = (inventoryId: string) => ['ghg', 'coverage', inventoryId] as const
 export const auditEventsKey = (inventoryId: string) => ['ghg', 'events', inventoryId] as const
+
+/** The organization's own history (spec 01.3), separate from an inventory's. */
+export const organizationEventsKey = (organizationId: string) =>
+  ['ghg', 'organization-events', organizationId] as const
 export const inheritanceKey = (inventoryId: string) => ['ghg', 'inheritance', inventoryId] as const
 export const runKey = (id: string) => ['ghg', 'run', id] as const
 export const reportKey = (runId: string) => ['ghg', 'report', runId] as const
@@ -520,8 +526,17 @@ export function useUpdateOrganization() {
 export function useDeleteOrganization() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deleteOrganization(id),
+    mutationFn: ({ id, input }: { id: string; input: DeleteOrganizationInput }) =>
+      deleteOrganization(id, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationsKey }),
+  })
+}
+
+/** The organization's own history: support access assumed, ended and expired (spec 01.3). */
+export function useOrganizationEventsQuery(organizationId: string) {
+  return useQuery({
+    queryKey: organizationEventsKey(organizationId),
+    queryFn: () => listOrganizationEvents(organizationId),
   })
 }
 
