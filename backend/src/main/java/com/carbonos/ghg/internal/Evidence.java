@@ -9,7 +9,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
@@ -31,6 +34,12 @@ public class Evidence {
 
 	@Column(name = "activity_id")
 	private UUID activityId;
+
+	// the same column as a read-only association, so the source documents page can join the record and
+	// its facility (spec 04.6)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "activity_id", insertable = false, updatable = false)
+	private ActivityRecord activity;
 
 	@Column(name = "market_factor_id")
 	private UUID marketFactorId;
@@ -97,6 +106,11 @@ public class Evidence {
 
 	public UUID getActivityId() {
 		return activityId;
+	}
+
+	/** The record the evidence belongs to, or null for an instrument's evidence. */
+	public ActivityRecord getActivity() {
+		return activity;
 	}
 
 	public UUID getMarketFactorId() {

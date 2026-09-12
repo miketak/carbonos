@@ -2677,19 +2677,19 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/csv"))));
 		var rows = csv.split("\r\n");
-		assertThat(rows[0]).startsWith("line_id,record_id,facility_id,facility,legal_entity,country,activity_type,evidence_ref,"
+		assertThat(rows[0]).startsWith("line_id,record_id,record_ref,facility_id,facility,legal_entity,country,activity_type,evidence_ref,"
 				+ "period_start,period_end,scope,category,lease_type,quantity,unit,factor_id,factor,factor_unit,"
 				+ "converted_quantity,conversion_factor,kg_co2e_per_unit,gwp_set,accounting_share,period_days,"
 				+ "covered_days,period_share,kg_co2e,");
 		assertThat(rows).hasSize(3);
 		var dieselRow = java.util.Arrays.stream(rows).filter(row -> row.contains("Genset diesel")).findFirst().orElseThrow();
-		assertThat(dieselRow).contains("," + diesel + ",").contains(",INV-2938,").contains("," + DIESEL_FACTOR + ",")
+		assertThat(dieselRow).contains("," + diesel + ",ACT-0001,").contains(",INV-2938,").contains("," + DIESEL_FACTOR + ",")
 			.contains(",2660,").contains(",AR5,");
 		// byte-identical on a second download
 		assertThat(body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember())))).isEqualTo(csv);
 		mvc.perform(get("/api/ghg/runs/" + runId + "/exclusions.csv").with(asMember()))
 			.andExpect(status().isOk())
-			.andExpect(content().string(org.hamcrest.Matchers.startsWith("record_id,facility,activity_type,")));
+			.andExpect(content().string(org.hamcrest.Matchers.startsWith("record_id,record_ref,facility,activity_type,")));
 
 		// the frozen inputs: the boundary version, the factor set and the instrument as recorded
 		var inputs = body(mvc.perform(get("/api/ghg/runs/" + runId + "/inputs.json").with(asMember()))
@@ -3763,5 +3763,357 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.byScope3Category[?(@.category == 'BUSINESS_TRAVEL')].lineCount").value(1))
 			.andExpect(jsonPath("$.operationalBoundary.notQuantified[0].category").value("INVESTMENTS"));
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember())).andExpect(status().isOk());
+	}
+
+	// --- the register as a workspace: drafts, readiness, record numbers, source documents (spec 04.6) ---
+
+	String createStream(String facilityId, String name, String fuel) throws Exception {
+		var result = mvc.perform(post("/api/ghg/facilities/" + facilityId + "/streams").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"name": "%s", "kind": "STATIONARY_COMBUSTION", "fuel": "%s", "meterOrSupplier": "Tank meter 3",
+					 "contractorOperated": false}""".formatted(name, fuel)))
+			.andExpect(status().isCreated())
+			.andReturn();
+		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+	}
+
+	org.springframework.test.web.servlet.ResultActions postActivity(String orgId, String json) throws Exception {
+		return mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content(json));
+	}
+
+	@Test
+	void activityRecordsAreNumberedPerOrganizationAndDraftsStayOutOfReview() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var otherOrg = createOrganization("Sankofa Gold");
+		var mine = createFacility(orgId, "Nkran Mine");
+		var otherMine = createFacility(otherOrg, "Bibiani Mine");
+
+		// numbers run per organization, from ACT-0001, in entry order
+		var first = createActivity(orgId, mine, "Genset diesel", "1000", "litre", "2025-08-01");
+		createActivity(orgId, mine, "Grid electricity", "500", "kWh", "2025-08-01");
+		createActivity(otherOrg, otherMine, "Genset diesel", "10", "litre", "2025-08-01");
+		mvc.perform(get("/api/ghg/activities/" + first).with(asMember()))
+			.andExpect(jsonPath("$.recordNo").value(1))
+			.andExpect(jsonPath("$.recordRef").value("ACT-0001"))
+			.andExpect(jsonPath("$.draft").value(false))
+			.andExpect(jsonPath("$.status").value("NEEDS_ATTENTION"))
+			.andExpect(jsonPath("$.issues").value(org.hamcrest.Matchers.contains("NO_STREAM", "EVIDENCE_REFERENCE_ONLY")));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("sort", "recordNo")
+			.param("dir", "asc"))
+			.andExpect(jsonPath("$.items[1].recordRef").value("ACT-0002"));
+		mvc.perform(get("/api/ghg/organizations/" + otherOrg + "/activities/page").with(asMember()))
+			.andExpect(jsonPath("$.items[0].recordRef").value("ACT-0001"));
+
+		// a fact needs its figures; a draft does not
+		postActivity(orgId, """
+				{"facilityId": "%s", "activityType": "July dispensing", "unit": "litre", "dataQuality": "MEASURED"}"""
+			.formatted(mine)).andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.quantity").value(org.hamcrest.Matchers.containsString("draft")));
+		var draft = JsonPath.<String>read(body(postActivity(orgId, """
+				{"draft": true, "facilityId": "%s", "activityType": "July dispensing", "periodStart": "2025-07-01",
+				 "periodEnd": "2025-07-31", "dataQuality": "MEASURED"}""".formatted(mine))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.recordRef").value("ACT-0003"))
+			.andExpect(jsonPath("$.status").value("DRAFT"))
+			.andExpect(jsonPath("$.quantity").doesNotExist())
+			.andExpect(jsonPath("$.issues").value(org.hamcrest.Matchers.hasItems("MISSING_QUANTITY", "MISSING_UNIT")))),
+				"$.id");
+		var undated = JsonPath.<String>read(body(postActivity(orgId, """
+				{"draft": true, "facilityId": "%s", "activityType": "Explosives", "dataQuality": "MEASURED"}"""
+			.formatted(mine)).andExpect(status().isCreated())), "$.id");
+
+		// a draft is edited without a reason and stays out of review, the gate and the coverage
+		mvc.perform(put("/api/ghg/activities/" + draft).with(asMember()).with(csrf()).contentType("application/json")
+			.content("""
+					{"draft": true, "facilityId": "%s", "activityType": "July dispensing", "quantity": 12500,
+					 "periodStart": "2025-07-01", "periodEnd": "2025-07-31", "dataQuality": "MEASURED"}""".formatted(mine)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("DRAFT"))
+			.andExpect(jsonPath("$.quantity").value(12500))
+			.andExpect(jsonPath("$.revisionCount").value(0));
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, mine);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.created").value(2));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[1].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[1].findings[?(@.severity == 'WARNING')].message").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.allOf(org.hamcrest.Matchers.containsString("2 draft records are not entered"),
+						org.hamcrest.Matchers.containsString("ACT-0003 'July dispensing' at Nkran Mine (2025-07-01 to 2025-07-31)"),
+						org.hamcrest.Matchers.containsString("ACT-0004 'Explosives' at Nkran Mine (no period)")))))
+			.andExpect(jsonPath("$.gates[1].findings[?(@.severity == 'INFO')].message").value(org.hamcrest.Matchers
+				.hasItem(org.hamcrest.Matchers.containsString("'Genset diesel' (2025-08-01) cites INV-2938 but nothing is attached"))));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/coverage").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityType == 'July dispensing')].pendingMonths").value(
+					org.hamcrest.Matchers.hasItem(java.util.List.of("2025-07"))))
+			.andExpect(jsonPath("$[?(@.activityType == 'July dispensing')].coveredMonths").value(
+					org.hamcrest.Matchers.hasItem(java.util.List.of())));
+
+		// entering the draft needs the figures and leaves an ENTERED revision naming who entered them
+		mvc.perform(put("/api/ghg/activities/" + draft).with(asMember()).with(csrf()).contentType("application/json")
+			.content("""
+					{"facilityId": "%s", "activityType": "July dispensing", "quantity": 12500,
+					 "periodStart": "2025-07-01", "periodEnd": "2025-07-31", "dataQuality": "MEASURED"}""".formatted(mine)))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.unit").exists());
+		mvc.perform(put("/api/ghg/activities/" + draft).with(asMember()).with(csrf()).contentType("application/json")
+			.content("""
+					{"facilityId": "%s", "activityType": "July dispensing", "quantity": 12500, "unit": "litre",
+					 "periodStart": "2025-07-01", "periodEnd": "2025-07-31", "dataSource": "Dispensing log",
+					 "evidenceRef": "LOG-07", "dataQuality": "MEASURED"}""".formatted(mine)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.draft").value(false))
+			.andExpect(jsonPath("$.status").value("NEEDS_ATTENTION"))
+			.andExpect(jsonPath("$.issues").value(org.hamcrest.Matchers.contains("NO_STREAM", "EVIDENCE_REFERENCE_ONLY")))
+			.andExpect(jsonPath("$.revisionCount").value(1));
+		mvc.perform(get("/api/ghg/activities/" + draft + "/revisions").with(asMember()))
+			.andExpect(jsonPath("$[0].kind").value("ENTERED"))
+			.andExpect(jsonPath("$[0].changedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$[0].changes[?(@.field == 'quantity')].after").value("12500"))
+			.andExpect(jsonPath("$[0].changes[?(@.field == 'draft')].before").value("true"));
+		// it is now a fact: reviewed on the next sync, corrected only with a reason, never a draft again
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.created").value(1));
+		mvc.perform(put("/api/ghg/activities/" + draft).with(asMember()).with(csrf()).contentType("application/json")
+			.content("""
+					{"draft": true, "facilityId": "%s", "activityType": "July dispensing", "dataQuality": "MEASURED"}"""
+				.formatted(mine)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("cannot go back to a draft")));
+		mvc.perform(put("/api/ghg/activities/" + draft).with(asMember()).with(csrf()).contentType("application/json")
+			.content("""
+					{"facilityId": "%s", "activityType": "July dispensing", "quantity": 12600, "unit": "litre",
+					 "periodStart": "2025-07-01", "periodEnd": "2025-07-31", "dataQuality": "MEASURED"}""".formatted(mine)))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.reason").exists());
+		// the undated draft can be removed like any record and keeps its number
+		mvc.perform(delete("/api/ghg/activities/" + undated).with(asMember()).with(csrf()).param("reason", "no such source"))
+			.andExpect(status().isNoContent());
+		createActivity(orgId, mine, "Grid electricity", "600", "kWh", "2025-09-01");
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("q", "ACT-0005"))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].quantity").value(600));
+	}
+
+	@Test
+	void theRegisterFiltersByReadinessAndReturnsCounts() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		var gensets = createStream(mine, "Standby gensets", "Diesel");
+		var ready = JsonPath.<String>read(body(postActivity(orgId, """
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Genset diesel", "quantity": 1000, "unit": "litre",
+				 "periodStart": "2025-03-31", "dataSource": "Fuel register", "evidenceRef": "INV-1",
+				 "dataQuality": "MEASURED"}""".formatted(mine, gensets)).andExpect(status().isCreated())
+			.andExpect(jsonPath("$.status").value("READY"))
+			.andExpect(jsonPath("$.periodEnd").value("2025-03-31"))), "$.id");
+		postActivity(orgId, """
+				{"facilityId": "%s", "activityType": "Genset diesel", "quantity": 900, "unit": "litre",
+				 "periodStart": "2025-04-30", "dataSource": "Fuel register", "evidenceRef": "INV-2",
+				 "dataQuality": "MEASURED"}""".formatted(mine)).andExpect(status().isCreated())
+			.andExpect(jsonPath("$.status").value("NEEDS_ATTENTION"))
+			.andExpect(jsonPath("$.issues").value(org.hamcrest.Matchers.contains("NO_STREAM", "EVIDENCE_REFERENCE_ONLY")));
+		postActivity(orgId, """
+				{"draft": true, "facilityId": "%s", "streamId": "%s", "activityType": "Genset diesel",
+				 "dataQuality": "MEASURED"}""".formatted(mine, gensets)).andExpect(status().isCreated());
+		var noEvidence = JsonPath.<String>read(body(postActivity(orgId, """
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Genset diesel", "quantity": 800, "unit": "litre",
+				 "periodStart": "2025-05-31", "dataSource": "Fuel register", "dataQuality": "MEASURED"}"""
+			.formatted(mine, gensets)).andExpect(status().isCreated())
+			.andExpect(jsonPath("$.status").value("NEEDS_ATTENTION"))
+			.andExpect(jsonPath("$.issues").value(org.hamcrest.Matchers.contains("NO_EVIDENCE")))), "$.id");
+		// an attachment makes it ready, and the register's counts follow
+		mvc.perform(post("/api/ghg/activities/" + noEvidence + "/evidence/links").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"name": "Fuel register (SharePoint)", "url": "https://example.com/register"}"""))
+			.andExpect(status().isCreated());
+		mvc.perform(get("/api/ghg/activities/" + noEvidence).with(asMember()))
+			.andExpect(jsonPath("$.status").value("READY"))
+			.andExpect(jsonPath("$.issues").isEmpty());
+
+		var page = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()))
+			.andExpect(jsonPath("$.total").value(4))
+			.andExpect(jsonPath("$.counts.total").value(4))
+			.andExpect(jsonPath("$.counts.ready").value(2))
+			.andExpect(jsonPath("$.counts.readyWithDocument").value(1))
+			.andExpect(jsonPath("$.counts.needsAttention").value(2))
+			.andExpect(jsonPath("$.counts.drafts").value(1)));
+		// the counts and the statuses of the items come from two implementations of one rule: they agree
+		List<String> statuses = JsonPath.read(page, "$.items[*].status");
+		assertThat(statuses.stream().filter("READY"::equals).count()).isEqualTo(2);
+		assertThat(statuses.stream().filter("DRAFT"::equals).count()).isEqualTo(1);
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("status", "READY"))
+			.andExpect(jsonPath("$.total").value(2))
+			.andExpect(jsonPath("$.items[*].status").value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("READY"))))
+			.andExpect(jsonPath("$.counts.total").value(4));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember())
+			.param("status", "NEEDS_ATTENTION"))
+			.andExpect(jsonPath("$.total").value(2))
+			.andExpect(jsonPath("$.items[*].status").value(org.hamcrest.Matchers.hasItems("NEEDS_ATTENTION", "DRAFT")));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("status", "DRAFT"))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].recordRef").value("ACT-0003"));
+		// the search box finds a record by its number in any spelling
+		for (var q : List.of("ACT-0001", "act1", "1")) {
+			mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("q", q))
+				.andExpect(jsonPath("$.total").value(1))
+				.andExpect(jsonPath("$.items[0].id").value(ready));
+		}
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("q", "gensets"))
+			.andExpect(jsonPath("$.total").value(3));
+	}
+
+	@Test
+	void aCsvImportPreviewsWithoutSavingAndTheCommitKeepsTheFile() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		createStream(mine, "Standby gensets", "Diesel");
+		postActivity(orgId, """
+				{"draft": true, "facilityId": "%s", "activityType": "Diesel consumption", "periodStart": "2025-03-01",
+				 "periodEnd": "2025-03-31", "dataQuality": "MEASURED"}""".formatted(mine))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.recordRef").value("ACT-0001"));
+		var csv = ("facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref\r\n"
+				+ "Nkran Mine,Standby gensets,Diesel consumption,12500,litre,2025-03-01,2025-03-31,Fuel register,INV-3\r\n"
+				+ "Nkran Mine,Standby gensets,Diesel consumption,300,gallon,2025-04-01,2025-06-30,,\r\n")
+			.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		var file = new org.springframework.mock.web.MockMultipartFile("file", "q1-dispensing.csv", "text/csv", csv);
+
+		// the dry run: every row as it would import, control totals, warnings; nothing saved
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import").file(file).param("dryRun", "true")
+			.with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.dryRun").value(true))
+			.andExpect(jsonPath("$.imported").value(0))
+			.andExpect(jsonPath("$.rejected").isEmpty())
+			.andExpect(jsonPath("$.rows.length()").value(2))
+			.andExpect(jsonPath("$.rows[0].row").value(2))
+			.andExpect(jsonPath("$.rows[0].status").value("READY"))
+			.andExpect(jsonPath("$.rows[0].issues").value(org.hamcrest.Matchers.contains("EVIDENCE_REFERENCE_ONLY")))
+			.andExpect(jsonPath("$.rows[1].status").value("NEEDS_ATTENTION"))
+			.andExpect(jsonPath("$.rows[1].issues").value(org.hamcrest.Matchers.contains("NO_DATA_SOURCE", "NO_EVIDENCE")))
+			.andExpect(jsonPath("$.totals.length()").value(2))
+			.andExpect(jsonPath("$.totals[0].unit").value("litre"))
+			.andExpect(jsonPath("$.totals[0].rows").value(1))
+			.andExpect(jsonPath("$.totals[0].quantity").value(12500))
+			.andExpect(jsonPath("$.warnings[*].message").value(org.hamcrest.Matchers.hasItems(
+					org.hamcrest.Matchers.containsString("matches draft ACT-0001"),
+					org.hamcrest.Matchers.containsString("mixes units in this file: gallon, litre"),
+					org.hamcrest.Matchers.containsString("longer than one month"))));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()))
+			.andExpect(jsonPath("$.total").value(1));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/import-batches").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(0));
+
+		// the commit numbers the rows in order, keeps the file with its digest and stamps each record
+		var batchId = JsonPath.<String>read(body(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import").file(file).with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.dryRun").value(false))
+			.andExpect(jsonPath("$.imported").value(2))
+			.andExpect(jsonPath("$.batchId").isNotEmpty())), "$.batchId");
+		var digest = java.util.HexFormat.of()
+			.formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(csv));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/import-batches").with(asMember()))
+			.andExpect(jsonPath("$[0].id").value(batchId))
+			.andExpect(jsonPath("$[0].fileName").value("q1-dispensing.csv"))
+			.andExpect(jsonPath("$[0].sha256").value(digest))
+			.andExpect(jsonPath("$[0].rowCount").value(2))
+			.andExpect(jsonPath("$[0].importedBy").value("kojo@ecoriv.com"));
+		mvc.perform(get("/api/ghg/import-batches/" + batchId + "/file").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("q1-dispensing.csv")))
+			.andExpect(content().bytes(csv));
+		mvc.perform(get("/api/ghg/import-batches/" + batchId + "/file").with(asOutsider())).andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("sort", "recordNo")
+			.param("dir", "asc").param("status", "NEEDS_ATTENTION"))
+			.andExpect(jsonPath("$.total").value(2))
+			.andExpect(jsonPath("$.items[0].recordRef").value("ACT-0001"))
+			.andExpect(jsonPath("$.items[1].recordRef").value("ACT-0003"))
+			.andExpect(jsonPath("$.items[1].importBatchId").value(batchId))
+			.andExpect(jsonPath("$.items[1].importRow").value(3));
+		// the same file again: every row a duplicate, and the draft still on file
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import").file(file).param("dryRun", "true")
+			.with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.rejected.length()").value(2))
+			.andExpect(jsonPath("$.rows").isEmpty());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("status", "DRAFT"))
+			.andExpect(jsonPath("$.total").value(1));
+	}
+
+	@Test
+	void evidenceOfAnOrganizationIsPagedWithItsRecord() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var diesel = createActivity(orgId, mine, "Genset diesel", "1000", "litre", "2025-08-01");
+		var power = createActivity(orgId, plant, "Mill grid electricity", "500", "kWh", "2025-08-01");
+		var pdf = new org.springframework.mock.web.MockMultipartFile("file", "invoice-2938.pdf", "application/pdf",
+				"%PDF-1.4 fuel invoice".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		var evidenceId = JsonPath.<String>read(body(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/activities/" + diesel + "/evidence").file(pdf).with(asMember()).with(csrf()))
+			.andExpect(status().isCreated())), "$.id");
+		mvc.perform(post("/api/ghg/activities/" + power + "/evidence/links").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"name": "ECG bill (SharePoint)", "url": "https://example.com/ecg-08"}"""))
+			.andExpect(status().isCreated());
+
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()))
+			.andExpect(jsonPath("$.total").value(2))
+			.andExpect(jsonPath("$.items[0].name").value("ECG bill (SharePoint)"))
+			.andExpect(jsonPath("$.items[0].recordRef").value("ACT-0002"))
+			.andExpect(jsonPath("$.items[0].activityType").value("Mill grid electricity"))
+			.andExpect(jsonPath("$.items[0].facilityName").value("Obuom Processing Plant"))
+			.andExpect(jsonPath("$.items[0].recordRemoved").value(false))
+			.andExpect(jsonPath("$.items[1].name").value("invoice-2938.pdf"))
+			.andExpect(jsonPath("$.items[1].periodStart").value("2025-08-01"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()).param("q", "invoice"))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].id").value(evidenceId));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()).param("facilityId", plant))
+			.andExpect(jsonPath("$.total").value(1));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()).param("filter", "LINK_ONLY"))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].kind").value("LINK"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()).param("filter", "ORPHANED"))
+			.andExpect(jsonPath("$.total").value(0));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asOutsider())).andExpect(status().isNotFound());
+
+		// the index for the verifier's pack: one row per document of a live record
+		var index = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/index.csv").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/csv"))));
+		assertThat(index).startsWith("record_ref,activity_type,facility,period_start,period_end,evidence_ref,document,kind,url,")
+			.contains("ACT-0001,Genset diesel,Nkran Mine,2025-08-01,2025-08-01,INV-2938,invoice-2938.pdf,FILE,,application/pdf,")
+			.contains("ACT-0002,Mill grid electricity,Obuom Processing Plant,2025-08-01,2025-08-01,INV-2938,ECG bill (SharePoint),LINK,https://example.com/ecg-08,");
+
+		// a removed record's document is an orphan: listed under that filter, out of the index
+		mvc.perform(delete("/api/ghg/activities/" + power).with(asMember()).with(csrf()).param("reason", "entered twice"))
+			.andExpect(status().isNoContent());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()).param("filter", "ORPHANED"))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].recordRemoved").value(true));
+		assertThat(body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/index.csv").with(asMember()))))
+			.doesNotContain("ACT-0002");
+
+		// once a run has calculated the record, its evidence stays on file
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, mine);
+		putBoundary(inventoryId, plant);
+		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + runId).with(asMember()))
+			.andExpect(jsonPath("$.lines[0].recordRef").value("ACT-0001"));
+		mvc.perform(delete("/api/ghg/evidence/" + evidenceId).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("stays on file")));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()))
+			.andExpect(jsonPath("$.total").value(2));
 	}
 }

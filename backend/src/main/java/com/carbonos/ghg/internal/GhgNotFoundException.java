@@ -91,6 +91,10 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Custom unit", id);
 	}
 
+	static GhgNotFoundException importBatch(UUID id) {
+		return new GhgNotFoundException("Import", id);
+	}
+
 	static GhgNotFoundException evidence(UUID id) {
 		return new GhgNotFoundException("Evidence", id);
 	}

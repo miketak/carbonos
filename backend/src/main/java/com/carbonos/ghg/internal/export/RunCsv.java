@@ -21,7 +21,8 @@ public final class RunCsv {
 
 	public static String lines(GhgRun run) {
 		var columns = List.<Column<GhgRunLine>>of(new Column<>("line_id", l -> l.getId()),
-				new Column<>("record_id", l -> l.getActivityId()), new Column<>("facility_id", l -> l.getFacilityId()),
+				new Column<>("record_id", l -> l.getActivityId()), new Column<>("record_ref", GhgRunLine::getRecordRef),
+				new Column<>("facility_id", l -> l.getFacilityId()),
 				new Column<>("facility", GhgRunLine::getFacilityName), new Column<>("legal_entity", GhgRunLine::getEntityName),
 				new Column<>("country", GhgRunLine::getCountry), new Column<>("activity_type", GhgRunLine::getActivityType),
 				new Column<>("evidence_ref", GhgRunLine::getEvidenceRef),
@@ -64,6 +65,7 @@ public final class RunCsv {
 
 	public static String exclusions(GhgRun run) {
 		var columns = List.<Column<GhgRunExclusion>>of(new Column<>("record_id", GhgRunExclusion::getActivityId),
+				new Column<>("record_ref", GhgRunExclusion::getRecordRef),
 				new Column<>("facility", GhgRunExclusion::getFacilityName),
 				new Column<>("activity_type", GhgRunExclusion::getActivityType),
 				new Column<>("period_start", GhgRunExclusion::getPeriodStart),

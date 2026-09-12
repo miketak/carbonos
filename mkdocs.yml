@@ -130,6 +130,7 @@ nav:
               - specs/04.3-source-streams-and-scope-choice.md
               - specs/04.4-activity-data-quality-evidence-and-corrections.md
               - specs/04.5-bulk-import-and-activity-register.md
+              - specs/04.6-activity-register-drafts-readiness-and-source-documents.md
           - "05 Inventories and calculation":
               - specs/05-inventories-and-calculation.md
               - specs/05.1-inventory-lifecycle-and-run-snapshots.md

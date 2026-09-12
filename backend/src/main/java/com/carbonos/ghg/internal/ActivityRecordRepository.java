@@ -17,6 +17,15 @@ public interface ActivityRecordRepository
 	@EntityGraph(attributePaths = { "facility", "stream" })
 	List<ActivityRecord> findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(UUID organizationId);
 
+	/** The facts: what inventories review, gates check and imports compare against; drafts stay out (spec 04.6). */
+	@EntityGraph(attributePaths = { "facility", "stream" })
+	List<ActivityRecord> findAllByOrganizationIdAndDeletedAtIsNullAndDraftFalseOrderByPeriodEndDesc(
+			UUID organizationId);
+
+	@EntityGraph(attributePaths = { "facility", "stream" })
+	List<ActivityRecord> findAllByOrganizationIdAndDeletedAtIsNullAndDraftTrueOrderByCreatedAtAsc(
+			UUID organizationId);
+
 	boolean existsByFacilityIdAndDeletedAtIsNull(UUID facilityId);
 
 	boolean existsByStreamIdAndDeletedAtIsNull(UUID streamId);

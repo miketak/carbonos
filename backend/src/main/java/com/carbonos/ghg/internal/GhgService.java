@@ -686,7 +686,7 @@ public class GhgService {
 		var inUse = activities
 			.findAllByFacilityOrganizationIdAndDeletedAtIsNullOrderByPeriodEndDesc(unit.getOrganizationId())
 			.stream()
-			.anyMatch(activity -> activity.getUnit().equalsIgnoreCase(unit.getCode()));
+			.anyMatch(activity -> activity.getUnit() != null && activity.getUnit().equalsIgnoreCase(unit.getCode()));
 		if (inUse) {
 			throw new GhgRuleViolationException("Records are recorded in " + unit.getCode()
 					+ ". Correct them into another unit before deleting the definition.");
@@ -768,31 +768,43 @@ public class GhgService {
 
 	// --- activity data (organizational facts) -------------------------------
 
-	/** A record with how much evidence and how many revisions it carries (spec 04.4). */
-	public record ActivitySummary(ActivityRecord activity, long evidenceCount, long revisionCount) {
+	/** A record with how much evidence and how many revisions it carries (spec 04.4), and its readiness (spec 04.6). */
+	public record ActivitySummary(ActivityRecord activity, long evidenceCount, long revisionCount,
+			ActivityReadiness readiness) {
 	}
 
-	/** The register's search, filters, sort and page (spec 04.5). */
-	public record ActivityQuery(String q, UUID facilityId, UUID streamId, LocalDate from, LocalDate to, String sort,
-			boolean descending, int page, int size) {
+	/** The register's search, filters, sort and page (spec 04.5), and its readiness filter (spec 04.6). */
+	public record ActivityQuery(String q, UUID facilityId, UUID streamId, LocalDate from, LocalDate to,
+			ActivityStatus status, String sort, boolean descending, int page, int size) {
 	}
 
-	/** One page of the register with the total that matches. */
-	public record ActivityPage(List<ActivitySummary> items, int page, int size, long total) {
+	/** How the records that match the search and filters (status aside) divide by readiness (spec 04.6). */
+	public record ActivityCounts(long total, long ready, long readyWithDocument, long needsAttention, long drafts) {
+	}
+
+	/** One page of the register with the total that matches and the counts by readiness. */
+	public record ActivityPage(List<ActivitySummary> items, int page, int size, long total, ActivityCounts counts) {
 	}
 
 	private static final java.util.Map<String, String> SORTS = java.util.Map.of("periodEnd", "periodEnd", "periodStart",
 			"periodStart", "facility", "facility.name", "activityType", "activityType", "quantity", "quantity",
-			"createdAt", "createdAt");
+			"createdAt", "createdAt", "recordNo", "recordNo");
+
+	// "ACT-0012", "act12" or "12" in the search box finds the record by number (spec 04.6)
+	private static final java.util.regex.Pattern RECORD_REF = java.util.regex.Pattern
+		.compile("(?i)^(?:act-?)?0*(\\d{1,9})$");
 
 	@Transactional(readOnly = true)
 	public ActivityPage searchActivities(UUID organizationId, ActivityQuery query) {
 		getOrganization(organizationId);
-		var like = query.q() == null || query.q().isBlank() ? null : "%" + query.q().trim().toLowerCase(Locale.ROOT) + "%";
-		org.springframework.data.jpa.domain.Specification<ActivityRecord> spec = (root, cq, cb) -> {
+		var trimmed = query.q() == null ? "" : query.q().trim();
+		var like = trimmed.isEmpty() ? null : "%" + trimmed.toLowerCase(Locale.ROOT) + "%";
+		var refMatch = RECORD_REF.matcher(trimmed);
+		var recordNo = refMatch.matches() ? Integer.valueOf(refMatch.group(1)) : null;
+		org.springframework.data.jpa.domain.Specification<ActivityRecord> base = (root, cq, cb) -> {
 			var facility = root.join("facility");
 			var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
-			predicates.add(cb.equal(facility.get("organization").get("id"), organizationId));
+			predicates.add(cb.equal(root.get("organizationId"), organizationId));
 			predicates.add(cb.isNull(root.get("deletedAt")));
 			if (query.facilityId() != null) {
 				predicates.add(cb.equal(facility.get("id"), query.facilityId()));
@@ -808,16 +820,36 @@ public class GhgService {
 			}
 			if (like != null) {
 				var stream = root.join("stream", jakarta.persistence.criteria.JoinType.LEFT);
-				predicates.add(cb.or(cb.like(cb.lower(root.get("activityType")), like),
-						cb.like(cb.lower(facility.get("name")), like),
+				var text = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>(List.of(
+						cb.like(cb.lower(root.get("activityType")), like), cb.like(cb.lower(facility.get("name")), like),
 						cb.like(cb.lower(cb.coalesce(root.get("dataSource"), "")), like),
 						cb.like(cb.lower(cb.coalesce(root.get("evidenceRef"), "")), like),
 						cb.like(cb.lower(cb.coalesce(root.get("note"), "")), like),
 						cb.like(cb.lower(cb.coalesce(stream.get("name"), "")), like),
-						cb.like(cb.lower(root.get("unit")), like)));
+						cb.like(cb.lower(cb.coalesce(root.get("unit"), "")), like)));
+				if (recordNo != null) {
+					text.add(cb.equal(root.get("recordNo"), recordNo));
+				}
+				predicates.add(cb.or(text.toArray(jakarta.persistence.criteria.Predicate[]::new)));
 			}
 			return cb.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
 		};
+		org.springframework.data.jpa.domain.Specification<ActivityRecord> readySpec = ActivityReadiness::ready;
+		org.springframework.data.jpa.domain.Specification<ActivityRecord> draftSpec = (root, cq, cb) -> cb
+			.isTrue(root.get("draft"));
+		org.springframework.data.jpa.domain.Specification<ActivityRecord> withDocumentSpec = (root, cq, cb) -> {
+			var attached = cq.subquery(Integer.class);
+			var item = attached.from(Evidence.class);
+			attached.select(cb.literal(1)).where(cb.equal(item.get("activityId"), root.get("id")));
+			return cb.exists(attached);
+		};
+		var spec = query.status() == null ? base : base.and(
+				(root, cq, cb) -> ActivityReadiness.forStatus(query.status(), root, cq, cb));
+		var total = activities.count(base);
+		var ready = activities.count(base.and(readySpec));
+		var readyWithDocument = activities.count(base.and(readySpec).and(withDocumentSpec));
+		var drafts = activities.count(base.and(draftSpec));
+		var counts = new ActivityCounts(total, ready, readyWithDocument, total - ready, drafts);
 		var property = SORTS.getOrDefault(query.sort() == null ? "periodEnd" : query.sort(), "periodEnd");
 		var direction = query.descending() ? org.springframework.data.domain.Sort.Direction.DESC
 				: org.springframework.data.domain.Sort.Direction.ASC;
@@ -843,10 +875,24 @@ public class GhgService {
 			if (record.getStream() != null) {
 				record.getStream().getName();
 			}
-			return new ActivitySummary(record, evidenceCounts.getOrDefault(record.getId(), 0L),
-					revisionCounts.getOrDefault(record.getId(), 0L));
+			var attached = evidenceCounts.getOrDefault(record.getId(), 0L);
+			return new ActivitySummary(record, attached, revisionCounts.getOrDefault(record.getId(), 0L),
+					ActivityReadiness.of(record, attached > 0));
 		}).toList();
-		return new ActivityPage(items, page.getNumber(), size, page.getTotalElements());
+		return new ActivityPage(items, page.getNumber(), size, page.getTotalElements(), counts);
+	}
+
+	/** One record with its counts and readiness (spec 04.6), for the drawer and after a save. */
+	@Transactional(readOnly = true)
+	public ActivitySummary summary(UUID id) {
+		var activity = getActivity(id);
+		activity.getFacility().getName();
+		if (activity.getStream() != null) {
+			activity.getStream().getName();
+		}
+		var attached = evidence.countByActivityId(id);
+		return new ActivitySummary(activity, attached, revisions.findAllByActivityIdIn(List.of(id)).size(),
+				ActivityReadiness.of(activity, attached > 0));
 	}
 
 	@Transactional(readOnly = true)
@@ -871,28 +917,67 @@ public class GhgService {
 			revisionCounts.merge(revision.getActivityId(), 1L, Long::sum);
 		}
 		return records.stream()
-			.map(record -> new ActivitySummary(record, evidenceCounts.getOrDefault(record.getId(), 0L),
-					revisionCounts.getOrDefault(record.getId(), 0L)))
+			.map(record -> {
+				var attached = evidenceCounts.getOrDefault(record.getId(), 0L);
+				return new ActivitySummary(record, attached, revisionCounts.getOrDefault(record.getId(), 0L),
+						ActivityReadiness.of(record, attached > 0));
+			})
 			.toList();
 	}
 
-	/** The facts of a record as a request states them (spec 04.4: with its quality tier and uncertainty). */
-	public record ActivityFacts(UUID facilityId, UUID streamId, String activityType, BigDecimal quantity, String unit,
-			LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef, DataQuality dataQuality,
-			String note, Integer dataQualityTier, BigDecimal uncertaintyPercent) {
+	/**
+	 * The facts of a record as a request states them (spec 04.4: with its quality
+	 * tier and uncertainty; spec 04.6: as a draft, which may lack quantity, unit
+	 * or period).
+	 */
+	public record ActivityFacts(boolean draft, UUID facilityId, UUID streamId, String activityType,
+			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
+			String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
+			BigDecimal uncertaintyPercent) {
+
+		String unitOrNull() {
+			return unit == null || unit.isBlank() ? null : unit.trim();
+		}
 	}
 
 	public ActivityRecord createActivity(UUID organizationId, ActivityFacts facts) {
-		access.checkWrite(getOrganization(organizationId));
+		// row-locked: the record number is taken from the organization's counter (spec 04.6)
+		var organization = organizations.lockById(organizationId)
+			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
+		access.checkWrite(organization);
 		var facility = requireFacilityInOrganization(facts.facilityId(), organizationId);
-		requirePeriod(facts.periodStart(), facts.periodEnd());
+		requireFactComplete(facts);
 		if (facts.dataQualityTier() != null) {
 			DataQualityTier.require(facts.dataQualityTier());
 		}
-		return activities.save(new ActivityRecord(facility, requireStreamOfFacility(facts.streamId(), facility),
-				facts.activityType().trim(), facts.quantity(), facts.unit().trim(), facts.periodStart(),
-				facts.periodEnd(), trimToNull(facts.dataSource()), trimToNull(facts.evidenceRef()),
-				facts.dataQuality(), trimToNull(facts.note()), facts.dataQualityTier(), facts.uncertaintyPercent()));
+		var recordNo = organization.allocateRecordNumbers(1);
+		return activities.save(new ActivityRecord(recordNo, facts.draft(), facility,
+				requireStreamOfFacility(facts.streamId(), facility), facts.activityType().trim(), facts.quantity(),
+				facts.unitOrNull(), facts.periodStart(), facts.periodEnd(), trimToNull(facts.dataSource()),
+				trimToNull(facts.evidenceRef()), facts.dataQuality(), trimToNull(facts.note()),
+				facts.dataQualityTier(), facts.uncertaintyPercent()));
+	}
+
+	/** A fact carries quantity, unit and period; only a draft may leave them out (spec 04.6). */
+	private static void requireFactComplete(ActivityFacts facts) {
+		if (!facts.draft()) {
+			if (facts.quantity() == null) {
+				throw new GhgFieldException("quantity", "A quantity is required unless the record is saved as a draft.");
+			}
+			if (facts.unitOrNull() == null) {
+				throw new GhgFieldException("unit", "A unit is required unless the record is saved as a draft.");
+			}
+			if (facts.periodStart() == null) {
+				throw new GhgFieldException("periodStart",
+						"A period is required unless the record is saved as a draft.");
+			}
+		}
+		if (facts.periodStart() != null && facts.periodEnd() != null) {
+			requirePeriod(facts.periodStart(), facts.periodEnd());
+		}
+		else if (facts.periodStart() == null && facts.periodEnd() != null) {
+			throw new GhgFieldException("periodStart", "A period end needs a period start.");
+		}
 	}
 
 	/**
@@ -905,25 +990,41 @@ public class GhgService {
 	public ActivityRecord updateActivity(UUID id, ActivityFacts facts, String reason) {
 		var activity = getActivity(id);
 		access.checkWrite(activity.getFacility().getOrganization());
-		requireReason(reason, "A correction");
 		if (activity.isDeleted()) {
 			throw new GhgRuleViolationException("This record was removed and cannot be corrected.");
 		}
+		// spec 04.6: a draft is not yet a fact, so editing it needs no reason; a fact never goes back
+		if (!activity.isDraft() && facts.draft()) {
+			throw new GhgRuleViolationException(
+					"A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft.");
+		}
+		var promoting = activity.isDraft() && !facts.draft();
+		if (!activity.isDraft()) {
+			requireReason(reason, "A correction");
+		}
 		var organizationId = activity.getFacility().getOrganization().getId();
 		var facility = requireFacilityInOrganization(facts.facilityId(), organizationId);
-		requirePeriod(facts.periodStart(), facts.periodEnd());
+		requireFactComplete(facts);
 		var tier = facts.dataQualityTier() == null ? activity.getDataQualityTier() : facts.dataQualityTier();
 		DataQualityTier.require(tier);
 		var stream = requireStreamOfFacility(facts.streamId(), facility);
-		var changes = activity.changesTo(facility, stream, facts.activityType().trim(), facts.quantity(),
-				facts.unit().trim(), facts.periodStart(), facts.periodEnd(), trimToNull(facts.dataSource()),
+		var changes = activity.changesTo(facts.draft(), facility, stream, facts.activityType().trim(),
+				facts.quantity(), facts.unitOrNull(), facts.periodStart(), facts.periodEnd(),
+				trimToNull(facts.dataSource()), trimToNull(facts.evidenceRef()), facts.dataQuality(),
+				trimToNull(facts.note()), tier, facts.uncertaintyPercent());
+		activity.update(facts.draft(), facility, stream, facts.activityType().trim(), facts.quantity(),
+				facts.unitOrNull(), facts.periodStart(), facts.periodEnd(), trimToNull(facts.dataSource()),
 				trimToNull(facts.evidenceRef()), facts.dataQuality(), trimToNull(facts.note()), tier,
 				facts.uncertaintyPercent());
-		activity.update(facility, stream, facts.activityType().trim(), facts.quantity(), facts.unit().trim(),
-				facts.periodStart(), facts.periodEnd(), trimToNull(facts.dataSource()), trimToNull(facts.evidenceRef()),
-				facts.dataQuality(), trimToNull(facts.note()), tier, facts.uncertaintyPercent());
-		revisions.save(new ActivityRevision(id, ActivityRevision.Kind.CORRECTED, reason.trim(), changes,
-				access.currentUserId(), access.currentUserEmail()));
+		if (promoting) {
+			// the audit trail names who entered the figures, not who opened the stub
+			revisions.save(new ActivityRevision(id, ActivityRevision.Kind.ENTERED, "Entered from a draft.",
+					activity.entered(), access.currentUserId(), access.currentUserEmail()));
+		}
+		else if (!activity.isDraft()) {
+			revisions.save(new ActivityRevision(id, ActivityRevision.Kind.CORRECTED, reason.trim(), changes,
+					access.currentUserId(), access.currentUserEmail()));
+		}
 		return activity;
 	}
 

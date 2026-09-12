@@ -33,6 +33,10 @@ public class GhgRunExclusion {
 	@Column(name = "activity_id", nullable = false)
 	private UUID activityId;
 
+	// the record's number when the run was launched (spec 04.6); null on lines of runs before V34
+	@Column(name = "record_no")
+	private Integer recordNo;
+
 	@Column(name = "facility_name", nullable = false, length = 120)
 	private String facilityName;
 
@@ -72,6 +76,7 @@ public class GhgRunExclusion {
 		this.id = UUID.randomUUID();
 		this.run = run;
 		this.activityId = activity.getId();
+		this.recordNo = activity.getRecordNo();
 		this.facilityName = activity.getFacility().getName();
 		this.activityType = activity.getActivityType();
 		this.quantity = activity.getQuantity();
@@ -90,6 +95,15 @@ public class GhgRunExclusion {
 
 	public UUID getActivityId() {
 		return activityId;
+	}
+
+	public Integer getRecordNo() {
+		return recordNo;
+	}
+
+	/** {@code ACT-0001}, or empty on a line of a run before V34. */
+	public String getRecordRef() {
+		return ActivityRecord.ref(recordNo);
 	}
 
 	public String getFacilityName() {

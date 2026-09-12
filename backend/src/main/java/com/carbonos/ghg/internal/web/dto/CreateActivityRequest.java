@@ -18,15 +18,21 @@ import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * A record as the form or the drawer sends it. Quantity, unit and period are
+ * required unless {@code draft} is true (spec 04.6); the service says which one
+ * is missing, so the drawer shows the message beside the field.
+ */
 public record CreateActivityRequest( //
+		Boolean draft, //
 		@NotNull UUID facilityId, //
 		UUID streamId, //
 		@NotBlank @Size(max = 120) String activityType, //
-		@NotNull @Positive @Digits(integer = 11, fraction = 3) BigDecimal quantity, //
-		@NotBlank @Size(max = 30) String unit, //
+		@Positive @Digits(integer = 11, fraction = 3) BigDecimal quantity, //
+		@Size(max = 30) String unit, //
 		// the period the quantity was consumed or emitted over (spec 04.2); a reading is a one-day period
-		@NotNull @PastOrPresent(message = "The period start cannot be after today.") LocalDate periodStart, //
-		@NotNull @PastOrPresent(message = "The period end cannot be after today.") LocalDate periodEnd, //
+		@PastOrPresent(message = "The period start cannot be after today.") LocalDate periodStart, //
+		@PastOrPresent(message = "The period end cannot be after today.") LocalDate periodEnd, //
 		@Size(max = 120) String dataSource, //
 		@Size(max = 150) String evidenceRef, //
 		@NotNull DataQuality dataQuality, //
@@ -38,7 +44,8 @@ public record CreateActivityRequest( //
 		@Size(max = 500) String reason) {
 
 	public GhgService.ActivityFacts toFacts() {
-		return new GhgService.ActivityFacts(facilityId, streamId, activityType, quantity, unit, periodStart,
-				periodEnd, dataSource, evidenceRef, dataQuality, note, dataQualityTier, uncertaintyPercent);
+		return new GhgService.ActivityFacts(Boolean.TRUE.equals(draft), facilityId, streamId, activityType, quantity,
+				unit, periodStart, periodEnd == null ? periodStart : periodEnd, dataSource, evidenceRef, dataQuality,
+				note, dataQualityTier, uncertaintyPercent);
 	}
 }

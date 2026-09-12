@@ -29,6 +29,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 04.3 | [Source streams, explicit scope choice and proxy factors](04.3-source-streams-and-scope-choice.md) | Ch. 4, 7 | Implemented |
 | 04.4 | [Activity data quality, evidence, corrections, and justified exclusions](04.4-activity-data-quality-evidence-and-corrections.md) | Ch. 7, 9, Scope 3 Standard Ch. 7, ISO 14064-1 | Implemented |
 | 04.5 | [Bulk import and the activity register](04.5-bulk-import-and-activity-register.md) | Ch. 7, ISO 14064-1 | Implemented |
+| 04.6 | [The activity register as a workspace: drafts, readiness, record numbers and source documents](04.6-activity-register-drafts-readiness-and-source-documents.md) | Ch. 7, 9, ISO 14064-1, ISO 14064-3 | Approved |
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
 | 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |

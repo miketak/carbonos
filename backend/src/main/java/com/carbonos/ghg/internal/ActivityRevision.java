@@ -14,8 +14,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * One correction of an activity record, or its removal (spec 04.4): who, when,
- * why, and each field's old and new value. Facts are corrected in place
+ * One correction of an activity record, its removal (spec 04.4) or its entry
+ * from a draft (spec 04.6): who, when, why, and each field's old and new value. Facts are corrected in place
  * (CORRECT-01); this is the history the in-place edit would otherwise lose.
  */
 @Entity
@@ -23,7 +23,9 @@ import jakarta.persistence.Table;
 public class ActivityRevision {
 
 	public enum Kind {
-		CORRECTED, REMOVED
+		CORRECTED, REMOVED,
+		/** A draft entered as a fact (spec 04.6): who entered the figures, and what they were. */
+		ENTERED
 	}
 
 	@Id

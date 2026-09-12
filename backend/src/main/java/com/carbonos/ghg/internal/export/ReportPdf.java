@@ -267,7 +267,7 @@ public final class ReportPdf {
 				var recs = table(6, 22, 16, 12, 12, 26, 12);
 				head(recs, "Record", "Facility", "Quantity", "Period", "Reason and justification", "Est. kg CO2e");
 				for (var x : report.exclusions()) {
-					row(recs, x.activityType(), x.facilityName(), plain(x.quantity()) + " " + x.unit(),
+					row(recs, ref(x.recordRef()) + x.activityType(), x.facilityName(), plain(x.quantity()) + " " + x.unit(),
 							x.periodStart() + (x.periodStart().equals(x.periodEnd()) ? "" : " to " + x.periodEnd()),
 							x.exclusionReason().name() + (x.exclusionDetail() == null ? "" : ": " + x.exclusionDetail())
 									+ (x.exclusionJustification() == null ? "" : ". " + x.exclusionJustification()),
@@ -280,7 +280,7 @@ public final class ReportPdf {
 			var lines = table(7, 18, 22, 9, 15, 12, 8, 16);
 			head(lines, "Facility", "Record / factor", "Scope", "Quantity", "kg CO2e / unit", "Share", "kg CO2e");
 			for (var l : report.lines()) {
-				row(lines, l.facilityName(), nvl(l.activityType(), "") + "\n" + l.factorName(), l.scope().name().replace("SCOPE_", ""),
+				row(lines, l.facilityName(), ref(l.recordRef()) + nvl(l.activityType(), "") + "\n" + l.factorName(), l.scope().name().replace("SCOPE_", ""),
 						plain(l.quantity()) + " " + l.unit() + (l.convertedQuantity().compareTo(l.quantity()) == 0 ? ""
 								: " = " + plain(l.convertedQuantity()) + " " + l.factorUnit())
 								+ (l.conversionNote() == null ? "" : "\n" + l.conversionNote()),
@@ -393,6 +393,11 @@ public final class ReportPdf {
 		return b == null ? a : a + ", " + b;
 	}
 
+
+	/** The record number as a prefix, "ACT-0007 ", or nothing for a line of a run before the numbers existed. */
+	private static String ref(String recordRef) {
+		return recordRef == null || recordRef.isEmpty() ? "" : recordRef + " ";
+	}
 	private static String nvl(String value, String fallback) {
 		return value == null ? fallback : value;
 	}

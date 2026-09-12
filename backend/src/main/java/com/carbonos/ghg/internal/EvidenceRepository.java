@@ -5,8 +5,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface EvidenceRepository extends JpaRepository<Evidence, UUID> {
+public interface EvidenceRepository extends JpaRepository<Evidence, UUID>, JpaSpecificationExecutor<Evidence> {
 
 	List<Evidence> findAllByActivityIdOrderByUploadedAtAsc(UUID activityId);
 

@@ -31,6 +31,10 @@ public class Organization {
 	@Column(length = 160)
 	private String contact;
 
+	// the next free record number (spec 04.6); read under a row lock when numbers are taken
+	@Column(name = "next_record_no", nullable = false)
+	private int nextRecordNo = 1;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -83,6 +87,17 @@ public class Organization {
 	void setHeader(String address, String contact) {
 		this.address = address;
 		this.contact = contact;
+	}
+
+	public int getNextRecordNo() {
+		return nextRecordNo;
+	}
+
+	/** Takes {@code count} consecutive record numbers and returns the first (spec 04.6). */
+	int allocateRecordNumbers(int count) {
+		var first = nextRecordNo;
+		nextRecordNo += count;
+		return first;
 	}
 
 }
