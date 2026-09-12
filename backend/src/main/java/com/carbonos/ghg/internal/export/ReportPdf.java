@@ -2,8 +2,10 @@ package com.carbonos.ghg.internal.export;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
+import com.carbonos.ghg.internal.Scope;
 import com.carbonos.ghg.internal.web.dto.ReportResponse;
 import com.lowagie.text.Chunk;
 import com.lowagie.text.Document;
@@ -24,9 +26,17 @@ import com.lowagie.text.pdf.PdfWriter;
 /**
  * The inventory report as a document (spec 07.5), in the order Chapter 9
  * lists its elements: header, company and boundary, operational boundary,
- * period, emissions by scope and the breakdowns, gases, biogenic CO2, base
- * year, methodology and factors, exclusions, lines. Built from the report
- * composite, which reads the run's snapshot only.
+ * period, emissions by scope with the market-based method and the breakdowns,
+ * gases, biogenic CO2, base year, methodology and factors, exclusions, lines.
+ * Built from the report composite, which reads the run's snapshot only.
+ *
+ * <p>Readability (spec 07.8): every enum prints through {@link ReportLabels},
+ * every date and instant in reader form, and a heading is never the last
+ * thing on a page. A heading that introduces a table is the table's first
+ * row, a header row spanning every column, so the layout engine moves
+ * heading, column header and first data row as one block and repeats the
+ * header rows when the table continues on a new page. A heading that
+ * introduces a paragraph shares the paragraph with it.
  */
 public final class ReportPdf {
 
@@ -42,6 +52,18 @@ public final class ReportPdf {
 			+ "not separable; the source did not publish them.";
 	static final String MARKET_BASED_NOTE = "The market-based scope 2 figure is not split by gas; its instruments and "
 			+ "balance are in section 04.";
+
+	/** The section headings in document order, for the layout test. */
+	static final List<String> HEADINGS = List.of("Report", "1. Company and organizational boundary",
+			"2. Operational boundary", "3. Reporting period", "4. Emissions by scope (tonnes CO2e)",
+			"5. Emissions by gas", "6. Biogenic CO2", "7. Base year", "8. Methodology and emission factors",
+			"8a. Data quality and uncertainty", "9. Exclusions", "10. Snapshot lines (kg CO2e)");
+
+	/** The subheadings that introduce a table, for the layout test. */
+	static final List<String> TABLE_SUBHEADINGS = List.of("Scope 3 by category (declared and reported)", "By facility",
+			"By legal entity", "By country", "Emissions profile over time", "Other views of the same periods",
+			"Emission factors applied", "Emissions by data quality tier", "Operations left out of the boundary",
+			"Records left out of the run");
 
 	private ReportPdf() {
 	}
@@ -63,27 +85,28 @@ public final class ReportPdf {
 			}
 			document.add(new Paragraph(" "));
 
-			heading(document, "Report");
-			var header = table(2, 30, 70);
+			var header = titled("Report", H2, 30, 70);
 			row(header, "Reporting entity", join(h.organizationName(), h.address()));
 			row(header, "Contact", nvl(h.contact(), "not recorded"));
-			row(header, "Reporting period", h.periodLabel() + " (" + h.periodStart() + " to " + h.periodEnd() + ")");
-			row(header, "Prepared by", nvl(h.preparedBy(), "not recorded") + ", " + h.preparedAt());
+			row(header, "Reporting period", h.periodLabel() + " (" + ReportLabels.period(h.periodStart(), h.periodEnd()) + ")");
+			row(header, "Prepared by", nvl(h.preparedBy(), "not recorded") + ", " + ReportLabels.instant(h.preparedAt()));
 			row(header, "Approved by", nvl(h.approvedBy(), "not yet approved"));
 			row(header, "Published", h.publishedAt() == null ? "not published"
-					: h.publishedAt() + " by " + nvl(h.publishedBy(), "unknown"));
+					: ReportLabels.instant(h.publishedAt()) + " by " + nvl(h.publishedBy(), "unknown"));
 			row(header, "Version", h.version() + (h.supersedes().isEmpty() ? "" : ", supersedes " + String.join(", ", h.supersedes()))
 					+ (h.supersededBy() == null ? "" : "; superseded by " + h.supersededBy()));
-			row(header, "Assurance", h.assuranceLevel() + (h.assuranceProvider() == null ? "" : " by " + h.assuranceProvider())
+			row(header, "Assurance", ReportLabels.label(h.assuranceLevel())
+					+ (h.assuranceProvider() == null ? "" : " by " + h.assuranceProvider())
 					+ (h.assuranceStatement() == null ? "" : " (" + h.assuranceStatement() + ")"));
 			document.add(header);
 
-			heading(document, "1. Company and organizational boundary");
-			document.add(new Paragraph(report.company().organizationName() + ", " + report.company().consolidationApproach()
-					+ " approach (Corporate Standard, chapter 3)." + (report.company().boundaryVersion() == null ? ""
-							: " Boundary version " + report.company().boundaryVersion().version().versionNo() + "."), BODY));
+			paragraph(document, "1. Company and organizational boundary", report.company().organizationName() + ", "
+					+ ReportLabels.lower(report.company().consolidationApproach()) + " approach (Corporate Standard, chapter 3)."
+					+ (report.company().boundaryVersion() == null ? ""
+							: " Boundary version " + report.company().boundaryVersion().version().versionNo() + "."));
 			if (report.company().boundaryVersion() != null) {
-				var boundary = table(4, 34, 22, 22, 22);
+				var boundary = titled("Boundary version " + report.company().boundaryVersion().version().versionNo(), SMALL_BOLD,
+						34, 22, 22, 22);
 				head(boundary, "Legal entity", "Table 1 row", "Share", "Window");
 				for (var entry : report.company().boundaryVersion().entries()) {
 					row(boundary, entry.entityName() + (entry.excluded() ? " (excluded: " + entry.exclusionReason() + ")" : ""),
@@ -93,68 +116,72 @@ public final class ReportPdf {
 				document.add(boundary);
 			}
 
-			heading(document, "2. Operational boundary");
 			var ob = report.operationalBoundary();
-			document.add(new Paragraph("Scopes covered: " + ob.scopesCovered() + ". Scope 3 categories declared: "
-					+ (ob.scope3Categories().isEmpty() ? "none" : ob.scope3Categories()) + "."
-					+ (ob.exclusionsRationale() == null ? "" : " " + ob.exclusionsRationale()), BODY));
+			var declaration = new StringBuilder("Scopes covered: " + ReportLabels.list(ob.scopesCovered())
+					+ ". Scope 3 categories declared: "
+					+ (ob.scope3Categories().isEmpty() ? "none" : ReportLabels.list(ob.scope3Categories())) + ".");
+			for (var item : ob.notQuantified()) {
+				declaration.append(' ').append(ReportLabels.label(item.category())).append(" is declared, not quantified: ")
+					.append(sentence(item.reason()));
+			}
+			if (ob.exclusionsRationale() != null) {
+				declaration.append(' ').append(ob.exclusionsRationale());
+			}
+			paragraph(document, "2. Operational boundary", declaration.toString());
 
-			heading(document, "3. Reporting period");
-			document.add(new Paragraph(report.period().periodStart() + " to " + report.period().periodEnd() + " ("
-					+ report.period().inventoryName() + ", " + report.period().status() + ").", BODY));
+			paragraph(document, "3. Reporting period", ReportLabels.period(report.period().periodStart(), report.period().periodEnd())
+					+ " (" + report.period().inventoryName() + ", " + ReportLabels.lower(report.period().status()) + ").");
 
-			heading(document, "4. Emissions by scope (tonnes CO2e)");
 			var e = report.emissions();
-			var scopes = table(2, 60, 40);
+			var scopes = titled("4. Emissions by scope (tonnes CO2e)", H2, 60, 40);
 			row(scopes, "Scope 1", tonnes(e.scope1TCo2e()));
 			row(scopes, "Scope 2, location-based", tonnes(e.scope2LocationBasedTCo2e()));
-			row(scopes, "Scope 2, market-based (" + e.scope2MarketBasis() + ")", tonnes(e.scope2MarketBasedTCo2e()));
+			row(scopes, "Scope 2, market-based", tonnes(e.scope2MarketBasedTCo2e()));
 			row(scopes, "Scope 3", tonnes(e.scope3TCo2e()));
 			row(scopes, "Total (location-based scope 2)", tonnes(e.totalTCo2e()));
 			document.add(scopes);
-			document.add(new Paragraph(nvl(e.residualMixDisclosure(), ""), SMALL));
+			// spec 07.8: the market-based method sits under the scope table, once its context is clear
+			subparagraph(document, "Scope 2, market-based method", "Basis: " + ReportLabels.label(e.scope2MarketBasis()) + ". "
+					+ nvl(e.residualMixDisclosure(), "")
+					+ (e.marketInstruments().isEmpty() ? " No contractual instruments were held." : ""));
+			for (var instrument : e.marketInstruments()) {
+				var outcomes = new ArrayList<String>();
+				for (var c : instrument.criteria()) {
+					outcomes.add(ReportLabels.criterion(c.code()) + ": " + ReportLabels.label(c.answer()));
+				}
+				document.add(new Paragraph(instrument.facilityName() + ", " + ReportLabels.lower(instrument.instrumentType())
+						+ ", " + plain(instrument.kgCo2ePerKwh()) + " kg CO2e/kWh (" + instrument.source() + ")"
+						+ (instrument.certificateId() == null ? "" : ", certificate " + instrument.certificateId())
+						+ (instrument.registry() == null ? "" : " at " + instrument.registry())
+						+ (instrument.vintage() == null ? "" : ", vintage " + instrument.vintage())
+						+ (instrument.retirementDate() == null ? "" : ", retired " + ReportLabels.date(instrument.retirementDate()))
+						+ ": " + (instrument.meetsQualityCriteria() ? "meets every Scope 2 Quality Criterion" : "not applied") + ". "
+						+ String.join("; ", outcomes) + ".", SMALL));
+			}
 			if (!report.byScope3Category().isEmpty()) {
-				subheading(document, "Scope 3 by category (declared and reported)");
-				var cats = table(4, 40, 20, 10, 30);
+				var cats = titled("Scope 3 by category (declared and reported)", SMALL_BOLD, 40, 20, 10, 30);
 				head(cats, "Category", "Declared", "Lines", "t CO2e");
 				for (var c : report.byScope3Category()) {
-					row(cats, c.category().name(), c.declared() ? "yes" : "no (reported, not declared)",
+					row(cats, ReportLabels.label(c.category()), c.declared() ? "yes" : "no (reported, not declared)",
 							String.valueOf(c.lineCount()), c.lineCount() == 0 && c.notQuantifiedReason() != null
 									? "declared, not quantified: " + c.notQuantifiedReason()
 									: c.lineCount() == 0 ? "declared, not quantified: no reason recorded" : tonnes(c.tCo2e()));
 				}
 				document.add(cats);
 			}
-			if (!e.marketInstruments().isEmpty()) {
-				subheading(document, "Contractual instruments and the Scope 2 Quality Criteria");
-				for (var instrument : e.marketInstruments()) {
-					var outcomes = new java.util.ArrayList<String>();
-					for (var c : instrument.criteria()) {
-						outcomes.add(c.code().toLowerCase().replace('_', ' ') + ": " + c.answer().name().toLowerCase().replace('_', ' '));
-					}
-					document.add(new Paragraph(instrument.facilityName() + ", " + instrument.instrumentType().name().toLowerCase().replace('_', ' ')
-							+ ", " + plain(instrument.kgCo2ePerKwh()) + " kg CO2e/kWh (" + instrument.source() + ")"
-							+ (instrument.certificateId() == null ? "" : ", certificate " + instrument.certificateId())
-							+ (instrument.registry() == null ? "" : " at " + instrument.registry())
-							+ (instrument.vintage() == null ? "" : ", vintage " + instrument.vintage())
-							+ (instrument.retirementDate() == null ? "" : ", retired " + instrument.retirementDate())
-							+ ": " + (instrument.meetsQualityCriteria() ? "meets every criterion" : "not applied") + ". "
-							+ String.join("; ", outcomes) + ".", SMALL));
-				}
-			}
 			breakdown(document, "By facility", report.byFacility());
 			breakdown(document, "By legal entity", report.byEntity());
 			breakdown(document, "By country", report.byCountry());
 			if (!report.intensity().isEmpty()) {
-				subheading(document, "Intensity");
+				var lines = new ArrayList<String>();
 				for (var i : report.intensity()) {
-					document.add(new Paragraph(i.tCo2ePerUnit().stripTrailingZeros().toPlainString() + " t CO2e per " + i.unit()
-							+ " of " + i.name() + " (" + i.value().stripTrailingZeros().toPlainString() + " " + i.unit() + ")", BODY));
+					lines.add(plain(i.tCo2ePerUnit()) + " t CO2e per " + i.unit() + " of " + i.name() + " ("
+							+ plain(i.value()) + " " + i.unit() + ")");
 				}
+				subparagraph(document, "Intensity", String.join("\n", lines));
 			}
 
-			heading(document, "5. Emissions by gas");
-			var gases = table(3, 40, 30, 30);
+			var gases = titled("5. Emissions by gas", H2, 40, 30, 30);
 			head(gases, "Gas", "Mass (t)", "t CO2e");
 			ReportResponse.Gas unsplit = null;
 			for (var g : report.byGas()) {
@@ -168,53 +195,55 @@ public final class ReportPdf {
 			}
 			document.add(gases);
 			// spec 07.7: the table foots to the report's total, and says where the unsplit CO2e comes from
-			document.add(new Paragraph("Total (scope 2 location-based), ties to section 04: "
-					+ tonnes(report.byGasTotalTCo2e()) + " t CO2e. " + MARKET_BASED_NOTE, BODY));
+			document.add(new Paragraph("Total (scope 2 location-based), ties to section 04: " + tonnes(byGasTotal(report))
+					+ " t CO2e. " + MARKET_BASED_NOTE, BODY));
 			if (unsplit != null) {
-				document.add(new Paragraph("The row '" + UNSPLIT_ROW + "' comes from: " + String.join(", ", unsplit.factors())
-						+ ". " + UNSPLIT_RULE, SMALL));
+				document.add(new Paragraph("The row '" + UNSPLIT_ROW + "' comes from: "
+						+ (unsplit.factors() == null ? "" : String.join(", ", unsplit.factors())) + ". " + UNSPLIT_RULE, SMALL));
 			}
 
-			heading(document, "6. Biogenic CO2");
-			document.add(new Paragraph(tonnes(report.biogenicCo2T()) + " t of biogenic CO2, reported outside the scopes.", BODY));
+			paragraph(document, "6. Biogenic CO2", tonnes(report.biogenicCo2T()) + " t of biogenic CO2, reported outside the scopes.");
 
-			heading(document, "7. Base year");
 			if (report.baseYear() == null) {
-				document.add(new Paragraph("No base year designated.", BODY));
+				paragraph(document, "7. Base year", "No base year designated.");
 			}
 			else {
 				var b = report.baseYear();
-				var convention = switch (b.structuralChangeConvention()) {
-					case TRANSACTION_DATE -> "mid-year structural changes from the transaction date (membership windows)";
-					case WHOLE_YEAR -> "mid-year structural changes for the whole year, as the Standard recommends";
-				};
-				document.add(new Paragraph(b.periodLabel() + " (" + b.inventoryName() + "), significance threshold "
-						+ b.thresholdPercent() + "% applied to each change and to the cumulative effect, " + convention + ". "
-						+ "Why this year: " + b.reason()
+				paragraph(document, "7. Base year", b.periodLabel() + " (" + b.inventoryName() + "), significance threshold "
+						+ b.thresholdPercent() + "% applied to each change and to the cumulative effect. Mid-year structural changes: "
+						+ ReportLabels.lower(b.structuralChangeConvention()) + ". Why this year: " + b.reason()
 						+ (b.originalBase() == null ? "" : " Base-year emissions (" + b.originalBase().label() + "): "
-								+ tonnes(b.originalBase().totalKgCo2e().movePointLeft(3)) + " t CO2e."), BODY));
+								+ tonnes(b.originalBase().totalKgCo2e().movePointLeft(3)) + " t CO2e."));
 				if (!b.recalculations().isEmpty()) {
 					// spec 06.1: the report shows every candidate with the decision taken on it
-					subheading(document, "Recalculation history");
+					var first = true;
 					for (var entry : b.recalculations()) {
 						var decision = entry.decision();
-						var text = new StringBuilder(decision.status().name()).append(": ").append(decision.reason());
+						var text = new StringBuilder(ReportLabels.label(decision.status())).append(" (")
+							.append(ReportLabels.lower(decision.triggerType())).append("): ").append(decision.reason());
 						if (decision.decisionNote() != null) {
 							text.append(" Decision: ").append(decision.decisionNote()).append('.');
 						}
 						if (decision.decidedBy() != null) {
-							text.append(" Decided by ").append(decision.decidedBy()).append('.');
+							text.append(" Decided by ").append(decision.decidedBy())
+								.append(decision.decidedAt() == null ? "" : ", " + ReportLabels.instant(decision.decidedAt()))
+								.append('.');
 						}
 						if (entry.recalculatedBase() != null) {
 							text.append(" Recalculated base (").append(entry.recalculatedBase().label()).append("): ")
 								.append(tonnes(entry.recalculatedBase().totalKgCo2e().movePointLeft(3))).append(" t CO2e.");
 						}
-						document.add(new Paragraph(text.toString(), SMALL));
+						if (first) {
+							subparagraph(document, "Recalculation history", text.toString());
+							first = false;
+						}
+						else {
+							document.add(new Paragraph(text.toString(), SMALL));
+						}
 					}
 				}
 				if (!b.profile().isEmpty()) {
-					subheading(document, "Emissions profile over time");
-					var profile = table(4, 14, 42, 22, 22);
+					var profile = titled("Emissions profile over time", SMALL_BOLD, 14, 42, 22, 22);
 					head(profile, "Period", "Inventory", "Final run (t CO2e)", "Recalculated (t CO2e)");
 					for (var p : b.profile()) {
 						row(profile, p.periodLabel(), p.name(),
@@ -224,90 +253,92 @@ public final class ReportPdf {
 					document.add(profile);
 				}
 				if (b.otherViews() != null && !b.otherViews().isEmpty()) {
-					document.add(new Paragraph("Other views of the same periods, not comparable with the base year "
-							+ "(a different consolidation approach or GWP set):", BODY));
-					var others = table(4, 18, 40, 22, 20);
+					var others = titled("Other views of the same periods, not comparable with the base year (a different "
+							+ "consolidation approach or GWP set)", SMALL_BOLD, 18, 40, 22, 20);
 					head(others, "Period", "Inventory", "Approach / GWP", "Final run (t CO2e)");
 					for (var p : b.otherViews()) {
-						row(others, p.periodLabel(), p.name(), p.consolidationApproach() + " / " + p.gwpSet(),
+						row(others, p.periodLabel(), p.name(),
+								ReportLabels.label(p.consolidationApproach()) + " / " + ReportLabels.label(p.gwpSet()),
 								p.totalKgCo2e() == null ? "not yet final" : tonnes(p.totalKgCo2e().movePointLeft(3)));
 					}
 					document.add(others);
 				}
 			}
 
-			heading(document, "8. Methodology and emission factors");
-			document.add(new Paragraph(report.methodology().statement(), BODY));
-			var factors = table(5, 26, 14, 30, 8, 22);
+			paragraph(document, "8. Methodology and emission factors", report.methodology().statement());
+			var factors = titled("Emission factors applied", SMALL_BOLD, 26, 14, 30, 8, 22);
 			head(factors, "Factor", "kg CO2e / unit", "Gases (kg per unit)", "GWP", "Source");
 			for (var f : report.factors()) {
-				row(factors, f.name(), plain(f.kgCo2ePerUnit()) + " / " + f.unit(), gasSplit(f), f.gwpSet().name(), f.source());
+				row(factors, f.name(), plain(f.kgCo2ePerUnit()) + " / " + f.unit(), gasSplit(f), ReportLabels.label(f.gwpSet()),
+						f.source());
 			}
 			document.add(factors);
 
-			heading(document, "8a. Data quality and uncertainty");
 			var dq = report.dataQuality();
-			document.add(new Paragraph(dq.statement(), BODY));
-			if (dq.uncertaintyStatement() != null) {
-				document.add(new Paragraph(dq.uncertaintyStatement(), BODY));
-			}
+			paragraph(document, "8a. Data quality and uncertainty", dq.statement()
+					+ (dq.uncertaintyStatement() == null ? "" : "\n" + dq.uncertaintyStatement()));
 			if (!dq.byTier().isEmpty()) {
-				var tiers = table(6, 8, 36, 14, 14, 14, 14);
+				var tiers = titled("Emissions by data quality tier", SMALL_BOLD, 8, 36, 14, 14, 14, 14);
 				head(tiers, "Tier", "Quality", "Scope 1 (t)", "Scope 2 (t)", "Scope 3 (t)", "Share");
 				for (var t : dq.byTier()) {
 					row(tiers, String.valueOf(t.tier()), t.label(), tonnes(t.scope1KgCo2e().movePointLeft(3)),
 							tonnes(t.scope2KgCo2e().movePointLeft(3)), tonnes(t.scope3KgCo2e().movePointLeft(3)),
-							t.sharePercent().stripTrailingZeros().toPlainString() + "%");
+							plain(t.sharePercent()) + "%");
 				}
 				document.add(tiers);
 			}
 
-			heading(document, "9. Exclusions");
+			// spec 07.8: "9. Exclusions" heads whichever exclusion table comes first
+			var exclusionsHeading = "9. Exclusions";
 			if (report.boundaryExclusions().isEmpty() && report.exclusions().isEmpty()) {
-				document.add(new Paragraph("No exclusions.", BODY));
+				paragraph(document, exclusionsHeading, "No exclusions.");
 			}
 			if (!report.exclusionSummary().isEmpty()) {
-				var summary = table(3, 40, 20, 40);
+				var summary = titled(exclusionsHeading, H2, 40, 20, 40);
+				exclusionsHeading = null;
 				head(summary, "Reason", "Records", "Estimated t CO2e left out");
 				for (var x : report.exclusionSummary()) {
-					row(summary, x.reason().name(), String.valueOf(x.recordCount()), tonnes(x.estimatedTCo2e())
+					row(summary, ReportLabels.label(x.reason()), String.valueOf(x.recordCount()), tonnes(x.estimatedTCo2e())
 							+ (x.unestimatedCount() == 0 ? "" : " (" + x.unestimatedCount() + " not estimated)"));
 				}
 				document.add(summary);
 			}
 			if (!report.boundaryExclusions().isEmpty()) {
-				var ops = table(3, 40, 20, 40);
+				var ops = exclusionsHeading == null ? titled("Operations left out of the boundary", SMALL_BOLD, 40, 20, 40)
+						: titled(exclusionsHeading, H2, "Operations left out of the boundary", 40, 20, 40);
+				exclusionsHeading = null;
 				head(ops, "Operation", "Reason", "Detail");
 				for (var x : report.boundaryExclusions()) {
 					row(ops, x.facilityName() == null ? x.entityName() + " (whole entity)" : x.facilityName() + " (" + x.entityName() + ")",
-							x.reason().name(), nvl(x.detail(), ""));
+							ReportLabels.label(x.reason()), nvl(x.detail(), ""));
 				}
 				document.add(ops);
 			}
 			if (!report.exclusions().isEmpty()) {
-				var recs = table(6, 22, 16, 12, 12, 26, 12);
+				var recs = exclusionsHeading == null ? titled("Records left out of the run", SMALL_BOLD, 22, 16, 12, 12, 26, 12)
+						: titled(exclusionsHeading, H2, "Records left out of the run", 22, 16, 12, 12, 26, 12);
 				head(recs, "Record", "Facility", "Quantity", "Period", "Reason and justification", "Est. kg CO2e");
 				for (var x : report.exclusions()) {
 					row(recs, ref(x.recordRef()) + x.activityType(), x.facilityName(), plain(x.quantity()) + " " + x.unit(),
-							x.periodStart() + (x.periodStart().equals(x.periodEnd()) ? "" : " to " + x.periodEnd()),
-							x.exclusionReason().name() + (x.exclusionDetail() == null ? "" : ": " + x.exclusionDetail())
+							ReportLabels.period(x.periodStart(), x.periodEnd()),
+							ReportLabels.label(x.exclusionReason()) + (x.exclusionDetail() == null ? "" : ": " + x.exclusionDetail())
 									+ (x.exclusionJustification() == null ? "" : ". " + x.exclusionJustification()),
 							x.estimatedKgCo2e() == null ? "" : plain(x.estimatedKgCo2e()));
 				}
 				document.add(recs);
 			}
 
-			heading(document, "10. Snapshot lines (kg CO2e)");
-			var lines = table(7, 18, 22, 9, 15, 12, 8, 16);
+			var lines = titled("10. Snapshot lines (kg CO2e)", H2, 18, 22, 9, 15, 12, 8, 16);
 			head(lines, "Facility", "Record / factor", "Scope", "Quantity", "kg CO2e / unit", "Share", "kg CO2e");
 			for (var l : report.lines()) {
-				row(lines, l.facilityName(), ref(l.recordRef()) + nvl(l.activityType(), "") + "\n" + l.factorName(), l.scope().name().replace("SCOPE_", ""),
+				row(lines, l.facilityName(), ref(l.recordRef()) + nvl(l.activityType(), "") + "\n" + l.factorName(),
+						ReportLabels.label(l.scope()),
 						plain(l.quantity()) + " " + l.unit() + (l.convertedQuantity().compareTo(l.quantity()) == 0 ? ""
 								: " = " + plain(l.convertedQuantity()) + " " + l.factorUnit())
 								+ (l.conversionNote() == null ? "" : "\n" + l.conversionNote()),
 						plain(l.kgCo2ePerUnit()), percent(l.weight()) + (l.periodShare().compareTo(BigDecimal.ONE) == 0 ? ""
 								: " x " + percent(l.periodShare())),
-						plain(l.kgCo2e()) + (l.marketBasedKgCo2e() == null || l.scope().name().equals("SCOPE_2") == false ? ""
+						plain(l.kgCo2e()) + (l.marketBasedKgCo2e() == null || l.scope() != Scope.SCOPE_2 ? ""
 								: "\nmarket: " + plain(l.marketBasedKgCo2e())));
 			}
 			document.add(lines);
@@ -319,12 +350,19 @@ public final class ReportPdf {
 		return out.toByteArray();
 	}
 
+	/** The footing figure (spec 07.7), summed from the rows for a snapshot stored before the field existed. */
+	private static BigDecimal byGasTotal(ReportResponse report) {
+		if (report.byGasTotalTCo2e() != null) {
+			return report.byGasTotalTCo2e();
+		}
+		return report.byGas().stream().map(ReportResponse.Gas::tCo2e).reduce(BigDecimal.ZERO, BigDecimal::add);
+	}
+
 	private static void breakdown(Document document, String title, List<ReportResponse.Breakdown> rows) throws DocumentException {
 		if (rows.isEmpty()) {
 			return;
 		}
-		subheading(document, title);
-		var table = table(6, 30, 14, 14, 14, 14, 14);
+		var table = titled(title, SMALL_BOLD, 30, 14, 14, 14, 14, 14);
 		head(table, "Name", "Scope 1", "Scope 2 (loc.)", "Scope 2 (mkt.)", "Scope 3", "Total t CO2e");
 		for (var r : rows) {
 			row(table, r.name(), tonnes(r.scope1KgCo2e().movePointLeft(3)), tonnes(r.scope2KgCo2e().movePointLeft(3)),
@@ -334,21 +372,36 @@ public final class ReportPdf {
 		document.add(table);
 	}
 
-	private static void heading(Document document, String text) throws DocumentException {
-		var paragraph = new Paragraph(text, H2);
+	/** A section heading and the paragraph it introduces, as one paragraph with a line break, so they never separate. */
+	private static void paragraph(Document document, String heading, String text) throws DocumentException {
+		var paragraph = new Paragraph();
+		paragraph.add(new Chunk(heading, H2));
+		paragraph.add(Chunk.NEWLINE);
+		paragraph.add(new Chunk(text, BODY));
 		paragraph.setSpacingBefore(10);
 		paragraph.setSpacingAfter(4);
 		document.add(paragraph);
 	}
 
-	private static void subheading(Document document, String text) throws DocumentException {
-		var paragraph = new Paragraph(text, SMALL_BOLD);
+	/** A subheading and its paragraph, kept together the same way. */
+	private static void subparagraph(Document document, String heading, String text) throws DocumentException {
+		var paragraph = new Paragraph();
+		paragraph.add(new Chunk(heading, SMALL_BOLD));
+		paragraph.add(Chunk.NEWLINE);
+		paragraph.add(new Chunk(text, SMALL));
 		paragraph.setSpacingBefore(6);
+		paragraph.setSpacingAfter(2);
 		document.add(paragraph);
 	}
 
-	private static PdfPTable table(int columns, float... widths) {
-		var table = new PdfPTable(columns);
+	/** A table whose first row is its heading, spanning every column; {@link #head} then adds the column header. */
+	private static PdfPTable titled(String heading, Font font, float... widths) {
+		return titled(heading, font, null, widths);
+	}
+
+	/** A table headed by a section heading and a subheading on the next line, both in the heading row. */
+	private static PdfPTable titled(String heading, Font font, String subheading, float... widths) {
+		var table = new PdfPTable(widths.length);
 		table.setWidthPercentage(100);
 		try {
 			table.setWidths(widths);
@@ -356,11 +409,24 @@ public final class ReportPdf {
 		catch (DocumentException ex) {
 			throw new IllegalStateException(ex);
 		}
-		table.setSpacingBefore(3);
+		table.setSpacingBefore(font == H2 ? 10 : 6);
 		table.setSpacingAfter(3);
+		var phrase = new Phrase(heading, font);
+		if (subheading != null) {
+			phrase.add(Chunk.NEWLINE);
+			phrase.add(new Chunk(subheading, SMALL_BOLD));
+		}
+		var cell = new PdfPCell(phrase);
+		cell.setColspan(widths.length);
+		cell.setBorder(Rectangle.NO_BORDER);
+		cell.setPaddingLeft(0);
+		cell.setPaddingBottom(4);
+		table.addCell(cell);
+		table.setHeaderRows(1);
 		return table;
 	}
 
+	/** The column header row; it joins the heading as a header row, so both repeat when the table continues. */
 	private static void head(PdfPTable table, String... cells) {
 		for (var cell : cells) {
 			var pdfCell = new PdfPCell(new Phrase(cell, SMALL_BOLD));
@@ -368,6 +434,7 @@ public final class ReportPdf {
 			pdfCell.setPadding(3);
 			table.addCell(pdfCell);
 		}
+		table.setHeaderRows(table.getRows().size());
 	}
 
 	private static void row(PdfPTable table, String... cells) {
@@ -381,7 +448,7 @@ public final class ReportPdf {
 	}
 
 	private static String gasSplit(ReportResponse.FactorRow f) {
-		var parts = new java.util.ArrayList<String>();
+		var parts = new ArrayList<String>();
 		if (f.co2().signum() > 0) parts.add("CO2 " + plain(f.co2()));
 		if (f.ch4().signum() > 0) parts.add("CH4 " + plain(f.ch4()) + (f.ch4Fossil() ? " (fossil)" : " (biogenic)"));
 		if (f.n2o().signum() > 0) parts.add("N2O " + plain(f.n2o()));
@@ -390,7 +457,7 @@ public final class ReportPdf {
 		if (f.sf6().signum() > 0) parts.add("SF6 " + plain(f.sf6()));
 		if (f.nf3().signum() > 0) parts.add("NF3 " + plain(f.nf3()));
 		if (f.biogenicCo2().signum() > 0) parts.add("biogenic CO2 " + plain(f.biogenicCo2()));
-		return String.join(", ", parts);
+		return parts.isEmpty() ? "CO2e only, no gas split published" : String.join(", ", parts);
 	}
 
 	private static String tonnes(BigDecimal value) {
@@ -407,18 +474,24 @@ public final class ReportPdf {
 
 	private static String window(java.time.LocalDate from, java.time.LocalDate to) {
 		if (from == null && to == null) return "whole period";
-		return (from == null ? "" : "from " + from) + (to == null ? "" : " until " + to);
+		return (from == null ? "" : "from " + ReportLabels.date(from)) + (to == null ? "" : (from == null ? "" : " ") + "until " + ReportLabels.date(to));
 	}
 
 	private static String join(String a, String b) {
 		return b == null ? a : a + ", " + b;
 	}
 
-
 	/** The record number as a prefix, "ACT-0007 ", or nothing for a line of a run before the numbers existed. */
 	private static String ref(String recordRef) {
 		return recordRef == null || recordRef.isEmpty() ? "" : recordRef + " ";
 	}
+
+	/** Free text as a sentence: a full stop is added only when the author left none. */
+	private static String sentence(String text) {
+		var trimmed = text == null ? "" : text.strip();
+		return trimmed.isEmpty() || trimmed.endsWith(".") ? trimmed : trimmed + ".";
+	}
+
 	private static String nvl(String value, String fallback) {
 		return value == null ? fallback : value;
 	}

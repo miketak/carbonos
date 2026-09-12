@@ -2648,6 +2648,8 @@ class GhgApiIntegrationTests {
 		var plant = createFacility(orgId, "Obuom Processing Plant");
 		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
 		var power = createActivity(orgId, plant, "Mill grid electricity", "1000", "kWh", "2025-08-01");
+		// a record from the year before: excluded as outside the reporting period, so the PDF prints the reason
+		createActivity(orgId, plant, "Genset diesel, prior year", "100", "litre", "2024-08-01");
 		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, plant);
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + plant).with(asMember())
@@ -2673,6 +2675,16 @@ class GhgApiIntegrationTests {
 			.getContentAsByteArray();
 		assertThat(new String(pdf, 0, 5, java.nio.charset.StandardCharsets.ISO_8859_1)).isEqualTo("%PDF-");
 		assertThat(pdf.length).isGreaterThan(2000);
+		// spec 07.8: the PDF reads in words and reader dates, never in enum names or ISO instants
+		var text = pdfText(pdf).replaceAll("\\s+", " ");
+		assertThat(text).contains("operational control approach")
+			.contains("Scopes covered: Scope 1, Scope 2")
+			.contains("Outside reporting period")
+			.contains("energy attribute certificate")
+			.containsPattern("\\d{1,2} (January|February|March|April|May|June|July|August|September|October|November|December) "
+					+ "\\d{4}, \\d{2}:\\d{2} UTC")
+			.doesNotContainPattern("\\b[A-Z]+_[A-Z_]+\\b")
+			.doesNotContainPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}");
 
 		// the calculation file: a header row, then one row per line with record id, evidence and factor id
 		var csv = body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember()))
