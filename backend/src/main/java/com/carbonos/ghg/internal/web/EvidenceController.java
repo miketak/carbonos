@@ -85,8 +85,10 @@ class EvidenceController {
 			@RequestParam(defaultValue = "ALL") DocumentFilter filter, @RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "24") int size) {
 		var result = evidenceService.pageOfOrganization(organizationId, q, facilityId, filter, page, size);
-		return new PageResponse<>(result.items().stream().map(EvidenceDocumentResponse::from).toList(),
-				result.page(), result.size(), result.total());
+		return new PageResponse<>(result.items()
+			.stream()
+			.map(item -> EvidenceDocumentResponse.from(item, result.calculated().contains(item.getActivityId())))
+			.toList(), result.page(), result.size(), result.total());
 	}
 
 	/** The evidence index for the verifier's pack (spec 04.6). */

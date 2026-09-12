@@ -6,6 +6,8 @@ import { GlassCard } from './GlassCard'
 interface ModalProps {
   title: string
   onClose: () => void
+  /** `lg` for a dialog that holds a table, such as an import preview. */
+  size?: 'md' | 'lg'
   children: ReactNode
 }
 
@@ -15,7 +17,7 @@ interface ModalProps {
  * backdrop-filtered card would be positioned against that card, not the viewport,
  * and its buttons could end up off-screen or under a sibling card.
  */
-export function Modal({ title, onClose, children }: ModalProps) {
+export function Modal({ title, onClose, size = 'md', children }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
   // focus once on open (an inline onClose is a new function every render, and refocusing on each
@@ -46,7 +48,9 @@ export function Modal({ title, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="max-h-[calc(100vh-2rem)] w-full max-w-md animate-[modal-in_150ms_ease-out] overflow-y-auto bg-white/80 p-6"
+        className={`max-h-[calc(100vh-2rem)] w-full animate-[modal-in_150ms_ease-out] overflow-y-auto bg-white/80 p-6 ${
+          size === 'lg' ? 'max-w-3xl' : 'max-w-md'
+        }`}
       >
         <h2 className="mb-4 text-lg">{title}</h2>
         {children}

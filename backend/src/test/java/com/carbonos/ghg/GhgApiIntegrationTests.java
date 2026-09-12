@@ -4020,6 +4020,8 @@ class GhgApiIntegrationTests {
 			.formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(csv));
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/import-batches").with(asMember()))
 			.andExpect(jsonPath("$[0].id").value(batchId))
+			.andExpect(jsonPath("$[0].firstRecordRef").value("ACT-0002"))
+			.andExpect(jsonPath("$[0].lastRecordRef").value("ACT-0003"))
 			.andExpect(jsonPath("$[0].fileName").value("q1-dispensing.csv"))
 			.andExpect(jsonPath("$[0].sha256").value(digest))
 			.andExpect(jsonPath("$[0].rowCount").value(2))
@@ -4066,6 +4068,7 @@ class GhgApiIntegrationTests {
 
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()))
 			.andExpect(jsonPath("$.total").value(2))
+			.andExpect(jsonPath("$.items[0].calculated").value(false))
 			.andExpect(jsonPath("$.items[0].name").value("ECG bill (SharePoint)"))
 			.andExpect(jsonPath("$.items[0].recordRef").value("ACT-0002"))
 			.andExpect(jsonPath("$.items[0].activityType").value("Mill grid electricity"))
@@ -4114,6 +4117,7 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("stays on file")));
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()))
-			.andExpect(jsonPath("$.total").value(2));
+			.andExpect(jsonPath("$.total").value(2))
+			.andExpect(jsonPath("$.items[?(@.recordRef == 'ACT-0001')].calculated").value(org.hamcrest.Matchers.hasItem(true)));
 	}
 }

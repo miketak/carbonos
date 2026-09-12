@@ -504,14 +504,14 @@ function ActivityForm({
           <Section title="Source and traceability">
             <InputField
               label="Data source"
-              placeholder="Utility invoice, dispensing log, meter reading"
+              placeholder="Example: utility invoice, dispensing log, meter reading"
               value={dataSource}
               onChange={(event) => setDataSource(event.target.value)}
               error={errors?.dataSource}
             />
             <InputField
               label="Document reference"
-              placeholder="INV-2938"
+              placeholder="Example: INV-2938"
               value={evidenceRef}
               onChange={(event) => setEvidenceRef(event.target.value)}
               error={errors?.evidenceRef}

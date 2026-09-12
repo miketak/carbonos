@@ -28,6 +28,10 @@ public interface ActivityRecordRepository
 
 	boolean existsByFacilityIdAndDeletedAtIsNull(UUID facilityId);
 
+	/** The first and last record number an import produced (spec 04.6), or nulls for none. */
+	@org.springframework.data.jpa.repository.Query("select min(a.recordNo), max(a.recordNo) from ActivityRecord a where a.importBatchId = :batchId")
+	List<Object[]> recordRange(UUID batchId);
+
 	boolean existsByStreamIdAndDeletedAtIsNull(UUID streamId);
 
 }

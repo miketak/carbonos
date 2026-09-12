@@ -1041,6 +1041,8 @@ export interface EvidenceDocument extends Evidence {
   periodEnd: string | null
   evidenceRef: string | null
   recordRemoved: boolean
+  /** A run snapshotted the record: the document stays on file and cannot be removed (spec 04.6). */
+  calculated: boolean
 }
 
 export type DocumentFilter = 'ALL' | 'LINK_ONLY' | 'ORPHANED'
@@ -1062,6 +1064,9 @@ export interface ImportBatch {
   sizeBytes: number
   importedBy: string
   importedAt: string
+  /** The records the import produced, ACT-0092 to ACT-0093; empty when none. */
+  firstRecordRef: string
+  lastRecordRef: string
 }
 
 export type AssignmentStatus = 'INCLUDED' | 'EXCLUDED' | 'UNCLASSIFIED'

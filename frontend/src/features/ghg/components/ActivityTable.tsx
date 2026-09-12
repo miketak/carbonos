@@ -1,6 +1,7 @@
 import type { Activity } from '../api'
 import { formatQuantity, formatRecordPeriod } from '../format'
 import { ActivityStatusPill } from './badges'
+import { TapCheckbox } from './TapCheckbox'
 
 function Paperclip() {
   return (
@@ -28,17 +29,32 @@ export function ActivityTable({
   activities,
   openId,
   cursorId,
+  selected,
+  onToggle,
+  onToggleAll,
   onOpen,
 }: {
   activities: Activity[]
   openId: string | null
   cursorId: string | null
+  /** The ids ticked for a bulk action (spec 04.6). */
+  selected: Set<string>
+  onToggle: (id: string, checked: boolean) => void
+  onToggleAll: (checked: boolean) => void
   onOpen: (activity: Activity) => void
 }) {
+  const allSelected = activities.length > 0 && activities.every((a) => selected.has(a.id))
   return (
     <table className="w-full text-left text-sm">
       <thead>
         <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+          <th className="w-10 py-2 pl-2">
+            <TapCheckbox
+              label="Select all on this page"
+              checked={allSelected}
+              onChange={onToggleAll}
+            />
+          </th>
           <th className="px-4 py-3 font-semibold">Activity</th>
           <th className="px-4 py-3 font-semibold">Facility / period</th>
           <th className="px-4 py-3 text-right font-semibold">Quantity</th>
@@ -63,6 +79,13 @@ export function ActivityTable({
                 open ? 'bg-teal/10' : cursor ? 'bg-teal/5' : 'hover:bg-teal/5'
               }`}
             >
+              <td className="py-2 pl-2" onClick={(event) => event.stopPropagation()}>
+                <TapCheckbox
+                  label={`Select ${activity.recordRef}`}
+                  checked={selected.has(activity.id)}
+                  onChange={(checked) => onToggle(activity.id, checked)}
+                />
+              </td>
               <td className="px-4 py-3">
                 <button
                   type="button"
