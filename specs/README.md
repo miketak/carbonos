@@ -15,8 +15,8 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 01 | [Identity and access](01-identity-and-access.md) | | Implemented |
 | 01.1 | [Access requests](01.1-access-requests.md) | | Implemented |
 | 01.2 | [Organization membership, roles and attribution](01.2-organization-membership-and-roles.md) | Ch. 7 | Implemented |
-| 01.3 | [Organization confidentiality and deletion safeguards](01.3-organization-confidentiality-and-deletion-safeguards.md) | Ch. 7, 9, ISO 14064-1 | Approved |
-| 01.4 | [Role-aware UI and visible refusals](01.4-role-aware-ui-and-visible-refusals.md) | Ch. 7 | Approved |
+| 01.3 | [Organization confidentiality and deletion safeguards](01.3-organization-confidentiality-and-deletion-safeguards.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
+| 01.4 | [Role-aware UI and visible refusals](01.4-role-aware-ui-and-visible-refusals.md) | Ch. 7 | Implemented |
 | 02 | [Organization and facts](02-organization-and-facts.md) | Ch. 6, 7 | Implemented |
 | 02.1 | [Emission factor library, provenance and packs](02.1-emission-factor-library.md) | Ch. 6, 9, Scope 2 Guidance | Implemented |
 | 02.2 | [Units, densities, and custom units](02.2-units-densities-and-custom-units.md) | Ch. 6, 7 | Implemented |
@@ -58,8 +58,8 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 A chapter spec (`NN`) describes one stage of the workflow as it is today. A
 sub-spec (`NN.M`) is a branch of that stage that deserves its own document.
 Every spec listed is implemented as of 2026-09-09, except the sub-specs
-from the audit of 2026-09-11 that the table still marks `Approved`; 07.7 and
-07.8 were implemented on 2026-09-12. Sub-specs 03.3, 06.1 and
+from the audit of 2026-09-11 that the table still marks `Approved`; 01.3,
+01.4, 07.7 and 07.8 were implemented on 2026-09-12. Sub-specs 03.3, 06.1 and
 07.2 come from a conformance review of the set against the Standard on
 2026-09-08; the conformance table in spec 00 records what each closed.
 Sub-specs from 07.3 onward close tickets of the GHG officer audit backlog in

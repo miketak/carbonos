@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-12
 ---
 
 # Frontend structure
@@ -40,7 +40,7 @@ flowchart TB
 | --- | --- | --- |
 | `auth` | `user` | Sign in, the post-login splash, route guards |
 | `access` | `user` | Request access, set password |
-| `admin` | `user` | Users list and administration |
+| `admin` | `user`, `ghg` | Users list and administration; the organizations list where a platform administrator assumes support access (spec 01.3) |
 | `profile` | `user`, `media` | Profile and avatar |
 | `ghg` | `ghg` | Organizations, overview, entities, facilities, activity data and its source documents, units, emission factors, inventories, inventory detail, run detail, base year |
 | `home` | none | Landing |
@@ -51,8 +51,20 @@ Every backend call goes through `api()` in `src/lib/api.ts`. It sends
 credentials, fetches and attaches the CSRF token on mutating requests,
 parses RFC 9457 problem details into `ApiError`, and exposes
 `fieldErrors()` and `problemDetail()` so forms can print a 422's
-`errors.<field>` map inline. Server state goes through TanStack Query;
-features do not hand-roll fetch effects.
+`errors.<field>` map inline. `refusalMessage(error, myRole)` turns a 403, a
+404, a 409, a 5xx or a dead connection into the one sentence every page
+prints for it (spec 01.4), so a refused write is never silent. Server state
+goes through TanStack Query; features do not hand-roll fetch effects.
+
+## Roles on the screen
+
+`src/features/ghg/roles.ts` holds the role sets of spec 01.4 (`mayWrite`,
+`mayApprove`, `mayOwn`, `mayManageMembership`, `isReadOnly`) and the
+sentences that name a role. A write control the caller's role does not
+allow is hidden when it is the only content of its region and disabled
+otherwise, through `RoleButton`, which carries the sentence as a tooltip
+and as text an assistive technology reads. The screen is a display concern:
+the server checks of spec 01.2 stay the authority.
 
 ## Scripts
 
