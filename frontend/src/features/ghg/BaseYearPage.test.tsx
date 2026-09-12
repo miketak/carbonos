@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
+import { ApiError } from '../../lib/api'
 import { BaseYearPage } from './BaseYearPage'
 import type { BaseYear, Inventory } from './api'
 
@@ -13,11 +14,26 @@ vi.setConfig({ testTimeout: 30000 })
 import {
   decideRecalculation,
   getBaseYear,
+  getOrganization,
   listInventories,
   listRuns,
   raiseRecalculation,
   setBaseYear,
 } from './api'
+import type { Organization } from './api'
+
+function organization(myRole: Organization['myRole']): Organization {
+  return {
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole,
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  }
+}
 
 const inventory: Inventory = {
   id: 'inv-2024',
@@ -104,6 +120,7 @@ beforeEach(() => {
   vi.mocked(setBaseYear).mockReset()
   vi.mocked(decideRecalculation).mockReset()
   vi.mocked(raiseRecalculation).mockReset()
+  vi.mocked(getOrganization).mockReset()
   vi.mocked(listInventories).mockResolvedValue([inventory])
   vi.mocked(listRuns).mockResolvedValue([])
 })
@@ -213,5 +230,74 @@ test('a candidate can be weighed against a comparison run instead of a typed sha
       affectedPercent: undefined,
       comparisonRunId: 'run-9',
     }),
+  )
+})
+
+test('a verifier sees the base year and its policy, with the policy form and candidate outcomes disabled (spec 01.4)', async () => {
+  vi.mocked(getBaseYear).mockResolvedValue(baseYear)
+  vi.mocked(getOrganization).mockResolvedValue(organization('VERIFIER'))
+  renderPage()
+
+  expect(await screen.findByText('2024', { selector: 'dd' })).toBeInTheDocument()
+  expect(screen.getByText(/First year with metered data for every site/)).toBeInTheDocument()
+  expect(screen.getByText('FLAGGED')).toBeInTheDocument()
+
+  const editPolicy = screen.getByRole('button', { name: /edit policy/i })
+  expect(editPolicy).toBeDisabled()
+  expect(editPolicy).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+  expect(screen.getByRole('button', { name: /clear base year/i })).toBeDisabled()
+  expect(screen.getByRole('button', { name: /raise a candidate/i })).toBeDisabled()
+  expect(screen.getByRole('button', { name: /record recalculated base/i })).toBeDisabled()
+  expect(screen.getByRole('button', { name: /^decline$/i })).toBeDisabled()
+
+  // the policy form never opens: clicking a disabled control does nothing
+  const user = userEvent.setup()
+  await user.click(editPolicy)
+  expect(screen.queryByLabelText('Significance threshold (%)')).not.toBeInTheDocument()
+})
+
+test('a verifier with no base year yet sees no designation form', async () => {
+  vi.mocked(getBaseYear).mockResolvedValue(null)
+  vi.mocked(getOrganization).mockResolvedValue(organization('VERIFIER'))
+  renderPage()
+
+  expect(await screen.findByText(/no base year has been designated yet/i)).toBeInTheDocument()
+  expect(screen.queryByLabelText('Base-year inventory')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /designate base year/i })).not.toBeInTheDocument()
+})
+
+test('a preparer has the policy form and the candidate outcome controls enabled', async () => {
+  vi.mocked(getBaseYear).mockResolvedValue(baseYear)
+  vi.mocked(getOrganization).mockResolvedValue(organization('PREPARER'))
+  renderPage()
+
+  expect(await screen.findByText(/First year with metered data for every site/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /edit policy/i })).toBeEnabled()
+  expect(screen.getByRole('button', { name: /clear base year/i })).toBeEnabled()
+  expect(screen.getByRole('button', { name: /raise a candidate/i })).toBeEnabled()
+  expect(screen.getByRole('button', { name: /record recalculated base/i })).toBeEnabled()
+  expect(screen.getByRole('button', { name: /^decline$/i })).toBeEnabled()
+})
+
+test('a refused save keeps the policy form open with the typed values (spec 01.4)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getBaseYear).mockResolvedValue(null)
+  vi.mocked(getOrganization).mockResolvedValue(organization('PREPARER'))
+  vi.mocked(setBaseYear).mockRejectedValue(
+    new ApiError(403, { detail: 'This action needs the PREPARER, REVIEWER or OWNER role.' }),
+  )
+  renderPage()
+
+  await screen.findByRole('option', { name: /2024 Base Year/ })
+  await user.click(screen.getByLabelText('Why this year'))
+  await user.paste('First year with metered data for every site')
+  await user.click(screen.getByRole('button', { name: /designate base year/i }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    /this action needs the preparer, reviewer or owner role/i,
+  )
+  // the form stays open with what was typed
+  expect(screen.getByLabelText('Why this year')).toHaveValue(
+    'First year with metered data for every site',
   )
 })

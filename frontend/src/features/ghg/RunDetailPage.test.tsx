@@ -845,3 +845,27 @@ test('the header prints who designated the final run and the note (spec 05.5)', 
     /by abena@asantegold\.com on .*: reconciled against the fuel ledger/,
   )
 })
+
+test('a verifier still gets every download and export link, and the page offers no write control (spec 01.4)', async () => {
+  renderRunDetailPage()
+
+  const downloads = await screen.findByRole('navigation', { name: 'Downloads' })
+  expect(within(downloads).getByRole('link', { name: 'PDF report' })).toHaveAttribute(
+    'href',
+    '/api/ghg/runs/run-1/report.pdf',
+  )
+  expect(within(downloads).getByRole('link', { name: 'Lines (CSV)' })).toHaveAttribute(
+    'href',
+    '/api/ghg/runs/run-1/lines.csv',
+  )
+  expect(within(downloads).getByRole('link', { name: 'Exclusions (CSV)' })).toHaveAttribute(
+    'href',
+    '/api/ghg/runs/run-1/exclusions.csv',
+  )
+  expect(within(downloads).getByRole('link', { name: 'Frozen inputs (JSON)' })).toHaveAttribute(
+    'href',
+    '/api/ghg/runs/run-1/inputs.json',
+  )
+  // the report is a read: it carries no write or lifecycle control for any role to be gated on
+  expect(screen.queryAllByRole('button')).toHaveLength(0)
+})

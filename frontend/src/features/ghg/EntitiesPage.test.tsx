@@ -3,14 +3,25 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { EntitiesPage } from './EntitiesPage'
-import type { Entity } from './api'
+import type { Entity, Organization } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
 // forms with many fields take longer than the 15s default on a loaded machine
 vi.setConfig({ testTimeout: 30000 })
 
-import { createEntity, listEntities } from './api'
+import { createEntity, getOrganization, listEntities } from './api'
+
+const organization: Organization = {
+  id: 'org-1',
+  name: 'Sankofa Gold plc',
+  myRole: 'OWNER',
+  address: null,
+  contact: null,
+  facilityCount: 2,
+  supportAccess: [],
+  createdAt: '2026-08-01T00:00:00Z',
+}
 
 const own: Entity = {
   id: 'ent-1',
@@ -69,6 +80,7 @@ function renderPage() {
 beforeEach(() => {
   vi.mocked(listEntities).mockReset()
   vi.mocked(createEntity).mockReset()
+  vi.mocked(getOrganization).mockReset()
   vi.mocked(listEntities).mockResolvedValue([own, jv])
 })
 
@@ -178,4 +190,30 @@ test('the add form submits the dates, the jurisdiction and the control decision 
       }),
     ),
   )
+})
+
+test('a verifier sees Add entity, Edit and Remove disabled with the role they need (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'VERIFIER' })
+  renderPage()
+
+  const add = await screen.findByRole('button', { name: /add entity/i })
+  await waitFor(() => expect(add).toBeDisabled())
+  expect(add).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(add).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+
+  const jvRow = screen.getByText('Tarkwa Gold JV Ltd').closest('tr') as HTMLElement
+  expect(within(jvRow).getByRole('button', { name: /^edit$/i })).toBeDisabled()
+  expect(within(jvRow).getByRole('button', { name: /^remove$/i })).toBeDisabled()
+})
+
+test('a preparer can add, edit and remove entities (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
+  renderPage()
+
+  const add = await screen.findByRole('button', { name: /add entity/i })
+  await waitFor(() => expect(add).toBeEnabled())
+
+  const jvRow = screen.getByText('Tarkwa Gold JV Ltd').closest('tr') as HTMLElement
+  expect(within(jvRow).getByRole('button', { name: /^edit$/i })).toBeEnabled()
+  expect(within(jvRow).getByRole('button', { name: /^remove$/i })).toBeEnabled()
 })

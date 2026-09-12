@@ -1456,3 +1456,101 @@ test('the inheritance notice says the boundary was rebuilt and lists the dropped
     ),
   ).toBeInTheDocument()
 })
+
+// --- role-aware controls (spec 01.4) ----------------------------------------
+
+test('a verifier sees the launch and freeze buttons disabled with the role they need (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'VERIFIER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(getValidation).mockResolvedValue(passingReport)
+  renderPage()
+
+  const launch = await screen.findByRole('button', { name: /launch calculation run/i })
+  await waitFor(() => expect(launch).toBeDisabled())
+  expect(launch).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(launch).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+
+  const freeze = screen.getByRole('button', { name: /freeze inventory/i })
+  expect(freeze).toBeDisabled()
+  expect(freeze).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(freeze).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+})
+
+test('a preparer can freeze and launch (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'PREPARER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(getValidation).mockResolvedValue(passingReport)
+  renderPage()
+
+  expect(await screen.findByRole('button', { name: /launch calculation run/i })).toBeEnabled()
+  expect(screen.getByRole('button', { name: /freeze inventory/i })).toBeEnabled()
+})
+
+test('a preparer sees Publish disabled with the role it needs (spec 01.4)', async () => {
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'FINAL',
+    finalRunId: 'run-1',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'PREPARER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  renderPage()
+
+  const publish = await screen.findByRole('button', { name: /^publish$/i })
+  await waitFor(() => expect(publish).toBeDisabled())
+  expect(publish).toHaveAttribute('title', 'Needs the Reviewer or Owner role.')
+  expect(publish).toHaveAccessibleDescription('Needs the Reviewer or Owner role.')
+})
+
+test('a preparer sees Create correction disabled with the role it needs (spec 01.4)', async () => {
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'PUBLISHED',
+    finalRunId: 'run-1',
+    publishedAt: '2026-09-05T09:00:00Z',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'PREPARER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  renderPage()
+
+  const correction = await screen.findByRole('button', { name: /create correction/i })
+  await waitFor(() => expect(correction).toBeDisabled())
+  expect(correction).toHaveAttribute('title', 'Needs the Reviewer or Owner role.')
+  expect(correction).toHaveAccessibleDescription('Needs the Reviewer or Owner role.')
+})

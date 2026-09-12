@@ -5,10 +5,12 @@ import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { problemDetail } from '../../lib/api'
+import { refusalMessage } from '../../lib/api'
 import { ApproachBadge, InventoryStatusBadge } from './components/badges'
 import { InventoryFormModal } from './components/InventoryFormModal'
-import { useDeleteInventory, useInventoriesQuery } from './useGhg'
+import { RoleButton } from './components/RoleButton'
+import { mayWrite, WRITE_TOOLTIP } from './roles'
+import { useDeleteInventory, useInventoriesQuery, useOrganizationQuery } from './useGhg'
 import type { Inventory } from './api'
 
 /**
@@ -19,11 +21,13 @@ import type { Inventory } from './api'
 export function InventoriesPage() {
   const { organizationId = '' } = useParams()
   const inventoriesQuery = useInventoriesQuery(organizationId)
+  const organizationQuery = useOrganizationQuery(organizationId)
   const deleteInventory = useDeleteInventory(organizationId)
   const toast = useToast()
   const [creating, setCreating] = useState(false)
 
   const inventories = inventoriesQuery.data
+  const myRole = organizationQuery.data?.myRole ?? null
 
   return (
     <section>
@@ -35,9 +39,14 @@ export function InventoriesPage() {
             different accounting contexts.
           </p>
         </div>
-        <Button className="px-4 py-1.5 text-sm" onClick={() => setCreating(true)}>
+        <RoleButton
+          allowed={mayWrite(myRole)}
+          tooltip={WRITE_TOOLTIP}
+          className="px-4 py-1.5 text-sm"
+          onClick={() => setCreating(true)}
+        >
           New inventory
-        </Button>
+        </RoleButton>
       </div>
 
       {inventoriesQuery.isPending && (
@@ -66,8 +75,7 @@ export function InventoriesPage() {
             onDelete={() =>
               deleteInventory.mutate(inventory.id, {
                 onSuccess: () => toast(`${inventory.name} deleted.`),
-                onError: (error) =>
-                  toast(problemDetail(error) ?? `Could not delete ${inventory.name}.`, 'error'),
+                onError: (error) => toast(refusalMessage(error, myRole), 'error'),
               })
             }
           />
@@ -77,6 +85,7 @@ export function InventoriesPage() {
       {creating && (
         <InventoryFormModal
           organizationId={organizationId}
+          myRole={myRole}
           onClose={() => setCreating(false)}
           onSaved={(message) => {
             setCreating(false)

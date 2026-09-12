@@ -1,14 +1,23 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Button } from '../../../components/Button'
 import { Drawer } from '../../../components/Drawer'
 import { InputField, SelectField, TextAreaField } from '../../../components/Field'
 import { Skeleton } from '../../../components/Skeleton'
 import { Tabs } from '../../../components/Tabs'
-import { fieldErrors, problemDetail } from '../../../lib/api'
+import { fieldErrors, refusalMessage } from '../../../lib/api'
 import { checkNumber, collectErrors, withoutError } from '../../../lib/validate'
 import type { Activity, ActivityInput, DataQuality, Facility } from '../api'
-import { activityIssueLabels, categoryLabel, scopeLabels, tierLabels } from '../format'
+import {
+  activityIssueLabels,
+  categoryLabel,
+  formatQuantity,
+  formatRecordPeriod,
+  scopeLabels,
+  tierLabels,
+} from '../format'
+import { isReadOnly, mayWrite, WRITE_TOOLTIP } from '../roles'
+import type { MyRole } from '../roles'
 import {
   useActivityQuery,
   useCreateActivity,
@@ -53,6 +62,7 @@ export function ActivityDrawer({
   pageItems,
   facilities,
   defaultFacilityId,
+  myRole,
   onNavigate,
   onClose,
   onSaved,
@@ -65,6 +75,7 @@ export function ActivityDrawer({
   pageItems: Activity[]
   facilities: Facility[]
   defaultFacilityId?: string
+  myRole?: MyRole
   onNavigate: (id: string) => void
   onClose: () => void
   onSaved: (message: string) => void
@@ -101,6 +112,7 @@ export function ActivityDrawer({
       position={index >= 0 ? { index, total: pageItems.length } : undefined}
       previousId={previous?.id}
       nextId={next?.id}
+      myRole={myRole}
       onNavigate={onNavigate}
       onClose={onClose}
       onSaved={onSaved}
@@ -118,6 +130,7 @@ function ActivityForm({
   position,
   previousId,
   nextId,
+  myRole,
   onNavigate,
   onClose,
   onSaved,
@@ -131,6 +144,7 @@ function ActivityForm({
   position?: { index: number; total: number }
   previousId?: string
   nextId?: string
+  myRole?: MyRole
   onNavigate: (id: string) => void
   onClose: () => void
   onSaved: (message: string) => void
@@ -165,6 +179,7 @@ function ActivityForm({
   const [note, setNote] = useState(activity?.note ?? '')
   const [reason, setReason] = useState('')
   const [clientErrors, setClientErrors] = useState<Record<string, string> | undefined>()
+  const removeHintId = useId()
 
   const streams = useMemo(
     () => (streamsQuery.data ?? []).filter((stream) => stream.facilityId === facilityId),
@@ -172,7 +187,9 @@ function ActivityForm({
   )
   const stream = streams.find((item) => item.id === streamId)
   const errors = clientErrors ?? fieldErrors(mutation.error)
-  const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
+  const generalError =
+    mutation.isError && !errors ? refusalMessage(mutation.error, myRole) : undefined
+  const readOnly = isReadOnly(myRole)
   const isFact = activity !== undefined && !activity.draft
   const reasonMissing = isFact && reason.trim().length < 5
   const today = new Date().toISOString().slice(0, 10)
@@ -267,41 +284,43 @@ function ActivityForm({
       ) : (
         <span className="text-xs text-ink-muted">New record</span>
       )}
-      <div className="flex gap-2">
-        {!isFact && (
+      {mayWrite(myRole) && (
+        <div className="flex gap-2">
+          {!isFact && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="px-3 py-1.5 text-sm"
+              busy={mutation.isPending}
+              disabled={activityType.trim() === '' || facilityId === ''}
+              onClick={() => save('draft')}
+            >
+              Save draft
+            </Button>
+          )}
+          {nextId && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="px-3 py-1.5 text-sm"
+              busy={mutation.isPending}
+              disabled={reasonMissing}
+              onClick={() => save('save')}
+            >
+              Save
+            </Button>
+          )}
           <Button
-            type="button"
-            variant="ghost"
-            className="px-3 py-1.5 text-sm"
+            type="submit"
+            form="activity-drawer-form"
+            className="px-4 py-1.5 text-sm"
             busy={mutation.isPending}
-            disabled={activityType.trim() === '' || facilityId === ''}
-            onClick={() => save('draft')}
+            disabled={reasonMissing || activityType.trim() === '' || facilityId === ''}
           >
-            Save draft
+            {nextId ? 'Save & next →' : 'Save'}
           </Button>
-        )}
-        {nextId && (
-          <Button
-            type="button"
-            variant="ghost"
-            className="px-3 py-1.5 text-sm"
-            busy={mutation.isPending}
-            disabled={reasonMissing}
-            onClick={() => save('save')}
-          >
-            Save
-          </Button>
-        )}
-        <Button
-          type="submit"
-          form="activity-drawer-form"
-          className="px-4 py-1.5 text-sm"
-          busy={mutation.isPending}
-          disabled={reasonMissing || activityType.trim() === '' || facilityId === ''}
-        >
-          {nextId ? 'Save & next →' : 'Save'}
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   )
 
@@ -321,13 +340,30 @@ function ActivityForm({
             >
               History{activity.revisionCount > 0 ? ` (${activity.revisionCount})` : ''}
             </button>
-            <button
-              type="button"
-              className="text-xs text-red-600 hover:underline"
-              onClick={() => onRemove(activity)}
-            >
-              Remove
-            </button>
+            {mayWrite(myRole) ? (
+              <button
+                type="button"
+                className="text-xs text-red-600 hover:underline"
+                onClick={() => onRemove(activity)}
+              >
+                Remove
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="text-xs text-red-600 opacity-50"
+                  disabled
+                  title={WRITE_TOOLTIP}
+                  aria-describedby={removeHintId}
+                >
+                  Remove
+                </button>
+                <span id={removeHintId} className="sr-only">
+                  {WRITE_TOOLTIP}
+                </span>
+              </>
+            )}
           </>
         ) : undefined
       }
@@ -352,277 +388,333 @@ function ActivityForm({
         <EvidencePanel
           owner={{ activityId: activity.id }}
           organizationId={organizationId}
-          editable
+          editable={mayWrite(myRole)}
+          myRole={myRole}
         />
       )}
 
-      {tab === 'activity' && (
-        <form
-          id="activity-drawer-form"
-          onSubmit={submit}
-          className="flex flex-col gap-6"
-          noValidate
-        >
-          {activity ? (
-            activity.status === 'READY' ? (
-              <div
-                role="status"
-                className="rounded-lg border border-teal/30 bg-accent-green/20 px-3 py-2 text-sm"
-              >
-                <p className="font-semibold">All completeness checks passed.</p>
-                <p className="text-xs text-ink-muted">
-                  This record is ready for an accountant's review.
-                  {issues.includes('EVIDENCE_REFERENCE_ONLY') &&
-                    ' It cites a reference; nothing is attached yet.'}
-                </p>
-              </div>
-            ) : (
-              <div
-                role="status"
-                className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
-              >
-                <p className="font-semibold">
-                  {activity.draft ? 'A draft, not yet a fact.' : 'Not ready for review yet.'}
-                </p>
-                {blocking.length > 0 && (
-                  <ul className="mt-1 list-disc pl-4 text-xs">
-                    {blocking.map((issue) => (
-                      <li key={issue}>{activityIssueLabels[issue]}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )
-          ) : (
-            <p className="text-xs text-ink-muted">
-              Save a draft with just the activity and the facility, or fill in the figures and save
-              the fact. The checks run on the saved record.
-            </p>
-          )}
-
-          <Section title="Activity details" hint="Required fields *">
-            <InputField
-              label="Activity type *"
-              placeholder="e.g. Diesel consumption"
-              value={activityType}
-              onChange={(event) => setActivityType(event.target.value)}
-              error={errors?.activityType}
-              required
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <SelectField
-                label="Facility *"
-                value={facilityId}
-                onChange={(event) => {
-                  setFacilityId(event.target.value)
-                  setStreamId('')
-                }}
-                error={errors?.facilityId}
-              >
-                {facilities.map((facility) => (
-                  <option key={facility.id} value={facility.id}>
-                    {facility.name}
-                  </option>
-                ))}
-              </SelectField>
-              <SelectField
-                label="Stream"
-                value={streamId}
-                onChange={(event) => setStreamId(event.target.value)}
-                error={errors?.streamId}
-              >
-                <option value="">No stream</option>
-                {streams.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </SelectField>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <InputField
-                label="Period start *"
-                type="date"
-                max={today}
-                value={periodStart}
-                onChange={(event) => {
-                  setPeriodStart(event.target.value)
-                  setClientErrors((current) => withoutError(current, 'periodStart'))
-                }}
-                error={errors?.periodStart}
-                hint="The period the quantity covers, not the invoice date."
-              />
-              <InputField
-                label="Period end"
-                type="date"
-                min={periodStart || undefined}
-                max={today}
-                value={periodEnd}
-                onChange={(event) => setPeriodEnd(event.target.value)}
-                error={errors?.periodEnd}
-                hint="Same as the start for a single reading."
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <InputField
-                label="Activity quantity *"
-                type="number"
-                value={quantity}
-                onChange={(event) => {
-                  setQuantity(event.target.value)
-                  setClientErrors((current) => withoutError(current, 'quantity'))
-                }}
-                error={errors?.quantity}
-              />
-              <UnitField
-                value={unit}
-                onChange={(value) => {
-                  setUnit(value)
-                  setClientErrors((current) => withoutError(current, 'unit'))
-                }}
-                error={errors?.unit}
-                units={unitsQuery.data ?? []}
-                loading={unitsQuery.isPending}
-              />
-            </div>
-            {stream ? (
-              <p className="rounded-lg bg-teal/5 px-3 py-2 text-xs text-ink-muted">
-                <span className="font-semibold text-dark-teal">Stream default:</span>{' '}
-                {scopeLabels[stream.defaultScope]} · {categoryLabel(stream.defaultCategory)}. Scope
-                is confirmed in each inventory's review.
-              </p>
-            ) : (
-              streams.length === 0 && (
-                <p className="text-xs text-ink-muted">
-                  This facility has no source streams yet; register them under Facilities so the
-                  factor picker and the coverage matrix know this source.
-                </p>
-              )
-            )}
-          </Section>
-
-          <Section title="Source and traceability">
-            <InputField
-              label="Data source"
-              placeholder="Example: utility invoice, dispensing log, meter reading"
-              value={dataSource}
-              onChange={(event) => setDataSource(event.target.value)}
-              error={errors?.dataSource}
-            />
-            <InputField
-              label="Document reference"
-              placeholder="Example: INV-2938"
-              value={evidenceRef}
-              onChange={(event) => setEvidenceRef(event.target.value)}
-              error={errors?.evidenceRef}
-              hint="Invoice, meter reading or log number as printed on the document."
-            />
-            {stream?.meterOrSupplier && (
-              <p className="text-xs text-ink-muted">
-                Meter or supplier on the stream: {stream.meterOrSupplier}
-              </p>
-            )}
-          </Section>
-
-          {activity && (
-            <Section title="Supporting evidence">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-ink-muted">
-                  {activity.evidenceCount === 0
-                    ? 'Nothing attached'
-                    : `${activity.evidenceCount} attached`}
-                </span>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-link hover:underline"
-                  onClick={() => setTab('evidence')}
+      {tab === 'activity' &&
+        (readOnly ? (
+          <ActivityFacts activity={activity} />
+        ) : (
+          <form
+            id="activity-drawer-form"
+            onSubmit={submit}
+            className="flex flex-col gap-6"
+            noValidate
+          >
+            {activity ? (
+              activity.status === 'READY' ? (
+                <div
+                  role="status"
+                  className="rounded-lg border border-teal/30 bg-accent-green/20 px-3 py-2 text-sm"
                 >
-                  {activity.evidenceCount === 0 ? 'Attach a file or link →' : 'Open evidence →'}
-                </button>
-              </div>
-            </Section>
-          )}
+                  <p className="font-semibold">All completeness checks passed.</p>
+                  <p className="text-xs text-ink-muted">
+                    This record is ready for an accountant's review.
+                    {issues.includes('EVIDENCE_REFERENCE_ONLY') &&
+                      ' It cites a reference; nothing is attached yet.'}
+                  </p>
+                </div>
+              ) : (
+                <div
+                  role="status"
+                  className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+                >
+                  <p className="font-semibold">
+                    {activity.draft ? 'A draft, not yet a fact.' : 'Not ready for review yet.'}
+                  </p>
+                  {blocking.length > 0 && (
+                    <ul className="mt-1 list-disc pl-4 text-xs">
+                      {blocking.map((issue) => (
+                        <li key={issue}>{activityIssueLabels[issue]}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )
+            ) : (
+              <p className="text-xs text-ink-muted">
+                Save a draft with just the activity and the facility, or fill in the figures and
+                save the fact. The checks run on the saved record.
+              </p>
+            )}
 
-          <Section title="Notes" hint="Optional">
-            <TextAreaField
-              label="Context for the reviewer"
-              placeholder="Estimation method, allocation, or useful context."
-              value={note}
-              maxLength={255}
-              onChange={(event) => setNote(event.target.value)}
-              error={errors?.note}
-            />
-          </Section>
-
-          <details className="group">
-            <summary className="cursor-pointer text-[11px] font-semibold tracking-widest text-ink-muted uppercase">
-              Data quality
-            </summary>
-            <div className="mt-3 flex flex-col gap-3">
+            <Section title="Activity details" hint="Required fields *">
+              <InputField
+                label="Activity type *"
+                placeholder="e.g. Diesel consumption"
+                value={activityType}
+                onChange={(event) => setActivityType(event.target.value)}
+                error={errors?.activityType}
+                required
+              />
               <div className="grid grid-cols-2 gap-3">
                 <SelectField
-                  label="Method"
-                  value={dataQuality}
-                  onChange={(event) => setDataQuality(event.target.value as DataQuality)}
-                  error={errors?.dataQuality}
+                  label="Facility *"
+                  value={facilityId}
+                  onChange={(event) => {
+                    setFacilityId(event.target.value)
+                    setStreamId('')
+                  }}
+                  error={errors?.facilityId}
                 >
-                  {Object.entries(qualityLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                  {facilities.map((facility) => (
+                    <option key={facility.id} value={facility.id}>
+                      {facility.name}
                     </option>
                   ))}
                 </SelectField>
                 <SelectField
-                  label="Quality tier"
-                  value={tier}
-                  onChange={(event) => setTier(event.target.value)}
-                  error={errors?.dataQualityTier}
-                  hint="1 is metered primary data, 5 an assumption. Blank follows the method."
+                  label="Stream"
+                  value={streamId}
+                  onChange={(event) => setStreamId(event.target.value)}
+                  error={errors?.streamId}
                 >
-                  <option value="">Follow the method</option>
-                  {Object.entries(tierLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {value}: {label}
+                  <option value="">No stream</option>
+                  {streams.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
                     </option>
                   ))}
                 </SelectField>
               </div>
-              <InputField
-                label="Uncertainty, ± %"
-                type="number"
-                min="0"
-                step="0.1"
-                value={uncertainty}
-                onChange={(event) => {
-                  setUncertainty(event.target.value)
-                  setClientErrors((current) => withoutError(current, 'uncertaintyPercent'))
-                }}
-                error={errors?.uncertaintyPercent}
-                hint="The report weights it by emissions into the uncertainty statement."
-              />
-            </div>
-          </details>
+              <div className="grid grid-cols-2 gap-3">
+                <InputField
+                  label="Period start *"
+                  type="date"
+                  max={today}
+                  value={periodStart}
+                  onChange={(event) => {
+                    setPeriodStart(event.target.value)
+                    setClientErrors((current) => withoutError(current, 'periodStart'))
+                  }}
+                  error={errors?.periodStart}
+                  hint="The period the quantity covers, not the invoice date."
+                />
+                <InputField
+                  label="Period end"
+                  type="date"
+                  min={periodStart || undefined}
+                  max={today}
+                  value={periodEnd}
+                  onChange={(event) => setPeriodEnd(event.target.value)}
+                  error={errors?.periodEnd}
+                  hint="Same as the start for a single reading."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <InputField
+                  label="Activity quantity *"
+                  type="number"
+                  value={quantity}
+                  onChange={(event) => {
+                    setQuantity(event.target.value)
+                    setClientErrors((current) => withoutError(current, 'quantity'))
+                  }}
+                  error={errors?.quantity}
+                />
+                <UnitField
+                  value={unit}
+                  onChange={(value) => {
+                    setUnit(value)
+                    setClientErrors((current) => withoutError(current, 'unit'))
+                  }}
+                  error={errors?.unit}
+                  units={unitsQuery.data ?? []}
+                  loading={unitsQuery.isPending}
+                />
+              </div>
+              {stream ? (
+                <p className="rounded-lg bg-teal/5 px-3 py-2 text-xs text-ink-muted">
+                  <span className="font-semibold text-dark-teal">Stream default:</span>{' '}
+                  {scopeLabels[stream.defaultScope]} · {categoryLabel(stream.defaultCategory)}.
+                  Scope is confirmed in each inventory's review.
+                </p>
+              ) : (
+                streams.length === 0 && (
+                  <p className="text-xs text-ink-muted">
+                    This facility has no source streams yet; register them under Facilities so the
+                    factor picker and the coverage matrix know this source.
+                  </p>
+                )
+              )}
+            </Section>
 
-          {isFact && (
-            <InputField
-              label="Reason for the correction *"
-              placeholder="Dispensing log reconciled with the supplier invoice"
-              value={reason}
-              onChange={(event) => setReason(event.target.value)}
-              error={errors?.reason}
-              hint="Recorded with the old and new values in the record's history."
-              minLength={5}
-              maxLength={500}
-              required
-            />
-          )}
-          {generalError && (
-            <p role="alert" className="text-sm font-medium text-red-600">
-              {generalError}
-            </p>
-          )}
-        </form>
-      )}
+            <Section title="Source and traceability">
+              <InputField
+                label="Data source"
+                placeholder="Example: utility invoice, dispensing log, meter reading"
+                value={dataSource}
+                onChange={(event) => setDataSource(event.target.value)}
+                error={errors?.dataSource}
+              />
+              <InputField
+                label="Document reference"
+                placeholder="Example: INV-2938"
+                value={evidenceRef}
+                onChange={(event) => setEvidenceRef(event.target.value)}
+                error={errors?.evidenceRef}
+                hint="Invoice, meter reading or log number as printed on the document."
+              />
+              {stream?.meterOrSupplier && (
+                <p className="text-xs text-ink-muted">
+                  Meter or supplier on the stream: {stream.meterOrSupplier}
+                </p>
+              )}
+            </Section>
+
+            {activity && (
+              <Section title="Supporting evidence">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-ink-muted">
+                    {activity.evidenceCount === 0
+                      ? 'Nothing attached'
+                      : `${activity.evidenceCount} attached`}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-link hover:underline"
+                    onClick={() => setTab('evidence')}
+                  >
+                    {activity.evidenceCount === 0 ? 'Attach a file or link →' : 'Open evidence →'}
+                  </button>
+                </div>
+              </Section>
+            )}
+
+            <Section title="Notes" hint="Optional">
+              <TextAreaField
+                label="Context for the reviewer"
+                placeholder="Estimation method, allocation, or useful context."
+                value={note}
+                maxLength={255}
+                onChange={(event) => setNote(event.target.value)}
+                error={errors?.note}
+              />
+            </Section>
+
+            <details className="group">
+              <summary className="cursor-pointer text-[11px] font-semibold tracking-widest text-ink-muted uppercase">
+                Data quality
+              </summary>
+              <div className="mt-3 flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <SelectField
+                    label="Method"
+                    value={dataQuality}
+                    onChange={(event) => setDataQuality(event.target.value as DataQuality)}
+                    error={errors?.dataQuality}
+                  >
+                    {Object.entries(qualityLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    label="Quality tier"
+                    value={tier}
+                    onChange={(event) => setTier(event.target.value)}
+                    error={errors?.dataQualityTier}
+                    hint="1 is metered primary data, 5 an assumption. Blank follows the method."
+                  >
+                    <option value="">Follow the method</option>
+                    {Object.entries(tierLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {value}: {label}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+                <InputField
+                  label="Uncertainty, ± %"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={uncertainty}
+                  onChange={(event) => {
+                    setUncertainty(event.target.value)
+                    setClientErrors((current) => withoutError(current, 'uncertaintyPercent'))
+                  }}
+                  error={errors?.uncertaintyPercent}
+                  hint="The report weights it by emissions into the uncertainty statement."
+                />
+              </div>
+            </details>
+
+            {isFact && (
+              <InputField
+                label="Reason for the correction *"
+                placeholder="Dispensing log reconciled with the supplier invoice"
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                error={errors?.reason}
+                hint="Recorded with the old and new values in the record's history."
+                minLength={5}
+                maxLength={500}
+                required
+              />
+            )}
+            {generalError && (
+              <p role="alert" className="text-sm font-medium text-red-600">
+                {generalError}
+              </p>
+            )}
+          </form>
+        ))}
     </Drawer>
+  )
+}
+
+/**
+ * The verifier's view of a record (spec 01.4): the facts, read-only, with no
+ * fields and no Save. Evidence and history stay on their own tab and button.
+ */
+function ActivityFacts({ activity }: { activity: Activity | undefined }) {
+  if (!activity) {
+    return <p className="text-sm text-ink-muted">You do not have permission to add a record.</p>
+  }
+  return (
+    <div className="flex flex-col gap-6">
+      <Section title="Activity details">
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
+          <Fact label="Activity type" value={activity.activityType} />
+          <Fact label="Facility" value={activity.facilityName} />
+          <Fact label="Stream" value={activity.streamName ?? 'No stream'} />
+          <Fact
+            label="Period"
+            value={formatRecordPeriod(activity.periodStart, activity.periodEnd)}
+          />
+          <Fact
+            label="Quantity"
+            value={
+              activity.quantity === null
+                ? '—'
+                : `${formatQuantity(activity.quantity)} ${activity.unit ?? ''}`.trim()
+            }
+          />
+          <Fact label="Data quality" value={qualityLabels[activity.dataQuality]} />
+        </dl>
+      </Section>
+      <Section title="Source and traceability">
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
+          <Fact label="Data source" value={activity.dataSource ?? '—'} />
+          <Fact label="Document reference" value={activity.evidenceRef ?? '—'} />
+        </dl>
+      </Section>
+      <Section title="Notes">
+        <p className="text-sm">{activity.note ?? '—'}</p>
+      </Section>
+    </div>
+  )
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs text-ink-muted">{label}</dt>
+      <dd className="font-medium">{value}</dd>
+    </div>
   )
 }

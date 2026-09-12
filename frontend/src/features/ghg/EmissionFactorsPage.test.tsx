@@ -3,11 +3,28 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { EmissionFactorsPage } from './EmissionFactorsPage'
-import type { EmissionFactor, FactorPack } from './api'
+import type { EmissionFactor, FactorPack, Organization } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import { importFactorPack, listEmissionFactors, listFactorPacks, setFactorApproval } from './api'
+import {
+  getOrganization,
+  importFactorPack,
+  listEmissionFactors,
+  listFactorPacks,
+  setFactorApproval,
+} from './api'
+
+const organization: Organization = {
+  id: 'org-1',
+  name: 'Sankofa Gold plc',
+  myRole: 'OWNER',
+  address: null,
+  contact: null,
+  facilityCount: 2,
+  supportAccess: [],
+  createdAt: '2026-08-01T00:00:00Z',
+}
 
 const diesel: EmissionFactor = {
   id: 'f-1',
@@ -82,6 +99,7 @@ const pack: FactorPack = {
 beforeEach(() => {
   vi.mocked(listEmissionFactors).mockReset().mockResolvedValue([diesel, hfo])
   vi.mocked(listFactorPacks).mockReset().mockResolvedValue([pack])
+  vi.mocked(getOrganization).mockReset()
   vi.mocked(importFactorPack)
     .mockReset()
     .mockResolvedValue({ pack: 'sector-mining', created: 53, updated: 0 })
@@ -125,4 +143,36 @@ test('imports a pack and approves a factor', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Approve' }))
   await waitFor(() => expect(setFactorApproval).toHaveBeenCalledWith('f-2', true))
+})
+
+test('a verifier sees Add factor, Import pack, Approve and Delete disabled with the role they need (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'VERIFIER' })
+  renderPage()
+
+  const addFactor = await screen.findByRole('button', { name: /^add factor$/i })
+  await waitFor(() => expect(addFactor).toBeDisabled())
+  expect(addFactor).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(addFactor).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+
+  const importButton = await screen.findByRole('button', { name: /^Import pack/ })
+  expect(importButton).toBeDisabled()
+
+  const ownRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
+  expect(within(ownRow).getByRole('button', { name: /approve/i })).toBeDisabled()
+  expect(within(ownRow).getByRole('button', { name: /delete factor/i })).toBeDisabled()
+})
+
+test('a preparer can add, import, approve and delete factors (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
+  renderPage()
+
+  const addFactor = await screen.findByRole('button', { name: /^add factor$/i })
+  await waitFor(() => expect(addFactor).toBeEnabled())
+
+  const importButton = await screen.findByRole('button', { name: /^Import pack/ })
+  expect(importButton).toBeEnabled()
+
+  const ownRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
+  expect(within(ownRow).getByRole('button', { name: /approve/i })).toBeEnabled()
+  expect(within(ownRow).getByRole('button', { name: /delete factor/i })).toBeEnabled()
 })

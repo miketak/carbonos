@@ -3,14 +3,32 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { UnitsPage } from './UnitsPage'
-import type { Unit } from './api'
+import type { Organization, Unit } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
 // two forms of fields on one page take longer than the 15s default on a loaded machine
 vi.setConfig({ testTimeout: 30000 })
 
-import { createCustomUnit, createDensity, listCustomUnits, listDensities, listUnits } from './api'
+import {
+  createCustomUnit,
+  createDensity,
+  getOrganization,
+  listCustomUnits,
+  listDensities,
+  listUnits,
+} from './api'
+
+const organization: Organization = {
+  id: 'org-1',
+  name: 'Sankofa Gold plc',
+  myRole: 'OWNER',
+  address: null,
+  contact: null,
+  facilityCount: 2,
+  supportAccess: [],
+  createdAt: '2026-08-01T00:00:00Z',
+}
 
 const units: Unit[] = [
   {
@@ -67,6 +85,7 @@ beforeEach(() => {
     ])
   vi.mocked(createCustomUnit).mockReset()
   vi.mocked(createDensity).mockReset()
+  vi.mocked(getOrganization).mockReset()
 })
 
 test('lists custom units with their definition and densities with the typical flag', async () => {
@@ -133,4 +152,30 @@ test('records a supplier density with its source', async () => {
       note: undefined,
     }),
   )
+})
+
+test('a verifier sees no add forms and Delete disabled with the role it needs (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'VERIFIER' })
+  renderPage()
+
+  await screen.findByText('1 drum = 200 litre')
+  expect(screen.queryByLabelText('Code')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Material')).not.toBeInTheDocument()
+
+  const unitDelete = screen.getByRole('button', { name: /delete/i })
+  await waitFor(() => expect(unitDelete).toBeDisabled())
+  expect(unitDelete).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(unitDelete).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+})
+
+test('a preparer sees both add forms and can delete (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
+  renderPage()
+
+  await screen.findByText('1 drum = 200 litre')
+  expect(screen.getByLabelText('Code')).toBeInTheDocument()
+  expect(screen.getByLabelText('Material')).toBeInTheDocument()
+
+  const unitDelete = screen.getByRole('button', { name: /delete/i })
+  await waitFor(() => expect(unitDelete).toBeEnabled())
 })

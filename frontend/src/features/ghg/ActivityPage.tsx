@@ -7,7 +7,7 @@ import { MonthField } from '../../components/MonthField'
 import { Skeleton } from '../../components/Skeleton'
 import { Tabs } from '../../components/Tabs'
 import { useToast } from '../../components/toast'
-import { problemDetail } from '../../lib/api'
+import { refusalMessage } from '../../lib/api'
 import { useShortcuts } from '../../lib/useShortcuts'
 import { PAGE_SIZE, useActivityFilters } from './activityFilters'
 import type { ActivitySort, ActivityTab } from './activityFilters'
@@ -18,11 +18,14 @@ import { Breadcrumb } from './components/Breadcrumb'
 import { CompletenessBanner } from './components/CompletenessBanner'
 import { ImportActivitiesModal } from './components/ImportActivitiesModal'
 import { RemoveDialog } from './components/RemoveDialog'
+import { RoleButton } from './components/RoleButton'
 import { ViewSwitch } from './components/ViewSwitch'
+import { mayWrite, WRITE_TOOLTIP } from './roles'
 import {
   useActivityPageQuery,
   useDeleteActivity,
   useFacilitiesQuery,
+  useOrganizationQuery,
   useStreamsQuery,
 } from './useGhg'
 import type { Activity } from './api'
@@ -64,6 +67,8 @@ export function ActivityPage() {
   const facilitiesQuery = useFacilitiesQuery(organizationId)
   const streamsQuery = useStreamsQuery(organizationId)
   const deleteActivity = useDeleteActivity(organizationId)
+  const organizationQuery = useOrganizationQuery(organizationId)
+  const myRole = organizationQuery.data?.myRole
   const toast = useToast()
   const [dialog, setDialog] = useState<Dialog>(null)
   const [cursorId, setCursorId] = useState<string | null>(null)
@@ -107,7 +112,7 @@ export function ActivityPage() {
 
   useShortcuts(
     {
-      n: () => facilities.length > 0 && set({ record: 'new' }),
+      n: () => facilities.length > 0 && mayWrite(myRole) && set({ record: 'new' }),
       '/': () => searchRef.current?.focus(),
       j: () => move(1),
       k: () => move(-1),
@@ -140,7 +145,9 @@ export function ActivityPage() {
         </div>
         <div className="flex items-center gap-2">
           <ViewSwitch organizationId={organizationId} />
-          <Button
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
             variant="ghost"
             className="px-4 py-1.5 text-sm"
             onClick={() => setDialog({ kind: 'import' })}
@@ -148,8 +155,10 @@ export function ActivityPage() {
             title={facilities.length === 0 ? 'Add a facility first' : undefined}
           >
             Import CSV
-          </Button>
-          <Button
+          </RoleButton>
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
             className="px-4 py-1.5 text-sm"
             onClick={() => set({ record: 'new' })}
             disabled={facilities.length === 0}
@@ -157,7 +166,7 @@ export function ActivityPage() {
           >
             + Add activity
             <Kbd>N</Kbd>
-          </Button>
+          </RoleButton>
         </div>
       </div>
 
@@ -270,6 +279,7 @@ export function ActivityPage() {
               openId={filters.record}
               cursorId={effectiveCursorId}
               selected={selected}
+              selectable={mayWrite(myRole)}
               onToggle={(id, checked) =>
                 setSelected((current) => {
                   const next = new Set(current)
@@ -358,6 +368,7 @@ export function ActivityPage() {
           pageItems={activities ?? []}
           facilities={facilities}
           defaultFacilityId={filters.facility || undefined}
+          myRole={myRole}
           onNavigate={(id) => set({ record: id })}
           onClose={() => set({ record: null })}
           onSaved={(message) => toast(message)}
@@ -368,6 +379,7 @@ export function ActivityPage() {
       {dialog?.kind === 'import' && (
         <ImportActivitiesModal
           organizationId={organizationId}
+          myRole={myRole}
           onClose={() => setDialog(null)}
           onImported={(count) => {
             setDialog(null)
@@ -392,7 +404,7 @@ export function ActivityPage() {
                 },
                 onError: (error) => {
                   setDialog(null)
-                  toast(problemDetail(error) ?? 'Could not remove the activity.', 'error')
+                  toast(refusalMessage(error, myRole), 'error')
                 },
               },
             )
@@ -413,7 +425,7 @@ export function ActivityPage() {
                 await deleteActivity.mutateAsync({ id, reason })
               } catch (error) {
                 const record = activities?.find((a) => a.id === id)
-                failed.push(`${record?.recordRef ?? id}: ${problemDetail(error) ?? 'not removed'}`)
+                failed.push(`${record?.recordRef ?? id}: ${refusalMessage(error, myRole)}`)
               }
             }
             setRemoving(false)

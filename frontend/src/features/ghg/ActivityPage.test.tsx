@@ -18,6 +18,7 @@ vi.setConfig({ testTimeout: 30000 })
 import {
   deleteActivity,
   getActivity,
+  getOrganization,
   importActivities,
   listStreams,
   searchActivities,
@@ -185,6 +186,16 @@ beforeEach(() => {
     ])
   vi.mocked(updateActivity).mockReset()
   vi.mocked(deleteActivity).mockReset()
+  vi.mocked(getOrganization).mockReset().mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'OWNER',
+    address: null,
+    contact: null,
+    facilityCount: 1,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
 })
 
 test('the register shows each record with its number, stream, period, quantity and readiness', async () => {
@@ -371,4 +382,70 @@ test('Import CSV opens the bulk entry dialog with the template link', async () =
     '/api/ghg/organizations/org-1/activities/import-template.csv',
   )
   expect(within(dialog).getByRole('button', { name: 'Add records' })).toBeDisabled()
+})
+
+test('a verifier sees Import CSV and + Add activity disabled with the role it needs (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'VERIFIER',
+    address: null,
+    contact: null,
+    facilityCount: 1,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  renderPage()
+
+  const importButton = await screen.findByRole('button', { name: 'Import CSV' })
+  const addButton = screen.getByRole('button', { name: /\+ Add activity/ })
+  await waitFor(() => expect(importButton).toBeDisabled())
+  expect(importButton).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(importButton).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+  expect(addButton).toBeDisabled()
+  expect(addButton).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+
+  // the register's selection checkboxes exist only to feed the bulk Remove action
+  await screen.findByText('Diesel consumption')
+  expect(screen.queryByLabelText('Select all on this page')).not.toBeInTheDocument()
+})
+
+test('a preparer sees Import CSV and + Add activity enabled', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'PREPARER',
+    address: null,
+    contact: null,
+    facilityCount: 1,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  renderPage()
+
+  const importButton = await screen.findByRole('button', { name: 'Import CSV' })
+  const addButton = screen.getByRole('button', { name: /\+ Add activity/ })
+  await waitFor(() => expect(importButton).toBeEnabled())
+  expect(addButton).toBeEnabled()
+})
+
+test('a verifier opens a record in a read-only drawer, with no fields and no Save', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'VERIFIER',
+    address: null,
+    contact: null,
+    facilityCount: 1,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: 'Diesel consumption' }))
+  const drawer = screen.getByRole('dialog', { name: 'Diesel consumption' })
+  expect(within(drawer).getByText('ACT-0001')).toBeInTheDocument()
+  expect(within(drawer).queryByLabelText('Activity type *')).not.toBeInTheDocument()
+  expect(within(drawer).queryByRole('button', { name: /^Save/ })).not.toBeInTheDocument()
 })

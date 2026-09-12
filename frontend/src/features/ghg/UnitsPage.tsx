@@ -6,7 +6,9 @@ import { InputField, SelectField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { fieldErrors, problemDetail } from '../../lib/api'
+import { fieldErrors, refusalMessage } from '../../lib/api'
+import { RoleButton } from './components/RoleButton'
+import { mayWrite, WRITE_TOOLTIP } from './roles'
 import { groupUnits } from './units'
 import {
   useCreateCustomUnit,
@@ -15,8 +17,10 @@ import {
   useDeleteCustomUnit,
   useDeleteDensity,
   useDensitiesQuery,
+  useOrganizationQuery,
   useUnitsQuery,
 } from './useGhg'
+import type { Organization } from './api'
 
 /**
  * The organization's units (spec 02.2): custom units defined as multiples of
@@ -27,6 +31,8 @@ import {
  */
 export function UnitsPage() {
   const { organizationId = '' } = useParams()
+  const organizationQuery = useOrganizationQuery(organizationId)
+  const myRole = organizationQuery.data?.myRole ?? null
   return (
     <section className="flex flex-col gap-6">
       <div>
@@ -37,13 +43,19 @@ export function UnitsPage() {
           conversion it applied.
         </p>
       </div>
-      <CustomUnitsCard organizationId={organizationId} />
-      <DensitiesCard organizationId={organizationId} />
+      <CustomUnitsCard organizationId={organizationId} myRole={myRole} />
+      <DensitiesCard organizationId={organizationId} myRole={myRole} />
     </section>
   )
 }
 
-function CustomUnitsCard({ organizationId }: { organizationId: string }) {
+function CustomUnitsCard({
+  organizationId,
+  myRole,
+}: {
+  organizationId: string
+  myRole: Organization['myRole']
+}) {
   const customUnitsQuery = useCustomUnitsQuery(organizationId)
   const unitsQuery = useUnitsQuery()
   const create = useCreateCustomUnit(organizationId)
@@ -54,6 +66,7 @@ function CustomUnitsCard({ organizationId }: { organizationId: string }) {
   const [baseUnit, setBaseUnit] = useState('litre')
   const [factor, setFactor] = useState('')
   const errors = fieldErrors(create.error)
+  const generalError = create.isError && !errors ? refusalMessage(create.error, myRole) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -65,10 +78,6 @@ function CustomUnitsCard({ organizationId }: { organizationId: string }) {
           setLabel('')
           setFactor('')
           toast(`${unit.definition} defined.`)
-        },
-        onError: (error) => {
-          if (!fieldErrors(error))
-            toast(problemDetail(error) ?? 'Could not define the unit.', 'error')
         },
       },
     )
@@ -104,84 +113,98 @@ function CustomUnitsCard({ organizationId }: { organizationId: string }) {
                 </td>
                 <td className="px-3 py-2 tabular-nums">{unit.definition}</td>
                 <td className="px-3 py-2 text-right">
-                  <Button
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
                     variant="ghost"
                     className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                     onClick={() =>
                       remove.mutate(unit.id, {
                         onSuccess: () => toast(`${unit.code} deleted.`),
-                        onError: (error) =>
-                          toast(problemDetail(error) ?? 'Could not delete the unit.', 'error'),
+                        onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                       })
                     }
                   >
                     Delete
-                  </Button>
+                  </RoleButton>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-5 md:items-end">
-        <InputField
-          label="Code"
-          placeholder="drum"
-          value={code}
-          maxLength={30}
-          error={errors?.code}
-          onChange={(event) => setCode(event.target.value)}
-          required
-        />
-        <InputField
-          label="Label"
-          placeholder="Drum (200 L)"
-          value={label}
-          error={errors?.label}
-          onChange={(event) => setLabel(event.target.value)}
-          required
-        />
-        <InputField
-          label="One unit equals"
-          type="number"
-          min="0.000001"
-          step="any"
-          placeholder="200"
-          value={factor}
-          error={errors?.factor}
-          onChange={(event) => setFactor(event.target.value)}
-          required
-        />
-        <SelectField
-          label="Of"
-          value={baseUnit}
-          error={errors?.baseUnit}
-          onChange={(event) => setBaseUnit(event.target.value)}
-        >
-          {groupUnits(unitsQuery.data ?? []).map((group) => (
-            <optgroup key={group.dimension} label={group.label}>
-              {group.units.map((unit) => (
-                <option key={unit.code} value={unit.code}>
-                  {unit.label} ({unit.code})
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </SelectField>
-        <Button
-          type="submit"
-          className="px-4 py-1.5 text-sm"
-          busy={create.isPending}
-          disabled={code.trim() === '' || label.trim() === '' || Number(factor) <= 0}
-        >
-          Define unit
-        </Button>
-      </form>
+      {mayWrite(myRole) && (
+        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-5 md:items-end">
+          <InputField
+            label="Code"
+            placeholder="drum"
+            value={code}
+            maxLength={30}
+            error={errors?.code}
+            onChange={(event) => setCode(event.target.value)}
+            required
+          />
+          <InputField
+            label="Label"
+            placeholder="Drum (200 L)"
+            value={label}
+            error={errors?.label}
+            onChange={(event) => setLabel(event.target.value)}
+            required
+          />
+          <InputField
+            label="One unit equals"
+            type="number"
+            min="0.000001"
+            step="any"
+            placeholder="200"
+            value={factor}
+            error={errors?.factor}
+            onChange={(event) => setFactor(event.target.value)}
+            required
+          />
+          <SelectField
+            label="Of"
+            value={baseUnit}
+            error={errors?.baseUnit}
+            onChange={(event) => setBaseUnit(event.target.value)}
+          >
+            {groupUnits(unitsQuery.data ?? []).map((group) => (
+              <optgroup key={group.dimension} label={group.label}>
+                {group.units.map((unit) => (
+                  <option key={unit.code} value={unit.code}>
+                    {unit.label} ({unit.code})
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </SelectField>
+          <Button
+            type="submit"
+            className="px-4 py-1.5 text-sm"
+            busy={create.isPending}
+            disabled={code.trim() === '' || label.trim() === '' || Number(factor) <= 0}
+          >
+            Define unit
+          </Button>
+          {generalError && (
+            <p role="alert" className="text-sm font-medium text-red-600 md:col-span-5">
+              {generalError}
+            </p>
+          )}
+        </form>
+      )}
     </GlassCard>
   )
 }
 
-function DensitiesCard({ organizationId }: { organizationId: string }) {
+function DensitiesCard({
+  organizationId,
+  myRole,
+}: {
+  organizationId: string
+  myRole: Organization['myRole']
+}) {
   const densitiesQuery = useDensitiesQuery(organizationId)
   const create = useCreateDensity(organizationId)
   const remove = useDeleteDensity(organizationId)
@@ -191,6 +214,7 @@ function DensitiesCard({ organizationId }: { organizationId: string }) {
   const [source, setSource] = useState('')
   const [note, setNote] = useState('')
   const errors = fieldErrors(create.error)
+  const generalError = create.isError && !errors ? refusalMessage(create.error, myRole) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -208,10 +232,6 @@ function DensitiesCard({ organizationId }: { organizationId: string }) {
           setSource('')
           setNote('')
           toast(`Density of ${density.material} recorded.`)
-        },
-        onError: (error) => {
-          if (!fieldErrors(error))
-            toast(problemDetail(error) ?? 'Could not record the density.', 'error')
         },
       },
     )
@@ -259,22 +279,20 @@ function DensitiesCard({ organizationId }: { organizationId: string }) {
                   </td>
                   <td className="px-3 py-2 text-right">
                     {!density.typical && (
-                      <Button
+                      <RoleButton
+                        allowed={mayWrite(myRole)}
+                        tooltip={WRITE_TOOLTIP}
                         variant="ghost"
                         className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                         onClick={() =>
                           remove.mutate(density.id, {
                             onSuccess: () => toast(`Density of ${density.material} deleted.`),
-                            onError: (error) =>
-                              toast(
-                                problemDetail(error) ?? 'Could not delete the density.',
-                                'error',
-                              ),
+                            onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                           })
                         }
                       >
                         Delete
-                      </Button>
+                      </RoleButton>
                     )}
                   </td>
                 </tr>
@@ -283,49 +301,56 @@ function DensitiesCard({ organizationId }: { organizationId: string }) {
           </table>
         </div>
       )}
-      <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-5 md:items-end">
-        <InputField
-          label="Material"
-          placeholder="Diesel (GOIL, 2025 CoA)"
-          value={material}
-          error={errors?.material}
-          onChange={(event) => setMaterial(event.target.value)}
-          required
-        />
-        <InputField
-          label="kg per litre"
-          type="number"
-          min="0.00001"
-          step="any"
-          placeholder="0.8325"
-          value={kgPerLitre}
-          error={errors?.kgPerLitre}
-          onChange={(event) => setKgPerLitre(event.target.value)}
-          required
-        />
-        <InputField
-          label="Source"
-          placeholder="Supplier certificate of analysis, batch 2025-03"
-          value={source}
-          error={errors?.source}
-          onChange={(event) => setSource(event.target.value)}
-          required
-        />
-        <InputField
-          label="Note (optional)"
-          value={note}
-          error={errors?.note}
-          onChange={(event) => setNote(event.target.value)}
-        />
-        <Button
-          type="submit"
-          className="px-4 py-1.5 text-sm"
-          busy={create.isPending}
-          disabled={material.trim() === '' || Number(kgPerLitre) <= 0 || source.trim() === ''}
-        >
-          Record density
-        </Button>
-      </form>
+      {mayWrite(myRole) && (
+        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-5 md:items-end">
+          <InputField
+            label="Material"
+            placeholder="Diesel (GOIL, 2025 CoA)"
+            value={material}
+            error={errors?.material}
+            onChange={(event) => setMaterial(event.target.value)}
+            required
+          />
+          <InputField
+            label="kg per litre"
+            type="number"
+            min="0.00001"
+            step="any"
+            placeholder="0.8325"
+            value={kgPerLitre}
+            error={errors?.kgPerLitre}
+            onChange={(event) => setKgPerLitre(event.target.value)}
+            required
+          />
+          <InputField
+            label="Source"
+            placeholder="Supplier certificate of analysis, batch 2025-03"
+            value={source}
+            error={errors?.source}
+            onChange={(event) => setSource(event.target.value)}
+            required
+          />
+          <InputField
+            label="Note (optional)"
+            value={note}
+            error={errors?.note}
+            onChange={(event) => setNote(event.target.value)}
+          />
+          <Button
+            type="submit"
+            className="px-4 py-1.5 text-sm"
+            busy={create.isPending}
+            disabled={material.trim() === '' || Number(kgPerLitre) <= 0 || source.trim() === ''}
+          >
+            Record density
+          </Button>
+          {generalError && (
+            <p role="alert" className="text-sm font-medium text-red-600 md:col-span-5">
+              {generalError}
+            </p>
+          )}
+        </form>
+      )}
     </GlassCard>
   )
 }

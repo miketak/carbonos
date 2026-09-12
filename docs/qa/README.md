@@ -65,7 +65,7 @@ editing them.
 
 | # | Procedure | Objective | Time |
 | --- | --- | --- | --- |
-| 1 | [Access and roles](001-access-and-roles.md) | A newcomer gets an account, joins an organization with a role, and can do only what the role allows. | 60 min |
+| 1 | [Access and roles](001-access-and-roles.md) | A newcomer gets an account, joins an organization with a role, and can do only what the role allows; a platform administrator is an outsider until they assume a logged support access, and an organization is not deleted while a record stands. | 75 min |
 | 2 | [Organization setup](002-organization-setup.md) | The organization's structure, sites, source streams, units and emission factors are recorded with the provenance a verifier expects. | 75 min |
 | 3 | [Activity data](003-activity-data.md) | Facts are recorded one by one and in bulk, corrected with a reason, removed with a reason, and backed by evidence. | 60 min |
 | 4 | [Boundary and inventory lifecycle](004-boundary-and-lifecycle.md) | An inventory starts from the approach, its boundary and exclusions are frozen as a version, and the lifecycle refuses what it must. | 60 min |

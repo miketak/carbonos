@@ -7,18 +7,21 @@ import { GlassCard } from '../../components/GlassCard'
 import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { fieldErrors, problemDetail } from '../../lib/api'
+import { fieldErrors, refusalMessage } from '../../lib/api'
 import { ScopeBadge } from './components/badges'
+import { RoleButton } from './components/RoleButton'
 import { categoriesForScope, categoryLabel, scopeLabels } from './format'
+import { mayWrite, WRITE_TOOLTIP } from './roles'
 import {
   useCreateEmissionFactor,
   useDeleteEmissionFactor,
   useEmissionFactorsQuery,
   useFactorPacksQuery,
   useImportFactorPack,
+  useOrganizationQuery,
   useSetFactorApproval,
 } from './useGhg'
-import type { ActivityCategory, EmissionFactor, GhgScope } from './api'
+import type { ActivityCategory, EmissionFactor, GhgScope, Organization } from './api'
 
 /** "CO2 2.6307 · CH4 0.0001 (fossil) · N2O 0.0001", listing only the gases the factor carries (spec 07.1). */
 function gasSplit(factor: EmissionFactor): string {
@@ -61,11 +64,13 @@ function provenance(factor: EmissionFactor): string {
 function FactorTable({
   factors,
   editable,
+  myRole,
   onApprove,
   onDelete,
 }: {
   factors: EmissionFactor[]
   editable: boolean
+  myRole?: Organization['myRole']
   onApprove?: (factor: EmissionFactor, approved: boolean) => void
   onDelete?: (factor: EmissionFactor) => void
 }) {
@@ -127,21 +132,25 @@ function FactorTable({
             </td>
             {editable && (
               <td className="px-4 py-3 text-right whitespace-nowrap">
-                <Button
+                <RoleButton
+                  allowed={mayWrite(myRole)}
+                  tooltip={WRITE_TOOLTIP}
                   variant="ghost"
                   className="px-2 py-1 text-xs"
                   onClick={() => onApprove?.(factor, !factor.approved)}
                 >
                   {factor.approved ? 'Unapprove' : 'Approve'}
-                </Button>
-                <Button
+                </RoleButton>
+                <RoleButton
+                  allowed={mayWrite(myRole)}
+                  tooltip={WRITE_TOOLTIP}
                   variant="ghost"
                   className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                   aria-label={`Delete factor ${factor.name}`}
                   onClick={() => onDelete?.(factor)}
                 >
                   Delete
-                </Button>
+                </RoleButton>
               </td>
             )}
           </tr>
@@ -160,6 +169,7 @@ export function EmissionFactorsPage() {
   const { organizationId = '' } = useParams()
   const factorsQuery = useEmissionFactorsQuery(organizationId)
   const packsQuery = useFactorPacksQuery()
+  const organizationQuery = useOrganizationQuery(organizationId)
   const importPack = useImportFactorPack(organizationId)
   const approve = useSetFactorApproval(organizationId)
   const remove = useDeleteEmissionFactor(organizationId)
@@ -168,16 +178,17 @@ export function EmissionFactorsPage() {
   const factors = factorsQuery.data
   const own = factors?.filter((factor) => factor.organizationId !== null) ?? []
   const library = factors?.filter((factor) => factor.organizationId === null) ?? []
+  const myRole = organizationQuery.data?.myRole ?? null
 
   const onApprove = (factor: EmissionFactor, approved: boolean) =>
     approve.mutate(
       { id: factor.id, approved },
-      { onError: (error) => toast(problemDetail(error) ?? 'Could not change approval.', 'error') },
+      { onError: (error) => toast(refusalMessage(error, myRole), 'error') },
     )
   const onDelete = (factor: EmissionFactor) =>
     remove.mutate(factor.id, {
       onSuccess: () => toast(`${factor.name} deleted.`),
-      onError: (error) => toast(problemDetail(error) ?? 'Could not delete the factor.', 'error'),
+      onError: (error) => toast(refusalMessage(error, myRole), 'error'),
     })
 
   return (
@@ -191,9 +202,14 @@ export function EmissionFactorsPage() {
             classification decides (Corporate Standard chapter 4).
           </p>
         </div>
-        <Button className="px-4 py-1.5 text-sm" onClick={() => setAdding(true)}>
+        <RoleButton
+          allowed={mayWrite(myRole)}
+          tooltip={WRITE_TOOLTIP}
+          className="px-4 py-1.5 text-sm"
+          onClick={() => setAdding(true)}
+        >
           Add factor
-        </Button>
+        </RoleButton>
       </div>
 
       <GlassCard className="animate-fade-up p-6">
@@ -218,7 +234,9 @@ export function EmissionFactorsPage() {
                 </span>
                 {pack.notes && <span className="text-xs text-ink-muted">{pack.notes}</span>}
                 <div>
-                  <Button
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
                     variant="ghost"
                     className="px-3 py-1 text-xs"
                     aria-label={`Import pack ${pack.name}`}
@@ -229,13 +247,12 @@ export function EmissionFactorsPage() {
                           toast(
                             `${pack.name}: ${result.created} factors added, ${result.updated} updated.`,
                           ),
-                        onError: (error) =>
-                          toast(problemDetail(error) ?? 'Could not import the pack.', 'error'),
+                        onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                       })
                     }
                   >
                     Import pack
-                  </Button>
+                  </RoleButton>
                 </div>
               </li>
             ))}
@@ -256,7 +273,13 @@ export function EmissionFactorsPage() {
           </p>
         )}
         {own.length > 0 && (
-          <FactorTable factors={own} editable onApprove={onApprove} onDelete={onDelete} />
+          <FactorTable
+            factors={own}
+            editable
+            myRole={myRole}
+            onApprove={onApprove}
+            onDelete={onDelete}
+          />
         )}
       </GlassCard>
 
@@ -271,6 +294,7 @@ export function EmissionFactorsPage() {
       {adding && (
         <FactorFormModal
           organizationId={organizationId}
+          myRole={myRole}
           onClose={() => setAdding(false)}
           onSaved={(name) => {
             setAdding(false)
@@ -284,10 +308,12 @@ export function EmissionFactorsPage() {
 
 function FactorFormModal({
   organizationId,
+  myRole,
   onClose,
   onSaved,
 }: {
   organizationId: string
+  myRole: Organization['myRole']
   onClose: () => void
   onSaved: (name: string) => void
 }) {
@@ -309,7 +335,7 @@ function FactorFormModal({
   const [validTo, setValidTo] = useState('')
   const [approved, setApproved] = useState(true)
   const errors = fieldErrors(create.error)
-  const generalError = create.isError && !errors ? problemDetail(create.error) : undefined
+  const generalError = create.isError && !errors ? refusalMessage(create.error, myRole) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()

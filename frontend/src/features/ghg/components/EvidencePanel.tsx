@@ -3,9 +3,11 @@ import type { FormEvent } from 'react'
 import { Button } from '../../../components/Button'
 import { InputField } from '../../../components/Field'
 import { useToast } from '../../../components/toast'
-import { fieldErrors, problemDetail } from '../../../lib/api'
+import { fieldErrors, refusalMessage } from '../../../lib/api'
 import { evidenceDownloadUrl } from '../api'
 import { formatDateTime } from '../format'
+import { WRITE_TOOLTIP } from '../roles'
+import type { MyRole } from '../roles'
 import type { EvidenceOwner } from '../api'
 import {
   useAddEvidenceLink,
@@ -31,10 +33,12 @@ export function EvidencePanel({
   owner,
   organizationId,
   editable,
+  myRole,
 }: {
   owner: EvidenceOwner
   organizationId: string
   editable: boolean
+  myRole?: MyRole
 }) {
   const evidenceQuery = useEvidenceQuery(owner)
   const upload = useUploadEvidence(owner, organizationId)
@@ -97,20 +101,35 @@ export function EvidencePanel({
                   {item.uploadedBy}, {formatDateTime(item.uploadedAt)}
                 </span>
               </span>
-              {editable && (
+              {editable ? (
                 <button
                   type="button"
                   aria-label={`Remove ${item.name}`}
                   className="text-xs text-red-600 hover:underline"
                   onClick={() =>
                     remove.mutate(item.id, {
-                      onError: (error) =>
-                        toast(problemDetail(error) ?? 'Could not remove the evidence.', 'error'),
+                      onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                     })
                   }
                 >
                   remove
                 </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${item.name}`}
+                    className="text-xs text-red-600 opacity-50"
+                    disabled
+                    title={WRITE_TOOLTIP}
+                    aria-describedby={`evidence-role-${item.id}`}
+                  >
+                    remove
+                  </button>
+                  <span id={`evidence-role-${item.id}`} className="sr-only">
+                    {WRITE_TOOLTIP}
+                  </span>
+                </>
               )}
             </li>
           ))}
@@ -131,8 +150,7 @@ export function EvidencePanel({
                 if (!file) return
                 upload.mutate(file, {
                   onSuccess: () => toast(`${file.name} attached.`),
-                  onError: (error) =>
-                    toast(problemDetail(error) ?? 'Could not attach the file.', 'error'),
+                  onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                 })
                 event.target.value = ''
               }}

@@ -7,7 +7,7 @@ import type { EvidenceDocument } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import { listFacilities, listImportBatches, searchEvidence } from './api'
+import { getOrganization, listFacilities, listImportBatches, searchEvidence } from './api'
 
 const invoice: EvidenceDocument = {
   id: 'ev-1',
@@ -66,6 +66,16 @@ beforeEach(() => {
       },
     ])
   vi.mocked(listFacilities).mockReset().mockResolvedValue([])
+  vi.mocked(getOrganization).mockReset().mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'OWNER',
+    address: null,
+    contact: null,
+    facilityCount: 1,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
 })
 
 function renderPage() {
@@ -121,4 +131,29 @@ test('the search and the filter ask the server', async () => {
       expect.objectContaining({ filter: 'ORPHANED' }),
     ),
   )
+})
+
+test('a verifier cannot upload or remove a document (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'VERIFIER',
+    address: null,
+    contact: null,
+    facilityCount: 1,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  renderPage()
+  await screen.findByText('invoice-2938.pdf')
+
+  // nothing on the page lets a verifier attach a new document
+  expect(screen.queryByRole('button', { name: /attach/i })).not.toBeInTheDocument()
+  expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument()
+
+  // removal stays visible, so the page keeps its shape, but is refused
+  const remove = screen.getByRole('button', { name: 'Remove ECG bill (SharePoint)' })
+  expect(remove).toBeDisabled()
+  expect(remove).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(remove).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
 })

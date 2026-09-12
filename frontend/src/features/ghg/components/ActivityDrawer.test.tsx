@@ -62,7 +62,11 @@ const draft: Activity = {
 
 const nextRecord: Activity = { ...draft, id: 'act-4', recordNo: 4, recordRef: 'ACT-0004' }
 
-function renderDrawer(activityId: string, pageItems: Activity[]) {
+function renderDrawer(
+  activityId: string,
+  pageItems: Activity[],
+  options: { myRole?: 'PREPARER' | 'REVIEWER' | 'OWNER' | 'VERIFIER' | 'ADMIN' } = {},
+) {
   const onNavigate = vi.fn()
   const onSaved = vi.fn()
   renderWithProviders(
@@ -71,6 +75,7 @@ function renderDrawer(activityId: string, pageItems: Activity[]) {
       activityId={activityId}
       pageItems={pageItems}
       facilities={[facility]}
+      myRole={options.myRole}
       onNavigate={onNavigate}
       onClose={vi.fn()}
       onSaved={onSaved}
@@ -178,4 +183,38 @@ test('a server field error lands beside its field', async () => {
   expect(
     await within(drawer).findByText('A unit is required unless the record is saved as a draft.'),
   ).toBeInTheDocument()
+})
+
+test('a 403 on save shows the refusal sentence in the drawer and keeps the typed values (spec 01.4)', async () => {
+  const user = userEvent.setup()
+  const { ApiError } = await import('../../../lib/api')
+  vi.mocked(updateActivity).mockRejectedValue(
+    new ApiError(403, {
+      title: 'Forbidden',
+      detail: 'This action needs the PREPARER, REVIEWER or OWNER role in the organization.',
+    }),
+  )
+  renderDrawer('act-3', [draft], { myRole: 'PREPARER' })
+  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+  await user.type(within(drawer).getByLabelText('Activity quantity *'), '12500')
+  await user.selectOptions(await within(drawer).findByLabelText('Unit'), 'litre')
+  await user.click(within(drawer).getByRole('button', { name: 'Save' }))
+
+  const alert = await within(drawer).findByRole('alert')
+  expect(alert).toHaveTextContent(
+    'This action needs the PREPARER, REVIEWER or OWNER role in the organization.',
+  )
+  expect(screen.getByRole('dialog', { name: 'July dispensing' })).toBeInTheDocument()
+  expect(within(drawer).getByLabelText('Activity quantity *')).toHaveValue(12500)
+})
+
+test('a verifier opens a drawer with no fields and no Save (spec 01.4)', async () => {
+  renderDrawer('act-3', [draft], { myRole: 'VERIFIER' })
+  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+
+  expect(within(drawer).queryByLabelText('Activity type *')).not.toBeInTheDocument()
+  expect(within(drawer).queryByLabelText('Activity quantity *')).not.toBeInTheDocument()
+  expect(within(drawer).queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+  expect(within(drawer).queryByRole('button', { name: 'Save draft' })).not.toBeInTheDocument()
+  expect(within(drawer).getByText('ACT-0003')).toBeInTheDocument()
 })

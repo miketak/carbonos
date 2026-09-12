@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Button } from '../../../components/Button'
 import { GlassCard } from '../../../components/GlassCard'
 import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
+import { refusalMessage } from '../../../lib/api'
 import { categoriesForScope } from '../format'
+import { mayWrite, WRITE_TOOLTIP } from '../roles'
+import type { MyRole } from '../roles'
 import { useSetOperationalBoundary } from '../useGhg'
+import { RoleButton } from './RoleButton'
 import type { ActivityCategory, Inventory } from '../api'
 
 /**
@@ -12,8 +14,15 @@ import type { ActivityCategory, Inventory } from '../api'
  * categories the inventory covers and why the others are left out. The report
  * prints it.
  */
-export function OperationalBoundaryCard({ inventory }: { inventory: Inventory }) {
+export function OperationalBoundaryCard({
+  inventory,
+  myRole,
+}: {
+  inventory: Inventory
+  myRole?: MyRole | null
+}) {
   const editable = inventory.status === 'DRAFT'
+  const writable = editable && mayWrite(myRole)
   const save = useSetOperationalBoundary(inventory.id)
   const toast = useToast()
   const [selected, setSelected] = useState<ActivityCategory[]>(inventory.scope3Categories)
@@ -49,7 +58,7 @@ export function OperationalBoundaryCard({ inventory }: { inventory: Inventory })
                   type="checkbox"
                   aria-label={entry.label}
                   checked={selected.includes(entry.category)}
-                  disabled={!editable}
+                  disabled={!writable}
                   onChange={(event) => toggle(entry.category, event.target.checked)}
                   className="size-4 accent-teal"
                 />
@@ -60,7 +69,7 @@ export function OperationalBoundaryCard({ inventory }: { inventory: Inventory })
                   aria-label={`${entry.label}: why not quantified this year`}
                   placeholder="Not quantified this year because…"
                   value={notQuantified[entry.category] ?? ''}
-                  disabled={!editable}
+                  disabled={!writable}
                   maxLength={500}
                   onChange={(event) =>
                     setNotQuantified({ ...notQuantified, [entry.category]: event.target.value })
@@ -77,7 +86,7 @@ export function OperationalBoundaryCard({ inventory }: { inventory: Inventory })
         <textarea
           aria-label="Why other categories are excluded"
           value={rationale}
-          disabled={!editable}
+          disabled={!writable}
           maxLength={1000}
           rows={3}
           onChange={(event) => setRationale(event.target.value)}
@@ -86,7 +95,9 @@ export function OperationalBoundaryCard({ inventory }: { inventory: Inventory })
       </label>
       {editable && (
         <div className="mt-3 flex justify-end">
-          <Button
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
             className="px-4 py-1.5 text-sm"
             busy={save.isPending}
             onClick={() =>
@@ -103,14 +114,13 @@ export function OperationalBoundaryCard({ inventory }: { inventory: Inventory })
                 },
                 {
                   onSuccess: () => toast('Operational boundary declaration saved.'),
-                  onError: (error) =>
-                    toast(problemDetail(error) ?? 'Could not save the declaration.', 'error'),
+                  onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                 },
               )
             }
           >
             Save declaration
-          </Button>
+          </RoleButton>
         </div>
       )}
     </GlassCard>
