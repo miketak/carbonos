@@ -153,7 +153,8 @@ class ReportPdfLayoutTest {
 					FIRST_FACILITY, "Old diesel delivery " + i, new BigDecimal("500"), "litre", LocalDate.of(2024, 6, 1),
 					LocalDate.of(2024, 6, 30), i % 2 == 0 ? ExclusionReason.METHODOLOGY : ExclusionReason.OUTSIDE_PERIOD,
 					i % 2 == 0 ? "de minimis" : null, i % 2 == 0 ? "Below the 1% threshold of the methodology." : null,
-					i % 2 == 0 ? new BigDecimal("1200") : null));
+					i % 2 == 0 ? new BigDecimal("1200") : null,
+					i % 2 == 0 ? com.carbonos.ghg.internal.ExclusionEstimateState.ESTIMATED : null, null));
 		}
 		var byGas = new RunResponse.ByGas(total.multiply(new BigDecimal("0.9")), new BigDecimal("1.5"), new BigDecimal("1.5"),
 				new BigDecimal("0.2"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
@@ -218,7 +219,9 @@ class ReportPdfLayoutTest {
 				List.of("Diesel (100% mineral diesel)"), List.of("AR5"), false,
 				"Emissions were calculated as activity data multiplied by an emission factor and the accounting share of the "
 						+ "facility's legal entity under the operational control approach (GHG Protocol Corporate Standard, "
-						+ "Chapter 3, Table 1), applied at every level of the group.");
+						+ "Chapter 3, Table 1), applied at every level of the group.",
+				List.of(new ReportResponse.UpstreamRuleLine("Diesel (100% mineral diesel)", "Well-to-tank diesel",
+						com.carbonos.ghg.internal.UpstreamRuleKind.WELL_TO_TANK, 4)));
 		var factors = List.of(new ReportResponse.FactorRow(FACTOR_ID, "Diesel (100% mineral diesel)", "litre", GwpSet.AR5,
 				new BigDecimal("2.66"), new BigDecimal("2.6307"), new BigDecimal("0.0001"), true, new BigDecimal("0.0001"),
 				BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null,
@@ -242,9 +245,9 @@ class ReportPdfLayoutTest {
 						true, null));
 		var exclusionSummary = List.of(
 				new ReportResponse.ExclusionSummary(ExclusionReason.OUTSIDE_PERIOD, (exclusions.size() + 1) / 2, BigDecimal.ZERO,
-						BigDecimal.ZERO, (exclusions.size() + 1) / 2),
+						BigDecimal.ZERO, (exclusions.size() + 1) / 2, 0, 0),
 				new ReportResponse.ExclusionSummary(ExclusionReason.METHODOLOGY, exclusions.size() / 2, new BigDecimal("1200"),
-						new BigDecimal("1.2"), 0));
+						new BigDecimal("1.2"), 0, exclusions.size() / 2, 0));
 		var dataQuality = new ReportResponse.DataQualitySection(
 				List.of(new ReportResponse.TierRow(1, "Metered or invoiced primary data", lineCount, total, BigDecimal.ZERO,
 						BigDecimal.ZERO, total, new BigDecimal("100"))),
@@ -283,7 +286,8 @@ class ReportPdfLayoutTest {
 				new RunResponse.ByGas(kg.multiply(new BigDecimal("0.9")), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
 						BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
 						BigDecimal.ZERO),
-				BigDecimal.ZERO, null, null, null, null, null, null, null, null, null, ReportingBasis.SCOPES);
+				BigDecimal.ZERO, null, null, null, null, null, null, null, null, null, ReportingBasis.SCOPES, null, null,
+				null);
 	}
 
 	private static ReportResponse.Gas gas(String name, BigDecimal kg, BigDecimal kgCo2e) {

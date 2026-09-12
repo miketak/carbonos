@@ -17,7 +17,10 @@ import com.carbonos.ghg.internal.BaseYear;
 import com.carbonos.ghg.internal.BaseYearService;
 import com.carbonos.ghg.internal.BoundaryVersion;
 import com.carbonos.ghg.internal.ConsolidationApproach;
+import com.carbonos.ghg.internal.ExclusionEstimateState;
 import com.carbonos.ghg.internal.ExclusionReason;
+import com.carbonos.ghg.internal.UnitConverter;
+import com.carbonos.ghg.internal.UpstreamRuleKind;
 import com.carbonos.ghg.internal.GhgRun;
 import com.carbonos.ghg.internal.GwpSet;
 import com.carbonos.ghg.internal.Inventory;
@@ -99,9 +102,14 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				outsideScopes, sincePublication, correction);
 	}
 
-	/** The records left out under one reason, with the emissions the accountant estimated for them (spec 04.4). */
+	/**
+	 * The records left out under one reason (spec 04.4), with the emissions
+	 * sized for them and how many records carry each of the three answers of
+	 * spec 04.8: sized, stated to emit nothing, or not estimated. A bare zero
+	 * is never printed for a record that was not sized.
+	 */
 	public record ExclusionSummary(ExclusionReason reason, int recordCount, BigDecimal estimatedKgCo2e,
-			BigDecimal estimatedTCo2e, int unestimatedCount) {
+			BigDecimal estimatedTCo2e, int unestimatedCount, int estimatedCount, int emitsNothingCount) {
 	}
 
 	/** The share of each scope resting on each data quality tier, and the uncertainty statement (spec 04.4). */
@@ -263,14 +271,24 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 	}
 
 	public record Methodology(GwpSet gwpSet, ConsolidationApproach consolidationApproach, List<String> factorSources,
-			List<String> assessmentReports, boolean multipleAssessmentReports, String statement) {
+			List<String> assessmentReports, boolean multipleAssessmentReports, String statement,
+			List<UpstreamRuleLine> upstreamRules) {
+	}
+
+	/**
+	 * One upstream rule as the run applied it (spec 04.7), reconstructed from
+	 * the derived lines so the report stays self-contained: the primary factor,
+	 * the upstream factor, the kind, and how many lines it derived.
+	 */
+	public record UpstreamRuleLine(String primaryFactorName, String upstreamFactorName, UpstreamRuleKind kind,
+			int lineCount) {
 	}
 
 	public static ReportResponse of(GhgRun run, Inventory inventory, Organization organization,
 			BoundaryVersion version, BaseYear baseYear, GhgRun baseRun, Map<UUID, GhgRun> recalculatedRuns,
 			BaseYearService.Profile profile, List<MarketFactor> marketFactors,
 			List<Inventory> predecessors, Inventory successor, List<IntensityMetric> metrics,
-			int boundaryVersionCount) {
+			int boundaryVersionCount, UnitConverter.Scoped units) {
 		var lines = run.getLines().stream().map(RunLineResponse::from).toList();
 		var header = new Header(organization.getName(), organization.getAddress(), organization.getContact(),
 				inventory.periodLabel(), run.getPeriodStart(), run.getPeriodEnd(), run.getCreatedBy(),
@@ -384,6 +402,20 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 						+ " not applied, as the lines state.";
 		var scope2Methods = "Scope 2 is reported location-based and market-based, each labeled (Scope 2 Guidance, "
 				+ "chapter 4). " + basis + failingClause + " The inventory total uses the location-based figure.";
+		// spec 04.7: the rules the run applied, read back from the lines they derived
+		var upstreamRules = upstreamRules(run);
+		var upstreamClause = upstreamRules.isEmpty() ? ""
+				: " Fuel- and energy-related activities (Scope 3 Standard, category 3) are quantified by upstream "
+						+ "rules that ride on the records already recorded: "
+						+ upstreamRules.stream()
+							.map(rule -> rule.primaryFactorName() + " → " + rule.upstreamFactorName() + " ("
+									+ rule.kind().phrase() + ", " + rule.lineCount() + " line"
+									+ (rule.lineCount() == 1 ? "" : "s") + ")")
+							.collect(java.util.stream.Collectors.joining("; "))
+						+ ". Transmission and distribution losses are computed on every kilowatt-hour consumed, at "
+						+ "the location-based factor, not on the market-based balance. Activities of the category "
+						+ "no rule covers, such as upstream emissions of purchased electricity where no factor "
+						+ "exists, are not quantified.";
 		var proxies = run.scopedLines().stream().filter(GhgRunLine::isProxy).count();
 		var proxyClause = proxies == 0 ? ""
 				: " " + proxies + " line" + (proxies == 1 ? " uses" : "s use") + " a proxy factor for a source with no "
@@ -393,7 +425,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				+ " approach (GHG Protocol Corporate Standard, Chapter 3, Table 1), applied at every level of the "
 				+ "group. Activity data were converted into each factor's unit within its physical dimension "
 				+ "only. " + potentials + " " + scope2Methods
-				+ proxyClause + " Figures are stated in metric tonnes, with kilograms retained on every line."
+				+ proxyClause + upstreamClause
+				+ " Figures are stated in metric tonnes, with kilograms retained on every line."
 				+ " Biogenic CO2 is reported outside the scopes.";
 		// every run reports both methods (spec 07.3); a base year on the grid-average basis is a location-based proxy
 		var baseYearScope2Method = baseRun == null ? null : "DUAL";
@@ -417,7 +450,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		}
 		var exclusionSummary = exclusionSummary(run);
 		var dataQuality = dataQuality(run, inventory.getUncertaintyStatement());
-		var outsideScopes = outsideScopes(run);
+		var outsideScopes = outsideScopes(run, units);
 		return new ReportResponse(
 				new Company(organization.getName(), run.getConsolidationApproach(),
 						version == null ? null : BoundaryVersionResponse.from(version)),
@@ -436,7 +469,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				List.copyOf(byGas), byGasTotalKg, tonnes(byGasTotalKg), run.getBiogenicCo2Kg(),
 				tonnes(run.getBiogenicCo2Kg()), baseYearSection,
 				new Methodology(gwp, run.getConsolidationApproach(), sources, reports, blendReports.size() > 0,
-						statement),
+						statement, upstreamRules),
 				version == null ? List.of()
 						: version.getExclusions().stream().map(BoundaryExclusionResponse::from).toList(),
 				run.getExclusions().stream().map(RunExclusionResponse::from).toList(), lines,
@@ -450,7 +483,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 	 * own GWP basis, and the records behind it. Never rescaled to the
 	 * inventory's set, because a non-Kyoto gas has no potential in it.
 	 */
-	private static List<OutsideScopesRow> outsideScopes(GhgRun run) {
+	private static List<OutsideScopesRow> outsideScopes(GhgRun run, UnitConverter.Scoped units) {
 		var masses = new java.util.LinkedHashMap<String, BigDecimal>();
 		var informational = new java.util.LinkedHashMap<String, BigDecimal>();
 		var basisOfGas = new java.util.LinkedHashMap<String, String>();
@@ -467,11 +500,59 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				refs.computeIfAbsent(gas, k -> new ArrayList<>()).add(ref);
 			}
 		}
-		return masses.entrySet()
+		var rows = new ArrayList<>(masses.entrySet()
 			.stream()
 			.map(e -> new OutsideScopesRow(e.getKey(), e.getValue(), OutsideScopesBasis.FACTOR,
 					informational.get(e.getKey()), basisOfGas.get(e.getKey()), e.getKey(),
 					refs.getOrDefault(e.getKey(), List.of())))
+			.toList());
+		// spec 04.8: a record excluded as a Montreal Protocol gas joins the block on its recorded mass,
+		// with no CO2e at all: an exclusion has no factor and states none
+		var recorded = new java.util.LinkedHashMap<String, BigDecimal>();
+		var recordedRefs = new java.util.LinkedHashMap<String, List<String>>();
+		for (var exclusion : run.getExclusions()) {
+			if (!exclusion.getExclusionReason().isOutsideScopes() || exclusion.getGas() == null) {
+				continue;
+			}
+			var gas = exclusion.getGas();
+			var kg = units != null && units.canConvert(exclusion.getUnit(), "kg")
+					? units.convert(exclusion.getQuantity(), exclusion.getUnit(), "kg") : exclusion.getQuantity();
+			recorded.merge(gas, kg.setScale(3, java.math.RoundingMode.HALF_UP), BigDecimal::add);
+			var ref = exclusion.getRecordRef();
+			if (ref != null && !ref.isBlank()) {
+				recordedRefs.computeIfAbsent(gas, k -> new ArrayList<>()).add(ref);
+			}
+		}
+		recorded.forEach((gas, kg) -> rows.add(new OutsideScopesRow(gas, kg, OutsideScopesBasis.RECORDED_MASS, null,
+				null, null, recordedRefs.getOrDefault(gas, List.of()))));
+		return List.copyOf(rows);
+	}
+
+	/**
+	 * The upstream rules a run applied (spec 04.7), read back from the lines
+	 * they derived: each derived line names its upstream factor and its kind,
+	 * and the line it rides on names the primary factor.
+	 */
+	private static List<UpstreamRuleLine> upstreamRules(GhgRun run) {
+		var primaryFactors = new java.util.HashMap<UUID, String>();
+		for (var line : run.getLines()) {
+			primaryFactors.put(line.getId(), line.getFactorName());
+		}
+		var counts = new java.util.LinkedHashMap<String, int[]>();
+		var kinds = new java.util.LinkedHashMap<String, UpstreamRuleLine>();
+		for (var line : run.getLines()) {
+			if (!line.isDerived()) {
+				continue;
+			}
+			var primary = primaryFactors.getOrDefault(line.getDerivedFromLineId(), "not recorded");
+			var key = primary + "|" + line.getFactorName() + "|" + line.getDerivedKind();
+			counts.computeIfAbsent(key, k -> new int[1])[0]++;
+			kinds.putIfAbsent(key, new UpstreamRuleLine(primary, line.getFactorName(), line.getDerivedKind(), 0));
+		}
+		return kinds.entrySet()
+			.stream()
+			.map(e -> new UpstreamRuleLine(e.getValue().primaryFactorName(), e.getValue().upstreamFactorName(),
+					e.getValue().kind(), counts.get(e.getKey())[0]))
 			.toList();
 	}
 
@@ -487,8 +568,17 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				.map(com.carbonos.ghg.internal.GhgRunExclusion::getEstimatedKgCo2e)
 				.filter(java.util.Objects::nonNull)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
-			var unestimated = (int) e.getValue().stream().filter(x -> x.getEstimatedKgCo2e() == null).count();
-			return new ExclusionSummary(e.getKey(), e.getValue().size(), estimated, tonnes(estimated), unestimated);
+			var states = e.getValue().stream().map(com.carbonos.ghg.internal.GhgRunExclusion::getEstimateState).toList();
+			// a computed reason has no state and prints as not estimated, as it always has; the
+			// Montreal reason is counted apart, because the block outside the scopes carries it
+			var unestimated = (int) e.getValue()
+				.stream()
+				.filter(x -> x.getEstimatedKgCo2e() == null && !x.getExclusionReason().isOutsideScopes())
+				.count();
+			var sized = (int) states.stream().filter(state -> state == ExclusionEstimateState.ESTIMATED).count();
+			var nothing = (int) states.stream().filter(state -> state == ExclusionEstimateState.EMITS_NOTHING).count();
+			return new ExclusionSummary(e.getKey(), e.getValue().size(), estimated, tonnes(estimated), unestimated,
+					sized, nothing);
 		}).toList();
 	}
 

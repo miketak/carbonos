@@ -27,6 +27,8 @@ import com.carbonos.ghg.internal.Scope2Criterion;
 import com.carbonos.ghg.internal.Scope2MarketBasis;
 import com.carbonos.ghg.internal.StreamKind;
 import com.carbonos.ghg.internal.StructuralChangeConvention;
+import com.carbonos.ghg.internal.ExclusionEstimateState;
+import com.carbonos.ghg.internal.UpstreamRuleKind;
 import com.carbonos.ghg.internal.web.dto.ReportResponse;
 
 /**
@@ -50,7 +52,7 @@ public final class ReportLabels {
 			ExclusionReason.class, DataQuality.class, LeaseType.class, StreamKind.class, InventoryStatus.class,
 			GwpSet.class, StructuralChangeConvention.class, RecalculationStatus.class, RecalculationTrigger.class,
 			Scope2Criterion.class, Scope2Criterion.Answer.class, RelationshipType.class, ReportingBasis.class,
-			ReportResponse.OutsideScopesBasis.class);
+			ReportResponse.OutsideScopesBasis.class, UpstreamRuleKind.class, ExclusionEstimateState.class);
 
 	private ReportLabels() {
 	}
@@ -85,6 +87,15 @@ public final class ReportLabels {
 				case LIMITED -> "Limited assurance";
 				case REASONABLE -> "Reasonable assurance";
 			};
+			case UpstreamRuleKind kind -> switch (kind) {
+				case WELL_TO_TANK -> "Well-to-tank (upstream emissions of the fuel)";
+				case TRANSMISSION_AND_DISTRIBUTION -> "Transmission and distribution losses";
+			};
+			case ExclusionEstimateState state -> switch (state) {
+				case ESTIMATED -> "Estimated";
+				case EMITS_NOTHING -> "Emits nothing";
+				case NOT_ESTIMATED -> "Not estimated";
+			};
 			case ExclusionReason reason -> switch (reason) {
 				case OUTSIDE_PERIOD -> "Outside reporting period";
 				case OUTSIDE_BOUNDARY -> "Outside boundary";
@@ -94,6 +105,7 @@ public final class ReportLabels {
 				case METHODOLOGY -> "Methodology exclusion";
 				case OTHER -> "Other documented reason";
 				case RECORD_REMOVED -> "Record removed";
+				case OUTSIDE_SCOPES_NON_KYOTO -> "Outside the scopes: Montreal Protocol gas";
 			};
 			case DataQuality quality -> switch (quality) {
 				case MEASURED -> "Measured";

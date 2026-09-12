@@ -21,6 +21,9 @@ public final class RunCsv {
 
 	public static String lines(GhgRun run) {
 		var columns = List.<Column<GhgRunLine>>of(new Column<>("line_id", l -> l.getId()),
+				// spec 04.7: the primary line a derived category 3 line rides on, and the kind of upstream emissions
+				new Column<>("derived_from_line_id", GhgRunLine::getDerivedFromLineId),
+				new Column<>("derived_kind", GhgRunLine::getDerivedKind),
 				new Column<>("record_id", l -> l.getActivityId()), new Column<>("record_ref", GhgRunLine::getRecordRef),
 				new Column<>("facility_id", l -> l.getFacilityId()),
 				new Column<>("facility", GhgRunLine::getFacilityName), new Column<>("legal_entity", GhgRunLine::getEntityName),
@@ -63,7 +66,8 @@ public final class RunCsv {
 				new Column<>("evidence_files", GhgRunLine::getEvidenceFiles),
 				new Column<>("density_material", GhgRunLine::getDensityMaterial),
 				new Column<>("density_kg_per_litre", GhgRunLine::getDensityKgPerLitre),
-				new Column<>("conversion_note", GhgRunLine::getConversionNote));
+				new Column<>("conversion_note", GhgRunLine::getConversionNote),
+				new Column<>("derived_note", GhgRunLine::getDerivedNote));
 		return render(columns, run.getLines());
 	}
 
@@ -77,7 +81,10 @@ public final class RunCsv {
 				new Column<>("unit", GhgRunExclusion::getUnit), new Column<>("reason", GhgRunExclusion::getExclusionReason),
 				new Column<>("detail", GhgRunExclusion::getExclusionDetail),
 				new Column<>("justification", GhgRunExclusion::getExclusionJustification),
-				new Column<>("estimated_kg_co2e", GhgRunExclusion::getEstimatedKgCo2e));
+				// spec 04.8: empty for not estimated, 0 for a record stated to emit nothing
+				new Column<>("estimated_kg_co2e", GhgRunExclusion::getEstimatedKgCo2e),
+				new Column<>("estimate_state", GhgRunExclusion::getEstimateState),
+				new Column<>("gas", GhgRunExclusion::getGas));
 		return render(columns, run.getExclusions());
 	}
 

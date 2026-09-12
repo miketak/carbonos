@@ -56,6 +56,10 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Activity", id);
 	}
 
+	static GhgNotFoundException upstreamRule(UUID id) {
+		return new GhgNotFoundException("Upstream rule", id);
+	}
+
 	static GhgNotFoundException emissionFactor(UUID id) {
 		return new GhgNotFoundException("Emission factor", id);
 	}

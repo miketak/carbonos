@@ -65,8 +65,14 @@ public class GhgRunExclusion {
 	@Column(name = "exclusion_justification", length = 500)
 	private String exclusionJustification;
 
+	// null when the preparer chose not to size the exclusion, zero when the record was stated
+	// to emit nothing, positive when it was sized (spec 04.8)
 	@Column(name = "estimated_kg_co2e", precision = 18, scale = 3)
 	private BigDecimal estimatedKgCo2e;
+
+	// the Montreal Protocol gas the record holds, reported outside the scopes (spec 04.8)
+	@Column(length = 60)
+	private String gas;
 
 	protected GhgRunExclusion() {
 	}
@@ -87,6 +93,7 @@ public class GhgRunExclusion {
 		this.exclusionDetail = assignment.getExclusionDetail();
 		this.exclusionJustification = assignment.getExclusionJustification();
 		this.estimatedKgCo2e = assignment.getEstimatedKgCo2e();
+		this.gas = assignment.getGas();
 	}
 
 	public UUID getId() {
@@ -144,5 +151,14 @@ public class GhgRunExclusion {
 
 	public BigDecimal getEstimatedKgCo2e() {
 		return estimatedKgCo2e;
+	}
+
+	public String getGas() {
+		return gas;
+	}
+
+	/** What the exclusion says about the emissions it leaves out (spec 04.8); null where none is asked. */
+	public ExclusionEstimateState getEstimateState() {
+		return ExclusionEstimateState.of(exclusionReason, estimatedKgCo2e);
 	}
 }
