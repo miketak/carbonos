@@ -124,7 +124,7 @@ imported in procedure 2, **Refrigerant R-407C leakage**.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Re-classify R11 (explosives, now in tonne) with the unapproved **Emulsion explosive (supplier)** factor from procedure 2 (F3), read the gate. | **Emission factors** blocks: "'ANFO explosives consumed' uses 'Emulsion explosive (supplier)', which is not approved. Approve it under Emission factors, or choose another." (it also warns that the factor publishes CO2e only). | | |
+| 1 | Re-classify R11 (explosives, now in tonne) with the unapproved **Emulsion explosive (supplier)** factor from procedure 2 (F3), read the gate. | **Emission factors** blocks: "'ANFO explosives consumed' uses 'Emulsion explosive (supplier)', which is not approved. Approve it under Emission factors, or choose another." (it also warns: "'Emulsion explosive (supplier)' publishes CO2e only. Its emissions are counted in the scope totals and appear in the by-gas table on the row 'CO2e from factors without a gas split', not under CO2, CH4 or N2O."). | | |
 | 2 | Then approve the factor under **Emission factors** and read the gate again. | After approval (no toast; the row now reads Approved) the gate no longer blocks. | | |
 | 3 | Re-classify R11 as in B3 (the seeded factor, flagged as a proxy), and classify R6 (refrigerant, kg) with **Refrigerant R-407C leakage**. | | | |
 

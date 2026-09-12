@@ -45,7 +45,7 @@ calculation, the report composite, the PDF or the CSV exports.
 | 4 | Check Light vehicle fleet petrol (R3). | 120,000 × 2.162 = 259,440 kg, scope 3, with the justification printed | | |
 | 5 | Check Diesel by tanker (R17). | 12,000 kg ÷ 0.8325 = 14,414.414414 litre × 2.66 = 38,342.342 kg, with the note "12 tonne = 12000 kg ÷ 0.8325 kg/litre = 14414.414414 litre (density of Diesel (GOIL, 2025 CoA))" | | |
 | 6 | Check Diesel in drums. | 5 × 200 = 1,000 litre × 2.66 = 2,660 kg, "1 drum = 200 litre" | | |
-| 7 | Check Straddling diesel (R19). | 10,000 × 2.66 × 50% = 13,300 kg, "pro-rated: 31 of 62 days inside the reporting period and the membership window (50%)" | | |
+| 7 | Check Straddling diesel (R19). | 10,000 × 2.66 × 50% = 13,300 kg, "pro-rated: 31 of 62 days inside the reporting period and the membership window (50%)"; its gas columns carry the same 50% (CO2 10,000 × 2.6307 × 50% = 13,153.5 kg) | | |
 | 8 | Check ANFO explosives (R11). | 8,400 × 170 = 1,428,000 kg, scope 1 process, proxy flag and justification printed | | |
 | 9 | Check Chiller refrigerant top-up (R6). | 45 kg × 1,624.21 = 73,089.45 kg, HFCs 45 kg of gas in the by-gas columns (AR5: 0.23 × 677 + 0.25 × 3,170 + 0.52 × 1,300) | | |
 | 10 | Check Camp LPG (two records). | 18,000 × 1.557 = 28,026 kg each | | |
@@ -76,7 +76,7 @@ calculation, the report composite, the PDF or the CSV exports.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Read the run 003 report top to bottom. | The numbered sections 00 to 10: report header; company and organizational boundary with the version; operational boundary with the declaration table (investments "declared, not quantified" with its reason; purchased goods and services with its lines); reporting period; emissions by scope with scope 2 both ways and the market basis, scope 3 by category, by facility, entity and country, and the intensity once B4 adds one; each gas in mass and CO2e; biogenic CO2; base year ("No base year designated" until procedure 8); methodology with the factor table and the data-quality table; exclusions with the per-reason summary (Outside reporting period 73 records, Outside boundary 1, Methodology exclusion 1 with 259 t, Record removed 1) and each justification; snapshot lines. | | |
+| 1 | Read the run 003 report top to bottom. | The numbered sections 00 to 10: report header; company and organizational boundary with the version; operational boundary with the declaration table (investments "declared, not quantified" with its reason; purchased goods and services with its lines); reporting period; emissions by scope with scope 2 both ways and the market basis, scope 3 by category, by facility, entity and country, and the intensity once B4 adds one; each gas in mass and CO2e with the footing row "Total (scope 2 location-based), ties to section 04" equal to the section 04 total (a row "CO₂e from factors without a gas split" naming its factors appears only when a line's factor publishes CO2e only; none does in this dataset); biogenic CO2; base year ("No base year designated" until procedure 8); methodology with the factor table and the data-quality table; exclusions with the per-reason summary (Outside reporting period 73 records, Outside boundary 1, Methodology exclusion 1 with 259 t, Record removed 1) and each justification; snapshot lines. | | |
 
 ### B2. Scope 2 disclosures
 
@@ -102,14 +102,17 @@ calculation, the report composite, the PDF or the CSV exports.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Download the PDF of run 005. | The same sections as the page, in the same order, with the data-quality table, the declaration table, the instrument outcomes and the exclusion summary. | | |
-| 2 | Download it again. | The same content (the same size, about 17 kB). | | |
+| 1 | Download the PDF of run 005. | The same sections as the page, in the same order, with the data-quality table, the declaration table, the instrument outcomes and the exclusion summary. The market-based method, its basis and the instrument sit under the scope table in section 4, before "Scope 3 by category"; the intensity line closes section 4; the gas table is section 5 with its footing row. | | |
+| 2 | Read the header table and section 1 and 2. | Words, not codes: "Prepared by" names you with the date in the form "12 September 2026, 05:38 UTC" (day, month, year, time, zone); "Assurance" reads "Not verified"; section 1 reads "Sankofa Gold plc, operational control approach (Corporate Standard, chapter 3). Boundary version 4."; section 2 reads "Scopes covered: Scope 1, Scope 2, Scope 3." and lists the declared categories with their numbers ("1. Purchased goods and services", "6. Business travel"). Nothing in the document reads like OPERATIONAL_CONTROL or 2026-09-12T05:38. | | |
+| 3 | Read the exclusions table and the dates. | The reasons read "Outside reporting period", "Outside boundary", "Methodology exclusion" and "Record removed"; every date reads like "15 December 2025" and every period like "1 January 2025 to 31 December 2025". | | |
+| 4 | Check every page break. | No heading or subheading stands alone at the foot of a page: "By facility", "By legal entity", "By country", "5. Emissions by gas" and "10. Snapshot lines" each sit on the same page as their column header and first row; a table that continues on a new page repeats its heading and column header there. | | |
+| 5 | Download it again. | The same content (the same size). | | |
 
 ### C2. The calculation file
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Download `lines.csv` and open it in the spreadsheet. | One row per line with `record_id`, `record_ref` (ACT-0001), `evidence_ref`, `evidence_files`, `factor_id`, `converted_quantity`, `conversion_factor`, `density_material`, `density_kg_per_litre`, `conversion_note`, `accounting_share`, `period_share`, the kg per gas, the `market_*` columns, `data_quality` and `data_quality_tier`. | | |
+| 1 | Download `lines.csv` and open it in the spreadsheet. | One row per line with `record_id`, `record_ref` (ACT-0001), `evidence_ref`, `evidence_files`, `factor_id`, `converted_quantity`, `conversion_factor`, `density_material`, `density_kg_per_litre`, `conversion_note`, `accounting_share`, `period_share`, the kg per gas, `co2e_unsplit_kg` (0 on every line of this dataset: no factor publishes CO2e only), the `market_*` columns, `data_quality` and `data_quality_tier`. | | |
 | 2 | Recompute one line's kg CO2e from its columns. | The recomputed figure matches. | | |
 
 ### C3. Exclusions and frozen inputs
