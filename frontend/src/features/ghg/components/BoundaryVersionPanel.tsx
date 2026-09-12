@@ -21,10 +21,12 @@ export function BoundaryVersionPanel({ versionId }: { versionId: string }) {
   return (
     <div className="mt-2 rounded-xl border border-teal/10 bg-white/40 p-3">
       <p className="text-xs text-ink-muted">
-        Version {version.versionNo} · {approachLabels[version.consolidationApproach]} ·{' '}
+        Boundary version {version.versionNo} · {approachLabels[version.consolidationApproach]} ·{' '}
         {describeFreeze(version)} · {version.entityCount}{' '}
         {version.entityCount === 1 ? 'entity' : 'entities'}, {version.facilityCount}{' '}
         {version.facilityCount === 1 ? 'facility' : 'facilities'}
+        {version.reopenedAt &&
+          ` · reopened ${new Date(version.reopenedAt).toLocaleString()} by ${version.reopenedBy ?? 'unknown'}: ${version.reopenReason ?? ''}`}
       </p>
       <BoundaryVersionEntries entries={entries} />
       {exclusions.length > 0 && (

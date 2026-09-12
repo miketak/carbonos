@@ -7,6 +7,7 @@ import { Skeleton } from '../../../components/Skeleton'
 import { useToast } from '../../../components/toast'
 import { problemDetail } from '../../../lib/api'
 import {
+  categories,
   categoriesForScope,
   categoryLabel,
   exclusionLabels,
@@ -27,6 +28,7 @@ import {
   useFacilitiesQuery,
   useExcludeAssignment,
   useIncludeAssignment,
+  useStreamsQuery,
   useSyncAssignments,
   useUnitsQuery,
 } from '../useGhg'
@@ -195,6 +197,9 @@ function ClassifyControls({
   const [pendingFactorId, setPendingFactorId] = useState<string | null>(null)
   // a proxy flag is only sent together with its justification (the backend refuses one without)
   const [proxyTicked, setProxyTicked] = useState(false)
+  // spec 05.5: a row shows its factor as text; the picker opens on demand (spec 02.3 replaces its contents)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [factorSearch, setFactorSearch] = useState('')
   const selected = factors.find(
     (factor) => factor.id === (assignment.emissionFactorId ?? pendingFactorId),
   )
@@ -203,6 +208,13 @@ function ClassifyControls({
     selected && !compatible.some((factor) => factor.id === selected.id)
       ? [selected, ...compatible]
       : compatible
+  const needle = factorSearch.trim().toLowerCase()
+  const shown =
+    needle === ''
+      ? options
+      : options.filter((factor) =>
+          `${factor.name} ${factor.pack ?? ''} ${factor.source}`.toLowerCase().includes(needle),
+        )
   const density = densities.find((candidate) => candidate.id === assignment.densityId)
   const densityNeeded = !!selected && needsDensity(units, assignment.unit, selected.unit)
   const preview = selected ? conversionPreview(units, assignment, selected, density) : null
@@ -234,41 +246,108 @@ function ClassifyControls({
 
   return (
     <div className="flex flex-col gap-1 md:w-80">
-      {/* DR-04: wide enough not to truncate the factor + unit; teal border marks it as the primary action */}
-      <select
-        aria-label={`Classify ${assignment.activityType}`}
-        value={assignment.emissionFactorId ?? ''}
-        disabled={!editable}
-        onChange={(event) => {
-          const factor = factors.find((candidate) => candidate.id === event.target.value)
-          if (!factor) return
-          if (needsDensity(units, assignment.unit, factor.unit) && !assignment.densityId) {
-            setPendingFactorId(factor.id)
-            return
-          }
-          setPendingFactorId(null)
-          if (factor)
-            onClassify({
-              emissionFactorId: factor.id,
-              // spec 04.3: the record's stream fixes the default scope; the factor only suggests one
-              scope: assignment.defaultScope ?? factor.defaultScope,
-              category: assignment.defaultScope
-                ? (assignment.defaultCategory ?? factor.defaultCategory)
-                : factor.defaultCategory,
-              densityId: needsDensity(units, assignment.unit, factor.unit)
-                ? (assignment.densityId ?? undefined)
-                : undefined,
-            })
-        }}
-        className={selectClasses}
-      >
-        <option value="">Select emission factor…</option>
-        {options.map((factor) => (
-          <option key={factor.id} value={factor.id}>
-            {factor.name} (/{factor.unit})
-          </option>
-        ))}
-      </select>
+      {selected && !pickerOpen && (
+        <p className="text-sm">
+          <span className="font-medium">{selected.name}</span>
+          <span className="text-ink-muted"> (/{selected.unit})</span>
+          {selected.pack && (
+            <span
+              className="ml-1 rounded-full border border-teal/30 px-1.5 text-xs text-ink-muted"
+              title="Delivered by a factor pack"
+            >
+              {selected.pack}
+            </span>
+          )}
+          {!selected.approved && (
+            <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
+              not approved
+            </span>
+          )}
+          {editable && (
+            <button
+              type="button"
+              className="ml-2 text-xs text-link hover:underline"
+              onClick={() => setPickerOpen(true)}
+            >
+              Change factor…
+            </button>
+          )}
+        </p>
+      )}
+      {!selected && !pickerOpen && editable && (
+        <Button
+          variant="ghost"
+          className="self-start px-2.5 py-1 text-xs"
+          onClick={() => setPickerOpen(true)}
+        >
+          Choose factor…
+        </Button>
+      )}
+      {!selected && !pickerOpen && !editable && (
+        <span className="text-xs text-ink-muted">No factor chosen</span>
+      )}
+      {pickerOpen && (
+        <div
+          role="group"
+          aria-label={`Factor picker for ${assignment.activityType}`}
+          className="flex flex-col gap-1"
+        >
+          <input
+            aria-label={`Search factors for ${assignment.activityType}`}
+            value={factorSearch}
+            placeholder="Search by name, pack or source"
+            onChange={(event) => setFactorSearch(event.target.value)}
+            className={selectClasses}
+          />
+          {/* DR-04: wide enough not to truncate the factor + unit; teal border marks it as the primary action */}
+          <select
+            aria-label={`Classify ${assignment.activityType}`}
+            value={assignment.emissionFactorId ?? ''}
+            size={Math.min(8, Math.max(2, shown.length + 1))}
+            onChange={(event) => {
+              const factor = factors.find((candidate) => candidate.id === event.target.value)
+              if (!factor) return
+              setPickerOpen(false)
+              setFactorSearch('')
+              if (needsDensity(units, assignment.unit, factor.unit) && !assignment.densityId) {
+                setPendingFactorId(factor.id)
+                return
+              }
+              setPendingFactorId(null)
+              onClassify({
+                emissionFactorId: factor.id,
+                // spec 04.3: the record's stream fixes the default scope; the factor only suggests one
+                scope: assignment.defaultScope ?? factor.defaultScope,
+                category: assignment.defaultScope
+                  ? (assignment.defaultCategory ?? factor.defaultCategory)
+                  : factor.defaultCategory,
+                densityId: needsDensity(units, assignment.unit, factor.unit)
+                  ? (assignment.densityId ?? undefined)
+                  : undefined,
+              })
+            }}
+            className={selectClasses}
+          >
+            <option value="">Select emission factor…</option>
+            {shown.map((factor) => (
+              <option key={factor.id} value={factor.id}>
+                {factor.name} (/{factor.unit}){factor.pack ? ` · ${factor.pack}` : ''}
+                {factor.approved ? '' : ' · not approved'}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="self-start text-xs text-ink-muted hover:underline"
+            onClick={() => {
+              setPickerOpen(false)
+              setFactorSearch('')
+            }}
+          >
+            Close picker
+          </button>
+        </div>
+      )}
       {!selected && assignment.suggestedFactorId && editable && (
         <button
           type="button"
@@ -661,15 +740,25 @@ export function AssignmentsSection({
   const [search, setSearch] = useState('')
   const [facilityId, setFacilityId] = useState('')
   const [status, setStatus] = useState<AssignmentStatus | ''>('')
+  // spec 05.5: review at scale filters by the classification too
+  const [scope, setScope] = useState<GhgScope | ''>('')
+  const [category, setCategory] = useState<ActivityCategory | ''>('')
+  const [streamId, setStreamId] = useState('')
+  const [leaseType, setLeaseType] = useState<LeaseType | ''>('')
   const [page, setPage] = useState(0)
   const assignmentsQuery = useAssignmentPageQuery(inventoryId, {
     q: search.trim() === '' ? undefined : search.trim(),
     facilityId: facilityId || undefined,
     status: status || undefined,
+    scope: scope || undefined,
+    category: category || undefined,
+    streamId: streamId || undefined,
+    leaseType: leaseType || undefined,
     page,
     size: PAGE_SIZE,
   })
   const facilitiesQuery = useFacilitiesQuery(organizationId)
+  const streamsQuery = useStreamsQuery(organizationId)
   const coverageQuery = useCoverageQuery(inventoryId)
   const factorsQuery = useEmissionFactorsQuery(organizationId)
   const densitiesQuery = useDensitiesQuery(organizationId)
@@ -684,7 +773,14 @@ export function AssignmentsSection({
   const counts = assignmentsQuery.data
   const total = counts?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const filtered = search.trim() !== '' || facilityId !== '' || status !== ''
+  const filtered =
+    search.trim() !== '' ||
+    facilityId !== '' ||
+    status !== '' ||
+    scope !== '' ||
+    category !== '' ||
+    streamId !== '' ||
+    leaseType !== ''
   const factors = factorsQuery.data ?? []
   const densities = densitiesQuery.data ?? []
   const units = unitsQuery.data ?? []
@@ -742,7 +838,7 @@ export function AssignmentsSection({
       </div>
 
       {counts && counts.included + counts.excluded + counts.unclassified > 0 && (
-        <div className="mt-4 grid gap-2 md:grid-cols-[2fr_1fr_1fr] md:items-end">
+        <div className="mt-4 grid gap-2 md:grid-cols-3 md:items-end xl:grid-cols-4">
           <InputField
             label="Search the view"
             placeholder="Activity, facility, stream, factor, unit, evidence"
@@ -781,6 +877,73 @@ export function AssignmentsSection({
             <option value="UNCLASSIFIED">Unclassified ({counts.unclassified})</option>
             <option value="INCLUDED">Included and classified ({counts.included})</option>
             <option value="EXCLUDED">Excluded ({counts.excluded})</option>
+          </SelectField>
+          <SelectField
+            label="Scope"
+            value={scope}
+            onChange={(event) => {
+              const next = event.target.value as GhgScope | ''
+              setScope(next)
+              if (
+                category !== '' &&
+                next !== '' &&
+                !categoriesForScope(next).some((c) => c.category === category)
+              )
+                setCategory('')
+              setPage(0)
+            }}
+          >
+            <option value="">All scopes</option>
+            {(Object.keys(scopeLabels) as GhgScope[]).map((value) => (
+              <option key={value} value={value}>
+                {scopeLabels[value]}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Category"
+            value={category}
+            onChange={(event) => {
+              setCategory(event.target.value as ActivityCategory | '')
+              setPage(0)
+            }}
+          >
+            <option value="">All categories</option>
+            {(scope === '' ? categories : categoriesForScope(scope)).map((entry) => (
+              <option key={entry.category} value={entry.category}>
+                {entry.label}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Stream"
+            value={streamId}
+            onChange={(event) => {
+              setStreamId(event.target.value)
+              setPage(0)
+            }}
+          >
+            <option value="">All streams</option>
+            {(streamsQuery.data ?? []).map((stream) => (
+              <option key={stream.id} value={stream.id}>
+                {stream.facilityName} · {stream.name}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Lease"
+            value={leaseType}
+            onChange={(event) => {
+              setLeaseType(event.target.value as LeaseType | '')
+              setPage(0)
+            }}
+          >
+            <option value="">Any lease treatment</option>
+            {Object.entries(leaseLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </SelectField>
         </div>
       )}

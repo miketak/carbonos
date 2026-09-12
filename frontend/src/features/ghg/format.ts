@@ -4,6 +4,7 @@ import type {
   ConsolidationApproach,
   ExclusionReason,
   FacilityType,
+  GateResult,
   GhgScope,
   InventoryStatus,
   LeaseType,
@@ -54,6 +55,15 @@ export const approachLabels: Record<ConsolidationApproach, string> = {
   EQUITY_SHARE: 'Equity share',
   FINANCIAL_CONTROL: 'Financial control',
   OPERATIONAL_CONTROL: 'Operational control',
+}
+
+/** The pre-flight gates as the panel and the freeze dialog name them (spec 05, 05.5). */
+export const gateLabels: Record<GateResult['gate'], string> = {
+  BOUNDARY: 'Reporting boundary',
+  COMPLETENESS: 'Activity data completeness',
+  CLASSIFICATION: 'Classification',
+  EMISSION_FACTOR: 'Emission factors',
+  BASE_YEAR: 'Base year',
 }
 
 export const statusLabels: Record<InventoryStatus, string> = {

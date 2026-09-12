@@ -10,6 +10,7 @@ import type {
   BoundaryVersion,
   BoundaryVersionSummary,
   Inventory,
+  Run,
   Unit,
   ValidationReport,
 } from './api'
@@ -23,9 +24,12 @@ vi.setConfig({ testTimeout: 30000 })
 import {
   classifyAssignment,
   excludeAssignment,
+  finalizeRun,
   freezeInventory,
   getInheritance,
   getBoundary,
+  getOrganization,
+  listStreams,
   getBoundaryVersion,
   getInventory,
   getValidation,
@@ -116,6 +120,9 @@ const inventory: Inventory = {
   copiedFromId: null,
   correctionReason: null,
   publishedAt: null,
+  finalDesignatedBy: null,
+  finalDesignatedAt: null,
+  finalNote: null,
   currentBoundaryVersionId: null,
   currentBoundaryVersionNo: null,
   createdAt: '2026-08-29T00:00:00Z',
@@ -130,6 +137,9 @@ const v1: BoundaryVersionSummary = {
   frozenByUserId: 'user-1',
   frozenBy: 'ama@ecoriv.test',
   frozenAt: '2026-09-01T10:00:00Z',
+  reopenedBy: null,
+  reopenedAt: null,
+  reopenReason: null,
 }
 
 const v2: BoundaryVersionSummary = { ...v1, id: 'bv-2', versionNo: 2, facilityCount: 2 }
@@ -296,6 +306,7 @@ function pageOf(items: Assignment[]): AssignmentPage {
 
 const blockedReport: ValidationReport = {
   ready: false,
+  freezeBlockers: [],
   gates: [
     { gate: 'BOUNDARY', status: 'PASSED', findings: [] },
     {
@@ -315,7 +326,49 @@ const blockedReport: ValidationReport = {
 
 const passingReport: ValidationReport = {
   ready: true,
+  freezeBlockers: [],
   gates: blockedReport.gates.map((gate) => ({ ...gate, status: 'PASSED', findings: [] })),
+}
+
+const run: Run = {
+  id: 'run-1',
+  inventoryId: 'inv-1',
+  runNo: 1,
+  label: 'Run 001',
+  periodStart: '2025-01-01',
+  periodEnd: '2025-12-31',
+  consolidationApproach: 'EQUITY_SHARE' as const,
+  gwpSet: 'AR5' as const,
+  activityCount: 1,
+  totalKgCo2e: 2660,
+  scope1KgCo2e: 2660,
+  scope2KgCo2e: 0,
+  scope3KgCo2e: 0,
+  scope2MarketBasedKgCo2e: 0,
+  scope2MarketBasis: 'GRID_AVERAGE' as const,
+  byGas: {
+    co2Kg: 2630.7,
+    ch4Kg: 0.1,
+    ch4FossilKg: 0.1,
+    n2oKg: 0.1,
+    hfcsKg: 0,
+    pfcsKg: 0,
+    hfcsKgCo2e: 0,
+    pfcsKgCo2e: 0,
+    sf6Kg: 0,
+    nf3Kg: 0,
+    co2eUnsplitKg: 0,
+  },
+  biogenicCo2Kg: 0,
+  isFinal: false,
+  voided: false,
+  voidedAt: null,
+  voidedBy: null,
+  voidReason: null,
+  boundaryVersionId: 'bv-1',
+  boundaryVersionNo: 1,
+  createdBy: null,
+  createdAt: '2026-09-02T10:00:00Z',
 }
 
 function renderPage() {
@@ -346,6 +399,17 @@ beforeEach(() => {
   vi.mocked(classifyAssignment).mockReset()
   vi.mocked(excludeAssignment).mockReset()
   vi.mocked(getInheritance).mockReset().mockResolvedValue(null)
+  vi.mocked(getOrganization).mockReset().mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'OWNER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(listStreams).mockReset().mockResolvedValue([])
+  vi.mocked(finalizeRun).mockReset()
   vi.mocked(freezeInventory).mockReset()
   vi.mocked(reopenInventory).mockReset()
   vi.mocked(withdrawFinal).mockReset()
@@ -481,6 +545,9 @@ test('classifying an assignment sends the factor with its default scope and cate
   vi.mocked(classifyAssignment).mockResolvedValue(classified)
   renderPage()
 
+  // spec 05.5: no factor select renders until asked for; the picker opens on demand
+  expect(screen.queryByLabelText('Classify Diesel consumption')).not.toBeInTheDocument()
+  await user.click((await screen.findAllByRole('button', { name: /choose factor/i }))[0])
   await user.selectOptions(
     (await screen.findAllByLabelText('Classify Diesel consumption'))[0],
     'ef-1',
@@ -585,6 +652,7 @@ test('a draft inventory is flagged, blocks the run, and freezes after confirming
   const user = userEvent.setup()
   vi.mocked(getValidation).mockResolvedValue({
     ready: false,
+    freezeBlockers: [],
     gates: [
       {
         gate: 'BOUNDARY',
@@ -611,7 +679,7 @@ test('a draft inventory is flagged, blocks the run, and freezes after confirming
   await user.click(within(dialog).getByRole('button', { name: /freeze inventory/i }))
 
   await waitFor(() => expect(freezeInventory).toHaveBeenCalledWith('inv-1'))
-  expect(await screen.findByText(/inventory frozen as boundary v1/i)).toBeInTheDocument()
+  expect(await screen.findByText(/inventory frozen as boundary version 1/i)).toBeInTheDocument()
 })
 
 test('a frozen inventory is read-only, offers reopen, and lists its versions', async () => {
@@ -634,13 +702,17 @@ test('a frozen inventory is read-only, offers reopen, and lists its versions', a
   expect(screen.queryByRole('button', { name: /freeze inventory/i })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: /review activity data/i })).toBeDisabled()
 
-  // history: newest first, each naming who froze it and how many facilities it held
-  const history = await screen.findAllByRole('button', { name: /^v\d · frozen/ })
+  // history: newest first, each naming who froze it and how many facilities it held; the lifecycle bar
+  // names the numbering (spec 05.5)
+  expect(
+    screen.getByText('Boundary version 2', { selector: 'span.tracking-wider' }),
+  ).toBeInTheDocument()
+  const history = await screen.findAllByRole('button', { name: /^Boundary version \d · frozen/ })
   expect(history[0]).toHaveTextContent(
-    /^v2 · frozen .* by ama@ecoriv\.test · 1 entity, 2 facilities$/,
+    /^Boundary version 2 · frozen .* by ama@ecoriv\.test · 1 entity, 2 facilities$/,
   )
   expect(history[1]).toHaveTextContent(
-    /^v1 · frozen .* by ama@ecoriv\.test · 1 entity, 1 facility$/,
+    /^Boundary version 1 · frozen .* by ama@ecoriv\.test · 1 entity, 1 facility$/,
   )
 })
 
@@ -649,7 +721,7 @@ test('expanding a version loads the boundary it recorded', async () => {
   vi.mocked(listBoundaryVersions).mockResolvedValue([v1])
   renderPage()
 
-  await user.click(await screen.findByRole('button', { name: /^v1 · frozen/ }))
+  await user.click(await screen.findByRole('button', { name: /^Boundary version 1 · frozen/ }))
   await waitFor(() => expect(getBoundaryVersion).toHaveBeenCalledWith('bv-1'))
 })
 
@@ -664,8 +736,17 @@ test('reopening a frozen inventory calls the API and confirms', async () => {
   vi.mocked(reopenInventory).mockResolvedValue(inventory)
   renderPage()
 
+  // spec 05.5: reopening needs a reason of at least 10 characters
   await user.click(await screen.findByRole('button', { name: /reopen as draft/i }))
-  await waitFor(() => expect(reopenInventory).toHaveBeenCalledWith('inv-1'))
+  const dialog = await screen.findByRole('dialog', { name: /reopen as a draft/i })
+  expect(within(dialog).getByText(/next freeze cuts a new boundary version/)).toBeInTheDocument()
+  const confirm = within(dialog).getByRole('button', { name: /reopen as draft/i })
+  expect(confirm).toBeDisabled()
+  await user.type(within(dialog).getByLabelText(/reason/i), 'instruments added for Nkran')
+  await user.click(confirm)
+  await waitFor(() =>
+    expect(reopenInventory).toHaveBeenCalledWith('inv-1', 'instruments added for Nkran'),
+  )
   expect(await screen.findByText(/inventory reopened as a draft/i)).toBeInTheDocument()
 })
 
@@ -725,46 +806,6 @@ test('a published inventory is a record that offers a correction', async () => {
 
 test('a run is voided with a reason, never deleted, and keeps its number', async () => {
   const user = userEvent.setup()
-  const run = {
-    id: 'run-1',
-    inventoryId: 'inv-1',
-    runNo: 1,
-    label: 'Run 001',
-    periodStart: '2025-01-01',
-    periodEnd: '2025-12-31',
-    consolidationApproach: 'EQUITY_SHARE' as const,
-    gwpSet: 'AR5' as const,
-    activityCount: 1,
-    totalKgCo2e: 2660,
-    scope1KgCo2e: 2660,
-    scope2KgCo2e: 0,
-    scope3KgCo2e: 0,
-    scope2MarketBasedKgCo2e: 0,
-    scope2MarketBasis: 'GRID_AVERAGE' as const,
-    byGas: {
-      co2Kg: 2630.7,
-      ch4Kg: 0.1,
-      ch4FossilKg: 0.1,
-      n2oKg: 0.1,
-      hfcsKg: 0,
-      pfcsKg: 0,
-      hfcsKgCo2e: 0,
-      pfcsKgCo2e: 0,
-      sf6Kg: 0,
-      nf3Kg: 0,
-      co2eUnsplitKg: 0,
-    },
-    biogenicCo2Kg: 0,
-    isFinal: false,
-    voided: false,
-    voidedAt: null,
-    voidedBy: null,
-    voidReason: null,
-    boundaryVersionId: 'bv-1',
-    boundaryVersionNo: 1,
-    createdBy: null,
-    createdAt: '2026-09-02T10:00:00Z',
-  }
   vi.mocked(getInventory).mockResolvedValue({
     ...inventory,
     status: 'FROZEN',
@@ -1087,6 +1128,9 @@ test('a correction asks for its reason and the page names what an inventory inhe
     inherited: 12,
     undecided: 3,
     correctionReason: null,
+    boundaryRebuilt: false,
+    leaseRederived: 0,
+    droppedExclusions: [],
   })
   vi.mocked(supersedeInventory).mockResolvedValue({ ...inventory, id: 'inv-9', name: 'Fix' })
   renderPage()
@@ -1172,4 +1216,240 @@ test('a frozen inventory offers no edit button', async () => {
   renderPage()
   await screen.findByRole('button', { name: /reopen as draft/i })
   expect(screen.queryByRole('button', { name: 'Edit inventory' })).not.toBeInTheDocument()
+})
+
+test('the freeze dialog shows the gate summary and is disabled while records block the freeze (spec 05.5)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getValidation).mockResolvedValue({
+    ...blockedReport,
+    freezeBlockers: [
+      {
+        activityId: 'act-1',
+        recordRef: 'ACT-0012',
+        activityType: 'Genset diesel',
+        facilityName: 'Nkran',
+        problem: 'is not classified',
+      },
+      {
+        activityId: 'act-2',
+        recordRef: 'ACT-0019',
+        activityType: 'Camp LPG',
+        facilityName: 'Nkran',
+        problem: 'is not classified',
+      },
+      {
+        activityId: 'act-3',
+        recordRef: 'ACT-0033',
+        activityType: 'Shiploader diesel',
+        facilityName: 'Takoradi',
+        problem: 'is not classified',
+      },
+    ],
+  })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /freeze inventory/i }))
+  const dialog = await screen.findByRole('dialog', { name: /freeze the inventory/i })
+  const summary = within(dialog).getByRole('list', { name: /gate summary/i })
+  expect(within(summary).getByText('Classification').closest('li')).toHaveTextContent('1 error')
+  expect(within(summary).getByText('Reporting boundary').closest('li')).toHaveTextContent('passes')
+  expect(
+    within(dialog).getByText('3 records are not classified; classify or exclude them first.'),
+  ).toBeInTheDocument()
+  expect(
+    within(dialog).getByText(/ACT-0012 'Genset diesel' at Nkran is not classified/),
+  ).toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: /freeze inventory/i })).toBeDisabled()
+  expect(freezeInventory).not.toHaveBeenCalled()
+})
+
+test('a draft with versions cut says how many, and a frozen inventory prints who designated the final run', async () => {
+  vi.mocked(listBoundaryVersions).mockResolvedValue([v2, v1])
+  renderPage()
+  expect(await screen.findByText('2 boundary versions cut')).toBeInTheDocument()
+})
+
+test('marking a run final is confirmed with a note by a reviewer (spec 05.5)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'FROZEN',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'REVIEWER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(listRuns).mockResolvedValue([run])
+  vi.mocked(finalizeRun).mockResolvedValue({
+    ...inventory,
+    status: 'FINAL',
+    finalRunId: 'run-1',
+    finalDesignatedBy: 'abena@asantegold.com',
+    finalDesignatedAt: '2026-09-12T10:00:00Z',
+    finalNote: 'reconciled against the fuel ledger',
+  })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /mark as final/i }))
+  const dialog = await screen.findByRole('dialog', { name: /mark run 001 as final/i })
+  expect(
+    within(dialog).getByText(/Run #001 \(2\.66 t CO₂e\) becomes this inventory's final run/),
+  ).toBeInTheDocument()
+  expect(within(dialog).getByText(/the report and the base year attach to it/)).toBeInTheDocument()
+  await user.type(
+    within(dialog).getByLabelText(/review note/i),
+    'reconciled against the fuel ledger',
+  )
+  await user.click(within(dialog).getByRole('button', { name: /mark as final/i }))
+  await waitFor(() =>
+    expect(finalizeRun).toHaveBeenCalledWith('run-1', 'reconciled against the fuel ledger'),
+  )
+  expect(await screen.findByText(/Run 001 designated final/)).toBeInTheDocument()
+})
+
+test('a preparer sees Mark as final disabled with the role it needs (spec 01.4, 05.5)', async () => {
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'FROZEN',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'PREPARER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(listRuns).mockResolvedValue([run])
+  renderPage()
+
+  const button = await screen.findByRole('button', { name: /mark as final/i })
+  await waitFor(() => expect(button).toBeDisabled())
+  expect(button).toHaveAttribute('title', 'Needs the Reviewer or Owner role.')
+  expect(button).toHaveAccessibleDescription('Needs the Reviewer or Owner role.')
+})
+
+test('the final inventory prints who designated the run and the note', async () => {
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'FINAL',
+    finalRunId: 'run-1',
+    finalDesignatedBy: 'abena@asantegold.com',
+    finalDesignatedAt: '2026-09-12T10:00:00Z',
+    finalNote: 'reconciled against the fuel ledger',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  renderPage()
+  expect(
+    await screen.findByText(
+      /Final designated by abena@asantegold\.com on .*: reconciled against the fuel ledger/,
+    ),
+  ).toBeInTheDocument()
+  expect(
+    screen.getByText('Boundary version 1', { selector: 'span.tracking-wider' }),
+  ).toBeInTheDocument()
+})
+
+test('the activity view filters by scope, category, stream and lease, and shows the factor as text (spec 05.5)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
+  vi.mocked(listStreams).mockResolvedValue([
+    {
+      id: 'st-1',
+      facilityId: 'fac-1',
+      facilityName: 'Tema Plant',
+      name: 'Mill grid supply',
+      kind: 'PURCHASED_ELECTRICITY',
+      fuel: null,
+      meterOrSupplier: null,
+      contractorOperated: false,
+      note: null,
+      defaultScope: 'SCOPE_2',
+      defaultCategory: 'PURCHASED_ELECTRICITY',
+      allowedCategories: ['PURCHASED_ELECTRICITY'],
+      createdAt: '2026-08-01T00:00:00Z',
+    },
+  ])
+  renderPage()
+
+  // the factor reads as text with its pack and approval marks; the select renders only on demand
+  const factor = (await screen.findAllByText('Diesel', { selector: 'span.font-medium' }))[0]
+  expect(factor.parentElement).toHaveTextContent(/Diesel \(\/litre\)/)
+  expect(screen.queryByLabelText('Classify Diesel consumption')).not.toBeInTheDocument()
+  await user.click(screen.getAllByRole('button', { name: /change factor/i })[0])
+  expect(screen.getAllByLabelText('Classify Diesel consumption')[0]).toBeInTheDocument()
+  await user.type(screen.getAllByLabelText('Search factors for Diesel consumption')[0], 'grid')
+  expect(
+    within(screen.getAllByLabelText('Classify Diesel consumption')[0]).queryByText(/^Diesel/),
+  ).not.toBeInTheDocument()
+
+  await user.selectOptions(screen.getByLabelText('Scope'), 'SCOPE_2')
+  await user.selectOptions(screen.getByLabelText('Stream'), 'st-1')
+  await user.selectOptions(screen.getByLabelText('Lease'), 'OPERATING_LEASE_IN')
+  await waitFor(() =>
+    expect(searchAssignments).toHaveBeenLastCalledWith(
+      'inv-1',
+      expect.objectContaining({
+        scope: 'SCOPE_2',
+        streamId: 'st-1',
+        leaseType: 'OPERATING_LEASE_IN',
+        page: 0,
+        size: 50,
+      }),
+    ),
+  )
+  await user.selectOptions(screen.getByLabelText('Category'), 'PURCHASED_ELECTRICITY')
+  await waitFor(() =>
+    expect(searchAssignments).toHaveBeenLastCalledWith(
+      'inv-1',
+      expect.objectContaining({ category: 'PURCHASED_ELECTRICITY' }),
+    ),
+  )
+})
+
+test('the inheritance notice says the boundary was rebuilt and lists the dropped exclusions (spec 05.4)', async () => {
+  vi.mocked(getInheritance).mockResolvedValue({
+    sourceInventoryId: 'inv-0',
+    sourceName: 'FY2025 Operational control',
+    inherited: 40,
+    undecided: 0,
+    correctionReason: null,
+    boundaryRebuilt: true,
+    leaseRederived: 6,
+    droppedExclusions: [
+      {
+        entityId: 'ent-9',
+        entityName: 'Wassa Gold Associates',
+        facilityId: null,
+        facilityName: null,
+        reason: 'METHODOLOGY',
+        detail: '0% under operational control',
+        sharePercent: 30,
+      },
+    ],
+  })
+  renderPage()
+
+  expect(
+    await screen.findByText(
+      /Boundary rebuilt from Table 1 under equity share; 6 leased assignments moved scope under Appendix F/,
+    ),
+  ).toBeInTheDocument()
+  const dropped = screen.getByRole('list', { name: /dropped exclusions/i })
+  expect(
+    within(dropped).getByText(
+      'Wassa Gold Associates: Methodology exclusion dropped, 30% equity share under this approach',
+    ),
+  ).toBeInTheDocument()
 })

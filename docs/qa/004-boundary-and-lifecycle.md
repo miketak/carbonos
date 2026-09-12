@@ -8,8 +8,12 @@ write it must.
 **Covers** [spec 03](../../specs/03-organizational-boundary.md),
 [spec 03.2](../../specs/03.2-effective-dated-membership.md),
 [spec 03.4](../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md),
-[spec 05.1](../../specs/05.1-inventory-lifecycle-and-run-snapshots.md)
-and [spec 07.2](../../specs/07.2-required-disclosures.md) (exclusions).
+[spec 05.1](../../specs/05.1-inventory-lifecycle-and-run-snapshots.md),
+[spec 05.4](../../specs/05.4-copying-a-view-across-consolidation-approaches.md)
+(a copy across approaches),
+[spec 05.5](../../specs/05.5-review-at-scale-and-deliberate-lifecycle-acts.md)
+(the freeze gate, the reopen reason, the version labels) and
+[spec 07.2](../../specs/07.2-required-disclosures.md) (exclusions).
 
 **Estimated time:** 60 minutes.
 
@@ -83,8 +87,9 @@ in this inventory's arithmetic and only matters in the equity view of D1.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Record the S5 exclusion again (B3 removed it), then click **Freeze inventory** and confirm. | The inventory is frozen. | | |
-| 2 | Open the version panel. | Boundary version 1 lists E0 and E1 with their facilities, shares and the 45% override, and records the S5 and E2 exclusions with their reasons. The freeze is attributed to you with the time. | | |
+| 1 | Record the S5 exclusion again (B3 removed it), then click **Freeze inventory**. | The dialog lists the five gates first, each with "passes" or its counts (**Reporting boundary** carries the draft hold as 1 error and its warnings, among them the S5 exclusion, disclosed because Sankofa Gold plc holds 100%), then says the freeze "cuts boundary version 1". Nothing has been reviewed yet, so no record blocks the freeze and the button is enabled. | | |
+| 2 | Confirm. | The inventory is frozen; the toast reads "Inventory frozen as boundary version 1." and the lifecycle bar shows the badge "Boundary version 1". | | |
+| 3 | Open **Boundary version history** and expand the version. | The row reads "Boundary version 1 · frozen <time> by <you> · 2 entities, 4 facilities" (S5 is out). Boundary version 1 lists E0 and E1 with their facilities, shares and the 45% override, and records the S5 and E2 exclusions with their reasons. | | |
 
 ### C2. A frozen inventory refuses writes
 
@@ -100,11 +105,14 @@ Runs are allowed (procedure 7).
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Reopen as draft**, tick S5 back in, and freeze again. | Version 2 is cut; version 1 stays readable and unchanged. | | |
+| 1 | Click **Reopen as draft**. | A dialog "Reopen as a draft?" says boundary version 1 stays on the record with your reason and that the next freeze cuts a new boundary version. Its button is disabled until the reason has 10 characters. | | |
+| 2 | Type the reason "S5 belongs in the boundary" and confirm. | The inventory is a draft again; the lifecycle bar reads "1 boundary version cut"; the **History** reads "reopened as a draft: S5 belongs in the boundary"; in the version history, version 1 reads "Reopened by <you> on <time>: S5 belongs in the boundary". | | |
+| 3 | Tick S5 back in and freeze again. | Boundary version 2 is cut; version 1 stays readable and unchanged, with its reopen line. | | |
 
 Every freeze cuts a new version, even when nothing changed: procedures 5
 and 6 each end with a freeze, so the first run in procedure 7 cites
-version 4.
+boundary version 4. The report version is a different count (one per
+correction, procedure 8), and the product always says which it means.
 
 ### C4. Renaming a facility does not rewrite a version
 
@@ -122,14 +130,21 @@ version 4.
 
 ## D. Copying a view
 
-### D1. A second inventory copies the first
+### D1. A second inventory copies the first, and across approaches the boundary follows Table 1
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Create **2025 Equity** with equity share and **Copy the view from (optional)** set to 2025 Operational. | The pre-population checkbox is disabled once a source is chosen (the source is listed as "2025 Operational (2025)"). The new inventory's boundary matches 2025 Operational as C3 left it: S5 in, the E1 override at 45% (which under equity share is now E1's accounting share), and the E2 exclusion with its copied reason (its facility reads "left out with the entity: Methodology exclusion"). The header reads "View copied from 2025 Operational: 0 decisions inherited, 5 records of this period the source never decided on" (no record was classified yet). | | |
+| 1 | Start **2025 Equity** with equity share and **Copy the view from (optional)** set to 2025 Operational. | The pre-population checkbox is disabled once a source is chosen (the source is listed as "2025 Operational (2025)"). Because the approaches differ, the form says "2025 Operational is under operational control. Under equity share the boundary is rebuilt from Table 1: every entity with a share joins with its facilities, the source's computed exclusions are dropped and listed, and leased assignments take their Appendix F scope under this approach. The decisions themselves are kept." | | |
+| 2 | Create it and open its boundary. | The boundary is not the source's: E0 is in at 100%, E1 at **40%** from the entity record (the 45% override of B4 is not copied), and E2 is **in at 30%** with S3 and the window "member from 2025-07-01" from its acquisition date. No exclusion remains: the E2 exclusion of the source was dropped. | | |
+| 3 | Read the header. | "View copied from 2025 Operational: 0 decisions inherited, 5 records of this period the source never decided on. Boundary rebuilt from Table 1 under equity share." (no record was classified yet, so no lease moved scope), then the amber notice "1 boundary exclusion of the source was dropped: the operation holds a share under this approach and joins the boundary. Record a reason again if it should stay out." listing "Takoradi Port Co: Methodology exclusion dropped, 30% equity share under this approach". | | |
+| 4 | Untick E2 and choose **Methodology exclusion** with the detail "Associate: not operated". | The **Reporting boundary** gate blocks: "Takoradi Port Co is excluded but holds a 30% equity share under this approach. Include it, or record why it emits nothing." Under equity share an associate is in by definition (chapter 3). | | |
+| 5 | Change the reason to **Non-GHG activity** with the detail "Port operated by a third party; loadout emissions reported by the operator". | The gate warns instead: "Takoradi Port Co is excluded as a non-GHG operation but holds a 30% equity share under this approach: the report discloses the exclusion." Tick E2 back in afterwards. | | |
 
-Under equity share E2 could be in at 30%; the copy keeps the source's
-decision, which is what this case checks.
+A copy within one approach (2025 Operational into a second
+operational-control view) keeps the boundary, the exclusions and every
+scope as the source had them; the rebuild happens only across approaches.
+The dropped-exclusion notice stays on the page until the inventory is
+frozen.
 
 ## Sign-off
 
@@ -140,5 +155,7 @@ decision, which is what this case checks.
 | Cases failed | |
 | Issues filed | |
 
-**Known non-goals:** re-populating a draft when its approach changes;
+**Known non-goals:** re-populating the boundary of a draft when its
+approach changes (its leased assignments are re-derived under Appendix F,
+spec 05.4, but the accountant adds or removes operations by hand);
 per-facility Table 1 facts (they live on the entity).

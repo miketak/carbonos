@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -105,6 +106,9 @@ class GhgApiIntegrationTests {
 
 	@Autowired
 	com.carbonos.user.internal.UserService userService;
+
+	@Autowired
+	org.springframework.jdbc.core.JdbcTemplate jdbc;
 
 	@BeforeEach
 	void resetGhgData() {
@@ -247,9 +251,11 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk());
 	}
 
+	/** Reopens with a reason (spec 05.5); the tests that care about the reason send their own. */
 	void reopen(String inventoryId) throws Exception {
-		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf()))
-			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "test: the draft changes again"}""")).andExpect(status().isOk());
 	}
 
 	String syncAndGetAssignmentId(String inventoryId, String activityId) throws Exception {
@@ -1016,10 +1022,17 @@ class GhgApiIntegrationTests {
 	void runCreationIsRefusedWhileValidationBlocks() throws Exception {
 		var orgId = createOrganization("Ecoriv Holdings");
 		var facilityId = createFacility(orgId, "Tema Plant");
+		createFacility(orgId, "Kumasi Depot");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
-		createActivity(orgId, facilityId, "Diesel consumption", "100", "litre", "2025-03-15");
+		var diesel = createActivity(orgId, facilityId, "Diesel consumption", "100", "litre", "2025-03-15");
+		// an unclassified record refuses the freeze itself (spec 05.5); an undocumented omission lets the freeze
+		// through and blocks the run (spec 07.2)
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.errors.records[0].problem").value("is not classified"));
+		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
 		freeze(inventoryId);
 
 		run(inventoryId, "Run 001").andExpect(status().isConflict())
@@ -1395,6 +1408,7 @@ class GhgApiIntegrationTests {
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
 		var assignmentId = syncAndGetAssignmentId(inventoryId, activityId);
+		classify(assignmentId, DIESEL_FACTOR);
 		freeze(inventoryId);
 
 		// both halves of the view are read-only: boundary, assignments, review, and the approach
@@ -1423,7 +1437,9 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isConflict());
 
 		// reopening restores editing and keeps the pointer to v1
-		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "test: the draft changes again"}"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("DRAFT"))
 			.andExpect(jsonPath("$.currentBoundaryVersionNo").value(1));
@@ -1580,7 +1596,9 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.status").value("FINAL"));
 
 		// FINAL: reopening is refused until the designation is withdrawn
-		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "test: the draft changes again"}"""))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Withdraw the designation")));
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/withdraw-final").with(asMember()).with(csrf())
@@ -1612,7 +1630,9 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"reason": "Too late"}"""))
 			.andExpect(status().isConflict());
-		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "test: the draft changes again"}"""))
 			.andExpect(status().isConflict());
 		run(inventoryId, "Run 003").andExpect(status().isConflict());
 		mvc.perform(post("/api/ghg/runs/" + runId + "/void").with(asMember()).with(csrf())
@@ -1695,7 +1715,8 @@ class GhgApiIntegrationTests {
 		// 2025 without the terminal: a divestment worth 4.76%, below the 5% threshold, recalculation optional
 		var current = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(current, pit);
-		excludeFacility(current, terminal, "OTHER", "Divested 2025-01-01");
+		// spec 05.4: the terminal's entity still holds 100%, so the divestment is disclosed as "not applicable in the period"
+		excludeFacility(current, terminal, "NOT_APPLICABLE", "Divested 2025-01-01");
 		freeze(current);
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
 			.andExpect(jsonPath("$.recalculations.length()").value(1))
@@ -1966,10 +1987,9 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.gwpSet").value("AR6")));
 		String ar6Id = JsonPath.read(ar6, "$.id");
 		putBoundary(ar6Id, plant);
-		prepare(ar6Id, pellets, BIOMASS_FACTOR);
-		// 1 x 27.9 + 0.46 x 273 = 153.48; the landfill record is unclassified and excluded by the gate? No:
-		// it is included and unclassified, so exclude it first
-		reopen(ar6Id);
+		classify(syncAndGetAssignmentId(ar6Id, pellets), BIOMASS_FACTOR);
+		// 1 x 27.9 + 0.46 x 273 = 153.48; the landfill record is included and unclassified, so exclude it before the
+		// freeze, which waits for a clean classification (spec 05.5)
 		var ar6Listing = body(mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/assignments").with(asMember())));
 		mvc.perform(put("/api/ghg/assignments/"
 				+ JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + waste + "')].id").getFirst()
@@ -2358,8 +2378,11 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary/exclusions").with(asMember()))
 			.andExpect(jsonPath("$.length()").value(2));
 		freeze(inventoryId);
+		// spec 05.4: the camp is one facility of the 100% reporting company, so its exclusion is disclosed as a warning
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
-			.andExpect(jsonPath("$.gates[0].status").value("PASSED"));
+			.andExpect(jsonPath("$.gates[0].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[0].findings[0].message").value(org.hamcrest.Matchers.startsWith(
+					"'Nkran Exploration Camp' (Sankofa Gold plc) is excluded as not applicable in the period while Sankofa Gold plc holds a 100% share under this approach")));
 		// the version copies the exclusions and the report prints them beside the record exclusions
 		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated()));
 		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(detail, "$.run.id") + "/report").with(asMember()))
@@ -4315,5 +4338,406 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/page").with(asMember()))
 			.andExpect(jsonPath("$.total").value(2))
 			.andExpect(jsonPath("$.items[?(@.recordRef == 'ACT-0001')].calculated").value(org.hamcrest.Matchers.hasItem(true)));
+	}
+
+	// --- copying a view across approaches (spec 05.4) -------------------------------------
+
+	/** Classifies with a lease type; Appendix F derives the scope under the inventory's approach. */
+	void classifyLeased(String assignmentId, String factorId, String leaseType) throws Exception {
+		mvc.perform(put("/api/ghg/assignments/" + assignmentId + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s", "leaseType": "%s"}""".formatted(factorId, leaseType)))
+			.andExpect(status().isOk());
+	}
+
+	void excludeEntity(String inventoryId, String entityId, String reason, String detail) throws Exception {
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/entities/" + entityId + "/exclude")
+			.with(asMember()).with(csrf()).contentType("application/json").content("""
+					{"reason": "%s", "detail": "%s"}""".formatted(reason, detail))).andExpect(status().isOk());
+	}
+
+	String copyInventory(String orgId, String name, String approach, String sourceId) throws Exception {
+		var created = mvc.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "%s", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+					 "consolidationApproach": "%s", "copyFromInventoryId": "%s"}""".formatted(name, approach, sourceId)))
+			.andExpect(status().isCreated())
+			.andReturn();
+		return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+	}
+
+	@Test
+	void aViewCopiedAcrossApproachesRebuildsTheBoundaryAndRederivesLeases() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var headOffice = createFacility(orgId, "Accra Head Office");
+		var wassa = createEntity(orgId, "Wassa Gold Associates", "ASSOCIATE", "30", false);
+		var wassaPit = createFacility(orgId, "Wassa Pit", wassa);
+		var ahafo = createEntity(orgId, "Ahafo Camp Services JV", "JOINT_VENTURE", "40", false);
+		var ahafoCamp = createFacility(orgId, "Ahafo Camp", ahafo);
+		var bonsu = createEntity(orgId, "Bonsu Royalty Holdings", "FIXED_ASSET_INVESTMENT", "5", false);
+		var bonsuOffice = createFacility(orgId, "Bonsu Registered Office", bonsu);
+		var officeDiesel = createActivity(orgId, headOffice, "Head office genset diesel", "1000", "litre", "2025-03-31");
+		var officePower = createActivity(orgId, headOffice, "Head office electricity", "1000", "kWh", "2025-03-31");
+		var wassaDiesel = createActivity(orgId, wassaPit, "Wassa haul diesel", "1000", "litre", "2025-04-30");
+		var ahafoDiesel = createActivity(orgId, ahafoCamp, "Ahafo camp diesel", "1000", "litre", "2025-05-31");
+
+		// the operational-control view: the head office is leased in, the associate and the JV are at 0%
+		var source = createInventory(orgId, "FY2025 Operational control", "OPERATIONAL_CONTROL");
+		putBoundary(source, headOffice);
+		excludeEntity(source, wassa, "METHODOLOGY", "0% under operational control");
+		excludeEntity(source, ahafo, "METHODOLOGY", "Methodology exclusion, 0% under operational control");
+		excludeEntity(source, bonsu, "NON_GHG", "Royalty holder: no operations of its own");
+		classifyLeased(syncAndGetAssignmentId(source, officeDiesel), DIESEL_FACTOR, "OPERATING_LEASE_IN");
+		classifyLeased(syncAndGetAssignmentId(source, officePower), GRID_FACTOR, "OPERATING_LEASE_IN");
+		mvc.perform(get("/api/ghg/inventories/" + source + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officeDiesel + "')].scope").value("SCOPE_1"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officePower + "')].scope").value("SCOPE_2"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + wassaDiesel + "')].exclusionReason").value("OUTSIDE_BOUNDARY"));
+
+		// copied into equity share: the boundary is rebuilt from Table 1, the computed exclusions dropped, Appendix F re-derived
+		var equity = copyInventory(orgId, "FY2025 Equity share (AR6)", "EQUITY_SHARE", source);
+		var boundary = body(mvc.perform(get("/api/ghg/inventories/" + equity + "/boundary").with(asMember())));
+		assertThat(JsonPath.<List<Boolean>>read(boundary, "$[?(@.entityName == 'Wassa Gold Associates')].inBoundary").getFirst()).isTrue();
+		assertThat(share(boundary, "Wassa Gold Associates")).isEqualTo(0.3);
+		assertThat(JsonPath.<List<Boolean>>read(boundary, "$[?(@.entityName == 'Ahafo Camp Services JV')].inBoundary").getFirst()).isTrue();
+		assertThat(share(boundary, "Ahafo Camp Services JV")).isEqualTo(0.4);
+		assertThat(JsonPath.<List<Boolean>>read(boundary, "$[?(@.entityName == 'Bonsu Royalty Holdings')].inBoundary").getFirst()).isFalse();
+		assertThat(JsonPath.<List<Boolean>>read(boundary, "$[*].facilities[?(@.facilityId == '" + headOffice + "')].inBoundary").getFirst()).isTrue();
+		mvc.perform(get("/api/ghg/inventories/" + equity + "/boundary/exclusions").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].entityName").value("Bonsu Royalty Holdings"));
+		mvc.perform(get("/api/ghg/inventories/" + equity + "/inheritance").with(asMember()))
+			.andExpect(jsonPath("$.sourceName").value("FY2025 Operational control"))
+			.andExpect(jsonPath("$.boundaryRebuilt").value(true))
+			.andExpect(jsonPath("$.leaseRederived").value(2))
+			.andExpect(jsonPath("$.droppedExclusions.length()").value(2))
+			.andExpect(jsonPath("$.droppedExclusions[?(@.entityName == 'Wassa Gold Associates')].sharePercent").value(30))
+			.andExpect(jsonPath("$.droppedExclusions[?(@.entityName == 'Wassa Gold Associates')].reason").value("METHODOLOGY"))
+			.andExpect(jsonPath("$.droppedExclusions[?(@.entityName == 'Ahafo Camp Services JV')].sharePercent").value(40));
+		mvc.perform(get("/api/ghg/inventories/" + equity + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officeDiesel + "')].scope").value("SCOPE_3"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officeDiesel + "')].category").value("UPSTREAM_LEASED_ASSETS"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officePower + "')].scope").value("SCOPE_3"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officePower + "')].inherited").value(true));
+		// the first review re-examines the automatic exclusions against the new boundary
+		classify(syncAndGetAssignmentId(equity, wassaDiesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(equity, ahafoDiesel), DIESEL_FACTOR);
+		mvc.perform(get("/api/ghg/inventories/" + equity + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'ERROR')]").isEmpty());
+		freeze(equity);
+		// 30% of Wassa's 2,660 kg and 40% of Ahafo's 2,660 kg in scope 1; the head office (2,660 + 441) in category 8
+		run(equity, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.scope1KgCo2e").value(1862.0))
+			.andExpect(jsonPath("$.run.scope2KgCo2e").value(0.0))
+			.andExpect(jsonPath("$.run.scope3KgCo2e").value(3101.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + officeDiesel + "')].category").value("UPSTREAM_LEASED_ASSETS"));
+
+		// the same copy within one approach keeps the boundary, the exclusions and the scopes as spec 05.3 describes
+		var second = copyInventory(orgId, "FY2025 Operational control (second view)", "OPERATIONAL_CONTROL", source);
+		var secondBoundary = body(mvc.perform(get("/api/ghg/inventories/" + second + "/boundary").with(asMember())));
+		assertThat(JsonPath.<List<Boolean>>read(secondBoundary, "$[?(@.entityName == 'Wassa Gold Associates')].inBoundary").getFirst()).isFalse();
+		mvc.perform(get("/api/ghg/inventories/" + second + "/boundary/exclusions").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(3));
+		mvc.perform(get("/api/ghg/inventories/" + second + "/inheritance").with(asMember()))
+			.andExpect(jsonPath("$.boundaryRebuilt").value(false))
+			.andExpect(jsonPath("$.leaseRederived").value(0))
+			.andExpect(jsonPath("$.droppedExclusions.length()").value(0));
+		mvc.perform(get("/api/ghg/inventories/" + second + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officeDiesel + "')].scope").value("SCOPE_1"));
+
+		// changing a draft's approach re-derives every leased assignment, and back again
+		mvc.perform(put("/api/ghg/inventories/" + second).with(asMember()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "Second view", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+					 "consolidationApproach": "EQUITY_SHARE"}""")).andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + second + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officeDiesel + "')].scope").value("SCOPE_3"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officePower + "')].category").value("UPSTREAM_LEASED_ASSETS"));
+		mvc.perform(put("/api/ghg/inventories/" + second).with(asMember()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "Second view", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+					 "consolidationApproach": "OPERATIONAL_CONTROL"}""")).andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + second + "/assignments").with(asMember()))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officeDiesel + "')].scope").value("SCOPE_1"))
+			.andExpect(jsonPath("$[?(@.activityId == '" + officePower + "')].scope").value("SCOPE_2"));
+		mvc.perform(get("/api/ghg/inventories/" + second + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.message =~ /.*Appendix F.*/)]").isEmpty());
+
+		// a leased assignment whose stored scope is forced to disagree with Appendix F blocks the run
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + equity + "/assignments").with(asMember())));
+		String officeDieselInEquity = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + officeDiesel + "')].id").getFirst();
+		jdbc.update("update ghg_assignments set scope = 'SCOPE_1', category = 'STATIONARY_COMBUSTION' where id = ?::uuid",
+				officeDieselInEquity);
+		mvc.perform(get("/api/ghg/inventories/" + equity + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(false))
+			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'ERROR')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.allOf(
+						org.hamcrest.Matchers.startsWith("'Head office genset diesel' (Accra Head Office) is a leased asset (operating lease in) stored in scope 1"),
+						org.hamcrest.Matchers.containsString("Appendix F under equity share puts it in scope 3")))));
+		run(equity, "Blocked").andExpect(status().isConflict());
+		assertThat(bonsuOffice).isNotNull();
+	}
+
+	@Test
+	void anExcludedEntityWithAShareBlocksTheRun() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var pit = createFacility(orgId, "Nkran Pit");
+		var wassa = createEntity(orgId, "Wassa Gold Associates", "ASSOCIATE", "30", false);
+		var wassaPit = createFacility(orgId, "Wassa Pit", wassa);
+		var bonsu = createEntity(orgId, "Bonsu Royalty Holdings", "SUBSIDIARY", "100", false);
+		var bonsuOffice = createFacility(orgId, "Bonsu Registered Office", bonsu);
+		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
+
+		// under equity share the associate holds 30%: a methodology exclusion is an error, a non-GHG one a warning
+		var equity = createInventory(orgId, "FY2025 Equity share", "EQUITY_SHARE");
+		putBoundary(equity, pit);
+		excludeEntity(equity, wassa, "METHODOLOGY", "Associate: not operated by the company");
+		excludeEntity(equity, bonsu, "NON_GHG", "Royalty holder: no operations of its own");
+		classify(syncAndGetAssignmentId(equity, diesel), DIESEL_FACTOR);
+		freeze(equity);
+		mvc.perform(get("/api/ghg/inventories/" + equity + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(false))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'ERROR')].message").value(org.hamcrest.Matchers.hasItem(
+					"Wassa Gold Associates is excluded but holds a 30% equity share under this approach. Include it, or record why it emits nothing.")))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'WARNING')].message").value(org.hamcrest.Matchers.hasItem(
+					"Bonsu Royalty Holdings is excluded as a non-GHG operation but holds a 100% equity share under this approach: the report discloses the exclusion.")));
+		run(equity, "Blocked").andExpect(status().isConflict());
+		// including the associate clears the error; the royalty holder's disclosure stays a warning
+		reopen(equity);
+		putBoundary(equity, wassaPit);
+		freeze(equity);
+		mvc.perform(get("/api/ghg/inventories/" + equity + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(true))
+			.andExpect(jsonPath("$.gates[0].status").value("WARNINGS"));
+		run(equity, "Run 001").andExpect(status().isCreated());
+
+		// the same methodology exclusion under operational control, where the associate is at 0%, passes
+		var operational = createInventory(orgId, "FY2025 Operational control", "OPERATIONAL_CONTROL");
+		putBoundary(operational, pit);
+		putBoundary(operational, bonsuOffice);
+		excludeEntity(operational, wassa, "METHODOLOGY", "0% under operational control");
+		mvc.perform(get("/api/ghg/inventories/" + operational + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.message =~ /.*Wassa Gold Associates is excluded.*/)]").isEmpty());
+	}
+
+	// --- review at scale and deliberate lifecycle acts (spec 05.5) ---------------------------
+
+	@Test
+	void freezeWaitsForClassificationAndReopenNeedsAReason() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var pit = createFacility(orgId, "Nkran Pit");
+		var camp = createFacility(orgId, "Nkran Exploration Camp");
+		var diesel = createActivity(orgId, pit, "Genset diesel", "1000", "litre", "2025-06-30");
+		var draft = JsonPath.<String>read(body(postActivity(orgId, """
+				{"draft": true, "facilityId": "%s", "activityType": "July dispensing", "periodStart": "2025-07-01",
+				 "periodEnd": "2025-07-31", "dataQuality": "MEASURED"}""".formatted(pit)).andExpect(status().isCreated())),
+				"$.id");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+
+		// an unclassified included record and an overlapping draft at a facility in the boundary refuse the freeze
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.title").value("Operation not allowed"))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.allOf(
+					org.hamcrest.Matchers.startsWith("2 records block the freeze: "),
+					org.hamcrest.Matchers.containsString("ACT-0001 'Genset diesel' at Nkran Pit is not classified"),
+					org.hamcrest.Matchers.containsString("ACT-0002 'July dispensing' at Nkran Pit is a draft with data outstanding"))))
+			.andExpect(jsonPath("$.errors.records.length()").value(2))
+			.andExpect(jsonPath("$.errors.records[0].activityId").value(diesel))
+			.andExpect(jsonPath("$.errors.records[0].recordRef").value("ACT-0001"))
+			.andExpect(jsonPath("$.errors.records[0].facilityName").value("Nkran Pit"))
+			.andExpect(jsonPath("$.errors.records[0].problem").value("is not classified"));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.freezeBlockers.length()").value(2));
+		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.startsWith("1 record blocks the freeze: ACT-0002")));
+		mvc.perform(delete("/api/ghg/activities/" + draft).with(asMember()).with(csrf()).param("reason", "no such dispensing"))
+			.andExpect(status().isNoContent());
+		// the camp is neither in the boundary nor excluded: that error keeps allowing the freeze (spec 07.2)
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.freezeBlockers.length()").value(0))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'ERROR')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("'Nkran Exploration Camp' (Asante Gold Resources) is neither"))));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.version.versionNo").value(1))
+			.andExpect(jsonPath("$.version.reopenedBy").doesNotExist());
+
+		// a reopen needs a reason; the reason lands on the event and on the version it supersedes
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf()))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.reason").exists());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "too short"}""")).andExpect(status().isUnprocessableEntity());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/reopen").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "instruments added for Nkran"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("DRAFT"));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.action == 'REOPENED')].reason").value("reopened as a draft: instruments added for Nkran"));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary/versions").with(asMember()))
+			.andExpect(jsonPath("$[0].versionNo").value(1))
+			.andExpect(jsonPath("$[0].reopenedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$[0].reopenedAt").exists())
+			.andExpect(jsonPath("$[0].reopenReason").value("instruments added for Nkran"));
+		excludeFacility(inventoryId, camp, "NOT_APPLICABLE", "Exploration only; no fuel or power in 2025");
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.version.versionNo").value(2));
+		var version1 = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary/versions").with(asMember())));
+		assertThat(JsonPath.<List<String>>read(version1, "$[?(@.versionNo == 1)].reopenReason").getFirst())
+			.isEqualTo("instruments added for Nkran");
+		assertThat(JsonPath.<List<Object>>read(version1, "$[?(@.versionNo == 2)].reopenReason").getFirst()).isNull();
+	}
+
+	@Test
+	void aFinalRunIsDesignatedWithANoteByAReviewer() throws Exception {
+		var abena = userService.create("abena@asantegold.test", "Abena Owusu", com.carbonos.user.internal.UserRole.MEMBER,
+				"reviewer-passw0rd");
+		var kofi = userService.create("kofi@asantegold.test", "Kofi Mensah", com.carbonos.user.internal.UserRole.MEMBER,
+				"preparer-passw0rd");
+		var orgId = createOrganization("Asante Gold Resources");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "abena@asantegold.test", "role": "REVIEWER"}""")).andExpect(status().isCreated());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "kofi@asantegold.test", "role": "PREPARER"}""")).andExpect(status().isCreated());
+		var pit = createFacility(orgId, "Nkran Pit");
+		var diesel = createActivity(orgId, pit, "Genset diesel", "1000", "litre", "2025-06-30");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		var runId = runAndGetId(inventoryId, "Run 003");
+
+		// a preparer cannot designate; a reviewer's note over 500 characters is refused; the note lands everywhere
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(as(kofi)).with(csrf())
+			.contentType("application/json").content("""
+					{"runId": "%s", "note": "reconciled against the fuel ledger"}""".formatted(runId)))
+			.andExpect(status().isForbidden());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"runId": "%s", "note": "%s"}""".formatted(runId, "x".repeat(501))))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.note").exists());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"runId": "%s", "note": "reconciled against the fuel ledger"}""".formatted(runId)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("FINAL"))
+			.andExpect(jsonPath("$.finalDesignatedBy").value("abena@asantegold.test"))
+			.andExpect(jsonPath("$.finalDesignatedAt").exists())
+			.andExpect(jsonPath("$.finalNote").value("reconciled against the fuel ledger"));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.action == 'FINAL_DESIGNATED')].reason")
+				.value("run 1 designated final: reconciled against the fuel ledger"))
+			.andExpect(jsonPath("$[?(@.action == 'FINAL_DESIGNATED')].actor").value("abena@asantegold.test"));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.header.version").value(1))
+			.andExpect(jsonPath("$.header.boundaryVersionNo").value(1))
+			.andExpect(jsonPath("$.header.boundaryVersionCount").value(1))
+			.andExpect(jsonPath("$.header.finalDesignatedBy").value("abena@asantegold.test"))
+			.andExpect(jsonPath("$.header.finalNote").value("reconciled against the fuel ledger"));
+		var pdf = mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember()))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsByteArray();
+		var text = pdfText(pdf).replaceAll("\\s+", " ");
+		assertThat(text).containsPattern("Report version\\s*1\\b")
+			.containsPattern("Final designated\\s*by abena@asantegold\\.test on \\d{1,2} [A-Z][a-z]+ \\d{4}: reconciled against the fuel ledger")
+			.contains("Boundary version 1 of 1.");
+		// withdrawing the designation clears the record of it; designating through the run takes a note too
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/withdraw-final").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "the ledger was re-issued"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.finalDesignatedBy").doesNotExist())
+			.andExpect(jsonPath("$.finalNote").doesNotExist());
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"note": "second review"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.finalNote").value("second review"));
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(kofi)).with(csrf())).andExpect(status().isForbidden());
+	}
+
+	@Test
+	void theActivityViewFiltersByScopeCategoryStreamAndLease() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var nkran = createFacility(orgId, "Nkran Pit");
+		var camp = createFacility(orgId, "Nkran Exploration Camp");
+		var mill = body(mvc.perform(post("/api/ghg/facilities/" + nkran + "/streams").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Mill grid supply", "kind": "PURCHASED_ELECTRICITY", "contractorOperated": false}"""))
+			.andExpect(status().isCreated()));
+		String millId = JsonPath.read(mill, "$.id");
+		var electricity = new ArrayList<String>();
+		for (int i = 0; i < 84; i++) {
+			var day = java.time.LocalDate.of(2025, 1, 1).plusDays(i * 4);
+			electricity.add(JsonPath.read(body(postActivity(orgId, """
+					{"facilityId": "%s", "streamId": "%s", "activityType": "Mill electricity", "quantity": 1000, "unit": "kWh",
+					 "periodStart": "%s", "periodEnd": "%s", "dataQuality": "MEASURED"}""".formatted(nkran, millId, day, day))
+				.andExpect(status().isCreated())), "$.id"));
+		}
+		var diesel = new ArrayList<String>();
+		for (int i = 0; i < 36; i++) {
+			var day = java.time.LocalDate.of(2025, 1, 2).plusDays(i * 10);
+			diesel.add(createActivity(orgId, camp, "Camp genset diesel", "500", "litre", day.toString()));
+		}
+		var inventoryId = createInventory(orgId, "FY2025", "EQUITY_SHARE");
+		putBoundary(inventoryId, nkran);
+		putBoundary(inventoryId, camp);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		for (var activity : electricity) {
+			classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + activity + "')].id").getFirst(), GRID_FACTOR);
+		}
+		for (var activity : diesel.subList(0, 10)) {
+			classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + activity + "')].id").getFirst(), DIESEL_FACTOR);
+		}
+		// one camp genset is leased in: under equity share an operating lease lands in scope 3, category 8
+		classifyLeased(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + diesel.get(10) + "')].id").getFirst(),
+				DIESEL_FACTOR, "OPERATING_LEASE_IN");
+
+		// the counts describe the whole view whatever the page; the filters narrow the items
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
+			.param("scope", "SCOPE_2").param("facilityId", nkran))
+			.andExpect(jsonPath("$.total").value(84))
+			.andExpect(jsonPath("$.items.length()").value(50))
+			.andExpect(jsonPath("$.included").value(95))
+			.andExpect(jsonPath("$.unclassified").value(25))
+			.andExpect(jsonPath("$.excluded").value(0));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
+			.param("scope", "SCOPE_2").param("facilityId", nkran).param("page", "1"))
+			.andExpect(jsonPath("$.total").value(84))
+			.andExpect(jsonPath("$.items.length()").value(34))
+			.andExpect(jsonPath("$.included").value(95));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
+			.param("streamId", millId).param("size", "10"))
+			.andExpect(jsonPath("$.total").value(84))
+			.andExpect(jsonPath("$.items.length()").value(10));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
+			.param("category", "MOBILE_COMBUSTION"))
+			.andExpect(jsonPath("$.total").value(10));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
+			.param("leaseType", "OPERATING_LEASE_IN"))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].scope").value("SCOPE_3"))
+			.andExpect(jsonPath("$.items[0].category").value("UPSTREAM_LEASED_ASSETS"));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
+			.param("scope", "SCOPE_1").param("status", "INCLUDED"))
+			.andExpect(jsonPath("$.total").value(10));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
+			.param("status", "UNCLASSIFIED").param("facilityId", camp))
+			.andExpect(jsonPath("$.total").value(25));
 	}
 }

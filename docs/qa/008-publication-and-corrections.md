@@ -26,20 +26,21 @@ publication, corrections, the report snapshot or the audit events.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As the Analyst, mark run 005 as final. | Run 005 is FINAL. | | |
+| 1 | As the Analyst, click **Mark as final** on run 005. | A dialog "Mark Run 005 as final?" names the run with its total, says the report and the base year attach to the final run, and offers a **Review note (optional)** of up to 500 characters. | | |
+| 1a | Type the note "reconciled against the fuel ledger" and confirm. | Run 005 is FINAL. The lifecycle bar reads "Final designated by <analyst email> on <date>: reconciled against the fuel ledger" and the **History** entry "Final run designated" carries the note. | | |
 | 2 | Try to reopen the inventory. | While a run is final the page shows no **Reopen as draft** (a direct request is refused with "A run is designated final. Withdraw the designation before reopening the inventory."). | | |
 | 3 | Withdraw the designation with the reason "Run 006 will carry the approver". | The withdrawal needs a reason and appears in the history with the Analyst's email. | | |
-| 4 | Reopen. | The inventory reopens as a draft. | | |
-| 5 | Freeze. | The freeze after reopening cuts boundary version 5. | | |
+| 4 | Click **Reopen as draft**. | The dialog asks for a reason of at least 10 characters; its button stays disabled until then. Give "Approver added to the header" and confirm: the inventory reopens as a draft, the **History** reads "reopened as a draft: Approver added to the header", and boundary version 4 in the version history reads "Reopened by <analyst email> on <time>: Approver added to the header". | | |
+| 5 | Freeze. | The freeze after reopening cuts boundary version 5; the bar reads "Boundary version 5". | | |
 | 6 | Launch run 006. | Run 006 cites boundary version 5. | | |
-| 7 | Mark it final. | Run 006 is FINAL. | | |
+| 7 | Mark it final, leaving the note empty. | Run 006 is FINAL; the bar reads "Final designated by <analyst email> on <date>" with no note. | | |
 
 ### A2. Only an approver publishes
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As the Auditor, try to publish. | The Auditor's confirm dialog ends in "This action needs the REVIEWER or OWNER role in the organization.". | | |
-| 2 | As the Analyst, publish. | The inventory is PUBLISHED, with the time and the Analyst's email in the history ("Published · run #006") and in the report header ("Published <time> by analyst..."). | | |
+| 2 | As the Analyst, publish. | The inventory is PUBLISHED, with the time and the Analyst's email in the history ("Published · run #006") and in the report header ("Published <time> by analyst..."). The header also reads "Final designated" "by <analyst email> on <date>" and "Report version" 1; the PDF prints the same two rows. | | |
 
 ## B. The published record
 
@@ -81,7 +82,7 @@ Procedure 9 checks both the base year and 2026 Corporate.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | In the correction, review activity data (R2 is already corrected). | "Review activity data" says every record is already reviewed. | | |
-| 2 | Freeze, launch a run and open its report. | The report carries a **Correction of 2025 Operational** block with the reason and "Against the published run: 0 lines added, 0 removed, 1 changed; +661.5 t CO₂e in total.". The R2 line reads 22,050 t and market-based 15,600 t. The header reads "Version 2, supersedes 2025 Operational". | | |
+| 2 | Freeze, launch a run and open its report. | The report carries a **Correction of 2025 Operational** block with the reason and "Against the published run: 0 lines added, 0 removed, 1 changed; +661.5 t CO₂e in total.". The R2 line reads 22,050 t and market-based 15,600 t. The header row **Report version** reads "2, supersedes 2025 Operational", and section 1 cites the correction's own boundary version ("Boundary version 1 of 1"). | | |
 
 The +661.5 t is 1,500,000 × 0.441 = 661,500 kg: the inventory total uses
 the location-based scope 2 figure, as the report's method disclosure says.
@@ -93,7 +94,7 @@ instrument still covers 20,000 MWh and the balance grows.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Open the published inventory. | The published one is badged "PUBLISHED · SUPERSEDED", links "Superseded by a correction" and its history says "Correction created". The published page no longer offers **Create correction**; a direct request is refused with "This inventory has already been superseded.". | | |
-| 2 | Open the correction. | The correction's header shows version 2 and what it supersedes. | | |
+| 2 | Open the correction. | The correction's header shows report version 2 and what it supersedes. | | |
 
 ## Sign-off
 

@@ -18,6 +18,9 @@ const version: BoundaryVersion = {
     frozenByUserId: 'user-1',
     frozenBy: 'ama@ecoriv.test',
     frozenAt: '2026-09-01T10:00:00Z',
+    reopenedBy: null,
+    reopenedAt: null,
+    reopenReason: null,
   },
   entries: [
     {
@@ -290,6 +293,11 @@ const report: Report = {
     assuranceLevel: 'LIMITED',
     assuranceProvider: 'Verify Ghana Ltd',
     assuranceStatement: 'VG-2026-014',
+    finalDesignatedBy: null,
+    finalDesignatedAt: null,
+    finalNote: null,
+    boundaryVersionNo: 1,
+    boundaryVersionCount: 1,
   },
   byScope3Category: [
     {
@@ -462,7 +470,11 @@ test('cites the boundary version the run computed from, including silent entitie
   expect(
     await screen.findByRole('heading', { name: /company and organizational boundary/i }),
   ).toBeInTheDocument()
-  await screen.findByText(/Version 1 · Equity share · frozen .* by ama@ecoriv\.test/)
+  await screen.findByText(/Boundary version 1 · Equity share · frozen .* by ama@ecoriv\.test/)
+  // spec 05.5: the boundary version is named apart from the report version, with how many were cut
+  expect(
+    screen.getByText(/Boundary version 1 of 1: the organizational boundary/),
+  ).toBeInTheDocument()
   // Sankofa's own entity has no run line, yet the version shows it was in scope at 100% from July
   const own = screen.getByText('Sankofa Gold plc', { selector: 'span.font-medium' }).closest('tr')
   expect(own).toHaveTextContent(/Subsidiary · member from 2025-07-01/)
@@ -701,7 +713,12 @@ test('opens with the header block and prints the breakdown and factor tables', a
   ).toBeInTheDocument()
   expect(within(header).getByText(/kojo@ecoriv.test/)).toBeInTheDocument()
   expect(within(header).getByText('Ama Mensah, Sustainability Lead')).toBeInTheDocument()
+  // spec 05.5: "Report version", never a bare "Version", and the final designation line
+  expect(within(header).getByText('Report version')).toBeInTheDocument()
   expect(within(header).getByText(/2, supersedes 2025 Corporate Inventory/)).toBeInTheDocument()
+  expect(within(header).getByText('Final designated').closest('tr')).toHaveTextContent(
+    'not designated',
+  )
   expect(
     within(header).getByText(/Limited assurance by Verify Ghana Ltd \(VG-2026-014\)/),
   ).toBeInTheDocument()
@@ -809,4 +826,22 @@ test("prints the declaration as a table and each instrument's criteria outcomes 
   expect(
     screen.getByText(/certificate IREC-GH-2025-0417 · registry I-TRACK · vintage 2025/),
   ).toBeInTheDocument()
+})
+
+test('the header prints who designated the final run and the note (spec 05.5)', async () => {
+  vi.mocked(getReport).mockResolvedValue({
+    ...report,
+    header: {
+      ...report.header,
+      finalDesignatedBy: 'abena@asantegold.com',
+      finalDesignatedAt: '2026-09-12T10:00:00Z',
+      finalNote: 'reconciled against the fuel ledger',
+    },
+  })
+  renderRunDetailPage()
+
+  const header = await screen.findByRole('table', { name: 'Report header' })
+  expect(within(header).getByText('Final designated').closest('tr')).toHaveTextContent(
+    /by abena@asantegold\.com on .*: reconciled against the fuel ledger/,
+  )
 })

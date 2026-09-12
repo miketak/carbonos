@@ -41,6 +41,9 @@ const draft: Inventory = {
   copiedFromId: null,
   correctionReason: null,
   publishedAt: null,
+  finalDesignatedBy: null,
+  finalDesignatedAt: null,
+  finalNote: null,
   currentBoundaryVersionId: null,
   currentBoundaryVersionNo: null,
   createdAt: '2026-08-29T00:00:00Z',
@@ -64,6 +67,9 @@ const published: Inventory = {
   finalRunId: 'run-0',
   status: 'PUBLISHED',
   publishedAt: '2026-09-01T00:00:00Z',
+  finalDesignatedBy: null,
+  finalDesignatedAt: null,
+  finalNote: null,
   supersededById: 'inv-4',
   currentBoundaryVersionId: 'bv-1',
   currentBoundaryVersionNo: 1,
@@ -159,4 +165,24 @@ test('a new inventory can copy its view from another, which switches off pre-pop
       expect.objectContaining({ copyFromInventoryId: draft.id, prefillBoundary: false }),
     ),
   )
+})
+
+test('the form says the boundary is rebuilt when the chosen approach differs from the source (spec 05.4)', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<InventoriesPage />, {
+    route: '/app/ghg/org-1/inventories',
+    path: '/app/ghg/:organizationId/inventories',
+  })
+
+  await user.click(await screen.findByRole('button', { name: /new inventory/i }))
+  const dialog = await screen.findByRole('dialog', { name: /new inventory/i })
+  // the draft is an operational-control view and the form defaults to operational control: nothing to say
+  await user.selectOptions(within(dialog).getByLabelText(/Copy the view from/), draft.id)
+  expect(within(dialog).queryByText(/boundary is rebuilt from Table 1/)).not.toBeInTheDocument()
+  await user.selectOptions(within(dialog).getByLabelText(/Consolidation approach/), 'EQUITY_SHARE')
+  expect(
+    within(dialog).getByText(
+      /2025 Corporate Inventory is under operational control\. Under equity share the boundary is rebuilt from Table 1/,
+    ),
+  ).toBeInTheDocument()
 })

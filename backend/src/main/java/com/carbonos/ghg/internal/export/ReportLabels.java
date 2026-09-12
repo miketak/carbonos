@@ -234,4 +234,9 @@ public final class ReportLabels {
 	public static String instant(Instant instant) {
 		return instant == null ? "" : INSTANT.format(instant);
 	}
+
+	/** "12 September 2026": the day of an instant, in UTC, where the time adds nothing (spec 05.5). */
+	public static String day(Instant instant) {
+		return instant == null ? "" : date(instant.atZone(java.time.ZoneOffset.UTC).toLocalDate());
+	}
 }

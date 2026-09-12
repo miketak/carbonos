@@ -89,7 +89,9 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		var h = new Header(header.organizationName(), header.address(), header.contact(), header.periodLabel(),
 				header.periodStart(), header.periodEnd(), header.preparedBy(), header.preparedAt(), header.approvedBy(),
 				header.publishedBy(), header.publishedAt(), header.version(), header.supersedes(), supersededBy,
-				header.assuranceLevel(), header.assuranceProvider(), header.assuranceStatement());
+				header.assuranceLevel(), header.assuranceProvider(), header.assuranceStatement(),
+				header.finalDesignatedBy(), header.finalDesignatedAt(), header.finalNote(), header.boundaryVersionNo(),
+				header.boundaryVersionCount());
 		return new ReportResponse(company, operationalBoundary, p, emissions, byGas, byGasTotalKgCo2e, byGasTotalTCo2e,
 				biogenicCo2Kg, biogenicCo2T, baseYear, methodology, boundaryExclusions, exclusions, lines, run, h,
 				byScope3Category, byFacility, byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality,
@@ -110,11 +112,18 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			BigDecimal scope3KgCo2e, BigDecimal totalKgCo2e, BigDecimal sharePercent) {
 	}
 
-	/** The report's header block (spec 07.4): who, for which entity, when, which version, with what assurance. */
+	/**
+	 * The report's header block (spec 07.4): who, for which entity, when, which
+	 * version, with what assurance. {@code version} is the report version (one
+	 * more per correction); the boundary version is named apart (spec 05.5),
+	 * with who designated the final run and the review note.
+	 */
 	public record Header(String organizationName, String address, String contact, String periodLabel,
 			LocalDate periodStart, LocalDate periodEnd, String preparedBy, Instant preparedAt, String approvedBy,
 			String publishedBy, Instant publishedAt, int version, List<String> supersedes, String supersededBy,
-			AssuranceLevel assuranceLevel, String assuranceProvider, String assuranceStatement) {
+			AssuranceLevel assuranceLevel, String assuranceProvider, String assuranceStatement,
+			String finalDesignatedBy, Instant finalDesignatedAt, String finalNote, Integer boundaryVersionNo,
+			Integer boundaryVersionCount) {
 	}
 
 	/** Emissions of one scope 3 category (spec 07.4), declared or not, quantified or not (spec 07.6). */
@@ -233,7 +242,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 	public static ReportResponse of(GhgRun run, Inventory inventory, Organization organization,
 			BoundaryVersion version, BaseYear baseYear, GhgRun baseRun, Map<UUID, GhgRun> recalculatedRuns,
 			BaseYearService.Profile profile, List<MarketFactor> marketFactors,
-			List<Inventory> predecessors, Inventory successor, List<IntensityMetric> metrics) {
+			List<Inventory> predecessors, Inventory successor, List<IntensityMetric> metrics,
+			int boundaryVersionCount) {
 		var lines = run.getLines().stream().map(RunLineResponse::from).toList();
 		var header = new Header(organization.getName(), organization.getAddress(), organization.getContact(),
 				inventory.periodLabel(), run.getPeriodStart(), run.getPeriodEnd(), run.getCreatedBy(),
@@ -242,7 +252,11 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				inventory.getPublishedBy(), inventory.getPublishedAt(), predecessors.size() + 1,
 				predecessors.stream().map(Inventory::getName).toList(),
 				successor == null ? null : successor.getName(), inventory.getAssuranceLevel(),
-				inventory.getAssuranceProvider(), inventory.getAssuranceStatement());
+				inventory.getAssuranceProvider(), inventory.getAssuranceStatement(),
+				run.getId().equals(inventory.getFinalRunId()) ? inventory.getFinalDesignatedBy() : null,
+				run.getId().equals(inventory.getFinalRunId()) ? inventory.getFinalDesignatedAt() : null,
+				run.getId().equals(inventory.getFinalRunId()) ? inventory.getFinalNote() : null,
+				run.getBoundaryVersionNo(), boundaryVersionCount);
 		var byCategory = new java.util.TreeMap<ActivityCategory, BigDecimal[]>();
 		for (var line : run.getLines()) {
 			if (line.getScope() == Scope.SCOPE_3) {

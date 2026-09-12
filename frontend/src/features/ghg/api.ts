@@ -518,6 +518,10 @@ export interface Inventory {
   copiedFromId: string | null
   correctionReason: string | null
   publishedAt: string | null
+  /** Who designated the final run, when, and the reviewer's note (spec 05.5); null until a run is final. */
+  finalDesignatedBy: string | null
+  finalDesignatedAt: string | null
+  finalNote: string | null
   currentBoundaryVersionId: string | null
   currentBoundaryVersionNo: number | null
   createdAt: string
@@ -545,6 +549,23 @@ export interface Inheritance {
   inherited: number
   undecided: number
   correctionReason: string | null
+  /** Spec 05.4: across approaches the boundary was rebuilt from Table 1 and Appendix F re-derived. */
+  boundaryRebuilt: boolean
+  /** Copied assignments whose lease treatment moved scope under this approach. */
+  leaseRederived: number
+  /** Boundary exclusions the copy left behind, with the share that made them moot. */
+  droppedExclusions: DroppedExclusion[]
+}
+
+/** A boundary exclusion a copy across approaches dropped, and why (spec 05.4). */
+export interface DroppedExclusion {
+  entityId: string | null
+  entityName: string | null
+  facilityId: string | null
+  facilityName: string | null
+  reason: ExclusionReason
+  detail: string | null
+  sharePercent: number
 }
 
 export interface IntensityMetricInput {
@@ -655,6 +676,10 @@ export interface BoundaryVersionSummary {
   /** The freezer's email as it was at the time; null for versions reconstructed by migration. */
   frozenBy: string | null
   frozenAt: string
+  /** The reopen that superseded this version (spec 05.5); null while it is current. */
+  reopenedBy: string | null
+  reopenedAt: string | null
+  reopenReason: string | null
 }
 
 export interface BoundaryVersionFacility {
@@ -773,6 +798,16 @@ export interface GateResult {
 export interface ValidationReport {
   ready: boolean
   gates: GateResult[]
+  /** The records that would stop a freeze (spec 05.5), so the dialog can say why before asking. */
+  freezeBlockers: FreezeBlocker[]
+}
+
+export interface FreezeBlocker {
+  activityId: string
+  recordRef: string
+  activityType: string
+  facilityName: string
+  problem: string
 }
 
 /** Totals per gas: kg of each gas, and for the HFC and PFC blends also the kg CO2e their source applied. */
@@ -1077,6 +1112,11 @@ export interface AssignmentQuery {
   q?: string
   facilityId?: string
   status?: AssignmentStatus
+  /** Review at scale (spec 05.5): the classification filters beside status and facility. */
+  scope?: GhgScope
+  category?: ActivityCategory
+  streamId?: string
+  leaseType?: LeaseType
   page?: number
   size?: number
 }
@@ -1407,12 +1447,20 @@ export interface ReportHeader {
   approvedBy: string | null
   publishedBy: string | null
   publishedAt: string | null
+  /** The report version: 1 for the first inventory of the period, one more per correction (spec 07.4). */
   version: number
   supersedes: string[]
   supersededBy: string | null
   assuranceLevel: AssuranceLevel
   assuranceProvider: string | null
   assuranceStatement: string | null
+  /** Who designated the final run, when, and the note; null for a run that is not the final one (spec 05.5). */
+  finalDesignatedBy: string | null
+  finalDesignatedAt: string | null
+  finalNote: string | null
+  /** The boundary version the run cites, of how many were cut; null on reports snapshotted before spec 05.5. */
+  boundaryVersionNo: number | null
+  boundaryVersionCount: number | null
 }
 
 export interface Breakdown {
@@ -1966,14 +2014,22 @@ export function freezeInventory(inventoryId: string): Promise<BoundaryVersion> {
   return api<BoundaryVersion>(`/api/ghg/inventories/${inventoryId}/freeze`, { method: 'POST' })
 }
 
-export function reopenInventory(inventoryId: string): Promise<Inventory> {
-  return api<Inventory>(`/api/ghg/inventories/${inventoryId}/reopen`, { method: 'POST' })
+/** Reopening needs a reason (spec 05.5); the version it supersedes records it. */
+export function reopenInventory(inventoryId: string, reason: string): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/inventories/${inventoryId}/reopen`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
 }
 
-export function finalizeInventory(inventoryId: string, runId: string): Promise<Inventory> {
+export function finalizeInventory(
+  inventoryId: string,
+  runId: string,
+  note?: string,
+): Promise<Inventory> {
   return api<Inventory>(`/api/ghg/inventories/${inventoryId}/finalize`, {
     method: 'POST',
-    body: JSON.stringify({ runId }),
+    body: JSON.stringify({ runId, note }),
   })
 }
 
@@ -2112,9 +2168,12 @@ export function getRun(id: string): Promise<RunDetail> {
   return api<RunDetail>(`/api/ghg/runs/${id}`)
 }
 
-/** Designates the run as its inventory's final run; the inventory moves to FINAL (spec 05.1). */
-export function finalizeRun(id: string): Promise<Inventory> {
-  return api<Inventory>(`/api/ghg/runs/${id}/finalize`, { method: 'POST' })
+/** Designates the run as its inventory's final run, with the reviewer's optional note (spec 05.1, 05.5). */
+export function finalizeRun(id: string, note?: string): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/runs/${id}/finalize`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  })
 }
 
 /** Voids a run with a reason; it stays on the record with its number (spec 05.2). */

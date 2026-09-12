@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.ghg.internal.InventoryService;
+import com.carbonos.ghg.internal.web.dto.FinalNoteRequest;
 import com.carbonos.ghg.internal.web.dto.InventoryResponse;
 import com.carbonos.ghg.internal.web.dto.ReasonRequest;
 import com.carbonos.ghg.internal.web.dto.RunDetailResponse;
@@ -55,9 +56,10 @@ class RunController {
 
 	/** Designates this run as its inventory's final run (spec 05.1); the inventory moves to FINAL. */
 	@PostMapping("/runs/{id}/finalize")
-	InventoryResponse finalizeRun(@PathVariable UUID id) {
+	InventoryResponse finalizeRun(@PathVariable UUID id, @Valid @RequestBody(required = false) FinalNoteRequest body) {
 		var run = inventoryService.getRun(id);
-		return InventoryResponse.from(inventoryService.designateFinal(run.getInventory().getId(), id));
+		return InventoryResponse.from(inventoryService.designateFinal(run.getInventory().getId(), id,
+				body == null ? null : body.note()));
 	}
 
 	/** Voids the run with a reason (spec 05.2); it stays on the record with its number. */

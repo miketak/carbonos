@@ -93,8 +93,12 @@ public final class ReportPdf {
 			row(header, "Approved by", nvl(h.approvedBy(), "not yet approved"));
 			row(header, "Published", h.publishedAt() == null ? "not published"
 					: ReportLabels.instant(h.publishedAt()) + " by " + nvl(h.publishedBy(), "unknown"));
-			row(header, "Version", h.version() + (h.supersedes().isEmpty() ? "" : ", supersedes " + String.join(", ", h.supersedes()))
+			// spec 05.5: two numberings, two names; the report version here, the boundary version in section 1
+			row(header, "Report version", h.version() + (h.supersedes().isEmpty() ? "" : ", supersedes " + String.join(", ", h.supersedes()))
 					+ (h.supersededBy() == null ? "" : "; superseded by " + h.supersededBy()));
+			row(header, "Final designated", h.finalDesignatedBy() == null ? "not designated"
+					: "by " + h.finalDesignatedBy() + " on " + ReportLabels.day(h.finalDesignatedAt())
+							+ (h.finalNote() == null ? "" : ": " + h.finalNote()));
 			row(header, "Assurance", ReportLabels.label(h.assuranceLevel())
 					+ (h.assuranceProvider() == null ? "" : " by " + h.assuranceProvider())
 					+ (h.assuranceStatement() == null ? "" : " (" + h.assuranceStatement() + ")"));
@@ -103,7 +107,8 @@ public final class ReportPdf {
 			paragraph(document, "1. Company and organizational boundary", report.company().organizationName() + ", "
 					+ ReportLabels.lower(report.company().consolidationApproach()) + " approach (Corporate Standard, chapter 3)."
 					+ (report.company().boundaryVersion() == null ? ""
-							: " Boundary version " + report.company().boundaryVersion().version().versionNo() + "."));
+							: " Boundary version " + report.company().boundaryVersion().version().versionNo()
+									+ (h.boundaryVersionCount() == null ? "" : " of " + h.boundaryVersionCount()) + "."));
 			if (report.company().boundaryVersion() != null) {
 				var boundary = titled("Boundary version " + report.company().boundaryVersion().version().versionNo(), SMALL_BOLD,
 						34, 22, 22, 22);
