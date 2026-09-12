@@ -138,6 +138,11 @@ public class GhgRunLine {
 	@Column(name = "lease_type", length = 30)
 	private LeaseType leaseType;
 
+	// spec 02.4: a line calculated with a non-Kyoto factor is reported outside every scope
+	@Enumerated(EnumType.STRING)
+	@Column(name = "reporting_basis", nullable = false, length = 30)
+	private ReportingBasis reportingBasis = ReportingBasis.SCOPES;
+
 	@Column(nullable = false, precision = 14, scale = 3)
 	private BigDecimal quantity;
 
@@ -282,6 +287,7 @@ public class GhgRunLine {
 		this.scope = assignment.getScope();
 		this.category = assignment.getCategory();
 		this.leaseType = assignment.getLeaseType();
+		this.reportingBasis = factor.getReportingBasis();
 		this.quantity = activity.getQuantity();
 		this.unit = activity.getUnit();
 		this.factorUnit = factor.getUnit();
@@ -429,6 +435,29 @@ public class GhgRunLine {
 
 	public LeaseType getLeaseType() {
 		return leaseType;
+	}
+
+	public ReportingBasis getReportingBasis() {
+		return reportingBasis;
+	}
+
+	/**
+	 * The quantity the arithmetic actually multiplied by the factor: the
+	 * converted quantity after pro-rating and the accounting share. For a line
+	 * whose factor is per kilogram of gas, this is the kilograms of gas the
+	 * inventory counts (spec 02.4).
+	 */
+	public BigDecimal countedQuantity() {
+		return convertedQuantity.multiply(periodShare).multiply(weight).setScale(3, java.math.RoundingMode.HALF_UP);
+	}
+
+	/**
+	 * Whether this line counts in the scope totals (spec 02.4). A line
+	 * calculated with a non-Kyoto factor is a snapshot like any other, but no
+	 * scope total, by-scope table, by-gas row or intensity figure includes it.
+	 */
+	public boolean isInScopes() {
+		return reportingBasis.inScopes();
 	}
 
 	public BigDecimal getQuantity() {

@@ -2722,10 +2722,11 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/csv"))));
 		var rows = csv.split("\r\n");
+		// spec 02.4: reporting_basis follows the category, so a verifier reads the basis beside the scope
 		assertThat(rows[0]).startsWith("line_id,record_id,record_ref,facility_id,facility,legal_entity,country,activity_type,evidence_ref,"
-				+ "period_start,period_end,scope,category,lease_type,quantity,unit,factor_id,factor,factor_unit,"
-				+ "converted_quantity,conversion_factor,kg_co2e_per_unit,gwp_set,accounting_share,period_days,"
-				+ "covered_days,period_share,kg_co2e,");
+				+ "period_start,period_end,scope,category,reporting_basis,lease_type,quantity,unit,factor_id,factor,"
+				+ "factor_unit,converted_quantity,conversion_factor,kg_co2e_per_unit,gwp_set,accounting_share,"
+				+ "period_days,covered_days,period_share,kg_co2e,");
 		assertThat(rows).hasSize(3);
 		var dieselRow = java.util.Arrays.stream(rows).filter(row -> row.contains("Genset diesel")).findFirst().orElseThrow();
 		assertThat(dieselRow).contains("," + diesel + ",ACT-0001,").contains(",INV-2938,").contains("," + DIESEL_FACTOR + ",")
@@ -4953,5 +4954,153 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
 			.param("status", "UNCLASSIFIED").param("facilityId", camp))
 			.andExpect(jsonPath("$.total").value(25));
+	}
+
+	// --- factor identity across packs and sector-pack completeness (specs 02.3, 02.4) ---
+
+	/** Audit findings F22 and F23 (spec 02.3): the publication row is the factor's identity. */
+	@Test
+	void aPublicationRowIsOneFactorWhateverPackDeliversIt() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources (identity)");
+		var first = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/refrigerants-ar5/import")
+			.with(asMember()).with(csrf())).andExpect(status().isOk()).andExpect(jsonPath("$.tagged").value(0)));
+		assertThat(JsonPath.<Integer>read(first, "$.created")).isGreaterThan(40);
+		// the second pack selects rows the first already delivered: it tags them, it never copies them
+		var second = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import")
+			.with(asMember()).with(csrf())).andExpect(status().isOk()));
+		assertThat(JsonPath.<Integer>read(second, "$.tagged")).isGreaterThan(0);
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-oil-and-gas/import").with(asMember())
+			.with(csrf())).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import").with(asMember())
+			.with(csrf())).andExpect(status().isOk());
+		var factors = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		List<String> codes = JsonPath.<List<String>>read(factors, "$[*].packCode")
+			.stream()
+			.filter(java.util.Objects::nonNull)
+			.toList();
+		assertThat(codes).isNotEmpty().doesNotHaveDuplicates();
+		// "Refrigerant R-410A leakage (/kg)" appears once among the organization's own factors, carrying every
+		// pack that delivered it (the shared library keeps its own row: spec 02.3 merges nothing across tiers)
+		var own = "$[?(@.organizationId == '" + orgId + "' && @.name == 'Refrigerant R-410A leakage')]";
+		List<String> r410a = JsonPath.read(factors, own + ".id");
+		assertThat(r410a).hasSize(1);
+		assertThat(JsonPath.<List<List<String>>>read(factors, own + ".packs").getFirst())
+			.contains("refrigerants-ar5", "sector-mining", "sector-oil-and-gas");
+		// a sector-pack row cites the publication it comes from, not the pack that delivered it
+		var lime = "$[?(@.organizationId == '" + orgId + "' && @.name == 'Quicklime (high-calcium lime) calcination')]";
+		assertThat(JsonPath.<List<String>>read(factors, lime + ".source").getFirst())
+			.startsWith("IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3");
+		assertThat(JsonPath.<List<Integer>>read(factors, lime + ".publicationYear").getFirst()).isEqualTo(2006);
+		assertThat(JsonPath.<List<Integer>>read(factors, lime + ".dataYear").getFirst()).isEqualTo(2006);
+		assertThat(JsonPath.<List<List<String>>>read(factors, lime + ".packs").getFirst()).contains("sector-mining");
+		// approval is a property of the one factor: a re-import neither approves nor unapproves it
+		String r410aId = r410a.getFirst();
+		mvc.perform(post("/api/ghg/emission-factors/" + r410aId + "/unapprove").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+			.with(csrf())).andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
+			.andExpect(jsonPath("$[?(@.id == '" + r410aId + "')].approved")
+				.value(org.hamcrest.Matchers.hasItem(false)));
+		// the picker's filters: unapproved rows hidden unless asked for, and a search over name, source and tag
+		var approvedOnly = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors")
+			.with(asMember()).param("includeUnapproved", "false")));
+		assertThat(JsonPath.<List<String>>read(approvedOnly, "$[?(@.id == '" + r410aId + "')].id")).isEmpty();
+		var searched = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("q", "sector-oil-and-gas")));
+		assertThat(JsonPath.<List<String>>read(searched, "$[*].id")).isNotEmpty().hasSizeLessThan(
+				JsonPath.<List<String>>read(factors, "$[*].id").size());
+		// the report's factor table prints the publication, its years and the tags apart from the source
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var activity = createActivity(orgId, plant, "Lime for the CIL circuit", "40", "tonne", "2025-06-30");
+		var inventoryId = createInventory(orgId, "FY2025 identity", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		String limeId = JsonPath.<List<String>>read(factors, lime + ".id").getFirst();
+		prepare(inventoryId, activity, limeId);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.factors[0].publicationYear").value(2006))
+			.andExpect(jsonPath("$.factors[0].dataYear").value(2006))
+			.andExpect(jsonPath("$.factors[0].packs").value(org.hamcrest.Matchers.hasItem("sector-mining")))
+			.andExpect(jsonPath("$.factors[0].reportingBasis").value("SCOPES"));
+	}
+
+	/** Audit finding F56 (spec 02.4): a Montreal Protocol gas is disclosed, never counted in a scope. */
+	@Test
+	void aNonKyotoGasIsReportedOutsideTheScopes() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources (non-Kyoto)");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+			.with(csrf())).andExpect(status().isOk());
+		var factors = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		var hcfc = "$[?(@.name == 'HCFC-22 (R-22)')]";
+		String hcfcId = JsonPath.<List<String>>read(factors, hcfc + ".id").getFirst();
+		assertThat(JsonPath.<List<String>>read(factors, hcfc + ".reportingBasis").getFirst())
+			.isEqualTo("OUTSIDE_SCOPES_NON_KYOTO");
+		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-06-30");
+		var topUp = createActivity(orgId, plant, "R-22 top-up", "85", "kg", "2025-08-01");
+		var inventoryId = createInventory(orgId, "FY2025 non-Kyoto", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		var topUpAssignment = syncAndGetAssignmentId(inventoryId, topUp);
+		// a gas outside the scopes cannot be classified into scope 3
+		classifyAs(topUpAssignment, hcfcId, "SCOPE_3", "PURCHASED_GOODS_SERVICES").andExpect(status().isConflict());
+		classify(topUpAssignment, hcfcId);
+		freeze(inventoryId);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers
+					.containsString("Gases outside the scopes (Montreal Protocol)"))));
+		var runId = runAndGetId(inventoryId, "Run 001");
+		var report = body(mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			// 1,000 litres of diesel only: the 85 kg of R-22 moves no total
+			.andExpect(jsonPath("$.run.scope1KgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.emissions.totalKgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.outsideScopes[0].gas").value("HCFC-22 (R-22)"))
+			.andExpect(jsonPath("$.outsideScopes[0].kg").value(85.0))
+			.andExpect(jsonPath("$.outsideScopes[0].basis").value("FACTOR"))
+			.andExpect(jsonPath("$.outsideScopes[0].kgCo2eInformational").value(149600.0))
+			.andExpect(jsonPath("$.outsideScopes[0].informationalGwpSource").value("AR5")));
+		// the by-gas table still ties to the total, with no HFC row for the non-Kyoto gas
+		assertThat(JsonPath.<Number>read(report, "$.byGasTotalKgCo2e").doubleValue()).isEqualTo(2660.0);
+		assertThat(JsonPath.<List<Number>>read(report, "$.byGas[?(@.gas == 'HFCs')].kg").getFirst().doubleValue())
+			.isZero();
+		// the line is still a snapshot line, and the lines CSV carries its basis
+		var csv = body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember())));
+		assertThat(csv).contains("reporting_basis").contains("OUTSIDE_SCOPES_NON_KYOTO");
+	}
+
+	/** Spec 02.4: a gas recorded as itself follows the inventory's GWP set through the per-gas arithmetic. */
+	@Test
+	void aGasEmittedAsItselfFollowsTheGwpSet() throws Exception {
+		var orgId = createOrganization("Takoradi Gas (gases)");
+		var plant = createFacility(orgId, "Atuabo Gas Plant");
+		var library = body(mvc.perform(get("/api/ghg/emission-factors").with(asMember())));
+		String methane = JsonPath
+			.<List<String>>read(library, "$[?(@.name == 'Methane (CH4) emitted as gas, fossil origin')].id")
+			.getFirst();
+		var vent = createActivity(orgId, plant, "Compressor vent, measured", "12000", "kg", "2025-07-31");
+		var ar5 = createInventory(orgId, "FY2025 AR5", "OPERATIONAL_CONTROL");
+		putBoundary(ar5, plant);
+		prepare(ar5, vent, methane);
+		var ar5Run = runAndGetId(ar5, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + ar5Run + "/report").with(asMember()))
+			.andExpect(jsonPath("$.run.scope1KgCo2e").value(336000.0))
+			.andExpect(jsonPath("$.byGas[?(@.gas == 'CH4')].kg").value(org.hamcrest.Matchers.hasItem(12000.0)))
+			.andExpect(jsonPath("$.byGas[?(@.gas == 'CH4')].kgCo2e").value(org.hamcrest.Matchers.hasItem(336000.0)));
+		// the same 12 t of fossil methane on the AR6 basis
+		var ar6 = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember())
+			.with(csrf()).contentType("application/json").content("""
+					{"name": "FY2025 AR6", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+					 "purpose": "Corporate reporting", "consolidationApproach": "OPERATIONAL_CONTROL",
+					 "gwpSet": "AR6"}""")).andExpect(status().isCreated()));
+		String ar6Id = JsonPath.read(ar6, "$.id");
+		putBoundary(ar6Id, plant);
+		prepare(ar6Id, vent, methane);
+		var ar6Run = runAndGetId(ar6Id, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + ar6Run + "/report").with(asMember()))
+			.andExpect(jsonPath("$.run.scope1KgCo2e").value(357600.0));
 	}
 }

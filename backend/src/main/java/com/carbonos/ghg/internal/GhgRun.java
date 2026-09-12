@@ -206,6 +206,10 @@ public class GhgRun {
 	void addLine(GhgRunLine line) {
 		lines.add(line);
 		activityCount++;
+		// spec 02.4: a non-Kyoto line is a snapshot like any other, but no scope total counts it
+		if (!line.isInScopes()) {
+			return;
+		}
 		totalKgCo2e = totalKgCo2e.add(line.getKgCo2e());
 		switch (line.getScope()) {
 			case SCOPE_1 -> scope1KgCo2e = scope1KgCo2e.add(line.getKgCo2e());
@@ -252,7 +256,7 @@ public class GhgRun {
 	 */
 	public BigDecimal co2eUnsplitKg() {
 		if (Hibernate.isInitialized(lines)) {
-			return lines.stream().map(GhgRunLine::co2eUnsplitKg).reduce(BigDecimal.ZERO, BigDecimal::add);
+			return scopedLines().stream().map(GhgRunLine::co2eUnsplitKg).reduce(BigDecimal.ZERO, BigDecimal::add);
 		}
 		return co2eUnsplitKgLoaded == null ? BigDecimal.ZERO : co2eUnsplitKgLoaded;
 	}
@@ -260,7 +264,7 @@ public class GhgRun {
 	/** The factors behind the reconciling row, largest contribution first (spec 07.7). */
 	public List<String> unsplitFactorNames() {
 		var byFactor = new java.util.LinkedHashMap<String, BigDecimal>();
-		for (var line : lines) {
+		for (var line : scopedLines()) {
 			if (line.isUnsplit()) {
 				byFactor.merge(line.getFactorName(), line.getKgCo2e(), BigDecimal::add);
 			}
@@ -435,6 +439,16 @@ public class GhgRun {
 
 	public Integer getBoundaryVersionNo() {
 		return boundaryVersionNo;
+	}
+
+	/** The lines the scopes count (spec 02.4): every line whose factor reports inside the scopes. */
+	public List<GhgRunLine> scopedLines() {
+		return lines.stream().filter(GhgRunLine::isInScopes).toList();
+	}
+
+	/** The lines reported outside the scopes, in line order (spec 02.4). */
+	public List<GhgRunLine> outsideScopesLines() {
+		return lines.stream().filter(line -> !line.isInScopes()).toList();
 	}
 
 	public List<GhgRunLine> getLines() {

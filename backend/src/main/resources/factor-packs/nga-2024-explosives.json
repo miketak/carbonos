@@ -28,7 +28,13 @@
    "dataYear": 2024,
    "sourceDetail": "NGA Factors 2024, explosives: 0.17 t CO2-e per t of explosive, all types",
    "approved": true,
-   "notes": ""
+   "notes": "",
+   "reportingBasis": "SCOPES",
+   "sf6": 0,
+   "nf3": 0,
+   "sourcePublication": "Australian Government DCCEEW, National Greenhouse Accounts Factors, 2024",
+   "sourceUrl": "https://www.dcceew.gov.au/climate-change/publications/national-greenhouse-accounts-factors",
+   "publicationYear": 2024
   }
  ]
 }

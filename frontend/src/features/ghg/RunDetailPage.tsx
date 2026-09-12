@@ -14,12 +14,15 @@ import {
   conventionLabels,
   exclusionLabels,
   formatCo2e,
+  formatExactKg,
   formatKg,
   formatPeriod,
   formatTonnes,
   formatTonnesOfGas,
   instrumentLabels,
   marketBasisLabels,
+  outsideScopesBasisLabels,
+  publicationLine,
   scopeLabels,
 } from './format'
 import { useReportQuery } from './useGhg'
@@ -34,13 +37,18 @@ import type {
 } from './api'
 
 /** One Chapter 9 element of the report: a numbered small-caps heading over a glass card. */
+/** The sentence under the block of gases outside the scopes (spec 02.4); the PDF prints it too. */
+const OUTSIDE_SCOPES_RULE =
+  'Reported separately as optional information under Chapter 4 and Chapter 9; not included in any scope.'
+
 function Section({
   number,
   title,
   stagger,
   children,
 }: {
-  number: number
+  /** The section number; a string for a lettered section such as "6a" (spec 02.4). */
+  number: number | string
   title: string
   stagger: number
   children: ReactNode
@@ -48,7 +56,9 @@ function Section({
   return (
     <GlassCard className="animate-fade-up p-6" style={{ '--stagger': stagger } as CSSProperties}>
       <h2 className="flex items-baseline gap-2 text-sm font-semibold tracking-widest text-ink-muted uppercase">
-        <span className="font-mono">{String(number).padStart(2, '0')}</span>
+        <span className="font-mono">
+          {typeof number === 'number' ? String(number).padStart(2, '0') : number}
+        </span>
         {title}
       </h2>
       <div className="mt-3">{children}</div>
@@ -169,6 +179,15 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
   const gases = report.byGas.filter((gas) => gas.gas === 'CO2' || gas.kg !== 0 || gas.kgCo2e !== 0)
   // spec 07.7: the reconciling row for factors that publish CO2e only, and the footing that ties to section 04
   const unsplit = report.byGas.find((gas) => gas.gas === 'CO2E_UNSPLIT')
+  // spec 02.4: gases outside the scopes; absent on a report snapshot taken before the block existed
+  const outsideScopes = report.outsideScopes ?? []
+  const publishedBases = [
+    ...new Set(
+      outsideScopes
+        .map((row) => row.informationalGwpSource)
+        .filter((basis): basis is string => basis !== null && basis !== report.methodology.gwpSet),
+    ),
+  ]
   const byGasTotalTCo2e =
     report.byGasTotalTCo2e ?? report.byGas.reduce((sum, gas) => sum + gas.tCo2e, 0)
   const failingInstruments = emissions.marketInstruments.filter(
@@ -552,6 +571,56 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
             scopes.
           </span>
         </p>
+      </Section>
+
+      {/* spec 02.4: a Montreal Protocol gas is not a Kyoto gas; its mass is disclosed, its CO2e informs only */}
+      <Section number="6a" title="Gases outside the scopes (Montreal Protocol)" stagger={6}>
+        {outsideScopes.length === 0 ? (
+          <p className="text-sm text-ink-muted">
+            No gases outside the scopes were reported. {OUTSIDE_SCOPES_RULE}
+          </p>
+        ) : (
+          <>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+                  <th className="py-1.5 font-semibold">Gas</th>
+                  <th className="py-1.5 text-right font-semibold">Mass (kg)</th>
+                  <th className="py-1.5 font-semibold">Basis</th>
+                  <th className="py-1.5 font-semibold">CO₂e for information</th>
+                  <th className="py-1.5 font-semibold">Records</th>
+                </tr>
+              </thead>
+              <tbody>
+                {outsideScopes.map((row) => (
+                  <tr key={row.gas} className="border-b border-teal/5 last:border-0">
+                    <td className="py-1.5">{row.gas}</td>
+                    <td className="py-1.5 text-right tabular-nums">{formatExactKg(row.kg)}</td>
+                    <td className="py-1.5 text-xs text-ink-muted">
+                      {outsideScopesBasisLabels[row.basis]}
+                    </td>
+                    <td className="py-1.5 text-xs text-ink-muted">
+                      {row.kgCo2eInformational === null
+                        ? 'not quantified'
+                        : `${formatExactKg(row.kgCo2eInformational)} CO₂e` +
+                          (row.informationalGwpSource
+                            ? `, ${row.informationalGwpSource} as published`
+                            : '')}
+                    </td>
+                    <td className="py-1.5 text-xs text-ink-muted">{row.recordRefs.join(', ')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-2 text-xs text-ink-muted">{OUTSIDE_SCOPES_RULE}</p>
+            {publishedBases.length > 0 && (
+              <p className="mt-1 text-xs text-ink-muted">
+                {publishedBases.join(' and ')} potentials as published; not restated to{' '}
+                {report.methodology.gwpSet}.
+              </p>
+            )}
+          </>
+        )}
       </Section>
 
       <Section number={7} title="Base year" stagger={7}>
@@ -1079,7 +1148,8 @@ function FactorTable({ factors }: { factors: Report['factors'] }) {
             <th className="py-1 text-right font-semibold">kg CO₂e per unit</th>
             <th className="py-1 font-semibold">Gases (kg per unit)</th>
             <th className="py-1 font-semibold">GWP</th>
-            <th className="py-1 font-semibold">Source</th>
+            <th className="py-1 font-semibold">Packs</th>
+            <th className="py-1 font-semibold">Source (publication)</th>
           </tr>
         </thead>
         <tbody>
@@ -1091,7 +1161,11 @@ function FactorTable({ factors }: { factors: Report['factors'] }) {
               </td>
               <td className="py-1 pr-2 text-xs text-ink-muted">{gases(f)}</td>
               <td className="py-1 pr-2 text-xs">IPCC {f.gwpSet}</td>
-              <td className="py-1 text-xs text-ink-muted">{f.source}</td>
+              {/* spec 02.3: the packs that delivered the row, always apart from its publication */}
+              <td className="py-1 pr-2 text-xs text-ink-muted">
+                {f.packs && f.packs.length > 0 ? f.packs.join(', ') : 'entered by hand'}
+              </td>
+              <td className="py-1 text-xs text-ink-muted">{publicationLine(f)}</td>
             </tr>
           ))}
         </tbody>

@@ -21,12 +21,39 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class FactorPacks {
 
-	/** One factor of a pack, exactly as the file states it. */
+	/**
+	 * One factor of a pack, exactly as the file states it. A pack is a
+	 * selection, so a row carries the provenance of the publication it comes
+	 * from ({@code sourcePublication}, {@code sourceUrl},
+	 * {@code publicationYear}), not the pack's (spec 02.3); a file written
+	 * before that change leaves them null and the pack's provenance stands in.
+	 */
 	public record PackFactor(String code, String name, Scope defaultScope, ActivityCategory defaultCategory,
 			boolean scopeAgnostic, String unit, BigDecimal kgCo2ePerUnit, BigDecimal co2, BigDecimal ch4,
 			boolean ch4Fossil, BigDecimal n2o, BigDecimal hfcsKg, BigDecimal pfcsKg, BigDecimal sf6, BigDecimal nf3,
 			String blendComposition, String blendGwpSource, BigDecimal biogenicCo2, Integer dataYear,
-			String sourceDetail, boolean approved, String notes) {
+			String sourceDetail, boolean approved, String notes, String sourcePublication, String sourceUrl,
+			Integer publicationYear, ReportingBasis reportingBasis) {
+
+		/** The publication the row comes from, or the pack's when the file predates spec 02.3. */
+		public String citation(Pack pack) {
+			var publication = sourcePublication == null || sourcePublication.isBlank() ? pack.source()
+					: sourcePublication;
+			return sourceDetail == null || sourceDetail.isBlank() ? publication : publication + ": " + sourceDetail;
+		}
+
+		public String citationUrl(Pack pack) {
+			return sourceUrl == null || sourceUrl.isBlank() ? pack.sourceUrl() : sourceUrl;
+		}
+
+		public Integer citationYear(Pack pack) {
+			return publicationYear == null ? pack.publicationYear() : publicationYear;
+		}
+
+		/** SCOPES unless the row says otherwise (spec 02.4). */
+		public ReportingBasis basis() {
+			return reportingBasis == null ? ReportingBasis.SCOPES : reportingBasis;
+		}
 	}
 
 	public record Pack(String id, String name, String source, String sourceUrl, Integer publicationYear,

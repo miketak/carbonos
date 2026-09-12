@@ -264,6 +264,7 @@ const report: Report = {
         co2eUnsplitKg: 0,
       },
       biogenicCo2Kg: 0,
+      reportingBasis: 'SCOPES',
       blendGwpSource: null,
       marketBasedKgCo2e: null,
       marketFactorKgCo2ePerKwh: null,
@@ -350,6 +351,10 @@ const report: Report = {
       blendComposition: null,
       blendGwpSource: null,
       source: 'DEFRA 2025',
+      publicationYear: 2025,
+      dataYear: 2025,
+      packs: ['defra-2026'],
+      reportingBasis: 'SCOPES',
     },
   ],
   intensity: [{ name: 'Gold produced', value: 1000, unit: 'oz', tCo2ePerUnit: 0.001946 }],
@@ -730,7 +735,51 @@ test('opens with the header block and prints the breakdown and factor tables', a
   const factors = screen.getByRole('table', { name: 'Emission factors applied' })
   expect(within(factors).getByText('Diesel').closest('tr')).toHaveTextContent(/2\.66 \/ litre/)
   expect(within(factors).getByText(/CH₄ 0\.0001 \(fossil\)/)).toBeInTheDocument()
-  expect(within(factors).getByText('DEFRA 2025')).toBeInTheDocument()
+  // spec 02.3: the publication with its years, and the packs that delivered it in their own column
+  expect(
+    within(factors).getByText('DEFRA 2025 (published 2025, data year 2025)'),
+  ).toBeInTheDocument()
+  expect(within(factors).getByText('defra-2026')).toBeInTheDocument()
+})
+
+test('gases outside the scopes print in a block of their own and move no total (spec 02.4)', async () => {
+  vi.mocked(getReport).mockResolvedValue({
+    ...report,
+    outsideScopes: [
+      {
+        gas: 'HCFC-22 (R-22)',
+        kg: 85,
+        basis: 'FACTOR',
+        kgCo2eInformational: 149600,
+        informationalGwpSource: 'AR5',
+        factorName: 'HCFC-22 (R-22)',
+        recordRefs: ['ACT-0007'],
+      },
+    ],
+  })
+  renderRunDetailPage()
+
+  expect(
+    await screen.findByText('Gases outside the scopes (Montreal Protocol)'),
+  ).toBeInTheDocument()
+  const row = screen.getByText('HCFC-22 (R-22)').closest('tr')!
+  expect(row).toHaveTextContent('85 kg')
+  expect(row).toHaveTextContent('Calculated with a factor')
+  expect(row).toHaveTextContent('149,600 kg CO₂e, AR5 as published')
+  expect(row).toHaveTextContent('ACT-0007')
+  expect(
+    screen.getByText(
+      'Reported separately as optional information under Chapter 4 and Chapter 9; not included in any scope.',
+    ),
+  ).toBeInTheDocument()
+  // the scope totals are untouched: the by-gas table still foots to the report total
+  expect(screen.getAllByText(/1\.946 t/).length).toBeGreaterThan(0)
+})
+
+test('the block says so when no gas outside the scopes was reported (spec 02.4)', async () => {
+  renderRunDetailPage()
+
+  expect(await screen.findByText(/No gases outside the scopes were reported/)).toBeInTheDocument()
 })
 
 test('offers the report as a PDF, the lines and exclusions as CSV, and the frozen inputs as JSON', async () => {

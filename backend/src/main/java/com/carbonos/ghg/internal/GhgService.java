@@ -583,24 +583,52 @@ public class GhgService {
 	/** The shared library and the organization's own factors together. */
 	@Transactional(readOnly = true)
 	public List<EmissionFactor> listEmissionFactors(UUID organizationId) {
+		return listEmissionFactors(organizationId, true, null);
+	}
+
+	/**
+	 * The shared library and the organization's own factors, filtered as the
+	 * classification picker asks (spec 02.3): unapproved rows hidden until the
+	 * toggle reveals them, and a search over name, publication and pack tag.
+	 */
+	@Transactional(readOnly = true)
+	public List<EmissionFactor> listEmissionFactors(UUID organizationId, boolean includeUnapproved, String query) {
 		getOrganization(organizationId);
-		return emissionFactors.findAllByOrganizationIdIsNullOrOrganizationIdOrderByDefaultScopeAscNameAsc(organizationId);
+		var all = emissionFactors
+			.findAllByOrganizationIdIsNullOrOrganizationIdOrderByDefaultScopeAscNameAsc(organizationId);
+		var needle = trimToNull(query) == null ? null : query.trim().toLowerCase(Locale.ROOT);
+		return all.stream()
+			.filter(factor -> includeUnapproved || factor.isApproved())
+			.filter(factor -> needle == null || matches(factor, needle))
+			.toList();
+	}
+
+	/** Whether a factor answers a picker search: its name, its publication or one of its pack tags. */
+	private static boolean matches(EmissionFactor factor, String needle) {
+		if (factor.getName().toLowerCase(Locale.ROOT).contains(needle)
+				|| factor.getSource().toLowerCase(Locale.ROOT).contains(needle)) {
+			return true;
+		}
+		return factor.getPacks().stream().anyMatch(pack -> pack.toLowerCase(Locale.ROOT).contains(needle));
 	}
 
 	/** The facts of a factor as a request states them. */
 	public record FactorFacts(String name, Scope defaultScope, ActivityCategory defaultCategory, boolean scopeAgnostic,
 			String unit, BigDecimal kgCo2ePerUnit, EmissionFactor.Gases gases, String blendComposition,
-			String blendGwpSource, EmissionFactor.Provenance provenance, boolean approved) {
+			String blendGwpSource, EmissionFactor.Provenance provenance, boolean approved,
+			ReportingBasis reportingBasis) {
 	}
 
 	public EmissionFactor createEmissionFactor(UUID organizationId, FactorFacts facts) {
 		var organization = getOrganization(organizationId);
 		access.checkWrite(organization);
 		requireFactorFacts(facts);
-		return emissionFactors.save(new EmissionFactor(organization.getId(), facts.name().trim(), facts.defaultScope(),
+		var factor = new EmissionFactor(organization.getId(), facts.name().trim(), facts.defaultScope(),
 				facts.defaultCategory(), facts.scopeAgnostic(), facts.unit().trim(), facts.kgCo2ePerUnit(),
 				facts.gases(), trimToNull(facts.blendComposition()), trimToNull(facts.blendGwpSource()),
-				facts.provenance(), facts.approved(), null, null));
+				facts.provenance(), facts.approved(), null, null);
+		factor.setReportingBasis(facts.reportingBasis());
+		return emissionFactors.save(factor);
 	}
 
 	public EmissionFactor updateEmissionFactor(UUID id, FactorFacts facts) {
@@ -609,6 +637,7 @@ public class GhgService {
 		factor.update(facts.name().trim(), facts.defaultScope(), facts.defaultCategory(), facts.scopeAgnostic(),
 				facts.unit().trim(), facts.kgCo2ePerUnit(), facts.gases(), trimToNull(facts.blendComposition()),
 				trimToNull(facts.blendGwpSource()), facts.provenance(), facts.approved());
+		factor.setReportingBasis(facts.reportingBasis());
 		return factor;
 	}
 
@@ -628,7 +657,11 @@ public class GhgService {
 		emissionFactors.delete(factor);
 	}
 
-	public record ImportResult(String pack, int created, int updated) {
+	/**
+	 * What an import did (spec 02.3): rows created, rows refreshed, and rows
+	 * another pack had already delivered that only gained this pack's tag.
+	 */
+	public record ImportResult(String pack, int created, int updated, int tagged) {
 	}
 
 	/** A shipped pack with its factors, or 404. */
@@ -636,26 +669,34 @@ public class GhgService {
 		return factorPacks.find(packId).orElseThrow(() -> GhgNotFoundException.pack(packId));
 	}
 
-	/** Imports a pack as the organization's factors; a re-import updates the rows it created (by pack and code). */
+	/**
+	 * Imports a pack as the organization's factors (spec 02.3). The publication
+	 * row identifier is the identity of a factor within an organization: a row
+	 * the organization already holds gains this pack's tag and has its values
+	 * refreshed, never a copy. Approval belongs to the one factor, so a pack
+	 * neither approves a factor a user unapproved nor unapproves one another
+	 * import approved.
+	 */
 	public ImportResult importPack(UUID organizationId, String packId) {
 		var organization = getOrganization(organizationId);
 		access.checkWrite(organization);
 		var pack = factorPacks.find(packId).orElseThrow(() -> GhgNotFoundException.pack(packId));
-		var existing = emissionFactors.findAllByOrganizationIdAndPack(organizationId, packId)
+		var existing = emissionFactors.findAllByOrganizationIdAndPackCodeIsNotNull(organizationId)
 			.stream()
 			.collect(Collectors.toMap(EmissionFactor::getPackCode, Function.identity(), (a, b) -> a));
 		int created = 0;
 		int updated = 0;
+		int tagged = 0;
 		for (var row : pack.factors()) {
 			if (units.dimensionOf(row.unit()).isEmpty()) {
 				continue; // a unit the registry cannot convert; the generator keeps them out, but a pack may carry one
 			}
 			var gases = new EmissionFactor.Gases(nz(row.co2()), nz(row.ch4()), row.ch4Fossil(), nz(row.n2o()),
 					nz(row.hfcsKg()), nz(row.pfcsKg()), nz(row.sf6()), nz(row.nf3()), nz(row.biogenicCo2()));
-			var citation = pack.source() + ": " + row.sourceDetail();
+			// spec 02.3: the row cites the publication it comes from, not the pack that delivered it
+			var citation = row.citation(pack);
 			var provenance = new EmissionFactor.Provenance(citation.length() > 500 ? citation.substring(0, 497) + "..." : citation,
-					pack.sourceUrl(),
-					pack.publicationYear(), row.dataYear(), null, null, trimToNull(row.notes()));
+					row.citationUrl(pack), row.citationYear(pack), row.dataYear(), null, null, trimToNull(row.notes()));
 			var current = existing.get(row.code());
 			if (current == null) {
 				var factor = new EmissionFactor(organization.getId(), row.name(), row.defaultScope(),
@@ -663,18 +704,28 @@ public class GhgService {
 						trimToNull(row.blendComposition()), trimToNull(row.blendGwpSource()), provenance, row.approved(),
 						packId, row.code());
 				factor.setGridRegion(gridRegionOf(row.code()));
-				emissionFactors.save(factor);
+				factor.setReportingBasis(row.basis());
+				existing.put(row.code(), emissionFactors.save(factor));
 				created++;
 			}
 			else {
+				var alreadyTagged = current.getPacks().contains(packId);
+				// approval is a property of the one factor, not of the pack that delivered it again
 				current.update(row.name(), row.defaultScope(), row.defaultCategory(), row.scopeAgnostic(), row.unit(),
 						row.kgCo2ePerUnit(), gases, trimToNull(row.blendComposition()), trimToNull(row.blendGwpSource()),
 						provenance, current.isApproved());
 				current.setGridRegion(gridRegionOf(row.code()));
-				updated++;
+				current.setReportingBasis(row.basis());
+				current.addPack(packId);
+				if (alreadyTagged) {
+					updated++;
+				}
+				else {
+					tagged++;
+				}
 			}
 		}
-		return new ImportResult(packId, created, updated);
+		return new ImportResult(packId, created, updated, tagged);
 	}
 
 	/** The grid a pack row serves (spec 03.4): Ember rows carry the alpha-3 code, eGRID rows the subregion. */

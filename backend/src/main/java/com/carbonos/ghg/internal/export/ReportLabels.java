@@ -21,11 +21,13 @@ import com.carbonos.ghg.internal.MarketInstrument;
 import com.carbonos.ghg.internal.RecalculationStatus;
 import com.carbonos.ghg.internal.RecalculationTrigger;
 import com.carbonos.ghg.internal.RelationshipType;
+import com.carbonos.ghg.internal.ReportingBasis;
 import com.carbonos.ghg.internal.Scope;
 import com.carbonos.ghg.internal.Scope2Criterion;
 import com.carbonos.ghg.internal.Scope2MarketBasis;
 import com.carbonos.ghg.internal.StreamKind;
 import com.carbonos.ghg.internal.StructuralChangeConvention;
+import com.carbonos.ghg.internal.web.dto.ReportResponse;
 
 /**
  * The words the PDF prints for every enum the report carries, and the date
@@ -47,7 +49,8 @@ public final class ReportLabels {
 			ActivityCategory.class, Scope2MarketBasis.class, MarketInstrument.class, AssuranceLevel.class,
 			ExclusionReason.class, DataQuality.class, LeaseType.class, StreamKind.class, InventoryStatus.class,
 			GwpSet.class, StructuralChangeConvention.class, RecalculationStatus.class, RecalculationTrigger.class,
-			Scope2Criterion.class, Scope2Criterion.Answer.class, RelationshipType.class);
+			Scope2Criterion.class, Scope2Criterion.Answer.class, RelationshipType.class, ReportingBasis.class,
+			ReportResponse.OutsideScopesBasis.class);
 
 	private ReportLabels() {
 	}
@@ -155,6 +158,14 @@ public final class ReportLabels {
 				case MET -> "met";
 				case NOT_MET -> "not met";
 				case UNANSWERED -> "unanswered";
+			};
+			case ReportingBasis basis -> switch (basis) {
+				case SCOPES -> "Counted in the scopes";
+				case OUTSIDE_SCOPES_NON_KYOTO -> "Outside the scopes (Montreal Protocol, not a Kyoto gas)";
+			};
+			case ReportResponse.OutsideScopesBasis basis -> switch (basis) {
+				case FACTOR -> "Calculated with a factor";
+				case RECORDED_MASS -> "Recorded mass of an excluded record";
 			};
 			case RelationshipType relationship -> switch (relationship) {
 				case SUBSIDIARY -> "Group company or subsidiary (financial control)";

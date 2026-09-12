@@ -25,6 +25,7 @@ import com.carbonos.ghg.internal.InventoryStatus;
 import com.carbonos.ghg.internal.MarketFactor;
 import com.carbonos.ghg.internal.Organization;
 import com.carbonos.ghg.internal.RecalculationStatus;
+import com.carbonos.ghg.internal.ReportingBasis;
 import com.carbonos.ghg.internal.Scope;
 import com.carbonos.ghg.internal.Scope2MarketBasis;
 import com.carbonos.ghg.internal.StructuralChangeConvention;
@@ -42,8 +43,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		List<RunExclusionResponse> exclusions, List<RunLineResponse> lines, RunResponse run, Header header,
 		List<CategoryFigure> byScope3Category, List<Breakdown> byFacility, List<Breakdown> byEntity,
 		List<Breakdown> byCountry, List<FactorRow> factors, List<Intensity> intensity,
-		List<ExclusionSummary> exclusionSummary, DataQualitySection dataQuality, SincePublication sincePublication,
-		Correction correction) {
+		List<ExclusionSummary> exclusionSummary, DataQualitySection dataQuality, List<OutsideScopesRow> outsideScopes,
+		SincePublication sincePublication, Correction correction) {
 
 	/** The by-gas table's reconciling row (spec 07.7): CO2e of the lines whose factor published no gas split. */
 	public static final String CO2E_UNSPLIT = "CO2E_UNSPLIT";
@@ -69,7 +70,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		return new ReportResponse(company, operationalBoundary, period, emissions, byGas, byGasTotalKgCo2e,
 				byGasTotalTCo2e, biogenicCo2Kg, biogenicCo2T, baseYear, methodology, boundaryExclusions, exclusions, lines,
 				run, header, byScope3Category, byFacility, byEntity, byCountry, factors, intensity, exclusionSummary,
-				dataQuality, sincePublication, correction);
+				dataQuality, outsideScopes, sincePublication, correction);
 	}
 
 	/**
@@ -84,7 +85,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			return new ReportResponse(company, operationalBoundary, p, emissions, byGas, byGasTotalKgCo2e,
 					byGasTotalTCo2e, biogenicCo2Kg, biogenicCo2T, baseYear, methodology, boundaryExclusions, exclusions,
 					lines, run, header, byScope3Category, byFacility, byEntity, byCountry, factors, intensity,
-					exclusionSummary, dataQuality, sincePublication, correction);
+					exclusionSummary, dataQuality, outsideScopes, sincePublication, correction);
 		}
 		var h = new Header(header.organizationName(), header.address(), header.contact(), header.periodLabel(),
 				header.periodStart(), header.periodEnd(), header.preparedBy(), header.preparedAt(), header.approvedBy(),
@@ -95,7 +96,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		return new ReportResponse(company, operationalBoundary, p, emissions, byGas, byGasTotalKgCo2e, byGasTotalTCo2e,
 				biogenicCo2Kg, biogenicCo2T, baseYear, methodology, boundaryExclusions, exclusions, lines, run, h,
 				byScope3Category, byFacility, byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality,
-				sincePublication, correction);
+				outsideScopes, sincePublication, correction);
 	}
 
 	/** The records left out under one reason, with the emissions the accountant estimated for them (spec 04.4). */
@@ -136,11 +137,37 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			BigDecimal scope2MarketBasedKgCo2e, BigDecimal scope3KgCo2e, BigDecimal totalKgCo2e, BigDecimal totalTCo2e) {
 	}
 
-	/** One factor exactly as the run applied it (spec 07.4). */
+	/**
+	 * One factor exactly as the run applied it (spec 07.4), citing the
+	 * publication it comes from with its years, the packs that delivered it and
+	 * its reporting basis (specs 02.3, 02.4).
+	 */
 	public record FactorRow(UUID factorId, String name, String unit, GwpSet gwpSet, BigDecimal kgCo2ePerUnit,
 			BigDecimal co2, BigDecimal ch4, boolean ch4Fossil, BigDecimal n2o, BigDecimal hfcsKg, BigDecimal pfcsKg,
 			BigDecimal sf6, BigDecimal nf3, BigDecimal biogenicCo2, String blendComposition, String blendGwpSource,
-			String source) {
+			String source, Integer publicationYear, Integer dataYear, List<String> packs,
+			ReportingBasis reportingBasis) {
+	}
+
+	/**
+	 * One gas reported outside the scopes (spec 02.4): a Montreal Protocol gas
+	 * the inventory emitted, its mass, whether a factor calculated it or a
+	 * record's mass was excluded (spec 04.8), and the CO2e the source publishes
+	 * for information on its own GWP basis, never rescaled.
+	 */
+	public record OutsideScopesRow(String gas, BigDecimal kg, OutsideScopesBasis basis,
+			BigDecimal kgCo2eInformational, String informationalGwpSource, String factorName,
+			List<String> recordRefs) {
+	}
+
+	/** Where an outside-the-scopes row comes from (spec 02.4). */
+	public enum OutsideScopesBasis {
+
+		/** Calculated with a factor whose reporting basis is OUTSIDE_SCOPES_NON_KYOTO. */
+		FACTOR,
+
+		/** A record excluded under the non-Kyoto reason of spec 04.8, with its mass recorded. */
+		RECORDED_MASS
 	}
 
 	/** Total tCO2e per unit of an intensity denominator (spec 07.4). */
@@ -258,7 +285,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				run.getId().equals(inventory.getFinalRunId()) ? inventory.getFinalNote() : null,
 				run.getBoundaryVersionNo(), boundaryVersionCount);
 		var byCategory = new java.util.TreeMap<ActivityCategory, BigDecimal[]>();
-		for (var line : run.getLines()) {
+		for (var line : run.scopedLines()) {
 			if (line.getScope() == Scope.SCOPE_3) {
 				var figure = byCategory.computeIfAbsent(line.getCategory(),
 						c -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO });
@@ -289,7 +316,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			.map(f -> new FactorRow(f.getFactorId(), f.getName(), f.getUnit(), f.getGwpSet(), f.getKgCo2ePerUnit(),
 					f.getCo2KgPerUnit(), f.getCh4KgPerUnit(), f.isCh4Fossil(), f.getN2oKgPerUnit(),
 					f.getHfcsKgPerUnit(), f.getPfcsKgPerUnit(), f.getSf6KgPerUnit(), f.getNf3KgPerUnit(),
-					f.getBiogenicCo2KgPerUnit(), f.getBlendComposition(), f.getBlendGwpSource(), f.getSource()))
+					f.getBiogenicCo2KgPerUnit(), f.getBlendComposition(), f.getBlendGwpSource(), f.getSource(),
+					f.getPublicationYear(), f.getDataYear(), f.getPacks(), f.getReportingBasis()))
 			.toList();
 		var intensity = metrics.stream()
 			.map(m -> new Intensity(m.getName(), m.getValue(), m.getUnit(),
@@ -297,7 +325,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			.toList();
 		var scopesCovered = EnumSet.noneOf(Scope.class);
 		var scope3Reported = EnumSet.noneOf(ActivityCategory.class);
-		for (var line : run.getLines()) {
+		for (var line : run.scopedLines()) {
 			scopesCovered.add(line.getScope());
 			if (line.getScope() == Scope.SCOPE_3) {
 				scope3Reported.add(line.getCategory());
@@ -316,7 +344,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			byGas.add(Gas.unsplit(unsplitKg, run.unsplitFactorNames()));
 		}
 		var byGasTotalKg = byGas.stream().map(Gas::kgCo2e).reduce(BigDecimal.ZERO, BigDecimal::add);
-		var sources = run.getLines().stream().map(line -> line.getFactorName()).distinct().sorted().toList();
+		var sources = run.getLines().stream().map(GhgRunLine::getFactorName).distinct().sorted().toList();
 		var reports = run.assessmentReports();
 		var blendReports = reports.stream().skip(1).toList();
 		var methane = gwp == GwpSet.AR6
@@ -356,7 +384,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 						+ " not applied, as the lines state.";
 		var scope2Methods = "Scope 2 is reported location-based and market-based, each labeled (Scope 2 Guidance, "
 				+ "chapter 4). " + basis + failingClause + " The inventory total uses the location-based figure.";
-		var proxies = run.getLines().stream().filter(GhgRunLine::isProxy).count();
+		var proxies = run.scopedLines().stream().filter(GhgRunLine::isProxy).count();
 		var proxyClause = proxies == 0 ? ""
 				: " " + proxies + " line" + (proxies == 1 ? " uses" : "s use") + " a proxy factor for a source with no "
 						+ "published factor, with the justification on the line.";
@@ -389,6 +417,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		}
 		var exclusionSummary = exclusionSummary(run);
 		var dataQuality = dataQuality(run, inventory.getUncertaintyStatement());
+		var outsideScopes = outsideScopes(run);
 		return new ReportResponse(
 				new Company(organization.getName(), run.getConsolidationApproach(),
 						version == null ? null : BoundaryVersionResponse.from(version)),
@@ -412,7 +441,38 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 						: version.getExclusions().stream().map(BoundaryExclusionResponse::from).toList(),
 				run.getExclusions().stream().map(RunExclusionResponse::from).toList(), lines,
 				RunResponse.from(run), header, byScope3Category, byFacility, byEntity, byCountry, factorRows,
-				intensity, exclusionSummary, dataQuality, null, null);
+				intensity, exclusionSummary, dataQuality, outsideScopes, null, null);
+	}
+
+	/**
+	 * The gases the inventory emitted outside the scopes (spec 02.4), one row
+	 * per gas: the mass, the CO2e the source publishes for information on its
+	 * own GWP basis, and the records behind it. Never rescaled to the
+	 * inventory's set, because a non-Kyoto gas has no potential in it.
+	 */
+	private static List<OutsideScopesRow> outsideScopes(GhgRun run) {
+		var masses = new java.util.LinkedHashMap<String, BigDecimal>();
+		var informational = new java.util.LinkedHashMap<String, BigDecimal>();
+		var basisOfGas = new java.util.LinkedHashMap<String, String>();
+		var refs = new java.util.LinkedHashMap<String, List<String>>();
+		for (var line : run.outsideScopesLines()) {
+			var gas = line.getFactorName();
+			masses.merge(gas, line.countedQuantity(), BigDecimal::add);
+			informational.merge(gas, line.getKgCo2e(), BigDecimal::add);
+			if (line.getBlendGwpSource() != null) {
+				basisOfGas.putIfAbsent(gas, line.getBlendGwpSource());
+			}
+			var ref = line.getRecordRef();
+			if (ref != null && !ref.isBlank()) {
+				refs.computeIfAbsent(gas, k -> new ArrayList<>()).add(ref);
+			}
+		}
+		return masses.entrySet()
+			.stream()
+			.map(e -> new OutsideScopesRow(e.getKey(), e.getValue(), OutsideScopesBasis.FACTOR,
+					informational.get(e.getKey()), basisOfGas.get(e.getKey()), e.getKey(),
+					refs.getOrDefault(e.getKey(), List.of())))
+			.toList();
 	}
 
 	/** Excluded records grouped by reason with the estimated magnitude summed (spec 04.4, Chapter 9). */
@@ -443,7 +503,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		var weighted = BigDecimal.ZERO;
 		var weightedBase = BigDecimal.ZERO;
 		var withUncertainty = 0;
-		for (var line : run.getLines()) {
+		for (var line : run.scopedLines()) {
 			var tier = line.getDataQualityTier() == null ? 3 : line.getDataQualityTier();
 			var sums = byTier.computeIfAbsent(tier, k -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });
 			switch (line.getScope()) {
@@ -480,10 +540,10 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 						+ "(assumption): " + String.join("; ", parts) + "."
 						+ (weightedUncertainty == null
 								? " No line records a quantitative uncertainty; the statement below is qualitative."
-								: " " + withUncertainty + " of " + run.getLines().size()
+								: " " + withUncertainty + " of " + run.scopedLines().size()
 										+ " lines record a quantitative uncertainty; weighted by emissions it is ±"
 										+ weightedUncertainty.stripTrailingZeros().toPlainString() + "% for those lines.");
-		return new DataQualitySection(rows, weightedUncertainty, withUncertainty, run.getLines().size(), statement,
+		return new DataQualitySection(rows, weightedUncertainty, withUncertainty, run.scopedLines().size(), statement,
 				uncertaintyStatement);
 	}
 
@@ -492,7 +552,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			java.util.function.Function<GhgRunLine, String> name) {
 		var groups = new java.util.LinkedHashMap<String, BigDecimal[]>();
 		var ids = new java.util.HashMap<String, UUID>();
-		for (var line : run.getLines()) {
+		for (var line : run.scopedLines()) {
 			var key = name.apply(line);
 			ids.putIfAbsent(key, id.apply(line));
 			var sums = groups.computeIfAbsent(key, k -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO,

@@ -24,6 +24,7 @@ import com.carbonos.ghg.internal.MarketInstrument;
 import com.carbonos.ghg.internal.RecalculationStatus;
 import com.carbonos.ghg.internal.RecalculationTrigger;
 import com.carbonos.ghg.internal.RelationshipType;
+import com.carbonos.ghg.internal.ReportingBasis;
 import com.carbonos.ghg.internal.Scope;
 import com.carbonos.ghg.internal.Scope2Criterion;
 import com.carbonos.ghg.internal.Scope2MarketBasis;
@@ -221,10 +222,12 @@ class ReportPdfLayoutTest {
 		var factors = List.of(new ReportResponse.FactorRow(FACTOR_ID, "Diesel (100% mineral diesel)", "litre", GwpSet.AR5,
 				new BigDecimal("2.66"), new BigDecimal("2.6307"), new BigDecimal("0.0001"), true, new BigDecimal("0.0001"),
 				BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null,
-				"UK Government GHG Conversion Factors for Company Reporting 2025"),
+				"UK Government GHG Conversion Factors for Company Reporting 2025", 2026, 2026, List.of("defra-2026"),
+				ReportingBasis.SCOPES),
 				new ReportResponse.FactorRow(UUID.randomUUID(), "Grid electricity, Ghana (2024)", "kWh", GwpSet.AR5,
 						new BigDecimal("0.469"), BigDecimal.ZERO, BigDecimal.ZERO, true, BigDecimal.ZERO, BigDecimal.ZERO,
-						BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null, "Ember 2024"));
+						BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null, "Ember 2024", 2025,
+						2024, List.of("ghana", "sector-mining"), ReportingBasis.SCOPES));
 		var byFacility = List.of(new ReportResponse.Breakdown(FACILITY_ID, FIRST_FACILITY, total, BigDecimal.ZERO, BigDecimal.ZERO,
 				BigDecimal.ZERO, total, tonnes(total)),
 				new ReportResponse.Breakdown(UUID.randomUUID(), "Nkran Camp", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
@@ -262,7 +265,11 @@ class ReportPdfLayoutTest {
 				new BigDecimal("18000"), new BigDecimal("18"), baseYear, methodology, version.exclusions(), exclusions, lines,
 				run, header, byCategory, byFacility, byEntity, byCountry, factors,
 				List.of(new ReportResponse.Intensity("Gold produced", new BigDecimal("120000"), "oz", new BigDecimal("0.346056"))),
-				exclusionSummary, dataQuality, null, null);
+				exclusionSummary, dataQuality,
+				List.of(new ReportResponse.OutsideScopesRow("HCFC-22 (R-22)", new BigDecimal("85"),
+						ReportResponse.OutsideScopesBasis.FACTOR, new BigDecimal("149600"), "AR5", "HCFC-22 (R-22)",
+						List.of("ACT-0001"))),
+				null, null);
 	}
 
 	private static RunLineResponse line(int i, BigDecimal kg) {
@@ -276,7 +283,7 @@ class ReportPdfLayoutTest {
 				new RunResponse.ByGas(kg.multiply(new BigDecimal("0.9")), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
 						BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
 						BigDecimal.ZERO),
-				BigDecimal.ZERO, null, null, null, null, null, null, null, null, null);
+				BigDecimal.ZERO, null, null, null, null, null, null, null, null, null, ReportingBasis.SCOPES);
 	}
 
 	private static ReportResponse.Gas gas(String name, BigDecimal kg, BigDecimal kgCo2e) {

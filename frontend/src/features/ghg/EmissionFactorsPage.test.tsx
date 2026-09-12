@@ -62,8 +62,10 @@ const diesel: EmissionFactor = {
   note: null,
   approved: true,
   pack: null,
+  packs: [],
   packCode: null,
   gridRegion: null,
+  reportingBasis: 'SCOPES',
 }
 
 const hfo: EmissionFactor = {
@@ -79,6 +81,7 @@ const hfo: EmissionFactor = {
   validTo: '2025-12-31',
   approved: false,
   pack: 'sector-mining',
+  packs: ['refrigerants-ar5', 'sector-mining'],
   packCode: 'X',
   gridRegion: null,
 }
@@ -102,7 +105,7 @@ beforeEach(() => {
   vi.mocked(getOrganization).mockReset()
   vi.mocked(importFactorPack)
     .mockReset()
-    .mockResolvedValue({ pack: 'sector-mining', created: 53, updated: 0 })
+    .mockResolvedValue({ pack: 'sector-mining', created: 53, updated: 0, tagged: 3 })
   vi.mocked(setFactorApproval)
     .mockReset()
     .mockResolvedValue({ ...hfo, approved: true })
@@ -126,7 +129,10 @@ test('lists the shared library and the organization factors with their provenanc
     ),
   ).toBeInTheDocument()
   expect(within(ownRow).getByText('Not approved')).toBeInTheDocument()
-  expect(within(ownRow).getByText('pack sector-mining')).toBeInTheDocument()
+  // spec 02.3: the packs that delivered the row stand in a column of their own, apart from the source
+  const packTags = within(ownRow).getAllByTitle('Delivered by a factor pack')
+  expect(packTags.map((tag) => tag.textContent)).toEqual(['refrigerants-ar5', 'sector-mining'])
+  expect(within(ownRow).queryByText(/GOIL.*sector-mining/)).not.toBeInTheDocument()
   const libraryRow = screen.getByText('Diesel (100% mineral diesel)').closest('tr')!
   expect(within(libraryRow).getByText('Approved')).toBeInTheDocument()
   expect(within(libraryRow).queryByRole('button')).not.toBeInTheDocument()
@@ -139,10 +145,34 @@ test('imports a pack and approves a factor', async () => {
 
   await user.click(await screen.findByRole('button', { name: /^Import pack/ }))
   await waitFor(() => expect(importFactorPack).toHaveBeenCalledWith('org-1', 'sector-mining'))
-  expect(await screen.findByText(/53 factors added, 0 updated/)).toBeInTheDocument()
+  expect(
+    await screen.findByText(
+      /53 factors added, 0 updated, 3 already held from another pack and tagged/,
+    ),
+  ).toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: 'Approve' }))
   await waitFor(() => expect(setFactorApproval).toHaveBeenCalledWith('f-2', true))
+})
+
+test('a gas outside the scopes is marked on the page and can be chosen on the add form (spec 02.4)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listEmissionFactors).mockResolvedValue([
+    diesel,
+    { ...hfo, id: 'f-3', name: 'HCFC-22 (R-22)', reportingBasis: 'OUTSIDE_SCOPES_NON_KYOTO' },
+  ])
+  renderPage()
+
+  const row = (await screen.findByText('HCFC-22 (R-22)')).closest('tr')!
+  expect(
+    within(row).getByText('Outside the scopes (Montreal Protocol, not a Kyoto gas)'),
+  ).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: /^add factor$/i }))
+  const basis = await screen.findByLabelText('Reporting basis')
+  expect(basis).toHaveValue('SCOPES')
+  await user.selectOptions(basis, 'OUTSIDE_SCOPES_NON_KYOTO')
+  expect(basis).toHaveValue('OUTSIDE_SCOPES_NON_KYOTO')
 })
 
 test('a verifier sees Add factor, Import pack, Approve and Delete disabled with the role they need (spec 01.4)', async () => {
