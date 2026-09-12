@@ -332,8 +332,7 @@ The findings refer to the report of 11 September 2026
 (`docs/reviews/2026-09-11-ghg-officer-ui-audit.md`), not to the numbering
 of the first audit used in the sections before this one.
 
-All ten are implemented as of 2026-09-12; specs 04.7 and 04.8 ship together in the
-last pull request of the batch.
+All ten are implemented as of 2026-09-12, in five pull requests (#57 to #61).
 
 | Priority | Findings | Spec | Done |
 |---|---|---|---|
@@ -343,7 +342,7 @@ last pull request of the batch.
 | 4 | F3, F6 | 01.3 | Yes (PR #59) |
 | 5 | F2, F4 | 01.4 | Yes (PR #59) |
 | 6 | F22, F23 | 02.3 | Yes (PR #60) |
-| 7 | F41, F34 | 04.7 | Yes |
-| 8 | F35, F26 | 04.8 (factor rows in 02.4) | Yes |
+| 7 | F41, F34 | 04.7 | Yes (PR #61) |
+| 8 | F35, F26 | 04.8 (factor rows in 02.4) | Yes (PR #61) |
 | 9 | F56 | 02.4 | Yes (PR #60) |
 | 10 | F36, F43, F54, F31 | 05.5 | Yes (PR #58) |
