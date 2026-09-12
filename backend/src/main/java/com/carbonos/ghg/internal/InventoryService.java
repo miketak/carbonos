@@ -1537,8 +1537,10 @@ public class InventoryService {
 						+ ", which does not cover the reporting period."));
 			}
 			if (chosen.isCo2eOnly() && co2eOnlyNamed.add(chosen.getId())) {
+				// spec 07.7: the warning says what the report does with the line
 				factorFindings.add(new Finding(Severity.WARNING, "'" + chosen.getName()
-						+ "' publishes CO2e only: the by-gas table carries no CH4 or N2O for it, and the report says so."));
+						+ "' publishes CO2e only. Its emissions are counted in the scope totals and appear in the by-gas "
+						+ "table on the row 'CO2e from factors without a gas split', not under CO2, CH4 or N2O."));
 			}
 			if (Conversion.needsDensity(units, activityUnit, factorUnit)) {
 				// spec 02.2: mass and volume meet through a density; a typical value is disclosed
@@ -1760,17 +1762,13 @@ public class InventoryService {
 			var perUnit = factor.kgCo2ePerUnit(gwp);
 			var counted = convertedQuantity.multiply(periodShare);
 			var kgCo2e = round(counted.multiply(perUnit).multiply(share));
-			var gases = new GhgRunLine.Gases(round(convertedQuantity.multiply(factor.getCo2KgPerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.getCh4KgPerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.getN2oKgPerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.hfcsKgCo2ePerUnit(gwp)).multiply(share)),
-					round(convertedQuantity.multiply(factor.pfcsKgCo2ePerUnit(gwp)).multiply(share)),
-					round(convertedQuantity.multiply(factor.getSf6KgPerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.getNf3KgPerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.getBiogenicCo2KgPerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.getHfcsKgPerUnit()).multiply(share)),
-					round(convertedQuantity.multiply(factor.getPfcsKgPerUnit()).multiply(share)),
-					factor.blendGwpSourceFor(gwp), factor.isCh4Fossil());
+			// spec 07.7: every gas carries the same two shares as kgCo2e, so the gas CO2e contributions tie to it
+			var gases = new GhgRunLine.Gases(gas(counted, factor.getCo2KgPerUnit(), share),
+					gas(counted, factor.getCh4KgPerUnit(), share), gas(counted, factor.getN2oKgPerUnit(), share),
+					gas(counted, factor.hfcsKgCo2ePerUnit(gwp), share), gas(counted, factor.pfcsKgCo2ePerUnit(gwp), share),
+					gas(counted, factor.getSf6KgPerUnit(), share), gas(counted, factor.getNf3KgPerUnit(), share),
+					gas(counted, factor.getBiogenicCo2KgPerUnit(), share), gas(counted, factor.getHfcsKgPerUnit(), share),
+					gas(counted, factor.getPfcsKgPerUnit(), share), factor.blendGwpSourceFor(gwp), factor.isCh4Fossil());
 			GhgRunLine.Market market = null;
 			if (assignment.getScope() == Scope.SCOPE_2) {
 				market = marketBased(units, inventory, assignment, instruments.get(activity.getFacility().getId()),
@@ -2011,6 +2009,15 @@ public class InventoryService {
 
 	private static BigDecimal round(BigDecimal value) {
 		return value.setScale(3, RoundingMode.HALF_UP);
+	}
+
+	/**
+	 * One gas of a line (spec 07.7): the counted quantity (already pro-rated by
+	 * the period share) times the factor's per-unit component times the
+	 * accounting share, stored to three decimals of a kilogram.
+	 */
+	private static BigDecimal gas(BigDecimal counted, BigDecimal componentPerUnit, BigDecimal share) {
+		return round(counted.multiply(componentPerUnit).multiply(share));
 	}
 
 	private InventoryAssignment getAssignment(UUID id) {

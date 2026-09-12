@@ -42,6 +42,8 @@ public final class RunCsv {
 				new Column<>("hfcs_kg_co2e", GhgRunLine::getHfcsKgCo2e), new Column<>("pfcs_kg", GhgRunLine::getPfcsKg),
 				new Column<>("pfcs_kg_co2e", GhgRunLine::getPfcsKgCo2e), new Column<>("sf6_kg", GhgRunLine::getSf6Kg),
 				new Column<>("nf3_kg", GhgRunLine::getNf3Kg), new Column<>("biogenic_co2_kg", GhgRunLine::getBiogenicCo2Kg),
+				// spec 07.7: the line's kg CO2e when its factor published no gas split, else 0
+				new Column<>("co2e_unsplit_kg", GhgRunLine::co2eUnsplitKg),
 				new Column<>("market_based_kg_co2e", GhgRunLine::getMarketBasedKgCo2e),
 				new Column<>("market_instrument", GhgRunLine::getMarketInstrument),
 				new Column<>("market_factor_kg_co2e_per_kwh", GhgRunLine::getMarketFactorKgCo2ePerKwh),

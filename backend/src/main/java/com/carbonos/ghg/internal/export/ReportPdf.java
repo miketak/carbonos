@@ -36,6 +36,13 @@ public final class ReportPdf {
 	private static final Font SMALL = FontFactory.getFont(FontFactory.HELVETICA, 7.5f);
 	private static final Font SMALL_BOLD = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f);
 
+	/** The by-gas table's reconciling row and the sentences under it (spec 07.7), as the page prints them. */
+	static final String UNSPLIT_ROW = "CO2e from factors without a gas split";
+	static final String UNSPLIT_RULE = "Factors that publish CO2e only are listed on one row. Their CO2, CH4 and N2O are "
+			+ "not separable; the source did not publish them.";
+	static final String MARKET_BASED_NOTE = "The market-based scope 2 figure is not split by gas; its instruments and "
+			+ "balance are in section 04.";
+
 	private ReportPdf() {
 	}
 
@@ -149,10 +156,24 @@ public final class ReportPdf {
 			heading(document, "5. Emissions by gas");
 			var gases = table(3, 40, 30, 30);
 			head(gases, "Gas", "Mass (t)", "t CO2e");
+			ReportResponse.Gas unsplit = null;
 			for (var g : report.byGas()) {
-				row(gases, g.gas(), tonnes(g.tonnes()), tonnes(g.tCo2e()));
+				if (g.isUnsplit()) {
+					unsplit = g;
+					row(gases, UNSPLIT_ROW, "not separable", tonnes(g.tCo2e()));
+				}
+				else {
+					row(gases, g.gas(), tonnes(g.tonnes()), tonnes(g.tCo2e()));
+				}
 			}
 			document.add(gases);
+			// spec 07.7: the table foots to the report's total, and says where the unsplit CO2e comes from
+			document.add(new Paragraph("Total (scope 2 location-based), ties to section 04: "
+					+ tonnes(report.byGasTotalTCo2e()) + " t CO2e. " + MARKET_BASED_NOTE, BODY));
+			if (unsplit != null) {
+				document.add(new Paragraph("The row '" + UNSPLIT_ROW + "' comes from: " + String.join(", ", unsplit.factors())
+						+ ". " + UNSPLIT_RULE, SMALL));
+			}
 
 			heading(document, "6. Biogenic CO2");
 			document.add(new Paragraph(tonnes(report.biogenicCo2T()) + " t of biogenic CO2, reported outside the scopes.", BODY));

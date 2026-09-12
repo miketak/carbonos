@@ -2425,6 +2425,8 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.period.periodStart").value("2025-01-01"))
 			.andExpect(jsonPath("$.emissions.totalKgCo2e").value(2660.0))
 			.andExpect(jsonPath("$.byGas.length()").value(7))
+			.andExpect(jsonPath("$.byGas[?(@.gas == 'CO2E_UNSPLIT')]").isEmpty())
+			.andExpect(jsonPath("$.byGasTotalKgCo2e").value(2660.0))
 			.andExpect(jsonPath("$.baseYear").doesNotExist())
 			.andExpect(jsonPath("$.methodology.statement")
 				.value(org.hamcrest.Matchers.containsString("Table 1")))
@@ -2706,6 +2708,188 @@ class GhgApiIntegrationTests {
 		// tenant-scoped like the report
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asOutsider())).andExpect(status().isNotFound());
 		mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asOutsider())).andExpect(status().isNotFound());
+	}
+
+	/** Spec 07.7: every gas column carries the accounting share and the period share, like kg CO2e. */
+	@Test
+	void everyGasColumnCarriesThePeriodAndAccountingShares() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var jv = createEntity(orgId, "Tarkwa Gold JV Ltd", "JOINT_VENTURE", "40", true);
+		var plant = createFacility(orgId, "Tarkwa Processing Plant", jv);
+		// a factor with a component for every gas column; the HFC CO2e is the stated total less the CO2
+		var factor = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Test fuel with every gas", "defaultScope": "SCOPE_1",
+						 "defaultCategory": "STATIONARY_COMBUSTION", "unit": "litre", "kgCo2ePerUnit": 4.588,
+						 "co2KgPerUnit": 2.5, "ch4KgPerUnit": 0.01, "n2oKgPerUnit": 0.002, "hfcsKgPerUnit": 0.001,
+						 "sf6KgPerUnit": 0.0001, "biogenicCo2KgPerUnit": 0.3, "source": "Test bench"}"""))
+			.andExpect(status().isCreated()));
+		String factorId = JsonPath.read(factor, "$.id");
+		// 60 days, 30 of them inside 2025: a 50% period share, under a 40% equity share
+		var straddle = createPeriodActivity(orgId, plant, "Year-end fuel read", "1000", "litre", "2025-12-02",
+				"2026-01-30");
+		var inventoryId = createInventory(orgId, "2025 Equity", "EQUITY_SHARE");
+		putBoundary(inventoryId, plant);
+		prepare(inventoryId, straddle, factorId);
+		// quantity x component x 0.4 x 0.5 on every column; kg CO2e = 1,000 x 0.5 x 7.748 x 0.4
+		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.lines[0].weight").value(0.4))
+			.andExpect(jsonPath("$.lines[0].periodShare").value(0.5))
+			.andExpect(jsonPath("$.lines[0].kgCo2e").value(1549.6))
+			.andExpect(jsonPath("$.lines[0].byGas.co2Kg").value(500.0))
+			.andExpect(jsonPath("$.lines[0].byGas.ch4Kg").value(2.0))
+			.andExpect(jsonPath("$.lines[0].byGas.n2oKg").value(0.4))
+			.andExpect(jsonPath("$.lines[0].byGas.hfcsKg").value(0.2))
+			.andExpect(jsonPath("$.lines[0].byGas.hfcsKgCo2e").value(417.6))
+			.andExpect(jsonPath("$.lines[0].byGas.sf6Kg").value(0.02))
+			.andExpect(jsonPath("$.lines[0].byGas.co2eUnsplitKg").value(0))
+			.andExpect(jsonPath("$.lines[0].biogenicCo2Kg").value(60.0))
+			.andExpect(jsonPath("$.run.byGas.co2eUnsplitKg").value(0)));
+		// the gas CO2e contributions under AR5 tie to kg CO2e: 500 + 2 x 28 + 0.4 x 265 + 0.02 x 23,500 + 417.6
+		var gasCo2e = new java.math.BigDecimal("500").add(new java.math.BigDecimal("2").multiply(new java.math.BigDecimal("28")))
+			.add(new java.math.BigDecimal("0.4").multiply(new java.math.BigDecimal("265")))
+			.add(new java.math.BigDecimal("0.02").multiply(new java.math.BigDecimal("23500")))
+			.add(new java.math.BigDecimal("417.6"));
+		assertThat(gasCo2e.subtract(new java.math.BigDecimal("1549.6")).abs()).isLessThan(new java.math.BigDecimal("0.001"));
+		// the calculation file carries the same columns, and no unsplit CO2e
+		var csv = body(mvc.perform(get("/api/ghg/runs/" + JsonPath.read(detail, "$.run.id") + "/lines.csv").with(asMember())));
+		var rows = csv.split("\r\n");
+		var header = java.util.Arrays.asList(rows[0].split(","));
+		var cells = csvCells(rows[1]);
+		assertThat(cells.get(header.indexOf("period_share"))).isEqualTo("0.5");
+		assertThat(cells.get(header.indexOf("co2_kg"))).isEqualTo("500");
+		assertThat(cells.get(header.indexOf("ch4_kg"))).isEqualTo("2");
+		assertThat(cells.get(header.indexOf("n2o_kg"))).isEqualTo("0.4");
+		assertThat(cells.get(header.indexOf("sf6_kg"))).isEqualTo("0.02");
+		assertThat(cells.get(header.indexOf("biogenic_co2_kg"))).isEqualTo("60");
+		assertThat(cells.get(header.indexOf("co2e_unsplit_kg"))).isEqualTo("0");
+		assertThat(header.indexOf("co2e_unsplit_kg")).isEqualTo(header.indexOf("biogenic_co2_kg") + 1);
+	}
+
+	/** Spec 07.7: the by-gas table carries a reconciling row for CO2e-only factors and foots to the total. */
+	@Test
+	void theByGasTableFootsToTheTotal() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
+		var leak = createActivity(orgId, plant, "Chiller refrigerant top-up", "10", "kg", "2025-05-01");
+		var power = createActivity(orgId, plant, "Mill grid electricity", "1000", "kWh", "2025-08-01");
+		// a grid factor that publishes CO2e only, as the Ember rows do
+		var grid = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Grid electricity, Ghana (Ember 2024)", "defaultScope": "SCOPE_2",
+						 "defaultCategory": "PURCHASED_ELECTRICITY", "unit": "kWh", "kgCo2ePerUnit": 0.469,
+						 "source": "Ember yearly electricity data 2024"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.co2eOnly").value(true)));
+		String gridId = JsonPath.read(grid, "$.id");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + leak + "')].id").getFirst(), R410A_FACTOR);
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + power + "')].id").getFirst(), gridId);
+		freeze(inventoryId);
+		// the gate says what the report does with the CO2e-only factor
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[?(@.gate == 'EMISSION_FACTOR')].findings[*].message").value(org.hamcrest.Matchers
+				.hasItem("'Grid electricity, Ghana (Ember 2024)' publishes CO2e only. Its emissions are counted in the "
+						+ "scope totals and appear in the by-gas table on the row 'CO2e from factors without a gas split', "
+						+ "not under CO2, CH4 or N2O.")));
+		// 2,660 (diesel) + 19,235 (HFCs) + 469 (grid, unsplit) = 22,364 kg
+		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(22364.0))
+			.andExpect(jsonPath("$.run.byGas.co2eUnsplitKg").value(469.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + power + "')].byGas.co2Kg").value(0.0))
+			.andExpect(jsonPath("$.lines[?(@.activityId == '" + power + "')].byGas.co2eUnsplitKg").value(469.0)));
+		String runId = JsonPath.read(detail, "$.run.id");
+		var report = body(mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.byGas.length()").value(8))
+			.andExpect(jsonPath("$.byGas[7].gas").value("CO2E_UNSPLIT"))
+			.andExpect(jsonPath("$.byGas[7].kg").doesNotExist())
+			.andExpect(jsonPath("$.byGas[7].tonnes").doesNotExist())
+			.andExpect(jsonPath("$.byGas[7].kgCo2e").value(469.0))
+			.andExpect(jsonPath("$.byGas[7].tCo2e").value(0.469))
+			.andExpect(jsonPath("$.byGas[7].factors[0]").value("Grid electricity, Ghana (Ember 2024)"))
+			.andExpect(jsonPath("$.byGas[0].factors.length()").value(0))
+			.andExpect(jsonPath("$.emissions.totalTCo2e").value(22.364))
+			.andExpect(jsonPath("$.byGasTotalKgCo2e").value(22364.0))
+			.andExpect(jsonPath("$.byGasTotalTCo2e").value(22.364)));
+		// the invariant: the CO2e column over the eight rows adds to the report's total, exactly in kilograms
+		// and to the rounding of the table in tonnes (each row is rounded to three decimals of a tonne)
+		var byGasKg = JsonPath.<List<Number>>read(report, "$.byGas[*].kgCo2e")
+			.stream()
+			.map(n -> new java.math.BigDecimal(n.toString()))
+			.reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+		assertThat(byGasKg).isEqualByComparingTo("22364");
+		var byGasT = JsonPath.<List<Number>>read(report, "$.byGas[*].tCo2e")
+			.stream()
+			.map(n -> new java.math.BigDecimal(n.toString()))
+			.reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+		assertThat(byGasT.subtract(new java.math.BigDecimal("22.364")).abs())
+			.isLessThanOrEqualTo(new java.math.BigDecimal("0.004"));
+		// the CSV's unsplit column reproduces the row
+		var csv = body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember())));
+		var rows = csv.split("\r\n");
+		var header = java.util.Arrays.asList(rows[0].split(","));
+		var unsplit = java.util.Arrays.stream(rows)
+			.skip(1)
+			.map(row -> new java.math.BigDecimal(csvCells(row).get(header.indexOf("co2e_unsplit_kg"))))
+			.reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+		assertThat(unsplit).isEqualByComparingTo("469");
+		// the PDF carries the row, the footing line and the rule
+		var pdf = mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember()))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsByteArray();
+		var text = pdfText(pdf);
+		assertThat(text).contains("CO2e from factors without a gas split")
+			.contains("ties to section 04")
+			.contains("Grid electricity, Ghana (Ember 2024)")
+			.contains("Their CO2, CH4 and N2O are not separable");
+	}
+
+	/** One CSV row split into cells, honouring quoted cells that carry commas. */
+	static List<String> csvCells(String row) {
+		var cells = new java.util.ArrayList<String>();
+		var cell = new StringBuilder();
+		var quoted = false;
+		for (int i = 0; i < row.length(); i++) {
+			var c = row.charAt(i);
+			if (c == '"') {
+				if (quoted && i + 1 < row.length() && row.charAt(i + 1) == '"') {
+					cell.append('"');
+					i++;
+				}
+				else {
+					quoted = !quoted;
+				}
+			}
+			else if (c == ',' && !quoted) {
+				cells.add(cell.toString());
+				cell.setLength(0);
+			}
+			else {
+				cell.append(c);
+			}
+		}
+		cells.add(cell.toString());
+		return cells;
+	}
+
+	/** The PDF's text, every page joined, for assertions on what a reader sees. */
+	static String pdfText(byte[] pdf) throws Exception {
+		var reader = new com.lowagie.text.pdf.PdfReader(pdf);
+		var extractor = new com.lowagie.text.pdf.parser.PdfTextExtractor(reader);
+		var text = new StringBuilder();
+		for (int page = 1; page <= reader.getNumberOfPages(); page++) {
+			text.append(extractor.getTextFromPage(page)).append('\n');
+		}
+		reader.close();
+		return text.toString();
 	}
 
 	/** Audit findings F17, F19, F20, F51 (T-03): organization factors with provenance, approval, and packs. */
