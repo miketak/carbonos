@@ -37,7 +37,7 @@ What stands in the way is shorter and more specific than last time. Section 05 (
 - Severity: Major. Area: GHG home, Organization overview (Sankofa Gold plc).
 - What I did: Signed in as the fresh admin account with no organizations and opened the GHG home, then the other team's organization "Sankofa Gold plc".
 - What happened: The other team's organization is listed with "Edit" and "Delete"; its overview shows "Your role: ADMIN", its final run totals, its members with editable role selects and "Remove" buttons, and an "Add member" form. The Verifier account, by contrast, gets "Organization not found" for the same URL.
-- Why it matters: A hosted GHG platform holds several clients' pre-publication inventories. Confidentiality and change-control (ISO 14064-1 clause 8.3, and any verifier's IT-controls enquiry) require that access to an inventory be by membership, not by platform role. A support administrator may need break-glass access, but it must be explicit, logged and visible to the organization's owner.
+- Why it matters: A hosted GHG platform holds several clients' pre-publication inventories. Confidentiality and change-control (ISO 14064-1:2018 clause 8.2, and any verifier's IT-controls enquiry) require that access to an inventory be by membership, not by platform role. A support administrator may need break-glass access, but it must be explicit, logged and visible to the organization's owner.
 - What to do: Restrict organization data to members; give administrators a separate, logged "assume access" action that the organization's history records.
 - Evidence: 02-ghg-home.png, 05-sankofa-org-visible-to-officer.png, 104-abena-sankofa-attempt.png.
 
@@ -58,7 +58,7 @@ What stands in the way is shorter and more specific than last time. Section 05 (
 - Severity: Major. Area: GHG home, Delete organization.
 - What I did: Clicked "Delete" on the AGR card (which holds a published, superseded inventory and a base year) and read the dialog, then cancelled.
 - What happened: "Delete Asante Gold Resources Ltd? Its facilities, activity data, and past runs are removed with it." with Cancel and Delete. The same control is offered to a platform administrator on another team's organization (F3).
-- Why it matters: A published report is a record the company has issued; ISO 14064-1 clause 8.3 requires retention of the records that support it. Everywhere else the product now refuses hard deletion (runs are voided, records and entities are kept "on file as removed"); the organization is the one place where the whole trail can vanish.
+- Why it matters: A published report is a record the company has issued; ISO 14064-1:2018 clause 8.2 requires retention of the records that support it. Everywhere else the product now refuses hard deletion (runs are voided, records and entities are kept "on file as removed"); the organization is the one place where the whole trail can vanish.
 - What to do: Block deletion while any inventory is published or any run is final; otherwise require a typed name and a reason, and keep a tombstone.
 - Evidence: 131-delete-org-dialog.png.
 
@@ -94,7 +94,7 @@ What stands in the way is shorter and more specific than last time. Section 05 (
 - Severity: Minor. Area: Legal entities, Activity data, Source documents.
 - What I did: Removed the probe entity and the probe record with reasons, then searched the register for "ACT-0037", filtered Source documents by "Record removed", and re-read the entities table.
 - What happened: Both dialogs said the item "stays on file as removed, with your name, the date and the reason"; afterwards neither appears anywhere: the register search returns nothing, the entities table has no removed section, and the record number is simply skipped.
-- Why it matters: Corporate Standard transparency principle and ISO 14064-1 clause 8.3: a verifier who sees ACT-0036 followed by ACT-0038 will ask for ACT-0037.
+- Why it matters: Corporate Standard transparency principle and ISO 14064-1:2018 clause 8.2: a verifier who sees ACT-0036 followed by ACT-0038 will ask for ACT-0037.
 - What to do: Add a "Removed" filter to the register and the entities table showing the tombstone with who, when and why.
 - Evidence: 14-remove-entity-confirm.png, 45-remove-record-dialog.png, 130-removed-record-search.png.
 
@@ -116,7 +116,7 @@ What stands in the way is shorter and more specific than last time. Section 05 (
 - Severity: none (positive). Area: Activity data > Import CSV; Source documents.
 - What I did: Downloaded the template, imported 36 rows covering seven facilities, read the preview, confirmed, and opened Source documents.
 - What happened: Template columns include stream, period start and end, data source, evidence reference, data quality, tier and uncertainty. The preview printed control totals per facility and stream ("Nkawkaw Open Pit · Grid supply (ECG bulk) · 1 · 18,500,000 kWh"), warned on periods longer than a month, on a stream that mixes units ("drum, litre"), on rows without a stream and on a row without evidence; all 36 became ACT-0001 to ACT-0036. The uploaded file is kept with its SHA-256 digest and row range.
-- Why it matters: ISO 14064-1 clause 8.3 traceability from record to source document; this closes old F15.
+- Why it matters: ISO 14064-1:2018 clause 8.2 traceability from record to source document; this closes old F15.
 - Evidence: 31-import-dialog.png, 32-import-preview.png, 33-register-after-import.png, 44-source-documents.png.
 
 **F15. Evidence can be attached as files or links, prints on the run lines and in the lines CSV, and an evidence index is exportable.**
@@ -128,7 +128,7 @@ What stands in the way is shorter and more specific than last time. Section 05 (
 **F16. Corrections need a reason and keep a history; removals need a reason; records a run has calculated cannot be removed.**
 - Severity: none (positive). Area: Record drawer, Remove record.
 - What happened: Save is disabled until "Reason for the correction" is filled; History shows "Corrected by officer@review.test ... Quantity: 8450000 → 8460000" with the reason; after publication a second correction produced "History (2)" and the toast "Record corrected. Past runs are unaffected."; the removal dialog says "A record a run calculated cannot be removed."
-- Why it matters: Corporate Standard ch. 5 and ISO 14064-1 clause 8.3. Closes old F14.
+- Why it matters: Corporate Standard ch. 5 and ISO 14064-1:2018 clause 8.2. Closes old F14.
 - Evidence: 38-history-after-correction.png, 45-remove-record-dialog.png, 123-fact-corrected-after-publication.png.
 
 **F17. Data quality is a method, a five-tier score and a percentage uncertainty, and the report weights them.**
@@ -317,7 +317,7 @@ What stands in the way is shorter and more specific than last time. Section 05 (
 **F42. Runs are voided with a reason, keep their number and figures, and the history records it; there is no delete.**
 - Severity: none (positive). Area: Inventory > Calculation runs.
 - What happened: "Void…" opened "Void Run 002 (with instruments)? The run keeps its number, lines and totals on the record, marked VOIDED with your reason and your name. Run numbers are never reused. This cannot be undone."; the card then reads "VOIDED · Voided by officer@review.test on ...: reason"; the next label offered was "Run 003". (I voided Run 002 rather than Run 001 because the newest run sits first; the dialog named the run clearly, so the error was mine.)
-- Why it matters: ISO 14064-1 clause 8.3. Closes old F35.
+- Why it matters: ISO 14064-1:2018 clause 8.2. Closes old F35.
 - Evidence: 80-void-dialog.png, 81-runs-after-void.png.
 
 **F43. "Mark as final" acts immediately, with no confirmation and no note.**

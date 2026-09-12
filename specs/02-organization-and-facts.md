@@ -23,8 +23,10 @@ scope, no factor, no boundary decision lives here.
 ### Organizations
 
 An organization is a reporting company: a unique name (case-insensitive) and
-an owner (spec 01). It is the tenant boundary for everything below. Deleting
-an organization cascades to all of it.
+an owner (spec 01). It is the tenant boundary for everything below. An
+organization is removed with a typed name and a reason, leaves a tombstone,
+and cannot be removed while it holds a published or final inventory (spec
+01.3).
 
 ### Legal entities and their facts
 

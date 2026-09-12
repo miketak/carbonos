@@ -113,10 +113,14 @@ nav:
               - specs/01-identity-and-access.md
               - specs/01.1-access-requests.md
               - specs/01.2-organization-membership-and-roles.md
+              - specs/01.3-organization-confidentiality-and-deletion-safeguards.md
+              - specs/01.4-role-aware-ui-and-visible-refusals.md
           - "02 Organization and facts":
               - specs/02-organization-and-facts.md
               - specs/02.1-emission-factor-library.md
               - specs/02.2-units-densities-and-custom-units.md
+              - specs/02.3-factor-identity-across-packs.md
+              - specs/02.4-sector-pack-completeness.md
           - "03 Organizational boundary":
               - specs/03-organizational-boundary.md
               - specs/03.1-legal-entities-and-table-1.md
@@ -131,11 +135,15 @@ nav:
               - specs/04.4-activity-data-quality-evidence-and-corrections.md
               - specs/04.5-bulk-import-and-activity-register.md
               - specs/04.6-activity-register-drafts-readiness-and-source-documents.md
+              - specs/04.7-derived-fuel-and-energy-related-lines.md
+              - specs/04.8-exclusions-without-a-false-zero-and-gases-outside-the-scopes.md
           - "05 Inventories and calculation":
               - specs/05-inventories-and-calculation.md
               - specs/05.1-inventory-lifecycle-and-run-snapshots.md
               - specs/05.2-run-numbering-and-voiding.md
               - specs/05.3-inheritance-and-the-published-record.md
+              - specs/05.4-copying-a-view-across-consolidation-approaches.md
+              - specs/05.5-review-at-scale-and-deliberate-lifecycle-acts.md
           - "06 Tracking emissions over time":
               - specs/06-tracking-emissions-over-time.md
               - specs/06.1-recalculation-policy-conformance.md
@@ -147,6 +155,8 @@ nav:
               - specs/07.4-report-tables-factors-and-metadata.md
               - specs/07.5-report-export.md
               - specs/07.6-scope2-instrument-criteria-and-scope3-crosscheck.md
+              - specs/07.7-emissions-by-gas-that-ties-to-the-total.md
+              - specs/07.8-pdf-readability.md
           - "08 Form validation and UI polish": specs/08-form-validation-and-ui-polish.md
       - QA procedures:
           - reference/qa/README.md
