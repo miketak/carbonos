@@ -5,7 +5,7 @@ import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { Skeleton } from '../../../components/Skeleton'
 import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
+import { refusalMessage } from '../../../lib/api'
 import {
   categories,
   categoriesForScope,
@@ -18,6 +18,8 @@ import {
   leaseLabels,
   scopeLabels,
 } from '../format'
+import { mayWrite, WRITE_TOOLTIP } from '../roles'
+import type { MyRole } from '../roles'
 import { convertQuantity, DIMENSION_LABELS, needsDensity, unitDimension } from '../units'
 import {
   useAssignmentPageQuery,
@@ -33,6 +35,7 @@ import {
   useUnitsQuery,
 } from '../useGhg'
 import { ScopeBadge } from './badges'
+import { RoleButton } from './RoleButton'
 import type {
   ActivityCategory,
   Assignment,
@@ -732,11 +735,14 @@ export function AssignmentsSection({
   organizationId,
   inventoryId,
   editable,
+  myRole,
 }: {
   organizationId: string
   inventoryId: string
   editable: boolean
+  myRole?: MyRole | null
 }) {
+  const writable = editable && mayWrite(myRole)
   const [search, setSearch] = useState('')
   const [facilityId, setFacilityId] = useState('')
   const [status, setStatus] = useState<AssignmentStatus | ''>('')
@@ -788,16 +794,16 @@ export function AssignmentsSection({
   const onClassify = (assignment: Assignment) => (input: ClassifyInput) =>
     classify.mutate(
       { id: assignment.id, input },
-      { onError: (error) => toast(problemDetail(error) ?? 'Could not classify.', 'error') },
+      { onError: (error) => toast(refusalMessage(error, myRole), 'error') },
     )
   const onExclude = (assignment: Assignment) => (input: ExcludeInput) =>
     exclude.mutate(
       { id: assignment.id, input },
-      { onError: (error) => toast(problemDetail(error) ?? 'Could not exclude.', 'error') },
+      { onError: (error) => toast(refusalMessage(error, myRole), 'error') },
     )
   const onInclude = (assignment: Assignment) => () =>
     include.mutate(assignment.id, {
-      onError: (error) => toast(problemDetail(error) ?? 'Could not include.', 'error'),
+      onError: (error) => toast(refusalMessage(error, myRole), 'error'),
     })
 
   return (
@@ -810,7 +816,9 @@ export function AssignmentsSection({
             modified.
           </p>
         </div>
-        <Button
+        <RoleButton
+          allowed={mayWrite(myRole)}
+          tooltip={WRITE_TOOLTIP}
           className="px-4 py-1.5 text-sm"
           busy={sync.isPending}
           disabled={!editable}
@@ -829,12 +837,12 @@ export function AssignmentsSection({
                     : parts.join(' · ') + '.',
                 )
               },
-              onError: (error) => toast(problemDetail(error) ?? 'Could not sync.', 'error'),
+              onError: (error) => toast(refusalMessage(error, myRole), 'error'),
             })
           }
         >
           Review activity data
-        </Button>
+        </RoleButton>
       </div>
 
       {counts && counts.included + counts.excluded + counts.unclassified > 0 && (
@@ -995,7 +1003,7 @@ export function AssignmentsSection({
                     <td className="px-3 py-2">
                       <StatusPills
                         assignment={assignment}
-                        editable={editable}
+                        editable={writable}
                         onInclude={onInclude(assignment)}
                       />
                     </td>
@@ -1006,7 +1014,7 @@ export function AssignmentsSection({
                           factors={factors}
                           units={units}
                           densities={densities}
-                          editable={editable}
+                          editable={writable}
                           onClassify={onClassify(assignment)}
                         />
                       ) : (
@@ -1014,7 +1022,7 @@ export function AssignmentsSection({
                       )}
                     </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
-                      {assignment.included && editable && (
+                      {assignment.included && writable && (
                         <ExcludeMenu assignment={assignment} onExclude={onExclude(assignment)} />
                       )}
                     </td>
@@ -1068,7 +1076,7 @@ export function AssignmentsSection({
                 </div>
                 <StatusPills
                   assignment={assignment}
-                  editable={editable}
+                  editable={writable}
                   onInclude={onInclude(assignment)}
                 />
                 {assignment.included && (
@@ -1078,10 +1086,10 @@ export function AssignmentsSection({
                       factors={factors}
                       units={units}
                       densities={densities}
-                      editable={editable}
+                      editable={writable}
                       onClassify={onClassify(assignment)}
                     />
-                    {editable && (
+                    {writable && (
                       <div>
                         <ExcludeMenu assignment={assignment} onExclude={onExclude(assignment)} />
                       </div>

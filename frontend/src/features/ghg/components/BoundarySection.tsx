@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Button } from '../../../components/Button'
 import { GlassCard } from '../../../components/GlassCard'
 import { Skeleton } from '../../../components/Skeleton'
 import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
+import { refusalMessage } from '../../../lib/api'
 import { approachLabels, describeFreeze, exclusionLabels, relationshipShortLabels } from '../format'
+import { mayWrite, WRITE_TOOLTIP } from '../roles'
+import type { MyRole } from '../roles'
 import {
   useBoundaryQuery,
   useBoundaryVersionsQuery,
@@ -18,6 +19,7 @@ import {
   useSetEntityTreatment,
 } from '../useGhg'
 import { BoundaryVersionPanel } from './BoundaryVersionPanel'
+import { RoleButton } from './RoleButton'
 import { TapCheckbox } from './TapCheckbox'
 import type {
   BoundaryEntity,
@@ -38,9 +40,16 @@ const dateInputClasses =
  * reason Chapter 9 asks for (spec 07.2). Editable only while the inventory is
  * a draft (spec 05.1).
  */
-export function BoundarySection({ inventory }: { inventory: Inventory }) {
+export function BoundarySection({
+  inventory,
+  myRole,
+}: {
+  inventory: Inventory
+  myRole?: MyRole | null
+}) {
   const inventoryId = inventory.id
   const editable = inventory.status === 'DRAFT'
+  const writable = editable && mayWrite(myRole)
   const boundaryQuery = useBoundaryQuery(inventoryId)
   const setEntity = useSetEntityTreatment(inventoryId)
   const removeEntity = useRemoveEntityTreatment(inventoryId)
@@ -56,7 +65,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
 
   const onWriteError = (error: unknown) => {
     setRevision((value) => value + 1)
-    toast(problemDetail(error) ?? 'Could not update boundary.', 'error')
+    toast(refusalMessage(error, myRole), 'error')
   }
 
   const update = (entity: BoundaryEntity, input: BoundaryTreatmentInput) =>
@@ -101,7 +110,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
               <TapCheckbox
                 label={`${entity.entityName} in boundary`}
                 checked={entity.inBoundary}
-                disabled={!editable || (!entity.inBoundary && entity.shareUnderApproach === 0)}
+                disabled={!writable || (!entity.inBoundary && entity.shareUnderApproach === 0)}
                 onChange={() => toggleEntity(entity)}
               />
               <div className="min-w-0 flex-1">
@@ -134,7 +143,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                   <select
                     aria-label={`${entity.entityName} relationship`}
                     value={entity.relationshipType ?? 'SUBSIDIARY'}
-                    disabled={!editable}
+                    disabled={!writable}
                     onChange={(event) =>
                       update(entity, { relationshipType: event.target.value as RelationshipType })
                     }
@@ -157,7 +166,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                     step="0.01"
                     aria-label={`${entity.entityName} economic interest percent`}
                     defaultValue={entity.economicInterestPercent ?? 100}
-                    disabled={!editable}
+                    disabled={!writable}
                     onBlur={(event) =>
                       update(entity, { economicInterestPercent: Number(event.target.value) })
                     }
@@ -168,7 +177,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                   <TapCheckbox
                     label={`${entity.entityName} operated by the company`}
                     checked={entity.operatedByCompany ?? false}
-                    disabled={!editable}
+                    disabled={!writable}
                     onChange={(value) => update(entity, { operatedByCompany: value })}
                   />
                   <span className="text-ink-muted">Operated by the company</span>
@@ -178,7 +187,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                     <TapCheckbox
                       label={`${entity.entityName} financially controlled by the company`}
                       checked={entity.controlledByCompany ?? false}
-                      disabled={!editable}
+                      disabled={!writable}
                       onChange={(value) => update(entity, { controlledByCompany: value })}
                     />
                     <span className="text-ink-muted">Financially controlled</span>
@@ -202,7 +211,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                     type="date"
                     aria-label={`${entity.entityName} member from`}
                     defaultValue={entity.effectiveFrom ?? ''}
-                    disabled={!editable}
+                    disabled={!writable}
                     onBlur={(event) => {
                       if (event.target.value && event.target.value !== (entity.effectiveFrom ?? ''))
                         update(entity, { effectiveFrom: event.target.value })
@@ -217,7 +226,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                     type="date"
                     aria-label={`${entity.entityName} member until`}
                     defaultValue={entity.effectiveTo ?? ''}
-                    disabled={!editable}
+                    disabled={!writable}
                     onBlur={(event) => {
                       if (event.target.value && event.target.value !== (entity.effectiveTo ?? ''))
                         update(entity, { effectiveTo: event.target.value })
@@ -226,14 +235,16 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                   />
                 </label>
                 {(entity.effectiveFrom || entity.effectiveTo) && editable && (
-                  <Button
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
                     variant="ghost"
                     className="px-2 py-1 text-xs"
                     aria-label={`Clear ${entity.entityName} membership window`}
                     onClick={() => update(entity, { clearWindow: true })}
                   >
                     Clear
-                  </Button>
+                  </RoleButton>
                 )}
               </div>
             )}
@@ -259,6 +270,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                   label={`${entity.entityName} left out because`}
                   exclusion={entity.exclusion}
                   editable={editable}
+                  writable={writable}
                   onExclude={(input) =>
                     excludeEntity.mutate(
                       { entityId: entity.entityId, input },
@@ -280,7 +292,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                       label={`${facility.facilityName} in boundary`}
                       checked={facility.inBoundary}
                       disabled={
-                        !editable || (!facility.inBoundary && entity.shareUnderApproach === 0)
+                        !writable || (!facility.inBoundary && entity.shareUnderApproach === 0)
                       }
                       onChange={() => toggleFacility(facility.facilityId, facility.inBoundary)}
                     />
@@ -293,6 +305,7 @@ export function BoundarySection({ inventory }: { inventory: Inventory }) {
                         label={`${facility.facilityName} left out because`}
                         exclusion={facility.exclusion}
                         editable={editable}
+                        writable={writable}
                         onExclude={(input) =>
                           excludeFacility.mutate(
                             { facilityId: facility.facilityId, input },
@@ -336,12 +349,14 @@ function ExclusionControl({
   label,
   exclusion,
   editable,
+  writable,
   onExclude,
   onClear,
 }: {
   label: string
   exclusion: BoundaryExclusion | null
   editable: boolean
+  writable: boolean
   onExclude: (input: { reason: ExclusionReason; detail?: string }) => void
   onClear: () => void
 }) {
@@ -365,6 +380,7 @@ function ExclusionControl({
       <select
         aria-label={label}
         value={exclusion?.reason ?? ''}
+        disabled={!writable}
         onChange={(event) => {
           setChosenReason(event.target.value as ExclusionReason | '')
           if (event.target.value === '') onClear()
@@ -390,6 +406,7 @@ function ExclusionControl({
         value={detail}
         placeholder="Detail for the verifier"
         maxLength={500}
+        disabled={!writable}
         onChange={(event) => setDetail(event.target.value)}
         onBlur={() => {
           const reason = exclusion?.reason ?? chosenReason

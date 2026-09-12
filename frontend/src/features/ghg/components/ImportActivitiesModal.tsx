@@ -2,10 +2,11 @@ import { useRef, useState } from 'react'
 import type { DragEvent, ReactNode } from 'react'
 import { Button } from '../../../components/Button'
 import { Modal } from '../../../components/Modal'
-import { fieldErrors, problemDetail } from '../../../lib/api'
+import { fieldErrors, refusalMessage } from '../../../lib/api'
 import { activityImportTemplateUrl } from '../api'
 import type { ActivityImportResult, ReadinessIssue } from '../api'
 import { activityIssueLabels, formatRecordPeriod } from '../format'
+import type { MyRole } from '../roles'
 import { useImportActivities } from '../useGhg'
 import { ActivityStatusPill } from './badges'
 
@@ -38,10 +39,12 @@ function Step({ number, title, children }: { number: number; title: string; chil
  */
 export function ImportActivitiesModal({
   organizationId,
+  myRole,
   onClose,
   onImported,
 }: {
   organizationId: string
+  myRole?: MyRole
   onClose: () => void
   onImported: (count: number) => void
 }) {
@@ -52,7 +55,7 @@ export function ImportActivitiesModal({
   const inputRef = useRef<HTMLInputElement>(null)
   const errors = fieldErrors(importActivities.error)
   const generalError =
-    importActivities.isError && !errors ? problemDetail(importActivities.error) : undefined
+    importActivities.isError && !errors ? refusalMessage(importActivities.error, myRole) : undefined
 
   const choose = (chosen: File | null) => {
     setFile(chosen)

@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'reac
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { GhgHeader } from './components/GhgHeader'
+import { ReadOnlyBanner } from './components/ReadOnlyBanner'
 import { useOrganizationQuery, useOrganizationsQuery } from './useGhg'
 import type { Organization } from './api'
 
@@ -216,7 +217,12 @@ export function OrganizationLayout() {
               </p>
             </GlassCard>
           )}
-          {organizationQuery.data && <Outlet />}
+          {organizationQuery.data && (
+            <>
+              <ReadOnlyBanner myRole={organizationQuery.data.myRole} />
+              <Outlet />
+            </>
+          )}
         </main>
       </div>
     </div>

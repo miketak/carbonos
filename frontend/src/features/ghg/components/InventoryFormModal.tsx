@@ -3,8 +3,9 @@ import type { FormEvent } from 'react'
 import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
-import { fieldErrors, problemDetail } from '../../../lib/api'
+import { fieldErrors, refusalMessage } from '../../../lib/api'
 import { approachLabels } from '../format'
+import type { MyRole } from '../roles'
 import { useCreateInventory, useInventoriesQuery, useUpdateInventory } from '../useGhg'
 import type { ConsolidationApproach, GwpSet, Inventory, StraddleTreatment } from '../api'
 
@@ -28,12 +29,14 @@ function wholeMonths(start: string, end: string): number | null {
 export function InventoryFormModal({
   organizationId,
   inventory,
+  myRole,
   onClose,
   onSaved,
 }: {
   organizationId: string
   /** The draft being edited; absent when creating. */
   inventory?: Inventory
+  myRole?: MyRole | null
   onClose: () => void
   onSaved: (message: string) => void
 }) {
@@ -63,7 +66,8 @@ export function InventoryFormModal({
   const rebuilds = !!source && source.consolidationApproach !== approach
 
   const errors = fieldErrors(mutation.error)
-  const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
+  const generalError =
+    mutation.isError && !errors ? refusalMessage(mutation.error, myRole) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()

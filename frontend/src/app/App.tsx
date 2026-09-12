@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import { AmbientBackground } from '../components/AmbientBackground'
 import { SetPasswordPage } from '../features/access/SetPasswordPage'
+import { AdminOrganizationsPage } from '../features/admin/AdminOrganizationsPage'
 import { AdminUsersPage } from '../features/admin/AdminUsersPage'
 import { LoginPage } from '../features/auth/LoginPage'
 import { RequireAuth } from '../features/auth/RequireAuth'
@@ -80,6 +81,14 @@ export function App() {
           element={
             <RequireAuth role="ADMIN">
               <AdminUsersPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/organizations"
+          element={
+            <RequireAuth role="ADMIN">
+              <AdminOrganizationsPage />
             </RequireAuth>
           }
         />

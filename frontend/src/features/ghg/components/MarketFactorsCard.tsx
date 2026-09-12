@@ -4,9 +4,11 @@ import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { useToast } from '../../../components/toast'
-import { fieldErrors, problemDetail } from '../../../lib/api'
+import { fieldErrors, refusalMessage } from '../../../lib/api'
 import { checkNumber, collectErrors, withoutError } from '../../../lib/validate'
 import { instrumentLabels } from '../format'
+import { mayWrite, WRITE_TOOLTIP } from '../roles'
+import type { MyRole } from '../roles'
 import {
   useFacilitiesQuery,
   useMarketFactorsQuery,
@@ -15,6 +17,7 @@ import {
   useSetResidualMix,
 } from '../useGhg'
 import { EvidenceModal } from './EvidenceModal'
+import { RoleButton } from './RoleButton'
 import type { Inventory, MarketFactor, MarketInstrument } from '../api'
 
 /** The eight Scope 2 Quality Criteria in the Guidance's order (spec 07.6). */
@@ -45,12 +48,15 @@ const answerLabels: Record<'MET' | 'NOT_MET' | 'UNANSWERED', string> = {
 export function MarketFactorsCard({
   organizationId,
   inventory,
+  myRole,
 }: {
   organizationId: string
   inventory: Inventory
+  myRole?: MyRole | null
 }) {
   const inventoryId = inventory.id
   const editable = inventory.status === 'DRAFT'
+  const writable = editable && mayWrite(myRole)
   const factorsQuery = useMarketFactorsQuery(inventoryId)
   const facilitiesQuery = useFacilitiesQuery(organizationId)
   const set = useSetMarketFactor(inventoryId)
@@ -75,6 +81,8 @@ export function MarketFactorsCard({
 
   const chosenFacility = facilityId || facilities[0]?.id || ''
   const errors = clientErrors ?? fieldErrors(set.error)
+  const generalError =
+    set.isError && !fieldErrors(set.error) ? refusalMessage(set.error, myRole) : undefined
 
   /** Loads a recorded instrument into the form; saving replaces it (one per facility). */
   const edit = (entry: MarketFactor) => {
@@ -144,11 +152,6 @@ export function MarketFactorsCard({
           setPeriodStart('')
           setPeriodEnd('')
           toast(`Instrument recorded for ${saved.facilityName}.`)
-        },
-        onError: (error) => {
-          if (!fieldErrors(error)) {
-            toast(problemDetail(error) ?? 'Could not save the instrument.', 'error')
-          }
         },
       },
     )
@@ -232,29 +235,32 @@ export function MarketFactorsCard({
                   </td>
                   <td className="px-3 py-2 text-right">
                     {editable && (
-                      <Button
+                      <RoleButton
+                        allowed={mayWrite(myRole)}
+                        tooltip={WRITE_TOOLTIP}
                         variant="ghost"
                         className="px-2 py-1 text-xs"
                         aria-label={`Edit instrument for ${entry.facilityName}`}
                         onClick={() => edit(entry)}
                       >
                         Edit
-                      </Button>
+                      </RoleButton>
                     )}
                     {editable && (
-                      <Button
+                      <RoleButton
+                        allowed={mayWrite(myRole)}
+                        tooltip={WRITE_TOOLTIP}
                         variant="ghost"
                         className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                         aria-label={`Remove instrument for ${entry.facilityName}`}
                         onClick={() =>
                           remove.mutate(entry.facilityId, {
-                            onError: (error) =>
-                              toast(problemDetail(error) ?? 'Could not remove.', 'error'),
+                            onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                           })
                         }
                       >
                         Remove
-                      </Button>
+                      </RoleButton>
                     )}
                   </td>
                 </tr>
@@ -269,7 +275,7 @@ export function MarketFactorsCard({
           average where none is published, and the report says so.
         </p>
       )}
-      {editable && facilities.length > 0 && (
+      {writable && facilities.length > 0 && (
         <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-4 md:items-end" noValidate>
           <SelectField
             label="Facility"
@@ -415,6 +421,11 @@ export function MarketFactorsCard({
               maxLength={500}
             />
           </div>
+          {generalError && (
+            <p role="alert" className="text-sm font-medium text-red-600 md:col-span-4">
+              {generalError}
+            </p>
+          )}
           <div className="flex justify-end md:col-span-4">
             <Button type="submit" className="px-4 py-1.5 text-sm" busy={set.isPending}>
               Add instrument
@@ -422,7 +433,7 @@ export function MarketFactorsCard({
           </div>
         </form>
       )}
-      <ResidualMix inventory={inventory} editable={editable} />
+      <ResidualMix inventory={inventory} editable={editable} myRole={myRole} />
       {evidenceFor && (
         <EvidenceModal
           owner={{ marketFactorId: evidenceFor.id }}
@@ -437,7 +448,16 @@ export function MarketFactorsCard({
 }
 
 /** The Scope 2 Guidance disclosure: is an adjusted residual mix available, and at what factor? */
-function ResidualMix({ inventory, editable }: { inventory: Inventory; editable: boolean }) {
+function ResidualMix({
+  inventory,
+  editable,
+  myRole,
+}: {
+  inventory: Inventory
+  editable: boolean
+  myRole?: MyRole | null
+}) {
+  const writable = editable && mayWrite(myRole)
   const set = useSetResidualMix(inventory.id)
   const toast = useToast()
   const [available, setAvailable] = useState(
@@ -447,6 +467,8 @@ function ResidualMix({ inventory, editable }: { inventory: Inventory; editable: 
     inventory.residualMixKgCo2ePerKwh === null ? '' : String(inventory.residualMixKgCo2ePerKwh),
   )
   const [factorError, setFactorError] = useState<string | undefined>()
+  const generalError =
+    set.isError && !fieldErrors(set.error) ? refusalMessage(set.error, myRole) : undefined
 
   return (
     <form
@@ -465,8 +487,6 @@ function ResidualMix({ inventory, editable }: { inventory: Inventory; editable: 
           },
           {
             onSuccess: () => toast('Residual mix recorded.'),
-            onError: (error) =>
-              toast(problemDetail(error) ?? 'Could not record the residual mix.', 'error'),
           },
         )
       }}
@@ -475,7 +495,7 @@ function ResidualMix({ inventory, editable }: { inventory: Inventory; editable: 
       <SelectField
         label="Residual mix available"
         value={available}
-        disabled={!editable}
+        disabled={!writable}
         onChange={(event) => setAvailable(event.target.value)}
         hint="Every run reports market-based, so the Guidance requires this disclosure either way: an absent residual mix may mean double counting between consumers."
       >
@@ -489,18 +509,29 @@ function ResidualMix({ inventory, editable }: { inventory: Inventory; editable: 
         min="0"
         step="0.000001"
         value={factor}
-        disabled={!editable || available !== 'true'}
+        disabled={!writable || available !== 'true'}
         onChange={(event) => {
           setFactor(event.target.value)
           setFactorError(undefined)
         }}
         error={factorError ?? fieldErrors(set.error)?.kgCo2ePerKwh}
       />
+      {generalError && (
+        <p role="alert" className="text-sm font-medium text-red-600 md:col-span-3">
+          {generalError}
+        </p>
+      )}
       {editable && (
         <div className="flex justify-end">
-          <Button type="submit" className="px-4 py-1.5 text-sm" busy={set.isPending}>
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
+            type="submit"
+            className="px-4 py-1.5 text-sm"
+            busy={set.isPending}
+          >
             Save residual mix
-          </Button>
+          </RoleButton>
         </div>
       )}
     </form>

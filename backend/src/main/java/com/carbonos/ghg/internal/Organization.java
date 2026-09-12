@@ -18,7 +18,8 @@ public class Organization {
 	@Id
 	private UUID id;
 
-	@Column(nullable = false, unique = true, length = 120)
+	// unique among live rows only (spec 01.3): a removed name is released for reuse
+	@Column(nullable = false, length = 120)
 	private String name;
 
 	@Column(name = "owner_user_id")
@@ -34,6 +35,16 @@ public class Organization {
 	// the next free record number (spec 04.6); read under a row lock when numbers are taken
 	@Column(name = "next_record_no", nullable = false)
 	private int nextRecordNo = 1;
+
+	// the tombstone (spec 01.3, in the vocabulary of spec 04.4): who removed the organization, when and why
+	@Column(name = "deleted_at")
+	private Instant deletedAt;
+
+	@Column(name = "deleted_by", length = 320)
+	private String deletedBy;
+
+	@Column(name = "delete_reason", length = 500)
+	private String deleteReason;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
@@ -98,6 +109,29 @@ public class Organization {
 		var first = nextRecordNo;
 		nextRecordNo += count;
 		return first;
+	}
+
+	public boolean isDeleted() {
+		return deletedAt != null;
+	}
+
+	public Instant getDeletedAt() {
+		return deletedAt;
+	}
+
+	public String getDeletedBy() {
+		return deletedBy;
+	}
+
+	public String getDeleteReason() {
+		return deleteReason;
+	}
+
+	/** Removes the organization with a tombstone; its children stay untouched (spec 01.3). */
+	void remove(String by, String reason) {
+		this.deletedAt = Instant.now();
+		this.deletedBy = by;
+		this.deleteReason = reason;
 	}
 
 }

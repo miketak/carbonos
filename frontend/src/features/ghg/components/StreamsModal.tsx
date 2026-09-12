@@ -4,9 +4,11 @@ import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
+import { refusalMessage } from '../../../lib/api'
 import { categoryLabel, scopeLabels, streamKindLabels } from '../format'
-import { useCreateStream, useDeleteStream, useStreamsQuery } from '../useGhg'
+import { mayWrite, WRITE_TOOLTIP } from '../roles'
+import { useCreateStream, useDeleteStream, useOrganizationQuery, useStreamsQuery } from '../useGhg'
+import { RoleButton } from './RoleButton'
 import type { Facility, StreamKind } from '../api'
 
 /**
@@ -25,15 +27,18 @@ export function StreamsModal({
   onClose: () => void
 }) {
   const streamsQuery = useStreamsQuery(organizationId)
+  const organizationQuery = useOrganizationQuery(organizationId)
   const create = useCreateStream(organizationId)
   const remove = useDeleteStream(organizationId)
   const toast = useToast()
   const streams = (streamsQuery.data ?? []).filter((stream) => stream.facilityId === facility.id)
+  const myRole = organizationQuery.data?.myRole ?? null
   const [name, setName] = useState('')
   const [kind, setKind] = useState<StreamKind>('STATIONARY_COMBUSTION')
   const [fuel, setFuel] = useState('')
   const [meterOrSupplier, setMeterOrSupplier] = useState('')
   const [contractorOperated, setContractorOperated] = useState(false)
+  const generalError = create.isError ? refusalMessage(create.error, myRole) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -55,7 +60,6 @@ export function StreamsModal({
           setMeterOrSupplier('')
           toast(`${stream.name} added to ${facility.name}.`)
         },
-        onError: (error) => toast(problemDetail(error) ?? 'Could not add the stream.', 'error'),
       },
     )
   }
@@ -85,19 +89,20 @@ export function StreamsModal({
                   {categoryLabel(stream.defaultCategory)}
                 </span>
               </div>
-              <Button
+              <RoleButton
+                allowed={mayWrite(myRole)}
+                tooltip={WRITE_TOOLTIP}
                 variant="ghost"
                 className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                 aria-label={`Remove stream ${stream.name}`}
                 onClick={() =>
                   remove.mutate(stream.id, {
-                    onError: (error) =>
-                      toast(problemDetail(error) ?? 'Could not remove the stream.', 'error'),
+                    onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                   })
                 }
               >
                 Remove
-              </Button>
+              </RoleButton>
             </li>
           ))}
         </ul>
@@ -105,55 +110,69 @@ export function StreamsModal({
       {streams.length === 0 && streamsQuery.data && (
         <p className="mt-3 text-sm text-ink-muted">No streams registered yet.</p>
       )}
-      <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-2" noValidate>
-        <InputField
-          label="Stream name"
-          placeholder="Standby gensets"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          required
-        />
-        <SelectField
-          label="Kind"
-          value={kind}
-          onChange={(event) => setKind(event.target.value as StreamKind)}
-        >
-          {Object.entries(streamKindLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </SelectField>
-        <InputField
-          label="Fuel or material (optional)"
-          placeholder="Diesel"
-          value={fuel}
-          onChange={(event) => setFuel(event.target.value)}
-        />
-        <InputField
-          label="Meter or supplier (optional)"
-          placeholder="Bulk tank dip, ECG account 1234"
-          value={meterOrSupplier}
-          onChange={(event) => setMeterOrSupplier(event.target.value)}
-        />
-        <label className="flex items-center gap-2 text-sm md:col-span-2">
-          <input
-            type="checkbox"
-            checked={contractorOperated}
-            onChange={(event) => setContractorOperated(event.target.checked)}
-            className="size-4 accent-teal"
+      {mayWrite(myRole) && (
+        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-2" noValidate>
+          <InputField
+            label="Stream name"
+            placeholder="Standby gensets"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
           />
-          Operated by a contractor (its emissions default to scope 3)
-        </label>
-        <div className="flex justify-end gap-2 md:col-span-2">
+          <SelectField
+            label="Kind"
+            value={kind}
+            onChange={(event) => setKind(event.target.value as StreamKind)}
+          >
+            {Object.entries(streamKindLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </SelectField>
+          <InputField
+            label="Fuel or material (optional)"
+            placeholder="Diesel"
+            value={fuel}
+            onChange={(event) => setFuel(event.target.value)}
+          />
+          <InputField
+            label="Meter or supplier (optional)"
+            placeholder="Bulk tank dip, ECG account 1234"
+            value={meterOrSupplier}
+            onChange={(event) => setMeterOrSupplier(event.target.value)}
+          />
+          <label className="flex items-center gap-2 text-sm md:col-span-2">
+            <input
+              type="checkbox"
+              checked={contractorOperated}
+              onChange={(event) => setContractorOperated(event.target.checked)}
+              className="size-4 accent-teal"
+            />
+            Operated by a contractor (its emissions default to scope 3)
+          </label>
+          {generalError && (
+            <p role="alert" className="text-sm font-medium text-red-600 md:col-span-2">
+              {generalError}
+            </p>
+          )}
+          <div className="flex justify-end gap-2 md:col-span-2">
+            <Button type="button" variant="ghost" onClick={onClose}>
+              Close
+            </Button>
+            <Button type="submit" busy={create.isPending} disabled={name.trim() === ''}>
+              Add stream
+            </Button>
+          </div>
+        </form>
+      )}
+      {!mayWrite(myRole) && (
+        <div className="mt-4 flex justify-end">
           <Button type="button" variant="ghost" onClick={onClose}>
             Close
           </Button>
-          <Button type="submit" busy={create.isPending} disabled={name.trim() === ''}>
-            Add stream
-          </Button>
         </div>
-      </form>
+      )}
     </Modal>
   )
 }

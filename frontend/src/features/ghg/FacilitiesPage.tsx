@@ -4,12 +4,19 @@ import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { problemDetail } from '../../lib/api'
+import { refusalMessage } from '../../lib/api'
 import { FacilityFormModal } from './components/FacilityFormModal'
 import { RemoveDialog } from './components/RemoveDialog'
+import { RoleButton } from './components/RoleButton'
 import { StreamsModal } from './components/StreamsModal'
 import { facilityTypeLabels, leaseLabels, relationshipShortLabels } from './format'
-import { useDeleteFacility, useEntitiesQuery, useFacilitiesQuery } from './useGhg'
+import { mayWrite, WRITE_TOOLTIP } from './roles'
+import {
+  useDeleteFacility,
+  useEntitiesQuery,
+  useFacilitiesQuery,
+  useOrganizationQuery,
+} from './useGhg'
 import type { Facility } from './api'
 
 type Dialog =
@@ -33,12 +40,14 @@ export function FacilitiesPage() {
   const { organizationId = '' } = useParams()
   const facilitiesQuery = useFacilitiesQuery(organizationId)
   const entitiesQuery = useEntitiesQuery(organizationId)
+  const organizationQuery = useOrganizationQuery(organizationId)
   const deleteFacility = useDeleteFacility(organizationId)
   const toast = useToast()
   const [dialog, setDialog] = useState<Dialog>(null)
 
   const facilities = facilitiesQuery.data
   const entityCount = entitiesQuery.data?.length ?? 0
+  const myRole = organizationQuery.data?.myRole ?? null
 
   return (
     <section>
@@ -50,9 +59,14 @@ export function FacilitiesPage() {
             accounting share every inventory starts from.
           </p>
         </div>
-        <Button className="px-4 py-1.5 text-sm" onClick={() => setDialog({ kind: 'create' })}>
+        <RoleButton
+          allowed={mayWrite(myRole)}
+          tooltip={WRITE_TOOLTIP}
+          className="px-4 py-1.5 text-sm"
+          onClick={() => setDialog({ kind: 'create' })}
+        >
           Add facility
-        </Button>
+        </RoleButton>
       </div>
 
       {facilities && facilities.length > 0 && (
@@ -129,20 +143,24 @@ export function FacilitiesPage() {
                     >
                       Source streams
                     </Button>
-                    <Button
+                    <RoleButton
+                      allowed={mayWrite(myRole)}
+                      tooltip={WRITE_TOOLTIP}
                       variant="ghost"
                       className="px-2 py-1 text-xs"
                       onClick={() => setDialog({ kind: 'edit', facility })}
                     >
                       Edit
-                    </Button>
-                    <Button
+                    </RoleButton>
+                    <RoleButton
+                      allowed={mayWrite(myRole)}
+                      tooltip={WRITE_TOOLTIP}
                       variant="ghost"
                       className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                       onClick={() => setDialog({ kind: 'remove', facility })}
                     >
                       Remove
-                    </Button>
+                    </RoleButton>
                   </td>
                 </tr>
               ))}
@@ -177,10 +195,7 @@ export function FacilitiesPage() {
                 },
                 onError: (error) => {
                   setDialog(null)
-                  toast(
-                    problemDetail(error) ?? `Could not remove ${dialog.facility.name}.`,
-                    'error',
-                  )
+                  toast(refusalMessage(error, myRole), 'error')
                 },
               },
             )

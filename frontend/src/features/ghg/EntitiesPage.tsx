@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { problemDetail } from '../../lib/api'
+import { refusalMessage } from '../../lib/api'
 import { EntityFormModal } from './components/EntityFormModal'
 import { RemoveDialog } from './components/RemoveDialog'
+import { RoleButton } from './components/RoleButton'
 import { relationshipShortLabels } from './format'
-import { useDeleteEntity, useEntitiesQuery } from './useGhg'
+import { mayWrite, WRITE_TOOLTIP } from './roles'
+import { useDeleteEntity, useEntitiesQuery, useOrganizationQuery } from './useGhg'
 import type { Entity } from './api'
 
 type Dialog =
@@ -22,11 +23,13 @@ function percent(share: number): string {
 export function EntitiesPage() {
   const { organizationId = '' } = useParams()
   const entitiesQuery = useEntitiesQuery(organizationId)
+  const organizationQuery = useOrganizationQuery(organizationId)
   const deleteEntity = useDeleteEntity(organizationId)
   const toast = useToast()
   const [dialog, setDialog] = useState<Dialog>(null)
 
   const entities = entitiesQuery.data
+  const myRole = organizationQuery.data?.myRole ?? null
 
   return (
     <section>
@@ -38,9 +41,14 @@ export function EntitiesPage() {
             GHG Protocol turns the relationship into an accounting share under each approach.
           </p>
         </div>
-        <Button className="px-4 py-1.5 text-sm" onClick={() => setDialog({ kind: 'create' })}>
+        <RoleButton
+          allowed={mayWrite(myRole)}
+          tooltip={WRITE_TOOLTIP}
+          className="px-4 py-1.5 text-sm"
+          onClick={() => setDialog({ kind: 'create' })}
+        >
           Add entity
-        </Button>
+        </RoleButton>
       </div>
 
       <GlassCard className="animate-fade-up overflow-x-auto">
@@ -129,21 +137,25 @@ export function EntitiesPage() {
                     {percent(entity.operationalControlShare)}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <Button
+                    <RoleButton
+                      allowed={mayWrite(myRole)}
+                      tooltip={WRITE_TOOLTIP}
                       variant="ghost"
                       className="px-2 py-1 text-xs"
                       onClick={() => setDialog({ kind: 'edit', entity })}
                     >
                       Edit
-                    </Button>
+                    </RoleButton>
                     {!entity.reportingCompany && (
-                      <Button
+                      <RoleButton
+                        allowed={mayWrite(myRole)}
+                        tooltip={WRITE_TOOLTIP}
                         variant="ghost"
                         className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                         onClick={() => setDialog({ kind: 'remove', entity })}
                       >
                         Remove
-                      </Button>
+                      </RoleButton>
                     )}
                   </td>
                 </tr>
@@ -179,7 +191,7 @@ export function EntitiesPage() {
                 },
                 onError: (error) => {
                   setDialog(null)
-                  toast(problemDetail(error) ?? `Could not remove ${dialog.entity.name}.`, 'error')
+                  toast(refusalMessage(error, myRole), 'error')
                 },
               },
             )

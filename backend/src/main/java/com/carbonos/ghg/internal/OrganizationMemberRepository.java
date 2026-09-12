@@ -15,6 +15,13 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
 
 	long countByOrganizationIdAndRole(UUID organizationId, OrgRole role);
 
-	@Query("select m.organization from OrganizationMember m where m.userId = :userId order by m.organization.createdAt")
+	/** The live organizations the user is a member of; removed ones are listed for nobody (spec 01.3). */
+	@Query("select m.organization from OrganizationMember m where m.userId = :userId and m.organization.deletedAt is null order by m.organization.createdAt")
 	List<Organization> findOrganizationsOfUser(UUID userId);
+
+	/** The owners' emails of an organization, for the administrators' support list (spec 01.3). */
+	@Query("select m.email from OrganizationMember m where m.organization.id = :organizationId and m.role = com.carbonos.ghg.internal.OrgRole.OWNER order by m.createdAt")
+	List<String> findOwnerEmails(UUID organizationId);
+
+	long countByOrganizationId(UUID organizationId);
 }

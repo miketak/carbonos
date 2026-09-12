@@ -3,13 +3,14 @@ import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
-import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { problemDetail } from '../../lib/api'
+import { DeleteOrganizationDialog } from './components/DeleteOrganizationDialog'
 import { GhgHeader } from './components/GhgHeader'
 import { OrganizationFormModal } from './components/OrganizationFormModal'
-import { useDeleteOrganization, useOrganizationsQuery } from './useGhg'
+import { RoleButton } from './components/RoleButton'
+import { mayManageMembership, mayOwn, OWNER_TOOLTIP } from './roles'
+import { useOrganizationsQuery } from './useGhg'
 import type { Organization } from './api'
 
 type Dialog =
@@ -21,7 +22,6 @@ type Dialog =
 /** Entry point of the GHG workflow: the reporting organizations. */
 export function OrganizationsPage() {
   const organizationsQuery = useOrganizationsQuery()
-  const deleteOrganization = useDeleteOrganization()
   const toast = useToast()
   const [dialog, setDialog] = useState<Dialog>(null)
 
@@ -78,6 +78,13 @@ export function OrganizationsPage() {
                 {organization.facilityCount} facilit
                 {organization.facilityCount === 1 ? 'y' : 'ies'} in the boundary
               </p>
+              {organization.myRole === 'ADMIN' && (
+                <p className="mt-2">
+                  <span className="rounded-full bg-teal/15 px-2 py-0.5 text-xs font-bold tracking-wide text-dark-teal">
+                    Support access
+                  </span>
+                </p>
+              )}
               <div className="mt-4 flex gap-2">
                 <Link
                   to={`/app/ghg/${organization.id}`}
@@ -85,20 +92,24 @@ export function OrganizationsPage() {
                 >
                   Open
                 </Link>
-                <Button
+                <RoleButton
+                  allowed={mayOwn(organization.myRole)}
+                  tooltip={OWNER_TOOLTIP}
                   variant="ghost"
                   className="px-3 py-1.5 text-sm"
                   onClick={() => setDialog({ kind: 'edit', organization })}
                 >
                   Edit
-                </Button>
-                <Button
+                </RoleButton>
+                <RoleButton
+                  allowed={mayManageMembership(organization.myRole)}
+                  tooltip={OWNER_TOOLTIP}
                   variant="ghost"
                   className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
                   onClick={() => setDialog({ kind: 'delete', organization })}
                 >
                   Delete
-                </Button>
+                </RoleButton>
               </div>
             </GlassCard>
           ))}
@@ -125,34 +136,14 @@ export function OrganizationsPage() {
         />
       )}
       {dialog?.kind === 'delete' && (
-        <Modal title="Delete organization" onClose={() => setDialog(null)}>
-          <p className="text-sm text-ink-muted">
-            Delete <strong>{dialog.organization.name}</strong>? Its facilities, activity data, and
-            past runs are removed with it.
-          </p>
-          <div className="mt-6 flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setDialog(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() => {
-                const { organization } = dialog
-                setDialog(null)
-                deleteOrganization.mutate(organization.id, {
-                  onSuccess: () => toast(`${organization.name} deleted.`),
-                  onError: (error) =>
-                    toast(
-                      problemDetail(error) ?? `Could not delete ${organization.name}.`,
-                      'error',
-                    ),
-                })
-              }}
-            >
-              Delete
-            </Button>
-          </div>
-        </Modal>
+        <DeleteOrganizationDialog
+          organization={dialog.organization}
+          onClose={() => setDialog(null)}
+          onDeleted={(message) => {
+            setDialog(null)
+            toast(message)
+          }}
+        />
       )}
     </div>
   )

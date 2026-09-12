@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
+import { refusalMessage } from '../../../lib/api'
+import { mayWrite, WRITE_TOOLTIP } from '../roles'
+import type { MyRole } from '../roles'
 import { useSetReportMetadata } from '../useGhg'
+import { RoleButton } from './RoleButton'
 import type { AssuranceLevel, Inventory, IntensityMetricInput } from '../api'
 
 /** The words the PDF prints too: `ReportLabels.java` in the backend's ghg export package carries the same labels (spec 07.8). */
@@ -24,11 +26,14 @@ export const assuranceLabels: Record<AssuranceLevel, string> = {
 export function ReportMetadataCard({
   inventory,
   intensityMetrics,
+  myRole,
 }: {
   inventory: Inventory
   intensityMetrics: IntensityMetricInput[]
+  myRole?: MyRole | null
 }) {
   const editable = inventory.status !== 'PUBLISHED'
+  const writable = editable && mayWrite(myRole)
   const save = useSetReportMetadata(inventory.id)
   const toast = useToast()
   const [approvedBy, setApprovedBy] = useState(inventory.approvedBy ?? '')
@@ -56,7 +61,7 @@ export function ReportMetadataCard({
       },
       {
         onSuccess: () => toast('Report header saved.'),
-        onError: (error) => toast(problemDetail(error) ?? 'Could not save the header.', 'error'),
+        onError: (error) => toast(refusalMessage(error, myRole), 'error'),
       },
     )
   }
@@ -74,13 +79,13 @@ export function ReportMetadataCard({
           label="Approved by (optional)"
           placeholder="Name and role; defaults to whoever publishes"
           value={approvedBy}
-          disabled={!editable}
+          disabled={!writable}
           onChange={(event) => setApprovedBy(event.target.value)}
         />
         <SelectField
           label="Assurance"
           value={assuranceLevel}
-          disabled={!editable}
+          disabled={!writable}
           onChange={(event) => setAssuranceLevel(event.target.value as AssuranceLevel)}
         >
           {Object.entries(assuranceLabels).map(([value, label]) => (
@@ -92,13 +97,13 @@ export function ReportMetadataCard({
         <InputField
           label="Assurance provider (optional)"
           value={assuranceProvider}
-          disabled={!editable}
+          disabled={!writable}
           onChange={(event) => setAssuranceProvider(event.target.value)}
         />
         <InputField
           label="Assurance statement reference (optional)"
           value={assuranceStatement}
-          disabled={!editable}
+          disabled={!writable}
           onChange={(event) => setAssuranceStatement(event.target.value)}
         />
         <label className="flex flex-col gap-1.5 md:col-span-2">
@@ -106,7 +111,7 @@ export function ReportMetadataCard({
           <textarea
             aria-label="Uncertainty statement"
             value={uncertaintyStatement}
-            disabled={!editable}
+            disabled={!writable}
             maxLength={1000}
             rows={3}
             placeholder="Fuel data are metered; the cyanide estimate rests on supplier averages."
@@ -130,7 +135,7 @@ export function ReportMetadataCard({
                   <span>
                     {metric.name}: {metric.value.toLocaleString()} {metric.unit}
                   </span>
-                  {editable && (
+                  {writable && (
                     <button
                       type="button"
                       aria-label={`Remove ${metric.name}`}
@@ -144,7 +149,7 @@ export function ReportMetadataCard({
               ))}
             </ul>
           )}
-          {editable && (
+          {writable && (
             <div className="mt-2 grid gap-2 md:grid-cols-4 md:items-end">
               <InputField
                 label="Denominator"
@@ -166,7 +171,9 @@ export function ReportMetadataCard({
                 value={metricUnit}
                 onChange={(event) => setMetricUnit(event.target.value)}
               />
-              <Button
+              <RoleButton
+                allowed={mayWrite(myRole)}
+                tooltip={WRITE_TOOLTIP}
                 type="button"
                 variant="ghost"
                 className="px-3 py-1.5 text-sm"
@@ -188,15 +195,21 @@ export function ReportMetadataCard({
                 }}
               >
                 Add denominator
-              </Button>
+              </RoleButton>
             </div>
           )}
         </div>
         {editable && (
           <div className="flex justify-end md:col-span-2">
-            <Button type="submit" className="px-4 py-1.5 text-sm" busy={save.isPending}>
+            <RoleButton
+              allowed={mayWrite(myRole)}
+              tooltip={WRITE_TOOLTIP}
+              type="submit"
+              className="px-4 py-1.5 text-sm"
+              busy={save.isPending}
+            >
               Save report header
-            </Button>
+            </RoleButton>
           </div>
         )}
       </form>

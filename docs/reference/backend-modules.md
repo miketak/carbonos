@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-12
 ---
 
 # Backend modules
@@ -33,7 +33,7 @@ flowchart TB
 | Module | Responsibility | Public API (root package) | Tables |
 | --- | --- | --- | --- |
 | `user` | Accounts, session login, the administrator-facing user API, the self-service access-request loop (spec 01, 01.1). | `AuthenticatedUser` (the session principal), `UserDirectory` (account lookup), events `UserCreated`, `AccessRequestApproved`, `AccessRequestDenied` | `users`, `access_requests` |
-| `ghg` | Everything the GHG Protocol specs describe: organizations, entities, facilities, activity data, factors, boundaries, inventories, runs, base years, reports (specs 02 to 08). | Events `GhgRunCompleted`, `InventoryPublished` | Every `ghg_*` table |
+| `ghg` | Everything the GHG Protocol specs describe: organizations, entities, facilities, activity data, factors, boundaries, inventories, runs, base years, reports (specs 02 to 08), plus membership, support access and the organization tombstone (specs 01.2, 01.3). | Events `GhgRunCompleted`, `InventoryPublished` | Every `ghg_*` table |
 | `mail` | Turns other modules' events into SMTP messages. Owns no tables and exposes no API. Delivery is at-least-once through the Modulith event registry; unsent mail is retried on restart. | none | none (the event publication log is Modulith's) |
 | `media` | Object storage for evidence and profile files on any S3-compatible store: MinIO locally, a Railway bucket in production. | `MediaStorage` | `media_files` |
 | `shared` | Cross-cutting infrastructure: web configuration, RFC 9457 problem details, the global exception handler. Business logic never lives here. | n/a | none |
@@ -63,6 +63,12 @@ evidence through `MediaStorage`.
   migrations and Hibernate validates it at startup.
 - Time-ordered facts (runs, boundary versions, audit events) are immutable
   once written; corrections add rows, they do not update them.
+- An organization and everything under it is visible to its members only
+  (spec 01.3). `GhgAccess` decides: an outsider, a platform administrator
+  without support access, and a removed organization all give 404. The
+  administrator-only endpoints live under `/api/admin/**`, which
+  `SecurityConfig` reserves for the ADMIN platform role, and the service
+  checks the role again.
 
 ## Generated documentation
 

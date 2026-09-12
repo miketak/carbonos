@@ -206,3 +206,32 @@ test('editing a recorded instrument loads it into the form and saving replaces i
     retirementDate: '2026-01-15',
   })
 })
+
+test('a verifier has no add-instrument form; the row actions and the residual mix stay visible but disabled (spec 01.4)', async () => {
+  vi.mocked(listMarketFactors).mockResolvedValue([ppa])
+  renderWithProviders(
+    <MarketFactorsCard organizationId="org-1" inventory={inventory} myRole="VERIFIER" />,
+  )
+
+  // the residual mix disclosure is a read every role sees, disabled rather than hidden
+  const available = await screen.findByLabelText(/Residual mix available/)
+  expect(available).toBeDisabled()
+  const save = screen.getByRole('button', { name: /save residual mix/i })
+  expect(save).toBeDisabled()
+  expect(save).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(save).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+
+  // the instrument the organization already recorded stays visible, its row actions disabled with the role they need
+  expect(await screen.findByText('Obuom solar PPA 2025')).toBeInTheDocument()
+  const edit = screen.getByRole('button', { name: 'Edit instrument for Obuom Processing Plant' })
+  expect(edit).toBeDisabled()
+  expect(edit).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  const remove = screen.getByRole('button', {
+    name: 'Remove instrument for Obuom Processing Plant',
+  })
+  expect(remove).toBeDisabled()
+  expect(remove).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+
+  // the new-instrument form has nothing to read: it is hidden outright, not merely disabled
+  expect(screen.queryByRole('button', { name: 'Add instrument' })).not.toBeInTheDocument()
+})

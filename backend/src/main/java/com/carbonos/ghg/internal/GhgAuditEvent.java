@@ -13,9 +13,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * One recorded act on an inventory (spec 05.2): who did what, when, and why.
- * Runs are never deleted and final designations never silently withdrawn;
- * each such act leaves a row here that the inventory page lists.
+ * One recorded act on an inventory (spec 05.2) or on an organization (spec
+ * 01.3): who did what, when, and why. Runs are never deleted and final
+ * designations never silently withdrawn; each such act leaves a row here that
+ * the inventory page lists. Support access and the organization's deletion
+ * leave rows without an inventory that the organization's history lists.
  */
 @Entity
 @Table(name = "ghg_audit_events")
@@ -23,13 +25,17 @@ public class GhgAuditEvent {
 
 	public enum Action {
 		RUN_VOIDED, FINAL_WITHDRAWN, CLASSIFIED, REVIEWED, FROZEN, REOPENED, RUN_LAUNCHED, FINAL_DESIGNATED, PUBLISHED,
-		CORRECTION_CREATED, HEADER_SAVED
+		CORRECTION_CREATED, HEADER_SAVED, ADMIN_ACCESS_ASSUMED, ADMIN_ACCESS_ENDED, ADMIN_ACCESS_EXPIRED,
+		ORGANIZATION_DELETED
 	}
 
 	@Id
 	private UUID id;
 
-	@Column(name = "inventory_id", nullable = false)
+	@Column(name = "organization_id")
+	private UUID organizationId;
+
+	@Column(name = "inventory_id")
 	private UUID inventoryId;
 
 	@Column(name = "run_id")
@@ -58,8 +64,20 @@ public class GhgAuditEvent {
 	protected GhgAuditEvent() {
 	}
 
-	GhgAuditEvent(UUID inventoryId, GhgRun run, Action action, UUID actorUserId, String actor, String reason) {
+	/** An act on an inventory; {@code run} is the run it concerns, if any. */
+	GhgAuditEvent(Inventory inventory, GhgRun run, Action action, UUID actorUserId, String actor, String reason) {
+		this(inventory.getOrganization().getId(), inventory.getId(), run, action, actorUserId, actor, reason);
+	}
+
+	/** An act on the organization itself (spec 01.3): no inventory, no run. */
+	GhgAuditEvent(UUID organizationId, Action action, UUID actorUserId, String actor, String reason) {
+		this(organizationId, null, null, action, actorUserId, actor, reason);
+	}
+
+	private GhgAuditEvent(UUID organizationId, UUID inventoryId, GhgRun run, Action action, UUID actorUserId,
+			String actor, String reason) {
 		this.id = UUID.randomUUID();
+		this.organizationId = organizationId;
 		this.inventoryId = inventoryId;
 		this.runId = run == null ? null : run.getId();
 		this.runNo = run == null ? null : run.getRunNo();
@@ -71,6 +89,10 @@ public class GhgAuditEvent {
 
 	public UUID getId() {
 		return id;
+	}
+
+	public UUID getOrganizationId() {
+		return organizationId;
 	}
 
 	public UUID getInventoryId() {

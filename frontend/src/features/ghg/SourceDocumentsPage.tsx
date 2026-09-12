@@ -4,18 +4,21 @@ import { InputField, SelectField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { problemDetail } from '../../lib/api'
+import { refusalMessage } from '../../lib/api'
 import { evidenceDownloadUrl, evidenceIndexUrl, importBatchFileUrl } from './api'
 import type { DocumentFilter, EvidenceDocument, EvidenceQuery } from './api'
 import { Breadcrumb } from './components/Breadcrumb'
 import { formatSize } from './components/EvidencePanel'
 import { ViewSwitch } from './components/ViewSwitch'
 import { formatDateTime, formatRecordPeriod } from './format'
+import { mayWrite, WRITE_TOOLTIP } from './roles'
+import type { MyRole } from './roles'
 import {
   useDeleteEvidence,
   useEvidencePageQuery,
   useFacilitiesQuery,
   useImportBatchesQuery,
+  useOrganizationQuery,
 } from './useGhg'
 
 const PAGE_SIZE = 24
@@ -57,6 +60,8 @@ function DocumentIcon({ kind }: { kind: EvidenceDocument['kind'] | 'IMPORT' }) {
  */
 export function SourceDocumentsPage() {
   const { organizationId = '' } = useParams()
+  const organizationQuery = useOrganizationQuery(organizationId)
+  const myRole = organizationQuery.data?.myRole
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
   const facilityId = params.get('facility') ?? ''
@@ -209,7 +214,12 @@ export function SourceDocumentsPage() {
       {documents && documents.length > 0 && (
         <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {documents.map((item) => (
-            <DocumentCard key={item.id} organizationId={organizationId} item={item} />
+            <DocumentCard
+              key={item.id}
+              organizationId={organizationId}
+              item={item}
+              myRole={myRole}
+            />
           ))}
         </ul>
       )}
@@ -248,9 +258,11 @@ export function SourceDocumentsPage() {
 function DocumentCard({
   organizationId,
   item,
+  myRole,
 }: {
   organizationId: string
   item: EvidenceDocument
+  myRole?: MyRole
 }) {
   const remove = useDeleteEvidence({ activityId: item.activityId }, organizationId)
   const toast = useToast()
@@ -311,20 +323,35 @@ function DocumentCard({
             <span title="A run has calculated this record; its evidence stays on file so the run remains traceable.">
               on a calculated run
             </span>
-          ) : (
+          ) : mayWrite(myRole) ? (
             <button
               type="button"
               aria-label={`Remove ${item.name}`}
               className="text-red-600 hover:underline"
               onClick={() =>
                 remove.mutate(item.id, {
-                  onError: (error) =>
-                    toast(problemDetail(error) ?? 'Could not remove the document.', 'error'),
+                  onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                 })
               }
             >
               remove
             </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                aria-label={`Remove ${item.name}`}
+                className="text-red-600 opacity-50"
+                disabled
+                title={WRITE_TOOLTIP}
+                aria-describedby={`doc-role-${item.id}`}
+              >
+                remove
+              </button>
+              <span id={`doc-role-${item.id}`} className="sr-only">
+                {WRITE_TOOLTIP}
+              </span>
+            </>
           )}
         </div>
       </GlassCard>

@@ -10,7 +10,7 @@ vi.mock('./api', () => import('./testApiMock'))
 // forms with many fields take longer than the 15s default on a loaded machine
 vi.setConfig({ testTimeout: 30000 })
 
-import { createInventory, listInventories } from './api'
+import { createInventory, getOrganization, listInventories } from './api'
 
 const draft: Inventory = {
   id: 'inv-1',
@@ -78,6 +78,16 @@ const published: Inventory = {
 beforeEach(() => {
   vi.mocked(listInventories).mockReset()
   vi.mocked(listInventories).mockResolvedValue([final, draft, published])
+  vi.mocked(getOrganization).mockReset().mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'OWNER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
 })
 
 test('every card shows its lifecycle state, so the list shows what can run or change', async () => {
@@ -185,4 +195,26 @@ test('the form says the boundary is rebuilt when the chosen approach differs fro
       /2025 Corporate Inventory is under operational control\. Under equity share the boundary is rebuilt from Table 1/,
     ),
   ).toBeInTheDocument()
+})
+
+test('a verifier has no usable New inventory (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    myRole: 'VERIFIER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  renderWithProviders(<InventoriesPage />, {
+    route: '/app/ghg/org-1/inventories',
+    path: '/app/ghg/:organizationId/inventories',
+  })
+
+  const button = await screen.findByRole('button', { name: /new inventory/i })
+  await waitFor(() => expect(button).toBeDisabled())
+  expect(button).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(button).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
 })

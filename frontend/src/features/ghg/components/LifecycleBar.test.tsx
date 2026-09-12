@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../../test/utils'
@@ -202,4 +202,96 @@ test('reopening asks for a reason of at least 10 characters and names the versio
   await waitFor(() =>
     expect(reopenInventory).toHaveBeenCalledWith('inv-1', 'instruments added for Nkran'),
   )
+})
+
+// --- the write and approve split (spec 01.4) --------------------------------
+
+test('a verifier sees Freeze inventory disabled with the write role it needs', async () => {
+  renderWithProviders(<LifecycleBar inventory={inventory} inBoundaryCount={2} myRole="VERIFIER" />)
+
+  const freeze = await screen.findByRole('button', { name: /freeze inventory/i })
+  expect(freeze).toBeDisabled()
+  expect(freeze).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
+  expect(freeze).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+})
+
+test('a preparer may reopen a frozen inventory but not withdraw its final designation', async () => {
+  renderWithProviders(
+    <LifecycleBar
+      inventory={{
+        ...inventory,
+        status: 'FROZEN',
+        currentBoundaryVersionId: 'bv-1',
+        currentBoundaryVersionNo: 1,
+      }}
+      inBoundaryCount={2}
+      myRole="PREPARER"
+    />,
+  )
+
+  expect(await screen.findByRole('button', { name: /reopen as draft/i })).toBeEnabled()
+
+  cleanup()
+  renderWithProviders(
+    <LifecycleBar
+      inventory={{
+        ...inventory,
+        status: 'FINAL',
+        finalRunId: 'run-1',
+        currentBoundaryVersionId: 'bv-1',
+        currentBoundaryVersionNo: 1,
+      }}
+      inBoundaryCount={2}
+      myRole="PREPARER"
+    />,
+  )
+
+  const withdraw = await screen.findByRole('button', { name: /withdraw final designation/i })
+  expect(withdraw).toBeDisabled()
+  expect(withdraw).toHaveAttribute('title', 'Needs the Reviewer or Owner role.')
+  expect(withdraw).toHaveAccessibleDescription('Needs the Reviewer or Owner role.')
+  const publish = screen.getByRole('button', { name: /^publish$/i })
+  expect(publish).toBeDisabled()
+  expect(publish).toHaveAttribute('title', 'Needs the Reviewer or Owner role.')
+})
+
+test('a reviewer may withdraw a final designation and publish', async () => {
+  renderWithProviders(
+    <LifecycleBar
+      inventory={{
+        ...inventory,
+        status: 'FINAL',
+        finalRunId: 'run-1',
+        currentBoundaryVersionId: 'bv-1',
+        currentBoundaryVersionNo: 1,
+      }}
+      inBoundaryCount={2}
+      myRole="REVIEWER"
+    />,
+  )
+
+  expect(await screen.findByRole('button', { name: /withdraw final designation/i })).toBeEnabled()
+  expect(screen.getByRole('button', { name: /^publish$/i })).toBeEnabled()
+})
+
+test('a preparer sees Create correction disabled with the approve role it needs', async () => {
+  renderWithProviders(
+    <LifecycleBar
+      inventory={{
+        ...inventory,
+        status: 'PUBLISHED',
+        finalRunId: 'run-1',
+        publishedAt: '2026-09-05T09:00:00Z',
+        currentBoundaryVersionId: 'bv-1',
+        currentBoundaryVersionNo: 1,
+      }}
+      inBoundaryCount={2}
+      myRole="PREPARER"
+    />,
+  )
+
+  const correction = await screen.findByRole('button', { name: /create correction/i })
+  expect(correction).toBeDisabled()
+  expect(correction).toHaveAttribute('title', 'Needs the Reviewer or Owner role.')
+  expect(correction).toHaveAccessibleDescription('Needs the Reviewer or Owner role.')
 })

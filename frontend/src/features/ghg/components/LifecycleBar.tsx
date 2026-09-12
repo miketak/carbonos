@@ -5,8 +5,10 @@ import { InputField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { Modal } from '../../../components/Modal'
 import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
+import { refusalMessage } from '../../../lib/api'
 import { gateLabels } from '../format'
+import { APPROVE_TOOLTIP, mayApprove, mayWrite, WRITE_TOOLTIP } from '../roles'
+import type { MyRole } from '../roles'
 import {
   useBoundaryVersionsQuery,
   useFreezeInventory,
@@ -16,6 +18,7 @@ import {
   useValidationQuery,
   useWithdrawFinal,
 } from '../useGhg'
+import { RoleButton } from './RoleButton'
 import type { FreezeBlocker, GateResult, Inventory } from '../api'
 
 const stateCopy: Record<Inventory['status'], string> = {
@@ -64,9 +67,11 @@ function summarizeGate(gate: GateResult): string {
 export function LifecycleBar({
   inventory,
   inBoundaryCount,
+  myRole,
 }: {
   inventory: Inventory
   inBoundaryCount: number
+  myRole?: MyRole | null
 }) {
   const inventoryId = inventory.id
   const freeze = useFreezeInventory(inventoryId)
@@ -85,6 +90,7 @@ export function LifecycleBar({
   const [withdrawReason, setWithdrawReason] = useState('')
   const [reopenReason, setReopenReason] = useState('')
   const [correctionReason, setCorrectionReason] = useState('')
+  const [mutationError, setMutationError] = useState<string | null>(null)
 
   const report = validationQuery.data
   const blockers = report?.freezeBlockers ?? []
@@ -92,10 +98,12 @@ export function LifecycleBar({
   const versionsCut = versionsQuery.data?.length ?? 0
   const nextVersionNo = versionsCut + 1
 
-  const fail = (fallback: string) => (error: unknown) => {
-    setDialog(null)
-    toast(problemDetail(error) ?? fallback, 'error')
+  // spec 01.4: the refusal stays under the dialog's fields; the dialog stays open with what was typed
+  const openDialog = (which: NonNullable<typeof dialog>) => {
+    setMutationError(null)
+    setDialog(which)
   }
+  const fail = (error: unknown) => setMutationError(refusalMessage(error, myRole))
 
   return (
     <GlassCard className="p-6">
@@ -133,27 +141,31 @@ export function LifecycleBar({
         </div>
         <div className="flex flex-wrap gap-2">
           {inventory.status === 'DRAFT' && (
-            <Button
+            <RoleButton
+              allowed={mayWrite(myRole)}
+              tooltip={WRITE_TOOLTIP}
               className="px-4 py-1.5 text-sm"
               disabled={inBoundaryCount === 0}
               title={inBoundaryCount === 0 ? 'Add at least one facility first' : undefined}
-              onClick={() => setDialog('freeze')}
+              onClick={() => openDialog('freeze')}
             >
               Freeze inventory
-            </Button>
+            </RoleButton>
           )}
           {inventory.status === 'FROZEN' && (
             <>
-              <Button
+              <RoleButton
+                allowed={mayWrite(myRole)}
+                tooltip={WRITE_TOOLTIP}
                 variant="ghost"
                 className="px-4 py-1.5 text-sm"
                 onClick={() => {
                   setReopenReason('')
-                  setDialog('reopen')
+                  openDialog('reopen')
                 }}
               >
                 Reopen as draft
-              </Button>
+              </RoleButton>
               <Button className="px-4 py-1.5 text-sm" disabled title="Designate a final run first">
                 Publish
               </Button>
@@ -161,25 +173,37 @@ export function LifecycleBar({
           )}
           {inventory.status === 'FINAL' && (
             <>
-              <Button
+              <RoleButton
+                allowed={mayApprove(myRole)}
+                tooltip={APPROVE_TOOLTIP}
                 variant="ghost"
                 className="px-4 py-1.5 text-sm"
                 onClick={() => {
                   setWithdrawReason('')
-                  setDialog('withdraw')
+                  openDialog('withdraw')
                 }}
               >
                 Withdraw final designation
-              </Button>
-              <Button className="px-4 py-1.5 text-sm" onClick={() => setDialog('publish')}>
+              </RoleButton>
+              <RoleButton
+                allowed={mayApprove(myRole)}
+                tooltip={APPROVE_TOOLTIP}
+                className="px-4 py-1.5 text-sm"
+                onClick={() => openDialog('publish')}
+              >
                 Publish
-              </Button>
+              </RoleButton>
             </>
           )}
           {inventory.status === 'PUBLISHED' && !inventory.supersededById && (
-            <Button className="px-4 py-1.5 text-sm" onClick={() => setDialog('supersede')}>
+            <RoleButton
+              allowed={mayApprove(myRole)}
+              tooltip={APPROVE_TOOLTIP}
+              className="px-4 py-1.5 text-sm"
+              onClick={() => openDialog('supersede')}
+            >
               Create correction
-            </Button>
+            </RoleButton>
           )}
         </div>
       </div>
@@ -228,6 +252,11 @@ export function LifecycleBar({
               </ul>
             </div>
           )}
+          {mutationError && (
+            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+              {mutationError}
+            </p>
+          )}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -243,7 +272,7 @@ export function LifecycleBar({
                     setDialog(null)
                     toast(`Inventory frozen as boundary version ${version.version.versionNo}.`)
                   },
-                  onError: fail('Could not freeze the inventory.'),
+                  onError: fail,
                 })
               }
             >
@@ -271,6 +300,11 @@ export function LifecycleBar({
               required
             />
           </div>
+          {mutationError && (
+            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+              {mutationError}
+            </p>
+          )}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -285,7 +319,7 @@ export function LifecycleBar({
                     setDialog(null)
                     toast('Inventory reopened as a draft.')
                   },
-                  onError: fail('Could not reopen the inventory.'),
+                  onError: fail,
                 })
               }
             >
@@ -312,6 +346,11 @@ export function LifecycleBar({
               required
             />
           </div>
+          {mutationError && (
+            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+              {mutationError}
+            </p>
+          )}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -326,7 +365,7 @@ export function LifecycleBar({
                     setDialog(null)
                     toast('Final designation withdrawn.')
                   },
-                  onError: fail('Could not withdraw the designation.'),
+                  onError: fail,
                 })
               }
             >
@@ -342,6 +381,11 @@ export function LifecycleBar({
             Publishing issues the report; nothing on this inventory can change afterwards. A
             correction is a new inventory that supersedes it.
           </p>
+          {mutationError && (
+            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+              {mutationError}
+            </p>
+          )}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -355,7 +399,7 @@ export function LifecycleBar({
                     setDialog(null)
                     toast('Inventory published.')
                   },
-                  onError: fail('Could not publish the inventory.'),
+                  onError: fail,
                 })
               }
             >
@@ -390,6 +434,11 @@ export function LifecycleBar({
               required
             />
           </div>
+          {mutationError && (
+            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+              {mutationError}
+            </p>
+          )}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -407,7 +456,7 @@ export function LifecycleBar({
                       toast(`${successor.name} created as a correction.`)
                       void navigate(`../${successor.id}`, { relative: 'path' })
                     },
-                    onError: fail('Could not create the correction.'),
+                    onError: fail,
                   },
                 )
               }

@@ -1,12 +1,18 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { useToast } from '../../../components/toast'
-import { problemDetail } from '../../../lib/api'
+import { ApiError, refusalMessage } from '../../../lib/api'
+import { useSession } from '../../auth/useSession'
+import { mayManageMembership } from '../roles'
 import { useAddMember, useChangeMemberRole, useMembersQuery, useRemoveMember } from '../useGhg'
 import type { OrgRole, Organization } from '../api'
+
+/** Spec 01.4: the email typed has no platform account yet. */
+const UNKNOWN_EMAIL = 'No account with that email.'
 
 export const roleLabels: Record<OrgRole, string> = {
   OWNER: 'Owner',
@@ -26,12 +32,17 @@ export function MembersCard({ organization }: { organization: Organization }) {
   const changeRole = useChangeMemberRole(organization.id)
   const remove = useRemoveMember(organization.id)
   const toast = useToast()
-  const canManage = organization.myRole === 'OWNER' || organization.myRole === 'ADMIN'
+  const session = useSession()
+  // spec 01.3: support access never grants membership changes, so an owner by membership only
+  const canManage = mayManageMembership(organization.myRole)
+  const isPlatformAdmin = session.data?.role === 'ADMIN'
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<OrgRole>('PREPARER')
+  const [addError, setAddError] = useState<string | null>(null)
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    setAddError(null)
     add.mutate(
       { email: email.trim(), role },
       {
@@ -41,7 +52,13 @@ export function MembersCard({ organization }: { organization: Organization }) {
             `${member.displayName} added as ${roleLabels[member.role].split(' (')[0].toLowerCase()}.`,
           )
         },
-        onError: (error) => toast(problemDetail(error) ?? 'Could not add the member.', 'error'),
+        // spec 01.4: an unknown email keeps what was typed and says what to do about it
+        onError: (error) =>
+          setAddError(
+            error instanceof ApiError && error.status === 404
+              ? UNKNOWN_EMAIL
+              : refusalMessage(error, organization.myRole),
+          ),
       },
     )
   }
@@ -82,7 +99,7 @@ export function MembersCard({ organization }: { organization: Organization }) {
                           { memberId: member.id, role: event.target.value as OrgRole },
                           {
                             onError: (error) =>
-                              toast(problemDetail(error) ?? 'Could not change the role.', 'error'),
+                              toast(refusalMessage(error, organization.myRole), 'error'),
                           },
                         )
                       }
@@ -107,7 +124,7 @@ export function MembersCard({ organization }: { organization: Organization }) {
                       onClick={() =>
                         remove.mutate(member.id, {
                           onError: (error) =>
-                            toast(problemDetail(error) ?? 'Could not remove the member.', 'error'),
+                            toast(refusalMessage(error, organization.myRole), 'error'),
                         })
                       }
                     >
@@ -128,6 +145,7 @@ export function MembersCard({ organization }: { organization: Organization }) {
             placeholder="abena@client.example"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            aria-invalid={addError !== null}
             required
           />
           <SelectField
@@ -149,6 +167,25 @@ export function MembersCard({ organization }: { organization: Organization }) {
           >
             Add member
           </Button>
+          {addError && (
+            <p role="alert" className="text-xs font-medium text-red-600 md:col-span-3">
+              {addError === UNKNOWN_EMAIL ? (
+                <>
+                  No account with that email. Add the user under{' '}
+                  {isPlatformAdmin ? (
+                    <Link to="/admin/users" className="font-semibold underline">
+                      Manage users
+                    </Link>
+                  ) : (
+                    'Manage users'
+                  )}{' '}
+                  first.{isPlatformAdmin ? '' : ' Ask a platform administrator to add them.'}
+                </>
+              ) : (
+                addError
+              )}
+            </p>
+          )}
         </form>
       )}
     </GlassCard>

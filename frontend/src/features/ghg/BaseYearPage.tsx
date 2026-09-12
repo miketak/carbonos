@@ -7,13 +7,17 @@ import { GlassCard } from '../../components/GlassCard'
 import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { fieldErrors, problemDetail } from '../../lib/api'
+import { fieldErrors, refusalMessage } from '../../lib/api'
+import { RoleButton } from './components/RoleButton'
 import { conventionLabels, formatCo2e } from './format'
+import { mayWrite, WRITE_TOOLTIP } from './roles'
+import type { MyRole } from './roles'
 import {
   useBaseYearQuery,
   useClearBaseYear,
   useDecideRecalculation,
   useInventoriesQuery,
+  useOrganizationQuery,
   useRaiseRecalculation,
   useRunsQuery,
   useSetBaseYear,
@@ -43,12 +47,14 @@ export function BaseYearPage() {
   const { organizationId = '' } = useParams()
   const baseYearQuery = useBaseYearQuery(organizationId)
   const inventoriesQuery = useInventoriesQuery(organizationId)
+  const organizationQuery = useOrganizationQuery(organizationId)
   const clear = useClearBaseYear(organizationId)
   const toast = useToast()
   const [editing, setEditing] = useState(false)
 
   const baseYear = baseYearQuery.data
   const inventories = inventoriesQuery.data ?? []
+  const myRole = organizationQuery.data?.myRole
 
   return (
     <section className="flex flex-col gap-6">
@@ -81,51 +87,62 @@ export function BaseYearPage() {
               </div>
               {baseYear && !editing && (
                 <div className="flex gap-2">
-                  <Button
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
                     variant="ghost"
                     className="px-3 py-1.5 text-sm"
                     onClick={() => setEditing(true)}
                   >
                     Edit policy
-                  </Button>
-                  <Button
+                  </RoleButton>
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
                     variant="ghost"
                     className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
                     busy={clear.isPending}
                     onClick={() =>
                       clear.mutate(undefined, {
                         onSuccess: () => toast('Base year cleared.'),
-                        onError: (error) =>
-                          toast(problemDetail(error) ?? 'Could not clear the base year.', 'error'),
+                        onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                       })
                     }
                   >
                     Clear base year
-                  </Button>
+                  </RoleButton>
                 </div>
               )}
             </div>
 
             {baseYear && !editing && <Designation baseYear={baseYear} />}
-            {(!baseYear || editing) && (
-              <PolicyForm
-                organizationId={organizationId}
-                inventories={inventories}
-                baseYear={baseYear ?? null}
-                onCancel={baseYear ? () => setEditing(false) : undefined}
-                onSaved={(saved) => {
-                  setEditing(false)
-                  toast(`Base year ${saved.year} designated.`)
-                }}
-              />
-            )}
+            {(!baseYear || editing) &&
+              (mayWrite(myRole) ? (
+                <PolicyForm
+                  organizationId={organizationId}
+                  inventories={inventories}
+                  baseYear={baseYear ?? null}
+                  myRole={myRole}
+                  onCancel={baseYear ? () => setEditing(false) : undefined}
+                  onSaved={(saved) => {
+                    setEditing(false)
+                    toast(`Base year ${saved.year} designated.`)
+                  }}
+                />
+              ) : (
+                <p className="mt-4 text-sm text-ink-muted">No base year has been designated yet.</p>
+              ))}
           </>
         )}
       </GlassCard>
 
       {baseYear && (
         <div className="animate-fade-up" style={{ '--stagger': 1 } as CSSProperties}>
-          <RecalculationHistory organizationId={organizationId} baseYear={baseYear} />
+          <RecalculationHistory
+            organizationId={organizationId}
+            baseYear={baseYear}
+            myRole={myRole}
+          />
         </div>
       )}
     </section>
@@ -179,12 +196,14 @@ function PolicyForm({
   organizationId,
   inventories,
   baseYear,
+  myRole,
   onCancel,
   onSaved,
 }: {
   organizationId: string
   inventories: Inventory[]
   baseYear: BaseYear | null
+  myRole: MyRole | undefined
   onCancel?: () => void
   onSaved: (saved: BaseYear) => void
 }) {
@@ -197,7 +216,7 @@ function PolicyForm({
   )
 
   const validation = fieldErrors(set.error)
-  const generalError = set.isError && !validation ? problemDetail(set.error) : undefined
+  const generalError = set.isError && !validation ? refusalMessage(set.error, myRole) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -308,9 +327,11 @@ type Decision =
 function RecalculationHistory({
   organizationId,
   baseYear,
+  myRole,
 }: {
   organizationId: string
   baseYear: BaseYear
+  myRole: MyRole | undefined
 }) {
   const [decision, setDecision] = useState<Decision>(null)
   const toast = useToast()
@@ -330,13 +351,15 @@ function RecalculationHistory({
             on its own and together with the outstanding earlier ones.
           </p>
         </div>
-        <Button
+        <RoleButton
+          allowed={mayWrite(myRole)}
+          tooltip={WRITE_TOOLTIP}
           variant="ghost"
           className="px-3 py-1.5 text-sm"
           onClick={() => setDecision({ kind: 'raise' })}
         >
           Raise a candidate
-        </Button>
+        </RoleButton>
       </div>
       {baseYear.recalculations.length === 0 && (
         <p className="mt-4 text-sm text-ink-muted">
@@ -377,19 +400,23 @@ function RecalculationHistory({
             <p className="mt-2">{recalculation.reason}</p>
             {recalculation.status === 'FLAGGED' ? (
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button
+                <RoleButton
+                  allowed={mayWrite(myRole)}
+                  tooltip={WRITE_TOOLTIP}
                   className="px-3 py-1.5 text-xs"
                   onClick={() => setDecision({ kind: 'recalculate', recalculation })}
                 >
                   Record recalculated base
-                </Button>
-                <Button
+                </RoleButton>
+                <RoleButton
+                  allowed={mayWrite(myRole)}
+                  tooltip={WRITE_TOOLTIP}
                   variant="ghost"
                   className="px-3 py-1.5 text-xs"
                   onClick={() => setDecision({ kind: 'decline', recalculation })}
                 >
                   Decline
-                </Button>
+                </RoleButton>
               </div>
             ) : (
               <p className="mt-2 text-xs text-ink-muted">
@@ -411,6 +438,7 @@ function RecalculationHistory({
         <DeclineModal
           organizationId={organizationId}
           recalculation={decision.recalculation}
+          myRole={myRole}
           onClose={() => setDecision(null)}
           onDone={() => {
             setDecision(null)
@@ -421,6 +449,7 @@ function RecalculationHistory({
       {decision?.kind === 'raise' && (
         <RaiseModal
           organizationId={organizationId}
+          myRole={myRole}
           onClose={() => setDecision(null)}
           onDone={() => {
             setDecision(null)
@@ -433,6 +462,7 @@ function RecalculationHistory({
           organizationId={organizationId}
           baseYear={baseYear}
           recalculation={decision.recalculation}
+          myRole={myRole}
           onClose={() => setDecision(null)}
           onDone={() => {
             setDecision(null)
@@ -447,10 +477,12 @@ function RecalculationHistory({
 /** A methodology change or a significant error, raised by the accountant (spec 06.1). */
 function RaiseModal({
   organizationId,
+  myRole,
   onClose,
   onDone,
 }: {
   organizationId: string
+  myRole: MyRole | undefined
   onClose: () => void
   onDone: () => void
 }) {
@@ -462,7 +494,7 @@ function RaiseModal({
   const [percent, setPercent] = useState('')
   const [comparisonRunId, setComparisonRunId] = useState('')
   const validation = fieldErrors(raise.error)
-  const error = raise.isError && !validation ? problemDetail(raise.error) : undefined
+  const error = raise.isError && !validation ? refusalMessage(raise.error, myRole) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -542,17 +574,19 @@ function RaiseModal({
 function DeclineModal({
   organizationId,
   recalculation,
+  myRole,
   onClose,
   onDone,
 }: {
   organizationId: string
   recalculation: Recalculation
+  myRole: MyRole | undefined
   onClose: () => void
   onDone: () => void
 }) {
   const decide = useDecideRecalculation(organizationId)
   const [note, setNote] = useState('')
-  const error = decide.isError ? problemDetail(decide.error) : undefined
+  const error = decide.isError ? refusalMessage(decide.error, myRole) : undefined
 
   return (
     <Modal title="Decline the recalculation?" onClose={onClose}>
@@ -601,12 +635,14 @@ function RecalculateModal({
   organizationId,
   baseYear,
   recalculation,
+  myRole,
   onClose,
   onDone,
 }: {
   organizationId: string
   baseYear: BaseYear
   recalculation: Recalculation
+  myRole: MyRole | undefined
   onClose: () => void
   onDone: () => void
 }) {
@@ -615,7 +651,7 @@ function RecalculateModal({
   const runs = runsQuery.data ?? []
   const [runId, setRunId] = useState('')
   const [note, setNote] = useState('')
-  const error = decide.isError ? problemDetail(decide.error) : undefined
+  const error = decide.isError ? refusalMessage(decide.error, myRole) : undefined
   const chosen = runId || runs[0]?.id || ''
 
   return (

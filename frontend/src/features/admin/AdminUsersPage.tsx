@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
 import { useToast } from '../../components/toast'
@@ -54,6 +55,9 @@ export function AdminUsersPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Link to="/admin/organizations" className="text-sm font-semibold text-link">
+              Organizations
+            </Link>
             <span className="text-sm text-ink-muted">{session.data?.displayName}</span>
             <Button
               variant="ghost"

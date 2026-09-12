@@ -1,7 +1,9 @@
 package com.carbonos.ghg.internal;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -42,6 +44,9 @@ public class GhgService {
 	private final CustomUnitRepository customUnits;
 	private final DensityRepository densities;
 	private final InventoryAssignmentRepository assignments;
+	private final InventoryRepository inventories;
+	private final SupportAccessRepository supportAccess;
+	private final GhgAuditEventRepository auditEvents;
 
 	GhgService(OrganizationRepository organizations, LegalEntityRepository entities, FacilityRepository facilities,
 			EmissionFactorRepository emissionFactors, ActivityRecordRepository activities,
@@ -49,7 +54,11 @@ public class GhgService {
 			OrganizationMemberRepository members, UserDirectory userDirectory, GhgAccess access,
 			ActivityRevisionRepository revisions, BoundaryTreatmentRepository boundaryTreatments,
 			EvidenceRepository evidence, CustomUnitRepository customUnits, DensityRepository densities,
-			InventoryAssignmentRepository assignments) {
+			InventoryAssignmentRepository assignments, InventoryRepository inventories,
+			SupportAccessRepository supportAccess, GhgAuditEventRepository auditEvents) {
+		this.inventories = inventories;
+		this.supportAccess = supportAccess;
+		this.auditEvents = auditEvents;
 		this.customUnits = customUnits;
 		this.densities = densities;
 		this.assignments = assignments;
@@ -72,13 +81,27 @@ public class GhgService {
 
 	// --- organizations -----------------------------------------------------
 
+	/**
+	 * The organizations the caller is a member of, plus, for a platform
+	 * administrator, those they hold active support access to (spec 01.3).
+	 * Removed organizations are listed for nobody.
+	 */
 	@Transactional(readOnly = true)
 	public List<Organization> listOrganizations() {
+		var userId = access.currentUserId();
+		var result = new java.util.LinkedHashMap<UUID, Organization>();
+		members.findOrganizationsOfUser(userId).forEach(organization -> result.put(organization.getId(), organization));
 		if (access.isCurrentUserAdmin()) {
-			return organizations.findAllByOrderByCreatedAtAsc();
+			var granted = supportAccess.findAllByAdminUserIdAndEndedAtIsNullAndExpiresAtAfter(userId, Instant.now())
+				.stream()
+				.map(SupportAccess::getOrganizationId)
+				.toList();
+			organizations.findAllById(granted)
+				.stream()
+				.filter(organization -> !organization.isDeleted())
+				.forEach(organization -> result.putIfAbsent(organization.getId(), organization));
 		}
-		// spec 01.2: the organizations the caller is a member of
-		return members.findOrganizationsOfUser(access.currentUserId());
+		return result.values().stream().sorted(Comparator.comparing(Organization::getCreatedAt)).toList();
 	}
 
 	@Transactional(readOnly = true)
@@ -95,7 +118,7 @@ public class GhgService {
 
 	public Organization createOrganization(String name, String address, String contact) {
 		var trimmed = name.trim();
-		if (organizations.existsByNameIgnoreCase(trimmed)) {
+		if (organizations.existsByNameIgnoreCaseAndDeletedAtIsNull(trimmed)) {
 			throw new DuplicateOrganizationException(trimmed);
 		}
 		Organization organization;
@@ -117,21 +140,32 @@ public class GhgService {
 		return organization;
 	}
 
-	/** The caller's role in an organization, for the response (spec 01.2). */
+	/**
+	 * The caller's role in an organization, for the response (spec 01.2): the
+	 * member's own, or ADMIN while a platform administrator holds active support
+	 * access (spec 01.3).
+	 */
 	@Transactional(readOnly = true)
 	public String roleIn(Organization organization) {
-		if (access.isCurrentUserAdmin()
-				&& members.findByOrganizationIdAndUserId(organization.getId(), access.currentUserId()).isEmpty()) {
+		if (access.isUnderSupportAccess(organization)) {
 			return "ADMIN";
 		}
 		return access.roleIn(organization).map(Enum::name).orElse(null);
+	}
+
+	/** The active support grants on an organization, for its owners' overview (spec 01.3). */
+	@Transactional(readOnly = true)
+	public List<SupportAccess> activeSupportAccess(Organization organization) {
+		return supportAccess.findAllByOrganizationIdAndEndedAtIsNullAndExpiresAtAfterOrderByGrantedAtAsc(
+				organization.getId(), Instant.now());
 	}
 
 	public Organization updateOrganization(UUID id, String name, String address, String contact) {
 		var organization = getOrganization(id);
 		access.checkOwner(organization);
 		var trimmed = name.trim();
-		if (!trimmed.equalsIgnoreCase(organization.getName()) && organizations.existsByNameIgnoreCase(trimmed)) {
+		if (!trimmed.equalsIgnoreCase(organization.getName())
+				&& organizations.existsByNameIgnoreCaseAndDeletedAtIsNull(trimmed)) {
 			throw new DuplicateOrganizationException(trimmed);
 		}
 		// the reporting company's entity follows the organization's name unless it was renamed by hand
@@ -143,11 +177,62 @@ public class GhgService {
 		return organization;
 	}
 
-	public void deleteOrganization(UUID id) {
-		var organization = getOrganization(id);
-		access.checkOwner(organization);
-		organizations.delete(organization);
+	/**
+	 * The inventories that block the organization's deletion (spec 01.3): any
+	 * that is published or final, or that has a run designated final.
+	 */
+	@Transactional(readOnly = true)
+	public List<Inventory> deletionBlockers(UUID organizationId) {
+		return inventories.findAllByOrganizationIdOrderByCreatedAtDesc(organizationId)
+			.stream()
+			.filter(inventory -> inventory.getStatus() == InventoryStatus.PUBLISHED
+					|| inventory.getStatus() == InventoryStatus.FINAL || inventory.getFinalRunId() != null)
+			.toList();
 	}
+
+	/**
+	 * Removes an organization with a tombstone (spec 01.3): an owner by
+	 * membership types the name exactly and gives a reason; refused while any
+	 * inventory is published or final. Nothing under it is cascaded.
+	 */
+	public void deleteOrganization(UUID id, String typedName, String reason) {
+		var organization = getOrganization(id);
+		access.checkMemberOwner(organization);
+		var blockers = deletionBlockers(id);
+		if (!blockers.isEmpty()) {
+			var names = blockers.stream()
+				.map(inventory -> inventory.getName() + ": " + label(inventory.getStatus()))
+				.collect(Collectors.joining(", "));
+			throw new OrganizationDeletionBlockedException(
+					"'" + organization.getName() + "' cannot be deleted while its records stand: " + names
+							+ ". Publish records are kept: withdraw the final designation or supersede the published inventory first.",
+					blockers);
+		}
+		if (typedName == null || !typedName.trim().equals(organization.getName())) {
+			throw new GhgFieldException("name", "Type the organization's name exactly to confirm.");
+		}
+		var trimmedReason = reason == null ? "" : reason.trim();
+		if (trimmedReason.length() < 10) {
+			throw new GhgFieldException("reason", "Give a reason of at least 10 characters.");
+		}
+		organization.remove(access.currentUserEmail(), trimmedReason);
+		auditEvents.save(new GhgAuditEvent(organization.getId(), GhgAuditEvent.Action.ORGANIZATION_DELETED,
+				access.currentUserId(), access.currentUserEmail(), trimmedReason));
+	}
+
+	/** "Published" or "Final", as the delete dialog and the 409 name an inventory's status. */
+	private static String label(InventoryStatus status) {
+		var name = status.name();
+		return name.charAt(0) + name.substring(1).toLowerCase(Locale.ROOT);
+	}
+
+	/** The organization-level history (spec 01.3): support access assumed, ended, expired; the deletion. */
+	@Transactional(readOnly = true)
+	public List<GhgAuditEvent> organizationEvents(UUID organizationId) {
+		getOrganization(organizationId);
+		return auditEvents.findAllByOrganizationIdAndInventoryIdIsNullOrderByCreatedAtDesc(organizationId);
+	}
+
 	// --- members (spec 01.2) -------------------------------------------------------
 
 	@Transactional(readOnly = true)
@@ -159,7 +244,7 @@ public class GhgService {
 	/** Adds a platform account as a member; owners (and platform administrators) only. */
 	public OrganizationMember addMember(UUID organizationId, String email, OrgRole role) {
 		var organization = getOrganization(organizationId);
-		access.checkOwner(organization);
+		access.checkMemberOwner(organization);
 		var account = userDirectory.findByEmail(email).orElseThrow(() -> GhgNotFoundException.account(email));
 		if (members.findByOrganizationIdAndUserId(organizationId, account.id()).isPresent()) {
 			throw new GhgRuleViolationException(account.email() + " is already a member of '" + organization.getName() + "'.");
@@ -169,7 +254,7 @@ public class GhgService {
 
 	public OrganizationMember changeMemberRole(UUID organizationId, UUID memberId, OrgRole role) {
 		var organization = getOrganization(organizationId);
-		access.checkOwner(organization);
+		access.checkMemberOwner(organization);
 		var member = requireMember(organizationId, memberId);
 		if (member.getRole() == OrgRole.OWNER && role != OrgRole.OWNER && isLastOwner(organizationId)) {
 			throw new GhgRuleViolationException("'" + organization.getName() + "' needs at least one owner.");
@@ -180,7 +265,7 @@ public class GhgService {
 
 	public void removeMember(UUID organizationId, UUID memberId) {
 		var organization = getOrganization(organizationId);
-		access.checkOwner(organization);
+		access.checkMemberOwner(organization);
 		var member = requireMember(organizationId, memberId);
 		if (member.getRole() == OrgRole.OWNER && isLastOwner(organizationId)) {
 			throw new GhgRuleViolationException("'" + organization.getName() + "' needs at least one owner.");

@@ -1,15 +1,22 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { ApiError } from '../../lib/api'
 import { renderWithProviders } from '../../test/utils'
 import { OverviewPage } from './OverviewPage'
 import type { Facility, Inventory, Organization, Run } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
+vi.mock('../auth/api', () => ({
+  login: vi.fn(),
+  logout: vi.fn(),
+  me: vi.fn(),
+}))
 
 import {
   addMember,
   getOrganization,
+  listOrganizationEvents,
   searchActivities,
   listFacilities,
   listInventories,
@@ -24,6 +31,7 @@ const organization: Organization = {
   address: null,
   contact: null,
   facilityCount: 1,
+  supportAccess: [],
   createdAt: '2026-08-01T00:00:00Z',
 }
 
@@ -130,6 +138,7 @@ function renderOverviewPage() {
 }
 
 beforeEach(() => {
+  vi.mocked(listOrganizationEvents).mockReset().mockResolvedValue([])
   vi.mocked(getOrganization).mockReset()
   vi.mocked(listFacilities).mockReset()
   vi.mocked(listMembers)
@@ -306,4 +315,90 @@ test('an owner sees the members and adds one by email with a role', async () => 
       role: 'PREPARER',
     }),
   )
+})
+
+test('the owners read who holds support access, why, and until when (spec 01.3)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({
+    ...organization,
+    supportAccess: [
+      {
+        adminEmail: 'support@ecoriv.com',
+        grantedAt: '2026-09-12T09:14:00Z',
+        expiresAt: '2026-09-13T09:14:00Z',
+        reason: 'ticket 4512, preparer cannot open the run',
+      },
+    ],
+  })
+  vi.mocked(listOrganizationEvents).mockResolvedValue([
+    {
+      id: 'ev-1',
+      action: 'ADMIN_ACCESS_ASSUMED',
+      runId: null,
+      runNo: null,
+      actor: 'support@ecoriv.com',
+      reason: 'ticket 4512, preparer cannot open the run',
+      at: '2026-09-12T09:14:00Z',
+    },
+  ])
+  vi.mocked(listFacilities).mockResolvedValue([facility])
+  vi.mocked(searchActivities).mockResolvedValue({
+    items: [],
+    page: 0,
+    size: 1,
+    total: 0,
+    counts: { total: 0, ready: 0, readyWithDocument: 0, needsAttention: 0, drafts: 0 },
+  })
+  vi.mocked(listInventories).mockResolvedValue([])
+  renderOverviewPage()
+
+  expect(await screen.findByRole('heading', { name: /support access/i })).toBeInTheDocument()
+  expect(
+    screen.getByText(/support@ecoriv\.com since .*: ticket 4512, preparer cannot open the run/),
+  ).toBeInTheDocument()
+  expect(await screen.findByText(/support access assumed/i)).toBeInTheDocument()
+})
+
+test('an unknown email under Add member says what to do about it (spec 01.4)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(addMember).mockRejectedValue(new ApiError(404, { detail: 'Account not found.' }))
+  vi.mocked(listFacilities).mockResolvedValue([facility])
+  vi.mocked(searchActivities).mockResolvedValue({
+    items: [],
+    page: 0,
+    size: 1,
+    total: 0,
+    counts: { total: 0, ready: 0, readyWithDocument: 0, needsAttention: 0, drafts: 0 },
+  })
+  vi.mocked(listInventories).mockResolvedValue([])
+  renderOverviewPage()
+
+  expect(await screen.findByText('Ama Mensah')).toBeInTheDocument()
+  const field = screen.getByLabelText(/email of an existing account/i)
+  await user.type(field, 'nobody@example.com')
+  await user.click(screen.getByRole('button', { name: /add member/i }))
+
+  expect(
+    await screen.findByText(/No account with that email\. Add the user under Manage users first\./),
+  ).toBeInTheDocument()
+  expect(screen.getByText(/Ask a platform administrator to add them\./)).toBeInTheDocument()
+  expect(field).toHaveValue('nobody@example.com')
+})
+
+test('a verifier sees no members form and no role selects (spec 01.4)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'VERIFIER' })
+  vi.mocked(listFacilities).mockResolvedValue([facility])
+  vi.mocked(searchActivities).mockResolvedValue({
+    items: [],
+    page: 0,
+    size: 1,
+    total: 0,
+    counts: { total: 0, ready: 0, readyWithDocument: 0, needsAttention: 0, drafts: 0 },
+  })
+  vi.mocked(listInventories).mockResolvedValue([])
+  renderOverviewPage()
+
+  expect(await screen.findByText('Ama Mensah')).toBeInTheDocument()
+  expect(screen.queryByLabelText(/email of an existing account/i)).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Role of Ama Mensah')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /remove ama mensah/i })).not.toBeInTheDocument()
 })

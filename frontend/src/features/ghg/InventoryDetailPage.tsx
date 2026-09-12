@@ -7,7 +7,7 @@ import { GlassCard } from '../../components/GlassCard'
 import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { problemDetail } from '../../lib/api'
+import { refusalMessage } from '../../lib/api'
 import { AssignmentsSection } from './components/AssignmentsSection'
 import { ApproachBadge, InventoryStatusBadge } from './components/badges'
 import { BoundarySection } from './components/BoundarySection'
@@ -18,8 +18,10 @@ import { MarketFactorsCard } from './components/MarketFactorsCard'
 import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
 import { PreflightPanel } from './components/PreflightPanel'
 import { ReportMetadataCard } from './components/ReportMetadataCard'
+import { RoleButton } from './components/RoleButton'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
-import { approachLabels, exclusionLabels, formatCo2e } from './format'
+import { actionLabels, approachLabels, exclusionLabels, formatCo2e } from './format'
+import { APPROVE_TOOLTIP, mayApprove, mayWrite, WRITE_TOOLTIP } from './roles'
 import {
   useBoundaryQuery,
   useInheritanceQuery,
@@ -33,10 +35,6 @@ import {
   useValidationQuery,
 } from './useGhg'
 import type { AuditEvent, DroppedExclusion, Inventory, Organization, Run } from './api'
-
-/** The approve set of spec 01.4: who may designate a final run, publish, or create a correction. */
-const APPROVE_ROLES: ReadonlyArray<Organization['myRole']> = ['REVIEWER', 'OWNER', 'ADMIN']
-const APPROVE_TOOLTIP = 'Needs the Reviewer or Owner role.'
 
 /** "Wassa Gold Associates: Methodology exclusion dropped, 30% equity share under this approach" (spec 05.4). */
 export function describeDroppedExclusion(
@@ -110,14 +108,16 @@ export function InventoryDetailPage() {
             GWP {inventory.gwpSet}
           </span>
           {editable && (
-            <Button
+            <RoleButton
+              allowed={mayWrite(myRole)}
+              tooltip={WRITE_TOOLTIP}
               variant="ghost"
               className="px-3 py-1 text-xs"
               onClick={() => setEditing(true)}
               title="Name, period, purpose, straddle treatment, approach and GWP set"
             >
               Edit inventory
-            </Button>
+            </RoleButton>
           )}
         </div>
         <p className="mt-1 text-sm text-ink-muted">
@@ -185,12 +185,13 @@ export function InventoryDetailPage() {
       </div>
 
       <div className="animate-fade-up" style={{ '--stagger': 1 } as CSSProperties}>
-        <LifecycleBar inventory={inventory} inBoundaryCount={inBoundaryCount} />
+        <LifecycleBar inventory={inventory} inBoundaryCount={inBoundaryCount} myRole={myRole} />
       </div>
       {editing && (
         <InventoryFormModal
           organizationId={organizationId}
           inventory={inventory}
+          myRole={myRole}
           onClose={() => setEditing(false)}
           onSaved={(message) => {
             setEditing(false)
@@ -199,24 +200,26 @@ export function InventoryDetailPage() {
         />
       )}
       <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
-        <BoundarySection inventory={inventory} />
+        <BoundarySection inventory={inventory} myRole={myRole} />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 3 } as CSSProperties}>
-        <OperationalBoundaryCard key={inventory.status} inventory={inventory} />
+        <OperationalBoundaryCard key={inventory.status} inventory={inventory} myRole={myRole} />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 4 } as CSSProperties}>
         <AssignmentsSection
           organizationId={organizationId}
           inventoryId={inventoryId}
           editable={editable}
+          myRole={myRole}
         />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 5 } as CSSProperties}>
-        <MarketFactorsCard organizationId={organizationId} inventory={inventory} />
+        <MarketFactorsCard organizationId={organizationId} inventory={inventory} myRole={myRole} />
         <ReportMetadataCard
           key={`header-${inventory.status}`}
           inventory={inventory}
           intensityMetrics={[]}
+          myRole={myRole}
         />
       </div>
       <div className="animate-fade-up" style={{ '--stagger': 6 } as CSSProperties}>
@@ -250,14 +253,15 @@ function LaunchSection({
   const label = customLabel ?? `Run ${String(nextRunNo).padStart(3, '0')}`
   const [voiding, setVoiding] = useState<Run | null>(null)
   const [voidReason, setVoidReason] = useState('')
+  const [voidError, setVoidError] = useState<string | null>(null)
   // spec 05.5: the final designation is confirmed, names the run and its total, and takes a review note
   const [finalizing, setFinalizing] = useState<Run | null>(null)
   const [finalNote, setFinalNote] = useState('')
+  const [finalizeError, setFinalizeError] = useState<string | null>(null)
 
   const report = validationQuery.data
   const canDesignate = inventory.status === 'FROZEN' || inventory.status === 'FINAL'
   const canVoid = inventory.status !== 'PUBLISHED'
-  const mayApprove = myRole === null || APPROVE_ROLES.includes(myRole)
 
   return (
     <div className="grid items-start gap-6 xl:grid-cols-2">
@@ -272,7 +276,9 @@ function LaunchSection({
             onChange={(event) => setCustomLabel(event.target.value)}
             className="min-w-40 flex-1 rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-teal focus:outline-none"
           />
-          <Button
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
             disabled={!report?.ready || inventory.status === 'PUBLISHED'}
             busy={execute.isPending}
             title={report?.ready ? undefined : 'Resolve the blocking findings first'}
@@ -282,12 +288,12 @@ function LaunchSection({
                   toast('Calculation complete.')
                   void navigate(`runs/${detail.run.id}`)
                 },
-                onError: (error) => toast(problemDetail(error) ?? 'The run was refused.', 'error'),
+                onError: (error) => toast(refusalMessage(error, myRole), 'error'),
               })
             }
           >
             Launch calculation run
-          </Button>
+          </RoleButton>
         </GlassCard>
       </div>
 
@@ -349,36 +355,34 @@ function LaunchSection({
               </div>
               <div className="mt-2 flex gap-2">
                 {run.id !== inventory.finalRunId && canDesignate && !run.voided && (
-                  <Button
+                  <RoleButton
+                    allowed={mayApprove(myRole)}
+                    tooltip={APPROVE_TOOLTIP}
                     variant="ghost"
                     className="px-2 py-1 text-xs"
-                    disabled={!mayApprove}
-                    title={mayApprove ? undefined : APPROVE_TOOLTIP}
-                    aria-describedby={mayApprove ? undefined : `final-role-${run.id}`}
                     onClick={() => {
                       setFinalNote('')
+                      setFinalizeError(null)
                       setFinalizing(run)
                     }}
                   >
                     Mark as final
-                  </Button>
-                )}
-                {!mayApprove && run.id !== inventory.finalRunId && canDesignate && !run.voided && (
-                  <span id={`final-role-${run.id}`} className="sr-only">
-                    {APPROVE_TOOLTIP}
-                  </span>
+                  </RoleButton>
                 )}
                 {canVoid && !run.voided && run.id !== inventory.finalRunId && (
-                  <Button
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
                     variant="ghost"
                     className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                     onClick={() => {
                       setVoidReason('')
+                      setVoidError(null)
                       setVoiding(run)
                     }}
                   >
                     Void…
-                  </Button>
+                  </RoleButton>
                 )}
               </div>
             </li>
@@ -406,6 +410,11 @@ function LaunchSection({
               hint={`${finalNote.length}/500 characters`}
             />
           </div>
+          {finalizeError && (
+            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+              {finalizeError}
+            </p>
+          )}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setFinalizing(null)}>
               Cancel
@@ -424,8 +433,7 @@ function LaunchSection({
                       toast(`${finalizing.label} designated final.`)
                       setFinalizing(null)
                     },
-                    onError: (error) =>
-                      toast(problemDetail(error) ?? 'Could not finalize.', 'error'),
+                    onError: (error) => setFinalizeError(refusalMessage(error, myRole)),
                   },
                 )
               }
@@ -453,6 +461,11 @@ function LaunchSection({
               required
             />
           </div>
+          {voidError && (
+            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+              {voidError}
+            </p>
+          )}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setVoiding(null)}>
               Cancel
@@ -469,8 +482,7 @@ function LaunchSection({
                       toast(`${voiding.label} voided.`)
                       setVoiding(null)
                     },
-                    onError: (error) =>
-                      toast(problemDetail(error) ?? 'Could not void the run.', 'error'),
+                    onError: (error) => setVoidError(refusalMessage(error, myRole)),
                   },
                 )
               }
@@ -482,20 +494,6 @@ function LaunchSection({
       )}
     </div>
   )
-}
-
-export const actionLabels: Record<AuditEvent['action'], string> = {
-  RUN_VOIDED: 'Run voided',
-  FINAL_WITHDRAWN: 'Final designation withdrawn',
-  CLASSIFIED: 'Record classified',
-  REVIEWED: 'Activity data reviewed',
-  FROZEN: 'Inventory frozen',
-  REOPENED: 'Inventory reopened',
-  RUN_LAUNCHED: 'Run launched',
-  FINAL_DESIGNATED: 'Final run designated',
-  PUBLISHED: 'Published',
-  CORRECTION_CREATED: 'Correction created',
-  HEADER_SAVED: 'Report header saved',
 }
 
 /** The recorded acts on the inventory (spec 05.2), newest first. */
