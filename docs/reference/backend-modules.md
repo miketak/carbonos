@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-12
+last_reviewed: 2026-09-13
 ---
 
 # Backend modules
@@ -33,10 +33,30 @@ flowchart TB
 | Module | Responsibility | Public API (root package) | Tables |
 | --- | --- | --- | --- |
 | `user` | Accounts, session login, the administrator-facing user API, the self-service access-request loop (spec 01, 01.1). | `AuthenticatedUser` (the session principal), `UserDirectory` (account lookup), events `UserCreated`, `AccessRequestApproved`, `AccessRequestDenied` | `users`, `access_requests` |
-| `ghg` | Everything the GHG Protocol specs describe: organizations, entities, facilities, activity data, factors, boundaries, inventories, runs, base years, reports (specs 02 to 08), plus membership, support access and the organization tombstone (specs 01.2, 01.3). | Events `GhgRunCompleted`, `InventoryPublished` | Every `ghg_*` table |
+| `ghg` | Everything the GHG Protocol specs describe: organizations, entities, facilities, activity data, factors, boundaries, inventories, runs, base years, reports (specs 02 to 08), plus membership, support access and the organization tombstone (specs 01.2, 01.3). | Events `GhgRunCompleted`, `InventoryPublished` | Every `ghg_*` table, including the factor pack catalogue below |
 | `mail` | Turns other modules' events into SMTP messages. Owns no tables and exposes no API. Delivery is at-least-once through the Modulith event registry; unsent mail is retried on restart. | none | none (the event publication log is Modulith's) |
 | `media` | Object storage for evidence and profile files on any S3-compatible store: MinIO locally, a Railway bucket in production. | `MediaStorage` | `media_files` |
 | `shared` | Cross-cutting infrastructure: web configuration, RFC 9457 problem details, the global exception handler. Business logic never lives here. | n/a | none |
+
+### Where a factor pack lives
+
+A factor pack used to be a JSON file on the classpath, loaded once at startup.
+It is now a row set in the database (spec 02.5), so a maintainer can correct a
+row without a release and a report can name the vintage behind a figure:
+
+| Table | Holds |
+| --- | --- |
+| `ghg_factor_packs` | The families, keyed by `pack_key`: the lineage of one publication, such as `defra`. |
+| `ghg_factor_pack_editions` | One dated release of a family, keyed by `edition_id` (`defra-2026`), with its status, provenance, applies-from date, evidence checksum, curator and approver. |
+| `ghg_factor_pack_rows` | A row per factor per edition, with the publisher's category, activity and detail in three columns. |
+| `ghg_factor_pack_changes` | The change log frozen at publication, one entry per code. |
+| `ghg_factor_pack_events` | The publication trail. It is not `ghg_audit_events`, which requires an organization or an inventory on every event. |
+
+`V43__seed_factor_pack_editions.sql` seeds the ten shipped packs as published
+editions, 2,836 rows, generated from the JSON files. `FactorPacks` reads the
+catalogue and caches each assembled pack per instance, which assumes one
+backend instance per environment, as Railway runs today. Only a published
+edition is visible to an organization.
 
 ## Events
 
