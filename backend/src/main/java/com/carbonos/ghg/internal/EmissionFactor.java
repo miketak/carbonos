@@ -141,6 +141,31 @@ public class EmissionFactor {
 	@Column(name = "pack_code", length = 200)
 	private String packCode;
 
+	// --- specs 02.5 and 02.6: the edition a version came from, and the publisher's taxonomy ---
+
+	// the edition whose values this version carries; the pack tag for a factor imported before editions
+	@Column(name = "source_edition", length = 60)
+	private String sourceEdition;
+
+	// whether a person edited this version here, which an import must never overwrite
+	@Column(name = "locally_edited", nullable = false)
+	private boolean locallyEdited;
+
+	// the version that replaced this one in the lineage, once versioning cuts one
+	@Column(name = "superseded_by_id")
+	private UUID supersededById;
+
+	// the publisher's own category, activity and detail, backfilled from the edition row by pack_code;
+	// a hand-entered factor has no publisher taxonomy and keeps them null
+	@Column(name = "source_category", length = 120)
+	private String sourceCategory;
+
+	@Column(name = "source_activity", length = 200)
+	private String sourceActivity;
+
+	@Column(name = "source_detail", length = 500)
+	private String sourceDetail;
+
 	// spec 02.3: every pack that delivered this publication row, apart from its provenance
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "ghg_emission_factor_packs", joinColumns = @JoinColumn(name = "factor_id"))
@@ -285,6 +310,34 @@ public class EmissionFactor {
 		if (this.pack == null) {
 			this.pack = pack;
 		}
+	}
+
+	/** The edition this version's values came from, or null for a hand-entered factor (spec 02.6). */
+	public String getSourceEdition() {
+		return sourceEdition;
+	}
+
+	/** Whether a person edited this version here, which an import leaves alone (spec 02.6). */
+	public boolean isLocallyEdited() {
+		return locallyEdited;
+	}
+
+	/** The version that replaced this one in the lineage, or null while this one is live (spec 02.6). */
+	public UUID getSupersededById() {
+		return supersededById;
+	}
+
+	/** The publisher's category for this row, or null for a hand-entered factor (spec 02.5). */
+	public String getSourceCategory() {
+		return sourceCategory;
+	}
+
+	public String getSourceActivity() {
+		return sourceActivity;
+	}
+
+	public String getSourceDetail() {
+		return sourceDetail;
 	}
 
 	public ReportingBasis getReportingBasis() {
