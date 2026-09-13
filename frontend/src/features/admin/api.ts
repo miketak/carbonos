@@ -120,14 +120,119 @@ export interface FactorPackEdition {
   publishedAt: string | null
   sourceDocument: string | null
   evidenceChecksum: string | null
+  evidenceName: string | null
+  evidenceSize: number | null
   curator: string | null
   approver: string | null
   provenanceReview: string
   provenanceNote: string | null
+  /** The predecessor the change log was computed against, or null for a family's first edition. */
+  supersedesId: string | null
+  erratum: boolean
+  erratumNote: string | null
+  /** Recorded on a superseded edition when the erratum after it named the error. */
+  errorNote: string | null
+  withdrawnAt: string | null
+  withdrawnBy: string | null
+  withdrawalReason: string | null
   /** Only a draft is mutable; a published edition's rows and metadata never change. */
   mutable: boolean
   rowCount: number
   holderCount: number
+}
+
+/** The source document an edition is published against, with the checksum over the bytes stored. */
+export interface FactorPackEvidence {
+  key: string
+  name: string
+  size: number
+  checksum: string
+}
+
+export type FactorPackChangeKind = 'ADDED' | 'CHANGED' | 'DISCONTINUED' | 'UNCHANGED'
+
+/** One line of the change log an edition froze at publication, against its predecessor. */
+export interface FactorPackChange {
+  code: string
+  kind: FactorPackChangeKind
+  oldKgCo2e: number | null
+  newKgCo2e: number | null
+  percentChange: number | null
+  fields: string | null
+}
+
+export interface FactorPackEvent {
+  action: 'EVIDENCE_ATTACHED' | 'PUBLISHED' | 'SUPERSEDED' | 'WITHDRAWN'
+  actor: string | null
+  detail: string | null
+  occurredAt: string
+}
+
+/** One lineage as the edition would move it, and how many organizations hold it. */
+export interface BlastRadiusRow {
+  code: string
+  name: string
+  unit: string | null
+  kind: FactorPackChangeKind
+  oldKgCo2e: number | null
+  newKgCo2e: number | null
+  absoluteChange: number | null
+  percentChange: number | null
+  overThreshold: boolean
+  approved: boolean
+  holders: number
+}
+
+export interface BlastRadiusInventory {
+  inventoryId: string
+  name: string
+  periodStart: string
+  periodEnd: string
+  status: 'DRAFT' | 'FROZEN' | 'FINAL' | 'PUBLISHED'
+}
+
+/** What one organization would see if every holder adopted the edition. */
+export interface BlastRadiusOrganization {
+  organizationId: string
+  organizationName: string
+  lineagesHeld: number
+  rowsMoving: number
+  rowsOverThreshold: number
+  estimatedKgCo2eDelta: number | null
+  lastRunLabel: string | null
+  openDrafts: BlastRadiusInventory[]
+  lockedPeriods: BlastRadiusInventory[]
+  conflicts: string[]
+  blocked: string[]
+  unapproved: string[]
+  discontinued: string[]
+  diffHash: string | null
+}
+
+/** What publishing, or withdrawing, this edition would do (spec 02.5). */
+export interface BlastRadius {
+  editionId: string
+  packKey: string
+  act: 'PUBLISH' | 'WITHDRAW'
+  predecessorEditionId: string | null
+  rowsAdded: number
+  rowsChanged: number
+  rowsDiscontinued: number
+  rowsUnchanged: number
+  rowsOverThreshold: number
+  rows: BlastRadiusRow[]
+  discontinuedLineages: string[]
+  unapprovedRows: string[]
+  organizations: BlastRadiusOrganization[]
+  holderCount: number
+  openNoticeCount: number
+}
+
+export interface PublishInput {
+  sourceDocument: string
+  appliesFrom: string | null
+  erratum: boolean
+  erratumNote: string | null
 }
 
 /** A family: the lineage of one publication, with every edition of it. */
@@ -301,4 +406,49 @@ export function deleteFactorPackRow(editionId: string, rowId: string): Promise<v
 
 export function getFactorPackValidation(editionId: string): Promise<FactorPackFinding[]> {
   return api<FactorPackFinding[]>(`/api/admin/factor-packs/editions/${editionId}/validation`)
+}
+
+/** Stores the source document the edition is published against; the server computes the SHA-256. */
+export function uploadFactorPackEvidence(
+  editionId: string,
+  file: File,
+): Promise<FactorPackEvidence> {
+  const body = new FormData()
+  body.append('file', file)
+  return api<FactorPackEvidence>(`/api/admin/factor-packs/editions/${editionId}/evidence`, {
+    method: 'POST',
+    body,
+  })
+}
+
+export function getFactorPackBlastRadius(editionId: string): Promise<BlastRadius> {
+  return api<BlastRadius>(`/api/admin/factor-packs/editions/${editionId}/blast-radius`)
+}
+
+export function listFactorPackChanges(editionId: string): Promise<FactorPackChange[]> {
+  return api<FactorPackChange[]>(`/api/admin/factor-packs/editions/${editionId}/changes`)
+}
+
+export function listFactorPackEvents(editionId: string): Promise<FactorPackEvent[]> {
+  return api<FactorPackEvent[]>(`/api/admin/factor-packs/editions/${editionId}/events`)
+}
+
+export function publishFactorPackEdition(
+  editionId: string,
+  input: PublishInput,
+): Promise<FactorPackEdition> {
+  return api<FactorPackEdition>(`/api/admin/factor-packs/editions/${editionId}/publish`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function withdrawFactorPackEdition(
+  editionId: string,
+  reason: string,
+): Promise<FactorPackEdition> {
+  return api<FactorPackEdition>(`/api/admin/factor-packs/editions/${editionId}/withdraw`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
 }
