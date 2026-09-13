@@ -55,7 +55,7 @@ function ApartGroup({
       <ul className="mt-2 flex flex-col gap-1 text-xs">
         {rows.map((row) => (
           <li key={row.code}>
-            <span className="font-mono">{row.code}</span> — {row.name}
+            <span className="font-mono">{row.code}</span> · {row.name}
           </li>
         ))}
       </ul>
@@ -279,7 +279,7 @@ export function AdoptionDiffDrawer({
                       <td className="py-1.5 pr-2 tabular-nums">{row.currentKgCo2ePerUnit}</td>
                       <td className="py-1.5 pr-2 tabular-nums">{row.newKgCo2ePerUnit}</td>
                       <td className="py-1.5 pr-2 tabular-nums">
-                        {row.absoluteChange ?? '—'}
+                        {row.absoluteChange ?? 'not stated'}
                         <span className="block text-[11px] text-ink-muted">
                           {percent(row.percentChange)}
                         </span>
