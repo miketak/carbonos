@@ -79,7 +79,9 @@ function skippedNote(skipped: SkippedFactorRow[]): string {
     .map((row) => `${row.code} (${row.unit})`)
     .join(', ')
   const rest = skipped.length > 3 ? `, and ${skipped.length - 3} more` : ''
-  return ` ${skipped.length} row${skipped.length === 1 ? '' : 's'} skipped, in units the registry cannot convert: ${named}${rest}.`
+  const rows = skipped.length === 1 ? '1 row' : `${skipped.length} rows`
+  const units = skipped.length === 1 ? 'a unit' : 'units'
+  return ` ${rows} skipped, in ${units} the registry cannot convert: ${named}${rest}.`
 }
 
 function FactorTable({
