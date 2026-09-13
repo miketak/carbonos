@@ -181,4 +181,5 @@ nav:
       - explanation/architecture.md
       - explanation/spec-workflow.md
       - explanation/inventory-lifecycle.md
+      - explanation/roles-and-access.md
   - Contributing to docs: contributing-to-docs.md
