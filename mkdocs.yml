@@ -121,6 +121,9 @@ nav:
               - specs/02.2-units-densities-and-custom-units.md
               - specs/02.3-factor-identity-across-packs.md
               - specs/02.4-sector-pack-completeness.md
+              - specs/02.5-factor-pack-editions.md
+              - specs/02.6-versioned-pack-import.md
+              - specs/02.7-adopting-a-new-edition.md
           - "03 Organizational boundary":
               - specs/03-organizational-boundary.md
               - specs/03.1-legal-entities-and-table-1.md
