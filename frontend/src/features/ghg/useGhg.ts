@@ -55,6 +55,7 @@ import {
   listCoverage,
   listCustomUnits,
   listDensities,
+  listEmissionFactorFacets,
   listEmissionFactors,
   listEntities,
   listEvidence,
@@ -117,6 +118,7 @@ import type {
   DeleteOrganizationInput,
   DensityInput,
   EmissionFactorInput,
+  EmissionFactorQuery,
   EntityInput,
   EvidenceOwner,
   EvidenceQuery,
@@ -226,8 +228,44 @@ export function useDeleteStream(orgId: string) {
   return useStreamMutation(orgId, (id: string) => deleteStream(id))
 }
 
-export function useEmissionFactorsQuery(orgId: string) {
-  return useQuery({ queryKey: factorsKey(orgId), queryFn: () => listEmissionFactors(orgId) })
+/**
+ * One page of the factor library, filtered in SQL (FU-03). The query is part
+ * of the key, so every filter combination is cached on its own and a mutation
+ * still invalidates all of them through the shared prefix.
+ */
+export function useEmissionFactorsQuery(
+  orgId: string,
+  query: EmissionFactorQuery = {},
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [...factorsKey(orgId), query] as const,
+    queryFn: () => listEmissionFactors(orgId, query),
+    enabled: options.enabled ?? true,
+    placeholderData: (previous) => previous,
+  })
+}
+
+/**
+ * The factors a page of records already references, resolved by identifier
+ * rather than by fetching the library (FU-03).
+ */
+export function useEmissionFactorsByIdQuery(orgId: string, ids: string[]) {
+  const wanted = [...new Set(ids)].sort()
+  return useQuery({
+    queryKey: [...factorsKey(orgId), 'by-id', wanted] as const,
+    queryFn: () => listEmissionFactors(orgId, { ids: wanted, size: 200 }),
+    enabled: wanted.length > 0,
+    placeholderData: (previous) => previous,
+  })
+}
+
+/** The values the picker's filters offer, narrowed to a category when one is chosen. */
+export function useEmissionFactorFacetsQuery(orgId: string, sourceCategory?: string) {
+  return useQuery({
+    queryKey: [...factorsKey(orgId), 'facets', sourceCategory ?? ''] as const,
+    queryFn: () => listEmissionFactorFacets(orgId, sourceCategory),
+  })
 }
 
 export function useMembersQuery(orgId: string) {

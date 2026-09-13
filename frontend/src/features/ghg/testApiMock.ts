@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import type { EmissionFactor, EmissionFactorPage, EmissionFactorQuery } from './api'
 
 /** A complete vi.fn() double of ./api, shared by the GHG feature tests. */
 export const listOrganizations = vi.fn()
@@ -24,6 +25,7 @@ export const createStream = vi.fn()
 export const updateStream = vi.fn()
 export const deleteStream = vi.fn()
 export const listEmissionFactors = vi.fn()
+export const listEmissionFactorFacets = vi.fn()
 export const createEmissionFactor = vi.fn()
 export const updateEmissionFactor = vi.fn()
 export const setFactorApproval = vi.fn()
@@ -117,3 +119,77 @@ export const setBaseYear = vi.fn()
 export const clearBaseYear = vi.fn()
 export const raiseRecalculation = vi.fn()
 export const decideRecalculation = vi.fn()
+
+/**
+ * Stubs the factor endpoint over a fixed set of rows, applying the filters the
+ * server applies (FU-03), so a test exercises the picker as a user meets it
+ * rather than a list the browser narrows itself.
+ */
+export function mockEmissionFactors(items: EmissionFactor[]) {
+  listEmissionFactors.mockReset()
+  listEmissionFactors.mockImplementation(
+    (_organizationId: string, query: EmissionFactorQuery = {}) =>
+      Promise.resolve(factorPage(items, query)),
+  )
+  listEmissionFactorFacets.mockReset()
+  listEmissionFactorFacets.mockResolvedValue({
+    categories: distinct(items.map((factor) => factor.sourceCategory)),
+    activities: distinct(items.map((factor) => factor.sourceActivity)),
+    units: distinct(items.map((factor) => factor.unit)),
+  })
+}
+
+/** One page of factors as the endpoint returns it, filtered and ordered the way the server does. */
+export function factorPage(
+  items: EmissionFactor[],
+  query: EmissionFactorQuery = {},
+): EmissionFactorPage {
+  const needle = query.q?.trim().toLowerCase() ?? ''
+  let matched = items.filter((factor) => {
+    if (query.ids && !query.ids.includes(factor.id)) return false
+    if (query.tier === 'OWN' && factor.organizationId === null) return false
+    if (query.tier === 'LIBRARY' && factor.organizationId !== null) return false
+    if (query.unit && factor.unit.toLowerCase() !== query.unit.toLowerCase()) return false
+    if (
+      query.dimension &&
+      query.dimension.length > 0 &&
+      (factor.dimension === null || !query.dimension.includes(factor.dimension))
+    )
+      return false
+    if (query.sourceCategory && factor.sourceCategory !== query.sourceCategory) return false
+    if (query.sourceActivity && factor.sourceActivity !== query.sourceActivity) return false
+    if (needle !== '') {
+      const haystack = [
+        factor.name,
+        factor.source,
+        factor.sourceCategory,
+        factor.sourceActivity,
+        factor.sourceDetail,
+        ...factor.packs,
+      ]
+      if (!haystack.some((part) => (part ?? '').toLowerCase().includes(needle))) return false
+    }
+    return true
+  })
+  const unapproved = matched.filter((factor) => !factor.approved).length
+  if (query.includeUnapproved === false) matched = matched.filter((factor) => factor.approved)
+  // the server's order: the organization's own rows first, then the shared library
+  matched = [...matched].sort(
+    (a, b) => Number(a.organizationId === null) - Number(b.organizationId === null),
+  )
+  const size = query.size ?? 50
+  const page = query.page ?? 0
+  return {
+    items: matched.slice(page * size, page * size + size),
+    page,
+    size,
+    total: matched.length,
+    unapproved,
+  }
+}
+
+function distinct(values: (string | null)[]): string[] {
+  return [
+    ...new Set(values.filter((value): value is string => value !== null && value !== '')),
+  ].sort()
+}

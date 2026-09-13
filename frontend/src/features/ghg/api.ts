@@ -322,6 +322,52 @@ export interface EmissionFactor {
   gridRegion: string | null
   /** SCOPES, or OUTSIDE_SCOPES_NON_KYOTO for a Montreal Protocol gas (spec 02.4). */
   reportingBasis: ReportingBasis
+  /**
+   * The publisher's own category, activity and detail (spec 02.5). 1,157 of the
+   * 1,868 DEFRA rows share a display name, so these plus the unit are what tell
+   * two options apart; null for a hand-entered factor.
+   */
+  sourceCategory: string | null
+  sourceActivity: string | null
+  sourceDetail: string | null
+}
+
+/** Which tier of the library a query wants: both, the organization's own, or the shared rows. */
+export type FactorTier = 'ALL' | 'OWN' | 'LIBRARY'
+
+/**
+ * What the picker asks the library for (FU-03). Every field is applied in SQL:
+ * nothing is filtered in the browser, because a published edition can be
+ * thousands of rows.
+ */
+export interface EmissionFactorQuery {
+  /** Searches name, publication, the publisher's taxonomy and the pack tags. */
+  q?: string
+  /** False hides rows a preparer must not pick unseen (spec 02.3). */
+  includeUnapproved?: boolean
+  tier?: FactorTier
+  sourceCategory?: string
+  sourceActivity?: string
+  sourceDetail?: string
+  unit?: string
+  /** The dimensions a record's unit converts into, so the picker offers only usable factors. */
+  dimension?: Dimension[]
+  /** Only these factors: how a page of records resolves the ones it already references. */
+  ids?: string[]
+  page?: number
+  size?: number
+}
+
+/** One page of the library, with how many of the matching rows are unapproved. */
+export interface EmissionFactorPage extends Page<EmissionFactor> {
+  unapproved: number
+}
+
+/** The values the picker's filters can take over the factors an organization can see. */
+export interface EmissionFactorFacets {
+  categories: string[]
+  activities: string[]
+  units: string[]
 }
 
 export interface EmissionFactorInput {
@@ -1772,19 +1818,41 @@ export function deleteStream(id: string): Promise<void> {
 // --- emission factors --------------------------------------------------------
 
 /**
- * The shared library and the organization's own factors together (spec 02.1),
- * with the picker's filters (spec 02.3): `includeUnapproved: false` hides rows
- * a preparer must not pick unseen, `q` searches name, publication and tag.
+ * One page of the shared library and the organization's own factors (spec
+ * 02.1), filtered and ordered by the database (FU-03). The organization's own
+ * rows come first, then the shared library, so the picker's grouping survives
+ * paging.
  */
 export function listEmissionFactors(
   organizationId: string,
-  options?: { includeUnapproved?: boolean; q?: string },
-): Promise<EmissionFactor[]> {
-  const query = new URLSearchParams()
-  if (options?.includeUnapproved === false) query.set('includeUnapproved', 'false')
-  if (options?.q) query.set('q', options.q)
-  const suffix = query.size > 0 ? `?${query.toString()}` : ''
-  return api<EmissionFactor[]>(`/api/ghg/organizations/${organizationId}/emission-factors${suffix}`)
+  query: EmissionFactorQuery = {},
+): Promise<EmissionFactorPage> {
+  const search = new URLSearchParams()
+  if (query.q) search.set('q', query.q)
+  if (query.includeUnapproved === false) search.set('includeUnapproved', 'false')
+  if (query.tier && query.tier !== 'ALL') search.set('tier', query.tier)
+  if (query.sourceCategory) search.set('sourceCategory', query.sourceCategory)
+  if (query.sourceActivity) search.set('sourceActivity', query.sourceActivity)
+  if (query.sourceDetail) search.set('sourceDetail', query.sourceDetail)
+  if (query.unit) search.set('unit', query.unit)
+  for (const dimension of query.dimension ?? []) search.append('dimension', dimension)
+  if (query.ids && query.ids.length > 0) search.set('ids', query.ids.join(','))
+  if (query.page) search.set('page', String(query.page))
+  if (query.size !== undefined) search.set('size', String(query.size))
+  const suffix = search.size > 0 ? `?${search.toString()}` : ''
+  return api<EmissionFactorPage>(
+    `/api/ghg/organizations/${organizationId}/emission-factors${suffix}`,
+  )
+}
+
+/** The values the picker's filters offer; the activities narrow to a category when one is given. */
+export function listEmissionFactorFacets(
+  organizationId: string,
+  sourceCategory?: string,
+): Promise<EmissionFactorFacets> {
+  return api<EmissionFactorFacets>(
+    `/api/ghg/organizations/${organizationId}/emission-factors/facets${queryString({ sourceCategory })}`,
+  )
 }
 
 export function createEmissionFactor(
