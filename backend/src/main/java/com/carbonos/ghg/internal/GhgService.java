@@ -3,6 +3,7 @@ package com.carbonos.ghg.internal;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -657,14 +658,33 @@ public class GhgService {
 			throw new GhgRuleViolationException("'" + factor.getName()
 					+ "' was applied by a calculation run. Set its validity end to retire it instead of deleting it.");
 		}
+		// spec 02.6: a classification holds the factor by a foreign key, so the refusal names the inventory
+		// that classified with it rather than letting the constraint reach the generic handler as a 500
+		if (assignments.existsByEmissionFactorId(id)) {
+			var names = assignments.inventoryNamesUsingFactor(id);
+			var where = names.isEmpty() ? "an inventory"
+					: names.size() == 1 ? "'" + names.getFirst() + "'"
+							: "'" + names.getFirst() + "' and " + (names.size() - 1) + " other inventories";
+			throw new GhgRuleViolationException("'" + factor.getName() + "' is applied by a classification in " + where
+					+ ". Choose another factor there before deleting it.");
+		}
 		emissionFactors.delete(factor);
 	}
 
 	/**
 	 * What an import did (spec 02.3): rows created, rows refreshed, and rows
-	 * another pack had already delivered that only gained this pack's tag.
+	 * another pack had already delivered that only gained this pack's tag,
+	 * plus the rows the import could not deliver (spec 02.6).
 	 */
-	public record ImportResult(String pack, int created, int updated, int tagged) {
+	public record ImportResult(String pack, int created, int updated, int tagged, List<SkippedRow> skippedUnits) {
+
+		/**
+		 * A pack row the registry cannot convert, carried back by its
+		 * publication row identifier and the unit that stopped it (spec 02.6),
+		 * so the caller can say which rows were skipped and why.
+		 */
+		public record SkippedRow(String code, String unit) {
+		}
 	}
 
 	/** A shipped pack with its factors, or 404. */
@@ -681,26 +701,39 @@ public class GhgService {
 	 * import approved.
 	 */
 	public ImportResult importPack(UUID organizationId, String packId) {
+		return importPack(organizationId, pack(packId));
+	}
+
+	/** The import itself, over a pack already resolved. */
+	public ImportResult importPack(UUID organizationId, FactorPacks.Pack pack) {
 		var organization = getOrganization(organizationId);
 		access.checkWrite(organization);
-		var pack = factorPacks.find(packId).orElseThrow(() -> GhgNotFoundException.pack(packId));
+		var packId = pack.id();
 		var existing = emissionFactors.findAllByOrganizationIdAndPackCodeIsNotNull(organizationId)
 			.stream()
 			.collect(Collectors.toMap(EmissionFactor::getPackCode, Function.identity(), (a, b) -> a));
 		int created = 0;
 		int updated = 0;
 		int tagged = 0;
+		var skippedUnits = new ArrayList<ImportResult.SkippedRow>();
 		for (var row : pack.factors()) {
 			if (units.dimensionOf(row.unit()).isEmpty()) {
-				continue; // a unit the registry cannot convert; the generator keeps them out, but a pack may carry one
+				// spec 02.6: a unit the registry cannot convert is reported, never dropped in silence. The
+				// generator keeps such rows out, but a pack may carry one and the caller is owed the reason.
+				skippedUnits.add(new ImportResult.SkippedRow(row.code(), row.unit()));
+				continue;
 			}
 			var gases = new EmissionFactor.Gases(nz(row.co2()), nz(row.ch4()), row.ch4Fossil(), nz(row.n2o()),
 					nz(row.hfcsKg()), nz(row.pfcsKg()), nz(row.sf6()), nz(row.nf3()), nz(row.biogenicCo2()));
 			// spec 02.3: the row cites the publication it comes from, not the pack that delivered it
 			var citation = row.citation(pack);
-			var provenance = new EmissionFactor.Provenance(citation.length() > 500 ? citation.substring(0, 497) + "..." : citation,
-					row.citationUrl(pack), row.citationYear(pack), row.dataYear(), null, null, trimToNull(row.notes()));
 			var current = existing.get(row.code());
+			// spec 02.6: validity is the organization's decision, not the pack's. An import carries the
+			// incumbent's window forward, so a factor a preparer retired by setting its end stays retired.
+			var provenance = new EmissionFactor.Provenance(citation.length() > 500 ? citation.substring(0, 497) + "..." : citation,
+					row.citationUrl(pack), row.citationYear(pack), row.dataYear(),
+					current == null ? null : current.getValidFrom(), current == null ? null : current.getValidTo(),
+					trimToNull(row.notes()));
 			if (current == null) {
 				var factor = new EmissionFactor(organization.getId(), row.name(), row.defaultScope(),
 						row.defaultCategory(), row.scopeAgnostic(), row.unit(), row.kgCo2ePerUnit(), gases,
@@ -728,7 +761,7 @@ public class GhgService {
 				}
 			}
 		}
-		return new ImportResult(packId, created, updated, tagged);
+		return new ImportResult(packId, created, updated, tagged, List.copyOf(skippedUnits));
 	}
 
 	/** The grid a pack row serves (spec 03.4): Ember rows carry the alpha-3 code, eGRID rows the subregion. */
