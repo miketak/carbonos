@@ -181,6 +181,25 @@ its boundary, refuses removal; procedure 3 checks the first.
 | 1 | Import **Refrigerants and other fluorinated gases (EPA Hub, IPCC AR5)**. | The import reports rows added and a non-zero count for "already held from another pack and tagged": the refrigerant rows the mining pack delivered are tagged, not copied. | | |
 | 2 | Search the factor table for **Refrigerant R-410A leakage**. | Exactly one row carries that name among the organization's own factors, and its Packs column lists both `refrigerants-ar5` and `sector-mining`. | | |
 
+### F3. The factor table and the picker at scale (a scratch organization)
+
+A published edition is thousands of rows, so the table and the picker ask
+the server for a page with the filters applied. Check that in an
+organization created for the purpose: importing this edition into the
+seeded organization would leave the factor tables of the later procedures
+unrecognizable.
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Create an organization **Scale Test Co** and open its **Emission factors** page. | The organization has no factors of its own yet. | | |
+| 2 | Import **UK Government (DESNZ) GHG conversion factors 2026**. | The import reports about 1,868 factors added. | | |
+| 3 | Read the heading of **This organization's factors** and the foot of the table. | The heading says "1,868 factors". The table holds 50 rows and the pager under it reads "Page 1 of 38". The browser does not slow to a crawl: it never receives the whole edition. | | |
+| 4 | Read the **Factor** column of any imported row. | Under the name is the publisher's own path, for example "Fuels / Gaseous fuels / Butane", which is what tells rows of the same name apart. | | |
+| 5 | Choose **Fuels** in **Published category**. | The table returns to page 1, the heading says how many match, and **Published activity** now offers only the activities inside Fuels. | | |
+| 6 | Type `butane` in **Search factors**, clear the category filter first. | The rows narrow to butane. Three carry the name "Gaseous fuels: Butane" and differ only by unit: 3,033.38067 kg CO₂e/tonne, 1.74533 kg CO₂e/litre and 0.22241 kg CO₂e/kWh. | | |
+| 7 | Untick **Show unapproved**, then tick it again. | The count changes and the checkbox names how many rows it is hiding while it is unticked. | | |
+| 8 | Open **Scale Test Co**'s settings and delete it, giving a reason. | The organization and its factors are gone, and the later procedures still see the seeded organization only. | | |
+
 Then remove nothing: the rest of procedure 2 and procedure 5 expect both
 packs. Every other pack is importable too; do not import them, or the factor
 pickers of procedure 5 fill with rows the cases do not name.
