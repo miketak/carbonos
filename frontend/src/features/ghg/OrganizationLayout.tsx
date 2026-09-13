@@ -4,7 +4,7 @@ import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { GhgHeader } from './components/GhgHeader'
 import { ReadOnlyBanner } from './components/ReadOnlyBanner'
-import { useOrganizationQuery, useOrganizationsQuery } from './useGhg'
+import { useFactorPackNoticesQuery, useOrganizationQuery, useOrganizationsQuery } from './useGhg'
 import type { Organization } from './api'
 
 const sections = [
@@ -41,6 +41,13 @@ const sections = [
     icon: 'M2 5h7a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H2zM22 5h-7a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h7z',
   },
   {
+    // spec 02.7: new editions of the packs the organization holds, and the decision on each
+    to: 'factor-updates',
+    label: 'Updates',
+    end: false,
+    icon: 'M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6',
+  },
+  {
     to: 'units',
     label: 'Units',
     end: false,
@@ -52,6 +59,9 @@ const collapseKey = 'ghg.sidebar'
 
 /* dividers group the nav: Overview | the GHG flow (entities, facilities, activity, inventories, base year) | reference */
 const dividerAfter = new Set([0, 5])
+
+/* the navigation entry that carries the open-notice count (spec 02.7) */
+const badgedSection = 'factor-updates'
 
 /* pill position: 36px rows + 6px flex gap; each divider adds 1px + one extra gap */
 function pillOffset(index: number): number {
@@ -81,6 +91,7 @@ export function OrganizationLayout() {
   const { organizationId = '' } = useParams()
   const organizationQuery = useOrganizationQuery(organizationId)
   const organizationsQuery = useOrganizationsQuery()
+  const noticesQuery = useFactorPackNoticesQuery(organizationId)
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(() => {
@@ -93,6 +104,8 @@ export function OrganizationLayout() {
 
   const organizations = organizationsQuery.data
   const organizationName = organizationQuery.data?.name ?? ''
+  // spec 02.7: the navigation entry carries a count of the notices still waiting on a decision
+  const openNotices = (noticesQuery.data ?? []).filter((notice) => notice.status === 'OPEN').length
 
   const toggleCollapsed = () =>
     setCollapsed((value) => {
@@ -179,6 +192,20 @@ export function OrganizationLayout() {
                   >
                     <Icon d={section.icon} />
                     <span className={collapsed ? 'md:hidden' : ''}>{section.label}</span>
+                    {section.to === badgedSection && openNotices > 0 && (
+                      <span
+                        title={`${openNotices} factor pack update${openNotices === 1 ? '' : 's'} waiting`}
+                        className={`ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 text-xs font-bold text-dark-teal ${
+                          collapsed ? 'md:absolute md:top-1 md:right-1 md:ml-0' : ''
+                        }`}
+                      >
+                        {openNotices}
+                        <span className="sr-only">
+                          {' '}
+                          factor pack update{openNotices === 1 ? '' : 's'} waiting
+                        </span>
+                      </span>
+                    )}
                   </NavLink>
                   {dividerAfter.has(index) && (
                     <div aria-hidden="true" className="mx-3 hidden h-px bg-teal/15 md:block" />

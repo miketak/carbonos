@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  acceptFactorPackNotice,
   addEvidenceLink,
   addMember,
   addUpstreamRule,
@@ -18,6 +19,7 @@ import {
   createOrganization,
   createStream,
   decideRecalculation,
+  declineFactorPackNotice,
   deleteActivity,
   deleteCustomUnit,
   deleteDensity,
@@ -36,6 +38,7 @@ import {
   freezeInventory,
   getActivity,
   getBaseYear,
+  getFactorPackDiff,
   getBoundary,
   getBoundaryVersion,
   getInheritance,
@@ -60,6 +63,7 @@ import {
   listEntities,
   listEvidence,
   listFacilities,
+  listFactorPackNotices,
   listFactorPacks,
   listImportBatches,
   listInventories,
@@ -130,6 +134,7 @@ import type {
   OrgRole,
   OrganizationInput,
   RaiseRecalculationInput,
+  RecalculationCase,
   RecalculationDecisionInput,
   ReportMetadataInput,
   ResidualMixInput,
@@ -163,6 +168,10 @@ export const evidenceKey = (owner: EvidenceOwner) =>
   ['ghg', 'evidence', 'activityId' in owner ? owner.activityId : owner.marketFactorId] as const
 export const inventoriesKey = (orgId: string) => ['ghg', 'inventories', orgId] as const
 export const baseYearKey = (orgId: string) => ['ghg', 'base-year', orgId] as const
+export const factorPackNoticesKey = (orgId: string) =>
+  ['ghg', 'factor-pack-notices', orgId] as const
+export const factorPackDiffKey = (noticeId: string) =>
+  ['ghg', 'factor-pack-diff', noticeId] as const
 export const inventoryKey = (id: string) => ['ghg', 'inventory', id] as const
 export const boundaryKey = (inventoryId: string) => ['ghg', 'boundary', inventoryId] as const
 export const boundaryVersionsKey = (inventoryId: string) =>
@@ -342,6 +351,67 @@ export function useDeleteEmissionFactor(orgId: string) {
 
 export function useImportFactorPack(orgId: string) {
   return useFactorMutation(orgId, (packId: string) => importFactorPack(orgId, packId))
+}
+
+// --- factor pack updates: the organization's inbox (spec 02.7) ----------------
+
+/** Every notice the organization holds, open first; the count badge reads the open ones. */
+export function useFactorPackNoticesQuery(orgId: string) {
+  return useQuery({
+    queryKey: factorPackNoticesKey(orgId),
+    queryFn: () => listFactorPackNotices(orgId),
+  })
+}
+
+export function useFactorPackDiffQuery(noticeId: string | undefined) {
+  return useQuery({
+    queryKey: factorPackDiffKey(noticeId ?? ''),
+    queryFn: () => getFactorPackDiff(noticeId ?? ''),
+    enabled: noticeId != null,
+  })
+}
+
+/**
+ * Deciding touches the notice, the organization's factors, its base year and
+ * every inventory's gates, because accepting runs an import and can raise a
+ * recalculation candidate.
+ */
+function useAdoptionMutation<TArgs, TResult>(
+  orgId: string,
+  mutationFn: (args: TArgs) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: factorPackNoticesKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['ghg', 'factor-pack-diff'] })
+      void queryClient.invalidateQueries({ queryKey: factorsKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: baseYearKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['ghg', 'validation'] })
+    },
+  })
+}
+
+export function useAcceptFactorPackNotice(orgId: string) {
+  return useAdoptionMutation(
+    orgId,
+    ({
+      noticeId,
+      recalculationCase,
+      note,
+    }: {
+      noticeId: string
+      recalculationCase: RecalculationCase
+      note?: string
+    }) => acceptFactorPackNotice(noticeId, { recalculationCase, note }),
+  )
+}
+
+export function useDeclineFactorPackNotice(orgId: string) {
+  return useAdoptionMutation(orgId, ({ noticeId, note }: { noticeId: string; note?: string }) =>
+    declineFactorPackNotice(noticeId, { note }),
+  )
 }
 
 export function useUnitsQuery(orgId?: string) {

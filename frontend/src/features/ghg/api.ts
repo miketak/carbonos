@@ -459,6 +459,102 @@ export interface FactorPackImport {
   splitPeriods: SplitPeriod[]
 }
 
+/** How chapter 5 treats an adoption; the question acceptance must answer (spec 02.7). */
+export type RecalculationCase =
+  'VINTAGE_PROGRESSION' | 'RETROSPECTIVE_ADOPTION' | 'ERRATUM_ON_REPORTED_YEAR'
+
+export type FactorPackNoticeStatus = 'OPEN' | 'ACCEPTED' | 'DECLINED' | 'WITHDRAWN'
+
+/**
+ * One organization's notice that a new edition of a pack it holds was
+ * published (spec 02.7). Publishing raises it and changes nothing: adopting an
+ * edition is the organization's accounting decision.
+ */
+export interface FactorPackNotice {
+  id: string
+  editionId: string
+  editionName: string
+  packKey: string | null
+  predecessorEditionId: string | null
+  status: FactorPackNoticeStatus
+  editionStatus: 'DRAFT' | 'PUBLISHED' | 'SUPERSEDED' | 'WITHDRAWN' | null
+  withdrawalReason: string | null
+  appliesFrom: string | null
+  raisedAt: string
+  rowsAffected: number
+  rowsOverThreshold: number
+  estimatedKgCo2eDelta: number | null
+  scopesAffected: string | null
+  diffHash: string
+  decidedAt: string | null
+  decidedBy: string | null
+  decidedByRole: 'OWNER' | 'REVIEWER' | 'PREPARER' | 'VERIFIER' | null
+  recalculationCase: RecalculationCase | null
+  decisionNote: string | null
+  significanceThresholdPercent: number | null
+  affectedPercent: number | null
+  recalculationId: string | null
+  appliedAt: string | null
+}
+
+/** One lineage the edition moves, as the diff shows it (spec 02.7). */
+export interface FactorPackDiffRow {
+  code: string
+  name: string
+  unit: string
+  currentKgCo2ePerUnit: number | null
+  newKgCo2ePerUnit: number | null
+  absoluteChange: number | null
+  percentChange: number | null
+  gasesChanged: string[]
+  provenanceChanged: boolean
+  gwpBasisChanged: boolean
+  estimatedKgCo2eDelta: number | null
+}
+
+/** A lineage the decision does not apply to, with the reason the page prints. */
+export interface FactorPackApartRow {
+  code: string
+  name: string
+  reason: string
+}
+
+export interface FactorPackInventoryRef {
+  inventoryId: string
+  name: string
+  periodStart: string
+  periodEnd: string
+  status: InventoryStatus
+}
+
+/** What opening a notice shows: the rows, the four groups apart, and what a decision would cost. */
+export interface FactorPackDiff {
+  noticeId: string
+  editionId: string
+  editionName: string
+  predecessorEditionId: string | null
+  appliesFrom: string | null
+  status: FactorPackNoticeStatus
+  rows: FactorPackDiffRow[]
+  conflicts: FactorPackApartRow[]
+  blocked: FactorPackApartRow[]
+  discontinued: FactorPackApartRow[]
+  earlierPeriods: FactorPackInventoryRef[]
+  estimatedKgCo2eDelta: number | null
+  diffHash: string
+  gwpBasisChanged: boolean
+  currentGwpBasis: string | null
+  newGwpBasis: string | null
+  /** The period the movement was estimated over, or null when the organization has none. */
+  estimatedOver: string | null
+  lockedPeriod: FactorPackInventoryRef | null
+  hasBaseYear: boolean
+  thresholdPercent: number | null
+  affectedPercent: number | null
+  /** The warning the decision screen shows before accepting, in the words spec 02.7 fixes. */
+  recalculationWarning: string
+}
+
 /** A shipped, importable factor pack (spec 02.1). */
 export interface FactorPack {
   id: string
@@ -1941,6 +2037,38 @@ export function importFactorPack(
     `/api/ghg/organizations/${organizationId}/factor-packs/${packId}/import`,
     { method: 'POST' },
   )
+}
+
+// --- factor pack updates: the organization's inbox (spec 02.7) ----------------
+
+export function listFactorPackNotices(organizationId: string): Promise<FactorPackNotice[]> {
+  return api<FactorPackNotice[]>(`/api/ghg/organizations/${organizationId}/factor-pack-notices`)
+}
+
+export function getFactorPackDiff(noticeId: string): Promise<FactorPackDiff> {
+  return api<FactorPackDiff>(`/api/ghg/factor-pack-notices/${noticeId}/diff`)
+}
+
+/** Accepting runs the versioned import of spec 02.6 from the edition's applies-from date. */
+export function acceptFactorPackNotice(
+  noticeId: string,
+  input: { recalculationCase: RecalculationCase; note?: string },
+): Promise<FactorPackImport> {
+  return api<FactorPackImport>(`/api/ghg/factor-pack-notices/${noticeId}/accept`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+/** Declining changes nothing and closes the notice. */
+export function declineFactorPackNotice(
+  noticeId: string,
+  input: { note?: string },
+): Promise<FactorPackNotice> {
+  return api<FactorPackNotice>(`/api/ghg/factor-pack-notices/${noticeId}/decline`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }
 
 // --- units -------------------------------------------------------------------
