@@ -61,7 +61,10 @@ anything today; each will be asked again the first time a client hits it.
 ## Emission factors still unsourced
 
 No published factor exists for these, so a supplier or study factor is
-entered by hand. The pack cards say so.
+entered by hand. The pack cards say so. Sourcing one is now an authoring job
+rather than an engineering one: a curator adds the row to a draft edition in
+the admin console and an approver publishes it (spec 02.5). Nothing is
+generated from a script and no release is needed.
 
 - [ ] **EF-01** Sodium cyanide (a material cat. 1 line at every Ghanaian gold
   plant). The mining pack ships a supplier-factor template, not a value.
