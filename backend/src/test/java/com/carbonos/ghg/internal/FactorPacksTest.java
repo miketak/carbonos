@@ -2,21 +2,48 @@ package com.carbonos.ghg.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+
+import com.carbonos.TestcontainersConfiguration;
 
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * What the shipped packs must contain (specs 02.3 and 02.4): every row cites
- * the publication it comes from, Montreal Protocol rows report outside the
- * scopes, the mining pack carries the purchased-goods rows its card promises,
- * and the oil and gas pack carries flaring rows with the table they come from.
+ * What the seeded editions must contain (specs 02.3, 02.4 and 02.5). The packs
+ * are read from the catalogue {@code V43} seeded, and the JSON files that seed
+ * came from are the oracle: every row must arrive with the values, the
+ * provenance and the taxonomy the file states. Every row cites the publication
+ * it comes from, Montreal Protocol rows report outside the scopes, the mining
+ * pack carries the purchased-goods rows its card promises, and the oil and gas
+ * pack carries flaring rows with the table they come from.
+ *
+ * <p>The publication rules and the console's own assertions arrive with the
+ * authoring phase of spec 02.5, which is where this class becomes
+ * {@code SeededFactorPackEditionsTest}.
  */
+@SpringBootTest
+@Import(TestcontainersConfiguration.class)
 class FactorPacksTest {
 
-	private final FactorPacks packs = new FactorPacks(JsonMapper.builder().build());
+	/** The rows each shipped pack file carries, which the seeded editions must match exactly. */
+	private static final Map<String, Integer> SHIPPED_ROW_COUNTS = Map.of("defra-2026", 1868, "epa-hub-2025", 548,
+			"ember-grid-2025", 141, "sector-construction", 80, "sector-oil-and-gas", 74, "refrigerants-ar5", 56,
+			"sector-mining", 56, "ghana", 7, "ipcc-2006-process", 5, "nga-2024-explosives", 1);
+
+	@Autowired
+	private FactorPacks packs;
+
+	@Autowired
+	private FactorPackEditionRepository editions;
 
 	private FactorPacks.Pack pack(String id) {
 		return packs.find(id).orElseThrow(() -> new AssertionError("pack " + id + " is missing"));
@@ -28,6 +55,158 @@ class FactorPacksTest {
 			.filter(factor -> factor.code().equals(code))
 			.findFirst()
 			.orElseThrow(() -> new AssertionError(pack.id() + " no longer carries " + code));
+	}
+
+	/** The shipped JSON files, still on the classpath, read as the oracle the seed was built from. */
+	private static Map<String, FactorPacks.Pack> shippedFiles() {
+		var mapper = JsonMapper.builder().build();
+		var loaded = new LinkedHashMap<String, FactorPacks.Pack>();
+		try {
+			for (var resource : new PathMatchingResourcePatternResolver()
+				.getResources("classpath:factor-packs/*.json")) {
+				try (var in = resource.getInputStream()) {
+					var pack = mapper.readValue(in, FactorPacks.Pack.class);
+					loaded.put(pack.id(), pack);
+				}
+			}
+		}
+		catch (Exception ex) {
+			throw new AssertionError("Could not read the shipped pack files", ex);
+		}
+		return loaded;
+	}
+
+	private static void assertSameValue(String as, BigDecimal actual, BigDecimal expected) {
+		if (expected == null) {
+			assertThat(actual).as(as).isNull();
+		}
+		else {
+			assertThat(actual).as(as).isNotNull().isEqualByComparingTo(expected);
+		}
+	}
+
+	@Test
+	void theTenSeededEditionsCarryTheRowsTheShippedFilesCarried() {
+		var shipped = shippedFiles();
+		assertThat(shipped.keySet()).containsExactlyInAnyOrderElementsOf(SHIPPED_ROW_COUNTS.keySet());
+		assertThat(packs.all().stream().map(FactorPacks.Pack::id))
+			.containsExactlyInAnyOrderElementsOf(SHIPPED_ROW_COUNTS.keySet());
+		// the header projection counts the same rows without assembling them
+		assertThat(packs.headers()).allSatisfy(header -> assertThat(header.factorCount()).as(header.id())
+			.isEqualTo(SHIPPED_ROW_COUNTS.get(header.id())));
+		assertThat(packs.headers().stream().mapToInt(FactorPacks.PackHeader::factorCount).sum()).isEqualTo(2836);
+		for (var entry : SHIPPED_ROW_COUNTS.entrySet()) {
+			var seeded = pack(entry.getKey());
+			var file = shipped.get(entry.getKey());
+			assertThat(seeded.factors()).as(entry.getKey()).hasSize(entry.getValue());
+			assertThat(seeded.name()).isEqualTo(file.name());
+			assertThat(seeded.source()).isEqualTo(file.source());
+			assertThat(seeded.sourceUrl()).isEqualTo(file.sourceUrl());
+			assertThat(seeded.publicationYear()).isEqualTo(file.publicationYear());
+			assertThat(seeded.gwpBasis()).isEqualTo(file.gwpBasis());
+			assertThat(seeded.license()).isEqualTo(file.license());
+			assertThat(seeded.retrieved()).isEqualTo(file.retrieved());
+			assertThat(seeded.notes()).isEqualTo(file.notes());
+			// every row, in the file's order, with the file's values
+			for (int i = 0; i < file.factors().size(); i++) {
+				var expected = file.factors().get(i);
+				var actual = seeded.factors().get(i);
+				var as = entry.getKey() + " / " + expected.code();
+				assertThat(actual.code()).as(as).isEqualTo(expected.code());
+				assertThat(actual.name()).as(as).isEqualTo(expected.name());
+				assertThat(actual.defaultScope()).as(as).isEqualTo(expected.defaultScope());
+				assertThat(actual.defaultCategory()).as(as).isEqualTo(expected.defaultCategory());
+				assertThat(actual.scopeAgnostic()).as(as).isEqualTo(expected.scopeAgnostic());
+				assertThat(actual.unit()).as(as).isEqualTo(expected.unit());
+				assertSameValue(as, actual.kgCo2ePerUnit(), expected.kgCo2ePerUnit());
+				assertSameValue(as, actual.co2(), expected.co2());
+				assertSameValue(as, actual.ch4(), expected.ch4());
+				assertThat(actual.ch4Fossil()).as(as).isEqualTo(expected.ch4Fossil());
+				assertSameValue(as, actual.n2o(), expected.n2o());
+				assertSameValue(as, actual.hfcsKg(), expected.hfcsKg());
+				assertSameValue(as, actual.pfcsKg(), expected.pfcsKg());
+				assertSameValue(as, actual.sf6(), expected.sf6());
+				assertSameValue(as, actual.nf3(), expected.nf3());
+				assertSameValue(as, actual.biogenicCo2(), expected.biogenicCo2());
+				assertThat(actual.blendComposition()).as(as).isEqualTo(expected.blendComposition());
+				assertThat(actual.blendGwpSource()).as(as).isEqualTo(expected.blendGwpSource());
+				assertThat(actual.dataYear()).as(as).isEqualTo(expected.dataYear());
+				assertThat(actual.approved()).as(as).isEqualTo(expected.approved());
+				assertThat(actual.notes()).as(as).isEqualTo(expected.notes());
+				assertThat(actual.sourcePublication()).as(as).isEqualTo(expected.sourcePublication());
+				assertThat(actual.sourceUrl()).as(as).isEqualTo(expected.sourceUrl());
+				assertThat(actual.publicationYear()).as(as).isEqualTo(expected.publicationYear());
+				assertThat(actual.basis()).as(as).isEqualTo(expected.basis());
+				// the file's one concatenation is three columns here, and they rejoin to it
+				assertThat(actual.sourcePath()).as(as).isEqualTo(expected.sourceDetail());
+				assertThat(actual.citation(seeded)).as(as).isEqualTo(expected.citation(file));
+			}
+		}
+	}
+
+	@Test
+	void everySeededEditionIsPublishedWithAnEvidenceChecksumAndNoApprover() {
+		var published = editions.findAllByStatusOrderByEditionIdAsc(FactorPackStatus.PUBLISHED);
+		assertThat(published.stream().map(FactorPackEdition::getEditionId))
+			.containsExactlyInAnyOrderElementsOf(SHIPPED_ROW_COUNTS.keySet());
+		assertThat(published).allSatisfy(edition -> {
+			var as = edition.getEditionId();
+			assertThat(edition.getEvidenceChecksum()).as(as).hasSize(64);
+			assertThat(edition.getSourceDocument()).as(as).contains(edition.getEditionId() + ".json");
+			assertThat(edition.getPublishedAt()).as(as).isNotNull();
+			// each applies from 1 January of its publication year
+			assertThat(edition.getAppliesFrom()).as(as).isNotNull();
+			assertThat(edition.getAppliesFrom().getYear()).as(as).isEqualTo(edition.getPublicationYear());
+			assertThat(edition.getAppliesFrom().getDayOfYear()).as(as).isEqualTo(1);
+			// the seed is not a separation-of-duties record, and says so
+			assertThat(edition.getProvenanceReview()).as(as).isEqualTo(FactorPackEdition.SEED_UNCHECKED);
+			assertThat(edition.getCuratorName()).as(as).isEqualTo("seed");
+			assertThat(edition.getApproverUserId()).as(as).isNull();
+			assertThat(edition.getApproverName()).as(as).isNull();
+			assertThat(edition.getProvenanceNote()).as(as)
+				.contains("not of the publication")
+				.contains("starts at the next edition");
+		});
+	}
+
+	@Test
+	void everyRowRecordsThePublishersTaxonomyInItsParts() {
+		for (var pack : packs.all()) {
+			for (var factor : pack.factors()) {
+				var as = pack.id() + " / " + factor.code();
+				assertThat(factor.sourcePath()).as(as).isNotBlank();
+				// a category never carries a separator of its own: it is one level of the publisher's table
+				if (factor.sourceCategory() != null) {
+					assertThat(factor.sourceCategory()).as(as).doesNotContain(" / ");
+				}
+			}
+		}
+		// the DESNZ table's own three levels, which a display name alone cannot tell apart
+		var butane = row(pack("defra-2026"), "DEFRA:Fuels:Gaseous_fuels_Butane:tonnes");
+		assertThat(butane.sourceCategory()).isEqualTo("Fuels");
+		assertThat(butane.sourceActivity()).isEqualTo("Gaseous fuels / Butane");
+		assertThat(butane.sourceDetail()).isNull();
+		var aluminium = row(pack("defra-2026"),
+				"DEFRA:Waste_disposal:Metal_Metal:_aluminium_cans_and_foil_excl._forming_:Combustion:tonnes");
+		assertThat(aluminium.sourceCategory()).isEqualTo("Waste disposal");
+		assertThat(aluminium.sourceActivity()).isEqualTo("Metal / Metal: aluminium cans and foil (excl. forming)");
+		assertThat(aluminium.sourceDetail()).isEqualTo("Combustion");
+		// an EPA Hub row: the third part is the detail, not part of the activity
+		var anthracite = row(pack("epa-hub-2025"),
+				"EPA:Stationary_combustion:Anthracite:Coal_and_Coke_per_short_ton:short_ton");
+		assertThat(anthracite.sourceCategory()).isEqualTo("Stationary combustion");
+		assertThat(anthracite.sourceActivity()).isEqualTo("Anthracite");
+		assertThat(anthracite.sourceDetail()).isEqualTo("Coal and Coke; per short ton");
+		// a hand-written derivation cites a document rather than a table row: the citation is the detail
+		var clinker = row(pack("ipcc-2006-process"), "IPCC:2006:clinker");
+		assertThat(clinker.sourceCategory()).isNull();
+		assertThat(clinker.sourceActivity()).isNull();
+		assertThat(clinker.sourceDetail()).contains("Volume 3, Chapter 2");
+		// three butane rows share a display name and differ by unit, which is why the parts are kept apart
+		assertThat(pack("defra-2026").factors()
+			.stream()
+			.filter(factor -> "Gaseous fuels: Butane".equals(factor.name()))
+			.map(FactorPacks.PackFactor::unit)).containsExactlyInAnyOrder("tonne", "litre", "kWh");
 	}
 
 	@Test

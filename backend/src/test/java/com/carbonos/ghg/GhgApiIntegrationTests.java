@@ -3121,7 +3121,7 @@ class GhgApiIntegrationTests {
 		return new FactorPacks.PackFactor(code, name, com.carbonos.ghg.internal.Scope.SCOPE_1,
 				com.carbonos.ghg.internal.ActivityCategory.STATIONARY_COMBUSTION, true, unit,
 				new java.math.BigDecimal("2.5"), new java.math.BigDecimal("2.5"), null, true, null, null, null, null,
-				null, null, null, null, 2026, "Test detail", true, null, "Test publication",
+				null, null, null, null, 2026, null, null, "Test detail", true, null, "Test publication",
 				"https://example.test/pack", 2026, com.carbonos.ghg.internal.ReportingBasis.SCOPES);
 	}
 
