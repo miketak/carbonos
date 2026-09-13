@@ -327,6 +327,18 @@ public class EmissionFactor {
 		return supersededById;
 	}
 
+	/**
+	 * Records the publisher's own category, activity and detail for this row
+	 * (spec 02.5). They are what tells two rows sharing a display name apart,
+	 * so the picker can show them and filter on them (FU-03). A hand-entered
+	 * factor has no publisher taxonomy and keeps them null.
+	 */
+	void setTaxonomy(String sourceCategory, String sourceActivity, String sourceDetail) {
+		this.sourceCategory = sourceCategory;
+		this.sourceActivity = sourceActivity;
+		this.sourceDetail = sourceDetail;
+	}
+
 	/** The publisher's category for this row, or null for a hand-entered factor (spec 02.5). */
 	public String getSourceCategory() {
 		return sourceCategory;

@@ -165,6 +165,26 @@ class GhgApiIntegrationTests {
 		return actions.andReturn().getResponse().getContentAsString();
 	}
 
+	/**
+	 * Every factor an organization can see, paged through. The endpoint returns
+	 * a page, not a list (FU-03), so a test that wants the whole library asks
+	 * for it page by page and reads the result with the same JsonPath it used
+	 * when the endpoint returned an array.
+	 */
+	Object allFactors(String organizationId) throws Exception {
+		var all = new java.util.ArrayList<Object>();
+		for (int page = 0;; page++) {
+			var body = body(mvc.perform(get("/api/ghg/organizations/" + organizationId + "/emission-factors")
+				.with(asMember())
+				.param("page", String.valueOf(page))
+				.param("size", "200")));
+			all.addAll(JsonPath.<List<Object>>read(body, "$.items"));
+			if (all.size() >= JsonPath.<Integer>read(body, "$.total")) {
+				return all;
+			}
+		}
+	}
+
 	String createOrganization(String name) throws Exception {
 		var result = mvc
 			.perform(post("/api/ghg/organizations").with(asMember()).with(csrf()).contentType("application/json")
@@ -2983,9 +3003,9 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isConflict());
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asOutsider()))
 			.andExpect(status().isNotFound());
-		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
-			.andExpect(jsonPath("$[?(@.id == '" + hfoId + "')].name").value("Heavy fuel oil (GOIL analysis 2025)"))
-			.andExpect(jsonPath("$[?(@.id == '" + DIESEL_FACTOR + "')]").isNotEmpty());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).param("size", "200"))
+			.andExpect(jsonPath("$.items[?(@.id == '" + hfoId + "')].name").value("Heavy fuel oil (GOIL analysis 2025)"))
+			.andExpect(jsonPath("$.items[?(@.id == '" + DIESEL_FACTOR + "')]").isNotEmpty());
 		// the gate blocks a run on an unapproved factor; approval clears it
 		var fuel = createActivity(orgId, plant, "HFO burned in the power plant", "10", "tonne", "2025-06-30");
 		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
@@ -3028,7 +3048,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/no-such-pack/import").with(asMember())
 			.with(csrf())).andExpect(status().isNotFound());
 		// an imported blend follows the inventory's GWP set: R-407C is 23% HFC-32, 25% HFC-125, 52% HFC-134a
-		var factors = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		var factors = allFactors(orgId);
 		String r407c = JsonPath.<List<String>>read(factors, "$[?(@.name == 'Refrigerant R-407C leakage')].id").getFirst();
 		assertThat(JsonPath.<List<String>>read(factors, "$[?(@.name == 'Refrigerant R-407C leakage')].blendComposition")
 			.getFirst()).isEqualTo("23% HFC-32, 25% HFC-125, 52% HFC-134a");
@@ -3068,7 +3088,7 @@ class GhgApiIntegrationTests {
 		var orgId = createOrganization("Asante Gold Resources");
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
-		var imported = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		var imported = allFactors(orgId);
 		String dieselId = JsonPath.<List<String>>read(imported,
 				"$[?(@.name == 'Liquid fuels: Diesel (100% mineral diesel)' && @.unit == 'litre')].id").getFirst();
 		// a preparer retires the row by ending its validity, and renames it while they are there
@@ -3085,7 +3105,7 @@ class GhgApiIntegrationTests {
 		// the same pack again refreshes the values, but the retirement is the organization's and stands
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
-		var after = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		var after = allFactors(orgId);
 		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + dieselId + "')].name").getFirst())
 			.isEqualTo("Liquid fuels: Diesel (100% mineral diesel)");
 		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + dieselId + "')].validFrom").getFirst())
@@ -3111,9 +3131,9 @@ class GhgApiIntegrationTests {
 		assertThat(result.skippedUnits()).containsExactly(
 				new GhgService.ImportResult.SkippedRow("TEST:Ore_hauled:drums", "drum"));
 		// and the row the registry cannot convert is not in the organization's factors
-		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
-			.andExpect(jsonPath("$[?(@.name == 'Test diesel')]").isNotEmpty())
-			.andExpect(jsonPath("$[?(@.name == 'Test ore hauled')]").isEmpty());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).param("size", "200"))
+			.andExpect(jsonPath("$.items[?(@.name == 'Test diesel')]").isNotEmpty())
+			.andExpect(jsonPath("$.items[?(@.name == 'Test ore hauled')]").isEmpty());
 	}
 
 	/** One pack row: a plain CO2-only factor in the given unit. */
@@ -4248,7 +4268,7 @@ class GhgApiIntegrationTests {
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		String flightsAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + flights + "')].id").getFirst();
 		// business travel: the seeded flight factor
-		var factors = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		var factors = allFactors(orgId);
 		String flightFactor = JsonPath.<List<String>>read(factors,
 				"$[?(@.defaultCategory == 'BUSINESS_TRAVEL' && @.unit == 'passenger-km' && @.approved == true)].id").getFirst();
 		classify(flightsAssignment, flightFactor);
@@ -5105,7 +5125,7 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
-		var factors = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		var factors = allFactors(orgId);
 		List<String> codes = JsonPath.<List<String>>read(factors, "$[*].packCode")
 			.stream()
 			.filter(java.util.Objects::nonNull)
@@ -5131,17 +5151,18 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
-		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
-			.andExpect(jsonPath("$[?(@.id == '" + r410aId + "')].approved")
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("ids", r410aId))
+			.andExpect(jsonPath("$.items[?(@.id == '" + r410aId + "')].approved")
 				.value(org.hamcrest.Matchers.hasItem(false)));
 		// the picker's filters: unapproved rows hidden unless asked for, and a search over name, source and tag
 		var approvedOnly = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors")
-			.with(asMember()).param("includeUnapproved", "false")));
-		assertThat(JsonPath.<List<String>>read(approvedOnly, "$[?(@.id == '" + r410aId + "')].id")).isEmpty();
+			.with(asMember()).param("includeUnapproved", "false").param("ids", r410aId)));
+		assertThat(JsonPath.<List<String>>read(approvedOnly, "$.items[?(@.id == '" + r410aId + "')].id")).isEmpty();
 		var searched = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
 			.param("q", "sector-oil-and-gas")));
-		assertThat(JsonPath.<List<String>>read(searched, "$[*].id")).isNotEmpty().hasSizeLessThan(
-				JsonPath.<List<String>>read(factors, "$[*].id").size());
+		assertThat(JsonPath.<Integer>read(searched, "$.total")).isPositive()
+			.isLessThan(JsonPath.<List<String>>read(factors, "$[*].id").size());
 		// the report's factor table prints the publication, its years and the tags apart from the source
 		var plant = createFacility(orgId, "Obuom Processing Plant");
 		var activity = createActivity(orgId, plant, "Lime for the CIL circuit", "40", "tonne", "2025-06-30");
@@ -5157,6 +5178,96 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.factors[0].reportingBasis").value("SCOPES"));
 	}
 
+	/**
+	 * FU-03: choosing a factor at the scale a published edition brings. The
+	 * defra-2026 edition is 1,868 rows; the picker must never be handed all of
+	 * them. The filters run in SQL, the endpoint returns a bounded page, a
+	 * taxonomy filter narrows without anyone typing a search, and the three
+	 * rows called "Gaseous fuels: Butane" come back telling themselves apart.
+	 */
+	@Test
+	void theFactorPickerPagesAndFiltersInSql() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources (at scale)");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import").with(asMember())
+			.with(csrf())).andExpect(status().isOk());
+
+		// the default page is bounded: 1,868 imported rows plus the shared library, 50 at a time
+		var first = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
+			.andExpect(status().isOk()));
+		assertThat(JsonPath.<List<String>>read(first, "$.items[*].id")).hasSize(50);
+		var total = JsonPath.<Integer>read(first, "$.total");
+		assertThat(total).isGreaterThan(1868);
+		assertThat(JsonPath.<Integer>read(first, "$.size")).isEqualTo(50);
+		// the organization's own factors come first, so the picker's grouping survives paging
+		assertThat(JsonPath.<List<Object>>read(first, "$.items[?(@.organizationId == null)].id")).isEmpty();
+		// and no caller can ask for the library in one go
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).param("size", "5000"))
+			.andExpect(jsonPath("$.size").value(200))
+			.andExpect(jsonPath("$.items.length()").value(200));
+
+		// a taxonomy filter narrows without a text search (spec 02.5 gave the columns; FU-03 filters on them)
+		var fuels = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("sourceCategory", "Fuels").param("size", "200")));
+		var fuelsTotal = JsonPath.<Integer>read(fuels, "$.total");
+		assertThat(fuelsTotal).isPositive().isLessThan(total);
+		assertThat(JsonPath.<List<String>>read(fuels, "$.items[*].sourceCategory")).isNotEmpty()
+			.allMatch("Fuels"::equals);
+		// the facets say which values the filter can take
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors/facets").with(asMember()))
+			.andExpect(jsonPath("$.categories").value(org.hamcrest.Matchers.hasItem("Fuels")))
+			.andExpect(jsonPath("$.units").value(org.hamcrest.Matchers.hasItem("tonne")));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors/facets").with(asMember())
+			.param("sourceCategory", "Fuels"))
+			.andExpect(jsonPath("$.activities").value(org.hamcrest.Matchers.hasItem("Gaseous fuels / Butane")));
+
+		// 1,157 of the imported rows share a display name. The three butane rows differ only by unit, so
+		// the response must carry the unit and the publisher's activity that tell them apart.
+		var butane = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("q", "Gaseous fuels: Butane").param("size", "200")));
+		var same = "$.items[?(@.name == 'Gaseous fuels: Butane')]";
+		assertThat(JsonPath.<List<String>>read(butane, same + ".id")).hasSize(3);
+		assertThat(JsonPath.<List<String>>read(butane, same + ".unit")).containsExactlyInAnyOrder("tonne", "litre",
+				"kWh");
+		assertThat(JsonPath.<List<String>>read(butane, same + ".sourceActivity")).allMatch(
+				"Gaseous fuels / Butane"::equals);
+		assertThat(JsonPath.<List<Double>>read(butane, same + ".kgCo2ePerUnit")).doesNotHaveDuplicates();
+
+		// the unit filter is what the classification picker uses: a record in litre is offered litre rows
+		var perLitre = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("q", "Gaseous fuels: Butane").param("unit", "litre")));
+		assertThat(JsonPath.<List<String>>read(perLitre, "$.items[*].unit")).isNotEmpty().allMatch("litre"::equals);
+		// and a dimension asks for every unit that converts into it, not one spelling
+		var volume = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("dimension", "VOLUME").param("size", "200")));
+		assertThat(JsonPath.<Integer>read(volume, "$.total")).isPositive().isLessThan(total);
+		assertThat(JsonPath.<List<String>>read(volume, "$.items[*].dimension")).isNotEmpty().allMatch("VOLUME"::equals);
+
+		// the approval toggle counts what it hides rather than making the browser work it out
+		String butaneId = JsonPath.<List<String>>read(butane, same + ".id").getFirst();
+		mvc.perform(post("/api/ghg/emission-factors/" + butaneId + "/unapprove").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		// the search also reaches the three well-to-tank rows of the same fuel, so six match and one is hidden
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("q", "Gaseous fuels: Butane"))
+			.andExpect(jsonPath("$.total").value(6))
+			.andExpect(jsonPath("$.unapproved").value(1));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("q", "Gaseous fuels: Butane").param("includeUnapproved", "false"))
+			.andExpect(jsonPath("$.total").value(5));
+
+		// a page of records resolves the factors it already references by identifier, never by fetching the library
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("ids", butaneId))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].id").value(butaneId));
+
+		// the shared library is its own tier, and stays small
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("tier", "LIBRARY").param("size", "200"))
+			.andExpect(jsonPath("$.items[?(@.organizationId != null)]").isEmpty())
+			.andExpect(jsonPath("$.total").value(org.hamcrest.Matchers.lessThan(total)));
+	}
+
 	/** Audit finding F56 (spec 02.4): a Montreal Protocol gas is disclosed, never counted in a scope. */
 	@Test
 	void aNonKyotoGasIsReportedOutsideTheScopes() throws Exception {
@@ -5164,7 +5275,7 @@ class GhgApiIntegrationTests {
 		var plant = createFacility(orgId, "Obuom Processing Plant");
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
-		var factors = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		var factors = allFactors(orgId);
 		var hcfc = "$[?(@.name == 'HCFC-22 (R-22)')]";
 		String hcfcId = JsonPath.<List<String>>read(factors, hcfc + ".id").getFirst();
 		assertThat(JsonPath.<List<String>>read(factors, hcfc + ".reportingBasis").getFirst())
