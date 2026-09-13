@@ -353,15 +353,23 @@ export interface EmissionFactorInput {
   reportingBasis?: ReportingBasis
 }
 
+/** A pack row the unit registry cannot convert, so the import left it out (spec 02.6). */
+export interface SkippedFactorRow {
+  code: string
+  unit: string
+}
+
 /**
  * What an import did (spec 02.3): rows created, rows refreshed, and rows
- * another pack had already delivered that only gained this pack's tag.
+ * another pack had already delivered that only gained this pack's tag, plus
+ * the rows the import could not deliver (spec 02.6).
  */
 export interface FactorPackImport {
   pack: string
   created: number
   updated: number
   tagged: number
+  skippedUnits: SkippedFactorRow[]
 }
 
 /** A shipped, importable factor pack (spec 02.1). */

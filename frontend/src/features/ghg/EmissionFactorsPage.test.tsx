@@ -103,9 +103,13 @@ beforeEach(() => {
   vi.mocked(listEmissionFactors).mockReset().mockResolvedValue([diesel, hfo])
   vi.mocked(listFactorPacks).mockReset().mockResolvedValue([pack])
   vi.mocked(getOrganization).mockReset()
-  vi.mocked(importFactorPack)
-    .mockReset()
-    .mockResolvedValue({ pack: 'sector-mining', created: 53, updated: 0, tagged: 3 })
+  vi.mocked(importFactorPack).mockReset().mockResolvedValue({
+    pack: 'sector-mining',
+    created: 53,
+    updated: 0,
+    tagged: 3,
+    skippedUnits: [],
+  })
   vi.mocked(setFactorApproval)
     .mockReset()
     .mockResolvedValue({ ...hfo, approved: true })
@@ -153,6 +157,28 @@ test('imports a pack and approves a factor', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Approve' }))
   await waitFor(() => expect(setFactorApproval).toHaveBeenCalledWith('f-2', true))
+})
+
+test('the import toast names the rows the registry could not convert (spec 02.6)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(importFactorPack).mockResolvedValue({
+    pack: 'sector-mining',
+    created: 51,
+    updated: 0,
+    tagged: 3,
+    skippedUnits: [
+      { code: 'DEFRA:Fuels:Ore_hauled', unit: 'drum' },
+      { code: 'DEFRA:Fuels:Lime_bagged', unit: 'bag' },
+    ],
+  })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /^Import pack/ }))
+  expect(
+    await screen.findByText(
+      /2 rows skipped, in units the registry cannot convert: DEFRA:Fuels:Ore_hauled \(drum\), DEFRA:Fuels:Lime_bagged \(bag\)/,
+    ),
+  ).toBeInTheDocument()
 })
 
 test('a gas outside the scopes is marked on the page and can be chosen on the add form (spec 02.4)', async () => {
