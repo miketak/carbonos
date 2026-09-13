@@ -2,29 +2,29 @@ package com.carbonos.ghg.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.math.BigDecimal;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import com.carbonos.TestcontainersConfiguration;
 
-import tools.jackson.databind.json.JsonMapper;
-
 /**
- * What the seeded editions must contain (specs 02.3, 02.4 and 02.5). The packs
- * are read from the catalogue {@code V43} seeded, and the JSON files that seed
- * came from are the oracle: every row must arrive with the values, the
- * provenance and the taxonomy the file states. Every row cites the publication
- * it comes from, Montreal Protocol rows report outside the scopes, the mining
- * pack carries the purchased-goods rows its card promises, and the oil and gas
- * pack carries flaring rows with the table they come from.
+ * What the seeded editions must contain (specs 02.3, 02.4 and 02.5). The
+ * catalogue {@code V43} seeded is the source of truth: the ten JSON files that
+ * seed was built from, and the script that wrote them, are gone, so there is no
+ * file left to disagree with the database. What the oracle used to prove row by
+ * row is now proved by shape and by sample: the ten editions are there with the
+ * row counts they shipped, the two read paths agree on every card field, every
+ * row cites the publication it comes from, Montreal Protocol rows report
+ * outside the scopes, the mining pack carries the purchased-goods rows its card
+ * promises, and the oil and gas pack carries flaring rows with the table they
+ * come from, each asserted against the values this file states rather than
+ * against a copy of the corpus.
  *
  * <p>Its last assertions are the guard the publication rules add: all ten pass
  * every rule of {@link FactorPackValidation}, so the rules and the corpus we
@@ -38,7 +38,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Import(TestcontainersConfiguration.class)
 class SeededFactorPackEditionsTest {
 
-	/** The rows each shipped pack file carries, which the seeded editions must match exactly. */
+	/** The rows each pack shipped with, which the seeded editions must still carry exactly. */
 	private static final Map<String, Integer> SHIPPED_ROW_COUNTS = Map.of("defra-2026", 1868, "epa-hub-2025", 548,
 			"ember-grid-2025", 141, "sector-construction", 80, "sector-oil-and-gas", 74, "refrigerants-ar5", 56,
 			"sector-mining", 56, "ghana", 7, "ipcc-2006-process", 5, "nga-2024-explosives", 1);
@@ -67,90 +67,43 @@ class SeededFactorPackEditionsTest {
 			.orElseThrow(() -> new AssertionError(pack.id() + " no longer carries " + code));
 	}
 
-	/** The shipped JSON files, still on the classpath, read as the oracle the seed was built from. */
-	private static Map<String, FactorPacks.Pack> shippedFiles() {
-		var mapper = JsonMapper.builder().build();
-		var loaded = new LinkedHashMap<String, FactorPacks.Pack>();
-		try {
-			for (var resource : new PathMatchingResourcePatternResolver()
-				.getResources("classpath:factor-packs/*.json")) {
-				try (var in = resource.getInputStream()) {
-					var pack = mapper.readValue(in, FactorPacks.Pack.class);
-					loaded.put(pack.id(), pack);
-				}
-			}
-		}
-		catch (Exception ex) {
-			throw new AssertionError("Could not read the shipped pack files", ex);
-		}
-		return loaded;
-	}
-
-	private static void assertSameValue(String as, BigDecimal actual, BigDecimal expected) {
-		if (expected == null) {
-			assertThat(actual).as(as).isNull();
-		}
-		else {
-			assertThat(actual).as(as).isNotNull().isEqualByComparingTo(expected);
-		}
-	}
-
 	@Test
-	void theTenSeededEditionsCarryTheRowsTheShippedFilesCarried() {
-		var shipped = shippedFiles();
-		assertThat(shipped.keySet()).containsExactlyInAnyOrderElementsOf(SHIPPED_ROW_COUNTS.keySet());
+	void theTenSeededEditionsCarryTheRowsTheyShippedWith() {
 		assertThat(packs.all().stream().map(FactorPacks.Pack::id))
 			.containsExactlyInAnyOrderElementsOf(SHIPPED_ROW_COUNTS.keySet());
 		// the header projection counts the same rows without assembling them
 		assertThat(packs.headers()).allSatisfy(header -> assertThat(header.factorCount()).as(header.id())
 			.isEqualTo(SHIPPED_ROW_COUNTS.get(header.id())));
 		assertThat(packs.headers().stream().mapToInt(FactorPacks.PackHeader::factorCount).sum()).isEqualTo(2836);
+		var headers = packs.headers()
+			.stream()
+			.collect(Collectors.toMap(FactorPacks.PackHeader::id, header -> header));
 		for (var entry : SHIPPED_ROW_COUNTS.entrySet()) {
+			var as = entry.getKey();
 			var seeded = pack(entry.getKey());
-			var file = shipped.get(entry.getKey());
-			assertThat(seeded.factors()).as(entry.getKey()).hasSize(entry.getValue());
-			assertThat(seeded.name()).isEqualTo(file.name());
-			assertThat(seeded.source()).isEqualTo(file.source());
-			assertThat(seeded.sourceUrl()).isEqualTo(file.sourceUrl());
-			assertThat(seeded.publicationYear()).isEqualTo(file.publicationYear());
-			assertThat(seeded.gwpBasis()).isEqualTo(file.gwpBasis());
-			assertThat(seeded.license()).isEqualTo(file.license());
-			assertThat(seeded.retrieved()).isEqualTo(file.retrieved());
-			assertThat(seeded.notes()).isEqualTo(file.notes());
-			// every row, in the file's order, with the file's values
-			for (int i = 0; i < file.factors().size(); i++) {
-				var expected = file.factors().get(i);
-				var actual = seeded.factors().get(i);
-				var as = entry.getKey() + " / " + expected.code();
-				assertThat(actual.code()).as(as).isEqualTo(expected.code());
-				assertThat(actual.name()).as(as).isEqualTo(expected.name());
-				assertThat(actual.defaultScope()).as(as).isEqualTo(expected.defaultScope());
-				assertThat(actual.defaultCategory()).as(as).isEqualTo(expected.defaultCategory());
-				assertThat(actual.scopeAgnostic()).as(as).isEqualTo(expected.scopeAgnostic());
-				assertThat(actual.unit()).as(as).isEqualTo(expected.unit());
-				assertSameValue(as, actual.kgCo2ePerUnit(), expected.kgCo2ePerUnit());
-				assertSameValue(as, actual.co2(), expected.co2());
-				assertSameValue(as, actual.ch4(), expected.ch4());
-				assertThat(actual.ch4Fossil()).as(as).isEqualTo(expected.ch4Fossil());
-				assertSameValue(as, actual.n2o(), expected.n2o());
-				assertSameValue(as, actual.hfcsKg(), expected.hfcsKg());
-				assertSameValue(as, actual.pfcsKg(), expected.pfcsKg());
-				assertSameValue(as, actual.sf6(), expected.sf6());
-				assertSameValue(as, actual.nf3(), expected.nf3());
-				assertSameValue(as, actual.biogenicCo2(), expected.biogenicCo2());
-				assertThat(actual.blendComposition()).as(as).isEqualTo(expected.blendComposition());
-				assertThat(actual.blendGwpSource()).as(as).isEqualTo(expected.blendGwpSource());
-				assertThat(actual.dataYear()).as(as).isEqualTo(expected.dataYear());
-				assertThat(actual.approved()).as(as).isEqualTo(expected.approved());
-				assertThat(actual.notes()).as(as).isEqualTo(expected.notes());
-				assertThat(actual.sourcePublication()).as(as).isEqualTo(expected.sourcePublication());
-				assertThat(actual.sourceUrl()).as(as).isEqualTo(expected.sourceUrl());
-				assertThat(actual.publicationYear()).as(as).isEqualTo(expected.publicationYear());
-				assertThat(actual.basis()).as(as).isEqualTo(expected.basis());
-				// the file's one concatenation is three columns here, and they rejoin to it
-				assertThat(actual.sourcePath()).as(as).isEqualTo(expected.sourceDetail());
-				assertThat(actual.citation(seeded)).as(as).isEqualTo(expected.citation(file));
-			}
+			var header = headers.get(entry.getKey());
+			assertThat(seeded.factors()).as(as).hasSize(entry.getValue());
+			// the list draws its card from the projection and the import reads the assembled pack:
+			// one edition, two read paths, and they must say the same thing about it
+			assertThat(seeded.name()).as(as).isEqualTo(header.name()).isNotBlank();
+			assertThat(seeded.source()).as(as).isEqualTo(header.source()).isNotBlank();
+			assertThat(seeded.sourceUrl()).as(as).isEqualTo(header.sourceUrl()).isNotNull();
+			assertThat(seeded.publicationYear()).as(as).isEqualTo(header.publicationYear()).isNotNull();
+			assertThat(seeded.gwpBasis()).as(as).isEqualTo(header.gwpBasis()).isNotBlank();
+			assertThat(seeded.license()).as(as).isEqualTo(header.license()).isNotBlank();
+			assertThat(seeded.retrieved()).as(as).isEqualTo(header.retrieved()).isNotBlank();
+			assertThat(seeded.notes()).as(as).isEqualTo(header.notes()).isNotBlank();
+			// spec 02.6: an import cuts a version dated by the edition it came from
+			assertThat(seeded.appliesFrom()).as(as).isNotNull();
+			// a code names one row of an edition, which is what a citation to it relies on
+			assertThat(seeded.factors().stream().map(FactorPacks.PackFactor::code)).as(as)
+				.doesNotHaveDuplicates()
+				.allSatisfy(code -> assertThat(code).isNotBlank());
+			assertThat(seeded.factors()).as(as).allSatisfy(factor -> {
+				assertThat(factor.name()).as("%s / %s", as, factor.code()).isNotBlank();
+				assertThat(factor.unit()).as("%s / %s", as, factor.code()).isNotBlank();
+				assertThat(factor.defaultScope()).as("%s / %s", as, factor.code()).isNotNull();
+			});
 		}
 	}
 
