@@ -132,6 +132,33 @@ public class FactorPackNotice {
 		this.scopesAffected = scopesAffected;
 	}
 
+	/**
+	 * The organization's decision (spec 02.7): one act by one named person, kept
+	 * with both edition ids, the diff hash raised with the notice, the answer to
+	 * the recalculation question, and the threshold and affected percent as they
+	 * stood at the moment it was answered. The diff hash is never rewritten: it
+	 * is what a verifier uses to confirm the diff the decider saw is the diff
+	 * this record describes.
+	 */
+	void decide(Status decision, UUID decidedByUserId, String decidedBy, OrgRole decidedByRole,
+			RecalculationCase recalculationCase, String note, BigDecimal thresholdPercent, BigDecimal affectedPercent) {
+		this.status = decision;
+		this.decidedAt = Instant.now();
+		this.decidedByUserId = decidedByUserId;
+		this.decidedBy = decidedBy;
+		this.decidedByRole = decidedByRole;
+		this.recalculationCase = recalculationCase;
+		this.decisionNote = note;
+		this.significanceThresholdPercent = thresholdPercent;
+		this.affectedPercent = affectedPercent;
+	}
+
+	/** What accepting produced: the moment the import ran and the candidate it raised, if one was warranted. */
+	void recordAdoption(UUID recalculationId) {
+		this.appliedAt = Instant.now();
+		this.recalculationId = recalculationId;
+	}
+
 	/** Withdrawing an edition closes every open notice for it; the organization never has to answer. */
 	void closeAsWithdrawn() {
 		if (status == Status.OPEN) {

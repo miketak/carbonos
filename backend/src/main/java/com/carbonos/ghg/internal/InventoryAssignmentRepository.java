@@ -41,4 +41,16 @@ public interface InventoryAssignmentRepository extends JpaRepository<InventoryAs
 	java.util.Set<UUID> factorIdsInInventoriesWithStatus(UUID organizationId,
 			java.util.Collection<InventoryStatus> statuses);
 
+	/**
+	 * The factors those inventories classified with (spec 02.7). The adoption
+	 * diff names a lineage blocked when the edition's applies-from date falls
+	 * inside a locked period that uses it, which is the same rule the import
+	 * refuses the whole edition on.
+	 */
+	@Query("""
+			select distinct a.emissionFactor.id from InventoryAssignment a
+			 where a.inventory.id in :inventoryIds
+			   and a.emissionFactor is not null""")
+	java.util.Set<UUID> factorIdsInInventories(java.util.Collection<UUID> inventoryIds);
+
 }

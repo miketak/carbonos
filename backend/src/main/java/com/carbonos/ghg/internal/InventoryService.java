@@ -731,6 +731,7 @@ public class InventoryService {
 		if (run.isVoided()) {
 			throw new GhgRuleViolationException("Run " + run.getRunNo() + " is voided and cannot be designated final.");
 		}
+		refuseWhileARecalculationHolds(inventory, "marked final");
 		inventory.designateFinal(runId, access.currentUserEmail(), reviewNote);
 		record(inventory, run, GhgAuditEvent.Action.FINAL_DESIGNATED,
 				"run " + run.getRunNo() + " designated final" + (reviewNote == null ? "" : ": " + reviewNote));
@@ -765,11 +766,39 @@ public class InventoryService {
 		if (inventory.getStatus() != InventoryStatus.FINAL) {
 			throw new GhgRuleViolationException("Designate a final run before publishing the inventory.");
 		}
+		refuseWhileARecalculationHolds(inventory, "published");
 		inventory.publish(access.currentUserEmail());
 		record(inventory, runs.findById(inventory.getFinalRunId()).orElse(null), GhgAuditEvent.Action.PUBLISHED,
 				"report issued");
 		events.publishEvent(new InventoryPublished(inventoryId, inventory.getFinalRunId()));
 		return inventory;
+	}
+
+	/**
+	 * The base-year hold (specs 06.1, 02.7). A candidate above the significance
+	 * threshold holds the inventories that report against the base year, and the
+	 * hold is on the two acts that report a figure: <strong>Mark as final</strong>
+	 * and <strong>Publish</strong>. It is never on launching a run, because
+	 * quantifying the movement is how the recalculation is assessed and how a
+	 * restated base year is produced. Other views and earlier periods are warned
+	 * by the BASE_YEAR gate rather than held.
+	 */
+	private void refuseWhileARecalculationHolds(Inventory inventory, String act) {
+		for (var flag : baseYears.unresolvedFlags(inventory.getOrganization().getId())) {
+			if (!flag.isAboveThreshold()) {
+				continue;
+			}
+			var baseYear = flag.getBaseYear();
+			if (baseYear.getInventory().getId().equals(inventory.getId())
+					|| !BaseYearService.reportsAgainst(baseYear, inventory)) {
+				continue;
+			}
+			throw new GhgRuleViolationException("The " + baseYear.year()
+					+ " base year has a recalculation candidate above the significance threshold ("
+					+ flag.getReason() + "). An inventory that reports against the base year cannot be " + act
+					+ " until the recalculation is completed or declined. Calculation runs stay available, because "
+					+ "quantifying the movement is how a recalculation is assessed.");
+		}
 	}
 
 	// --- report metadata (spec 07.4) -------------------------------------------------
@@ -2231,13 +2260,17 @@ public class InventoryService {
 					: "A published inventory cannot be recalculated. Create a correction that supersedes it.");
 		}
 		var report = validate(inventoryId);
-		if (!report.ready()) {
-			var errorCount = report.gates()
-				.stream()
-				.flatMap(gate -> gate.findings().stream())
-				.filter(finding -> finding.severity() == Severity.ERROR)
-				.count();
-			throw new ValidationBlockedException(errorCount);
+		// spec 02.7: a pending base-year recalculation holds the acts that report a figure, never the
+		// calculation itself. Quantifying the movement is how a recalculation is assessed and how a
+		// restated base year is produced, so a preparer must always be able to run.
+		var blocking = report.gates()
+			.stream()
+			.filter(gate -> gate.gate() != Gate.BASE_YEAR)
+			.flatMap(gate -> gate.findings().stream())
+			.filter(finding -> finding.severity() == Severity.ERROR)
+			.count();
+		if (blocking > 0) {
+			throw new ValidationBlockedException(blocking);
 		}
 		// the gate guarantees a frozen boundary, so shares come from its version,
 		// never from live treatments: the arithmetic and the cited version cannot

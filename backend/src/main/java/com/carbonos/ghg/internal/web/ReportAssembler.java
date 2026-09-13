@@ -36,11 +36,14 @@ public class ReportAssembler {
 	private final InventoryService inventoryService;
 	private final GhgService ghgService;
 	private final BaseYearService baseYearService;
+	private final com.carbonos.ghg.internal.FactorPackAdoptionService adoption;
 	private final OrganizationUnits organizationUnits;
 	private final ObjectMapper mapper;
 
 	ReportAssembler(InventoryService inventoryService, GhgService ghgService, BaseYearService baseYearService,
-			OrganizationUnits organizationUnits, ObjectMapper mapper) {
+			com.carbonos.ghg.internal.FactorPackAdoptionService adoption, OrganizationUnits organizationUnits,
+			ObjectMapper mapper) {
+		this.adoption = adoption;
 		this.organizationUnits = organizationUnits;
 		this.inventoryService = inventoryService;
 		this.ghgService = ghgService;
@@ -93,8 +96,9 @@ public class ReportAssembler {
 				: baseYearService.profile(baseYear, run.getPeriodEnd());
 		var successor = inventory.getSupersededById() == null ? null
 				: inventoryService.get(inventory.getSupersededById());
+		// spec 02.7: the edition decisions print beside the recalculations, so the answer reaches a reader
 		return ReportResponse.of(run, inventory, organization, version, baseYear, baseRun, recalculatedRuns, profile,
-				inventoryService.marketFactors(inventory.getId()), inventoryService.predecessors(inventory.getId()),
+				adoption.decisionsFor(organization.getId()), inventoryService.marketFactors(inventory.getId()), inventoryService.predecessors(inventory.getId()),
 				successor, inventoryService.intensityMetrics(inventory.getId()),
 				inventoryService.listBoundaryVersions(inventory.getId()).size(),
 				organizationUnits.forOrganization(organization.getId()));

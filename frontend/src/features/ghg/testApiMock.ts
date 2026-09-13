@@ -118,6 +118,10 @@ export const getBaseYear = vi.fn()
 export const setBaseYear = vi.fn()
 export const clearBaseYear = vi.fn()
 export const raiseRecalculation = vi.fn()
+export const listFactorPackNotices = vi.fn()
+export const getFactorPackDiff = vi.fn()
+export const acceptFactorPackNotice = vi.fn()
+export const declineFactorPackNotice = vi.fn()
 export const decideRecalculation = vi.fn()
 
 /**

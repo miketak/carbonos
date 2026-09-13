@@ -44,6 +44,11 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Factor pack", null, id);
 	}
 
+	/** A factor pack notice, which is an organization's to read (specs 02.7, 01.3). */
+	static GhgNotFoundException factorPackNotice(UUID id) {
+		return new GhgNotFoundException("Factor pack notice", id);
+	}
+
 	static GhgNotFoundException stream(UUID id) {
 		return new GhgNotFoundException("Source stream", id);
 	}

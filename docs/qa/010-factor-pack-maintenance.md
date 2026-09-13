@@ -5,16 +5,18 @@ and a draft edition, clone a predecessor into a new draft, author its rows, and
 read the live validation report; that publishing an edition needs its evidence,
 its rules and an approver who is not the curator; that publishing moves no
 organization's numbers; that a published edition is frozen; and that a draft is
-invisible to every organization until it is published.
+invisible to every organization until it is published; and that the
+organization, not the platform, decides whether to adopt a published
+edition.
 
 **Covers** [spec 02.5](../../specs/02.5-factor-pack-editions.md) whole:
-authoring in sections A to C, publication in section D. The notices publication
-raises are written but have no tenant-facing page yet; the inbox, the diff and
-the decision are
-[spec 02.7](../../specs/02.7-adopting-a-new-edition.md), and case D6 checks the
-record rather than a screen.
+authoring in sections A to C, publication in section D. Section E covers
+[spec 02.7](../../specs/02.7-adopting-a-new-edition.md): the notice reaching
+the organization's own workspace, the diff behind it, and the decision a
+reviewer or an owner records on it. Section F covers the withdrawal and leaves
+the environment tidy.
 
-**Estimated time:** 75 minutes.
+**Estimated time:** 100 minutes.
 
 **Run this procedure** before a release, and after any change to the factor
 pack console, the publication rules or the catalogue.
@@ -177,7 +179,63 @@ refuses to let one person do both.
 | 2 | Find `GHANA:td-losses` in the table. | It reads CHANGED, was 0.117202, is 0.2, with the percent change and the fields that moved ("kg CO2e per unit"). | | |
 | 3 | Count the rows listed. | Only the rows that moved are listed. The unchanged rows are counted in the line beneath the table, not printed. | | |
 
-### D5. A published edition is withdrawn with a reason
+## E. The organization decides (spec 02.7)
+
+Publishing changed nobody's numbers. Section E is the other half: the notice
+reaches the organization's own workspace, and a named reviewer or owner decides
+whether to move to the new vintage. Work in the member's private window, signed
+in to a client organization that holds the `ghana` lineages.
+
+### E1. The notice reaches the organization's workspace
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | In the member's window, open the client organization's workspace. | The left navigation carries an **Updates** entry under **Emission factors**, with an amber count badge reading 1. Hover it: the title reads "1 factor pack update waiting". | | |
+| 2 | Click **Updates**. | The page explains that publishing an edition changes none of your numbers and that moving to a new factor vintage is your decision. One row lists `qa-ghana-2027`, in place of `ghana`, with when it was raised, the rows affected, how many move more than five percent, the estimated tonnage movement and the status "Waiting on you". | | |
+| 3 | Check that this is the organization's own page, not an administrator's. | The page sits inside the organization workspace, beside Emission factors. Nothing on it names another organization. | | |
+| 4 | Confirm the factors themselves are untouched. | On **Emission factors**, the `GHANA:td-losses` row still reads 0.117202. Raising a notice writes no factor. | | |
+
+### E2. The diff says exactly what a decision would move
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On the row for `qa-ghana-2027` click **Review**. | A drawer opens beside the page, not over it, headed with the edition's name, the identifier, the edition it stands in place of, and the date it applies from. | | |
+| 2 | Read the summary line under the counts. | It says the movement is an estimate over a named period using the activity data already recorded, and that the data can change before the next run. If the organization has a base year, it also gives the movement as a percentage of base-year emissions and names the significance threshold it is measured against. | | |
+| 3 | Find `GHANA:td-losses` in the **What moves** table. | The row shows the value held (0.117202), the value the edition carries (0.2), the absolute change, the percent change, which gas components changed, whether provenance changed (including the GWP basis, when it moved), and the estimated movement in kg CO2e. | | |
+| 4 | Read the groups listed apart. | Conflicts, Blocked, Discontinued and Earlier periods each appear only when they hold something, each with the reason the decision does not apply to it. Discontinued says a retirement is a separate decision. Earlier periods says the coverage warnings that follow are correct and are what a vintage means. | | |
+| 5 | Read the last line of the diff. | A diff hash is printed. It is the hash raised with the notice, so a verifier can confirm the diff you read is the diff the record describes. | | |
+| 6 | Read the note above the buttons, and copy it out. | It reads, word for word: "Accepting raises a base-year recalculation candidate. If it is above your significance threshold, inventories that report against the base year cannot be marked final or published until the recalculation is completed or declined." | | |
+
+### E3. A preparer cannot decide, and a decline changes nothing
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Sign in as a member whose role in the organization is **Preparer** and open the same drawer. | The diff is fully readable. **Accept** and **Decline** are disabled, with the tooltip "Needs the Reviewer or Owner role." Moving a factor vintage is an accounting decision, so it sits with the roles that approve one. | | |
+| 2 | Sign in as a **Verifier** and open the drawer. | The same: the diff reads, the two buttons are disabled. | | |
+| 3 | As a **Reviewer** or the **Owner**, note the value of `GHANA:td-losses` and the total of the last completed run. | Write both down. | | |
+| 4 | Open the drawer, type "We report this year on the 2026 tables." in the note and click **Decline**. | A toast reads "Declined qa-ghana-2027. Nothing changed." The row now reads Declined with your email beneath it. | | |
+| 5 | Reread the two figures from step 3, and the navigation badge. | Both figures are exactly as you wrote them. The badge is gone: nothing is waiting. Declining writes no factor. | | |
+| 6 | Reopen the declined notice and try to decline it again through the drawer. | There is nothing to decide: the footer names who decided and when. A decision on an edition is made once. | | |
+
+### E4. Accepting answers the recalculation question and applies the import
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | As the **curator**, clone `qa-ghana-2027` into a draft `qa-ghana-2028`, change `GHANA:td-losses` to 0.25, upload the source document, and have the **approver** publish it with applies-from 2028-01-01. | The edition reads PUBLISHED, and `qa-ghana-2027` reads SUPERSEDED. | | |
+| 2 | In the member's window, open **Updates**. | The badge reads 1 again, and a new row lists `qa-ghana-2028` as waiting on you. | | |
+| 3 | Open it and click **Accept** without answering the question. | **Accept** is disabled until the question is answered. The question offers exactly three answers: a vintage progression, a retrospective adoption, and an erratum on a reported year. | | |
+| 4 | Answer **vintage progression**, leave the note empty, and click **Accept**. | If the estimated movement is at or above the organization's significance threshold, the note is refused where you typed it, saying the movement is a methodology change under chapter 5 and asking why it is still recorded as a vintage progression. If it is below the threshold, the acceptance goes through. | | |
+| 5 | Fill in a note if step 4 asked for one, and accept. | A toast names the edition and how many versions were cut and lineages added. The row reads Accepted with your email, and the badge is gone. | | |
+| 6 | Open **Emission factors** and find `GHANA:td-losses`. | It now reads 0.25, valid from 2028-01-01. The version it replaced is still there, closed the day before. Nothing rewrote a past value. | | |
+| 7 | Open the organization's history (**Overview**, the events list). | An entry reads FACTOR_PACK_ADOPTED with your email, the edition and the answer you gave. A decline in case E3 left a FACTOR_PACK_DECLINED entry beside it. | | |
+| 8 | If the organization has a base year, open **Base year**. | Where the movement was at or above the threshold, a candidate stands, raised as a methodology change and naming the edition. Where it was below, no candidate was raised, and the answer lives on the notice: that record is the evidence the question was asked. | | |
+| 9 | Open a draft inventory that reports against the base year and launch a calculation run. | The run launches. A pending recalculation never blocks a run: quantifying the movement is how the recalculation is assessed. | | |
+| 10 | Freeze that inventory if it is not frozen, then try **Mark as final**. | Where a candidate above the threshold stands, the act is refused, naming the base year and the candidate, and saying runs stay available. **Publish** is refused for the same reason on an inventory that is already final. | | |
+| 11 | Open the report of a published or final run and read section 7, Base year. | An "Emission factor edition decisions" table lists `qa-ghana-2028` with the answer you gave, the affected percent and the threshold it was measured against. The answer reaches a reader, not only the database. | | |
+
+## F. Withdrawal, and leaving the environment
+
+### F1. A published edition is withdrawn with a reason
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
@@ -185,23 +243,26 @@ refuses to let one person do both.
 | 2 | Close the drawer, click **Withdraw**, type "short" and confirm. | The field is refused: at least 10 characters, because it is the record a verifier reads. | | |
 | 3 | Type "The publisher retracted the 2027 tables pending a correction." and confirm. | A toast reads "qa-ghana-2027 was withdrawn.". The edition reads WITHDRAWN with its reason. | | |
 | 4 | In the member's private window, open the organization's factor pack list. | `qa-ghana-2027` is not offered for import. The rows the organization already holds are unchanged. | | |
-| 5 | Reread the two figures you noted in case D3 step 1. | Both are still exactly as you wrote them down. A withdrawal is the publisher's act, not the client's recalculation. | | |
+| 5 | Note the client organization's `GHANA:td-losses` value and its last run total, then reload both after the withdrawal. | Both are exactly as they were a moment before. A withdrawal is the publisher's act, not the client's recalculation; only the acceptance in case E4 moved a value, and it stands. | | |
 
-### D6. Publishing raised one notice per holder
+### F2. Withdrawing closes the open notices it raised
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | This case needs database access, because the notice inbox is spec 02.7 and has no page yet. Run: `select organization_id, edition_id, predecessor_edition_id, status, rows_affected, rows_over_threshold, estimated_kg_co2e_delta from ghg_factor_pack_notices order by raised_at;` | One row per organization that held a lineage of `ghana`, each naming `qa-ghana-2027` as the edition and `ghana` as the predecessor. An organization holding none of them has no row. | | |
-| 2 | Read the status of the notices for `qa-ghana-2027`. | They read WITHDRAWN after case D5: withdrawing an edition closes every open notice for it, so nobody is asked to decide on an edition the publisher retracted. | | |
-| 3 | Run `select count(*) from ghg_factor_pack_changes where edition_id = 'qa-ghana-2027';` | Seven, one per code of the edition. The change log is a row per code, frozen. | | |
+| 1 | Publish one more edition, `qa-ghana-2029`, the way case E4 step 1 describes, so an open notice exists to close. Check in the member's window that **Updates** shows it waiting. | The badge reads 1 and the row reads "Waiting on you". | | |
+| 2 | As the **approver**, withdraw `qa-ghana-2029` with a reason of at least 10 characters. | The toast names the withdrawal. The blast radius named how many open notices would close before you confirmed. | | |
+| 3 | Reload **Updates** in the member's window. | The row now reads "Withdrawn by the publisher" with the reason beneath it, and the badge is gone. Nobody is asked to decide on an edition the publisher retracted, and opening it says there is nothing to decide. | | |
+| 4 | Confirm the organization's numbers. | Unchanged. A withdrawal is the publisher's act, not the client's recalculation. | | |
+| 5 | With database access, run `select count(*) from ghg_factor_pack_changes where edition_id = 'qa-ghana-2027';` | Seven, one per code of the edition. The change log is a row per code, frozen. | | |
 
-### D7. The environment is left as you found it
+### F3. The environment is left as you found it
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Delete the draft `qa-pack-2027`. | The draft and its rows go. | | |
 | 2 | Try to delete `qa-ghana-2027`, the edition case D3 published. | There is no **Delete draft** button, and the API refuses with 409. A published edition is never deleted: clause 8.2 requires the records behind a reported figure to be retained. | | |
-| 3 | Note in the sign-off that `qa-ghana-2027` stays in the catalogue, withdrawn, and that `ghana` stays SUPERSEDED. | The environment carries them for good, which is the point: a citation names one thing forever. The next tester needs a new identifier rather than this one. | | |
+| 3 | Note in the sign-off that `qa-ghana-2027`, `qa-ghana-2028` and `qa-ghana-2029` stay in the catalogue, and that `ghana` stays SUPERSEDED. | The environment carries them for good, which is the point: a citation names one thing forever. The next tester needs new identifiers rather than these. | | |
+| 4 | Note in the sign-off that case E4 moved the client organization's `GHANA:td-losses` to 0.25 from 2028-01-01. | An adoption is a recorded accounting decision, so it is not undone. The next tester reads the earlier version beside it in the lineage. | | |
 
 ## Sign-off
 
@@ -212,7 +273,7 @@ refuses to let one person do both.
 | Cases failed | |
 | Issues filed | |
 
-**Known non-goals:** publication and everything that gates it (the evidence
-file, the approver who is not the curator, the change log, the blast radius);
-the adoption notice and the diff of spec 02.7; reordering the rows of an
-edition; a bulk import into a draft, which spec 02.6 governs.
+**Known non-goals:** reordering the rows of an edition; a bulk import into a
+draft, which spec 02.6 governs; re-opening a declined notice, which spec 02.7
+leaves open; and adopting part of an edition, which a partial vintage would
+make of it.
