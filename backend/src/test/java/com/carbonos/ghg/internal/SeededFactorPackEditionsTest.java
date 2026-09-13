@@ -26,11 +26,13 @@ import tools.jackson.databind.json.JsonMapper;
  * pack carries the purchased-goods rows its card promises, and the oil and gas
  * pack carries flaring rows with the table they come from.
  *
- * <p>Its last assertion is the guard the authoring phase adds: all ten pass
- * every publication rule of {@link FactorPackValidation}, so the rules and the
- * corpus we shipped cannot drift apart. Three rows of two seeded editions carry
- * a derivation narrative longer than the citation column, which the
- * {@code SEED_UNCHECKED} exemption covers and this class names one by one.
+ * <p>Its last assertions are the guard the publication rules add: all ten pass
+ * every rule of {@link FactorPackValidation}, so the rules and the corpus we
+ * shipped cannot drift apart, and not one row relies on an exemption. Three
+ * rows of two seeded editions once carried a derivation narrative longer than
+ * the citation column; {@code V45} widened the column to hold a full citation
+ * and the exemption went with it, so {@code SEED_UNCHECKED} now carries the
+ * missing approver and nothing else.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -329,23 +331,49 @@ class SeededFactorPackEditionsTest {
 	}
 
 	@Test
-	void onlyThreeSeededRowsRelyOnTheCitationLengthExemption() {
-		// spec 02.5 rule 2: the citation an import builds fits ghg_emission_factors.source, which is
-		// varchar(500), so a published edition never depends on the truncation spec 02.6 keeps as a
-		// backstop. Three rows shipped before the catalogue existed do, and V43 is checksummed by Flyway,
-		// so SEED_UNCHECKED covers them. Naming them here is what keeps a fourth from joining quietly.
+	void noSeededRowReliesOnTheCitationLengthExemption() {
+		// spec 02.5 rule 2: the citation an import builds fits ghg_emission_factors.source, so a published
+		// edition never depends on the truncation spec 02.6 keeps as a backstop. Three rows shipped before
+		// the catalogue existed did not fit varchar(500), and the rule exempted them, which put a hole in
+		// it. V45 widened the column to varchar(2000): the longest citation the row columns can produce is
+		// 1,328 characters, so there is nothing left for an exemption to cover.
 		var overLong = new java.util.ArrayList<String>();
+		var longest = 0;
+		String longestCode = null;
 		for (var editionId : SHIPPED_ROW_COUNTS.keySet()) {
 			for (var row : rows.findAllByEditionIdOrderByOrdinalAsc(editionId)) {
 				if (!FactorPackValidation.citationFits(row)) {
 					overLong.add(editionId + " / " + row.getCode());
 				}
+				if (row.citation().length() > longest) {
+					longest = row.citation().length();
+					longestCode = editionId + " / " + row.getCode();
+				}
 			}
 		}
-		assertThat(overLong).containsExactlyInAnyOrder(
-				"sector-mining / IPCC:2006:land-clearing-tropical-moist-forest",
-				"sector-oil-and-gas / IPCC:2006:flaring-gas-production",
-				"sector-oil-and-gas / IPCC:2006:flaring-per-m3-flared");
+		assertThat(overLong).as("rows relying on an exemption").isEmpty();
+		// the three that used to break the rule now fit, and the longest of them is one of them
+		assertThat(longest).as("the longest seeded citation, at %s", longestCode).isEqualTo(572);
+		assertThat(longestCode).isEqualTo("sector-oil-and-gas / IPCC:2006:flaring-gas-production");
+	}
+
+	@Test
+	void theThreeLongCitationsFitTheWidenedColumn() {
+		// the three rows the exemption used to cover, named so that a change to their detail is noticed
+		var lengths = new java.util.LinkedHashMap<String, Integer>();
+		for (var editionId : List.of("sector-mining", "sector-oil-and-gas")) {
+			for (var row : rows.findAllByEditionIdOrderByOrdinalAsc(editionId)) {
+				if (row.getCode().startsWith("IPCC:2006:flaring")
+						|| row.getCode().equals("IPCC:2006:land-clearing-tropical-moist-forest")) {
+					lengths.put(editionId + " / " + row.getCode(), row.citation().length());
+				}
+			}
+		}
+		assertThat(lengths).containsEntry("sector-oil-and-gas / IPCC:2006:flaring-gas-production", 572)
+			.containsEntry("sector-oil-and-gas / IPCC:2006:flaring-per-m3-flared", 528)
+			.containsEntry("sector-mining / IPCC:2006:land-clearing-tropical-moist-forest", 528);
+		assertThat(lengths.values()).allSatisfy(length -> assertThat(length)
+			.isLessThanOrEqualTo(FactorPackValidation.MAX_CITATION_LENGTH));
 	}
 
 	@Test

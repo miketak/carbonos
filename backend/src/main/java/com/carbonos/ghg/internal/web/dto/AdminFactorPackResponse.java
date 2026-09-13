@@ -20,8 +20,10 @@ public record AdminFactorPackResponse(String packKey, String name, FactorPackKin
 	public record Edition(String editionId, String packKey, String name, FactorPackStatus status, String source,
 			String sourceUrl, Integer publicationYear, String gwpBasis, String license, String retrieved,
 			String notes, LocalDate appliesFrom, Instant publishedAt, String sourceDocument, String evidenceChecksum,
-			String curator, String approver, String provenanceReview, String provenanceNote, boolean mutable,
-			long rowCount, long holderCount) {
+			String evidenceName, Long evidenceSize, String curator, String approver, String provenanceReview,
+			String provenanceNote, String supersedesId, boolean erratum, String erratumNote, String errorNote,
+			Instant withdrawnAt, String withdrawnBy, String withdrawalReason, boolean mutable, long rowCount,
+			long holderCount) {
 
 		public static Edition from(FactorPackAdminService.EditionView view) {
 			var edition = view.edition();
@@ -29,8 +31,11 @@ public record AdminFactorPackResponse(String packKey, String name, FactorPackKin
 					edition.getSource(), edition.getSourceUrl(), edition.getPublicationYear(), edition.getGwpBasis(),
 					edition.getLicense(), edition.getRetrieved(), edition.getNotes(), edition.getAppliesFrom(),
 					edition.getPublishedAt(), edition.getSourceDocument(), edition.getEvidenceChecksum(),
-					edition.getCuratorName(), edition.getApproverName(), edition.getProvenanceReview(),
-					edition.getProvenanceNote(), edition.isMutable(), view.rowCount(), view.holderCount());
+					edition.getEvidenceName(), edition.getEvidenceSize(), edition.getCuratorName(),
+					edition.getApproverName(), edition.getProvenanceReview(), edition.getProvenanceNote(),
+					edition.getSupersedesId(), edition.isErratum(), edition.getErratumNote(), edition.getErrorNote(),
+					edition.getWithdrawnAt(), edition.getWithdrawnBy(), edition.getWithdrawalReason(),
+					edition.isMutable(), view.rowCount(), view.holderCount());
 		}
 	}
 

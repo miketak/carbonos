@@ -159,6 +159,21 @@ public class FactorPacks {
 		});
 	}
 
+	/**
+	 * One edition an organization may import: a published one, and only a
+	 * published one. A superseded or withdrawn edition stays readable by
+	 * identifier so a past import can still be explained (spec 02.5), but it has
+	 * left the import list and nothing new is built from it.
+	 */
+	public Optional<Pack> findImportable(String editionId) {
+		if (editionId == null) {
+			return Optional.empty();
+		}
+		return editions.findById(editionId)
+			.filter(edition -> edition.getStatus() == FactorPackStatus.PUBLISHED)
+			.flatMap(edition -> find(edition.getEditionId()));
+	}
+
 	/** Drops the cache. The console calls it after a publish, supersede or withdraw. */
 	public void invalidate() {
 		assembled.clear();

@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.carbonos.user.UserDirectory;
 
@@ -26,8 +27,10 @@ import com.carbonos.user.UserDirectory;
  * <p>Only a draft is mutable. A published edition's rows, metadata and values
  * never change, because reports already rest on them, and clause 8.2 requires
  * the records behind a reported figure to be retained. Publication itself, the
- * evidence upload, the separation-of-duties gate and the blast radius are the
- * publication phase of this spec; {@link #publish} refuses until they land.
+ * evidence upload, the separation-of-duties gate, the frozen change log and the
+ * blast radius live in {@link FactorPackPublication} and
+ * {@link FactorPackBlastRadius}; this service is the console's entry point to
+ * them and checks the platform role first.
  */
 @Service
 @Transactional
@@ -62,17 +65,22 @@ public class FactorPackAdminService {
 	private final FactorPackRowRepository rows;
 	private final EmissionFactorRepository emissionFactors;
 	private final FactorPackValidation validation;
+	private final FactorPackPublication publication;
+	private final FactorPackBlastRadius blastRadius;
 	private final GhgAccess access;
 	private final UserDirectory userDirectory;
 
 	FactorPackAdminService(FactorPackFamilyRepository families, FactorPackEditionRepository editions,
 			FactorPackRowRepository rows, EmissionFactorRepository emissionFactors, FactorPackValidation validation,
-			GhgAccess access, UserDirectory userDirectory) {
+			FactorPackPublication publication, FactorPackBlastRadius blastRadius, GhgAccess access,
+			UserDirectory userDirectory) {
 		this.families = families;
 		this.editions = editions;
 		this.rows = rows;
 		this.emissionFactors = emissionFactors;
 		this.validation = validation;
+		this.publication = publication;
+		this.blastRadius = blastRadius;
 		this.access = access;
 		this.userDirectory = userDirectory;
 	}
@@ -241,19 +249,70 @@ public class FactorPackAdminService {
 		return validation.validate(edition, rows.findAllByEditionIdOrderByOrdinalAsc(edition.getEditionId()));
 	}
 
+	// --- publication --------------------------------------------------------
+
 	/**
-	 * Publication is the next phase of spec 02.5: the evidence file and its
-	 * checksum, the separation-of-duties gate, the frozen change log, the blast
-	 * radius and the notices. Refusing plainly is better than publishing an
-	 * edition half of whose record is missing.
+	 * Stores the source document the edition is published against and records
+	 * its SHA-256 (spec 02.5). A draft may replace it as often as it likes;
+	 * publication is what freezes it.
 	 */
-	public void publish(String editionId) {
+	public FactorPackPublication.Evidence attachEvidence(String editionId, MultipartFile file) {
 		access.checkAdmin();
 		var edition = mutable(editionId);
-		throw new GhgRuleViolationException("Publishing '" + edition.getEditionId()
-				+ "' is not available yet. Authoring, cloning and the validation report ship first; publication "
-				+ "needs the evidence file with its checksum, an approver who is not the curator, the frozen "
-				+ "change log and the blast radius, which arrive in the next release.");
+		return publication.attachEvidence(edition, file, access.currentUserId(), access.currentUserEmail());
+	}
+
+	/** The stored source document, for an approver who wants to read what they are signing. */
+	@Transactional(readOnly = true)
+	public com.carbonos.media.StoredMedia openEvidence(String editionId) {
+		access.checkAdmin();
+		return publication.openEvidence(get(editionId));
+	}
+
+	/** What publishing this edition would do to every organization holding one of its lineages. */
+	@Transactional(readOnly = true)
+	public FactorPackBlastRadius.Report blastRadius(String editionId) {
+		access.checkAdmin();
+		var edition = get(editionId);
+		return edition.isMutable() ? blastRadius.forPublication(edition) : blastRadius.forWithdrawal(edition);
+	}
+
+	/**
+	 * Publishes the edition: the gate, the frozen change log against the
+	 * predecessor, and one notice per holding organization. It moves no
+	 * organization's numbers; adopting an edition is the organization's
+	 * accounting decision (spec 02.7).
+	 */
+	public EditionView publish(String editionId, FactorPackPublication.PublishRequest request) {
+		access.checkAdmin();
+		var edition = get(editionId);
+		var approverId = access.currentUserId();
+		var email = userDirectory.findById(approverId)
+			.map(UserDirectory.UserSummary::email)
+			.orElseGet(access::currentUserEmail);
+		var name = userDirectory.findById(approverId).map(UserDirectory.UserSummary::displayName).orElse(email);
+		return view(publication.publish(edition, request, approverId, email, name));
+	}
+
+	/** Withdraws a published edition with a reason. The rows organizations hold stay as they are. */
+	public EditionView withdraw(String editionId, String reason) {
+		access.checkAdmin();
+		var edition = get(editionId);
+		return view(publication.withdraw(edition, reason, access.currentUserId(), access.currentUserEmail()));
+	}
+
+	/** The change log the edition froze at publication, code by code. */
+	@Transactional(readOnly = true)
+	public List<FactorPackChange> changes(String editionId) {
+		access.checkAdmin();
+		return publication.changeLog(get(editionId).getEditionId());
+	}
+
+	/** The publication trail: the evidence, the publication, the supersession and the withdrawal. */
+	@Transactional(readOnly = true)
+	public List<FactorPackEvent> trail(String editionId) {
+		access.checkAdmin();
+		return publication.trail(get(editionId).getEditionId());
 	}
 
 	// --- internals ----------------------------------------------------------

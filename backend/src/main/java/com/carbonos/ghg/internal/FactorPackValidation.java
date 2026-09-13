@@ -56,11 +56,18 @@ public class FactorPackValidation {
 	public static final String RULE_APPROVAL = "approvalAttributable";
 
 	/**
-	 * {@code ghg_emission_factors.source} is {@code varchar(500)}, and the
+	 * {@code ghg_emission_factors.source} is {@code varchar(2000)}, and the
 	 * import of spec 02.6 truncates a longer citation to fit. That truncation is
 	 * a backstop: a published edition never relies on it.
+	 *
+	 * <p>{@code V45} widened the column from 500 to hold a full citation. The
+	 * longest a row can state is the source publication plus the publisher's
+	 * three taxonomy parts joined by ' / ', which at the widths of
+	 * {@code ghg_factor_pack_rows} is 1,328 characters, so no row of the
+	 * catalogue can outgrow the column and no edition needs an exemption. Three
+	 * seeded rows used to, and the exemption went with the width.
 	 */
-	public static final int MAX_CITATION_LENGTH = 500;
+	public static final int MAX_CITATION_LENGTH = 2000;
 
 	/** Within one percent, as spec 02.5 states the reconciliation. */
 	private static final BigDecimal TOLERANCE_PERCENT = new BigDecimal("1");
@@ -94,13 +101,9 @@ public class FactorPackValidation {
 	public List<Finding> validate(FactorPackEdition edition, List<FactorPackRow> rows) {
 		var findings = new ArrayList<Finding>();
 		var gwp = edition.gwp();
-		// spec 02.5: SEED_UNCHECKED belongs to the ten editions V43 seeded, whose values were already in
-		// production. Three of their rows carry a derivation narrative longer than the citation column, and
-		// the file is checksummed by Flyway, so the length clause exempts them and only them.
-		var seeded = FactorPackEdition.SEED_UNCHECKED.equals(edition.getProvenanceReview());
 		for (var row : rows) {
 			checkCode(findings, row);
-			checkProvenance(findings, row, seeded);
+			checkProvenance(findings, row);
 			checkUnit(findings, row);
 			checkGasSplit(findings, row, gwp);
 			checkNonKyoto(findings, row);
@@ -132,7 +135,7 @@ public class FactorPackValidation {
 	 * no publication year to record until the supplier's document arrives. Rule
 	 * 8 is what governs it.
 	 */
-	private void checkProvenance(List<Finding> findings, FactorPackRow row, boolean seeded) {
+	private void checkProvenance(List<Finding> findings, FactorPackRow row) {
 		if (isTemplate(row)) {
 			return;
 		}
@@ -153,7 +156,7 @@ public class FactorPackValidation {
 			findings.add(new Finding(RULE_PROVENANCE, row.getCode(),
 					"The row is missing " + String.join(", ", missing) + "."));
 		}
-		if (!seeded && !citationFits(row)) {
+		if (!citationFits(row)) {
 			findings.add(new Finding(RULE_PROVENANCE, row.getCode(),
 					"The citation is " + row.citation().length() + " characters; it must fit "
 							+ MAX_CITATION_LENGTH + ", the width of the column an import writes it to. "

@@ -42,6 +42,18 @@ public interface EmissionFactorRepository
 	/** Every factor of an organization that came from a pack, keyed later by its publication row (spec 02.3). */
 	List<EmissionFactor> findAllByOrganizationIdAndPackCodeIsNotNull(UUID organizationId);
 
+	/**
+	 * Every organization's factor whose lineage is one of these publication row
+	 * identifiers, which is what the blast radius keys on (spec 02.5). It keys
+	 * on the code and never on a pack tag: 150 codes appear in more than one
+	 * pack file, and a holder may carry a row under a sector pack's tag.
+	 */
+	@Query("""
+			select f from EmissionFactor f
+			 where f.organizationId is not null and f.packCode in :codes
+			 order by f.organizationId, f.packCode""")
+	List<EmissionFactor> heldByCode(@Param("codes") java.util.Collection<String> codes);
+
 	/** The publisher's categories across both tiers, for the picker's filter (spec 02.5, FU-03). */
 	@Query("""
 			select distinct f.sourceCategory from EmissionFactor f
