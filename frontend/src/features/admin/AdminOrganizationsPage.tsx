@@ -7,8 +7,7 @@ import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
-import { useSession } from '../auth/useSession'
-import { useLogout } from '../auth/useLogout'
+import { AdminHeader } from './components/AdminHeader'
 import {
   useAdminOrganizationsQuery,
   useAssumeSupportAccess,
@@ -29,8 +28,6 @@ function formatDateTime(iso: string): string {
  * recorded in the organization's own history for its owners to read.
  */
 export function AdminOrganizationsPage() {
-  const session = useSession()
-  const signOut = useLogout()
   const organizationsQuery = useAdminOrganizationsQuery()
   const endAccess = useEndSupportAccess()
   const toast = useToast()
@@ -40,31 +37,7 @@ export function AdminOrganizationsPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-white/50 bg-white/60 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <div className="leading-none">
-            <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent">
-              CarbonOS
-            </p>
-            <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-ink-muted uppercase">
-              by ECORIV
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link to="/admin/users" className="text-sm font-semibold text-link">
-              Manage users
-            </Link>
-            <span className="text-sm text-ink-muted">{session.data?.displayName}</span>
-            <Button
-              variant="ghost"
-              className="px-3 py-1.5 text-sm"
-              onClick={() => signOut.mutate()}
-            >
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AdminHeader current="/admin/organizations" />
 
       <main className="mx-auto max-w-5xl px-6 py-10">
         <div className="mb-6">

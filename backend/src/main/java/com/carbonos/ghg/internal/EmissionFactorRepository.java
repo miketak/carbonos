@@ -33,6 +33,12 @@ public interface EmissionFactorRepository
 
 	List<EmissionFactor> findAllByOrganizationIdAndPack(UUID organizationId, String pack);
 
+	/** How many organizations hold factors from each edition, for the console's holder count (spec 02.5). */
+	@Query("""
+			select f.sourceEdition, count(distinct f.organizationId) from EmissionFactor f
+			 where f.sourceEdition is not null group by f.sourceEdition""")
+	List<Object[]> countHoldersByEdition();
+
 	/** Every factor of an organization that came from a pack, keyed later by its publication row (spec 02.3). */
 	List<EmissionFactor> findAllByOrganizationIdAndPackCodeIsNotNull(UUID organizationId);
 

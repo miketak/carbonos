@@ -1,6 +1,8 @@
 import { Route, Routes } from 'react-router-dom'
 import { AmbientBackground } from '../components/AmbientBackground'
 import { SetPasswordPage } from '../features/access/SetPasswordPage'
+import { AdminFactorPackEditionPage } from '../features/admin/AdminFactorPackEditionPage'
+import { AdminFactorPacksPage } from '../features/admin/AdminFactorPacksPage'
 import { AdminOrganizationsPage } from '../features/admin/AdminOrganizationsPage'
 import { AdminUsersPage } from '../features/admin/AdminUsersPage'
 import { LoginPage } from '../features/auth/LoginPage'
@@ -89,6 +91,22 @@ export function App() {
           element={
             <RequireAuth role="ADMIN">
               <AdminOrganizationsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/factor-packs"
+          element={
+            <RequireAuth role="ADMIN">
+              <AdminFactorPacksPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/factor-packs/:editionId"
+          element={
+            <RequireAuth role="ADMIN">
+              <AdminFactorPackEditionPage />
             </RequireAuth>
           }
         />

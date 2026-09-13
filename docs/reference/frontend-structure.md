@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-12
+last_reviewed: 2026-09-13
 ---
 
 # Frontend structure
@@ -34,13 +34,17 @@ flowchart TB
 | `src/lib` | `api.ts` (the fetch wrapper), `validate.ts` (numeric checks), `useCountUp.ts`, `useShortcuts.ts` (single-key page shortcuts that stay quiet while typing) | Shared infrastructure only. |
 | `src/test` | Render helpers with providers, the API mock | |
 
+Every page under `/admin` wears one header. `features/admin/components/AdminHeader`
+names the administration pages once and links to the ones the caller is not on,
+so adding a page is one entry rather than an edit to every other page.
+
 ## Feature to module
 
 | Feature | Backend module | Pages |
 | --- | --- | --- |
 | `auth` | `user` | Sign in, the post-login splash, route guards |
 | `access` | `user` | Request access, set password |
-| `admin` | `user`, `ghg` | Users list and administration; the organizations list where a platform administrator assumes support access (spec 01.3) |
+| `admin` | `user`, `ghg` | Users list and administration; the organizations list where a platform administrator assumes support access (spec 01.3); the factor pack catalogue and the edition workbench, where a pack family, a draft edition and its rows are authored and the validation report is read (spec 02.5) |
 | `profile` | `user`, `media` | Profile and avatar |
 | `ghg` | `ghg` | Organizations, overview, entities, facilities, activity data and its source documents, units, emission factors, inventories, inventory detail, run detail, base year |
 | `home` | none | Landing |

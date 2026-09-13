@@ -10,6 +10,11 @@ public interface FactorPackEditionRepository extends JpaRepository<FactorPackEdi
 
 	List<FactorPackEdition> findAllByStatusOrderByEditionIdAsc(FactorPackStatus status);
 
+	/** Every edition of one family, oldest identifier first, for the console's list. */
+	List<FactorPackEdition> findAllByPackKeyOrderByEditionIdAsc(String packKey);
+
+	List<FactorPackEdition> findAllByOrderByPackKeyAscEditionIdAsc();
+
 	/** An edition an organization may see: a draft is never visible to one (spec 02.5). */
 	Optional<FactorPackEdition> findByEditionIdAndStatusNot(String editionId, FactorPackStatus status);
 

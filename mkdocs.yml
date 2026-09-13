@@ -172,6 +172,7 @@ nav:
           - reference/qa/007-runs-reports-and-exports.md
           - reference/qa/008-publication-and-corrections.md
           - reference/qa/009-base-year.md
+          - reference/qa/010-factor-pack-maintenance.md
       - Decision records:
           - adr/README.md
           - adr/0001-use-material-for-mkdocs-with-uv.md
