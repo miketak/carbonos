@@ -318,9 +318,86 @@ public class EmissionFactor {
 		return sourceEdition;
 	}
 
+	/** Records the edition whose values this version carries (spec 02.6). */
+	void setSourceEdition(String sourceEdition) {
+		this.sourceEdition = sourceEdition;
+	}
+
 	/** Whether a person edited this version here, which an import leaves alone (spec 02.6). */
 	public boolean isLocallyEdited() {
 		return locallyEdited;
+	}
+
+	/**
+	 * Marks that a person edited this version here (spec 02.6). A later import
+	 * leaves the row exactly as it is and reports it as a conflict, because the
+	 * organization's own correction outranks the publisher's table until a
+	 * person resolves the two.
+	 */
+	void markLocallyEdited() {
+		this.locallyEdited = true;
+	}
+
+	/**
+	 * Closes this version the day before a new one starts (spec 02.6). An
+	 * earlier retirement is never extended, and a version never ends before it
+	 * begins, which is what {@code chk_ghg_emission_factors_validity} holds.
+	 */
+	void closeAt(LocalDate lastDay) {
+		if (lastDay == null || (validFrom != null && validFrom.isAfter(lastDay))) {
+			return;
+		}
+		if (validTo == null || validTo.isAfter(lastDay)) {
+			this.validTo = lastDay;
+		}
+	}
+
+	/** Records the version that replaced this one in the lineage (spec 02.6). */
+	void supersededBy(EmissionFactor version) {
+		this.supersededById = version == null ? null : version.getId();
+	}
+
+	/** Whether this version is the live one of its lineage: nothing has replaced it (spec 02.6). */
+	public boolean isLive() {
+		return supersededById == null;
+	}
+
+	/**
+	 * Whether an edition row would carry exactly the values this version already
+	 * holds (spec 02.6, rule 6). Validity and approval are the organization's,
+	 * not the edition's, so neither is compared: an identical row gains the tag
+	 * and cuts no version.
+	 */
+	boolean sameValuesAs(String name, Scope defaultScope, ActivityCategory defaultCategory, boolean scopeAgnostic,
+			String unit, BigDecimal kgCo2ePerUnit, Gases gases, String blendComposition, String blendGwpSource,
+			Provenance provenance, ReportingBasis reportingBasis, String sourceCategory, String sourceActivity,
+			String sourceDetail) {
+		return java.util.Objects.equals(this.name, name) && this.defaultScope == defaultScope
+				&& this.defaultCategory == defaultCategory && this.scopeAgnostic == scopeAgnostic
+				&& java.util.Objects.equals(this.unit, unit) && same(this.kgCo2ePerUnit, kgCo2ePerUnit)
+				&& same(this.co2KgPerUnit, gases.co2()) && same(this.ch4KgPerUnit, gases.ch4())
+				&& this.ch4Fossil == gases.ch4Fossil() && same(this.n2oKgPerUnit, gases.n2o())
+				&& same(this.hfcsKgPerUnit, gases.hfcsKg()) && same(this.pfcsKgPerUnit, gases.pfcsKg())
+				&& same(this.sf6KgPerUnit, gases.sf6()) && same(this.nf3KgPerUnit, gases.nf3())
+				&& same(this.biogenicCo2KgPerUnit, gases.biogenicCo2())
+				&& java.util.Objects.equals(this.blendComposition, blendComposition)
+				&& java.util.Objects.equals(this.blendGwpSource, blendGwpSource)
+				&& java.util.Objects.equals(this.source, provenance.source())
+				&& java.util.Objects.equals(this.sourceUrl, provenance.sourceUrl())
+				&& java.util.Objects.equals(this.publicationYear, provenance.publicationYear())
+				&& java.util.Objects.equals(this.dataYear, provenance.dataYear())
+				&& java.util.Objects.equals(this.note, provenance.note())
+				&& this.reportingBasis == (reportingBasis == null ? ReportingBasis.SCOPES : reportingBasis)
+				&& java.util.Objects.equals(this.sourceCategory, sourceCategory)
+				&& java.util.Objects.equals(this.sourceActivity, sourceActivity)
+				&& java.util.Objects.equals(this.sourceDetail, sourceDetail);
+	}
+
+	private static boolean same(BigDecimal left, BigDecimal right) {
+		if (left == null || right == null) {
+			return left == right;
+		}
+		return left.compareTo(right) == 0;
 	}
 
 	/** The version that replaced this one in the lineage, or null while this one is live (spec 02.6). */

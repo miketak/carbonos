@@ -33,6 +33,7 @@ import com.carbonos.ghg.internal.BoundaryTreatmentRepository;
 import com.carbonos.ghg.internal.BoundaryVersionRepository;
 import com.carbonos.ghg.internal.EmissionFactorRepository;
 import com.carbonos.ghg.internal.FacilityRepository;
+import com.carbonos.ghg.internal.FactorPackImportService;
 import com.carbonos.ghg.internal.FactorPacks;
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.GhgRunRepository;
@@ -109,6 +110,9 @@ class GhgApiIntegrationTests {
 
 	@Autowired
 	GhgService ghgService;
+
+	@Autowired
+	FactorPackImportService factorPackImports;
 
 	@Autowired
 	com.carbonos.user.internal.UserService userService;
@@ -3039,12 +3043,16 @@ class GhgApiIntegrationTests {
 			.with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.created").value(org.hamcrest.Matchers.greaterThan(40)))
-			.andExpect(jsonPath("$.updated").value(0))
+			.andExpect(jsonPath("$.versioned").value(0))
+			// spec 02.6: the result names the edition imported, not the family
+			.andExpect(jsonPath("$.edition").value("sector-mining"))
 			// spec 02.6: every row of a shipped pack is in a unit the registry converts
 			.andExpect(jsonPath("$.skippedUnits").isEmpty());
+		// spec 02.6: the same edition again is idempotent, so every row reads unchanged and no version is cut
 		var again = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import")
-			.with(asMember()).with(csrf())).andExpect(jsonPath("$.created").value(0)));
-		assertThat(JsonPath.<Integer>read(again, "$.updated")).isGreaterThan(40);
+			.with(asMember()).with(csrf())).andExpect(jsonPath("$.created").value(0))
+			.andExpect(jsonPath("$.versioned").value(0)));
+		assertThat(JsonPath.<Integer>read(again, "$.unchanged")).isGreaterThan(40);
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/no-such-pack/import").with(asMember())
 			.with(csrf())).andExpect(status().isNotFound());
 		// an imported blend follows the inventory's GWP set: R-407C is 23% HFC-32, 25% HFC-125, 52% HFC-134a
@@ -3080,8 +3088,10 @@ class GhgApiIntegrationTests {
 	}
 
 	/**
-	 * Spec 02.6: validity is the organization's decision, so an import carries
-	 * the incumbent's window forward instead of writing null over it.
+	 * Spec 02.6: validity is the organization's decision, never the pack's. A
+	 * preparer who retires a pack-derived row has edited it, so a later import
+	 * leaves the whole row alone and reports it as a conflict instead of
+	 * returning the factor to service.
 	 */
 	@Test
 	void importDoesNotUnretireAFactorWhoseValidityWasEnded() throws Exception {
@@ -3091,6 +3101,8 @@ class GhgApiIntegrationTests {
 		var imported = allFactors(orgId);
 		String dieselId = JsonPath.<List<String>>read(imported,
 				"$[?(@.name == 'Liquid fuels: Diesel (100% mineral diesel)' && @.unit == 'litre')].id").getFirst();
+		String dieselCode = JsonPath.<List<String>>read(imported, "$[?(@.id == '" + dieselId + "')].packCode")
+			.getFirst();
 		// a preparer retires the row by ending its validity, and renames it while they are there
 		mvc.perform(put("/api/ghg/emission-factors/" + dieselId).with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -3101,13 +3113,16 @@ class GhgApiIntegrationTests {
 					 "publicationYear": 2026, "dataYear": 2026, "validFrom": "2024-01-01",
 					 "validTo": "2025-12-31", "approved": true}"""))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.validTo").value("2025-12-31"));
-		// the same pack again refreshes the values, but the retirement is the organization's and stands
+			.andExpect(jsonPath("$.validTo").value("2025-12-31"))
+			.andExpect(jsonPath("$.locallyEdited").value(true));
+		// the same pack again leaves the edited row exactly as it is and names it as a conflict
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
-			.with(csrf())).andExpect(status().isOk());
+			.with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.conflicts").value(org.hamcrest.Matchers.hasItem(dieselCode)));
 		var after = allFactors(orgId);
 		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + dieselId + "')].name").getFirst())
-			.isEqualTo("Liquid fuels: Diesel (100% mineral diesel)");
+			.isEqualTo("Liquid fuels: Diesel (superseded on site)");
 		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + dieselId + "')].validFrom").getFirst())
 			.isEqualTo("2024-01-01");
 		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + dieselId + "')].validTo").getFirst())
@@ -3125,11 +3140,12 @@ class GhgApiIntegrationTests {
 		var pack = new FactorPacks.Pack("test-unconvertible", "A pack with a unit the registry does not hold",
 				"Test publication", "https://example.test/pack", 2026, "AR5", "Test", "2026-09-13", null,
 				List.of(packRow("TEST:Diesel:litres", "Test diesel", "litre"),
-						packRow("TEST:Ore_hauled:drums", "Test ore hauled", "drum")));
-		var result = asOwner(() -> ghgService.importPack(UUID.fromString(orgId), pack));
+						packRow("TEST:Ore_hauled:drums", "Test ore hauled", "drum")),
+				java.time.LocalDate.of(2026, 1, 1));
+		var result = asOwner(() -> factorPackImports.importPack(UUID.fromString(orgId), pack));
 		assertThat(result.created()).isEqualTo(1);
 		assertThat(result.skippedUnits()).containsExactly(
-				new GhgService.ImportResult.SkippedRow("TEST:Ore_hauled:drums", "drum"));
+				new FactorPackImportService.ImportResult.SkippedRow("TEST:Ore_hauled:drums", "drum"));
 		// and the row the registry cannot convert is not in the organization's factors
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).param("size", "200"))
 			.andExpect(jsonPath("$.items[?(@.name == 'Test diesel')]").isNotEmpty())

@@ -78,8 +78,15 @@ public class FactorPacks {
 		}
 	}
 
+	/**
+	 * One edition with its rows, as the read path and the import speak it. The
+	 * applies-from date is the edition's vintage (spec 02.6): the day the
+	 * version an import cuts begins, so the pack carries it rather than every
+	 * caller looking it up again.
+	 */
 	public record Pack(String id, String name, String source, String sourceUrl, Integer publicationYear,
-			String gwpBasis, String license, String retrieved, String notes, List<PackFactor> factors) {
+			String gwpBasis, String license, String retrieved, String notes, List<PackFactor> factors,
+			java.time.LocalDate appliesFrom) {
 	}
 
 	/**
@@ -153,7 +160,7 @@ public class FactorPacks {
 			}
 			var pack = new Pack(edition.getEditionId(), edition.getName(), edition.getSource(), edition.getSourceUrl(),
 					edition.getPublicationYear(), edition.getGwpBasis(), edition.getLicense(), edition.getRetrieved(),
-					edition.getNotes(), List.copyOf(factors));
+					edition.getNotes(), List.copyOf(factors), edition.getAppliesFrom());
 			assembled.put(pack.id(), pack);
 			return pack;
 		});

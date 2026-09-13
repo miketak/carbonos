@@ -81,8 +81,15 @@ class EmissionFactorController {
 		var query = new GhgService.FactorQuery(q, includeUnapproved, tier, sourceCategory, sourceActivity, sourceDetail,
 				unit, dimension == null ? Set.of() : Set.copyOf(dimension), ids, page, size);
 		var result = ghgService.searchEmissionFactors(organizationId, query);
-		return new EmissionFactorPageResponse(result.items().stream().map(this::toResponse).toList(), result.page(),
-				result.size(), result.total(), result.unapproved());
+		// spec 02.6: a lineage with more than one vintage comes back with its chain, read for the whole page
+		var chains = ghgService.versionChains(organizationId, result.items());
+		var items = result.items()
+			.stream()
+			.map(factor -> EmissionFactorResponse.from(factor, units.dimensionOf(factor.getUnit()).orElse(null),
+					chains.getOrDefault(factor.getId(), List.of())))
+			.toList();
+		return new EmissionFactorPageResponse(items, result.page(), result.size(), result.total(),
+				result.unapproved());
 	}
 
 	/** The values the picker's filters offer over the factors this organization can see (FU-03). */
