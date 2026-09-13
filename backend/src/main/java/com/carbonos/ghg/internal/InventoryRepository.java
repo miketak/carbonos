@@ -15,4 +15,11 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
 	/** The organization's inventories in one state, for the blast radius's open drafts (spec 02.5). */
 	List<Inventory> findAllByOrganizationIdAndStatusOrderByPeriodStartAsc(UUID organizationId,
 			InventoryStatus status);
+
+	/**
+	 * The organization's inventories in any of these states, which is how an
+	 * import finds the locked periods that refuse it (spec 02.6).
+	 */
+	List<Inventory> findAllByOrganizationIdAndStatusInOrderByPeriodStartAsc(UUID organizationId,
+			java.util.Collection<InventoryStatus> statuses);
 }

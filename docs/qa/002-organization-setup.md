@@ -169,17 +169,34 @@ its boundary, refuses removal; procedure 3 checks the first.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Import the **Sector pack: mining (Ghana and West Africa)** pack (the Import pack button on its card; the button's accessible name carries the pack's name). | The import reports "56 factors added, 0 updated, 0 already held from another pack and tagged" and says nothing more: every row of a shipped pack is in a unit the registry converts. A pack carrying a unit the registry does not hold adds a sentence to the same message, "1 row skipped, in a unit the registry cannot convert:" and then each row it left out with the unit that stopped it. The organization's factors now include refrigerants with a blend composition, diesel per tonne and per litre, explosives, and the Ghana grid by year, each citing the publication it comes from (not the pack) with its URL. Six rows arrive **Not approved** with an Approve button: the derived Ghana T&D loss factor, the four supplier-factor templates (quicklime, cement, sodium cyanide, grinding media) and the land-clearing row. Leave them. | | |
-| 2 | Import it again. | The second import reports "0 factors added, 56 updated, 0 already held from another pack and tagged", again with no skipped rows. A re-import refreshes each row's values from the pack, but it never rewrites the validity a preparer set, so a factor retired by its **Valid to** date stays retired. | | |
-| 3 | Read the **Packs** column of any imported row, and its **Source and vintage** column. | The pack tag sits in the Packs column on its own; the Source column names the publication, for example "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use): Volume 3, Chapter 2, Table 2.4 ...", published 2006, not the sector pack or the year 2026. | | |
-| 4 | Read the row **HCFC-22 (R-22)**. | Under the name it says "Outside the scopes (Montreal Protocol, not a Kyoto gas)". | | |
+| 1 | Import the **Sector pack: mining (Ghana and West Africa)** pack (the Import pack button on its card; the button's accessible name carries the pack's name). | The import reports "sector-mining, applying from 2026-01-01: 56 added, 0 versioned, 0 tagged, 0 unchanged." and says nothing more: every row of a shipped pack is in a unit the registry converts, nothing was held before, and nothing was dropped. A pack carrying a unit the registry does not hold adds a sentence to the same message, "1 row skipped, in a unit the registry cannot convert:" and then each row it left out with the unit that stopped it. The organization's factors now include refrigerants with a blend composition, diesel per tonne and per litre, explosives, and the Ghana grid by year, each citing the publication it comes from (not the pack) with its URL. Six rows arrive **Not approved** with an Approve button: the derived Ghana T&D loss factor, the four supplier-factor templates (quicklime, cement, sodium cyanide, grinding media) and the land-clearing row. Leave them. | | |
+| 2 | Import it again. | The second import reports "sector-mining, applying from 2026-01-01: 0 added, 0 versioned, 0 tagged, 56 unchanged.", again with no skipped rows. Re-importing the same edition is a no-op: it cuts no version and rewrites no value. | | |
+| 3 | Read the **Source and vintage** column of the imported **Liquid fuels: Diesel (100% mineral diesel)** row, per litre. | It says "valid 2026-01-01 to …": every version an import writes starts on the edition's applies-from date. The row shows no version chain yet, because the lineage holds one version. | | |
+| 4 | Read the action column of any imported row. | Where a hand-entered factor offers **Delete**, a pack-derived row reads "Retire, not delete". Hover it: a pack-derived factor is never deleted, because its versions are the record of what was calculated with. | | |
+| 5 | Read the **Packs** column of any imported row, and its **Source and vintage** column. | The pack tag sits in the Packs column on its own; the Source column names the publication, for example "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use): Volume 3, Chapter 2, Table 2.4 ...", published 2006, not the sector pack or the year 2026. | | |
+| 6 | Read the row **HCFC-22 (R-22)**. | Under the name it says "Outside the scopes (Montreal Protocol, not a Kyoto gas)". | | |
 
 ### F2a. A second pack tags a row it shares, it never copies it
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Import **Refrigerants and other fluorinated gases (EPA Hub, IPCC AR5)**. | The import reports rows added and a non-zero count for "already held from another pack and tagged": the refrigerant rows the mining pack delivered are tagged, not copied. | | |
+| 1 | Import **Refrigerants and other fluorinated gases (EPA Hub, IPCC AR5)**. | The import reports rows added and a non-zero **tagged** count: the refrigerant rows the mining pack already delivered carry identical values, so they gain this edition's tag rather than a copy or a new version. | | |
 | 2 | Search the factor table for **Refrigerant R-410A leakage**. | Exactly one row carries that name among the organization's own factors, and its Packs column lists both `refrigerants-ar5` and `sector-mining`. | | |
+
+### F2b. A later edition cuts a version, and what that makes visible
+
+An import never overwrites a figure. It closes the version the
+organization holds and cuts a new one from the edition's applies-from
+date, so a period already reported keeps the factors it reported with.
+Two consequences are correct and worth seeing.
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Open **Inventories**, create a draft inventory **FY2025** for 2025-01-01 to 2025-12-31, put a facility in its boundary, classify one record with an imported pack factor, and read the validation panel. | It raises a **warning** (not an error): the factor "is valid from 2026-01-01, which does not cover the reporting period". This is new and it is correct: the version the organization holds is the 2026 vintage, and 2025 is before it. The run is not blocked. Delete the inventory afterwards. | | |
+| 2 | As a platform administrator, publish a later edition of the mining pack under **Factor packs** in the admin console, applying from a date after every locked period (procedure 9 covers authoring and publication). Then, as the preparer, import it. | The import reports counts under four headings: added, versioned, tagged, unchanged. A row whose value moved is **versioned**: the row you held is closed the day before the new edition applies and a new version carries the new value from that day. A row the new edition drops is listed as discontinued and nothing retires it. A row you edited here is listed as a conflict and is left exactly as you left it. | | |
+| 3 | Read the **Source and vintage** column of a versioned row. | It offers "2 versions of this factor". Open it: the older version reads the old edition with its window ending the day before the new one applies, and the live version reads the new edition from its applies-from date, marked "(live)". | | |
+| 4 | Open a run made before the import and read its **Emission factors applied** table (procedure 7 has one). | Every figure is exactly what it was. The table names the edition and the vintage behind each factor; a run made before this release names none, which is honest rather than a guess. | | |
+| 5 | Import an edition whose applies-from date falls inside a **Frozen**, **Final** or **Published** inventory's period. | The import is refused with 409 naming that inventory and its status, and nothing is written. A reported period keeps the factors it reported with. | | |
 
 ### F3. The factor table and the picker at scale (a scratch organization)
 
@@ -192,7 +209,7 @@ unrecognizable.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Create an organization **Scale Test Co** and open its **Emission factors** page. | The organization has no factors of its own yet. | | |
-| 2 | Import **UK Government (DESNZ) GHG conversion factors 2026**. | The import reports about 1,868 factors added. | | |
+| 2 | Import **UK Government (DESNZ) GHG conversion factors 2026**. | The import reports about 1,868 added, and nothing versioned, tagged or unchanged. It takes a few seconds: it is the largest edition shipped. | | |
 | 3 | Read the heading of **This organization's factors** and the foot of the table. | The heading says "1,868 factors". The table holds 50 rows and the pager under it reads "Page 1 of 38". The browser does not slow to a crawl: it never receives the whole edition. | | |
 | 4 | Read the **Factor** column of any imported row. | Under the name is the publisher's own path, for example "Fuels / Gaseous fuels / Butane", which is what tells rows of the same name apart. | | |
 | 5 | Choose **Fuels** in **Published category**. | The table returns to page 1, the heading says how many match, and **Published activity** now offers only the activities inside Fuels. | | |

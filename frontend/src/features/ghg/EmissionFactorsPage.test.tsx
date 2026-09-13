@@ -65,6 +65,10 @@ const diesel: EmissionFactor = {
   sourceCategory: null,
   sourceActivity: null,
   sourceDetail: null,
+  sourceEdition: null,
+  locallyEdited: false,
+  supersededById: null,
+  versions: [],
 }
 
 const hfo: EmissionFactor = {
@@ -83,6 +87,19 @@ const hfo: EmissionFactor = {
   packs: ['refrigerants-ar5', 'sector-mining'],
   packCode: 'X',
   gridRegion: null,
+  sourceEdition: 'sector-mining',
+}
+
+/** A factor entered by hand: the only kind that can be deleted (spec 02.6). */
+const supplier: EmissionFactor = {
+  ...diesel,
+  id: 'f-9',
+  organizationId: 'org-1',
+  name: 'Quicklime (supplier declaration 2026)',
+  unit: 'tonne',
+  kgCo2ePerUnit: 1200,
+  source: 'Supplier environmental product declaration 2026',
+  sourceUrl: null,
 }
 
 const pack: FactorPack = {
@@ -103,11 +120,16 @@ beforeEach(() => {
   vi.mocked(listFactorPacks).mockReset().mockResolvedValue([pack])
   vi.mocked(getOrganization).mockReset()
   vi.mocked(importFactorPack).mockReset().mockResolvedValue({
-    pack: 'sector-mining',
+    edition: 'sector-mining',
+    appliesFrom: '2026-01-01',
     created: 53,
-    updated: 0,
+    versioned: 0,
     tagged: 3,
+    unchanged: 0,
     skippedUnits: [],
+    conflicts: [],
+    discontinued: [],
+    splitPeriods: [],
   })
   vi.mocked(setFactorApproval)
     .mockReset()
@@ -150,7 +172,7 @@ test('imports a pack and approves a factor', async () => {
   await waitFor(() => expect(importFactorPack).toHaveBeenCalledWith('org-1', 'sector-mining'))
   expect(
     await screen.findByText(
-      /53 factors added, 0 updated, 3 already held from another pack and tagged/,
+      /sector-mining, applying from 2026-01-01: 53 added, 0 versioned, 3 tagged, 0 unchanged/,
     ),
   ).toBeInTheDocument()
 
@@ -161,14 +183,19 @@ test('imports a pack and approves a factor', async () => {
 test('the import toast names the rows the registry could not convert (spec 02.6)', async () => {
   const user = userEvent.setup()
   vi.mocked(importFactorPack).mockResolvedValue({
-    pack: 'sector-mining',
+    edition: 'sector-mining',
+    appliesFrom: '2026-01-01',
     created: 51,
-    updated: 0,
+    versioned: 0,
     tagged: 3,
+    unchanged: 0,
     skippedUnits: [
       { code: 'DEFRA:Fuels:Ore_hauled', unit: 'drum' },
       { code: 'DEFRA:Fuels:Lime_bagged', unit: 'bag' },
     ],
+    conflicts: [],
+    discontinued: [],
+    splitPeriods: [],
   })
   renderPage()
 
@@ -202,6 +229,7 @@ test('a gas outside the scopes is marked on the page and can be chosen on the ad
 
 test('a verifier sees Add factor, Import pack, Approve and Delete disabled with the role they need (spec 01.4)', async () => {
   vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'VERIFIER' })
+  mockEmissionFactors([diesel, hfo, supplier])
   renderPage()
 
   const addFactor = await screen.findByRole('button', { name: /^add factor$/i })
@@ -214,11 +242,15 @@ test('a verifier sees Add factor, Import pack, Approve and Delete disabled with 
 
   const ownRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
   expect(within(ownRow).getByRole('button', { name: /approve/i })).toBeDisabled()
-  expect(within(ownRow).getByRole('button', { name: /delete factor/i })).toBeDisabled()
+  // spec 02.6: a pack-derived factor is never deleted, so the row offers retirement instead
+  expect(within(ownRow).getByText('Retire, not delete')).toBeInTheDocument()
+  const handRow = screen.getByText('Quicklime (supplier declaration 2026)').closest('tr')!
+  expect(within(handRow).getByRole('button', { name: /delete factor/i })).toBeDisabled()
 })
 
 test('a preparer can add, import, approve and delete factors (spec 01.4)', async () => {
   vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
+  mockEmissionFactors([diesel, hfo, supplier])
   renderPage()
 
   const addFactor = await screen.findByRole('button', { name: /^add factor$/i })
@@ -229,7 +261,8 @@ test('a preparer can add, import, approve and delete factors (spec 01.4)', async
 
   const ownRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
   expect(within(ownRow).getByRole('button', { name: /approve/i })).toBeEnabled()
-  expect(within(ownRow).getByRole('button', { name: /delete factor/i })).toBeEnabled()
+  const handRow = screen.getByText('Quicklime (supplier declaration 2026)').closest('tr')!
+  expect(within(handRow).getByRole('button', { name: /delete factor/i })).toBeEnabled()
 })
 
 test('the search, the taxonomy filters and the pager run on the server (FU-03)', async () => {
@@ -276,5 +309,81 @@ test('the search, the taxonomy filters and the pager run on the server (FU-03)',
       'org-1',
       expect.objectContaining({ q: 'butane 7', tier: 'OWN' }),
     ),
+  )
+})
+
+test('a lineage with two vintages shows its version chain and the live one (spec 02.6)', async () => {
+  const user = userEvent.setup()
+  mockEmissionFactors([
+    diesel,
+    {
+      ...hfo,
+      id: 'f-4',
+      name: 'Diesel (100% mineral diesel)',
+      packCode: 'DEFRA:Fuels:Diesel',
+      sourceEdition: 'defra-2027',
+      validFrom: '2027-01-01',
+      validTo: null,
+      versions: [
+        {
+          id: 'v-1',
+          sourceEdition: 'defra-2026',
+          validFrom: '2026-01-01',
+          validTo: '2026-12-31',
+          kgCo2ePerUnit: 2.66,
+          live: false,
+          locallyEdited: false,
+        },
+        {
+          id: 'f-4',
+          sourceEdition: 'defra-2027',
+          validFrom: '2027-01-01',
+          validTo: null,
+          kgCo2ePerUnit: 2.8,
+          live: true,
+          locallyEdited: false,
+        },
+      ],
+    },
+  ])
+  renderPage()
+
+  await user.click(await screen.findByText('2 versions of this factor'))
+  expect(screen.getByText(/defra-2026, 2026-01-01 to 2026-12-31, 2.66/)).toBeInTheDocument()
+  expect(screen.getByText(/defra-2027, 2027-01-01 to open, 2.8 \(live\)/)).toBeInTheDocument()
+})
+
+test('a locally edited row is marked, so a preparer knows an import will leave it alone (spec 02.6)', async () => {
+  mockEmissionFactors([diesel, { ...hfo, locallyEdited: true }])
+  renderPage()
+
+  const ownRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
+  expect(within(ownRow).getByText('Locally edited')).toBeInTheDocument()
+})
+
+test('the import toast names conflicts, discontinued lineages and a split period (spec 02.6)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(importFactorPack).mockResolvedValue({
+    edition: 'defra-2027',
+    appliesFrom: '2027-01-01',
+    created: 12,
+    versioned: 340,
+    tagged: 4,
+    unchanged: 1512,
+    skippedUnits: [],
+    conflicts: ['DEFRA:Fuels:Diesel'],
+    discontinued: ['DEFRA:Retired_row:tonnes'],
+    splitPeriods: [{ inventoryId: 'inv-1', name: 'FY2027' }],
+  })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /^Import pack/ }))
+  const toast = await screen.findByText(/340 versioned/)
+  expect(toast).toHaveTextContent('1 locally edited row left untouched: DEFRA:Fuels:Diesel.')
+  expect(toast).toHaveTextContent(
+    '1 lineage this edition drops, retired by nobody: DEFRA:Retired_row:tonnes.',
+  )
+  expect(toast).toHaveTextContent(
+    'It applies inside FY2027, so that period would be calculated on two editions.',
   )
 })

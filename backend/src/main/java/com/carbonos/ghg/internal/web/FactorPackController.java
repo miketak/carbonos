@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.carbonos.ghg.internal.ActivityCategory;
+import com.carbonos.ghg.internal.FactorPackImportService;
 import com.carbonos.ghg.internal.FactorPacks;
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.ReportingBasis;
@@ -66,10 +67,12 @@ class FactorPackController {
 
 	private final FactorPacks packs;
 	private final GhgService ghgService;
+	private final FactorPackImportService imports;
 
-	FactorPackController(FactorPacks packs, GhgService ghgService) {
+	FactorPackController(FactorPacks packs, GhgService ghgService, FactorPackImportService imports) {
 		this.packs = packs;
 		this.ghgService = ghgService;
+		this.imports = imports;
 	}
 
 	@GetMapping("/factor-packs")
@@ -84,7 +87,7 @@ class FactorPackController {
 	}
 
 	@PostMapping("/organizations/{organizationId}/factor-packs/{packId}/import")
-	GhgService.ImportResult importPack(@PathVariable UUID organizationId, @PathVariable String packId) {
-		return ghgService.importPack(organizationId, packId);
+	FactorPackImportService.ImportResult importPack(@PathVariable UUID organizationId, @PathVariable String packId) {
+		return imports.importPack(organizationId, packId);
 	}
 }

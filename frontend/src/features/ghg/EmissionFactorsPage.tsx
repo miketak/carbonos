@@ -25,6 +25,8 @@ import {
 import type {
   ActivityCategory,
   EmissionFactor,
+  FactorPackImport,
+  FactorVersion,
   GhgScope,
   Organization,
   ReportingBasis,
@@ -86,6 +88,49 @@ function skippedNote(skipped: SkippedFactorRow[]): string {
   const rows = skipped.length === 1 ? '1 row' : `${skipped.length} rows`
   const units = skipped.length === 1 ? 'a unit' : 'units'
   return ` ${rows} skipped, in ${units} the registry cannot convert: ${named}${rest}.`
+}
+
+/** The first few of a list of lineage codes, with a count of the rest. */
+function few(codes: string[]): string {
+  const named = codes.slice(0, 3).join(', ')
+  return codes.length > 3 ? `${named}, and ${codes.length - 3} more` : named
+}
+
+/**
+ * What an import did, in one sentence (spec 02.6). A version cut is the headline:
+ * the organization's earlier figures keep the vintage they were calculated on,
+ * and only periods from the edition's applies-from date use the new values.
+ */
+function importNote(result: FactorPackImport): string {
+  const parts = [
+    `${result.edition}, applying from ${result.appliesFrom}: ${result.created} added`,
+    `${result.versioned} versioned`,
+    `${result.tagged} tagged`,
+    `${result.unchanged} unchanged.`,
+  ]
+  let note = parts.join(', ')
+  if (result.conflicts.length > 0)
+    note += ` ${result.conflicts.length} locally edited row${
+      result.conflicts.length === 1 ? '' : 's'
+    } left untouched: ${few(result.conflicts)}.`
+  if (result.discontinued.length > 0)
+    note += ` ${result.discontinued.length} lineage${
+      result.discontinued.length === 1 ? '' : 's'
+    } this edition drops, retired by nobody: ${few(result.discontinued)}.`
+  if (result.splitPeriods.length > 0)
+    note += ` It applies inside ${result.splitPeriods
+      .map((period) => period.name)
+      .join(', ')}, so that period would be calculated on two editions.`
+  return note + skippedNote(result.skippedUnits)
+}
+
+/** "defra-2026, from 2026-01-01 to 2026-12-31": one version of a lineage (spec 02.6). */
+function versionLabel(version: FactorVersion): string {
+  const window =
+    version.validFrom === null && version.validTo === null
+      ? 'always applied'
+      : `${version.validFrom ?? '…'} to ${version.validTo ?? 'open'}`
+  return `${version.sourceEdition ?? 'entered by hand'}, ${window}, ${version.kgCo2ePerUnit}`
 }
 
 function FactorTable({
@@ -157,6 +202,22 @@ function FactorTable({
                 provenance(factor)
               )}
               {factor.note && <span className="block">{factor.note}</span>}
+              {/* spec 02.6: a lineage holds one version per vintage, so the chain says which applies */}
+              {factor.versions.length > 1 && (
+                <details className="mt-1">
+                  <summary className="cursor-pointer">
+                    {factor.versions.length} versions of this factor
+                  </summary>
+                  <ul className="mt-1 ml-3 list-disc">
+                    {factor.versions.map((version) => (
+                      <li key={version.id} className={version.live ? 'font-medium' : undefined}>
+                        {versionLabel(version)}
+                        {version.live ? ' (live)' : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </td>
             {/* spec 02.3: the packs that delivered the row, always apart from its source */}
             <td className="px-4 py-3 text-xs">
@@ -186,6 +247,15 @@ function FactorTable({
                   Not approved
                 </span>
               )}
+              {/* spec 02.6: an import leaves this row alone and reports it as a conflict */}
+              {factor.locallyEdited && (
+                <span
+                  className="mt-1 block text-xs text-ink-muted"
+                  title="Edited here, so an import leaves it alone and reports it as a conflict."
+                >
+                  Locally edited
+                </span>
+              )}
             </td>
             {editable && (
               <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -198,16 +268,26 @@ function FactorTable({
                 >
                   {factor.approved ? 'Unapprove' : 'Approve'}
                 </RoleButton>
-                <RoleButton
-                  allowed={mayWrite(myRole)}
-                  tooltip={WRITE_TOOLTIP}
-                  variant="ghost"
-                  className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                  aria-label={`Delete factor ${factor.name}`}
-                  onClick={() => onDelete?.(factor)}
-                >
-                  Delete
-                </RoleButton>
+                {/* spec 02.6: a pack-derived factor is never deleted; its versions are the record */}
+                {factor.packCode === null ? (
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
+                    variant="ghost"
+                    className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                    aria-label={`Delete factor ${factor.name}`}
+                    onClick={() => onDelete?.(factor)}
+                  >
+                    Delete
+                  </RoleButton>
+                ) : (
+                  <span
+                    className="px-2 py-1 text-xs text-ink-muted"
+                    title="From a factor pack. Its versions are the record of what was calculated with, so it retires by its validity end instead of being deleted."
+                  >
+                    Retire, not delete
+                  </span>
+                )}
               </td>
             )}
           </tr>
@@ -306,8 +386,10 @@ export function EmissionFactorsPage() {
       <GlassCard className="animate-fade-up p-6">
         <h2 className="text-lg">Factor packs</h2>
         <p className="text-sm text-ink-muted">
-          Built from published tables. Importing a pack adds its factors to this organization with
-          their citations; a second import updates them in place.
+          Built from published tables. Importing an edition adds its factors to this organization
+          with their citations. A later edition never overwrites a figure: it closes the version you
+          hold and cuts a new one from the edition's applies-from date, so a period you have already
+          reported keeps the factors it reported with.
         </p>
         {packsQuery.isPending && <Skeleton className="mt-3 h-16" />}
         {packsQuery.data && (
@@ -334,12 +416,7 @@ export function EmissionFactorsPage() {
                     busy={importPack.isPending && importPack.variables === pack.id}
                     onClick={() =>
                       importPack.mutate(pack.id, {
-                        onSuccess: (result) =>
-                          toast(
-                            `${pack.name}: ${result.created} factors added, ${result.updated} updated, ` +
-                              `${result.tagged} already held from another pack and tagged.` +
-                              skippedNote(result.skippedUnits),
-                          ),
+                        onSuccess: (result) => toast(importNote(result)),
                         onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                       })
                     }

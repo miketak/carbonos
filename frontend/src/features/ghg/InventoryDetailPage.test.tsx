@@ -429,6 +429,10 @@ const dieselFactor: EmissionFactor = {
   sourceCategory: null,
   sourceActivity: null,
   sourceDetail: null,
+  sourceEdition: null,
+  locallyEdited: false,
+  supersededById: null,
+  versions: [],
 }
 
 beforeEach(() => {
@@ -1199,6 +1203,10 @@ test('the activity view suggests the grid factor of the facility and names an in
       sourceCategory: null,
       sourceActivity: null,
       sourceDetail: null,
+      sourceEdition: null,
+      locallyEdited: false,
+      supersededById: null,
+      versions: [],
     },
   ])
   vi.mocked(searchAssignments).mockResolvedValue(

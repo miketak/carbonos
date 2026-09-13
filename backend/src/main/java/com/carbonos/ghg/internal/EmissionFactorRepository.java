@@ -43,6 +43,14 @@ public interface EmissionFactorRepository
 	List<EmissionFactor> findAllByOrganizationIdAndPackCodeIsNotNull(UUID organizationId);
 
 	/**
+	 * Every version of the named lineages an organization holds (spec 02.6), so
+	 * one page of the library can show each lineage's chain without a query per
+	 * row.
+	 */
+	List<EmissionFactor> findAllByOrganizationIdAndPackCodeIn(UUID organizationId,
+			java.util.Collection<String> packCodes);
+
+	/**
 	 * Every organization's factor whose lineage is one of these publication row
 	 * identifiers, which is what the blast radius keys on (spec 02.5). It keys
 	 * on the code and never on a pack tag: 150 codes appear in more than one

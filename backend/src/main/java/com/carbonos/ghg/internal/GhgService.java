@@ -672,6 +672,11 @@ public class GhgService {
 				facts.unit().trim(), facts.kgCo2ePerUnit(), facts.gases(), trimToNull(facts.blendComposition()),
 				trimToNull(facts.blendGwpSource()), facts.provenance(), facts.approved());
 		factor.setReportingBasis(facts.reportingBasis());
+		// spec 02.6: a person edited a pack-derived version here, so a later import leaves it alone and
+		// reports it as a conflict instead of overwriting the correction the organization made
+		if (factor.getPackCode() != null) {
+			factor.markLocallyEdited();
+		}
 		return factor;
 	}
 
@@ -684,6 +689,14 @@ public class GhgService {
 	/** A factor a run applied is part of the record; retire it by its validity end instead. */
 	public void deleteEmissionFactor(UUID id) {
 		var factor = getOwnFactor(id);
+		// spec 02.6: a pack-derived factor is never deleted. Its versions are the record of what the
+		// organization calculated with, so it retires by its validity end and stays on file.
+		if (factor.getPackCode() != null) {
+			throw new GhgRuleViolationException("'" + factor.getName() + "' came from the factor pack '"
+					+ (factor.getSourceEdition() == null ? factor.getPack() : factor.getSourceEdition())
+					+ "'. A pack-derived factor is never deleted, because its versions are the record of what "
+					+ "was calculated with. Set its validity end to retire it instead.");
+		}
 		if (runLines.existsByFactorId(id)) {
 			throw new GhgRuleViolationException("'" + factor.getName()
 					+ "' was applied by a calculation run. Set its validity end to retire it instead of deleting it.");
@@ -702,122 +715,42 @@ public class GhgService {
 	}
 
 	/**
-	 * What an import did (spec 02.3): rows created, rows refreshed, and rows
-	 * another pack had already delivered that only gained this pack's tag,
-	 * plus the rows the import could not deliver (spec 02.6).
+	 * The versions of each lineage on a page of the library, keyed by the
+	 * factor's identifier (spec 02.6). An import cuts a version rather than
+	 * overwriting a row, so a lineage holds one version per vintage and the page
+	 * shows the chain with its validity. Read in one query for the whole page,
+	 * because a lineage with a chain is the common case once an organization has
+	 * adopted a second edition.
 	 */
-	public record ImportResult(String pack, int created, int updated, int tagged, List<SkippedRow> skippedUnits) {
-
-		/**
-		 * A pack row the registry cannot convert, carried back by its
-		 * publication row identifier and the unit that stopped it (spec 02.6),
-		 * so the caller can say which rows were skipped and why.
-		 */
-		public record SkippedRow(String code, String unit) {
+	@Transactional(readOnly = true)
+	public java.util.Map<UUID, List<EmissionFactor>> versionChains(UUID organizationId, List<EmissionFactor> page) {
+		var codes = page.stream()
+			.filter(factor -> factor.getPackCode() != null && organizationId.equals(factor.getOrganizationId()))
+			.map(EmissionFactor::getPackCode)
+			.collect(Collectors.toSet());
+		if (codes.isEmpty()) {
+			return java.util.Map.of();
 		}
+		var byCode = emissionFactors.findAllByOrganizationIdAndPackCodeIn(organizationId, codes)
+			.stream()
+			.collect(Collectors.groupingBy(EmissionFactor::getPackCode));
+		byCode.values()
+			.forEach(versions -> versions.sort(Comparator.comparing(EmissionFactor::getValidFrom,
+					Comparator.nullsFirst(Comparator.naturalOrder()))));
+		var chains = new java.util.LinkedHashMap<UUID, List<EmissionFactor>>();
+		for (var factor : page) {
+			var versions = factor.getPackCode() == null ? null : byCode.get(factor.getPackCode());
+			if (versions != null && versions.size() > 1) {
+				chains.put(factor.getId(), versions);
+			}
+		}
+		return chains;
 	}
 
-	/** A shipped pack with its factors, or 404. */
+	/** A shipped edition with its rows, or 404. */
+	@Transactional(readOnly = true)
 	public FactorPacks.Pack pack(String packId) {
 		return factorPacks.find(packId).orElseThrow(() -> GhgNotFoundException.pack(packId));
-	}
-
-	/**
-	 * Imports a pack as the organization's factors (spec 02.3). The publication
-	 * row identifier is the identity of a factor within an organization: a row
-	 * the organization already holds gains this pack's tag and has its values
-	 * refreshed, never a copy. Approval belongs to the one factor, so a pack
-	 * neither approves a factor a user unapproved nor unapproves one another
-	 * import approved.
-	 */
-	public ImportResult importPack(UUID organizationId, String packId) {
-		// spec 02.5: a superseded or withdrawn edition is readable but not importable, so an import that
-		// names one is a 404 rather than a quiet build on a retired table
-		return importPack(organizationId,
-				factorPacks.findImportable(packId).orElseThrow(() -> GhgNotFoundException.pack(packId)));
-	}
-
-	/** The import itself, over a pack already resolved. */
-	public ImportResult importPack(UUID organizationId, FactorPacks.Pack pack) {
-		var organization = getOrganization(organizationId);
-		access.checkWrite(organization);
-		var packId = pack.id();
-		var existing = emissionFactors.findAllByOrganizationIdAndPackCodeIsNotNull(organizationId)
-			.stream()
-			.collect(Collectors.toMap(EmissionFactor::getPackCode, Function.identity(), (a, b) -> a));
-		int created = 0;
-		int updated = 0;
-		int tagged = 0;
-		var skippedUnits = new ArrayList<ImportResult.SkippedRow>();
-		for (var row : pack.factors()) {
-			if (units.dimensionOf(row.unit()).isEmpty()) {
-				// spec 02.6: a unit the registry cannot convert is reported, never dropped in silence. The
-				// generator keeps such rows out, but a pack may carry one and the caller is owed the reason.
-				skippedUnits.add(new ImportResult.SkippedRow(row.code(), row.unit()));
-				continue;
-			}
-			var gases = new EmissionFactor.Gases(nz(row.co2()), nz(row.ch4()), row.ch4Fossil(), nz(row.n2o()),
-					nz(row.hfcsKg()), nz(row.pfcsKg()), nz(row.sf6()), nz(row.nf3()), nz(row.biogenicCo2()));
-			// spec 02.3: the row cites the publication it comes from, not the pack that delivered it
-			var citation = row.citation(pack);
-			var current = existing.get(row.code());
-			// spec 02.6: validity is the organization's decision, not the pack's. An import carries the
-			// incumbent's window forward, so a factor a preparer retired by setting its end stays retired.
-			// spec 02.6: the truncation is a backstop. V45 widened the column so no published edition
-			// relies on it, and spec 02.5 rule 2 refuses to publish a row whose citation would not fit.
-			var provenance = new EmissionFactor.Provenance(
-					citation.length() > FactorPackValidation.MAX_CITATION_LENGTH
-							? citation.substring(0, FactorPackValidation.MAX_CITATION_LENGTH - 3) + "..." : citation,
-					row.citationUrl(pack), row.citationYear(pack), row.dataYear(),
-					current == null ? null : current.getValidFrom(), current == null ? null : current.getValidTo(),
-					trimToNull(row.notes()));
-			if (current == null) {
-				var factor = new EmissionFactor(organization.getId(), row.name(), row.defaultScope(),
-						row.defaultCategory(), row.scopeAgnostic(), row.unit(), row.kgCo2ePerUnit(), gases,
-						trimToNull(row.blendComposition()), trimToNull(row.blendGwpSource()), provenance, row.approved(),
-						packId, row.code());
-				factor.setGridRegion(gridRegionOf(row.code()));
-				factor.setReportingBasis(row.basis());
-				// spec 02.5: the publisher's taxonomy travels with the row, so the picker can tell two
-				// factors of the same display name apart and filter on it (FU-03)
-				factor.setTaxonomy(row.sourceCategory(), row.sourceActivity(), row.sourceDetail());
-				existing.put(row.code(), emissionFactors.save(factor));
-				created++;
-			}
-			else {
-				var alreadyTagged = current.getPacks().contains(packId);
-				// approval is a property of the one factor, not of the pack that delivered it again
-				current.update(row.name(), row.defaultScope(), row.defaultCategory(), row.scopeAgnostic(), row.unit(),
-						row.kgCo2ePerUnit(), gases, trimToNull(row.blendComposition()), trimToNull(row.blendGwpSource()),
-						provenance, current.isApproved());
-				current.setGridRegion(gridRegionOf(row.code()));
-				current.setReportingBasis(row.basis());
-				current.setTaxonomy(row.sourceCategory(), row.sourceActivity(), row.sourceDetail());
-				current.addPack(packId);
-				if (alreadyTagged) {
-					updated++;
-				}
-				else {
-					tagged++;
-				}
-			}
-		}
-		return new ImportResult(packId, created, updated, tagged, List.copyOf(skippedUnits));
-	}
-
-	/** The grid a pack row serves (spec 03.4): Ember rows carry the alpha-3 code, eGRID rows the subregion. */
-	static String gridRegionOf(String code) {
-		if (code == null) {
-			return null;
-		}
-		var parts = code.split(":");
-		if (code.startsWith("EMBER:grid:") && parts.length >= 3) {
-			return parts[2];
-		}
-		if (code.startsWith("EPA:Electricity_US_eGRID_subregion") && parts.length >= 3) {
-			return "US-" + parts[2].split("_")[0];
-		}
-		return null;
 	}
 
 	private static BigDecimal nz(BigDecimal value) {

@@ -310,11 +310,16 @@ public final class ReportPdf {
 
 			paragraph(document, "8. Methodology and emission factors", report.methodology().statement());
 			// spec 02.3: the publication with its years is the source; the packs that delivered it stand apart
-			var factors = titled("Emission factors applied", SMALL_BOLD, 24, 13, 26, 8, 11, 18);
-			head(factors, "Factor", "kg CO2e / unit", "Gases (kg per unit)", "GWP", "Packs", "Source (publication)");
+			// spec 02.6: the edition and the vintage name the version applied, not just the family
+			var factors = titled("Emission factors applied", SMALL_BOLD, 22, 12, 23, 7, 15, 21);
+			head(factors, "Factor", "kg CO2e / unit", "Gases (kg per unit)", "GWP", "Edition (vintage)",
+					"Source (publication)");
 			for (var f : report.factors()) {
+				var vintage = f.vintage();
 				row(factors, f.name(), plain(f.kgCo2ePerUnit()) + " / " + f.unit(), gasSplit(f), ReportLabels.label(f.gwpSet()),
-						f.packs() == null || f.packs().isEmpty() ? "entered by hand" : String.join(", ", f.packs()),
+						vintage != null ? vintage
+								: f.packs() == null || f.packs().isEmpty() ? "entered by hand"
+										: String.join(", ", f.packs()) + ", vintage not recorded",
 						f.source() + years(f));
 			}
 			document.add(factors);

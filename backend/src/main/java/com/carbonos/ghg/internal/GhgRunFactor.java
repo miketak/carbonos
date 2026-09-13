@@ -93,6 +93,15 @@ public class GhgRunFactor {
 	@Column(length = 200)
 	private String packs;
 
+	// spec 02.6: the edition and the vintage behind the version the run applied, so every reported
+	// figure names them (ISO 14064-1:2018 clause 9.3.1). Null on a run made before versioning: a past
+	// run reads as unknown rather than being credited to an edition it never saw.
+	@Column(name = "source_edition", length = 60)
+	private String sourceEdition;
+
+	@Column(name = "valid_from")
+	private java.time.LocalDate validFrom;
+
 	// spec 02.4: whether the factor's emissions belong in a scope at all
 	@Enumerated(EnumType.STRING)
 	@Column(name = "reporting_basis", nullable = false, length = 30)
@@ -123,6 +132,8 @@ public class GhgRunFactor {
 		this.source = factor.getSource();
 		this.publicationYear = factor.getPublicationYear();
 		this.dataYear = factor.getDataYear();
+		this.sourceEdition = factor.getSourceEdition();
+		this.validFrom = factor.getValidFrom();
 		var tags = String.join(", ", factor.getPacks());
 		this.packs = tags.isEmpty() ? null : tags.length() > 200 ? tags.substring(0, 197) + "..." : tags;
 		this.reportingBasis = factor.getReportingBasis();
@@ -212,6 +223,16 @@ public class GhgRunFactor {
 	public java.util.List<String> getPacks() {
 		return packs == null || packs.isBlank() ? java.util.List.of()
 				: java.util.Arrays.stream(packs.split(",")).map(String::trim).filter(tag -> !tag.isEmpty()).toList();
+	}
+
+	/** The edition whose values the run applied, or null for a hand-entered factor or a run before V46. */
+	public String getSourceEdition() {
+		return sourceEdition;
+	}
+
+	/** The first day the version the run applied covers, or null when the version has always applied. */
+	public java.time.LocalDate getValidFrom() {
+		return validFrom;
 	}
 
 	public ReportingBasis getReportingBasis() {

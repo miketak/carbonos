@@ -330,6 +330,30 @@ export interface EmissionFactor {
   sourceCategory: string | null
   sourceActivity: string | null
   sourceDetail: string | null
+  /** The edition this version's values came from; null for a hand-entered factor (spec 02.6). */
+  sourceEdition: string | null
+  /** A person edited this version here, so an import leaves it alone and reports it (spec 02.6). */
+  locallyEdited: boolean
+  /** The version that replaced this one in the lineage; null while this one is live (spec 02.6). */
+  supersededById: string | null
+  /** Every version of this lineage, oldest first; empty unless the lineage has more than one. */
+  versions: FactorVersion[]
+}
+
+/**
+ * One version of a lineage (spec 02.6): the edition it came from, the window it
+ * applies to, and its value, so a preparer can see which vintage covers a
+ * reporting period.
+ */
+export interface FactorVersion {
+  id: string
+  sourceEdition: string | null
+  validFrom: string | null
+  validTo: string | null
+  kgCo2ePerUnit: number
+  /** Whether nothing has replaced this version. */
+  live: boolean
+  locallyEdited: boolean
 }
 
 /** Which tier of the library a query wants: both, the organization's own, or the shared rows. */
@@ -405,17 +429,34 @@ export interface SkippedFactorRow {
   unit: string
 }
 
+/** An open draft inventory whose period the edition's applies-from date splits (spec 02.6). */
+export interface SplitPeriod {
+  inventoryId: string
+  name: string
+}
+
 /**
- * What an import did (spec 02.3): rows created, rows refreshed, and rows
- * another pack had already delivered that only gained this pack's tag, plus
- * the rows the import could not deliver (spec 02.6).
+ * What an import did (spec 02.6). The edition is the one imported, not the pack
+ * family: a family now has many editions. `created` is lineages the
+ * organization did not hold, `versioned` is versions cut, `tagged` is rows
+ * another edition had already delivered whose values match exactly, and
+ * `unchanged` is rows this same edition already delivered.
  */
 export interface FactorPackImport {
-  pack: string
+  edition: string
+  appliesFrom: string
   created: number
-  updated: number
+  versioned: number
   tagged: number
+  unchanged: number
+  /** Rows whose unit the registry cannot convert, so the edition could not deliver them. */
   skippedUnits: SkippedFactorRow[]
+  /** Lineages a person edited here, left exactly as they are for someone to resolve. */
+  conflicts: string[]
+  /** Lineages the organization holds that this edition drops. Nothing is retired. */
+  discontinued: string[]
+  /** Open drafts whose reporting period would be calculated on two editions. */
+  splitPeriods: SplitPeriod[]
 }
 
 /** A shipped, importable factor pack (spec 02.1). */
