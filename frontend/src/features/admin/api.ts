@@ -92,3 +92,213 @@ export function assumeSupportAccess(
 export function endSupportAccess(organizationId: string): Promise<void> {
   return api<void>(`/api/ghg/organizations/${organizationId}/support-access`, { method: 'DELETE' })
 }
+
+// --- factor pack editions: the maintenance console (spec 02.5) ---------------
+
+export type FactorPackKind = 'SOURCE' | 'SECTOR'
+
+export type FactorPackStatus = 'DRAFT' | 'PUBLISHED' | 'SUPERSEDED' | 'WITHDRAWN'
+
+export type Scope = 'SCOPE_1' | 'SCOPE_2' | 'SCOPE_3'
+
+export type ReportingBasis = 'SCOPES' | 'OUTSIDE_SCOPES_NON_KYOTO'
+
+/** One dated release of a family: the unit of vintage, so a citation names one thing forever. */
+export interface FactorPackEdition {
+  editionId: string
+  packKey: string
+  name: string
+  status: FactorPackStatus
+  source: string
+  sourceUrl: string | null
+  publicationYear: number | null
+  gwpBasis: string | null
+  license: string | null
+  retrieved: string | null
+  notes: string | null
+  appliesFrom: string | null
+  publishedAt: string | null
+  sourceDocument: string | null
+  evidenceChecksum: string | null
+  curator: string | null
+  approver: string | null
+  provenanceReview: string
+  provenanceNote: string | null
+  /** Only a draft is mutable; a published edition's rows and metadata never change. */
+  mutable: boolean
+  rowCount: number
+  holderCount: number
+}
+
+/** A family: the lineage of one publication, with every edition of it. */
+export interface FactorPackFamily {
+  packKey: string
+  name: string
+  kind: FactorPackKind
+  summary: string | null
+  editions: FactorPackEdition[]
+}
+
+/** One row of an edition, exactly as the publication states it; null is "not stated". */
+export interface FactorPackRow {
+  id: string
+  editionId: string
+  ordinal: number
+  code: string
+  name: string
+  defaultScope: Scope
+  defaultCategory: string
+  scopeAgnostic: boolean
+  unit: string
+  kgCo2ePerUnit: number
+  co2KgPerUnit: number | null
+  ch4KgPerUnit: number | null
+  ch4Fossil: boolean
+  n2oKgPerUnit: number | null
+  hfcsKgPerUnit: number | null
+  pfcsKgPerUnit: number | null
+  sf6KgPerUnit: number | null
+  nf3KgPerUnit: number | null
+  biogenicCo2KgPerUnit: number | null
+  blendComposition: string | null
+  blendGwpSource: string | null
+  dataYear: number | null
+  sourcePublication: string | null
+  sourceUrl: string | null
+  publicationYear: number | null
+  sourceCategory: string | null
+  sourceActivity: string | null
+  sourceDetail: string | null
+  co2eOnly: boolean
+  approved: boolean
+  notes: string | null
+  reportingBasis: ReportingBasis
+}
+
+export interface FactorPackRowPage {
+  items: FactorPackRow[]
+  page: number
+  size: number
+  total: number
+  categories: string[]
+  activities: string[]
+  units: string[]
+}
+
+/** One broken publication rule on one row, as the live report prints it. */
+export interface FactorPackFinding {
+  rule: string
+  code: string
+  message: string
+}
+
+export interface FactorPackRowFilter {
+  sourceCategory?: string
+  sourceActivity?: string
+  unit?: string
+  search?: string
+  page?: number
+  size?: number
+}
+
+export interface CreateFamilyInput {
+  packKey: string
+  name: string
+  kind: FactorPackKind
+  summary: string
+}
+
+export interface EditionInput {
+  editionId?: string
+  cloneFrom?: string | null
+  name: string
+  source: string
+  sourceUrl: string
+  publicationYear: number | null
+  gwpBasis: string
+  license: string
+  retrieved: string
+  notes: string
+  appliesFrom: string | null
+}
+
+export type RowInput = Omit<FactorPackRow, 'id' | 'editionId' | 'ordinal'>
+
+export function listFactorPacks(): Promise<FactorPackFamily[]> {
+  return api<FactorPackFamily[]>('/api/admin/factor-packs')
+}
+
+export function createFactorPackFamily(input: CreateFamilyInput): Promise<FactorPackFamily> {
+  return api<FactorPackFamily>('/api/admin/factor-packs', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function createFactorPackEdition(
+  packKey: string,
+  input: EditionInput,
+): Promise<FactorPackEdition> {
+  return api<FactorPackEdition>(`/api/admin/factor-packs/${packKey}/editions`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function getFactorPackEdition(editionId: string): Promise<FactorPackEdition> {
+  return api<FactorPackEdition>(`/api/admin/factor-packs/editions/${editionId}`)
+}
+
+export function updateFactorPackEdition(
+  editionId: string,
+  input: EditionInput,
+): Promise<FactorPackEdition> {
+  return api<FactorPackEdition>(`/api/admin/factor-packs/editions/${editionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteFactorPackEdition(editionId: string): Promise<void> {
+  return api<void>(`/api/admin/factor-packs/editions/${editionId}`, { method: 'DELETE' })
+}
+
+export function listFactorPackRows(
+  editionId: string,
+  filter: FactorPackRowFilter = {},
+): Promise<FactorPackRowPage> {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(filter)) {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  }
+  const suffix = query.toString() ? `?${query}` : ''
+  return api<FactorPackRowPage>(`/api/admin/factor-packs/editions/${editionId}/rows${suffix}`)
+}
+
+export function createFactorPackRow(editionId: string, input: RowInput): Promise<FactorPackRow> {
+  return api<FactorPackRow>(`/api/admin/factor-packs/editions/${editionId}/rows`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateFactorPackRow(
+  editionId: string,
+  rowId: string,
+  input: RowInput,
+): Promise<FactorPackRow> {
+  return api<FactorPackRow>(`/api/admin/factor-packs/editions/${editionId}/rows/${rowId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteFactorPackRow(editionId: string, rowId: string): Promise<void> {
+  return api<void>(`/api/admin/factor-packs/editions/${editionId}/rows/${rowId}`, {
+    method: 'DELETE',
+  })
+}
+
+export function getFactorPackValidation(editionId: string): Promise<FactorPackFinding[]> {
+  return api<FactorPackFinding[]>(`/api/admin/factor-packs/editions/${editionId}/validation`)
+}
