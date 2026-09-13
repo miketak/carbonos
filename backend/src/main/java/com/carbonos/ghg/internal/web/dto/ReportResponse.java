@@ -154,7 +154,18 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			BigDecimal co2, BigDecimal ch4, boolean ch4Fossil, BigDecimal n2o, BigDecimal hfcsKg, BigDecimal pfcsKg,
 			BigDecimal sf6, BigDecimal nf3, BigDecimal biogenicCo2, String blendComposition, String blendGwpSource,
 			String source, Integer publicationYear, Integer dataYear, List<String> packs,
-			ReportingBasis reportingBasis) {
+			ReportingBasis reportingBasis, String sourceEdition, java.time.LocalDate validFrom) {
+
+		/** "defra-2026, from 2026-01-01", or null for a run made before spec 02.6 or a hand-entered factor. */
+		public String vintage() {
+			if (sourceEdition == null && validFrom == null) {
+				return null;
+			}
+			if (sourceEdition == null) {
+				return "from " + validFrom;
+			}
+			return validFrom == null ? sourceEdition : sourceEdition + ", from " + validFrom;
+		}
 	}
 
 	/**
@@ -335,7 +346,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 					f.getCo2KgPerUnit(), f.getCh4KgPerUnit(), f.isCh4Fossil(), f.getN2oKgPerUnit(),
 					f.getHfcsKgPerUnit(), f.getPfcsKgPerUnit(), f.getSf6KgPerUnit(), f.getNf3KgPerUnit(),
 					f.getBiogenicCo2KgPerUnit(), f.getBlendComposition(), f.getBlendGwpSource(), f.getSource(),
-					f.getPublicationYear(), f.getDataYear(), f.getPacks(), f.getReportingBasis()))
+					f.getPublicationYear(), f.getDataYear(), f.getPacks(), f.getReportingBasis(), f.getSourceEdition(),
+					f.getValidFrom()))
 			.toList();
 		var intensity = metrics.stream()
 			.map(m -> new Intensity(m.getName(), m.getValue(), m.getUnit(),
