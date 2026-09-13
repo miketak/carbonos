@@ -42,7 +42,10 @@ flowchart TB
 
 A factor pack used to be a JSON file on the classpath, loaded once at startup.
 It is now a row set in the database (spec 02.5), so a maintainer can correct a
-row without a release and a report can name the vintage behind a figure:
+row without a release and a report can name the vintage behind a figure. The
+JSON files and the script that generated them are deleted: the catalogue is
+the only place a pack lives, and a pack is edited in the admin console, never
+in the repository.
 
 | Table | Holds |
 | --- | --- |
@@ -52,11 +55,13 @@ row without a release and a report can name the vintage behind a figure:
 | `ghg_factor_pack_changes` | The change log frozen at publication, one entry per code. |
 | `ghg_factor_pack_events` | The publication trail. It is not `ghg_audit_events`, which requires an organization or an inventory on every event. |
 
-`V43__seed_factor_pack_editions.sql` seeds the ten shipped packs as published
-editions, 2,836 rows, generated from the JSON files. `FactorPacks` reads the
-catalogue and caches each assembled pack per instance, which assumes one
-backend instance per environment, as Railway runs today. Only a published
-edition is visible to an organization.
+`V43__seed_factor_pack_editions.sql` seeds the ten packs the server used to
+ship as published editions, 2,836 rows. It was generated once from the JSON
+files, before they were deleted, and Flyway checksums it, so a published
+edition's values never change; a new edition is authored in the console
+instead. `FactorPacks` reads the catalogue and caches each assembled pack per
+instance, which assumes one backend instance per environment, as Railway runs
+today. Only a published edition is visible to an organization.
 
 ## Events
 
