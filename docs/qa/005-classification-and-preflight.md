@@ -153,7 +153,8 @@ scope, category and lease controls appear under it.
 | --- | --- | --- | --- | --- |
 | 1 | Re-classify R11 (explosives, now in tonne) with the unapproved **Emulsion explosive (supplier)** factor from procedure 2 (F3), read the gate. | **Emission factors** blocks: "'ANFO explosives consumed' uses 'Emulsion explosive (supplier)', which is not approved. Approve it under Emission factors, or choose another." (it also warns: "'Emulsion explosive (supplier)' publishes CO2e only. Its emissions are counted in the scope totals and appear in the by-gas table on the row 'CO2e from factors without a gas split', not under CO2, CH4 or N2O."). | | |
 | 2 | Then approve the factor under **Emission factors** and read the gate again. | After approval (no toast; the row now reads Approved) the gate no longer blocks. | | |
-| 3 | Re-classify R11 as in B3 (the seeded factor, flagged as a proxy), and classify R6 (refrigerant, kg) with **Refrigerant R-407C leakage**. | | | |
+| 3 | While R11 is still classified with it, click **Delete** on **Emulsion explosive (supplier)** under **Emission factors**. | The delete is refused with a message naming the inventory that classified with it: "'Emulsion explosive (supplier)' is applied by a classification in '2025 Operational'. Choose another factor there before deleting it." The factor is still listed, and the message is not the server failure "CarbonOS could not reach the server. Try again." | | |
+| 4 | Re-classify R11 as in B3 (the seeded factor, flagged as a proxy), and classify R6 (refrigerant, kg) with **Refrigerant R-407C leakage**. | | | |
 
 Procedure 7 checks both lines.
 

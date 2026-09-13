@@ -33,6 +33,8 @@ import com.carbonos.ghg.internal.BoundaryTreatmentRepository;
 import com.carbonos.ghg.internal.BoundaryVersionRepository;
 import com.carbonos.ghg.internal.EmissionFactorRepository;
 import com.carbonos.ghg.internal.FacilityRepository;
+import com.carbonos.ghg.internal.FactorPacks;
+import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.GhgRunRepository;
 import com.carbonos.ghg.internal.InventoryAssignmentRepository;
 import com.carbonos.ghg.internal.InventoryRepository;
@@ -104,6 +106,9 @@ class GhgApiIntegrationTests {
 
 	@Autowired
 	UnitConverter unitConverter;
+
+	@Autowired
+	GhgService ghgService;
 
 	@Autowired
 	com.carbonos.user.internal.UserService userService;
@@ -3014,7 +3019,9 @@ class GhgApiIntegrationTests {
 			.with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.created").value(org.hamcrest.Matchers.greaterThan(40)))
-			.andExpect(jsonPath("$.updated").value(0));
+			.andExpect(jsonPath("$.updated").value(0))
+			// spec 02.6: every row of a shipped pack is in a unit the registry converts
+			.andExpect(jsonPath("$.skippedUnits").isEmpty());
 		var again = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import")
 			.with(asMember()).with(csrf())).andExpect(jsonPath("$.created").value(0)));
 		assertThat(JsonPath.<Integer>read(again, "$.updated")).isGreaterThan(40);
@@ -3050,6 +3057,126 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.lines[0].kgCo2ePerUnit").value(1907.93))
 			.andExpect(jsonPath("$.lines[0].kgCo2e").value(19079.3))
 			.andExpect(jsonPath("$.lines[0].blendGwpSource").value("AR6"));
+	}
+
+	/**
+	 * Spec 02.6: validity is the organization's decision, so an import carries
+	 * the incumbent's window forward instead of writing null over it.
+	 */
+	@Test
+	void importDoesNotUnretireAFactorWhoseValidityWasEnded() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+			.with(csrf())).andExpect(status().isOk());
+		var imported = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		String dieselId = JsonPath.<List<String>>read(imported,
+				"$[?(@.name == 'Liquid fuels: Diesel (100% mineral diesel)' && @.unit == 'litre')].id").getFirst();
+		// a preparer retires the row by ending its validity, and renames it while they are there
+		mvc.perform(put("/api/ghg/emission-factors/" + dieselId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Liquid fuels: Diesel (superseded on site)", "defaultScope": "SCOPE_1",
+					 "defaultCategory": "STATIONARY_COMBUSTION", "scopeAgnostic": true, "unit": "litre",
+					 "kgCo2ePerUnit": 2.66155, "co2KgPerUnit": 2.62818, "ch4KgPerUnit": 0.00001036,
+					 "ch4Fossil": true, "n2oKgPerUnit": 0.00012483, "source": "UK Government (DESNZ) 2026",
+					 "publicationYear": 2026, "dataYear": 2026, "validFrom": "2024-01-01",
+					 "validTo": "2025-12-31", "approved": true}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.validTo").value("2025-12-31"));
+		// the same pack again refreshes the values, but the retirement is the organization's and stands
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+			.with(csrf())).andExpect(status().isOk());
+		var after = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())));
+		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + dieselId + "')].name").getFirst())
+			.isEqualTo("Liquid fuels: Diesel (100% mineral diesel)");
+		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + dieselId + "')].validFrom").getFirst())
+			.isEqualTo("2024-01-01");
+		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + dieselId + "')].validTo").getFirst())
+			.isEqualTo("2025-12-31");
+	}
+
+	/**
+	 * Spec 02.6: a row the unit registry cannot convert is not imported, and the
+	 * caller is told which row and which unit rather than quietly getting fewer
+	 * factors than the pack lists.
+	 */
+	@Test
+	void importReportsRowsWhoseUnitTheRegistryCannotConvert() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var pack = new FactorPacks.Pack("test-unconvertible", "A pack with a unit the registry does not hold",
+				"Test publication", "https://example.test/pack", 2026, "AR5", "Test", "2026-09-13", null,
+				List.of(packRow("TEST:Diesel:litres", "Test diesel", "litre"),
+						packRow("TEST:Ore_hauled:drums", "Test ore hauled", "drum")));
+		var result = asOwner(() -> ghgService.importPack(UUID.fromString(orgId), pack));
+		assertThat(result.created()).isEqualTo(1);
+		assertThat(result.skippedUnits()).containsExactly(
+				new GhgService.ImportResult.SkippedRow("TEST:Ore_hauled:drums", "drum"));
+		// and the row the registry cannot convert is not in the organization's factors
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
+			.andExpect(jsonPath("$[?(@.name == 'Test diesel')]").isNotEmpty())
+			.andExpect(jsonPath("$[?(@.name == 'Test ore hauled')]").isEmpty());
+	}
+
+	/** One pack row: a plain CO2-only factor in the given unit. */
+	private static FactorPacks.PackFactor packRow(String code, String name, String unit) {
+		return new FactorPacks.PackFactor(code, name, com.carbonos.ghg.internal.Scope.SCOPE_1,
+				com.carbonos.ghg.internal.ActivityCategory.STATIONARY_COMBUSTION, true, unit,
+				new java.math.BigDecimal("2.5"), new java.math.BigDecimal("2.5"), null, true, null, null, null, null,
+				null, null, null, null, 2026, "Test detail", true, null, "Test publication",
+				"https://example.test/pack", 2026, com.carbonos.ghg.internal.ReportingBasis.SCOPES);
+	}
+
+	/** Runs a service call as the owner this test class acts as, for a path MockMvc cannot reach. */
+	private <T> T asOwner(java.util.function.Supplier<T> call) {
+		var context = org.springframework.security.core.context.SecurityContextHolder.getContext();
+		context.setAuthentication(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+				new AuthenticatedUser(ownerId, "kojo@ecoriv.com", "irrelevant", "MEMBER", true), "irrelevant",
+				List.of()));
+		try {
+			return call.get();
+		}
+		finally {
+			org.springframework.security.core.context.SecurityContextHolder.clearContext();
+		}
+	}
+
+	/**
+	 * Spec 02.6: a classification holds its factor, so deleting it is refused
+	 * with the inventory named rather than breaking on the foreign key.
+	 */
+	@Test
+	void aFactorAClassificationUsesCannotBeDeleted() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		String hfoId = JsonPath.read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Heavy fuel oil (GOIL analysis 2025)", "defaultScope": "SCOPE_1",
+						 "defaultCategory": "STATIONARY_COMBUSTION", "scopeAgnostic": true, "unit": "tonne",
+						 "kgCo2ePerUnit": 3230, "co2KgPerUnit": 3216.4, "ch4KgPerUnit": 0.19,
+						 "n2oKgPerUnit": 0.027, "source": "GOIL fuel analysis certificate 2025-03",
+						 "approved": true}"""))
+			.andExpect(status().isCreated())), "$.id");
+		String spareId = JsonPath.read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Heavy fuel oil (spare)", "defaultScope": "SCOPE_1",
+						 "defaultCategory": "STATIONARY_COMBUSTION", "scopeAgnostic": true, "unit": "tonne",
+						 "kgCo2ePerUnit": 3230, "co2KgPerUnit": 3216.4, "ch4KgPerUnit": 0.19,
+						 "n2oKgPerUnit": 0.027, "source": "GOIL fuel analysis certificate 2025-03",
+						 "approved": true}"""))
+			.andExpect(status().isCreated())), "$.id");
+		var fuel = createActivity(orgId, plant, "HFO burned in the power plant", "10", "tonne", "2025-06-30");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		classify(syncAndGetAssignmentId(inventoryId, fuel), hfoId);
+		// no run has applied it, so only the classification holds it: 409 naming the inventory, not 500
+		mvc.perform(delete("/api/ghg/emission-factors/" + hfoId).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("FY2025")))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Choose another factor")));
+		// a factor nothing classified with is still deleted
+		mvc.perform(delete("/api/ghg/emission-factors/" + spareId).with(asMember()).with(csrf()))
+			.andExpect(status().isNoContent());
 	}
 
 	/** Audit findings F1 and F2 (T-22): members, roles and attribution. */

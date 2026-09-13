@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface InventoryAssignmentRepository extends JpaRepository<InventoryAssignment, UUID> {
 
@@ -19,5 +20,11 @@ public interface InventoryAssignmentRepository extends JpaRepository<InventoryAs
 	List<InventoryAssignment> findAllByActivityId(UUID activityId);
 
 	boolean existsByDensityId(UUID densityId);
+
+	boolean existsByEmissionFactorId(UUID emissionFactorId);
+
+	/** The inventories that classified with a factor (spec 02.6), so a refusal to delete it can name them. */
+	@Query("select distinct a.inventory.name from InventoryAssignment a where a.emissionFactor.id = :factorId")
+	List<String> inventoryNamesUsingFactor(UUID factorId);
 
 }

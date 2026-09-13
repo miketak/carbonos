@@ -27,6 +27,7 @@ import type {
   GhgScope,
   Organization,
   ReportingBasis,
+  SkippedFactorRow,
 } from './api'
 
 /** "CO2 2.6307 · CH4 0.0001 (fossil) · N2O 0.0001", listing only the gases the factor carries (spec 07.1). */
@@ -65,6 +66,22 @@ function provenance(factor: EmissionFactor): string {
   if (factor.validFrom || factor.validTo)
     bits.push(`valid ${factor.validFrom ?? '…'} to ${factor.validTo ?? '…'}`)
   return bits.join(', ')
+}
+
+/**
+ * What the import could not deliver (spec 02.6): the rows whose unit the
+ * registry cannot convert, named so a preparer knows what the pack left out.
+ */
+function skippedNote(skipped: SkippedFactorRow[]): string {
+  if (skipped.length === 0) return ''
+  const named = skipped
+    .slice(0, 3)
+    .map((row) => `${row.code} (${row.unit})`)
+    .join(', ')
+  const rest = skipped.length > 3 ? `, and ${skipped.length - 3} more` : ''
+  const rows = skipped.length === 1 ? '1 row' : `${skipped.length} rows`
+  const units = skipped.length === 1 ? 'a unit' : 'units'
+  return ` ${rows} skipped, in ${units} the registry cannot convert: ${named}${rest}.`
 }
 
 function FactorTable({
@@ -273,7 +290,8 @@ export function EmissionFactorsPage() {
                         onSuccess: (result) =>
                           toast(
                             `${pack.name}: ${result.created} factors added, ${result.updated} updated, ` +
-                              `${result.tagged} already held from another pack and tagged.`,
+                              `${result.tagged} already held from another pack and tagged.` +
+                              skippedNote(result.skippedUnits),
                           ),
                         onError: (error) => toast(refusalMessage(error, myRole), 'error'),
                       })
