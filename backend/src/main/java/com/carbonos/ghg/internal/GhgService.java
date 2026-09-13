@@ -241,7 +241,10 @@ public class GhgService {
 		return members.findAllByOrganizationIdOrderByCreatedAtAsc(organizationId);
 	}
 
-	/** Adds a platform account as a member; owners (and platform administrators) only. */
+	/**
+	 * Adds a platform account as a member. An owner by membership only: support
+	 * access never grants membership changes (spec 01.3).
+	 */
 	public OrganizationMember addMember(UUID organizationId, String email, OrgRole role) {
 		var organization = getOrganization(organizationId);
 		access.checkMemberOwner(organization);
