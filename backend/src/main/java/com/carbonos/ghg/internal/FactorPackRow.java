@@ -127,7 +127,79 @@ public class FactorPackRow {
 	@Column(name = "reporting_basis", nullable = false, length = 30)
 	private ReportingBasis reportingBasis;
 
+	/**
+	 * What a curator states about one row (spec 02.5). The values stay at the
+	 * publication's own scale: the rounding to {@code numeric(12,6)} happens on
+	 * import, where it happens today. A null gas is one the publication states
+	 * nothing about, which is not the same as a stated zero.
+	 */
+	public record Facts(String code, String name, Scope defaultScope, ActivityCategory defaultCategory,
+			boolean scopeAgnostic, String unit, BigDecimal kgCo2ePerUnit, BigDecimal co2, BigDecimal ch4,
+			boolean ch4Fossil, BigDecimal n2o, BigDecimal hfcsKg, BigDecimal pfcsKg, BigDecimal sf6, BigDecimal nf3,
+			BigDecimal biogenicCo2, String blendComposition, String blendGwpSource, Integer dataYear,
+			String sourcePublication, String sourceUrl, Integer publicationYear, String sourceCategory,
+			String sourceActivity, String sourceDetail, boolean co2eOnly, boolean approved, String notes,
+			ReportingBasis reportingBasis) {
+	}
+
 	protected FactorPackRow() {
+	}
+
+	FactorPackRow(String editionId, int ordinal, Facts facts) {
+		this.id = UUID.randomUUID();
+		this.editionId = editionId;
+		this.ordinal = ordinal;
+		update(facts);
+	}
+
+	/** Copies a predecessor's row into a new draft, keeping the order the publication lists it in. */
+	FactorPackRow(String editionId, FactorPackRow source) {
+		this(editionId, source.ordinal, source.facts());
+	}
+
+	void update(Facts facts) {
+		this.code = facts.code();
+		this.name = facts.name();
+		this.defaultScope = facts.defaultScope();
+		this.defaultCategory = facts.defaultCategory();
+		this.scopeAgnostic = facts.scopeAgnostic();
+		this.unit = facts.unit();
+		this.kgCo2ePerUnit = facts.kgCo2ePerUnit();
+		this.co2KgPerUnit = facts.co2();
+		this.ch4KgPerUnit = facts.ch4();
+		this.ch4Fossil = facts.ch4Fossil();
+		this.n2oKgPerUnit = facts.n2o();
+		this.hfcsKgPerUnit = facts.hfcsKg();
+		this.pfcsKgPerUnit = facts.pfcsKg();
+		this.sf6KgPerUnit = facts.sf6();
+		this.nf3KgPerUnit = facts.nf3();
+		this.biogenicCo2KgPerUnit = facts.biogenicCo2();
+		this.blendComposition = facts.blendComposition();
+		this.blendGwpSource = facts.blendGwpSource();
+		this.dataYear = facts.dataYear();
+		this.sourcePublication = facts.sourcePublication();
+		this.sourceUrl = facts.sourceUrl();
+		this.publicationYear = facts.publicationYear();
+		this.sourceCategory = facts.sourceCategory();
+		this.sourceActivity = facts.sourceActivity();
+		this.sourceDetail = facts.sourceDetail();
+		this.co2eOnly = facts.co2eOnly();
+		this.approved = facts.approved();
+		this.notes = facts.notes();
+		this.reportingBasis = facts.reportingBasis() == null ? ReportingBasis.SCOPES : facts.reportingBasis();
+	}
+
+	/** The row as a console reads it and a clone copies it. */
+	public Facts facts() {
+		return new Facts(code, name, defaultScope, defaultCategory, scopeAgnostic, unit, kgCo2ePerUnit, co2KgPerUnit,
+				ch4KgPerUnit, ch4Fossil, n2oKgPerUnit, hfcsKgPerUnit, pfcsKgPerUnit, sf6KgPerUnit, nf3KgPerUnit,
+				biogenicCo2KgPerUnit, blendComposition, blendGwpSource, dataYear, sourcePublication, sourceUrl,
+				publicationYear, sourceCategory, sourceActivity, sourceDetail, co2eOnly, approved, notes,
+				reportingBasis);
+	}
+
+	void moveTo(int ordinal) {
+		this.ordinal = ordinal;
 	}
 
 	/** The row as the tenant-facing read path and the import see it. */
@@ -181,5 +253,65 @@ public class FactorPackRow {
 
 	public boolean isApproved() {
 		return approved;
+	}
+
+	public int getOrdinal() {
+		return ordinal;
+	}
+
+	public Scope getDefaultScope() {
+		return defaultScope;
+	}
+
+	public ActivityCategory getDefaultCategory() {
+		return defaultCategory;
+	}
+
+	public boolean isScopeAgnostic() {
+		return scopeAgnostic;
+	}
+
+	public BigDecimal getBiogenicCo2KgPerUnit() {
+		return biogenicCo2KgPerUnit;
+	}
+
+	public String getBlendComposition() {
+		return blendComposition;
+	}
+
+	public String getSourcePublication() {
+		return sourcePublication;
+	}
+
+	public String getSourceUrl() {
+		return sourceUrl;
+	}
+
+	public Integer getPublicationYear() {
+		return publicationYear;
+	}
+
+	public Integer getDataYear() {
+		return dataYear;
+	}
+
+	public String getNotes() {
+		return notes;
+	}
+
+	public ReportingBasis getReportingBasis() {
+		return reportingBasis == null ? ReportingBasis.SCOPES : reportingBasis;
+	}
+
+	/**
+	 * The citation an import writes into {@code ghg_emission_factors.source}:
+	 * the publication, then the publisher's three taxonomy parts as one path.
+	 */
+	public String citation() {
+		var path = java.util.stream.Stream.of(sourceCategory, sourceActivity, sourceDetail)
+			.filter(part -> part != null && !part.isBlank())
+			.collect(java.util.stream.Collectors.joining(" / "));
+		var publication = sourcePublication == null ? "" : sourcePublication;
+		return path.isBlank() ? publication : publication + ": " + path;
 	}
 }

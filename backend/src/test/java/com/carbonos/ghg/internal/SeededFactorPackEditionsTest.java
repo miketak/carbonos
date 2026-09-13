@@ -26,13 +26,15 @@ import tools.jackson.databind.json.JsonMapper;
  * pack carries the purchased-goods rows its card promises, and the oil and gas
  * pack carries flaring rows with the table they come from.
  *
- * <p>The publication rules and the console's own assertions arrive with the
- * authoring phase of spec 02.5, which is where this class becomes
- * {@code SeededFactorPackEditionsTest}.
+ * <p>Its last assertion is the guard the authoring phase adds: all ten pass
+ * every publication rule of {@link FactorPackValidation}, so the rules and the
+ * corpus we shipped cannot drift apart. Three rows of two seeded editions carry
+ * a derivation narrative longer than the citation column, which the
+ * {@code SEED_UNCHECKED} exemption covers and this class names one by one.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
-class FactorPacksTest {
+class SeededFactorPackEditionsTest {
 
 	/** The rows each shipped pack file carries, which the seeded editions must match exactly. */
 	private static final Map<String, Integer> SHIPPED_ROW_COUNTS = Map.of("defra-2026", 1868, "epa-hub-2025", 548,
@@ -44,6 +46,12 @@ class FactorPacksTest {
 
 	@Autowired
 	private FactorPackEditionRepository editions;
+
+	@Autowired
+	private FactorPackRowRepository rows;
+
+	@Autowired
+	private FactorPackValidation validation;
 
 	private FactorPacks.Pack pack(String id) {
 		return packs.find(id).orElseThrow(() -> new AssertionError("pack " + id + " is missing"));
@@ -309,5 +317,43 @@ class FactorPacksTest {
 		assertThat(proxy.kgCo2ePerUnit()).isEqualByComparingTo("2.02633");
 		assertThat(proxy.notes()).contains("assumes complete combustion");
 		assertThat(oilgas.notes()).contains("Flaring ships four unapproved rows");
+	}
+
+	@Test
+	void allTenSeededEditionsPassEveryPublicationRule() {
+		for (var editionId : SHIPPED_ROW_COUNTS.keySet()) {
+			var edition = editions.findById(editionId).orElseThrow();
+			var findings = validation.validate(edition, rows.findAllByEditionIdOrderByOrdinalAsc(editionId));
+			assertThat(findings).as("%s breaks %s", editionId, findings).isEmpty();
+		}
+	}
+
+	@Test
+	void onlyThreeSeededRowsRelyOnTheCitationLengthExemption() {
+		// spec 02.5 rule 2: the citation an import builds fits ghg_emission_factors.source, which is
+		// varchar(500), so a published edition never depends on the truncation spec 02.6 keeps as a
+		// backstop. Three rows shipped before the catalogue existed do, and V43 is checksummed by Flyway,
+		// so SEED_UNCHECKED covers them. Naming them here is what keeps a fourth from joining quietly.
+		var overLong = new java.util.ArrayList<String>();
+		for (var editionId : SHIPPED_ROW_COUNTS.keySet()) {
+			for (var row : rows.findAllByEditionIdOrderByOrdinalAsc(editionId)) {
+				if (!FactorPackValidation.citationFits(row)) {
+					overLong.add(editionId + " / " + row.getCode());
+				}
+			}
+		}
+		assertThat(overLong).containsExactlyInAnyOrder(
+				"sector-mining / IPCC:2006:land-clearing-tropical-moist-forest",
+				"sector-oil-and-gas / IPCC:2006:flaring-gas-production",
+				"sector-oil-and-gas / IPCC:2006:flaring-per-m3-flared");
+	}
+
+	@Test
+	void anEditionAuthoredInTheConsoleIsNeverExemptFromTheApprover() {
+		// the exemption is a column value V43 alone writes, so it can be asserted rather than assumed
+		assertThat(editions.findAll())
+			.filteredOn(edition -> FactorPackEdition.SEED_UNCHECKED.equals(edition.getProvenanceReview()))
+			.extracting(FactorPackEdition::getEditionId)
+			.containsExactlyInAnyOrderElementsOf(SHIPPED_ROW_COUNTS.keySet());
 	}
 }

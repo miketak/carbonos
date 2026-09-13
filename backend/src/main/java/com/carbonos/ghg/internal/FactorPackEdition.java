@@ -31,6 +31,9 @@ public class FactorPackEdition {
 	/** The provenance of the ten editions the seed created, which alone may publish without an approver. */
 	public static final String SEED_UNCHECKED = "SEED_UNCHECKED";
 
+	/** The provenance of every edition authored in the console: checked against the publication. */
+	public static final String REVIEWED = "REVIEWED";
+
 	@Id
 	@Column(name = "edition_id", length = 60)
 	private String editionId;
@@ -82,11 +85,17 @@ public class FactorPackEdition {
 	@Column(name = "curator_user_id")
 	private UUID curatorUserId;
 
+	@Column(name = "curator_email", length = 320)
+	private String curatorEmail;
+
 	@Column(name = "curator_name", length = 200)
 	private String curatorName;
 
 	@Column(name = "approver_user_id")
 	private UUID approverUserId;
+
+	@Column(name = "approver_email", length = 320)
+	private String approverEmail;
 
 	@Column(name = "approver_name", length = 200)
 	private String approverName;
@@ -97,7 +106,66 @@ public class FactorPackEdition {
 	@Column(name = "provenance_note", length = 1000)
 	private String provenanceNote;
 
+	/** What a curator states when they create or edit a draft (spec 02.5). */
+	public record Facts(String name, String source, String sourceUrl, Integer publicationYear, String gwpBasis,
+			String license, String retrieved, String notes, LocalDate appliesFrom) {
+	}
+
 	protected FactorPackEdition() {
+	}
+
+	/**
+	 * A new draft: invisible to organizations, rows mutable, the curator
+	 * recorded with the email they hold now. {@code provenanceReview} is
+	 * {@code REVIEWED}, never {@code SEED_UNCHECKED}: that value belongs to the
+	 * ten editions {@code V43} seeded, so an edition authored in the console can
+	 * never be published without an approver.
+	 */
+	FactorPackEdition(String editionId, String packKey, Facts facts, UUID curatorUserId, String curatorEmail,
+			String curatorName) {
+		this.editionId = editionId;
+		this.packKey = packKey;
+		this.status = FactorPackStatus.DRAFT;
+		this.provenanceReview = REVIEWED;
+		this.curatorUserId = curatorUserId;
+		this.curatorEmail = curatorEmail;
+		this.curatorName = curatorName;
+		update(facts);
+	}
+
+	/** Applies a curator's edit. Only a draft ever reaches here; the service refuses the rest. */
+	void update(Facts facts) {
+		this.name = facts.name();
+		this.source = facts.source();
+		this.sourceUrl = facts.sourceUrl();
+		this.publicationYear = facts.publicationYear();
+		this.gwpBasis = facts.gwpBasis();
+		this.license = facts.license();
+		this.retrieved = facts.retrieved();
+		this.notes = facts.notes();
+		this.appliesFrom = facts.appliesFrom();
+	}
+
+	/** The facts a clone copies from its predecessor, so a new draft starts where the last edition left off. */
+	Facts facts() {
+		return new Facts(name, source, sourceUrl, publicationYear, gwpBasis, license, retrieved, notes, appliesFrom);
+	}
+
+	/** Whether the rows and metadata may still change: only a draft (spec 02.5). */
+	public boolean isMutable() {
+		return status == FactorPackStatus.DRAFT;
+	}
+
+	/** The set the gas split reconciles under, AR5 where the edition names none. */
+	public GwpSet gwp() {
+		if (gwpBasis != null) {
+			for (var set : GwpSet.values()) {
+				if (set.name().equalsIgnoreCase(gwpBasis.trim())) {
+					return set;
+				}
+			}
+		}
+		return GwpSet.AR5;
 	}
 
 	public String getEditionId() {
@@ -164,12 +232,20 @@ public class FactorPackEdition {
 		return curatorUserId;
 	}
 
+	public String getCuratorEmail() {
+		return curatorEmail;
+	}
+
 	public String getCuratorName() {
 		return curatorName;
 	}
 
 	public UUID getApproverUserId() {
 		return approverUserId;
+	}
+
+	public String getApproverEmail() {
+		return approverEmail;
 	}
 
 	public String getApproverName() {
