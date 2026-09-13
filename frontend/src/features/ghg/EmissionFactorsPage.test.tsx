@@ -7,13 +7,9 @@ import type { EmissionFactor, FactorPack, Organization } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import {
-  getOrganization,
-  importFactorPack,
-  listEmissionFactors,
-  listFactorPacks,
-  setFactorApproval,
-} from './api'
+import { listEmissionFactors, mockEmissionFactors } from './testApiMock'
+
+import { getOrganization, importFactorPack, listFactorPacks, setFactorApproval } from './api'
 
 const organization: Organization = {
   id: 'org-1',
@@ -66,6 +62,9 @@ const diesel: EmissionFactor = {
   packCode: null,
   gridRegion: null,
   reportingBasis: 'SCOPES',
+  sourceCategory: null,
+  sourceActivity: null,
+  sourceDetail: null,
 }
 
 const hfo: EmissionFactor = {
@@ -100,7 +99,7 @@ const pack: FactorPack = {
 }
 
 beforeEach(() => {
-  vi.mocked(listEmissionFactors).mockReset().mockResolvedValue([diesel, hfo])
+  mockEmissionFactors([diesel, hfo])
   vi.mocked(listFactorPacks).mockReset().mockResolvedValue([pack])
   vi.mocked(getOrganization).mockReset()
   vi.mocked(importFactorPack).mockReset().mockResolvedValue({
@@ -183,7 +182,7 @@ test('the import toast names the rows the registry could not convert (spec 02.6)
 
 test('a gas outside the scopes is marked on the page and can be chosen on the add form (spec 02.4)', async () => {
   const user = userEvent.setup()
-  vi.mocked(listEmissionFactors).mockResolvedValue([
+  mockEmissionFactors([
     diesel,
     { ...hfo, id: 'f-3', name: 'HCFC-22 (R-22)', reportingBasis: 'OUTSIDE_SCOPES_NON_KYOTO' },
   ])
@@ -231,4 +230,51 @@ test('a preparer can add, import, approve and delete factors (spec 01.4)', async
   const ownRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
   expect(within(ownRow).getByRole('button', { name: /approve/i })).toBeEnabled()
   expect(within(ownRow).getByRole('button', { name: /delete factor/i })).toBeEnabled()
+})
+
+test('the search, the taxonomy filters and the pager run on the server (FU-03)', async () => {
+  const user = userEvent.setup()
+  // an imported edition is thousands of rows; the page must never hold them all
+  const rows = Array.from({ length: 120 }, (_, index) => ({
+    ...hfo,
+    id: `f-${index}`,
+    name: `Gaseous fuels: Butane ${index}`,
+    sourceCategory: index % 2 === 0 ? 'Fuels' : 'WTT- fuels',
+    sourceActivity: 'Gaseous fuels / Butane',
+    sourceDetail: null,
+  }))
+  mockEmissionFactors([diesel, ...rows])
+  renderPage()
+
+  // the organization's table shows one page of the total, and says what the total is
+  expect(await screen.findByText('120 factors')).toBeInTheDocument()
+  await waitFor(() =>
+    expect(listEmissionFactors).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({ tier: 'OWN', page: 0, size: 50 }),
+    ),
+  )
+  expect(screen.getByText('Page 1 of 3')).toBeInTheDocument()
+
+  // the publisher's taxonomy is shown beside the name, because 1,157 DEFRA rows share one
+  expect(screen.getAllByText('Fuels / Gaseous fuels / Butane').length).toBeGreaterThan(0)
+
+  // and choosing a published category narrows on the server, back at the first page
+  await user.selectOptions(await screen.findByLabelText('Published category'), 'WTT- fuels')
+  await waitFor(() =>
+    expect(listEmissionFactors).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({ sourceCategory: 'WTT- fuels', tier: 'OWN', page: 0 }),
+    ),
+  )
+  expect(await screen.findByText('60 factors match')).toBeInTheDocument()
+
+  // the search goes to the server too, never to a list the browser already holds
+  await user.type(screen.getByLabelText('Search factors'), 'butane 7')
+  await waitFor(() =>
+    expect(listEmissionFactors).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({ q: 'butane 7', tier: 'OWN' }),
+    ),
+  )
 })

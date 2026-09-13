@@ -18,6 +18,9 @@ import type {
 
 vi.mock('./api', () => import('./testApiMock'))
 
+import { listEmissionFactors } from './testApiMock'
+import { mockEmissionFactors } from './testApiMock'
+
 // the workspace page imports every section component; its first render on a loaded
 // machine (parallel jsdom workers) can exceed the 15s default
 vi.setConfig({ testTimeout: 30000 })
@@ -39,7 +42,6 @@ import {
   listAuditEvents,
   listBoundaryVersions,
   listDensities,
-  listEmissionFactors,
   listFacilities,
   listMarketFactors,
   listUpstreamRules,
@@ -424,6 +426,9 @@ const dieselFactor: EmissionFactor = {
   packCode: null,
   gridRegion: null,
   reportingBasis: 'SCOPES',
+  sourceCategory: null,
+  sourceActivity: null,
+  sourceDetail: null,
 }
 
 beforeEach(() => {
@@ -471,7 +476,7 @@ beforeEach(() => {
   vi.mocked(setEntityTreatment).mockReset()
   vi.mocked(setOperationalBoundary).mockReset()
   vi.mocked(excludeFacility).mockReset()
-  vi.mocked(listEmissionFactors).mockReset().mockResolvedValue([dieselFactor])
+  mockEmissionFactors([dieselFactor])
 })
 
 test('renders entities with their share and facilities, assignments, and holds the launch', async () => {
@@ -551,7 +556,7 @@ test('setting a membership window sends the effective date to the entity treatme
 
 test('the picker groups its options, cites each publication and hides unapproved rows (spec 02.3)', async () => {
   const user = userEvent.setup()
-  vi.mocked(listEmissionFactors).mockResolvedValue([
+  mockEmissionFactors([
     dieselFactor,
     {
       ...dieselFactor,
@@ -572,14 +577,14 @@ test('the picker groups its options, cites each publication and hides unapproved
   await user.click((await screen.findAllByRole('button', { name: /choose factor/i }))[0])
   const picker = screen.getAllByLabelText('Classify Diesel consumption')[0]
   // the two factors share a name and unit; the publication line tells them apart
-  expect(within(picker).getByText('Shared library')).toBeInTheDocument()
+  expect(await within(picker).findByText('Shared library')).toBeInTheDocument()
   expect(
     within(picker).getByText(/DEFRA 2025 \(published 2025, data year 2025\)/),
   ).toBeInTheDocument()
-  // the unapproved row is hidden until the toggle reveals it
+  // the unapproved row is hidden until the toggle reveals it (FU-03: the server hides it)
   expect(within(picker).queryByText('This organization')).not.toBeInTheDocument()
   await user.click(screen.getAllByLabelText(/Show unapproved/)[0])
-  expect(within(picker).getByText('This organization')).toBeInTheDocument()
+  expect(await within(picker).findByText('This organization')).toBeInTheDocument()
   expect(within(picker).getByText('unapproved')).toBeInTheDocument()
   expect(
     within(picker).getByText(/GOIL fuel analysis certificate.*sector-mining/),
@@ -589,8 +594,60 @@ test('the picker groups its options, cites each publication and hides unapproved
     screen.getAllByLabelText('Search factors for Diesel consumption')[0],
     'sector-mining',
   )
-  expect(within(picker).queryByText('Shared library')).not.toBeInTheDocument()
+  await waitFor(() => expect(within(picker).queryByText('Shared library')).not.toBeInTheDocument())
   expect(within(picker).getByText('This organization')).toBeInTheDocument()
+})
+
+test('the picker asks the server for its page and tells same-named factors apart (FU-03)', async () => {
+  const user = userEvent.setup()
+  // the three DEFRA butane rows differ only by unit; two of them convert from a litre record
+  const butane = (id: string, unit: string, dimension: 'VOLUME' | 'MASS', value: number) => ({
+    ...dieselFactor,
+    id,
+    organizationId: 'org-1',
+    name: 'Gaseous fuels: Butane',
+    unit,
+    dimension,
+    kgCo2ePerUnit: value,
+    sourceCategory: 'Fuels',
+    sourceActivity: 'Gaseous fuels / Butane',
+    sourceDetail: null,
+  })
+  mockEmissionFactors([
+    butane('ef-butane-litre', 'litre', 'VOLUME', 1.74533),
+    butane('ef-butane-m3', 'm3', 'VOLUME', 1745.33),
+    butane('ef-butane-tonne', 'tonne', 'MASS', 3033.38067),
+  ])
+  renderPage()
+
+  await user.click((await screen.findAllByRole('button', { name: /choose factor/i }))[0])
+  const picker = screen.getAllByLabelText('Classify Diesel consumption')[0]
+
+  // the filters are the server's: the record is in litre, so only the volume rows are asked for
+  await waitFor(() =>
+    expect(listEmissionFactors).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({ dimension: ['VOLUME'], includeUnapproved: false, size: 50 }),
+    ),
+  )
+  const options = await within(picker).findAllByRole('button')
+  expect(options).toHaveLength(2)
+  // and no two options read alike: the value and the publisher's activity sit under the name
+  expect(
+    within(picker).getByText(/Gaseous fuels \/ Butane · 1.745 kg CO₂e \/ litre/),
+  ).toBeInTheDocument()
+  expect(
+    within(picker).getByText(/Gaseous fuels \/ Butane · 1,745.33 kg CO₂e \/ m3/),
+  ).toBeInTheDocument()
+
+  // typing goes to the server rather than narrowing a list the browser already holds
+  await user.type(screen.getAllByLabelText('Search factors for Diesel consumption')[0], 'butane')
+  await waitFor(() =>
+    expect(listEmissionFactors).toHaveBeenLastCalledWith(
+      'org-1',
+      expect.objectContaining({ q: 'butane' }),
+    ),
+  )
 })
 
 test('classifying an assignment sends the factor with its default scope and category', async () => {
@@ -1108,7 +1165,7 @@ test('an entity at 0% under the approach cannot be ticked in and says why (spec 
 
 test('the activity view suggests the grid factor of the facility and names an inherited lease (spec 03.4)', async () => {
   const user = userEvent.setup()
-  vi.mocked(listEmissionFactors).mockResolvedValue([
+  mockEmissionFactors([
     {
       id: 'ef-grid',
       organizationId: null,
@@ -1139,6 +1196,9 @@ test('the activity view suggests the grid factor of the facility and names an in
       packCode: 'EMBER:grid:GHA:2024',
       gridRegion: 'GHA',
       reportingBasis: 'SCOPES',
+      sourceCategory: null,
+      sourceActivity: null,
+      sourceDetail: null,
     },
   ])
   vi.mocked(searchAssignments).mockResolvedValue(
@@ -1451,9 +1511,12 @@ test('the activity view filters by scope, category, stream and lease, and shows 
   await user.click(screen.getAllByRole('button', { name: /change factor/i })[0])
   expect(screen.getAllByLabelText('Classify Diesel consumption')[0]).toBeInTheDocument()
   await user.type(screen.getAllByLabelText('Search factors for Diesel consumption')[0], 'grid')
-  expect(
-    within(screen.getAllByLabelText('Classify Diesel consumption')[0]).queryByText('Diesel'),
-  ).not.toBeInTheDocument()
+  // FU-03: the search is the server's, so the narrowed list arrives a tick later
+  await waitFor(() =>
+    expect(
+      within(screen.getAllByLabelText('Classify Diesel consumption')[0]).queryByText('Diesel'),
+    ).not.toBeInTheDocument(),
+  )
 
   await user.selectOptions(screen.getByLabelText('Scope'), 'SCOPE_2')
   await user.selectOptions(screen.getByLabelText('Stream'), 'st-1')
@@ -1631,7 +1694,7 @@ test('the upstream rules card lists the rules and adds one (spec 04.7)', async (
     defaultScope: 'SCOPE_3',
     defaultCategory: 'FUEL_ENERGY_RELATED',
   }
-  vi.mocked(listEmissionFactors).mockResolvedValue([dieselFactor, gridFactor, wtt])
+  mockEmissionFactors([dieselFactor, gridFactor, wtt])
   vi.mocked(listUpstreamRules).mockResolvedValue([
     {
       id: 'ur-1',
@@ -1701,7 +1764,7 @@ test('the scope select is enabled for a scope 2 factor and asks why the scope de
     scope: 'SCOPE_3',
     category: 'DOWNSTREAM_LEASED_ASSETS',
   }
-  vi.mocked(listEmissionFactors).mockResolvedValue([dieselFactor, gridFactor])
+  mockEmissionFactors([dieselFactor, gridFactor])
   // the view refetches after the classification, and then the record sits in scope 3
   vi.mocked(searchAssignments)
     .mockResolvedValueOnce(pageOf([classified]))

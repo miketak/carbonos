@@ -18,7 +18,7 @@ public record EmissionFactorResponse(UUID id, UUID organizationId, String name, 
 		String blendComposition, boolean ch4Fossil, boolean co2eOnly, String source, String sourceUrl,
 		Integer publicationYear, Integer dataYear, LocalDate validFrom, LocalDate validTo, String note,
 		boolean approved, String pack, List<String> packs, String packCode, String gridRegion,
-		ReportingBasis reportingBasis) {
+		ReportingBasis reportingBasis, String sourceCategory, String sourceActivity, String sourceDetail) {
 
 	/** kg of each gas per unit; for the HFC and PFC blends also the kg CO2e the source applied (spec 07.2). */
 	public record Gases(BigDecimal co2, BigDecimal ch4, BigDecimal n2o, BigDecimal hfcs, BigDecimal pfcs,
@@ -36,6 +36,7 @@ public record EmissionFactorResponse(UUID id, UUID organizationId, String name, 
 				factor.isCh4Fossil(), factor.isCo2eOnly(), factor.getSource(), factor.getSourceUrl(),
 				factor.getPublicationYear(), factor.getDataYear(), factor.getValidFrom(), factor.getValidTo(),
 				factor.getNote(), factor.isApproved(), factor.getPack(), factor.getPacks(), factor.getPackCode(),
-				factor.getGridRegion(), factor.getReportingBasis());
+				factor.getGridRegion(), factor.getReportingBasis(), factor.getSourceCategory(),
+				factor.getSourceActivity(), factor.getSourceDetail());
 	}
 }

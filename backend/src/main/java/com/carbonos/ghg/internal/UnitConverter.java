@@ -201,6 +201,30 @@ public class UnitConverter {
 			return quantity.multiply(ratio(from, to), MC);
 		}
 
+		/**
+		 * Every spelling (code and alias, normalized) of every unit in the
+		 * given dimensions, so a picker can ask the database for the factors a
+		 * record can be classified with instead of filtering them in the
+		 * browser (FU-03). Empty for no dimension, which means no unit filter.
+		 */
+		public java.util.Set<String> spellingsOf(java.util.Collection<Dimension> dimensions) {
+			if (dimensions == null || dimensions.isEmpty()) {
+				return java.util.Set.of();
+			}
+			var spellings = new java.util.LinkedHashSet<String>();
+			byAlias.forEach((alias, def) -> {
+				if (dimensions.contains(def.dimension())) {
+					spellings.add(alias);
+				}
+			});
+			custom.forEach((code, def) -> {
+				if (dimensions.contains(def.dimension())) {
+					spellings.add(code);
+				}
+			});
+			return java.util.Set.copyOf(spellings);
+		}
+
 		/** The custom-unit definitions a conversion between two units relies on, for the line's note. */
 		public String definitionsBehind(String from, String to) {
 			var parts = new java.util.ArrayList<String>();

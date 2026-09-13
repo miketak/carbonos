@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -584,36 +585,65 @@ public class GhgService {
 		return emissionFactors.findAllByOrganizationIdIsNullOrderByDefaultScopeAscNameAsc();
 	}
 
-	/** The shared library and the organization's own factors together. */
-	@Transactional(readOnly = true)
-	public List<EmissionFactor> listEmissionFactors(UUID organizationId) {
-		return listEmissionFactors(organizationId, true, null);
+	/**
+	 * What the picker asks the library for (spec 02.3, FU-03): the tier or
+	 * tiers, whether unapproved rows are revealed, a search over name,
+	 * publication, the publisher's taxonomy and the pack tags, the taxonomy
+	 * filters spec 02.5 made possible, a unit or the dimensions a record can
+	 * be classified with (spec 02.2), a set of identifiers when a caller only
+	 * wants the factors its rows already reference, and the page.
+	 */
+	public record FactorQuery(String q, boolean includeUnapproved, FactorTier tier, String sourceCategory,
+			String sourceActivity, String sourceDetail, String unit, Set<Dimension> dimensions, List<UUID> ids,
+			int page, int size) {
+
+		/** Everything the picker shows by default: both tiers, unapproved rows included, first page. */
+		public static FactorQuery all() {
+			return new FactorQuery(null, true, FactorTier.ALL, null, null, null, null, Set.of(), null, 0,
+					MAX_FACTOR_PAGE);
+		}
 	}
+
+	/** One page of the library with the total that matches and how many of those are unapproved. */
+	public record FactorPage(List<EmissionFactor> items, int page, int size, long total, long unapproved) {
+	}
+
+	/** The values the picker's filters can take, over the factors this organization can see. */
+	public record FactorFacets(List<String> categories, List<String> activities, List<String> units) {
+	}
+
+	/** A page is a page: a caller cannot ask for the whole library by naming a huge size. */
+	private static final int MAX_FACTOR_PAGE = 200;
 
 	/**
-	 * The shared library and the organization's own factors, filtered as the
-	 * classification picker asks (spec 02.3): unapproved rows hidden until the
-	 * toggle reveals them, and a search over name, publication and pack tag.
+	 * The shared library and the organization's own factors, filtered, ordered
+	 * and paged by the database (FU-03). The order is the picker's grouping:
+	 * the organization's own rows first, then the shared library, each by
+	 * scope, name and unit.
 	 */
 	@Transactional(readOnly = true)
-	public List<EmissionFactor> listEmissionFactors(UUID organizationId, boolean includeUnapproved, String query) {
+	public FactorPage searchEmissionFactors(UUID organizationId, FactorQuery query) {
 		getOrganization(organizationId);
-		var all = emissionFactors
-			.findAllByOrganizationIdIsNullOrOrganizationIdOrderByDefaultScopeAscNameAsc(organizationId);
-		var needle = trimToNull(query) == null ? null : query.trim().toLowerCase(Locale.ROOT);
-		return all.stream()
-			.filter(factor -> includeUnapproved || factor.isApproved())
-			.filter(factor -> needle == null || matches(factor, needle))
-			.toList();
+		var spellings = query.dimensions() == null || query.dimensions().isEmpty() ? Set.<String>of()
+				: units.with(customUnits.findAllByOrganizationIdOrderByCodeAsc(organizationId))
+					.spellingsOf(query.dimensions());
+		var spec = EmissionFactorSearch.matching(organizationId, query, spellings);
+		var size = Math.max(1, Math.min(query.size() <= 0 ? MAX_FACTOR_PAGE : query.size(), MAX_FACTOR_PAGE));
+		var page = emissionFactors.findAll(spec, org.springframework.data.domain.PageRequest
+			.of(Math.max(0, query.page()), size, EmissionFactorSearch.ORDER));
+		// what the approval toggle is hiding, counted over the same filters rather than over the page
+		var unapproved = query.includeUnapproved()
+				? emissionFactors.count(spec.and(EmissionFactorSearch.unapproved())) : 0L;
+		return new FactorPage(page.getContent(), page.getNumber(), size, page.getTotalElements(), unapproved);
 	}
 
-	/** Whether a factor answers a picker search: its name, its publication or one of its pack tags. */
-	private static boolean matches(EmissionFactor factor, String needle) {
-		if (factor.getName().toLowerCase(Locale.ROOT).contains(needle)
-				|| factor.getSource().toLowerCase(Locale.ROOT).contains(needle)) {
-			return true;
-		}
-		return factor.getPacks().stream().anyMatch(pack -> pack.toLowerCase(Locale.ROOT).contains(needle));
+	/** The values the picker's filters offer, over the factors this organization can see (FU-03). */
+	@Transactional(readOnly = true)
+	public FactorFacets factorFacets(UUID organizationId, String sourceCategory) {
+		getOrganization(organizationId);
+		var category = trimToNull(sourceCategory) == null ? null : sourceCategory.trim().toLowerCase(Locale.ROOT);
+		return new FactorFacets(emissionFactors.sourceCategories(organizationId),
+				emissionFactors.sourceActivities(organizationId, category), emissionFactors.units(organizationId));
 	}
 
 	/** The facts of a factor as a request states them. */
@@ -741,6 +771,9 @@ public class GhgService {
 						packId, row.code());
 				factor.setGridRegion(gridRegionOf(row.code()));
 				factor.setReportingBasis(row.basis());
+				// spec 02.5: the publisher's taxonomy travels with the row, so the picker can tell two
+				// factors of the same display name apart and filter on it (FU-03)
+				factor.setTaxonomy(row.sourceCategory(), row.sourceActivity(), row.sourceDetail());
 				existing.put(row.code(), emissionFactors.save(factor));
 				created++;
 			}
@@ -752,6 +785,7 @@ public class GhgService {
 						provenance, current.isApproved());
 				current.setGridRegion(gridRegionOf(row.code()));
 				current.setReportingBasis(row.basis());
+				current.setTaxonomy(row.sourceCategory(), row.sourceActivity(), row.sourceDetail());
 				current.addPack(packId);
 				if (alreadyTagged) {
 					updated++;

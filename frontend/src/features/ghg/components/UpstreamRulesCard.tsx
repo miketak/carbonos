@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { SelectField } from '../../../components/Field'
+import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
 import { useToast } from '../../../components/toast'
 import { refusalMessage } from '../../../lib/api'
@@ -17,6 +17,9 @@ import { RoleButton } from './RoleButton'
 import type { Inventory, UpstreamRuleKind } from '../api'
 
 const kinds: UpstreamRuleKind[] = ['WELL_TO_TANK', 'TRANSMISSION_AND_DISTRIBUTION']
+
+/** How many factors the two selects offer at once; the search narrows a bigger library (FU-03). */
+const FACTOR_CHOICES = 200
 
 /**
  * Upstream rules (spec 04.7): category 3 of the Scope 3 Standard is made of
@@ -37,7 +40,14 @@ export function UpstreamRulesCard({
   const inventoryId = inventory.id
   const editable = inventory.status === 'DRAFT'
   const rulesQuery = useUpstreamRulesQuery(inventoryId)
-  const factorsQuery = useEmissionFactorsQuery(organizationId)
+  // FU-03: only approved factors can carry a rule, and the search narrows them in SQL: a
+  // select of every row of an imported edition is unusable
+  const [factorSearch, setFactorSearch] = useState('')
+  const factorsQuery = useEmissionFactorsQuery(organizationId, {
+    q: factorSearch.trim() === '' ? undefined : factorSearch.trim(),
+    includeUnapproved: false,
+    size: FACTOR_CHOICES,
+  })
   const add = useAddUpstreamRule(inventoryId)
   const remove = useRemoveUpstreamRule(inventoryId)
   const toast = useToast()
@@ -46,7 +56,8 @@ export function UpstreamRulesCard({
   const [kind, setKind] = useState<UpstreamRuleKind>('WELL_TO_TANK')
 
   const rules = rulesQuery.data ?? []
-  const factors = (factorsQuery.data ?? []).filter((factor) => factor.approved)
+  const factors = factorsQuery.data?.items ?? []
+  const beyondChoices = Math.max(0, (factorsQuery.data?.total ?? 0) - factors.length)
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -123,6 +134,17 @@ export function UpstreamRulesCard({
           aria-label="Add an upstream rule"
           className="mt-4 grid gap-3 md:grid-cols-4"
         >
+          <InputField
+            label="Narrow the factors"
+            placeholder="Name, publication, taxonomy or pack tag"
+            value={factorSearch}
+            hint={
+              beyondChoices > 0
+                ? `${beyondChoices.toLocaleString()} more approved factors. Narrow the search to reach them.`
+                : undefined
+            }
+            onChange={(event) => setFactorSearch(event.target.value)}
+          />
           <SelectField
             label="Primary factor"
             value={primaryFactorId}
@@ -133,6 +155,7 @@ export function UpstreamRulesCard({
             {factors.map((factor) => (
               <option key={factor.id} value={factor.id}>
                 {factor.name} (/{factor.unit})
+                {factor.sourceActivity ? ` · ${factor.sourceActivity}` : ''}
               </option>
             ))}
           </SelectField>
@@ -147,6 +170,7 @@ export function UpstreamRulesCard({
             {factors.map((factor) => (
               <option key={factor.id} value={factor.id}>
                 {factor.name} (/{factor.unit})
+                {factor.sourceActivity ? ` · ${factor.sourceActivity}` : ''}
               </option>
             ))}
           </SelectField>

@@ -80,18 +80,22 @@ imported in procedure 2, **Refrigerant R-407C leakage**.
 
 To classify a record, click **Choose factor…** on its row (**Change
 factor…** once a factor is chosen), narrow the list with the search box and
-click the factor. The row then prints the factor with its unit, a tag for
-every pack that delivered it and "not approved" when it is not, and the
-scope, category and lease controls appear under it.
+click the factor. The picker asks the server for one page of options with
+its filters applied, so an imported edition of thousands of rows never
+reaches the browser. The row then prints the factor with its unit, the
+publisher's activity when it has one, a tag for every pack that delivered
+it and "not approved" when it is not, and the scope, category and lease
+controls appear under it.
 
 ### B0. What the picker shows
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open the picker on R1 (haul fleet diesel) and read it before typing anything. | The options are grouped, **This organization** first and **Shared library** after it. Each option prints the factor name and its unit on one line, then the publication with its years and the pack tags in a muted line under it, for example "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file: Fuels / Liquid fuels / Diesel (100% mineral diesel) (published 2026, data year 2026) · sector-mining". | | |
+| 1 | Open the picker on R1 (haul fleet diesel) and read it before typing anything. | The list is fetched when the picker opens and shows "Searching the library…" for an instant. The options are then grouped, **This organization** first and **Shared library** after it. Each option prints the factor name and its unit on one line, then the publisher's activity with the value per unit under it, then the publication with its years and the pack tags, for example "Liquid fuels / Diesel (100% mineral diesel) · 2.661 kg CO₂e / litre" above "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file: Fuels / Liquid fuels / Diesel (100% mineral diesel) (published 2026, data year 2026) · sector-mining". | | |
 | 2 | Look for the derived Ghana T&D loss factor, which is not approved. | It is not listed, and the checkbox reads **Show unapproved** with a count of the rows it hides. | | |
-| 3 | Tick **Show unapproved**. | The unapproved rows appear, each with an **unapproved** mark beside its name, so nothing can be picked without seeing that it is unapproved. | | |
-| 4 | Type `sector-mining` in the search box. | The list narrows to rows that pack delivered: the search covers the pack tag as well as the name and the publication. Clear it before classifying. | | |
+| 3 | Tick **Show unapproved**. | The list is fetched again and the unapproved rows appear, each with an **unapproved** mark beside its name, so nothing can be picked without seeing that it is unapproved. | | |
+| 4 | Type `sector-mining` in the search box. | The list narrows to rows that pack delivered: the search runs on the server and covers the pack tag and the publisher's taxonomy as well as the name and the publication. Clear it before classifying. | | |
+| 5 | Count the options in the picker and read the line under the list. | The picker holds at most 50 options at once. When more match, a line under the list says how many, for example "412 more match. Narrow the search to see them." With the two packs of procedure 2 imported there are fewer than 50, so no such line appears; procedure 2, section F3 checks the same picker against a published edition of 1,868 rows. | | |
 
 ### B1. A stream sets the default and a contractor lands in scope 3
 
@@ -120,7 +124,7 @@ scope, category and lease controls appear under it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open R11 (ANFO in `tonne ANFO`) for classification and read the picker. | The picker offers no factor and the row reads "No factor matches tonne ANFO: add a matching factor or record it in a compatible unit." | | |
+| 1 | Open R11 (ANFO in `tonne ANFO`) for classification and read the picker. | With the picker open the list is empty and the row reads "No factor matches tonne ANFO: add a matching factor or record it in a compatible unit." (the message follows the picker's own answer, so it appears once the picker is opened). | | |
 | 2 | Under **Activity data**, correct R11's unit to **tonne** with the reason "Unit typed as tonne ANFO; the registered unit is tonne". | | | |
 | 3 | Back in the view, classify R11 with **Explosives detonation (ANFO, emulsion)**, tick **proxy** and give the justification "national all-types default; supplier-specific factor pending approval". | The proxy flag and justification are saved (the justification saves when the field loses focus) and the line will print them. | | |
 

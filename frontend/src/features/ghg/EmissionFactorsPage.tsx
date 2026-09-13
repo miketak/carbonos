@@ -15,6 +15,7 @@ import { mayWrite, WRITE_TOOLTIP } from './roles'
 import {
   useCreateEmissionFactor,
   useDeleteEmissionFactor,
+  useEmissionFactorFacetsQuery,
   useEmissionFactorsQuery,
   useFactorPacksQuery,
   useImportFactorPack,
@@ -29,6 +30,9 @@ import type {
   ReportingBasis,
   SkippedFactorRow,
 } from './api'
+
+/** How many of an organization's factors one page of the table holds (FU-03). */
+const FACTOR_PAGE_SIZE = 50
 
 /** "CO2 2.6307 · CH4 0.0001 (fossil) · N2O 0.0001", listing only the gases the factor carries (spec 07.1). */
 function gasSplit(factor: EmissionFactor): string {
@@ -116,6 +120,15 @@ function FactorTable({
           <tr key={factor.id} className="border-b border-teal/5 last:border-0">
             <td className="px-4 py-3">
               <span className="font-medium">{factor.name}</span>
+              {/* FU-03: 1,157 of the 1,868 DEFRA rows share a display name, so the publisher's
+                  own category and activity go with it */}
+              {factor.sourceCategory && (
+                <span className="block text-xs text-ink-muted">
+                  {[factor.sourceCategory, factor.sourceActivity, factor.sourceDetail]
+                    .filter((part) => part !== null && part !== '')
+                    .join(' / ')}
+                </span>
+              )}
               {factor.reportingBasis === 'OUTSIDE_SCOPES_NON_KYOTO' && (
                 <span className="block text-xs text-amber-800">
                   {reportingBasisLabels[factor.reportingBasis]}
@@ -211,7 +224,6 @@ function FactorTable({
  */
 export function EmissionFactorsPage() {
   const { organizationId = '' } = useParams()
-  const factorsQuery = useEmissionFactorsQuery(organizationId)
   const packsQuery = useFactorPacksQuery()
   const organizationQuery = useOrganizationQuery(organizationId)
   const importPack = useImportFactorPack(organizationId)
@@ -219,9 +231,44 @@ export function EmissionFactorsPage() {
   const remove = useDeleteEmissionFactor(organizationId)
   const toast = useToast()
   const [adding, setAdding] = useState(false)
-  const factors = factorsQuery.data
-  const own = factors?.filter((factor) => factor.organizationId !== null) ?? []
-  const library = factors?.filter((factor) => factor.organizationId === null) ?? []
+  // FU-03: an imported edition can be thousands of rows, so the search and the filters are
+  // the server's work and the tables show one page each
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('')
+  const [activity, setActivity] = useState('')
+  const [unit, setUnit] = useState('')
+  const [showUnapproved, setShowUnapproved] = useState(true)
+  const [page, setPage] = useState(0)
+  const filters = {
+    q: search.trim() === '' ? undefined : search.trim(),
+    includeUnapproved: showUnapproved,
+    sourceCategory: category || undefined,
+    sourceActivity: activity || undefined,
+    unit: unit || undefined,
+  }
+  const ownQuery = useEmissionFactorsQuery(organizationId, {
+    ...filters,
+    tier: 'OWN',
+    page,
+    size: FACTOR_PAGE_SIZE,
+  })
+  const libraryQuery = useEmissionFactorsQuery(organizationId, {
+    ...filters,
+    tier: 'LIBRARY',
+    size: FACTOR_PAGE_SIZE,
+  })
+  const facetsQuery = useEmissionFactorFacetsQuery(organizationId, category || undefined)
+  const own = ownQuery.data?.items ?? []
+  const ownTotal = ownQuery.data?.total ?? 0
+  const hiddenUnapproved = ownQuery.data?.unapproved ?? 0
+  const library = libraryQuery.data?.items ?? []
+  const pageCount = Math.max(1, Math.ceil(ownTotal / FACTOR_PAGE_SIZE))
+  const filtered =
+    search.trim() !== '' || category !== '' || activity !== '' || unit !== '' || !showUnapproved
+  const narrow = (change: () => void) => {
+    change()
+    setPage(0)
+  }
   const myRole = organizationQuery.data?.myRole ?? null
 
   const onApprove = (factor: EmissionFactor, approved: boolean) =>
@@ -307,15 +354,81 @@ export function EmissionFactorsPage() {
       </GlassCard>
 
       <GlassCard className="animate-fade-up overflow-x-auto p-0">
-        <h2 className="px-4 pt-4 text-lg">This organization's factors</h2>
-        {factorsQuery.isPending && (
+        <div className="flex flex-wrap items-end justify-between gap-3 px-4 pt-4">
+          <h2 className="text-lg">This organization's factors</h2>
+          <p className="text-sm text-ink-muted">
+            {ownTotal.toLocaleString()} factor{ownTotal === 1 ? '' : 's'}
+            {filtered ? ' match' : ''}
+          </p>
+        </div>
+        <div className="grid gap-2 px-4 pt-3 md:grid-cols-2 md:items-end xl:grid-cols-4">
+          <InputField
+            label="Search factors"
+            placeholder="Name, publication, taxonomy or pack tag"
+            value={search}
+            onChange={(event) => narrow(() => setSearch(event.target.value))}
+          />
+          <SelectField
+            label="Published category"
+            value={category}
+            onChange={(event) =>
+              narrow(() => {
+                setCategory(event.target.value)
+                setActivity('')
+              })
+            }
+          >
+            <option value="">All categories</option>
+            {(facetsQuery.data?.categories ?? []).map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Published activity"
+            value={activity}
+            onChange={(event) => narrow(() => setActivity(event.target.value))}
+          >
+            <option value="">All activities</option>
+            {(facetsQuery.data?.activities ?? []).map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Unit"
+            value={unit}
+            onChange={(event) => narrow(() => setUnit(event.target.value))}
+          >
+            <option value="">All units</option>
+            {(facetsQuery.data?.units ?? []).map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </SelectField>
+        </div>
+        <label className="flex items-center gap-1.5 px-4 pt-2 text-xs text-ink-muted">
+          <input
+            type="checkbox"
+            checked={showUnapproved}
+            onChange={(event) => narrow(() => setShowUnapproved(event.target.checked))}
+          />
+          Show unapproved
+          {hiddenUnapproved > 0 && !showUnapproved && ` (${hiddenUnapproved} hidden)`}
+        </label>
+        {ownQuery.isPending && (
           <div aria-label="Loading emission factors" className="flex flex-col gap-2 p-4">
             <Skeleton className="h-8" />
           </div>
         )}
-        {factors && own.length === 0 && (
+        {ownQuery.data && own.length === 0 && (
           <p className="px-4 pb-4 text-sm text-ink-muted">
-            None yet. Import a pack or add a supplier-specific factor.
+            {filtered
+              ? 'No factor matches these filters.'
+              : 'None yet. Import a pack or add a supplier-specific factor.'}
           </p>
         )}
         {own.length > 0 && (
@@ -326,6 +439,29 @@ export function EmissionFactorsPage() {
             onApprove={onApprove}
             onDelete={onDelete}
           />
+        )}
+        {pageCount > 1 && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+            <Button
+              variant="ghost"
+              className="px-3 py-1 text-xs"
+              disabled={page === 0}
+              onClick={() => setPage((current) => Math.max(0, current - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-ink-muted">
+              Page {page + 1} of {pageCount}
+            </span>
+            <Button
+              variant="ghost"
+              className="px-3 py-1 text-xs"
+              disabled={page + 1 >= pageCount}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </Button>
+          </div>
         )}
       </GlassCard>
 

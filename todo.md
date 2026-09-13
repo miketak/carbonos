@@ -53,9 +53,6 @@ anything today; each will be asked again the first time a client hits it.
   boundary declaration, the report metadata fields and the classify controls
   fold the role into the existing `editable` flag, so they carry no per-field
   tooltip naming the role. Every button does (spec 01.4).
-- [ ] **FU-03** The factor picker filters in the browser over the single
-  per-page fetch. A register with thousands of factors will want the filter
-  on the server (specs 02.3, 05.5).
 - [ ] **FU-04** Stored runs calculated before spec 07.7 keep their old gas
   masses: pro-rated lines there still carry full-period gas figures. They are
   snapshots and are left as calculated. Decide whether any dev or QA run

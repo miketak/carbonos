@@ -11,6 +11,7 @@ import {
   categoriesForScope,
   categoryLabel,
   exclusionLabels,
+  factorIdentity,
   formatCo2e,
   formatPeriod,
   isAutomaticReason,
@@ -28,6 +29,7 @@ import {
   useClassifyAssignment,
   useCoverageQuery,
   useDensitiesQuery,
+  useEmissionFactorsByIdQuery,
   useEmissionFactorsQuery,
   useFacilitiesQuery,
   useExcludeAssignment,
@@ -45,6 +47,7 @@ import type {
   CoverageRow,
   ClassifyInput,
   Density,
+  Dimension,
   EmissionFactor,
   ExcludeInput,
   ExclusionReason,
@@ -54,6 +57,9 @@ import type {
 } from '../api'
 
 const PAGE_SIZE = 50
+
+/** How many factors the picker holds at once; a search narrows a bigger library (FU-03). */
+const PICKER_PAGE_SIZE = 50
 
 const selectClasses =
   'w-full rounded-lg border border-teal/40 bg-white/70 px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60'
@@ -176,6 +182,7 @@ function categoryFor(scope: GhgScope, factor: EmissionFactor): ActivityCategory 
  */
 function ClassifyControls({
   assignment,
+  organizationId,
   factors,
   units,
   densities,
@@ -183,6 +190,8 @@ function ClassifyControls({
   onClassify,
 }: {
   assignment: Assignment
+  organizationId: string
+  /** The factors this page's records already reference, resolved by identifier (FU-03). */
   factors: EmissionFactor[]
   units: Unit[]
   densities: Density[]
@@ -192,46 +201,51 @@ function ClassifyControls({
   // CLASS-01, widened for conversion: offer factors whose unit shares the fact's
   // dimension (convertible), and, when the organization has densities, factors
   // across the mass-volume divide (spec 02.2). For an unregistered unit, fall
-  // back to an exact-string match; those never auto-convert.
+  // back to an exact-string match; those never auto-convert. FU-03: the
+  // database applies this, so a library of thousands costs the picker a page.
   const dimension = unitDimension(units, assignment.unit)
-  const bridged = (factor: EmissionFactor) =>
-    densities.length > 0 && needsDensity(units, assignment.unit, factor.unit)
-  const compatible = factors.filter((factor) =>
-    dimension !== null
-      ? factor.dimension === dimension || bridged(factor)
-      : factor.unit.toLowerCase() === assignment.unit.toLowerCase(),
-  )
+  const bridges = densities.length > 0 && (dimension === 'MASS' || dimension === 'VOLUME')
+  const dimensions: Dimension[] =
+    dimension === null ? [] : bridges ? ['MASS', 'VOLUME'] : [dimension]
   // a per-litre factor on a mass record (or the reverse) cannot be sent without a density (spec 02.2):
   // hold the pick locally until the density is chosen, then send both together
   const [pendingFactorId, setPendingFactorId] = useState<string | null>(null)
   // a proxy flag is only sent together with its justification (the backend refuses one without)
   const [proxyTicked, setProxyTicked] = useState(false)
   // spec 05.5: a row shows its factor as text; the picker opens on demand, with the grouped,
-  // searchable contents of spec 02.3
+  // searchable contents of spec 02.3, and asks the server for one page of them
   const [pickerOpen, setPickerOpen] = useState(false)
   const [factorSearch, setFactorSearch] = useState('')
   // spec 02.3: an unapproved factor is hidden until asked for, so nobody picks one without seeing it
   const [showUnapproved, setShowUnapproved] = useState(false)
+  const pickerQuery = useEmissionFactorsQuery(
+    organizationId,
+    {
+      q: factorSearch.trim() === '' ? undefined : factorSearch.trim(),
+      includeUnapproved: showUnapproved,
+      unit: dimension === null ? assignment.unit : undefined,
+      dimension: dimensions.length > 0 ? dimensions : undefined,
+      size: PICKER_PAGE_SIZE,
+    },
+    { enabled: pickerOpen },
+  )
   const selected = factors.find(
     (factor) => factor.id === (assignment.emissionFactorId ?? pendingFactorId),
   )
-  // keep the current classification visible even if it no longer matches
-  const options =
-    selected && !compatible.some((factor) => factor.id === selected.id)
-      ? [selected, ...compatible]
-      : compatible
-  const needle = factorSearch.trim().toLowerCase()
-  const shown = options
-    .filter((factor) => showUnapproved || factor.approved || factor.id === selected?.id)
-    .filter(
-      (factor) =>
-        needle === '' ||
-        `${factor.name} ${factor.packs.join(' ')} ${factor.source}`.toLowerCase().includes(needle),
-    )
-  const hiddenUnapproved = options.filter(
-    (factor) => !factor.approved && factor.id !== selected?.id,
-  ).length
-  // spec 02.3: the organization's own factors first, then the shared library
+  const page = pickerQuery.data
+  const matched = page?.items ?? []
+  // keep the current classification visible even when its unit no longer fits the record; a
+  // search is the one filter it does not survive, because the server decides what matches
+  const shown =
+    selected && factorSearch.trim() === '' && !matched.some((factor) => factor.id === selected.id)
+      ? [selected, ...matched]
+      : matched
+  const hiddenUnapproved = showUnapproved ? 0 : (page?.unapproved ?? 0)
+  const beyondPage = Math.max(0, (page?.total ?? 0) - matched.length)
+  // nothing at all fits this record's unit, which is worth saying before a search narrows it further
+  const noneFit = pickerOpen && !pickerQuery.isPending && factorSearch.trim() === '' && !page?.total
+  // spec 02.3: the organization's own factors first, then the shared library. The order comes
+  // from the database, so the grouping holds across pages.
   const groups = [
     {
       label: 'This organization',
@@ -275,6 +289,9 @@ function ClassifyControls({
         <p className="text-sm">
           <span className="font-medium">{selected.name}</span>
           <span className="text-ink-muted"> (/{selected.unit})</span>
+          {selected.sourceActivity && (
+            <span className="text-ink-muted"> · {selected.sourceActivity}</span>
+          )}
           {selected.packs.map((pack) => (
             <span
               key={pack}
@@ -340,7 +357,10 @@ function ClassifyControls({
             aria-label={`Classify ${assignment.activityType}`}
             className="max-h-64 overflow-y-auto rounded-md border border-line"
           >
-            {groups.length === 0 && (
+            {pickerQuery.isPending && (
+              <p className="p-2 text-xs text-ink-muted">Searching the library…</p>
+            )}
+            {!pickerQuery.isPending && groups.length === 0 && (
               <p className="p-2 text-xs text-ink-muted">No factor matches this search.</p>
             )}
             {groups.map((group) => (
@@ -390,6 +410,12 @@ function ClassifyControls({
                             </span>
                           )}
                         </span>
+                        {/* FU-03: 1,157 of the 1,868 DEFRA rows share a display name, and the three
+                            butane rows differ only by unit. The publisher's activity and the value
+                            go beside the name, so no two options are indistinguishable. */}
+                        <span className="block text-xs text-ink-muted">
+                          {factorIdentity(factor)}
+                        </span>
                         <span className="block text-xs text-ink-muted">
                           {publicationLine(factor)}
                           {factor.packs.length > 0 && ` · ${factor.packs.join(', ')}`}
@@ -401,6 +427,11 @@ function ClassifyControls({
               </div>
             ))}
           </div>
+          {beyondPage > 0 && (
+            <p className="text-xs text-ink-muted">
+              {beyondPage.toLocaleString()} more match. Narrow the search to see them.
+            </p>
+          )}
           <button
             type="button"
             className="self-start text-xs text-ink-muted hover:underline"
@@ -440,7 +471,7 @@ function ClassifyControls({
           {assignment.leaseType === null && selected ? ' (set aside for this record)' : ''}.
         </p>
       )}
-      {options.length === 0 && (
+      {noneFit && (
         <p className="text-xs text-ink-muted">
           No factor matches {assignment.unit}
           {dimension ? ` (${DIMENSION_LABELS[dimension].toLowerCase()})` : ''}: add a matching
@@ -900,7 +931,6 @@ export function AssignmentsSection({
   const facilitiesQuery = useFacilitiesQuery(organizationId)
   const streamsQuery = useStreamsQuery(organizationId)
   const coverageQuery = useCoverageQuery(inventoryId)
-  const factorsQuery = useEmissionFactorsQuery(organizationId)
   const densitiesQuery = useDensitiesQuery(organizationId)
   const unitsQuery = useUnitsQuery(organizationId)
   const sync = useSyncAssignments(inventoryId)
@@ -921,7 +951,15 @@ export function AssignmentsSection({
     category !== '' ||
     streamId !== '' ||
     leaseType !== ''
-  const factors = factorsQuery.data ?? []
+  // FU-03: the rows need the factors they already reference, not the library. A page of 50
+  // records references at most 100 factors, asked for by identifier.
+  const referencedFactorIds = (assignments ?? []).flatMap((assignment) =>
+    [assignment.emissionFactorId, assignment.suggestedFactorId].filter(
+      (id): id is string => id !== null,
+    ),
+  )
+  const factorsQuery = useEmissionFactorsByIdQuery(organizationId, referencedFactorIds)
+  const factors = factorsQuery.data?.items ?? []
   const densities = densitiesQuery.data ?? []
   const units = unitsQuery.data ?? []
 
@@ -1145,6 +1183,7 @@ export function AssignmentsSection({
                       {assignment.included ? (
                         <ClassifyControls
                           assignment={assignment}
+                          organizationId={organizationId}
                           factors={factors}
                           units={units}
                           densities={densities}
@@ -1221,6 +1260,7 @@ export function AssignmentsSection({
                   <>
                     <ClassifyControls
                       assignment={assignment}
+                      organizationId={organizationId}
                       factors={factors}
                       units={units}
                       densities={densities}

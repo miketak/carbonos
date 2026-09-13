@@ -1602,10 +1602,10 @@ public class InventoryService {
 		}
 		var organizationId = assignments.getFirst().getInventory().getOrganization().getId();
 		var byRegion = new HashMap<String, EmissionFactor>();
-		for (var factor : emissionFactors
-			.findAllByOrganizationIdIsNullOrOrganizationIdOrderByDefaultScopeAscNameAsc(organizationId)) {
-			if (factor.getGridRegion() == null || !factor.isApproved()
-					|| factor.getDefaultCategory() != ActivityCategory.PURCHASED_ELECTRICITY) {
+		// only the grid rows, asked for in SQL: a library of thousands must not be loaded to
+		// suggest a factor for one facility's region (FU-03)
+		for (var factor : emissionFactors.gridFactors(organizationId)) {
+			if (factor.getDefaultCategory() != ActivityCategory.PURCHASED_ELECTRICITY) {
 				continue;
 			}
 			var current = byRegion.get(factor.getGridRegion());
@@ -1850,7 +1850,13 @@ public class InventoryService {
 						.collect(Collectors.joining(", "))
 					+ "."));
 		}
-		// spec 04.8: a record excluded as a Montreal Protocol gas that a factor could calculate instead
+		// spec 04.8: a record excluded as a Montreal Protocol gas that a factor could calculate instead.
+		// The candidates are read once, and only the rows reported outside the scopes (FU-03).
+		var montrealCandidates = allAssignments.stream()
+			.anyMatch(assignment -> !assignment.isIncluded() && assignment.getExclusionReason() != null
+					&& assignment.getExclusionReason().isOutsideScopes())
+							? emissionFactors.outsideScopeFactors(inventory.getOrganization().getId()) : List
+								.<EmissionFactor>of();
 		for (var assignment : allAssignments) {
 			if (assignment.isIncluded() || assignment.getExclusionReason() == null
 					|| !assignment.getExclusionReason().isOutsideScopes()) {
@@ -1858,10 +1864,7 @@ public class InventoryService {
 			}
 			var activity = assignment.getActivity();
 			var named = assignment.getGas() == null ? "" : assignment.getGas().toLowerCase(Locale.ROOT);
-			var candidate = emissionFactors
-				.findAllByOrganizationIdIsNullOrOrganizationIdOrderByDefaultScopeAscNameAsc(inventory.getOrganization().getId())
-				.stream()
-				.filter(factor -> !factor.getReportingBasis().inScopes() && factor.isApproved())
+			var candidate = montrealCandidates.stream()
 				.filter(factor -> !named.isBlank() && factor.getName().toLowerCase(Locale.ROOT).contains(named))
 				.filter(factor -> units.canConvert(activity.getUnit(), factor.getUnit()))
 				.findFirst();

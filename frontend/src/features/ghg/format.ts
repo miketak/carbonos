@@ -193,6 +193,34 @@ export function publicationLine(factor: {
   return years.length > 0 ? `${factor.source} (${years.join(', ')})` : factor.source
 }
 
+/**
+ * What tells two options of the same display name apart (FU-03). 1,157 of the
+ * 1,868 rows of the DEFRA 2026 edition share a name, and "Gaseous fuels:
+ * Butane" appears three times at 3,033.38, 1.745 and 0.222 kg CO2e per unit,
+ * differing only by unit. The line is the publisher's own activity (and detail
+ * where it adds anything) with the value per unit, so no two options in a
+ * picker ever read alike.
+ */
+export function factorIdentity(factor: {
+  unit: string
+  kgCo2ePerUnit: number
+  sourceActivity: string | null
+  sourceDetail: string | null
+}): string {
+  const parts = [factor.sourceActivity, factor.sourceDetail].filter(
+    (part): part is string => part !== null && part.trim() !== '',
+  )
+  parts.push(`${formatFactorValue(factor.kgCo2ePerUnit)} kg CO₂e / ${factor.unit}`)
+  return parts.join(' · ')
+}
+
+/** A factor's value at a readable precision: big numbers rounded, small ones kept significant. */
+function formatFactorValue(value: number): string {
+  if (value === 0) return '0'
+  const digits = Math.abs(value) >= 100 ? 2 : Math.abs(value) >= 1 ? 3 : 6
+  return value.toLocaleString(undefined, { maximumFractionDigits: digits })
+}
+
 export const exclusionLabels: Record<ExclusionReason, string> = {
   OUTSIDE_PERIOD: 'Outside reporting period',
   OUTSIDE_BOUNDARY: 'Outside boundary',
