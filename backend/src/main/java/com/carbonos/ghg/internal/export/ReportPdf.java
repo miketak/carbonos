@@ -285,6 +285,27 @@ public final class ReportPdf {
 						}
 					}
 				}
+				if (b.editionDecisions() != null && !b.editionDecisions().isEmpty()) {
+					// spec 02.7: every accepted factor pack edition, with the answer to the recalculation
+					// question and the threshold it was measured against, so the decision reaches a reader
+					var decisions = titled("Emission factor edition decisions", SMALL_BOLD, 22, 24, 18, 18, 18);
+					head(decisions, "Edition", "Answer", "Affected", "Threshold", "Decided by");
+					for (var d : b.editionDecisions()) {
+						row(decisions, d.editionId()
+								+ (d.predecessorEditionId() == null ? "" : " (from " + d.predecessorEditionId() + ")"),
+								d.recalculationCaseLabel() == null ? "" : d.recalculationCaseLabel(),
+								d.affectedPercent() == null ? "not measured" : d.affectedPercent() + "%",
+								d.thresholdPercent() == null ? "no base year" : d.thresholdPercent() + "%",
+								(d.decidedBy() == null ? "" : d.decidedBy())
+										+ (d.decidedAt() == null ? "" : ", " + ReportLabels.instant(d.decidedAt())));
+					}
+					document.add(decisions);
+					for (var d : b.editionDecisions()) {
+						if (d.note() != null) {
+							document.add(new Paragraph(d.editionId() + ": " + d.note(), SMALL));
+						}
+					}
+				}
 				if (!b.profile().isEmpty()) {
 					var profile = titled("Emissions profile over time", SMALL_BOLD, 14, 42, 22, 22);
 					head(profile, "Period", "Inventory", "Final run (t CO2e)", "Recalculated (t CO2e)");

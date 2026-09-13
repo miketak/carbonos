@@ -19,6 +19,8 @@ import com.carbonos.ghg.internal.BoundaryVersion;
 import com.carbonos.ghg.internal.ConsolidationApproach;
 import com.carbonos.ghg.internal.ExclusionEstimateState;
 import com.carbonos.ghg.internal.ExclusionReason;
+import com.carbonos.ghg.internal.FactorPackAdoptionService;
+import com.carbonos.ghg.internal.FactorPackNotice;
 import com.carbonos.ghg.internal.UnitConverter;
 import com.carbonos.ghg.internal.UpstreamRuleKind;
 import com.carbonos.ghg.internal.GhgRun;
@@ -250,7 +252,29 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 	public record BaseYearSection(int year, String periodLabel, String inventoryName, UUID inventoryId, BigDecimal thresholdPercent,
 			String reason, StructuralChangeConvention structuralChangeConvention, boolean gwpSetMatches,
 			RunFigure originalBase, List<Recalculation> recalculations, List<ProfileEntry> profile,
-			List<ProfileEntry> otherViews) {
+			List<ProfileEntry> otherViews, List<EditionDecision> editionDecisions) {
+	}
+
+	/**
+	 * One accepted factor pack edition, as the base-year section prints it
+	 * (spec 02.7): the edition, how the recalculation question was answered, the
+	 * affected percent and the threshold it was measured against. The answer
+	 * therefore reaches a reader and not only the database, and a verifier sees
+	 * every vintage decision behind the report without opening the product.
+	 */
+	public record EditionDecision(String editionId, String predecessorEditionId,
+			FactorPackNotice.RecalculationCase recalculationCase, String recalculationCaseLabel,
+			BigDecimal affectedPercent, BigDecimal thresholdPercent, Instant decidedAt, String decidedBy,
+			String note) {
+
+		static EditionDecision from(FactorPackAdoptionService.EditionDecision decision) {
+			return new EditionDecision(decision.editionId(), decision.predecessorEditionId(),
+					decision.recalculationCase(),
+					decision.recalculationCase() == null ? null
+							: FactorPackAdoptionService.caseLabel(decision.recalculationCase()),
+					decision.affectedPercent(), decision.thresholdPercent(), decision.decidedAt(),
+					decision.decidedBy(), decision.note());
+		}
 	}
 
 	/**
@@ -297,7 +321,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 
 	public static ReportResponse of(GhgRun run, Inventory inventory, Organization organization,
 			BoundaryVersion version, BaseYear baseYear, GhgRun baseRun, Map<UUID, GhgRun> recalculatedRuns,
-			BaseYearService.Profile profile, List<MarketFactor> marketFactors,
+			BaseYearService.Profile profile, List<FactorPackAdoptionService.EditionDecision> editionDecisions,
+			List<MarketFactor> marketFactors,
 			List<Inventory> predecessors, Inventory successor, List<IntensityMetric> metrics,
 			int boundaryVersionCount, UnitConverter.Scoped units) {
 		var lines = run.getLines().stream().map(RunLineResponse::from).toList();
@@ -458,7 +483,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 					baseYear.getInventory().getName(),
 					baseYear.getInventory().getId(), baseYear.getThresholdPercent(), baseYear.getReason(),
 					baseYear.getStructuralChangeConvention(), baseYear.getInventory().getGwpSet() == run.getGwpSet(),
-					baseRun == null ? null : figure(baseRun), recalculations, profileEntries, otherViews);
+					baseRun == null ? null : figure(baseRun), recalculations, profileEntries, otherViews,
+					editionDecisions.stream().map(EditionDecision::from).toList());
 		}
 		var exclusionSummary = exclusionSummary(run);
 		var dataQuality = dataQuality(run, inventory.getUncertaintyStatement());

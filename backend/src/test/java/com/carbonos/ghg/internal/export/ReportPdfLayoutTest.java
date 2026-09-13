@@ -214,7 +214,12 @@ class ReportPdfLayoutTest {
 								null, null, null, null, ConsolidationApproach.OPERATIONAL_CONTROL, GwpSet.AR5)),
 				List.of(new ReportResponse.ProfileEntry(UUID.randomUUID(), "FY2024 Equity view", 2024, "FY2024",
 						LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), InventoryStatus.FINAL, UUID.randomUUID(),
-						new BigDecimal("41000000"), null, null, ConsolidationApproach.EQUITY_SHARE, GwpSet.AR5)));
+						new BigDecimal("41000000"), null, null, ConsolidationApproach.EQUITY_SHARE, GwpSet.AR5)),
+				// spec 02.7: the edition decisions print beside the recalculations, so the answer reaches a reader
+				List.of(new ReportResponse.EditionDecision("defra-2026", "defra-2025",
+						com.carbonos.ghg.internal.FactorPackNotice.RecalculationCase.VINTAGE_PROGRESSION,
+						"a vintage progression", new BigDecimal("1.20"), new BigDecimal("5"), PREPARED_AT,
+						"officer@review.test", "The 2026 tables are the current vintage.")));
 		var methodology = new ReportResponse.Methodology(GwpSet.AR5, ConsolidationApproach.OPERATIONAL_CONTROL,
 				List.of("Diesel (100% mineral diesel)"), List.of("AR5"), false,
 				"Emissions were calculated as activity data multiplied by an emission factor and the accounting share of the "
