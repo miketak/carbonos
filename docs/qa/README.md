@@ -74,6 +74,7 @@ editing them.
 | 7 | [Runs, reports and exports](007-runs-reports-and-exports.md) | A run is a reproducible snapshot, the report carries every Chapter 9 element, and the exports match the page. | 75 min |
 | 8 | [Publication and corrections](008-publication-and-corrections.md) | A published report never changes, what came after is shown apart, and a correction inherits the view with a reason. | 45 min |
 | 9 | [Base year and recalculation](009-base-year.md) | The base year is designated with its policy, structural changes are detected, and manual candidates are weighed. | 60 min |
+| 10 | [Factor pack maintenance](010-factor-pack-maintenance.md) | A platform administrator authors a factor pack edition: a family, a draft, a clone of a predecessor, its rows, and the validation report; a published edition is frozen and a draft is invisible to every organization. | 45 min |
 
 ## Shared scenario
 
@@ -81,6 +82,10 @@ Procedures 2 to 9 use one company, **Sankofa Gold plc**, a Ghanaian gold
 miner. Procedure 2 sets it up; the later procedures assume it exists. If you
 skip procedure 2, create the entities, facilities and streams its section B
 lists before you continue.
+
+Procedure 10 is a platform procedure rather than a client one: it works on the
+shared factor pack catalogue, and only reads Sankofa Gold plc to check a holder
+count and that a draft stays invisible to an organization.
 
 ## Sign-off template
 
