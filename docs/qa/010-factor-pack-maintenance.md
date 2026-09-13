@@ -2,25 +2,31 @@
 
 **Objective.** Confirm that a platform administrator can create a pack family
 and a draft edition, clone a predecessor into a new draft, author its rows, and
-read the live validation report; that a published edition is frozen; and that a
-draft is invisible to every organization until it is published.
+read the live validation report; that publishing an edition needs its evidence,
+its rules and an approver who is not the curator; that publishing moves no
+organization's numbers; that a published edition is frozen; and that a draft is
+invisible to every organization until it is published.
 
-**Covers** [spec 02.5](../../specs/02.5-factor-pack-editions.md), the authoring
-half. Publication, the evidence file, the separation-of-duties gate, the blast
-radius and the adoption notices of
-[spec 02.7](../../specs/02.7-adopting-a-new-edition.md) are not in this release,
-and case B5 confirms that the console says so rather than doing half of it.
+**Covers** [spec 02.5](../../specs/02.5-factor-pack-editions.md) whole:
+authoring in sections A to C, publication in section D. The notices publication
+raises are written but have no tenant-facing page yet; the inbox, the diff and
+the decision are
+[spec 02.7](../../specs/02.7-adopting-a-new-edition.md), and case D6 checks the
+record rather than a screen.
 
-**Estimated time:** 45 minutes.
+**Estimated time:** 75 minutes.
 
 **Run this procedure** before a release, and after any change to the factor
 pack console, the publication rules or the catalogue.
 
 ## Prerequisites
 
-- An **ADMIN** account whose password you hold, and a second account that is
-  **not** an administrator (any member account will do; procedure 1 creates
-  one).
+- **Two** separate **ADMIN** accounts whose passwords you hold. Publication
+  needs an approver who is not the curator, so one account cannot walk section
+  D on its own. Procedure 1 creates an account; make the second an
+  administrator the same way.
+- A second account that is **not** an administrator (any member account will
+  do; procedure 1 creates one).
 - **Sankofa Gold plc** as procedure 2 leaves it, with the DESNZ 2026 pack
   imported. Without it, case A4's holder count reads zero and the rest of the
   procedure still works.
@@ -105,12 +111,13 @@ pack console, the publication rules or the catalogue.
 | 4 | Set the CO2 to 2.00, the biogenic CO2 to 1.00, and the kg CO2e per unit to 3.00, clearing the methane. Read the report. | One finding: "The stated CO2e per unit includes the biogenic CO2. Chapter 9 reports biogenic CO2 beside the total, never inside it". Chapter 9 reports biogenic CO2 apart from the scopes. | | |
 | 5 | Set the kg CO2e per unit back to 2.00. | The finding goes: the biogenic CO2 now sits beside the total rather than inside it. | | |
 
-### B5. Publishing says it is not available yet
+### B5. Publication is refused while a rule is broken
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open `qa-pack-2027`. | There is no **Publish** button: publication, the evidence file with its checksum, the approver who is not the curator, the frozen change log and the blast radius all arrive together in the next release. | | |
-| 2 | If you can reach the API directly, POST to `/api/admin/factor-packs/editions/qa-pack-2027/publish`. | 409, with a detail that names what publication still needs. The edition stays a draft. (Skip this step if you cannot make an API call; the absence of the button in step 1 is what a tester checks.) | | |
+| 1 | With the free-text unit of case B1 still on the row, open `qa-pack-2027` and click **Publish**. | The dialog lists the conditions. The first reads that rows break a rule, in red, and the **Publish** button is disabled. | | |
+| 2 | Close the dialog, correct the unit back to `litre` and the code back to `QA:fuels:diesel:litres`, and open **Publish** again. | The rule line now reads "Every publication rule passes." **Publish** is still disabled, because there is no source document yet. | | |
+| 3 | Close the dialog. | The edition is still a draft. | | |
 
 ## C. A draft belongs to the platform
 
@@ -125,9 +132,76 @@ pack console, the publication rules or the catalogue.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As the administrator, open `qa-ghana-2027` and click **Delete draft**. | The dialog says the draft and its 7 rows go for good, and that a draft that was never published is the only edition that can be deleted, because clause 8.2 requires the records behind a reported figure to be retained. | | |
+| 1 | As the administrator, create one more draft from `ghana` named `qa-ghana-throwaway`, then open it and click **Delete draft**. | The dialog says the draft and its 7 rows go for good, and that a draft that was never published is the only edition that can be deleted, because clause 8.2 requires the records behind a reported figure to be retained. | | |
 | 2 | Confirm. | The browser returns to the catalogue and the draft is gone. | | |
-| 3 | Delete `qa-pack-2027` the same way, so the environment is left as you found it. | The draft is gone; the ten seeded editions are untouched. | | |
+| 3 | Leave `qa-pack-2027` and `qa-ghana-2027` where they are. | Section D publishes them; case D7 clears up afterwards. | | |
+
+## D. Publication
+
+Section D needs the second administrator account. The curator built
+`qa-pack-2027` in section A; the approver is the other account, and the console
+refuses to let one person do both.
+
+### D1. The curator cannot publish their own draft
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Signed in as the **curator**, open `qa-pack-2027` and click **Publish**. Attach a file as the source document: any small PDF will do, so long as you can attach the same one again later. | The dialog shows the SHA-256 it computed over the bytes stored, 64 hexadecimal characters, and the line under the file reads "computed over the bytes stored". | | |
+| 2 | Fill in the source document as cited, leave the applies-from date at 2027-01-01, and click **Publish**. | The dialog stays put with a refusal naming the approver: the approver must not be the curator. The edition is still a draft. | | |
+| 3 | Reopen the edition's **Metadata** tab. | The evidence checksum reads the value from step 1 rather than "None yet": the upload stands even though the publication was refused. | | |
+
+### D2. The blast radius is read before publishing
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Open `qa-ghana-2027` (the clone of `ghana` from case A3, whose `GHANA:td-losses` you changed to 0.2) and click **Blast radius**. | A drawer opens beside the page, not over it. It says publishing itself changes no organization's data, and that the tonnage is an estimate from each organization's last completed run. | | |
+| 2 | Read the four figures at the top. | Added, changed, discontinued and unchanged, counted against `ghana`. One row changed: `GHANA:td-losses`. | | |
+| 3 | Read the rows moving more than 5 percent. | `GHANA:td-losses` is listed with its old value 0.117202, its proposed 0.2, the percent change, and how many organizations hold it. | | |
+| 4 | If Sankofa Gold plc holds a row of this lineage, read its card. | The card names the organization, the lineages it holds, the estimated movement in kg CO2e, the run the estimate came from, and, under the headings, its open drafts, any lineage it edited locally, any lineage inside a locked period, any unapproved row and any lineage the edition drops. | | |
+| 5 | Press Escape. | The drawer closes and the page is where you left it. | | |
+
+### D3. An edition is published by the second administrator
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Before publishing, note two figures for a client organization that holds this pack: the value of one imported factor on its **Emission factors** page, and the total of its last completed run. | Write both down. They are what step 4 checks. | | |
+| 2 | Sign in as the **approver** in a private window, open `qa-ghana-2027`, attach the same source document, name it, set applies-from to 2027-01-01, and click **Publish**. | A toast reads "qa-ghana-2027 was published.". The edition reads PUBLISHED, its rows can no longer be edited, and the page says its rows, metadata and values never change again. | | |
+| 3 | Return to the catalogue and read the `ghana` family. | `qa-ghana-2027` reads PUBLISHED and `ghana` now reads SUPERSEDED: a successor was published, so the predecessor is readable but no longer importable. | | |
+| 4 | Reread the two figures from step 1. | Both are exactly as you wrote them down. Publishing moves no client's numbers: adopting an edition is the organization's decision. | | |
+
+### D4. The change log is frozen against the predecessor
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On `qa-ghana-2027` open the **Changes** tab. | It says the log was frozen at publication against `ghana`, with the counts of added, changed, discontinued and unchanged rows. | | |
+| 2 | Find `GHANA:td-losses` in the table. | It reads CHANGED, was 0.117202, is 0.2, with the percent change and the fields that moved ("kg CO2e per unit"). | | |
+| 3 | Count the rows listed. | Only the rows that moved are listed. The unchanged rows are counted in the line beneath the table, not printed. | | |
+
+### D5. A published edition is withdrawn with a reason
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On `qa-ghana-2027` click **Blast radius**. | The drawer now describes a withdrawal: the edition leaves the import list, the rows organizations already hold stay as they are, and it names how many open notices would close. | | |
+| 2 | Close the drawer, click **Withdraw**, type "short" and confirm. | The field is refused: at least 10 characters, because it is the record a verifier reads. | | |
+| 3 | Type "The publisher retracted the 2027 tables pending a correction." and confirm. | A toast reads "qa-ghana-2027 was withdrawn.". The edition reads WITHDRAWN with its reason. | | |
+| 4 | In the member's private window, open the organization's factor pack list. | `qa-ghana-2027` is not offered for import. The rows the organization already holds are unchanged. | | |
+| 5 | Reread the two figures you noted in case D3 step 1. | Both are still exactly as you wrote them down. A withdrawal is the publisher's act, not the client's recalculation. | | |
+
+### D6. Publishing raised one notice per holder
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | This case needs database access, because the notice inbox is spec 02.7 and has no page yet. Run: `select organization_id, edition_id, predecessor_edition_id, status, rows_affected, rows_over_threshold, estimated_kg_co2e_delta from ghg_factor_pack_notices order by raised_at;` | One row per organization that held a lineage of `ghana`, each naming `qa-ghana-2027` as the edition and `ghana` as the predecessor. An organization holding none of them has no row. | | |
+| 2 | Read the status of the notices for `qa-ghana-2027`. | They read WITHDRAWN after case D5: withdrawing an edition closes every open notice for it, so nobody is asked to decide on an edition the publisher retracted. | | |
+| 3 | Run `select count(*) from ghg_factor_pack_changes where edition_id = 'qa-ghana-2027';` | Seven, one per code of the edition. The change log is a row per code, frozen. | | |
+
+### D7. The environment is left as you found it
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Delete the draft `qa-pack-2027`. | The draft and its rows go. | | |
+| 2 | Try to delete `qa-ghana-2027`, the edition case D3 published. | There is no **Delete draft** button, and the API refuses with 409. A published edition is never deleted: clause 8.2 requires the records behind a reported figure to be retained. | | |
+| 3 | Note in the sign-off that `qa-ghana-2027` stays in the catalogue, withdrawn, and that `ghana` stays SUPERSEDED. | The environment carries them for good, which is the point: a citation names one thing forever. The next tester needs a new identifier rather than this one. | | |
 
 ## Sign-off
 

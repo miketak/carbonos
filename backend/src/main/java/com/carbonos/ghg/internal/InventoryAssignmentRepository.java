@@ -27,4 +27,18 @@ public interface InventoryAssignmentRepository extends JpaRepository<InventoryAs
 	@Query("select distinct a.inventory.name from InventoryAssignment a where a.emissionFactor.id = :factorId")
 	List<String> inventoryNamesUsingFactor(UUID factorId);
 
+	/**
+	 * The organization's factors that feed an inventory in one of these states,
+	 * which the blast radius reports as blocked (specs 02.5 and 02.7): a change
+	 * inside a FROZEN, FINAL or PUBLISHED period is not the organization's to
+	 * make any more.
+	 */
+	@Query("""
+			select distinct a.emissionFactor.id from InventoryAssignment a
+			 where a.inventory.organization.id = :organizationId
+			   and a.inventory.status in :statuses
+			   and a.emissionFactor is not null""")
+	java.util.Set<UUID> factorIdsInInventoriesWithStatus(UUID organizationId,
+			java.util.Collection<InventoryStatus> statuses);
+
 }

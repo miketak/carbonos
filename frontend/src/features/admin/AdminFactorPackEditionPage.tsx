@@ -11,23 +11,29 @@ import { Tabs } from '../../components/Tabs'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
 import { AdminHeader } from './components/AdminHeader'
+import { BlastRadiusDrawer } from './components/BlastRadiusDrawer'
 import { PackRowFormModal } from './components/PackRowFormModal'
+import { PublishEditionDialog } from './components/PublishEditionDialog'
 import {
   useDeleteFactorPackEdition,
   useDeleteFactorPackRow,
+  useFactorPackChangesQuery,
   useFactorPackEditionQuery,
   useFactorPackRowsQuery,
   useFactorPackValidationQuery,
   useUpdateFactorPackEdition,
+  useWithdrawFactorPackEdition,
 } from './useFactorPacks'
-import type { FactorPackEdition, FactorPackRow, FactorPackStatus } from './api'
+import type { FactorPackChange, FactorPackEdition, FactorPackRow, FactorPackStatus } from './api'
 
-type Tab = 'rows' | 'metadata' | 'validation'
+type Tab = 'rows' | 'metadata' | 'validation' | 'changes'
 
 type Dialog =
   | { kind: 'row'; row: FactorPackRow | null }
   | { kind: 'deleteRow'; row: FactorPackRow }
   | { kind: 'deleteEdition' }
+  | { kind: 'publish' }
+  | { kind: 'withdraw' }
   | null
 
 const tones: Record<FactorPackStatus, PillTone> = {
@@ -75,12 +81,18 @@ export function AdminFactorPackEditionPage() {
     size: PAGE_SIZE,
   })
   const validationQuery = useFactorPackValidationQuery(editionId)
+  const changesQuery = useFactorPackChangesQuery(editionId)
   const deleteRow = useDeleteFactorPackRow()
   const deleteEdition = useDeleteFactorPackEdition()
+  const withdraw = useWithdrawFactorPackEdition()
+  const [blastRadiusOpen, setBlastRadiusOpen] = useState(false)
+  const [withdrawalReason, setWithdrawalReason] = useState('')
+  const [withdrawalError, setWithdrawalError] = useState<string | null>(null)
 
   const edition = editionQuery.data
   const rows = rowsQuery.data
   const findings = validationQuery.data ?? []
+  const changes = changesQuery.data ?? []
 
   if (editionQuery.isPending) {
     return (
@@ -136,18 +148,43 @@ export function AdminFactorPackEditionPage() {
               </p>
             )}
           </div>
-          {edition.mutable && (
-            <div className="flex gap-2">
-              <Button onClick={() => setDialog({ kind: 'row', row: null })}>Add row</Button>
+          <div className="flex flex-wrap gap-2">
+            {edition.mutable && (
+              <>
+                <Button onClick={() => setDialog({ kind: 'row', row: null })}>Add row</Button>
+                <Button
+                  variant="ghost"
+                  className="px-3 py-1.5 text-sm"
+                  onClick={() => setDialog({ kind: 'publish' })}
+                >
+                  Publish
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+                  onClick={() => setDialog({ kind: 'deleteEdition' })}
+                >
+                  Delete draft
+                </Button>
+              </>
+            )}
+            <Button
+              variant="ghost"
+              className="px-3 py-1.5 text-sm"
+              onClick={() => setBlastRadiusOpen(true)}
+            >
+              Blast radius
+            </Button>
+            {edition.status === 'PUBLISHED' && (
               <Button
                 variant="ghost"
                 className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                onClick={() => setDialog({ kind: 'deleteEdition' })}
+                onClick={() => setDialog({ kind: 'withdraw' })}
               >
-                Delete draft
+                Withdraw
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <Tabs
@@ -158,6 +195,7 @@ export function AdminFactorPackEditionPage() {
             { value: 'rows', label: 'Rows', count: edition.rowCount },
             { value: 'metadata', label: 'Metadata' },
             { value: 'validation', label: 'Validation', count: findings.length },
+            { value: 'changes', label: 'Changes', count: changes.length },
           ]}
         />
 
@@ -290,8 +328,88 @@ export function AdminFactorPackEditionPage() {
           {tab === 'validation' && (
             <ValidationTab findings={findings} loading={validationQuery.isPending} />
           )}
+
+          {tab === 'changes' && (
+            <ChangesTab
+              changes={changes}
+              loading={changesQuery.isPending}
+              predecessorId={edition.supersedesId}
+              mutable={edition.mutable}
+            />
+          )}
         </div>
       </main>
+
+      {blastRadiusOpen && (
+        <BlastRadiusDrawer
+          editionId={edition.editionId}
+          onClose={() => setBlastRadiusOpen(false)}
+        />
+      )}
+
+      {dialog?.kind === 'publish' && (
+        <PublishEditionDialog
+          edition={edition}
+          findings={findings}
+          onClose={() => setDialog(null)}
+          onPublished={(message) => {
+            setDialog(null)
+            toast(message)
+          }}
+          onOpenBlastRadius={() => {
+            setDialog(null)
+            setBlastRadiusOpen(true)
+          }}
+        />
+      )}
+
+      {dialog?.kind === 'withdraw' && (
+        <Modal title={`Withdraw ${edition.editionId}`} onClose={() => setDialog(null)}>
+          <p className="text-sm text-ink-muted">
+            The edition leaves the import list and every open notice for it closes. The rows
+            organizations already hold stay exactly as they are: a withdrawal is the
+            publisher&apos;s act, not the client&apos;s recalculation. Read the blast radius first.
+          </p>
+          <div className="mt-4">
+            <TextAreaField
+              label="Why it is withdrawn"
+              value={withdrawalReason}
+              error={withdrawalError ?? undefined}
+              hint="At least 10 characters. It is the record a verifier reads beside the figures that rest on it."
+              onChange={(event) => setWithdrawalReason(event.target.value)}
+            />
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              busy={withdraw.isPending}
+              onClick={() => {
+                setWithdrawalError(null)
+                withdraw.mutate(
+                  { editionId: edition.editionId, reason: withdrawalReason.trim() },
+                  {
+                    onSuccess: () => {
+                      setDialog(null)
+                      setWithdrawalReason('')
+                      toast(`${edition.editionId} was withdrawn.`)
+                    },
+                    onError: (error) => {
+                      const fields = fieldErrors(error)
+                      if (fields?.reason) setWithdrawalError(fields.reason)
+                      else toast(refusalMessage(error), 'error')
+                    },
+                  },
+                )
+              }}
+            >
+              Withdraw edition
+            </Button>
+          </div>
+        </Modal>
+      )}
 
       {dialog?.kind === 'row' && (
         <PackRowFormModal
@@ -584,6 +702,92 @@ function ValidationTab({
           )}
         </GlassCard>
       ))}
+    </div>
+  )
+}
+
+/**
+ * The change log the edition froze at publication, computed against the
+ * predecessor: one line per code, so a reader can see the one row that moved.
+ * A draft has none, because the comparison is made once, at publication.
+ */
+function ChangesTab({
+  changes,
+  loading,
+  predecessorId,
+  mutable,
+}: {
+  changes: FactorPackChange[]
+  loading: boolean
+  predecessorId: string | null
+  mutable: boolean
+}) {
+  if (loading) return <Skeleton className="h-32" aria-label="Loading the change log" />
+
+  if (changes.length === 0) {
+    return (
+      <GlassCard className="p-10 text-center">
+        <h2 className="text-lg">No change log</h2>
+        <p className="mt-1 text-sm text-ink-muted">
+          {mutable
+            ? 'The change log is computed and frozen at publication, against the predecessor edition. Read the blast radius to see what publishing would move.'
+            : 'This edition was the first of its family, so there was nothing to compare it against.'}
+        </p>
+      </GlassCard>
+    )
+  }
+
+  const counts = {
+    ADDED: changes.filter((change) => change.kind === 'ADDED').length,
+    CHANGED: changes.filter((change) => change.kind === 'CHANGED').length,
+    DISCONTINUED: changes.filter((change) => change.kind === 'DISCONTINUED').length,
+    UNCHANGED: changes.filter((change) => change.kind === 'UNCHANGED').length,
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-ink-muted">
+        Frozen at publication against <code>{predecessorId ?? 'no predecessor'}</code>:{' '}
+        {counts.ADDED} added, {counts.CHANGED} changed, {counts.DISCONTINUED} discontinued,{' '}
+        {counts.UNCHANGED} unchanged.
+      </p>
+      <GlassCard className="p-2">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+              <th className="px-3 py-2 font-semibold">Code</th>
+              <th className="px-3 py-2 font-semibold">Kind</th>
+              <th className="px-3 py-2 font-semibold">Was</th>
+              <th className="px-3 py-2 font-semibold">Is</th>
+              <th className="px-3 py-2 font-semibold">Change</th>
+              <th className="px-3 py-2 font-semibold">Fields</th>
+            </tr>
+          </thead>
+          <tbody>
+            {changes
+              .filter((change) => change.kind !== 'UNCHANGED')
+              .slice(0, 200)
+              .map((change) => (
+                <tr key={change.code} className="border-b border-teal/5 last:border-0">
+                  <td className="px-3 py-2 font-mono text-xs break-all">{change.code}</td>
+                  <td className="px-3 py-2 text-ink-muted">{change.kind}</td>
+                  <td className="px-3 py-2 text-ink-muted">{change.oldKgCo2e ?? '-'}</td>
+                  <td className="px-3 py-2 text-ink-muted">{change.newKgCo2e ?? '-'}</td>
+                  <td className="px-3 py-2 text-ink-muted">
+                    {change.percentChange === null ? '-' : `${change.percentChange.toFixed(2)}%`}
+                  </td>
+                  <td className="px-3 py-2 text-ink-muted">{change.fields ?? '-'}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </GlassCard>
+      {counts.UNCHANGED > 0 && (
+        <p className="text-xs text-ink-muted">
+          {counts.UNCHANGED} {counts.UNCHANGED === 1 ? 'row is' : 'rows are'} unchanged and are not
+          listed.
+        </p>
+      )}
     </div>
   )
 }

@@ -25,4 +25,15 @@ public interface GhgRunRepository extends JpaRepository<GhgRun, UUID> {
 
 	/** The highest-numbered run the inventory ever issued, voided or not (spec 05.2). */
 	Optional<GhgRun> findTopByInventoryIdOrderByRunNoDesc(UUID inventoryId);
+
+	/**
+	 * The organization's completed runs, newest first. The blast radius
+	 * estimates the tonnage an edition would move from the last of them
+	 * (spec 02.5); a voided run is not a figure anybody stands behind.
+	 */
+	@org.springframework.data.jpa.repository.Query("""
+			select r from GhgRun r
+			 where r.inventory.organization.id = :organizationId and r.voidedAt is null
+			 order by r.createdAt desc""")
+	List<GhgRun> completedRuns(UUID organizationId, org.springframework.data.domain.Pageable pageable);
 }

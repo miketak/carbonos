@@ -82,6 +82,16 @@ public class FactorPackEdition {
 	@Column(name = "evidence_checksum", length = 64)
 	private String evidenceChecksum;
 
+	// the object key the source document is stored under in the media module
+	@Column(name = "evidence_key", length = 200)
+	private String evidenceKey;
+
+	@Column(name = "evidence_name", length = 255)
+	private String evidenceName;
+
+	@Column(name = "evidence_size")
+	private Long evidenceSize;
+
 	@Column(name = "curator_user_id")
 	private UUID curatorUserId;
 
@@ -105,6 +115,29 @@ public class FactorPackEdition {
 
 	@Column(name = "provenance_note", length = 1000)
 	private String provenanceNote;
+
+	// the edition this one supersedes: the predecessor the change log is computed against
+	@Column(name = "supersedes_id", length = 60)
+	private String supersedesId;
+
+	@Column(nullable = false)
+	private boolean erratum;
+
+	@Column(name = "erratum_note", length = 1000)
+	private String erratumNote;
+
+	// recorded on the predecessor when an erratum supersedes it; its wrong values are never edited
+	@Column(name = "error_note", length = 1000)
+	private String errorNote;
+
+	@Column(name = "withdrawn_at")
+	private Instant withdrawnAt;
+
+	@Column(name = "withdrawn_by", length = 320)
+	private String withdrawnBy;
+
+	@Column(name = "withdrawal_reason", length = 500)
+	private String withdrawalReason;
 
 	/** What a curator states when they create or edit a draft (spec 02.5). */
 	public record Facts(String name, String source, String sourceUrl, Integer publicationYear, String gwpBasis,
@@ -154,6 +187,59 @@ public class FactorPackEdition {
 	/** Whether the rows and metadata may still change: only a draft (spec 02.5). */
 	public boolean isMutable() {
 		return status == FactorPackStatus.DRAFT;
+	}
+
+	/**
+	 * Records the source document a maintainer publishes against, with the
+	 * SHA-256 of the bytes stored. A draft may replace it as often as it likes;
+	 * publication is what freezes it.
+	 */
+	void attachEvidence(String key, String name, long size, String checksum) {
+		this.evidenceKey = key;
+		this.evidenceName = name;
+		this.evidenceSize = size;
+		this.evidenceChecksum = checksum;
+	}
+
+	/**
+	 * Freezes the edition (spec 02.5): the moment, the approver who is not the
+	 * curator, the source document checked against, the date it applies from,
+	 * and the predecessor the change log was computed against. Nothing here
+	 * changes again, because reports rest on it.
+	 */
+	void publish(UUID approverUserId, String approverEmail, String approverName, String sourceDocument,
+			LocalDate appliesFrom, String predecessorId, boolean erratum, String erratumNote) {
+		this.status = FactorPackStatus.PUBLISHED;
+		this.publishedAt = Instant.now();
+		this.approverUserId = approverUserId;
+		this.approverEmail = approverEmail;
+		this.approverName = approverName;
+		this.sourceDocument = sourceDocument;
+		this.appliesFrom = appliesFrom;
+		this.supersedesId = predecessorId;
+		this.erratum = erratum;
+		this.erratumNote = erratumNote;
+	}
+
+	/**
+	 * A successor was published. The values stay exactly as they are: an
+	 * erratum's predecessor records the note that it contains an error rather
+	 * than having the error corrected in place, because reports already rest on
+	 * the wrong figure.
+	 */
+	void supersede(String errorNote) {
+		this.status = FactorPackStatus.SUPERSEDED;
+		if (errorNote != null) {
+			this.errorNote = errorNote;
+		}
+	}
+
+	/** Leaves the import list with a reason. Rows organizations hold stay as they are. */
+	void withdraw(String reason, String withdrawnBy) {
+		this.status = FactorPackStatus.WITHDRAWN;
+		this.withdrawnAt = Instant.now();
+		this.withdrawnBy = withdrawnBy;
+		this.withdrawalReason = reason;
 	}
 
 	/** The set the gas split reconciles under, AR5 where the edition names none. */
@@ -226,6 +312,49 @@ public class FactorPackEdition {
 
 	public String getEvidenceChecksum() {
 		return evidenceChecksum;
+	}
+
+	public String getEvidenceKey() {
+		return evidenceKey;
+	}
+
+	public String getEvidenceName() {
+		return evidenceName;
+	}
+
+	public Long getEvidenceSize() {
+		return evidenceSize;
+	}
+
+	/** The predecessor the change log was computed against, or null for the first edition of a family. */
+	public String getSupersedesId() {
+		return supersedesId;
+	}
+
+	/** Whether this edition corrects a transcription error in its predecessor (spec 02.5). */
+	public boolean isErratum() {
+		return erratum;
+	}
+
+	public String getErratumNote() {
+		return erratumNote;
+	}
+
+	/** Recorded on a superseded edition when the erratum after it named the error. */
+	public String getErrorNote() {
+		return errorNote;
+	}
+
+	public Instant getWithdrawnAt() {
+		return withdrawnAt;
+	}
+
+	public String getWithdrawnBy() {
+		return withdrawnBy;
+	}
+
+	public String getWithdrawalReason() {
+		return withdrawalReason;
 	}
 
 	public UUID getCuratorUserId() {

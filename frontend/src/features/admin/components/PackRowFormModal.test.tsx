@@ -17,6 +17,12 @@ vi.mock('../api', () => ({
   updateFactorPackRow: vi.fn(),
   deleteFactorPackRow: vi.fn(),
   getFactorPackValidation: vi.fn(),
+  listFactorPackChanges: vi.fn(),
+  listFactorPackEvents: vi.fn(),
+  getFactorPackBlastRadius: vi.fn(),
+  uploadFactorPackEvidence: vi.fn(),
+  publishFactorPackEdition: vi.fn(),
+  withdrawFactorPackEdition: vi.fn(),
 }))
 
 import { createFactorPackRow, updateFactorPackRow } from '../api'

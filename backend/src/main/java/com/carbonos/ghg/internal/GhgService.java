@@ -731,7 +731,10 @@ public class GhgService {
 	 * import approved.
 	 */
 	public ImportResult importPack(UUID organizationId, String packId) {
-		return importPack(organizationId, pack(packId));
+		// spec 02.5: a superseded or withdrawn edition is readable but not importable, so an import that
+		// names one is a 404 rather than a quiet build on a retired table
+		return importPack(organizationId,
+				factorPacks.findImportable(packId).orElseThrow(() -> GhgNotFoundException.pack(packId)));
 	}
 
 	/** The import itself, over a pack already resolved. */
@@ -760,7 +763,11 @@ public class GhgService {
 			var current = existing.get(row.code());
 			// spec 02.6: validity is the organization's decision, not the pack's. An import carries the
 			// incumbent's window forward, so a factor a preparer retired by setting its end stays retired.
-			var provenance = new EmissionFactor.Provenance(citation.length() > 500 ? citation.substring(0, 497) + "..." : citation,
+			// spec 02.6: the truncation is a backstop. V45 widened the column so no published edition
+			// relies on it, and spec 02.5 rule 2 refuses to publish a row whose citation would not fit.
+			var provenance = new EmissionFactor.Provenance(
+					citation.length() > FactorPackValidation.MAX_CITATION_LENGTH
+							? citation.substring(0, FactorPackValidation.MAX_CITATION_LENGTH - 3) + "..." : citation,
 					row.citationUrl(pack), row.citationYear(pack), row.dataYear(),
 					current == null ? null : current.getValidFrom(), current == null ? null : current.getValidTo(),
 					trimToNull(row.notes()));

@@ -37,6 +37,10 @@ import com.jayway.jsonpath.JsonPath;
  * rows, and reads the live validation report. A draft is the platform's
  * business until it is published, so nothing an organization can reach ever
  * shows one, and a published edition is frozen for good.
+ *
+ * <p>Publication itself, the evidence upload, the separation-of-duties gate,
+ * the blast radius and the notices are
+ * {@code FactorPackPublicationApiIntegrationTests}.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -242,18 +246,6 @@ class FactorPackAdminApiIntegrationTests {
 			.andExpect(status().isConflict());
 		mvc.perform(delete("/api/admin/factor-packs/editions/ghana").with(asAdmin()).with(csrf()))
 			.andExpect(status().isConflict());
-	}
-
-	@Test
-	void publishingIsRefusedUntilThePublicationPhaseLands() throws Exception {
-		createFamily();
-		createDraft(DRAFT, null);
-
-		mvc.perform(post("/api/admin/factor-packs/editions/" + DRAFT + "/publish").with(asAdmin()).with(csrf()))
-			.andExpect(status().isConflict())
-			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("not available yet")));
-		mvc.perform(get("/api/admin/factor-packs/editions/" + DRAFT).with(asAdmin()))
-			.andExpect(jsonPath("$.status").value("DRAFT"));
 	}
 
 	// --- the validation report ----------------------------------------------

@@ -11,4 +11,8 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
 	java.util.Optional<Inventory> findBySupersededById(UUID supersededById);
 
 	List<Inventory> findAllByOrganizationIdOrderByCreatedAtDesc(UUID organizationId);
+
+	/** The organization's inventories in one state, for the blast radius's open drafts (spec 02.5). */
+	List<Inventory> findAllByOrganizationIdAndStatusOrderByPeriodStartAsc(UUID organizationId,
+			InventoryStatus status);
 }

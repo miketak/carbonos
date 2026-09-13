@@ -3,7 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { AdminFactorPackEditionPage } from './AdminFactorPackEditionPage'
-import type { FactorPackEdition, FactorPackRow, FactorPackRowPage } from './api'
+import type {
+  BlastRadius,
+  FactorPackChange,
+  FactorPackEdition,
+  FactorPackRow,
+  FactorPackRowPage,
+} from './api'
 
 vi.mock('./api', () => ({
   listFactorPacks: vi.fn(),
@@ -17,15 +23,24 @@ vi.mock('./api', () => ({
   updateFactorPackRow: vi.fn(),
   deleteFactorPackRow: vi.fn(),
   getFactorPackValidation: vi.fn(),
+  listFactorPackChanges: vi.fn(),
+  listFactorPackEvents: vi.fn(),
+  getFactorPackBlastRadius: vi.fn(),
+  uploadFactorPackEvidence: vi.fn(),
+  publishFactorPackEdition: vi.fn(),
+  withdrawFactorPackEdition: vi.fn(),
 }))
 vi.mock('../auth/api', () => ({ login: vi.fn(), logout: vi.fn(), me: vi.fn() }))
 
 import {
   deleteFactorPackEdition,
   deleteFactorPackRow,
+  getFactorPackBlastRadius,
   getFactorPackEdition,
   getFactorPackValidation,
+  listFactorPackChanges,
   listFactorPackRows,
+  withdrawFactorPackEdition,
 } from './api'
 
 const draft: FactorPackEdition = {
@@ -44,10 +59,19 @@ const draft: FactorPackEdition = {
   publishedAt: null,
   sourceDocument: null,
   evidenceChecksum: null,
+  evidenceName: null,
+  evidenceSize: null,
   curator: 'Ama Mensah',
   approver: null,
   provenanceReview: 'REVIEWED',
   provenanceNote: null,
+  supersedesId: null,
+  erratum: false,
+  erratumNote: null,
+  errorNote: null,
+  withdrawnAt: null,
+  withdrawnBy: null,
+  withdrawalReason: null,
   mutable: true,
   rowCount: 2,
   holderCount: 0,
@@ -88,6 +112,51 @@ const row: FactorPackRow = {
   reportingBasis: 'SCOPES',
 }
 
+const changes: FactorPackChange[] = [
+  {
+    code: 'DEFRA:Fuels:Gaseous_fuels_Butane:tonnes',
+    kind: 'CHANGED',
+    oldKgCo2e: 3033.38067,
+    newKgCo2e: 3100,
+    percentChange: 2.1961,
+    fields: 'kg CO2e per unit, gas split',
+  },
+  {
+    code: 'DEFRA:Fuels:Retired:tonnes',
+    kind: 'DISCONTINUED',
+    oldKgCo2e: 1,
+    newKgCo2e: null,
+    percentChange: null,
+    fields: null,
+  },
+  {
+    code: 'DEFRA:Fuels:Steady:tonnes',
+    kind: 'UNCHANGED',
+    oldKgCo2e: 1,
+    newKgCo2e: 1,
+    percentChange: 0,
+    fields: null,
+  },
+]
+
+const emptyBlastRadius: BlastRadius = {
+  editionId: 'defra-2027',
+  packKey: 'defra',
+  act: 'PUBLISH',
+  predecessorEditionId: 'defra-2026',
+  rowsAdded: 0,
+  rowsChanged: 1,
+  rowsDiscontinued: 1,
+  rowsUnchanged: 1,
+  rowsOverThreshold: 0,
+  rows: [],
+  discontinuedLineages: ['DEFRA:Fuels:Retired:tonnes'],
+  unapprovedRows: [],
+  organizations: [],
+  holderCount: 0,
+  openNoticeCount: 0,
+}
+
 const rowPage: FactorPackRowPage = {
   items: [row],
   page: 0,
@@ -104,6 +173,9 @@ beforeEach(() => {
   vi.mocked(getFactorPackValidation).mockReset().mockResolvedValue([])
   vi.mocked(deleteFactorPackRow).mockReset()
   vi.mocked(deleteFactorPackEdition).mockReset()
+  vi.mocked(listFactorPackChanges).mockReset().mockResolvedValue([])
+  vi.mocked(getFactorPackBlastRadius).mockReset().mockResolvedValue(emptyBlastRadius)
+  vi.mocked(withdrawFactorPackEdition).mockReset()
 })
 
 function renderPage(editionId = 'defra-2027') {
@@ -220,4 +292,76 @@ test('a published edition offers no authoring, and says why', async () => {
   expect(screen.queryByRole('button', { name: /delete draft/i })).not.toBeInTheDocument()
   expect(await screen.findByRole('button', { name: /edit DEFRA:Fuels/i })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /delete DEFRA:Fuels/i })).not.toBeInTheDocument()
+})
+
+test('the Changes tab prints the change log frozen against the predecessor', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listFactorPackChanges).mockResolvedValue(changes)
+  vi.mocked(getFactorPackEdition).mockResolvedValue({
+    ...draft,
+    editionId: 'defra-2027',
+    status: 'PUBLISHED',
+    mutable: false,
+    supersedesId: 'defra-2026',
+  })
+  renderPage()
+
+  await user.click(await screen.findByRole('tab', { name: /changes/i }))
+  expect(await screen.findByText(/frozen at publication against/i)).toBeInTheDocument()
+  expect(screen.getByText('defra-2026')).toBeInTheDocument()
+  expect(screen.getByText('CHANGED')).toBeInTheDocument()
+  expect(screen.getByText('2.20%')).toBeInTheDocument()
+  expect(screen.getByText('kg CO2e per unit, gas split')).toBeInTheDocument()
+  // an unchanged row is counted, not listed
+  expect(screen.queryByText('DEFRA:Fuels:Steady:tonnes')).not.toBeInTheDocument()
+  expect(
+    screen.getByText(/1 row is unchanged and are not listed|1 row is unchanged/i),
+  ).toBeInTheDocument()
+})
+
+test('a draft says the change log is computed at publication', async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click(await screen.findByRole('tab', { name: /changes/i }))
+  expect(await screen.findByText(/computed and frozen at publication/i)).toBeInTheDocument()
+})
+
+test('the blast radius opens in a drawer, beside the rows', async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /blast radius/i }))
+  const drawer = await screen.findByRole('dialog', { name: 'defra-2027' })
+  expect(within(drawer).getByText(/changes no organization/i)).toBeInTheDocument()
+  expect(within(drawer).getByText(/Nobody holds one of these lineages/i)).toBeInTheDocument()
+  await waitFor(() => expect(getFactorPackBlastRadius).toHaveBeenCalledWith('defra-2027'))
+})
+
+test('a published edition can be withdrawn with a reason, and a draft cannot', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getFactorPackEdition).mockResolvedValue({
+    ...draft,
+    editionId: 'defra-2026',
+    status: 'PUBLISHED',
+    mutable: false,
+  })
+  vi.mocked(withdrawFactorPackEdition).mockResolvedValue({ ...draft, status: 'WITHDRAWN' })
+  renderPage('defra-2026')
+
+  await user.click(await screen.findByRole('button', { name: /^withdraw$/i }))
+  const dialog = await screen.findByRole('dialog', { name: /withdraw defra-2026/i })
+  expect(within(dialog).getByText(/stay exactly as they are/i)).toBeInTheDocument()
+  await user.type(
+    within(dialog).getByLabelText(/why it is withdrawn/i),
+    'The publisher retracted the tables.',
+  )
+  await user.click(within(dialog).getByRole('button', { name: /withdraw edition/i }))
+
+  await waitFor(() =>
+    expect(withdrawFactorPackEdition).toHaveBeenCalledWith(
+      'defra-2026',
+      'The publisher retracted the tables.',
+    ),
+  )
 })

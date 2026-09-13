@@ -105,7 +105,8 @@ public class EmissionFactor {
 	@Column(name = "ch4_fossil", nullable = false)
 	private boolean ch4Fossil;
 
-	@Column(nullable = false, length = 500)
+	// the citation an import writes: V45 widened it to hold a full one (spec 02.5 rule 2)
+	@Column(nullable = false, length = 2000)
 	private String source;
 
 	// --- spec 02.1: ownership, provenance, approval and the pack a factor came from ---

@@ -14,14 +14,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.carbonos.ghg.internal.FactorPackAdminService;
+import com.carbonos.ghg.internal.FactorPackBlastRadius;
 import com.carbonos.ghg.internal.FactorPackValidation;
 import com.carbonos.ghg.internal.web.dto.AdminFactorPackResponse;
 import com.carbonos.ghg.internal.web.dto.AdminFactorPackRowResponse;
+import com.carbonos.ghg.internal.web.dto.FactorPackChangeResponse;
 import com.carbonos.ghg.internal.web.dto.FactorPackEditionRequest;
+import com.carbonos.ghg.internal.web.dto.FactorPackEventResponse;
+import com.carbonos.ghg.internal.web.dto.FactorPackEvidenceResponse;
 import com.carbonos.ghg.internal.web.dto.FactorPackFamilyRequest;
+import com.carbonos.ghg.internal.web.dto.FactorPackPublishRequest;
 import com.carbonos.ghg.internal.web.dto.FactorPackRowRequest;
+import com.carbonos.ghg.internal.web.dto.FactorPackWithdrawRequest;
 
 import jakarta.validation.Valid;
 
@@ -30,10 +37,9 @@ import jakarta.validation.Valid;
  * {@code /api/admin/**}, which the security filter reserves for the ADMIN
  * platform role, and checked again in {@code FactorPackAdminService}.
  *
- * <p>This is the authoring half: families, drafts, cloning, rows and the live
- * validation report. Publication, the evidence upload, the blast radius and the
- * notices arrive with the publication phase, and {@code POST .../publish}
- * refuses plainly until they do.
+ * <p>It carries both halves of the console: families, drafts, cloning, rows and
+ * the live validation report, then the evidence upload, the blast radius, the
+ * publication gate, the frozen change log and the withdrawal.
  */
 @RestController
 @RequestMapping("/api/admin/factor-packs")
@@ -121,9 +127,52 @@ class FactorPackAdminController {
 		return console.validate(editionId);
 	}
 
+	// --- publication --------------------------------------------------------
+
+	/** The source document the edition is published against, stored with its SHA-256. */
+	@PostMapping("/editions/{editionId}/evidence")
+	FactorPackEvidenceResponse attachEvidence(@PathVariable String editionId,
+			@RequestParam("file") MultipartFile file) {
+		return FactorPackEvidenceResponse.from(console.attachEvidence(editionId, file));
+	}
+
+	/** The stored source document, so an approver can read what they are signing. */
+	@GetMapping("/editions/{editionId}/evidence")
+	ResponseEntity<org.springframework.core.io.Resource> evidence(@PathVariable String editionId) {
+		var stored = console.openEvidence(editionId);
+		return ResponseEntity.ok()
+			.contentType(org.springframework.http.MediaType.parseMediaType(stored.contentType()))
+			.contentLength(stored.contentLength())
+			.body(new org.springframework.core.io.InputStreamResource(stored.content()));
+	}
+
+	/** What publishing (or withdrawing) this edition would do to every holder. */
+	@GetMapping("/editions/{editionId}/blast-radius")
+	FactorPackBlastRadius.Report blastRadius(@PathVariable String editionId) {
+		return console.blastRadius(editionId);
+	}
+
+	/** The change log the edition froze at publication, computed against the predecessor. */
+	@GetMapping("/editions/{editionId}/changes")
+	List<FactorPackChangeResponse> changes(@PathVariable String editionId) {
+		return console.changes(editionId).stream().map(FactorPackChangeResponse::from).toList();
+	}
+
+	/** The publication trail: the evidence, the publication, the supersession, the withdrawal. */
+	@GetMapping("/editions/{editionId}/events")
+	List<FactorPackEventResponse> events(@PathVariable String editionId) {
+		return console.trail(editionId).stream().map(FactorPackEventResponse::from).toList();
+	}
+
 	@PostMapping("/editions/{editionId}/publish")
-	ResponseEntity<Void> publish(@PathVariable String editionId) {
-		console.publish(editionId);
-		return ResponseEntity.noContent().build();
+	AdminFactorPackResponse.Edition publish(@PathVariable String editionId,
+			@Valid @RequestBody FactorPackPublishRequest request) {
+		return AdminFactorPackResponse.Edition.from(console.publish(editionId, request.toRequest()));
+	}
+
+	@PostMapping("/editions/{editionId}/withdraw")
+	AdminFactorPackResponse.Edition withdraw(@PathVariable String editionId,
+			@Valid @RequestBody FactorPackWithdrawRequest request) {
+		return AdminFactorPackResponse.Edition.from(console.withdraw(editionId, request.reason()));
 	}
 }

@@ -78,7 +78,8 @@ public class GhgRunFactor {
 	@Column(name = "blend_gwp_source", length = 20)
 	private String blendGwpSource;
 
-	@Column(nullable = false, length = 500)
+	// snapshotted from the factor, so it is as wide as the factor's citation (V45)
+	@Column(nullable = false, length = 2000)
 	private String source;
 
 	// spec 02.3: the publication behind the factor, snapshotted so the table reads the same later
