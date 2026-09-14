@@ -3152,6 +3152,98 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.items[?(@.name == 'Test ore hauled')]").isEmpty());
 	}
 
+
+	@Test
+	void aMemberReadsTheRowsOfAPackItCanImport() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+
+		// spec 02.8: a preparer reads what an edition carries without importing its rows
+		var first = body(mvc
+			.perform(get("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/rows").with(asMember())
+				.param("size", "50"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.page").value(0))
+			.andExpect(jsonPath("$.size").value(50))
+			.andExpect(jsonPath("$.total").value(1868))
+			.andExpect(jsonPath("$.rows.length()").value(50))
+			.andExpect(jsonPath("$.categories").isNotEmpty()));
+		// a row is identified by more than its name: the taxonomy, the unit and the value come with it
+		assertThat(JsonPath.<String>read(first, "$.rows[0].code")).isNotBlank();
+		assertThat(JsonPath.<String>read(first, "$.rows[0].unit")).isNotBlank();
+		assertThat(JsonPath.<Object>read(first, "$.rows[0].kgCo2ePerUnit")).isNotNull();
+
+		// reading is not importing: the organization holds nothing afterwards
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
+			.andExpect(jsonPath("$.items[?(@.packs.length() > 0)]").isEmpty());
+	}
+
+	@Test
+	void theRowsOfAPackAreSearchedAndFiltered() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+
+		// the three rows named "Gaseous fuels: Butane" differ only by unit, so the unit tells them apart
+		var butane = body(mvc
+			.perform(get("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/rows").with(asMember())
+				.param("q", "butane"))
+			.andExpect(status().isOk()));
+		assertThat(JsonPath.<List<String>>read(butane, "$.rows[*].unit")).contains("tonne", "litre", "kWh");
+
+		// the search reaches the publisher's taxonomy, not only the name
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/rows").with(asMember())
+			.param("q", "gaseous fuels")).andExpect(jsonPath("$.total").value(org.hamcrest.Matchers.greaterThan(0)));
+
+		// a category narrows to what the publisher grouped together
+		var category = JsonPath.<String>read(butane, "$.rows[0].sourceCategory");
+		var narrowed = body(mvc
+			.perform(get("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/rows").with(asMember())
+				.param("category", category))
+			.andExpect(status().isOk()));
+		assertThat(JsonPath.<List<String>>read(narrowed, "$.rows[*].sourceCategory")).containsOnly(category);
+		assertThat(JsonPath.<Integer>read(narrowed, "$.total")).isLessThan(1868);
+	}
+
+	@Test
+	void aPageOfPackRowsIsCappedAtTwoHundred() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/rows").with(asMember())
+			.param("size", "5000")).andExpect(jsonPath("$.size").value(200));
+	}
+
+	@Test
+	void anOutsiderCannotReadAPacksRows() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/rows").with(asOutsider()))
+			.andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/factor-packs/no-such-edition/rows").with(asMember()))
+			.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void aDraftEditionsRowsAreNotFoundForAMember() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		mvc.perform(post("/api/admin/factor-packs").with(asAdmin()).with(csrf()).contentType("application/json")
+			.content("""
+					{"packKey": "rows-test", "name": "A test publication", "kind": "SOURCE",
+					 "summary": "Written by a test."}""")).andExpect(status().isCreated());
+		mvc.perform(post("/api/admin/factor-packs/rows-test/editions").with(asAdmin()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"editionId": "rows-test-2027", "cloneFrom": null, "name": "A test publication 2027",
+					 "source": "A test publication, 2027 tables", "sourceUrl": "https://example.test/t.xlsx",
+					 "publicationYear": 2027, "gwpBasis": "AR5", "license": "Test licence",
+					 "retrieved": "2027-01-04", "notes": "For the tests.", "appliesFrom": "2027-01-01"}"""))
+			.andExpect(status().isCreated());
+
+		// spec 02.8: a draft belongs to the console, and the answer is 404 so its existence is not confirmed
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/factor-packs/rows-test-2027/rows").with(asMember()))
+			.andExpect(status().isNotFound());
+		// while a published edition of the same shape reads fine
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/rows").with(asMember()))
+			.andExpect(status().isOk());
+	}
+
 	/** One pack row: a plain CO2-only factor in the given unit. */
 	private static FactorPacks.PackFactor packRow(String code, String name, String unit) {
 		return new FactorPacks.PackFactor(code, name, com.carbonos.ghg.internal.Scope.SCOPE_1,

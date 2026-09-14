@@ -9,6 +9,7 @@ import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
 import { ScopeBadge } from './components/badges'
+import { PackRowsDrawer } from './components/PackRowsDrawer'
 import { RoleButton } from './components/RoleButton'
 import { categoriesForScope, categoryLabel, reportingBasisLabels, scopeLabels } from './format'
 import { mayWrite, WRITE_TOOLTIP } from './roles'
@@ -24,6 +25,7 @@ import {
 } from './useGhg'
 import type {
   ActivityCategory,
+  FactorPack,
   EmissionFactor,
   FactorPackImport,
   FactorVersion,
@@ -311,6 +313,8 @@ export function EmissionFactorsPage() {
   const remove = useDeleteEmissionFactor(organizationId)
   const toast = useToast()
   const [adding, setAdding] = useState(false)
+  // spec 02.8: the pack whose factors are open for reading, if any
+  const [viewing, setViewing] = useState<FactorPack | null>(null)
   // FU-03: an imported edition can be thousands of rows, so the search and the filters are
   // the server's work and the tables show one page each
   const [search, setSearch] = useState('')
@@ -406,7 +410,15 @@ export function EmissionFactorsPage() {
                   retrieved {pack.retrieved}
                 </span>
                 {pack.notes && <span className="text-xs text-ink-muted">{pack.notes}</span>}
-                <div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="ghost"
+                    className="px-3 py-1 text-xs"
+                    aria-label={`View the factors in ${pack.name}`}
+                    onClick={() => setViewing(pack)}
+                  >
+                    View factors
+                  </Button>
                   <RoleButton
                     allowed={mayWrite(myRole)}
                     tooltip={WRITE_TOOLTIP}
@@ -559,6 +571,14 @@ export function EmissionFactorsPage() {
             setAdding(false)
             toast(`${name} added.`)
           }}
+        />
+      )}
+
+      {viewing && (
+        <PackRowsDrawer
+          organizationId={organizationId}
+          pack={viewing}
+          onClose={() => setViewing(null)}
         />
       )}
     </section>

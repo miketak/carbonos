@@ -8,10 +8,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.carbonos.ghg.internal.ActivityCategory;
 import com.carbonos.ghg.internal.FactorPackImportService;
+import com.carbonos.ghg.internal.FactorPackRow;
+import com.carbonos.ghg.internal.FactorPackRowsService;
 import com.carbonos.ghg.internal.FactorPacks;
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.ReportingBasis;
@@ -65,14 +68,43 @@ class FactorPackController {
 		}
 	}
 
+	/**
+	 * One row of an edition as an organization reads it (spec 02.8). The
+	 * publisher's category, activity and unit are part of the identity, not
+	 * decoration: 1,157 of the 1,868 rows of defra-2026 share a name with
+	 * another row, and the three named "Gaseous fuels: Butane" differ only by
+	 * unit.
+	 */
+	record PackRowResponse(String code, String name, String sourceCategory, String sourceActivity,
+			String sourceDetail, String unit, BigDecimal kgCo2ePerUnit, Scope defaultScope,
+			ActivityCategory defaultCategory, ReportingBasis reportingBasis, boolean co2eOnly, boolean approved) {
+		static PackRowResponse of(FactorPackRow row) {
+			return new PackRowResponse(row.getCode(), row.getName(), row.getSourceCategory(), row.getSourceActivity(),
+					row.getSourceDetail(), row.getUnit(), row.getKgCo2ePerUnit(), row.getDefaultScope(),
+					row.getDefaultCategory(), row.getReportingBasis(), row.isCo2eOnly(), row.isApproved());
+		}
+	}
+
+	/** A page of an edition's rows, with the categories the whole edition carries. */
+	record PackRowPage(List<PackRowResponse> rows, int page, int size, long total, List<String> categories) {
+		static PackRowPage of(FactorPackRowsService.RowPage page) {
+			return new PackRowPage(page.rows().stream().map(PackRowResponse::of).toList(), page.page(), page.size(),
+					page.total(), page.categories());
+		}
+	}
+
 	private final FactorPacks packs;
 	private final GhgService ghgService;
 	private final FactorPackImportService imports;
 
-	FactorPackController(FactorPacks packs, GhgService ghgService, FactorPackImportService imports) {
+	private final FactorPackRowsService packRows;
+
+	FactorPackController(FactorPacks packs, GhgService ghgService, FactorPackImportService imports,
+			FactorPackRowsService packRows) {
 		this.packs = packs;
 		this.ghgService = ghgService;
 		this.imports = imports;
+		this.packRows = packRows;
 	}
 
 	@GetMapping("/factor-packs")
@@ -84,6 +116,13 @@ class FactorPackController {
 	@GetMapping("/factor-packs/{packId}")
 	PackDetail get(@PathVariable String packId) {
 		return PackDetail.of(ghgService.pack(packId));
+	}
+
+	@GetMapping("/organizations/{organizationId}/factor-packs/{packId}/rows")
+	PackRowPage rows(@PathVariable UUID organizationId, @PathVariable String packId,
+			@RequestParam(required = false) String q, @RequestParam(required = false) String category,
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
+		return PackRowPage.of(packRows.rows(organizationId, packId, q, category, page, size));
 	}
 
 	@PostMapping("/organizations/{organizationId}/factor-packs/{packId}/import")

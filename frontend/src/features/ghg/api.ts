@@ -556,6 +556,36 @@ export interface FactorPackDiff {
 }
 
 /** A shipped, importable factor pack (spec 02.1). */
+export interface PackRow {
+  code: string
+  name: string
+  sourceCategory: string | null
+  sourceActivity: string | null
+  sourceDetail: string | null
+  unit: string
+  kgCo2ePerUnit: number
+  defaultScope: string
+  defaultCategory: string
+  reportingBasis: string
+  co2eOnly: boolean
+  approved: boolean
+}
+
+export interface PackRowPage {
+  rows: PackRow[]
+  page: number
+  size: number
+  total: number
+  categories: string[]
+}
+
+export interface PackRowFilter {
+  q?: string
+  category?: string
+  page?: number
+  size?: number
+}
+
 export interface FactorPack {
   id: string
   name: string
@@ -2027,6 +2057,23 @@ export function deleteEmissionFactor(id: string): Promise<void> {
 
 export function listFactorPacks(): Promise<FactorPack[]> {
   return api<FactorPack[]>('/api/ghg/factor-packs')
+}
+
+/** One page of an edition's rows, read without importing it (spec 02.8). */
+export function listPackRows(
+  organizationId: string,
+  packId: string,
+  filter: PackRowFilter = {},
+): Promise<PackRowPage> {
+  const query = new URLSearchParams()
+  if (filter.q) query.set('q', filter.q)
+  if (filter.category) query.set('category', filter.category)
+  if (filter.page != null) query.set('page', String(filter.page))
+  if (filter.size != null) query.set('size', String(filter.size))
+  const suffix = query.toString() ? `?${query}` : ''
+  return api<PackRowPage>(
+    `/api/ghg/organizations/${organizationId}/factor-packs/${packId}/rows${suffix}`,
+  )
 }
 
 export function importFactorPack(

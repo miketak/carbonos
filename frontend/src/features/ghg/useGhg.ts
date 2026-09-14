@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   acceptFactorPackNotice,
   addEvidenceLink,
@@ -65,6 +65,7 @@ import {
   listFacilities,
   listFactorPackNotices,
   listFactorPacks,
+  listPackRows,
   listImportBatches,
   listInventories,
   listMarketFactors,
@@ -112,6 +113,7 @@ import {
 } from './api'
 import type {
   ActivityInput,
+  PackRowFilter,
   ActivityQuery,
   AssignmentQuery,
   BaseYearInput,
@@ -312,6 +314,16 @@ export function useRemoveMember(orgId: string) {
 
 export function useFactorPacksQuery() {
   return useQuery({ queryKey: factorPacksKey, queryFn: listFactorPacks })
+}
+
+/** One page of a pack's rows, read without importing it (spec 02.8). */
+export function usePackRowsQuery(orgId: string, packId: string | null, filter: PackRowFilter) {
+  return useQuery({
+    queryKey: ['ghg', orgId, 'pack-rows', packId, filter] as const,
+    queryFn: () => listPackRows(orgId, packId as string, filter),
+    enabled: packId != null,
+    placeholderData: keepPreviousData,
+  })
 }
 
 function useFactorMutation<TArgs, TResult>(

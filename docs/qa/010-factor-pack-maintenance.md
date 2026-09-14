@@ -255,6 +255,21 @@ in to a client organization that holds the `ghana` lineages.
 | 4 | Confirm the organization's numbers. | Unchanged. A withdrawal is the publisher's act, not the client's recalculation. | | |
 | 5 | With database access, run `select count(*) from ghg_factor_pack_changes where edition_id = 'qa-ghana-2027';` | Seven, one per code of the edition. The change log is a row per code, frozen. | | |
 
+### F4. An organization reads a pack without importing it
+
+Run this as a member of Sankofa Gold plc, not as the administrator.
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Open the organization, then **Emission factors**, and find the **Factor packs** card. | Each pack shows its name, its factor count, its source, its potentials basis and the date it was retrieved, with two controls: **View factors** and **Import pack**. | | |
+| 2 | On a pack the organization has not imported, click **View factors**. | A drawer opens beside the page, headed with the pack's name and carrying its source, potentials basis, licence and retrieval date. A line says that reading a pack changes nothing. | | |
+| 3 | Read the table. | Each row shows the factor's name, the publisher's category and activity beneath it, its code, its unit, its CO2e per unit, and whether it is approved. | | |
+| 4 | Type `butane` in **Search**. | The table narrows. Rows sharing the name "Gaseous fuels: Butane" appear more than once, told apart by their unit, at roughly 3,033 per tonne, 1.745 per litre and 0.222 per kWh. | | |
+| 5 | Clear the search and choose a value in **Publisher's category**. | The table narrows to that category only, and the count above the pager falls. The list offers only categories the pack actually carries. | | |
+| 6 | If the pack holds more than fifty factors, use **Next** and **Previous**. | The page moves and the range reads "51 to 100 of N". | | |
+| 7 | Close the drawer and open **Our factors**. | The organization holds exactly what it held before. Reading the pack imported nothing. | | |
+| 8 | Ask the administrator for the identifier of a draft edition, and open `/app/ghg/<organization>/factors` then request that pack's rows directly. | There is no way to reach a draft from this page, and a direct request answers that it was not found rather than that it is forbidden. | | |
+
 ### F3. The environment is left as you found it
 
 | Step | Action | Expected result | Pass/Fail | Notes |

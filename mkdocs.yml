@@ -124,6 +124,7 @@ nav:
               - specs/02.5-factor-pack-editions.md
               - specs/02.6-versioned-pack-import.md
               - specs/02.7-adopting-a-new-edition.md
+              - specs/02.8-viewing-a-packs-factors.md
           - "03 Organizational boundary":
               - specs/03-organizational-boundary.md
               - specs/03.1-legal-entities-and-table-1.md
