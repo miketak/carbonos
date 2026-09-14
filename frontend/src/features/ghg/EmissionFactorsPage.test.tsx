@@ -446,9 +446,11 @@ test("a pack's factors are read without importing it, and rows sharing a name ar
   await waitFor(() => expect(listPackRows).toHaveBeenCalled())
   // the two Butane rows share a name and differ only by unit, so the unit and the value are shown
   expect(within(drawer).getAllByText('Gaseous fuels: Butane')).toHaveLength(2)
-  expect(within(drawer).getByText('tonne')).toBeInTheDocument()
-  expect(within(drawer).getByText('litre')).toBeInTheDocument()
+  // the unit and the value sit beside the name, so the disambiguator is never scrolled off
+  expect(within(drawer).getByText('per tonne')).toBeInTheDocument()
+  expect(within(drawer).getByText('per litre')).toBeInTheDocument()
   expect(within(drawer).getByText(/3033\.38067/)).toBeInTheDocument()
+  expect(within(drawer).getByText(/1\.74533/)).toBeInTheDocument()
   // reading is not importing
   expect(importFactorPack).not.toHaveBeenCalled()
 })

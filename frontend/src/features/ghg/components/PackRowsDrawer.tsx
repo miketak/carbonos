@@ -95,42 +95,34 @@ export function PackRowsDrawer({ organizationId, pack, onClose }: PackRowsDrawer
       )}
 
       {rows.data && rows.data.rows.length > 0 && (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <caption className="sr-only">The factors {pack.name} carries</caption>
-            <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="py-2 pr-3">Factor</th>
-                <th className="py-2 pr-3">Unit</th>
-                <th className="py-2 pr-3 text-right">kg CO2e per unit</th>
-                <th className="py-2">Approved</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.data.rows.map((row: PackRow) => (
-                <tr key={row.code} className="border-b border-teal/5 last:border-0 align-top">
-                  <td className="py-2 pr-3">
-                    <span className="font-medium">{row.name}</span>
-                    <span className="block text-xs text-ink-muted">
-                      {[row.sourceCategory, row.sourceActivity, row.sourceDetail]
-                        .filter(Boolean)
-                        .join(' / ')}
-                    </span>
-                    <span className="block font-mono text-xs text-ink-muted">{row.code}</span>
-                  </td>
-                  <td className="py-2 pr-3">{row.unit}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums">
-                    {row.kgCo2ePerUnit}
-                    {row.co2eOnly && (
-                      <span className="block text-xs text-ink-muted">CO2e only</span>
-                    )}
-                  </td>
-                  <td className="py-2">{row.approved ? 'Yes' : 'No'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="mt-4 grid gap-0">
+          {rows.data.rows.map((row: PackRow) => (
+            <li
+              key={row.code}
+              className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-teal/5 py-2 last:border-0"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">{row.name}</span>
+                <span className="block text-xs text-ink-muted">
+                  {[row.sourceCategory, row.sourceActivity, row.sourceDetail]
+                    .filter(Boolean)
+                    .join(' / ')}
+                </span>
+                <span className="block font-mono text-xs break-all text-ink-muted">{row.code}</span>
+              </span>
+              <span className="text-right">
+                <span className="block tabular-nums">
+                  {row.kgCo2ePerUnit} <span className="text-ink-muted">kg CO2e</span>
+                </span>
+                <span className="block text-xs text-ink-muted">per {row.unit}</span>
+                {row.co2eOnly && <span className="block text-xs text-ink-muted">CO2e only</span>}
+                {!row.approved && (
+                  <span className="block text-xs font-semibold text-amber-700">Not approved</span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
 
       {rows.data && total > PAGE_SIZE && (
