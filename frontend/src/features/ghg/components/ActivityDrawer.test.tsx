@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../../test/utils'
 import { ActivityDrawer } from './ActivityDrawer'
-import type { Activity, Facility } from '../api'
+import type { Activity, Facility, SourceStream } from '../api'
 
 vi.mock('../api', () => import('../testApiMock'))
 
@@ -61,6 +61,32 @@ const draft: Activity = {
 }
 
 const nextRecord: Activity = { ...draft, id: 'act-4', recordNo: 4, recordRef: 'ACT-0004' }
+
+const fact: Activity = {
+  ...draft,
+  draft: false,
+  status: 'NEEDS_ATTENTION',
+  issues: ['NO_STREAM'],
+  quantity: 12500,
+  unit: 'litre',
+  dataSource: 'Dispensing log',
+}
+
+const haulFleet: SourceStream = {
+  id: 'str-1',
+  facilityId: 'fac-1',
+  facilityName: 'Nkran Mine',
+  name: 'Haul fleet',
+  kind: 'MOBILE_COMBUSTION',
+  fuel: 'Diesel',
+  meterOrSupplier: null,
+  contractorOperated: false,
+  note: null,
+  defaultScope: 'SCOPE_1',
+  defaultCategory: 'MOBILE_COMBUSTION',
+  allowedCategories: ['MOBILE_COMBUSTION'],
+  createdAt: '2026-09-01T00:00:00Z',
+}
 
 function renderDrawer(
   activityId: string,
@@ -217,4 +243,49 @@ test('a verifier opens a drawer with no fields and no Save (spec 01.4)', async (
   expect(within(drawer).queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
   expect(within(drawer).queryByRole('button', { name: 'Save draft' })).not.toBeInTheDocument()
   expect(within(drawer).getByText('ACT-0003')).toBeInTheDocument()
+})
+
+test('naming a stream on a saved fact asks for the reason instead of a dead Save button', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listStreams).mockResolvedValue([haulFleet])
+  vi.mocked(updateActivity).mockResolvedValue({
+    ...fact,
+    streamId: 'str-1',
+    streamName: 'Haul fleet',
+  })
+  const { onSaved } = renderDrawer('act-3', [fact])
+
+  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+  await within(drawer).findByRole('option', { name: 'Haul fleet' })
+  await user.selectOptions(within(drawer).getByLabelText('Stream'), 'str-1')
+  expect(within(drawer).getByText(/Stream default:/)).toBeInTheDocument()
+
+  const save = within(drawer).getByRole('button', { name: 'Save' })
+  expect(save).toBeEnabled()
+  await user.click(save)
+
+  expect(
+    await within(drawer).findByText('A correction needs a reason of at least 5 characters.'),
+  ).toBeInTheDocument()
+  expect(within(drawer).getByLabelText('Reason for the correction *')).toHaveFocus()
+  expect(updateActivity).not.toHaveBeenCalled()
+
+  await user.type(
+    within(drawer).getByLabelText('Reason for the correction *'),
+    'Stream register added after the record',
+  )
+  await user.click(within(drawer).getByRole('button', { name: 'Save' }))
+
+  await waitFor(() => expect(updateActivity).toHaveBeenCalled())
+  expect(vi.mocked(updateActivity).mock.calls[0]).toEqual([
+    'act-3',
+    expect.objectContaining({
+      draft: false,
+      streamId: 'str-1',
+      reason: 'Stream register added after the record',
+    }),
+  ])
+  await waitFor(() =>
+    expect(onSaved).toHaveBeenCalledWith('Record corrected. Past runs are unaffected.'),
+  )
 })
