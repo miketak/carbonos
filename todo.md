@@ -58,6 +58,25 @@ anything today; each will be asked again the first time a client hits it.
   snapshots and are left as calculated. Decide whether any dev or QA run
   needs recalculating before it is shown to anyone.
 
+## Questions the factor pack specs left open
+
+Each sits in the non-goals of the spec named beside it. They are listed here
+because this file is where open work lives. The first three are what the GHG
+officer said a verifier would ask for.
+
+- [ ] **PK-01** A data quality or pedigree score on a pack row, along the
+  lines of the indicators the Scope 3 Standard defines (spec 02.5).
+- [ ] **PK-02** A record of who checked each row's transcription against the
+  source document, which is a different act from approving the edition
+  (spec 02.5).
+- [ ] **PK-03** One retrievable recalculation log joining adoption decisions
+  to base-year candidates. Today the answer lives on the notice and the
+  candidate lives in the base year (spec 02.7).
+- [ ] **PK-04** Whether an approver must re-confirm when a draft changes
+  after they have read the blast radius (spec 02.5).
+- [ ] **PK-05** Whether a declined notice can be re-opened, or whether the
+  organization imports the edition directly instead (spec 02.7).
+
 ## Emission factors still unsourced
 
 No published factor exists for these, so a supplier or study factor is
@@ -76,10 +95,30 @@ generated from a script and no release is needed.
 
 ## Next audit
 
-The ten specs of the second backlog are implemented but have not been retested
-through the UI by the officer. That retest is the real verification, in
-particular the by-gas table footing to the total, the equity-share copy
-rebuilding its boundary, the PDF, and support access.
+Two bodies of work are implemented and neither has been walked through the UI
+by the officer. That walkthrough is the real verification; the tests prove the
+rules, not the experience.
+
+From the second backlog: the by-gas table footing to the total, the
+equity-share copy rebuilding its boundary, the PDF, and support access.
+
+From the factor pack console, none of which any pass has seen:
+
+- [ ] Authoring a draft edition, and the nine publication rules refusing a bad
+  row. Try a value with no source, a zero that is not a template, a code
+  outside the namespace, and a gas split that does not reconcile.
+- [ ] Publication with two people: the approver refused when they are the
+  curator, the evidence checksum, and the change log against the predecessor.
+- [ ] The blast radius before publishing and before withdrawing, read as a
+  maintainer would read it before deciding.
+- [ ] Versioned import: a later edition cutting a new version, a locally
+  edited row reported as a conflict rather than overwritten, and a locked
+  period refusing the import.
+- [ ] The adoption inbox: the per-row diff, the estimated tonnage movement,
+  the recalculation question, and that accepting holds **Mark as final** and
+  **Publish** while never blocking a run.
+- [ ] That a published edition cannot be edited, and that a superseded or
+  withdrawn one is still readable but not importable.
 
 Ask the officer to cover what neither pass has exercised:
 
