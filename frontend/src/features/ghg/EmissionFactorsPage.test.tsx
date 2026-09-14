@@ -9,7 +9,13 @@ vi.mock('./api', () => import('./testApiMock'))
 
 import { listEmissionFactors, mockEmissionFactors } from './testApiMock'
 
-import { getOrganization, importFactorPack, listFactorPacks, setFactorApproval } from './api'
+import {
+  getOrganization,
+  importFactorPack,
+  listFactorPacks,
+  listPackRows,
+  setFactorApproval,
+} from './api'
 
 const organization: Organization = {
   id: 'org-1',
@@ -118,6 +124,44 @@ const pack: FactorPack = {
 beforeEach(() => {
   mockEmissionFactors([diesel, hfo])
   vi.mocked(listFactorPacks).mockReset().mockResolvedValue([pack])
+  vi.mocked(listPackRows)
+    .mockReset()
+    .mockResolvedValue({
+      rows: [
+        {
+          code: 'DEFRA:Fuels:Gaseous_fuels_Butane:tonnes',
+          name: 'Gaseous fuels: Butane',
+          sourceCategory: 'Fuels',
+          sourceActivity: 'Gaseous fuels / Butane',
+          sourceDetail: null,
+          unit: 'tonne',
+          kgCo2ePerUnit: 3033.38067,
+          defaultScope: 'SCOPE_1',
+          defaultCategory: 'STATIONARY_COMBUSTION',
+          reportingBasis: 'SCOPES',
+          co2eOnly: false,
+          approved: true,
+        },
+        {
+          code: 'DEFRA:Fuels:Gaseous_fuels_Butane:litres',
+          name: 'Gaseous fuels: Butane',
+          sourceCategory: 'Fuels',
+          sourceActivity: 'Gaseous fuels / Butane',
+          sourceDetail: null,
+          unit: 'litre',
+          kgCo2ePerUnit: 1.74533,
+          defaultScope: 'SCOPE_1',
+          defaultCategory: 'STATIONARY_COMBUSTION',
+          reportingBasis: 'SCOPES',
+          co2eOnly: false,
+          approved: true,
+        },
+      ],
+      page: 0,
+      size: 50,
+      total: 2,
+      categories: ['Fuels'],
+    })
   vi.mocked(getOrganization).mockReset()
   vi.mocked(importFactorPack).mockReset().mockResolvedValue({
     edition: 'sector-mining',
@@ -386,4 +430,25 @@ test('the import toast names conflicts, discontinued lineages and a split period
   expect(toast).toHaveTextContent(
     'It applies inside FY2027, so that period would be calculated on two editions.',
   )
+})
+
+test("a pack's factors are read without importing it, and rows sharing a name are told apart (spec 02.8)", async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click(
+    await screen.findByRole('button', {
+      name: /view the factors in sector pack: mining/i,
+    }),
+  )
+
+  const drawer = await screen.findByRole('dialog', { name: /sector pack: mining/i })
+  await waitFor(() => expect(listPackRows).toHaveBeenCalled())
+  // the two Butane rows share a name and differ only by unit, so the unit and the value are shown
+  expect(within(drawer).getAllByText('Gaseous fuels: Butane')).toHaveLength(2)
+  expect(within(drawer).getByText('tonne')).toBeInTheDocument()
+  expect(within(drawer).getByText('litre')).toBeInTheDocument()
+  expect(within(drawer).getByText(/3033\.38067/)).toBeInTheDocument()
+  // reading is not importing
+  expect(importFactorPack).not.toHaveBeenCalled()
 })
