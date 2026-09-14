@@ -278,12 +278,15 @@ test('a row opens the drawer, and a correction needs a reason before it is sent'
     "Scope 1 · Stationary combustion. Scope is confirmed in each inventory's review.",
   )
   const save = within(drawer).getByRole('button', { name: 'Save & next →' })
-  expect(save).toBeDisabled()
+  await user.click(save)
+  expect(
+    await within(drawer).findByText('A correction needs a reason of at least 5 characters.'),
+  ).toBeInTheDocument()
+  expect(updateActivity).not.toHaveBeenCalled()
   await user.type(
     within(drawer).getByLabelText('Reason for the correction *'),
     'dispensing log reconciled with the supplier invoice',
   )
-  expect(save).toBeEnabled()
   await user.click(save)
 
   await waitFor(() => expect(updateActivity).toHaveBeenCalled())

@@ -102,7 +102,7 @@ two tiers in the data-quality table.
 | --- | --- | --- | --- | --- |
 | 1 | Back on Activity data, open the draft, type 96000 US-gallon, data source "Fuel register", document reference INV-2025-0731 and click **Save**. | "Record entered. It is now a fact." The pill turns Ready and the Drafts tab disappears. | | |
 | 2 | Click **History (1)**. | "Entered from a draft" by your email, with every value and "Draft: true → false". | | |
-| 3 | Change the quantity and click **Save**. | Refused until a reason of at least 5 characters is typed: a fact is corrected with a reason. | | |
+| 3 | Change the quantity and click **Save**. | Refused with "A correction needs a reason of at least 5 characters." under the reason field: a fact is corrected with a reason. | | |
 
 ## D. Corrections and removals
 
@@ -110,7 +110,7 @@ two tiers in the data-quality table.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open the haul fleet diesel record, change the quantity to 1200000 and try to save with the reason field empty. | **Save** stays disabled until the reason has at least 5 characters. | | |
+| 1 | Open the haul fleet diesel record, change the quantity to 1200000 and click **Save** with the reason field empty. | Nothing is saved. "A correction needs a reason of at least 5 characters." prints under the reason field and the field takes focus, scrolled into view at the foot of the drawer. | | |
 | 2 | Enter the reason "Dispensing log reconciled with the supplier invoice" and save. | "Record corrected. Past runs are unaffected." | | |
 | 3 | Click **History (1)** in the drawer's header. | The history lists the correction with your email, the time, the reason, and "Quantity: 1250000 → 1200000". | | |
 

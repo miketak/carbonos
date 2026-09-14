@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Button } from '../../../components/Button'
 import { Drawer } from '../../../components/Drawer'
@@ -54,7 +54,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
  * Edits one record beside the register (spec 04.6): the readiness checks, the
  * fields in three groups, the evidence on its own tab, and a navigator so an
  * engineer moves through a page with Save & next. A draft saves with a facility
- * and an activity type alone; a fact needs a reason to change.
+ * and an activity type alone; a fact needs a reason to change, and Save says so
+ * inline instead of going dead.
  */
 export function ActivityDrawer({
   organizationId,
@@ -180,6 +181,7 @@ function ActivityForm({
   const [reason, setReason] = useState('')
   const [clientErrors, setClientErrors] = useState<Record<string, string> | undefined>()
   const removeHintId = useId()
+  const reasonRef = useRef<HTMLInputElement>(null)
 
   const streams = useMemo(
     () => (streamsQuery.data ?? []).filter((stream) => stream.facilityId === facilityId),
@@ -201,9 +203,14 @@ function ActivityForm({
       uncertaintyPercent: checkNumber(uncertainty, { label: 'Uncertainty', min: 0, max: 100 }),
       unit: !draft && unit.trim() === '' ? 'Choose a unit.' : undefined,
       periodStart: !draft && periodStart === '' ? 'Enter the period start.' : undefined,
+      reason: reasonMissing ? 'A correction needs a reason of at least 5 characters.' : undefined,
     })
     setClientErrors(invalid)
-    if (invalid) return
+    if (invalid) {
+      // the reason sits at the foot of a scrolling drawer, so bring it into view
+      if (invalid.reason) reasonRef.current?.focus()
+      return
+    }
     const input: ActivityInput = {
       draft,
       facilityId,
@@ -304,7 +311,7 @@ function ActivityForm({
               variant="ghost"
               className="px-3 py-1.5 text-sm"
               busy={mutation.isPending}
-              disabled={reasonMissing}
+              disabled={activityType.trim() === '' || facilityId === ''}
               onClick={() => save('save')}
             >
               Save
@@ -315,7 +322,7 @@ function ActivityForm({
             form="activity-drawer-form"
             className="px-4 py-1.5 text-sm"
             busy={mutation.isPending}
-            disabled={reasonMissing || activityType.trim() === '' || facilityId === ''}
+            disabled={activityType.trim() === '' || facilityId === ''}
           >
             {nextId ? 'Save & next →' : 'Save'}
           </Button>
@@ -645,10 +652,14 @@ function ActivityForm({
 
             {isFact && (
               <InputField
+                ref={reasonRef}
                 label="Reason for the correction *"
                 placeholder="Dispensing log reconciled with the supplier invoice"
                 value={reason}
-                onChange={(event) => setReason(event.target.value)}
+                onChange={(event) => {
+                  setReason(event.target.value)
+                  setClientErrors((current) => withoutError(current, 'reason'))
+                }}
                 error={errors?.reason}
                 hint="Recorded with the old and new values in the record's history."
                 minLength={5}
