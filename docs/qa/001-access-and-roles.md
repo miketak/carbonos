@@ -8,7 +8,8 @@ and that each role can do exactly what it allows and nothing more.
 [spec 01.1](../../specs/01.1-access-requests.md),
 [spec 01.2](../../specs/01.2-organization-membership-and-roles.md),
 [spec 01.3](../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md)
-and [spec 01.4](../../specs/01.4-role-aware-ui-and-visible-refusals.md).
+[spec 01.4](../../specs/01.4-role-aware-ui-and-visible-refusals.md)
+and [spec 01.6](../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md).
 
 **Estimated time:** 75 minutes.
 
@@ -60,8 +61,9 @@ on staging. The development team covers it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Enter `Newcomer-pass-2026` twice and submit. | The Newcomer lands in the app signed in. The loader that plays after sign-in shows the wordmark, a progress bar and "Loading your workspace"; it makes no claim about verifying or calibrating anything, and a click skips it. | | |
-| 2 | In the normal window, refresh the Users list. | The account now shows **Active**. | | |
+| 1 | Enter `Newcomer-pass-2026` twice and submit. | The Newcomer lands on the **GHG accounting** page, signed in, with no organizations and no welcome card in between. The loader that plays after sign-in shows the wordmark, a progress bar and "Loading your workspace"; it makes no claim about verifying or calibrating anything, and a click skips it. | | |
+| 2 | Read the empty state. | It does not tell them to create an organization while **New organization** is hidden. With creation open it invites them to create one; with creation reserved to administrators it says they are not a member of any organization yet and names who to ask. | | |
+| 3 | In the normal window, refresh the Users list. | The account now shows **Active**. | | |
 
 ### A6. The link is single-use and a bad token looks the same
 
@@ -77,6 +79,18 @@ on staging. The development team covers it.
 | 1 | As the admin, create a user for the Analyst alias with the password `short1`. | Refused with the password rule under the field ("At least 12 characters, with a letter and a digit."). | | |
 | 2 | Repeat with `Analyst-pass-2026`. | The account is created. | | |
 | 3 | Repeat for the Auditor alias with `Auditor-pass-2026`. | The account is created. | | |
+
+### A8. The account menu carries the profile
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | As the Newcomer, look at the top right of the page. | An avatar disc with their initial and their display name, not a bare **Sign out** button. | | |
+| 2 | Open it. | A menu listing their email, **Edit profile** and **Sign out**. No **Administration** entry. | | |
+| 3 | Press Escape. | The menu closes and the keyboard focus is back on the trigger, so Tab continues from there. | | |
+| 4 | Open it again and choose **Edit profile**. | The profile page opens, with the same top bar and the same account menu. There is no Resume section anywhere on it. | | |
+| 5 | Change the display name and save, then open the menu again. | The name in the top right is the new one. | | |
+| 6 | Open the menu on an organization page and on the GHG accounting list. | It is in the same place on both. | | |
+| 7 | As the admin, open the menu from any GHG page. | It also lists **Administration**, which opens the platform dashboard. Inside `/admin` that entry is absent, because the sidebar is the navigation there. | | |
 
 ## B. Organizations and members
 
@@ -152,11 +166,13 @@ Exports are checked in procedure 7.
 | 4 | Click **Assume access** and submit with the reason `short`. | The button stays disabled until the reason is at least 10 characters. | | |
 | 5 | Type `ticket 4512, preparer cannot open the run` and confirm. | A toast confirms the access. The row shows the expiry and an **End access** action. | | |
 | 6 | Open the GHG home. | Sankofa Gold plc is now listed with a **Support access** badge and opens. | | |
-| 7 | On the organization, classify one record or change the header. | The act succeeds. | | |
-| 8 | Open the organization overview and read the **Support access** card. | It names the admin's email, the time the access was taken, the reason, and the expiry; the history below lists "Support access assumed". | | |
-| 9 | Look at the members card and at **Delete** on the organization card. | The members form and the role selects are absent, and **Delete** is disabled: support access never grants membership changes or deletion. | | |
-| 10 | Back on `/admin/organizations`, click **End access**. | The GHG home no longer lists Sankofa Gold plc and its URL is not found again. | | |
-| 11 | As the Newcomer, open the overview's **Support access** card. | The history lists "Support access assumed" and "Support access ended", each with the admin's email. | | |
+| 7 | Open the activity register, then legal entities, then inventories. | Every page carries a banner naming Sankofa Gold plc, saying you are inside under support access, giving the moment it expires, and saying every act is recorded in the organization's history. It is not only on the overview. | | |
+| 8 | On the organization, classify one record or change the header. | The act succeeds. | | |
+| 9 | Open the organization overview and read the **Support access** card. | It names the admin's email, the time the access was taken, the reason, and the expiry; the history below lists "Support access assumed". | | |
+| 10 | Look at the members card and at **Delete** on the organization card. | The members form and the role selects are absent, and **Delete** is disabled: support access never grants membership changes or deletion. | | |
+| 11 | Back on `/admin/organizations`, click **End access**. | The GHG home no longer lists Sankofa Gold plc. | | |
+| 12 | Paste the organization's URL again. | Not found, and the page says support access ends on its own when its window expires and that an administrator holds no standing access without a grant. It does not say the organization may have been deleted. | | |
+| 13 | As the Newcomer, open the overview's **Support access** card. | The history lists "Support access assumed" and "Support access ended", each with the admin's email. | | |
 
 ### B9. An organization is not deleted while it has a published record
 

@@ -113,7 +113,9 @@ every entity resolution, so every GHG endpoint inherits them.
 
 - `V2__users.sql`: `users(id, email unique, display_name, role CHECK, status
   CHECK, password_hash BCrypt, created_at, updated_at)`.
-- `V3__user_media.sql`: avatar and resume object-store keys on `users`.
+- `V3__user_media.sql`: avatar and resume object-store keys on `users`. The
+  resume columns were dropped by `V49__drop_user_resume.sql` when spec 01.6
+  retired that upload; the avatar columns stand.
 - `V7__organization_ownership.sql`: `ghg_organizations.owner_user_id` (no
   foreign key), backfilled to the oldest active administrator.
 

@@ -187,15 +187,23 @@ export function AdminLayout() {
             </nav>
 
             <div className="hidden md:mt-auto md:block md:border-t md:border-teal/10 md:pt-3">
+              {/*
+                Always shown, never conditional on the administrator having an
+                organization (spec 01.6). The membership list is
+                `/api/ghg/organizations`, which carries a facility count, and
+                spec 01.5 keeps tenant inventory data out of this panel; under
+                restricted creation this is also the only route to the screen
+                that creates an organization.
+              */}
               <Link
-                to="/app"
-                title={collapsed ? 'Back to CarbonOS' : undefined}
+                to="/app/ghg"
+                title={collapsed ? 'GHG accounting' : undefined}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap text-link transition-colors duration-150 hover:bg-teal/10 hover:text-link ${
                   collapsed ? 'md:justify-center md:px-2' : ''
                 }`}
               >
-                <Icon d="m12 19-7-7 7-7M19 12H5" />
-                <span className={collapsed ? 'md:hidden' : ''}>Back to CarbonOS</span>
+                <Icon d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10M2 21c0-3 1.85-5.36 4.71-6.5" />
+                <span className={collapsed ? 'md:hidden' : ''}>GHG accounting</span>
               </Link>
             </div>
           </div>

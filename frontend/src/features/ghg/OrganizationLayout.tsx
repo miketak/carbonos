@@ -3,7 +3,9 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'reac
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { AppHeader } from '../../components/AppHeader'
+import { useSession } from '../auth/useSession'
 import { ReadOnlyBanner } from './components/ReadOnlyBanner'
+import { SupportAccessBanner } from './components/SupportAccessBanner'
 import { useFactorPackNoticesQuery, useOrganizationQuery, useOrganizationsQuery } from './useGhg'
 import type { Organization } from './api'
 
@@ -89,6 +91,8 @@ function Icon({ d }: { d: string }) {
 /** Organization workspace shell: full-width, collapsible left sidebar around an outlet. */
 export function OrganizationLayout() {
   const { organizationId = '' } = useParams()
+  const session = useSession()
+  const isPlatformAdmin = session.data?.role === 'ADMIN'
   const organizationQuery = useOrganizationQuery(organizationId)
   const organizationsQuery = useOrganizationsQuery()
   const noticesQuery = useFactorPackNoticesQuery(organizationId)
@@ -239,13 +243,18 @@ export function OrganizationLayout() {
           {organizationQuery.isError && (
             <GlassCard className="p-8 text-center">
               <h1 className="text-lg">Organization not found</h1>
+              {/* spec 01.6: a grant that expired mid-session reads as the expiry
+                  it is, not as a deleted organization */}
               <p className="mt-1 text-sm text-ink-muted">
-                It may have been deleted. Head back to the list to pick another.
+                {isPlatformAdmin
+                  ? 'You are not inside this organization. Support access ends on its own when its window expires, and a platform administrator holds no standing access without a grant.'
+                  : 'It may have been deleted. Head back to the list to pick another.'}
               </p>
             </GlassCard>
           )}
           {organizationQuery.data && (
             <>
+              <SupportAccessBanner organization={organizationQuery.data} />
               <ReadOnlyBanner myRole={organizationQuery.data.myRole} />
               <Outlet />
             </>

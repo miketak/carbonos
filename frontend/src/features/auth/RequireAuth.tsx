@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { GlassCard } from '../../components/GlassCard'
-import { Skeleton } from '../../components/Skeleton'
+import { LoadingCard } from '../../components/LoadingCard'
 import { useSession } from './useSession'
 import type { Role } from './api'
 
@@ -15,15 +15,7 @@ export function RequireAuth({ role, children }: RequireAuthProps) {
   const location = useLocation()
 
   if (session.isPending) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-6">
-        <GlassCard className="w-full max-w-md space-y-3 p-8" aria-label="Loading">
-          <Skeleton className="h-6 w-1/2" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3" />
-        </GlassCard>
-      </main>
-    )
+    return <LoadingCard />
   }
 
   const user = session.data ?? null

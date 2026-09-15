@@ -1,35 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { AppHeader } from '../../components/AppHeader'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail } from '../../lib/api'
-import { useLogout } from '../auth/useLogout'
-import {
-  useAvatarQuery,
-  useProfileQuery,
-  useUpdateProfile,
-  useUploadAvatar,
-  useUploadResume,
-} from './useProfile'
+import { useAvatarQuery, useProfileQuery, useUpdateProfile, useUploadAvatar } from './useProfile'
 
-/** Self-service profile: display name plus avatar and resume uploads. */
+/** Self-service profile: display name and profile picture. */
 export function ProfilePage() {
   const toast = useToast()
-  const signOut = useLogout()
   const profileQuery = useProfileQuery()
   const profile = profileQuery.data
 
   const update = useUpdateProfile()
   const avatarUpload = useUploadAvatar()
-  const resumeUpload = useUploadResume()
 
   const [displayName, setDisplayName] = useState<string | null>(null)
   const avatarInput = useRef<HTMLInputElement>(null)
-  const resumeInput = useRef<HTMLInputElement>(null)
 
   const avatarQuery = useAvatarQuery(!!profile?.hasAvatar)
   const avatarBlob = avatarQuery.data
@@ -57,43 +47,11 @@ export function ProfilePage() {
     if (file) avatarUpload.mutate(file, { onSuccess: () => toast('Profile picture updated') })
   }
 
-  function pickResume(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (file) resumeUpload.mutate(file, { onSuccess: () => toast('Resume uploaded') })
-  }
-
-  const banner =
-    problemDetail(update.error) ??
-    problemDetail(avatarUpload.error) ??
-    problemDetail(resumeUpload.error)
+  const banner = problemDetail(update.error) ?? problemDetail(avatarUpload.error)
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-white/50 bg-white/60 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <div className="leading-none">
-            <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-lg font-bold text-transparent">
-              CarbonOS
-            </p>
-            <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-ink-muted uppercase">
-              by ECORIV
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link to="/app" className="text-sm text-ink-muted hover:text-dark-teal">
-              Home
-            </Link>
-            <Button
-              variant="ghost"
-              className="px-3 py-1.5 text-sm"
-              onClick={() => signOut.mutate()}
-            >
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto flex max-w-5xl justify-center px-6 py-16">
         <GlassCard className="w-full max-w-lg p-10">
@@ -166,47 +124,6 @@ export function ProfilePage() {
                   Save changes
                 </Button>
               </form>
-
-              <section className="mt-8 border-t border-teal/10 pt-6">
-                <h2 className="text-sm font-semibold tracking-wide text-ink-muted uppercase">
-                  Resume
-                </h2>
-                <div className="mt-3 flex items-center justify-between gap-4">
-                  {profile.hasResume ? (
-                    <a
-                      href="/api/profile/resume"
-                      download={profile.resumeFilename ?? undefined}
-                      className="truncate text-sm font-medium text-link hover:text-link"
-                    >
-                      {profile.resumeFilename ?? 'Download resume'}
-                    </a>
-                  ) : (
-                    <p className="text-sm text-ink-muted">No resume uploaded</p>
-                  )}
-                  <Button
-                    variant="ghost"
-                    className="shrink-0 px-3 py-1.5 text-sm"
-                    busy={resumeUpload.isPending}
-                    onClick={() => resumeInput.current?.click()}
-                  >
-                    {profile.hasResume ? 'Replace' : 'Upload'}
-                  </Button>
-                </div>
-                <p className="mt-1.5 text-xs text-ink-muted">PDF or PSD · up to 50 MB</p>
-                {fieldErrors(resumeUpload.error)?.file && (
-                  <p role="alert" className="mt-1 text-xs font-medium text-red-600">
-                    {fieldErrors(resumeUpload.error)?.file}
-                  </p>
-                )}
-                <input
-                  ref={resumeInput}
-                  type="file"
-                  accept=".pdf,.psd,application/pdf"
-                  className="hidden"
-                  onChange={pickResume}
-                  aria-label="Resume file"
-                />
-              </section>
             </>
           )}
         </GlassCard>

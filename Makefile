@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset db-wipe env-copy backend frontend admin verify dev-up dev-down docs docs-serve docs-check vale qa-docs
+.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check vale qa-docs
 
 # git ref the docs checks diff against
 BASE ?= origin/main
@@ -30,6 +30,10 @@ db-wipe:          ## wipe a Railway environment's database: make db-wipe ENV=sta
 env-copy:         ## copy a Railway environment's database and bucket into another: make env-copy FROM=staging TO=qa [ARGS=--yes]
 	@test -n "$(FROM)" -a -n "$(TO)" || { echo "Usage: make env-copy FROM=staging TO=qa [ARGS=--yes]"; exit 1; }
 	./scripts/copy-railway-env.sh "$(FROM)" "$(TO)" $(ARGS)
+
+purge-resumes:    ## delete the retired resume objects from an environment's bucket: make purge-resumes ENV=local [ARGS=--yes]
+	@test -n "$(ENV)" || { echo "Usage: make purge-resumes ENV=local|qa|staging|production [ARGS=--yes|--yes-production]"; exit 1; }
+	./scripts/purge-resumes.sh "$(ENV)" $(ARGS)
 
 backend:          ## run Spring Boot with the local profile (sources SDKMAN for Java 25)
 	cd backend && source "$$HOME/.sdkman/bin/sdkman-init.sh" && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local

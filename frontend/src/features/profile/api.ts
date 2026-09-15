@@ -5,8 +5,6 @@ export interface Profile {
   email: string
   displayName: string
   hasAvatar: boolean
-  hasResume: boolean
-  resumeFilename: string | null
 }
 
 export function getProfile(): Promise<Profile> {
@@ -27,10 +25,6 @@ export function uploadAvatar(file: File): Promise<Profile> {
   return upload('/api/profile/avatar', file)
 }
 
-export function uploadResume(file: File): Promise<Profile> {
-  return upload('/api/profile/resume', file)
-}
-
 /** The stored avatar image, or null when none has been uploaded yet. */
 export async function fetchAvatar(): Promise<Blob | null> {
   try {
@@ -39,8 +33,4 @@ export async function fetchAvatar(): Promise<Blob | null> {
     if (error instanceof ApiError && error.status === 404) return null
     throw error
   }
-}
-
-export function fetchResume(): Promise<Blob> {
-  return apiBlob('/api/profile/resume')
 }

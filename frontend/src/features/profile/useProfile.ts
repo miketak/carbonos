@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { sessionQueryKey } from '../auth/useSession'
-import { fetchAvatar, getProfile, updateProfile, uploadAvatar, uploadResume } from './api'
+import { fetchAvatar, getProfile, updateProfile, uploadAvatar } from './api'
 import type { Profile } from './api'
 
 export const profileQueryKey = ['profile'] as const
@@ -38,8 +38,4 @@ export function useUpdateProfile() {
 
 export function useUploadAvatar() {
   return useProfileMutation(uploadAvatar, true)
-}
-
-export function useUploadResume() {
-  return useProfileMutation(uploadResume)
 }

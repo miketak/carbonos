@@ -77,6 +77,23 @@ test('shows an empty state when there are no organizations', async () => {
   vi.mocked(listOrganizations).mockResolvedValue([])
   renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
   expect(await screen.findByRole('heading', { name: /no organizations yet/i })).toBeInTheDocument()
+  expect(screen.getByText(/create your first reporting organization/i)).toBeInTheDocument()
+})
+
+/**
+ * This is a landing screen now (spec 01.6), so the copy has to follow the
+ * capability: telling a reader to create an organization while the button is
+ * hidden from them is the invisible refusal spec 01.4 exists to stop.
+ */
+test('the empty state does not invite a reader who may not create one', async () => {
+  vi.mocked(listOrganizations).mockResolvedValue([])
+  vi.mocked(getOrganizationCapabilities).mockResolvedValue({ mayCreateOrganization: false })
+  renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
+
+  await screen.findByRole('heading', { name: /no organizations yet/i })
+  expect(await screen.findByText(/not a member of any organization yet/i)).toBeInTheDocument()
+  expect(screen.queryByText(/create your first reporting organization/i)).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /new organization/i })).not.toBeInTheDocument()
 })
 
 test('creates an organization through the modal', async () => {

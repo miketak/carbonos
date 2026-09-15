@@ -116,6 +116,7 @@ nav:
               - specs/01.3-organization-confidentiality-and-deletion-safeguards.md
               - specs/01.4-role-aware-ui-and-visible-refusals.md
               - specs/01.5-the-platform-administration-panel.md
+              - specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md
           - "02 Organization and facts":
               - specs/02-organization-and-facts.md
               - specs/02.1-emission-factor-library.md

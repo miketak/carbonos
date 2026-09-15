@@ -15,9 +15,22 @@ vi.mock('../auth/api', () => ({
   logout: vi.fn(),
   me: vi.fn(),
 }))
+// the shared header carries the account menu, which reads the profile (spec 01.6)
+vi.mock('../profile/api', () => ({
+  getProfile: vi.fn(),
+  updateProfile: vi.fn(),
+  uploadAvatar: vi.fn(),
+  fetchAvatar: vi.fn(),
+}))
+// the panel must never reach for the membership list: it carries a facility count
+vi.mock('../ghg/api', () => ({
+  listOrganizations: vi.fn(),
+}))
 
 import { getAccountsSummary, getPlatformSummary } from './api'
 import { me } from '../auth/api'
+import { listOrganizations } from '../ghg/api'
+import { getProfile } from '../profile/api'
 
 const accounts = {
   usersTotal: 4,
@@ -51,6 +64,13 @@ beforeEach(() => {
   })
   vi.mocked(getAccountsSummary).mockReset().mockResolvedValue(accounts)
   vi.mocked(getPlatformSummary).mockReset().mockResolvedValue(platform)
+  vi.mocked(listOrganizations).mockReset().mockResolvedValue([])
+  vi.mocked(getProfile).mockReset().mockResolvedValue({
+    id: 'u1',
+    email: 'admin@ecoriv.com',
+    displayName: 'Ama Admin',
+    hasAvatar: false,
+  })
 })
 
 /**
@@ -128,4 +148,20 @@ test('collapsing the sidebar is remembered', async () => {
   await user.click(await screen.findByTitle(/collapse sidebar/i))
   expect(localStorage.getItem('admin.sidebar')).toBe('collapsed')
   expect(await screen.findByTitle(/expand sidebar/i)).toBeInTheDocument()
+})
+
+/**
+ * Spec 01.6: the way out of the panel is a constant entry, never conditional on
+ * the administrator's memberships. Hiding it would mean reading
+ * `/api/ghg/organizations`, which carries a facility count that spec 01.5 keeps
+ * out of this panel, and would strand an administrator with no organization on
+ * a deployment that reserves organization creation to administrators.
+ */
+test('the sidebar always offers the way out to GHG accounting', async () => {
+  renderAt('/admin')
+
+  const link = await screen.findByRole('link', { name: /ghg accounting/i })
+  expect(link).toHaveAttribute('href', '/app/ghg')
+  expect(screen.queryByRole('link', { name: /back to carbonos/i })).not.toBeInTheDocument()
+  expect(listOrganizations).not.toHaveBeenCalled()
 })
