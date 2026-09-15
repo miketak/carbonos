@@ -15,6 +15,9 @@ public interface FactorPackEditionRepository extends JpaRepository<FactorPackEdi
 
 	List<FactorPackEdition> findAllByOrderByPackKeyAscEditionIdAsc();
 
+	/** The edition counts the administration panel shows (spec 01.5). */
+	long countByStatus(FactorPackStatus status);
+
 	/** An edition an organization may see: a draft is never visible to one (spec 02.5). */
 	Optional<FactorPackEdition> findByEditionIdAndStatusNot(String editionId, FactorPackStatus status);
 

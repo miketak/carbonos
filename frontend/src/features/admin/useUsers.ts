@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createUser, deleteUser, listUsers, updateUser } from './api'
+import { adminSummaryKey } from './useSummary'
 import type { CreateUserInput, UpdateUserInput, User } from './api'
 
-export const usersQueryKey = ['users'] as const
+/* every admin key starts with 'admin' so one invalidation covers the panel, the badge included */
+export const usersQueryKey = ['admin', 'users'] as const
 
 export function useUsersQuery() {
   return useQuery({ queryKey: usersQueryKey, queryFn: listUsers })
@@ -12,7 +14,11 @@ export function useCreateUser() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateUserInput) => createUser(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+        queryClient.invalidateQueries({ queryKey: adminSummaryKey }),
+      ]),
   })
 }
 
@@ -20,7 +26,11 @@ export function useUpdateUser() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateUserInput }) => updateUser(id, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+        queryClient.invalidateQueries({ queryKey: adminSummaryKey }),
+      ]),
   })
 }
 
@@ -40,6 +50,10 @@ export function useDeleteUser() {
     onError: (_error, _id, context) => {
       if (context?.previous) queryClient.setQueryData(usersQueryKey, context.previous)
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+        queryClient.invalidateQueries({ queryKey: adminSummaryKey }),
+      ]),
   })
 }

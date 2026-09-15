@@ -14,5 +14,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
 	long countByRoleAndStatus(UserRole role, UserStatus status);
 
+	/** The administration panel's account counts (spec 01.5). */
+	long countByStatus(UserStatus status);
+
 	List<User> findAllByOrderByCreatedAtAsc();
 }

@@ -1,5 +1,6 @@
 package com.carbonos.ghg.internal;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -11,13 +12,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.carbonos.platform.PlatformSettings;
 import com.carbonos.user.UserDirectory;
 
 /**
  * A platform administrator's support access to an organization (spec 01.3):
- * assumed with a reason for 24 hours, ended by hand or expired, every step
- * an audit event the organization's owners read. The administrators' list
- * of organizations carries no inventory data.
+ * assumed with a reason for the window the deployment sets, ended by hand or
+ * expired, every step an audit event the organization's owners read. The
+ * administrators' list of organizations carries no inventory data.
  */
 @Service
 @Transactional
@@ -36,16 +38,18 @@ public class SupportAccessService {
 	private final GhgAuditEventRepository auditEvents;
 	private final GhgAccess access;
 	private final UserDirectory userDirectory;
+	private final PlatformSettings settings;
 
 	SupportAccessService(OrganizationRepository organizations, OrganizationMemberRepository members,
 			SupportAccessRepository grants, GhgAuditEventRepository auditEvents, GhgAccess access,
-			UserDirectory userDirectory) {
+			UserDirectory userDirectory, PlatformSettings settings) {
 		this.organizations = organizations;
 		this.members = members;
 		this.grants = grants;
 		this.auditEvents = auditEvents;
 		this.access = access;
 		this.userDirectory = userDirectory;
+		this.settings = settings;
 	}
 
 	/** Every live organization with its owners, member count and the caller's grant; administrators only. */
@@ -64,9 +68,10 @@ public class SupportAccessService {
 	}
 
 	/**
-	 * Grants the caller an owner's rights on the organization for 24 hours
-	 * (spec 01.3). Administrators only; a member of the organization has no
-	 * need of it (409); the reason is at least 10 characters (422).
+	 * Grants the caller an owner's rights on the organization for the window the
+	 * deployment sets (specs 01.3, 01.5). Administrators only; a member of the
+	 * organization has no need of it (409); the reason is at least 10 characters
+	 * (422).
 	 */
 	public SupportAccess assume(UUID organizationId, String reason) {
 		access.checkAdmin();
@@ -89,7 +94,10 @@ public class SupportAccessService {
 		}
 		var email = userDirectory.findById(adminId).map(UserDirectory.UserSummary::email)
 			.orElse(access.currentUserEmail());
-		var grant = grants.save(new SupportAccess(organizationId, adminId, email, trimmed, now));
+		var grant = grants.save(new SupportAccess(organizationId, adminId, email, trimmed, now, window()));
+		// The reason stays the reason the administrator typed: owners read it as
+		// that. The window that applied is on the grant itself (spec 01.5), which
+		// the overview shows with its expiry, and the expiry line states it too.
 		auditEvents.save(new GhgAuditEvent(organizationId, GhgAuditEvent.Action.ADMIN_ACCESS_ASSUMED, adminId, email,
 				trimmed));
 		return grant;
@@ -109,9 +117,13 @@ public class SupportAccessService {
 	}
 
 	/**
-	 * Closes the grants whose 24 hours ran out and records the expiry (spec
+	 * Closes the grants whose window ran out and records the expiry (spec
 	 * 01.3). Reads already ignore an expired grant; the sweep only writes the
 	 * history line. Runs every minute.
+	 * <p>
+	 * The duration it states comes from the grant itself, never from the
+	 * setting in force now: a window changed afterwards must not retroactively
+	 * misdescribe an old grant in the record spec 01.3 exists to keep honest.
 	 */
 	@Scheduled(fixedDelayString = "PT1M", initialDelayString = "PT1M")
 	public void expireGrants() {
@@ -119,7 +131,8 @@ public class SupportAccessService {
 		for (var grant : expired) {
 			grant.expire();
 			auditEvents.save(new GhgAuditEvent(grant.getOrganizationId(), GhgAuditEvent.Action.ADMIN_ACCESS_EXPIRED,
-					grant.getAdminUserId(), grant.getAdminEmail(), "support access expired after 24 hours"));
+					grant.getAdminUserId(), grant.getAdminEmail(),
+					"support access expired after " + hours(grant.getWindow())));
 		}
 		if (!expired.isEmpty()) {
 			log.info("Expired {} support access grant(s)", expired.size());
@@ -131,4 +144,26 @@ public class SupportAccessService {
 			.filter(organization -> !organization.isDeleted())
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 	}
+	/**
+	 * The window in force. Falling back is not expected: migration V48 seeds
+	 * the settings row and nothing deletes it. It is logged loudly so a grant
+	 * issued from the fallback is identifiable afterwards.
+	 */
+	private Duration window() {
+		try {
+			return settings.supportAccessWindow();
+		}
+		catch (RuntimeException ex) {
+			log.warn("Platform settings unreadable; granting support access for the default {}",
+					SupportAccess.DEFAULT_WINDOW, ex);
+			return SupportAccess.DEFAULT_WINDOW;
+		}
+	}
+
+	private static String hours(Duration window) {
+		var count = window.toHours();
+		return count + (count == 1 ? " hour" : " hours");
+	}
+
+
 }

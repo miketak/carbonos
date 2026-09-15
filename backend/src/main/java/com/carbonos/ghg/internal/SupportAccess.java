@@ -11,14 +11,18 @@ import jakarta.persistence.Table;
 
 /**
  * A platform administrator's support access to an organization (spec 01.3):
- * the rights of an owner for 24 hours from the grant, or until the
+ * the rights of an owner for the window the deployment sets, or until the
  * administrator ends it, with the reason on the record.
+ * <p>
+ * The grant stores the moment it expires rather than recomputing it, so
+ * changing the window later never moves access already in force (spec 01.5).
  */
 @Entity
 @Table(name = "ghg_support_access")
 public class SupportAccess {
 
-	public static final Duration WINDOW = Duration.ofHours(24);
+	/** The window a grant falls back to when the deployment's settings cannot be read (spec 01.5). */
+	public static final Duration DEFAULT_WINDOW = Duration.ofHours(24);
 
 	@Id
 	private UUID id;
@@ -47,14 +51,20 @@ public class SupportAccess {
 	protected SupportAccess() {
 	}
 
-	SupportAccess(UUID organizationId, UUID adminUserId, String adminEmail, String reason, Instant grantedAt) {
+	SupportAccess(UUID organizationId, UUID adminUserId, String adminEmail, String reason, Instant grantedAt,
+			Duration window) {
 		this.id = UUID.randomUUID();
 		this.organizationId = organizationId;
 		this.adminUserId = adminUserId;
 		this.adminEmail = adminEmail;
 		this.reason = reason;
 		this.grantedAt = grantedAt;
-		this.expiresAt = grantedAt.plus(WINDOW);
+		this.expiresAt = grantedAt.plus(window);
+	}
+
+	/** The window this grant was actually taken under, for the history line it writes (spec 01.5). */
+	public Duration getWindow() {
+		return Duration.between(grantedAt, expiresAt);
 	}
 
 	public UUID getId() {

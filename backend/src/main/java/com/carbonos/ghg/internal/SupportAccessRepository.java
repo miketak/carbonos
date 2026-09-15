@@ -20,6 +20,12 @@ public interface SupportAccessRepository extends JpaRepository<SupportAccess, UU
 	/** The organizations an administrator currently holds support access to. */
 	List<SupportAccess> findAllByAdminUserIdAndEndedAtIsNullAndExpiresAtAfter(UUID adminUserId, Instant now);
 
-	/** Grants whose 24 hours ran out without being ended, for the expiry sweep. */
+	/** Every live grant on the platform, for the administration panel's access register (spec 01.5). */
+	List<SupportAccess> findAllByEndedAtIsNullAndExpiresAtAfterOrderByExpiresAtAsc(Instant now);
+
+	/** Grants that closed recently, so the register is a record rather than a list that empties (spec 01.5). */
+	List<SupportAccess> findAllByGrantedAtAfterOrderByGrantedAtDesc(Instant since);
+
+	/** Grants whose window ran out without being ended, for the expiry sweep. */
 	List<SupportAccess> findAllByEndedAtIsNullAndExpiresAtLessThanEqual(Instant now);
 }

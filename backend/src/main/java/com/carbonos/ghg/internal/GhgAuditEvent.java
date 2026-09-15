@@ -27,6 +27,9 @@ public class GhgAuditEvent {
 		RUN_VOIDED, FINAL_WITHDRAWN, CLASSIFIED, REVIEWED, FROZEN, REOPENED, RUN_LAUNCHED, FINAL_DESIGNATED, PUBLISHED,
 		CORRECTION_CREATED, HEADER_SAVED, ADMIN_ACCESS_ASSUMED, ADMIN_ACCESS_ENDED, ADMIN_ACCESS_EXPIRED,
 		ORGANIZATION_DELETED,
+		// spec 01.5: an administrator may create an organization for a client without
+		// becoming a member of it, so the act is recorded where the owners can read it
+		ORGANIZATION_CREATED,
 		// spec 02.7: adopting or declining a new edition of a factor pack is an act on an organization
 		FACTOR_PACK_ADOPTED, FACTOR_PACK_DECLINED
 	}

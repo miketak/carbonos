@@ -4,8 +4,6 @@ import { GlassCard } from '../../components/GlassCard'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
 import { useSession } from '../auth/useSession'
-import { AccessRequestsSection } from './components/AccessRequestsSection'
-import { AdminHeader } from './components/AdminHeader'
 import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog'
 import { UserFormModal } from './components/UserFormModal'
 import { UserTable } from './components/UserTable'
@@ -41,35 +39,29 @@ export function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <AdminHeader current="/admin/users" />
-
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <AccessRequestsSection />
-
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <h1 className="text-2xl">Users</h1>
-            <p className="mt-1 text-sm text-ink-muted">
-              {usersQuery.data
-                ? `${usersQuery.data.length} team member${usersQuery.data.length === 1 ? '' : 's'}`
-                : 'Manage who can access CarbonOS'}
-            </p>
-          </div>
-          <Button onClick={() => setDialog({ kind: 'create' })}>Add user</Button>
+    <div className="mx-auto max-w-5xl">
+      <div className="mb-6 flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl">Users</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            {usersQuery.data
+              ? `${usersQuery.data.length} team member${usersQuery.data.length === 1 ? '' : 's'}`
+              : 'Manage who can access CarbonOS'}
+          </p>
         </div>
+        <Button onClick={() => setDialog({ kind: 'create' })}>Add user</Button>
+      </div>
 
-        <GlassCard>
-          <UserTable
-            users={usersQuery.data}
-            isPending={usersQuery.isPending}
-            currentUserId={currentUserId}
-            onEdit={(user) => setDialog({ kind: 'edit', user })}
-            onToggleStatus={(user) => toggleStatus(user)}
-            onDelete={(user) => setDialog({ kind: 'delete', user })}
-          />
-        </GlassCard>
-      </main>
+      <GlassCard>
+        <UserTable
+          users={usersQuery.data}
+          isPending={usersQuery.isPending}
+          currentUserId={currentUserId}
+          onEdit={(user) => setDialog({ kind: 'edit', user })}
+          onToggleStatus={(user) => toggleStatus(user)}
+          onDelete={(user) => setDialog({ kind: 'delete', user })}
+        />
+      </GlassCard>
 
       {dialog?.kind === 'create' && (
         <UserFormModal

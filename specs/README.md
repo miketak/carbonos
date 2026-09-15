@@ -17,6 +17,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 01.2 | [Organization membership, roles and attribution](01.2-organization-membership-and-roles.md) | Ch. 7 | Implemented |
 | 01.3 | [Organization confidentiality and deletion safeguards](01.3-organization-confidentiality-and-deletion-safeguards.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
 | 01.4 | [Role-aware UI and visible refusals](01.4-role-aware-ui-and-visible-refusals.md) | Ch. 7 | Implemented |
+| 01.5 | [The platform administration panel](01.5-the-platform-administration-panel.md) | Ch. 7, 9, ISO 14064-1, ISO 14064-3 | Approved |
 | 02 | [Organization and facts](02-organization-and-facts.md) | Ch. 6, 7 | Implemented |
 | 02.1 | [Emission factor library, provenance and packs](02.1-emission-factor-library.md) | Ch. 6, 9, Scope 2 Guidance | Implemented |
 | 02.2 | [Units, densities, and custom units](02.2-units-densities-and-custom-units.md) | Ch. 6, 7 | Implemented |
@@ -40,6 +41,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 04.6 | [The activity register as a workspace: drafts, readiness, record numbers and source documents](04.6-activity-register-drafts-readiness-and-source-documents.md) | Ch. 7, 9, ISO 14064-1, ISO 14064-3 | Implemented |
 | 04.7 | [Derived fuel- and energy-related lines, and the scope select unlocked](04.7-derived-fuel-and-energy-related-lines.md) | Scope 3 Standard cat. 3, Ch. 4, App. F | Implemented |
 | 04.8 | [Exclusions without a false zero, and gases outside the scopes](04.8-exclusions-without-a-false-zero-and-gases-outside-the-scopes.md) | Ch. 4, 9, Scope 3 Standard Ch. 11 | Implemented |
+| 04.9 | [A correction's reason, where reliance begins](04.9-a-corrections-reason-where-reliance-begins.md) | Ch. 5, 7, 9, ISO 14064-1, ISO 14064-3 | Draft |
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
 | 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |

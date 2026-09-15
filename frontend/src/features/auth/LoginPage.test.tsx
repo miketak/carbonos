@@ -27,20 +27,42 @@ beforeEach(() => {
   vi.mocked(login).mockReset()
 })
 
-test('submits credentials and navigates on success', async () => {
+test('an administrator signs in and lands in the administration panel', async () => {
   const user = userEvent.setup({ delay: null })
   vi.mocked(login).mockResolvedValue(admin)
   renderWithProviders(<LoginPage />, {
     route: '/login',
-    extraRoutes: [{ path: '/app', element: <p>welcome home</p> }],
+    extraRoutes: [
+      { path: '/app', element: <p>welcome home</p> },
+      { path: '/admin', element: <p>platform overview</p> },
+    ],
   })
 
   await user.type(screen.getByLabelText(/email/i), 'admin@ecoriv.com')
   await user.type(screen.getByLabelText(/password/i), 'correct-horse')
   await user.click(screen.getByRole('button', { name: /sign in/i }))
 
-  await waitFor(() => expect(screen.getByText('welcome home')).toBeInTheDocument())
+  // spec 01.5: an administrator's work starts in the panel, everybody else's in the product
+  await waitFor(() => expect(screen.getByText('platform overview')).toBeInTheDocument())
   expect(login).toHaveBeenCalledWith('admin@ecoriv.com', 'correct-horse')
+})
+
+test('a member signs in and lands in the product', async () => {
+  const user = userEvent.setup({ delay: null })
+  vi.mocked(login).mockResolvedValue({ ...admin, role: 'MEMBER' })
+  renderWithProviders(<LoginPage />, {
+    route: '/login',
+    extraRoutes: [
+      { path: '/app', element: <p>welcome home</p> },
+      { path: '/admin', element: <p>platform overview</p> },
+    ],
+  })
+
+  await user.type(screen.getByLabelText(/email/i), 'member@ecoriv.com')
+  await user.type(screen.getByLabelText(/password/i), 'correct-horse')
+  await user.click(screen.getByRole('button', { name: /sign in/i }))
+
+  await waitFor(() => expect(screen.getByText('welcome home')).toBeInTheDocument())
 })
 
 test('shows an invalid-credentials message on 401', async () => {

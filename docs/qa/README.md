@@ -75,6 +75,7 @@ editing them.
 | 8 | [Publication and corrections](008-publication-and-corrections.md) | A published report never changes, what came after is shown apart, and a correction inherits the view with a reason. | 45 min |
 | 9 | [Base year and recalculation](009-base-year.md) | The base year is designated with its policy, structural changes are detected, and manual candidates are weighed. | 60 min |
 | 10 | [Factor pack maintenance](010-factor-pack-maintenance.md) | A platform administrator authors a factor pack edition: a family, a draft, a clone of a predecessor, its rows, and the validation report; a published edition is frozen and a draft is invisible to every organization; and the organization, not the platform, decides whether to adopt a published edition. | 100 min |
+| 11 | [Platform administration](011-platform-administration.md) | An administrator lands in a panel that says what is waiting and carries no client inventory data; the support-access window governs new grants without moving live ones; and reserving organization creation to administrators seats the client as owner, not the administrator. | 50 min |
 
 ## Shared scenario
 

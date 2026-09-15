@@ -9,4 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface FactorPackEventRepository extends JpaRepository<FactorPackEvent, UUID> {
 
 	List<FactorPackEvent> findAllByEditionIdOrderByOccurredAtAsc(String editionId);
+
+	/** The newest platform acts, for the administration panel's activity feed (spec 01.5). */
+	List<FactorPackEvent> findAllByOrderByOccurredAtDesc(org.springframework.data.domain.Pageable pageable);
 }

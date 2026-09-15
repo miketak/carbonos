@@ -20,6 +20,14 @@ public interface FactorPackNoticeRepository extends JpaRepository<FactorPackNoti
 
 	long countByEditionIdAndStatus(String editionId, FactorPackNotice.Status status);
 
+	/**
+	 * How many adoption decisions are outstanding across the platform
+	 * (spec 01.5). A bare total only: a notice states a movement computed from
+	 * the organization's own activity data, so naming which client has one
+	 * would put tenant inventory data in the administration panel.
+	 */
+	long countByStatus(FactorPackNotice.Status status);
+
 	/** The count badge the organization's navigation carries (spec 02.7). */
 	long countByOrganizationIdAndStatus(UUID organizationId, FactorPackNotice.Status status);
 

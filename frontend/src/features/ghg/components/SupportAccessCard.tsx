@@ -1,6 +1,6 @@
 import { GlassCard } from '../../../components/GlassCard'
 import { actionLabels, formatDateTime } from '../format'
-import { useOrganizationEventsQuery } from '../useGhg'
+import { useOrganizationEventsQuery, usePublicPlatformSettingsQuery } from '../useGhg'
 import type { Organization } from '../api'
 
 /**
@@ -9,17 +9,24 @@ import type { Organization } from '../api'
  */
 export function SupportAccessCard({ organization }: { organization: Organization }) {
   const eventsQuery = useOrganizationEventsQuery(organization.id)
+  const settingsQuery = usePublicPlatformSettingsQuery()
   const grants = organization.supportAccess ?? []
   const events = eventsQuery.data ?? []
 
   if (grants.length === 0 && events.length === 0) return null
 
+  // spec 01.5: the window the operator has set, not a number baked into the copy
+  const hours = settingsQuery.data?.supportAccessWindowHours
+  const windowHours =
+    hours === undefined ? 'a fixed window' : `${hours} ${hours === 1 ? 'hour' : 'hours'}`
+
   return (
     <GlassCard className="p-6">
       <h2 className="text-xl">Support access</h2>
       <p className="text-sm text-ink-muted">
-        A platform administrator can take an owner's rights here for 24 hours to work a support
+        A platform administrator can take an owner's rights here for {windowHours} to work a support
         case. Every grant is recorded, and every act under it is attributed to the administrator.
+        Adopting a new factor pack edition stays your decision, whoever is here.
       </p>
       {grants.length > 0 ? (
         <ul className="mt-4 flex flex-col gap-2 text-sm">

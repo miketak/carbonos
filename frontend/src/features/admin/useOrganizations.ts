@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { assumeSupportAccess, endSupportAccess, listAdminOrganizations } from './api'
+import { adminSummaryKey } from './useSummary'
 
 export const adminOrganizationsKey = ['admin', 'organizations'] as const
 
@@ -15,6 +16,7 @@ export function useAssumeSupportAccess() {
       assumeSupportAccess(organizationId, reason),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminOrganizationsKey })
+      void queryClient.invalidateQueries({ queryKey: adminSummaryKey })
       void queryClient.invalidateQueries({ queryKey: ['ghg'] })
     },
   })
@@ -26,6 +28,7 @@ export function useEndSupportAccess() {
     mutationFn: (organizationId: string) => endSupportAccess(organizationId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminOrganizationsKey })
+      void queryClient.invalidateQueries({ queryKey: adminSummaryKey })
       void queryClient.invalidateQueries({ queryKey: ['ghg'] })
     },
   })

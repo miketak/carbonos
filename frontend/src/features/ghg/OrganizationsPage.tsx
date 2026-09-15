@@ -6,11 +6,11 @@ import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { DeleteOrganizationDialog } from './components/DeleteOrganizationDialog'
-import { GhgHeader } from './components/GhgHeader'
+import { AppHeader } from '../../components/AppHeader'
 import { OrganizationFormModal } from './components/OrganizationFormModal'
 import { RoleButton } from './components/RoleButton'
 import { mayManageMembership, mayOwn, OWNER_TOOLTIP } from './roles'
-import { useOrganizationsQuery } from './useGhg'
+import { useOrganizationCapabilitiesQuery, useOrganizationsQuery } from './useGhg'
 import type { Organization } from './api'
 
 type Dialog =
@@ -22,14 +22,18 @@ type Dialog =
 /** Entry point of the GHG workflow: the reporting organizations. */
 export function OrganizationsPage() {
   const organizationsQuery = useOrganizationsQuery()
+  const capabilitiesQuery = useOrganizationCapabilitiesQuery()
   const toast = useToast()
   const [dialog, setDialog] = useState<Dialog>(null)
 
   const organizations = organizationsQuery.data
+  // while the capability is still loading the button shows, as spec 01.4 says:
+  // the server is the authority and refuses what the screen wrongly offers
+  const mayCreate = capabilitiesQuery.data?.mayCreateOrganization ?? true
 
   return (
     <div className="min-h-screen">
-      <GhgHeader />
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-6 flex items-end justify-between">
@@ -40,7 +44,11 @@ export function OrganizationsPage() {
               inventory.
             </p>
           </div>
-          <Button onClick={() => setDialog({ kind: 'create' })}>New organization</Button>
+          {/* spec 01.5: a deployment may reserve creation to administrators, and a
+              control nobody here may use is not offered at all (spec 01.4) */}
+          {mayCreate && (
+            <Button onClick={() => setDialog({ kind: 'create' })}>New organization</Button>
+          )}
         </div>
 
         {organizationsQuery.isPending && (

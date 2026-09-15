@@ -3,6 +3,10 @@ import type { EmissionFactor, EmissionFactorPage, EmissionFactorQuery } from './
 
 /** A complete vi.fn() double of ./api, shared by the GHG feature tests. */
 export const listOrganizations = vi.fn()
+export const getOrganizationCapabilities = vi
+  .fn()
+  .mockResolvedValue({ mayCreateOrganization: true })
+export const getPublicPlatformSettings = vi.fn().mockResolvedValue({ supportAccessWindowHours: 24 })
 export const getOrganization = vi.fn()
 export const createOrganization = vi.fn()
 export const updateOrganization = vi.fn()

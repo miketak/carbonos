@@ -30,7 +30,9 @@ test('greets the user and shows the admin link for an ADMIN', async () => {
   renderWithProviders(<WelcomePage />)
 
   expect(await screen.findByRole('heading', { name: /welcome, someone/i })).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: /manage users/i })).toBeInTheDocument()
+  // one link into the administration area, not a button per page (spec 01.5)
+  const admin = screen.getByRole('link', { name: /administration/i })
+  expect(admin).toHaveAttribute('href', '/admin')
 })
 
 test('hides the admin link for a MEMBER', async () => {
@@ -38,5 +40,5 @@ test('hides the admin link for a MEMBER', async () => {
   renderWithProviders(<WelcomePage />)
 
   expect(await screen.findByRole('heading', { name: /welcome, someone/i })).toBeInTheDocument()
-  expect(screen.queryByRole('link', { name: /manage users/i })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: /administration/i })).not.toBeInTheDocument()
 })

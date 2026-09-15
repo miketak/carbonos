@@ -1842,6 +1842,24 @@ export interface OutsideScopesRow {
 
 // --- organizations ---------------------------------------------------------
 
+/** What the caller may do at the organization list; the deployment decides (spec 01.5). */
+export interface OrganizationCapabilities {
+  mayCreateOrganization: boolean
+}
+
+export function getOrganizationCapabilities(): Promise<OrganizationCapabilities> {
+  return api<OrganizationCapabilities>('/api/ghg/organizations/capabilities')
+}
+
+/** The support-access window in force, so the screens that explain it print the real number. */
+export interface PublicPlatformSettings {
+  supportAccessWindowHours: number
+}
+
+export function getPublicPlatformSettings(): Promise<PublicPlatformSettings> {
+  return api<PublicPlatformSettings>('/api/platform/settings')
+}
+
 export function listOrganizations(): Promise<Organization[]> {
   return api<Organization[]>('/api/ghg/organizations')
 }

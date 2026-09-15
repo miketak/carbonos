@@ -115,31 +115,79 @@ public class GhgService {
 
 	/** Creates the organization and its own legal entity, the wholly owned reporting company (spec 03.1). */
 	public Organization createOrganization(String name) {
-		return createOrganization(name, null, null);
+		return createOrganization(name, null, null, null);
 	}
 
 	public Organization createOrganization(String name, String address, String contact) {
+		return createOrganization(name, address, contact, null);
+	}
+
+	/** Whether the caller may create an organization at all on this deployment (spec 01.5). */
+	public boolean mayCreateOrganization() {
+		return access.mayCreateOrganization();
+	}
+
+	/**
+	 * Creates the organization, seats its first owner, and gives it its own
+	 * legal entity (spec 03.1).
+	 * <p>
+	 * Who the first owner is depends on the deployment (spec 01.5). While
+	 * creation is open, it is the creator, as it has always been. While
+	 * creation is reserved to administrators, the request names the owner's
+	 * account and the administrator is not seated at all: seating them would
+	 * make a platform administrator a standing member of every organization
+	 * on the deployment, with no reason, no expiry and no record, holding the
+	 * deletion and membership rights that support access deliberately
+	 * withholds. That is the access spec 01.3 exists to abolish. The
+	 * administrator gets 404 for the organization afterwards, like any other
+	 * outsider, and enters it only by assuming logged support access.
+	 */
+	public Organization createOrganization(String name, String address, String contact, String ownerEmail) {
+		access.checkMayCreateOrganization();
+		var owner = firstOwner(ownerEmail);
 		var trimmed = name.trim();
 		if (organizations.existsByNameIgnoreCaseAndDeletedAtIsNull(trimmed)) {
 			throw new DuplicateOrganizationException(trimmed);
 		}
 		Organization organization;
 		try {
-			organization = organizations.saveAndFlush(new Organization(trimmed, access.currentUserId()));
+			organization = organizations.saveAndFlush(new Organization(trimmed, owner.id()));
 		}
 		catch (DataIntegrityViolationException ex) {
 			// unique-constraint race between the existence check and the insert
 			throw new DuplicateOrganizationException(trimmed);
 		}
 		organization.setHeader(trimToNull(address), trimToNull(contact));
-		// spec 01.2: the creator is the first owner
-		var creator = userDirectory.findById(access.currentUserId());
-		members.save(new OrganizationMember(organization, access.currentUserId(),
-				creator.map(UserDirectory.UserSummary::email).orElse(access.currentUserEmail()),
-				creator.map(UserDirectory.UserSummary::displayName).orElse(access.currentUserEmail()), OrgRole.OWNER));
+		// spec 01.2: an organization always starts with exactly one owner
+		members.save(new OrganizationMember(organization, owner.id(), owner.email(), owner.displayName(),
+				OrgRole.OWNER));
+		if (!owner.id().equals(access.currentUserId())) {
+			// spec 01.5: the administrator who created it is not a member, so the
+			// organization's own history is where the act is recorded.
+			auditEvents.save(new GhgAuditEvent(organization.getId(), GhgAuditEvent.Action.ORGANIZATION_CREATED,
+					access.currentUserId(), access.currentUserEmail(),
+					"created by a platform administrator for " + owner.email()));
+		}
 		entities.save(new LegalEntity(organization, trimmed, RelationshipType.SUBSIDIARY, new BigDecimal("100.00"),
 				new BigDecimal("100.00"), true, true, null, true));
 		return organization;
+	}
+
+	/**
+	 * The account that becomes the owner: the one the request names, which only
+	 * an administrator may do, and otherwise the caller. An ordinary user naming
+	 * somebody else would be creating an organization they cannot then open, so
+	 * the field is theirs to ignore rather than to use.
+	 */
+	private UserDirectory.UserSummary firstOwner(String ownerEmail) {
+		var named = access.isCurrentUserAdmin() ? trimToNull(ownerEmail) : null;
+		if (named != null) {
+			return userDirectory.findByEmail(named).orElseThrow(() -> GhgNotFoundException.account(named));
+		}
+		var callerId = access.currentUserId();
+		var callerEmail = access.currentUserEmail();
+		return userDirectory.findById(callerId)
+			.orElse(new UserDirectory.UserSummary(callerId, callerEmail, callerEmail, null));
 	}
 
 	/**

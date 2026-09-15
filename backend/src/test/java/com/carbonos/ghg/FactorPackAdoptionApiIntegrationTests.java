@@ -682,6 +682,45 @@ class FactorPackAdoptionApiIntegrationTests {
 			.isEqualTo(com.carbonos.ghg.internal.OrgRole.REVIEWER);
 	}
 
+	/**
+	 * Spec 01.5 with spec 02.7: the platform curates and publishes the edition,
+	 * so the platform must not also accept it for the tenant. Support access
+	 * carries an owner's rights, but never this decision.
+	 */
+	@Test
+	void anAdministratorUnderSupportAccessCannotDecideForTheOrganization() throws Exception {
+		var holder = holder();
+		var admin = userService.create("support-access@ecoriv.com", "Ama Support",
+				com.carbonos.user.internal.UserRole.ADMIN, "support-passw0rd");
+		var asAdmin = user(new com.carbonos.user.AuthenticatedUser(admin.getId(), admin.getEmail(), "irrelevant",
+				"ADMIN", true));
+		var noticeId = noticeId(holder.orgId());
+
+		mvc.perform(post("/api/ghg/organizations/" + holder.orgId() + "/support-access").with(asAdmin).with(csrf())
+			.contentType("application/json").content("""
+					{"reason":"ticket 4512, the import looks wrong"}"""))
+			.andExpect(status().isCreated());
+
+		// the grant carries an owner's reach: the diff opens
+		mvc.perform(get("/api/ghg/factor-pack-notices/" + noticeId + "/diff").with(asAdmin))
+			.andExpect(status().isOk());
+
+		// but not the decision itself, in either direction
+		accept(noticeId, "VINTAGE_PROGRESSION", "A note.", asAdmin).andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.detail")
+				.value(org.hamcrest.Matchers.containsString("the organization's own decision")));
+		mvc.perform(post("/api/ghg/factor-pack-notices/" + noticeId + "/decline").with(asAdmin).with(csrf())
+			.contentType("application/json").content("{}"))
+			.andExpect(status().isForbidden());
+
+		assertThat(notices.findById(UUID.fromString(noticeId)).orElseThrow().getStatus())
+			.isEqualTo(com.carbonos.ghg.internal.FactorPackNotice.Status.OPEN);
+
+		// the organization's own reviewer still decides
+		accept(noticeId, "VINTAGE_PROGRESSION", "The 2027 tables are the current vintage.", asOwner())
+			.andExpect(status().isOk());
+	}
+
 	// --- the recalculation question -----------------------------------------
 
 	@Test
