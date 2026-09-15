@@ -38,9 +38,18 @@ deployed to Railway. Specs live in `specs/`.
 1. **Spec first.** Non-trivial features start as a spec in `specs/` (copy
    `specs/TEMPLATE.md`, add it to the index in `specs/README.md`). Do not
    implement from a `Draft` spec; get it to `Approved` first.
-2. **Implement against the spec.** If reality diverges from the spec, update
+2. **Reset the dev environment before implementing.** Run `make db-reset` at
+   the start of the work, then `make admin EMAIL=.. PASSWORD=..` for an account
+   to sign in with. It drops the compose volumes, so the object store goes with
+   the database and the app comes back on the migrations alone. Local data
+   accumulates roles, memberships, platform settings and uploaded objects from
+   earlier sessions, and a stale row reads exactly like a bug in the new code:
+   time goes into chasing a ghost, or a real defect hides behind data that
+   happens to mask it. Starting clean means what you see is what a fresh
+   deployment gets.
+3. **Implement against the spec.** If reality diverges from the spec, update
    the spec in the same PR.
-3. **Verify before declaring done** (Definition of Done):
+4. **Verify before declaring done** (Definition of Done):
    - Backend: `./mvnw verify` passes (unit + context tests + ModularityTests).
    - Frontend: `npm run lint && npm run format:check && npm test && npm run build` pass.
    - New behavior has tests; bug fixes have a regression test.
