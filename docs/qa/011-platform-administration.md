@@ -8,7 +8,9 @@ already in force, and reserving organization creation to administrators seats
 the client as owner rather than the administrator.
 
 **Covers** [spec 01.5](../../specs/01.5-the-platform-administration-panel.md)
-whole, and the parts of
+whole, the administration half of
+[spec 01.6](../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md),
+and the parts of
 [spec 01.3](../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md)
 and [spec 02.7](../../specs/02.7-adopting-a-new-edition.md) that the settings
 change.
@@ -38,11 +40,13 @@ leaving the window at 1 hour affects everybody who tests after you.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Sign in as the administrator. | You land on **Platform overview**, not the welcome card. | | |
-| 2 | Read the sidebar. | Six entries in order: Dashboard, Access requests, Users, Organizations, Factor packs, Platform settings, and **Back to CarbonOS** at the foot. | | |
-| 3 | Collapse the sidebar with the chevron, then reload the page. | It is still collapsed. Expand it again. | | |
-| 4 | Open `/admin/nothing-here` in the address bar. | You land on the dashboard, not a blank page. | | |
-| 5 | In the private window, sign in as the member and open `/admin`. | "Access denied", with no sidebar and no administration content behind it. | | |
+| 1 | Sign in as the administrator. | You land on **Platform overview** directly, with no welcome card in between. | | |
+| 2 | Read the sidebar. | Six entries in order: Dashboard, Access requests, Users, Organizations, Factor packs, Platform settings, and **GHG accounting** at the foot. | | |
+| 3 | Check that **GHG accounting** is there while the administrator is a member of nothing and holds no grant, then follow it. | It is always present, never appearing and disappearing with memberships or grants, and it opens the GHG accounting list. With organization creation reserved to administrators this is the only route to **New organization**. | | |
+| 4 | Click the CarbonOS wordmark in the top bar. | You come back to the platform dashboard: for an administrator the wordmark means their own home. | | |
+| 5 | Collapse the sidebar with the chevron, then reload the page. | It is still collapsed. Expand it again. | | |
+| 6 | Open `/admin/nothing-here` in the address bar. | You land on the dashboard, not a blank page. | | |
+| 7 | In the private window, sign in as the member and open `/admin`. | "Access denied", with no sidebar and no administration content behind it. | | |
 
 ### A2. The panel carries no client inventory data
 

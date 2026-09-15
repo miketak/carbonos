@@ -23,7 +23,7 @@ spring:
       enabled: true
   servlet:
     multipart:
-      # PSD resumes are the ceiling
+      # factor pack evidence is the ceiling (FactorPackPublication.MAX_EVIDENCE_BYTES)
       max-file-size: 50MB
       max-request-size: 52MB
   modulith:

@@ -27,13 +27,13 @@ beforeEach(() => {
   vi.mocked(login).mockReset()
 })
 
-test('an administrator signs in and lands in the administration panel', async () => {
+test('signing in hands off to the landing resolver', async () => {
   const user = userEvent.setup({ delay: null })
   vi.mocked(login).mockResolvedValue(admin)
   renderWithProviders(<LoginPage />, {
     route: '/login',
     extraRoutes: [
-      { path: '/app', element: <p>welcome home</p> },
+      { path: '/app', element: <p>the landing resolver</p> },
       { path: '/admin', element: <p>platform overview</p> },
     ],
   })
@@ -42,27 +42,11 @@ test('an administrator signs in and lands in the administration panel', async ()
   await user.type(screen.getByLabelText(/password/i), 'correct-horse')
   await user.click(screen.getByRole('button', { name: /sign in/i }))
 
-  // spec 01.5: an administrator's work starts in the panel, everybody else's in the product
-  await waitFor(() => expect(screen.getByText('platform overview')).toBeInTheDocument())
+  // spec 01.6: the role rule lives in one place, so the form always goes to
+  // "/app" and LandingRedirect decides. LandingRedirect.test.tsx covers the split.
+  await waitFor(() => expect(screen.getByText('the landing resolver')).toBeInTheDocument())
+  expect(screen.queryByText('platform overview')).not.toBeInTheDocument()
   expect(login).toHaveBeenCalledWith('admin@ecoriv.com', 'correct-horse')
-})
-
-test('a member signs in and lands in the product', async () => {
-  const user = userEvent.setup({ delay: null })
-  vi.mocked(login).mockResolvedValue({ ...admin, role: 'MEMBER' })
-  renderWithProviders(<LoginPage />, {
-    route: '/login',
-    extraRoutes: [
-      { path: '/app', element: <p>welcome home</p> },
-      { path: '/admin', element: <p>platform overview</p> },
-    ],
-  })
-
-  await user.type(screen.getByLabelText(/email/i), 'member@ecoriv.com')
-  await user.type(screen.getByLabelText(/password/i), 'correct-horse')
-  await user.click(screen.getByRole('button', { name: /sign in/i }))
-
-  await waitFor(() => expect(screen.getByText('welcome home')).toBeInTheDocument())
 })
 
 test('shows an invalid-credentials message on 401', async () => {

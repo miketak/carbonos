@@ -19,6 +19,7 @@ does the same.
 | `db-reset` | Drops the compose volumes and starts the services again; the next backend start replays every migration. | Docker |
 | `db-wipe ENV=<env> [ARGS=...]` | Wipes a Railway environment's database over `railway ssh` and redeploys the backend. `ARGS=--yes` skips the staging prompt; production needs `ARGS=--yes-production` and a typed confirmation. | Railway CLI, a registered SSH key |
 | `env-copy FROM=<env> TO=<env>` | Copies one Railway environment's database and bucket into another over `railway ssh`, for example staging into qa. Production is never a target. | Railway CLI, a registered SSH key, Docker |
+| `purge-resumes ENV=<env> [ARGS=...]` | Deletes the retired resume objects (`users/<uuid>/resume`) from an environment's bucket, after the release is deployed there (spec 01.6). Lists what it would delete and stops; `ARGS=--yes` deletes, and production needs `ARGS=--yes-production` and a typed confirmation. `ENV=local` targets the compose MinIO. Keep the listing with the release record. | Docker; the Railway CLI for any environment but `local` |
 | `backend` | Runs Spring Boot with the `local` profile. Sources SDKMAN first. | Java 25, the compose services |
 | `frontend` | Runs the Vite dev server on 5173, proxying `/api` to 8080. | Node 22 |
 | `admin EMAIL=<email> PASSWORD=<password> [NAME=<name>]` | Creates a local administrator, or resets the password of an existing one. | The backend running |

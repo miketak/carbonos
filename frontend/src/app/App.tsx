@@ -27,7 +27,7 @@ import { OrganizationLayout } from '../features/ghg/OrganizationLayout'
 import { OrganizationsPage } from '../features/ghg/OrganizationsPage'
 import { OverviewPage } from '../features/ghg/OverviewPage'
 import { RunDetailPage } from '../features/ghg/RunDetailPage'
-import { WelcomePage } from '../features/home/WelcomePage'
+import { LandingRedirect } from '../features/home/LandingRedirect'
 import { ProfilePage } from '../features/profile/ProfilePage'
 
 export function App() {
@@ -43,7 +43,7 @@ export function App() {
           path="/app"
           element={
             <RequireAuth>
-              <WelcomePage />
+              <LandingRedirect />
             </RequireAuth>
           }
         />

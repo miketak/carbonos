@@ -30,9 +30,15 @@ flowchart TB
 | --- | --- | --- |
 | `src/app` | `App.tsx` (routes), `providers.tsx` (TanStack Query client, router, toasts) | Wiring only. |
 | `src/features/<name>` | Pages, feature components under `components/`, `api.ts` (typed calls), `use<Name>.ts` (TanStack Query hooks), tests beside the code | A feature never imports another feature's internals. |
-| `src/components` | Shared UI: `AppHeader` (the CarbonOS top bar both workspaces wear), `Button`, `InputField`, `SelectField` and `TextAreaField`, `Modal`, `Drawer` (a panel beside the page), `Tabs`, `StatusPill`, `MonthField`, `ProgressBar`, `GlassCard`, `Skeleton`, the toast host | No business logic. |
+| `src/components` | Shared UI: `AppHeader` (the CarbonOS top bar both workspaces wear) and the `AccountMenu` it carries in the top right, `LoadingCard`, `Button`, `InputField`, `SelectField` and `TextAreaField`, `Modal`, `Drawer` (a panel beside the page), `Tabs`, `StatusPill`, `MonthField`, `ProgressBar`, `GlassCard`, `Skeleton`, the toast host | No business logic. |
 | `src/lib` | `api.ts` (the fetch wrapper), `validate.ts` (numeric checks), `useCountUp.ts`, `useShortcuts.ts` (single-key page shortcuts that stay quiet while typing) | Shared infrastructure only. |
 | `src/test` | Render helpers with providers, the API mock | |
+
+`/app` is not a page. `LandingRedirect` resolves it: an administrator to the
+administration panel, everybody else to their organization when they have
+exactly one and to the organizations list otherwise (spec 01.6). The sign-in
+form and the set-password flow both hand off to it, so the rule lives in one
+place.
 
 `/admin` is a layout route. `features/admin/AdminLayout` draws the shared
 header and a collapsible sidebar around an `<Outlet />`, exactly as
@@ -48,9 +54,9 @@ not each page, so a member never sees the sidebar at all.
 | `auth` | `user` | Sign in, the post-login splash, route guards |
 | `access` | `user` | Request access, set password |
 | `admin` | `user`, `ghg`, `platform` | The administration shell and its dashboard, which opens on what needs a decision (spec 01.5); the access-request queue and the record of what was decided (spec 01.1); the users list; the organizations list where a platform administrator assumes support access (spec 01.3); the factor pack catalogue and the edition workbench, where a pack family, a draft edition and its rows are authored and the validation report is read (spec 02.5); the platform settings and the history of every change to them (spec 01.5) |
-| `profile` | `user`, `media` | Profile and avatar |
+| `profile` | `user`, `media` | Profile and avatar (the resume upload was retired by spec 01.6) |
 | `ghg` | `ghg` | Organizations, overview, entities, facilities, activity data and its source documents, units, emission factors, inventories, inventory detail, run detail, base year |
-| `home` | none | Landing |
+| `home` | none | The public landing page, and the post-sign-in resolver at `/app` (spec 01.6) |
 
 ## The API wrapper
 

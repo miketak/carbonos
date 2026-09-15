@@ -14,9 +14,7 @@ enum FileType {
 
 	PNG("image/png"),
 	JPEG("image/jpeg"),
-	WEBP("image/webp"),
-	PDF("application/pdf"),
-	PSD("image/vnd.adobe.photoshop");
+	WEBP("image/webp");
 
 	private final String contentType;
 
@@ -38,12 +36,6 @@ enum FileType {
 		}
 		if (startsWith(prefix, 'R', 'I', 'F', 'F') && matchesAt(prefix, 8, 'W', 'E', 'B', 'P')) {
 			return Optional.of(WEBP);
-		}
-		if (startsWith(prefix, '%', 'P', 'D', 'F')) {
-			return Optional.of(PDF);
-		}
-		if (startsWith(prefix, '8', 'B', 'P', 'S')) {
-			return Optional.of(PSD);
 		}
 		return Optional.empty();
 	}

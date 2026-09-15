@@ -16,18 +16,16 @@ import com.carbonos.media.StoredMedia;
 
 /**
  * Self-service profile operations for the logged-in user. Media lives in the
- * {@code media} module under stable keys ({@code users/<id>/avatar|resume}),
- * so re-uploads overwrite in place and no orphan cleanup is needed.
+ * {@code media} module under a stable key ({@code users/<id>/avatar}), so
+ * re-uploads overwrite in place and no orphan cleanup is needed.
  */
 @Service
 @Transactional
 public class ProfileService {
 
 	static final long MAX_AVATAR_BYTES = 5L * 1024 * 1024;
-	static final long MAX_RESUME_BYTES = 50L * 1024 * 1024;
 
 	private static final Set<FileType> AVATAR_TYPES = Set.of(FileType.PNG, FileType.JPEG, FileType.WEBP);
-	private static final Set<FileType> RESUME_TYPES = Set.of(FileType.PDF, FileType.PSD);
 
 	private final UserRepository users;
 	private final MediaStorage media;
@@ -59,34 +57,16 @@ public class ProfileService {
 		return user;
 	}
 
-	public User storeResume(UUID userId, MultipartFile file) {
-		var user = get(userId);
-		var type = validate(file, RESUME_TYPES, MAX_RESUME_BYTES, "PDF or PSD file");
-		var key = "users/" + userId + "/resume";
-		put(key, file, type);
-		user.setResume(key, type.contentType(), file.getOriginalFilename());
-		return user;
-	}
-
 	@Transactional(readOnly = true)
 	public Download avatar(UUID userId) {
 		var user = get(userId);
 		if (user.getAvatarKey() == null) {
 			throw new MediaNotFoundException("avatar");
 		}
-		return new Download(media.get(user.getAvatarKey()), user.getAvatarContentType(), null);
+		return new Download(media.get(user.getAvatarKey()), user.getAvatarContentType());
 	}
 
-	@Transactional(readOnly = true)
-	public Download resume(UUID userId) {
-		var user = get(userId);
-		if (user.getResumeKey() == null) {
-			throw new MediaNotFoundException("resume");
-		}
-		return new Download(media.get(user.getResumeKey()), user.getResumeContentType(), user.getResumeFilename());
-	}
-
-	public record Download(StoredMedia media, String contentType, String filename) {
+	public record Download(StoredMedia media, String contentType) {
 	}
 
 	private FileType validate(MultipartFile file, Set<FileType> allowed, long maxBytes, String expected) {
@@ -109,7 +89,7 @@ public class ProfileService {
 	}
 
 	private void put(String key, MultipartFile file, FileType type) {
-		// stream, never buffer: PSDs run to tens of MB
+		// stream, never buffer
 		try (InputStream content = file.getInputStream()) {
 			media.put(key, content, file.getSize(), type.contentType());
 		}

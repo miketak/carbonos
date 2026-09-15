@@ -1,10 +1,6 @@
 package com.carbonos.user.internal.web;
 
-import java.nio.charset.StandardCharsets;
-
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -53,31 +49,15 @@ class ProfileController {
 	@GetMapping("/avatar")
 	ResponseEntity<InputStreamResource> avatar(@AuthenticationPrincipal AuthenticatedUser principal) {
 		var download = profile.avatar(principal.getId());
-		return stream(download, false);
+		return stream(download);
 	}
 
-	@PutMapping(path = "/resume", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	ProfileResponse uploadResume(@AuthenticationPrincipal AuthenticatedUser principal,
-			@RequestPart("file") MultipartFile file) {
-		return ProfileResponse.from(profile.storeResume(principal.getId(), file));
-	}
 
-	@GetMapping("/resume")
-	ResponseEntity<InputStreamResource> resume(@AuthenticationPrincipal AuthenticatedUser principal) {
-		var download = profile.resume(principal.getId());
-		return stream(download, true);
-	}
-
-	private ResponseEntity<InputStreamResource> stream(ProfileService.Download download, boolean attachment) {
-		var builder = ResponseEntity.ok()
-			.contentType(MediaType.parseMediaType(download.contentType()))
-			.contentLength(download.media().contentLength());
-		if (attachment) {
-			var filename = download.filename() != null ? download.filename() : "download";
-			builder.header(HttpHeaders.CONTENT_DISPOSITION,
-					ContentDisposition.attachment().filename(filename, StandardCharsets.UTF_8).build().toString());
-		}
+	private ResponseEntity<InputStreamResource> stream(ProfileService.Download download) {
 		// InputStreamResource: Spring streams the body and closes the S3 stream
-		return builder.body(new InputStreamResource(download.media().content()));
+		return ResponseEntity.ok()
+			.contentType(MediaType.parseMediaType(download.contentType()))
+			.contentLength(download.media().contentLength())
+			.body(new InputStreamResource(download.media().content()));
 	}
 }

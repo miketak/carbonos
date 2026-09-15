@@ -10,9 +10,7 @@ vi.mock('./api', () => ({
   getProfile: vi.fn(),
   updateProfile: vi.fn(),
   uploadAvatar: vi.fn(),
-  uploadResume: vi.fn(),
   fetchAvatar: vi.fn(),
-  fetchResume: vi.fn(),
 }))
 vi.mock('../auth/api', () => ({
   login: vi.fn(),
@@ -20,22 +18,19 @@ vi.mock('../auth/api', () => ({
   me: vi.fn(),
 }))
 
-import { fetchAvatar, getProfile, updateProfile, uploadResume } from './api'
+import { fetchAvatar, getProfile, updateProfile } from './api'
 
 const profile = (overrides: Partial<Profile> = {}): Profile => ({
   id: 'u1',
   email: 'someone@ecoriv.com',
   displayName: 'Someone',
   hasAvatar: false,
-  hasResume: false,
-  resumeFilename: null,
   ...overrides,
 })
 
 beforeEach(() => {
   vi.mocked(getProfile).mockReset()
   vi.mocked(updateProfile).mockReset()
-  vi.mocked(uploadResume).mockReset()
   vi.mocked(fetchAvatar).mockReset().mockResolvedValue(null)
   vi.stubGlobal('URL', {
     ...URL,
@@ -50,7 +45,16 @@ test('renders the profile with a read-only email', async () => {
 
   expect(await screen.findByLabelText(/email/i)).toBeDisabled()
   expect(screen.getByLabelText(/display name/i)).toHaveValue('Someone')
-  expect(screen.getByText(/no resume uploaded/i)).toBeInTheDocument()
+})
+
+/** Spec 01.6 retired the experiment; the screen must not grow it back. */
+test('offers no resume upload', async () => {
+  vi.mocked(getProfile).mockResolvedValue(profile())
+  renderWithProviders(<ProfilePage />)
+
+  await screen.findByLabelText(/display name/i)
+  expect(screen.queryByLabelText(/resume file/i)).not.toBeInTheDocument()
+  expect(screen.queryByText(/resume/i)).not.toBeInTheDocument()
 })
 
 test('saves the display name', async () => {
@@ -78,17 +82,4 @@ test('renders a 422 field error inline', async () => {
   await userEvent.click(screen.getByRole('button', { name: /save changes/i }))
 
   expect(await screen.findByText('Display name is required.')).toBeInTheDocument()
-})
-
-test('uploads a resume from the file input', async () => {
-  vi.mocked(getProfile).mockResolvedValue(profile())
-  vi.mocked(uploadResume).mockResolvedValue(profile({ hasResume: true, resumeFilename: 'cv.pdf' }))
-  renderWithProviders(<ProfilePage />)
-
-  const input = await screen.findByLabelText(/resume file/i)
-  const file = new File(['%PDF-fake'], 'cv.pdf', { type: 'application/pdf' })
-  await userEvent.upload(input, file)
-
-  expect(uploadResume).toHaveBeenCalledWith(file, expect.anything())
-  expect(await screen.findByRole('link', { name: /cv\.pdf/i })).toBeInTheDocument()
 })

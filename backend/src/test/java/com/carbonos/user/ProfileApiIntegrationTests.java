@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,8 +36,6 @@ class ProfileApiIntegrationTests {
 	/** 1x1 PNG — real magic bytes for the sniffer. */
 	private static final byte[] PNG = Base64.getDecoder()
 		.decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
-
-	private static final byte[] PSD = "8BPSfake-photoshop-content".getBytes();
 
 	@Autowired
 	MockMvc mvc;
@@ -114,26 +111,38 @@ class ProfileApiIntegrationTests {
 			.andExpect(jsonPath("$.errors.file").exists());
 	}
 
+	/**
+	 * Spec 01.6 retired the resume upload. The endpoints are gone and V49 dropped
+	 * the columns; this pins both so the experiment does not quietly come back.
+	 */
 	@Test
-	void resumeBeforeUploadIs404() throws Exception {
+	void theRetiredResumeEndpointsAreGone() throws Exception {
 		var session = login();
 		mvc.perform(get("/api/profile/resume").session(session)).andExpect(status().isNotFound());
+
+		var file = new MockMultipartFile("file", "portfolio.psd", "application/octet-stream",
+				"8BPSfake-photoshop-content".getBytes());
+		mvc.perform(multipart(HttpMethod.PUT, "/api/profile/resume").file(file).with(csrf()).session(session))
+			.andExpect(status().isNotFound());
+
+		mvc.perform(get("/api/profile").session(session))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.hasResume").doesNotExist())
+			.andExpect(jsonPath("$.resumeFilename").doesNotExist());
 	}
 
+	/**
+	 * V49 drops three columns from a table the avatar shares, and the replay is
+	 * done by hand; this is the automated half of that check.
+	 */
 	@Test
-	void psdResumeUploadRoundTripsAsAttachment() throws Exception {
+	void anAvatarStillRoundTripsAfterTheResumeColumnsWereDropped() throws Exception {
 		var session = login();
-		var file = new MockMultipartFile("file", "portfolio.psd", "application/octet-stream", PSD);
-		mvc.perform(multipart(HttpMethod.PUT, "/api/profile/resume").file(file).with(csrf()).session(session))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.hasResume").value(true))
-			.andExpect(jsonPath("$.resumeFilename").value("portfolio.psd"));
+		var file = new MockMultipartFile("file", "me.png", "image/png", PNG);
+		mvc.perform(multipart(HttpMethod.PUT, "/api/profile/avatar").file(file).with(csrf()).session(session))
+			.andExpect(status().isOk());
 
-		var result = mvc.perform(get("/api/profile/resume").session(session))
-			.andExpect(status().isOk())
-			.andExpect(content().contentType("image/vnd.adobe.photoshop"))
-			.andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
-			.andReturn();
-		assertThat(result.getResponse().getContentAsByteArray()).isEqualTo(PSD);
+		var result = mvc.perform(get("/api/profile/avatar").session(session)).andExpect(status().isOk()).andReturn();
+		assertThat(result.getResponse().getContentAsByteArray()).isEqualTo(PNG);
 	}
 }

@@ -200,8 +200,13 @@ export const inheritanceKey = (inventoryId: string) => ['ghg', 'inheritance', in
 export const runKey = (id: string) => ['ghg', 'run', id] as const
 export const reportKey = (runId: string) => ['ghg', 'report', runId] as const
 
-export function useOrganizationsQuery() {
-  return useQuery({ queryKey: organizationsKey, queryFn: listOrganizations })
+/** `enabled` lets the landing resolver skip the fetch for an administrator, who never needs it (spec 01.6). */
+export function useOrganizationsQuery(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: organizationsKey,
+    queryFn: listOrganizations,
+    enabled: options.enabled ?? true,
+  })
 }
 
 /**

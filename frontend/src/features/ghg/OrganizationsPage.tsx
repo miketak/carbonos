@@ -61,8 +61,13 @@ export function OrganizationsPage() {
         {organizations?.length === 0 && (
           <GlassCard className="p-10 text-center">
             <h2 className="text-lg">No organizations yet</h2>
+            {/* spec 01.6: this is a landing screen now, and telling a reader to
+                create something the deployment reserves to administrators is
+                the invisible refusal spec 01.4 exists to stop */}
             <p className="mt-2 text-sm text-ink-muted">
-              Create your first reporting organization to start the GHG Protocol workflow.
+              {mayCreate
+                ? 'Create your first reporting organization to start the GHG Protocol workflow.'
+                : 'You are not a member of any organization yet. Ask an owner to add you, or a platform administrator.'}
             </p>
           </GlassCard>
         )}

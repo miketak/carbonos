@@ -23,9 +23,9 @@ export function LoginPage() {
     onSuccess: (user) => {
       queryClient.setQueryData(sessionQueryKey, user)
       triggerSplash()
-      // a deep link wins; otherwise an administrator's work starts in the
-      // administration panel and everybody else's in the product (spec 01.5)
-      void navigate(from ?? (user.role === 'ADMIN' ? '/admin' : '/app'), { replace: true })
+      // a deep link wins; otherwise "/app" resolves where this account's work
+      // starts, so the rule lives in one place (spec 01.6)
+      void navigate(from ?? '/app', { replace: true })
     },
   })
 
