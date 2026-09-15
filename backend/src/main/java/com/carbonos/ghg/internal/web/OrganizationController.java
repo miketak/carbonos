@@ -22,6 +22,7 @@ import com.carbonos.ghg.internal.Organization;
 import com.carbonos.ghg.internal.SupportAccessService;
 import com.carbonos.ghg.internal.web.dto.AuditEventResponse;
 import com.carbonos.ghg.internal.web.dto.DeleteOrganizationRequest;
+import com.carbonos.ghg.internal.web.dto.OrganizationCapabilitiesResponse;
 import com.carbonos.ghg.internal.web.dto.OrganizationRequest;
 import com.carbonos.ghg.internal.web.dto.OrganizationResponse;
 import com.carbonos.ghg.internal.web.dto.SupportAccessRequest;
@@ -46,6 +47,12 @@ class OrganizationController {
 		return ghgService.listOrganizations().stream().map(this::toResponse).toList();
 	}
 
+	/** Whether the caller may create an organization on this deployment (spec 01.5). */
+	@GetMapping("/capabilities")
+	OrganizationCapabilitiesResponse capabilities() {
+		return new OrganizationCapabilitiesResponse(ghgService.mayCreateOrganization());
+	}
+
 	@GetMapping("/{id}")
 	OrganizationResponse get(@PathVariable UUID id) {
 		return toResponse(ghgService.getOrganization(id));
@@ -53,7 +60,8 @@ class OrganizationController {
 
 	@PostMapping
 	ResponseEntity<OrganizationResponse> create(@Valid @RequestBody OrganizationRequest body) {
-		var organization = ghgService.createOrganization(body.name(), body.address(), body.contact());
+		var organization = ghgService.createOrganization(body.name(), body.address(), body.contact(),
+				body.ownerEmail());
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
 			.buildAndExpand(organization.getId()).toUri();
 		return ResponseEntity.created(location).body(toResponse(organization));

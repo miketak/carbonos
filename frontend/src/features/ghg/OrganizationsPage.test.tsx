@@ -13,7 +13,13 @@ vi.mock('../auth/api', () => ({
   me: vi.fn(),
 }))
 
-import { createOrganization, deleteOrganization, listInventories, listOrganizations } from './api'
+import {
+  createOrganization,
+  deleteOrganization,
+  getOrganizationCapabilities,
+  listInventories,
+  listOrganizations,
+} from './api'
 
 const organizations: Organization[] = [
   {
@@ -43,6 +49,9 @@ beforeEach(() => {
   vi.mocked(createOrganization).mockReset()
   vi.mocked(deleteOrganization).mockReset()
   vi.mocked(listInventories).mockReset().mockResolvedValue([])
+  vi.mocked(getOrganizationCapabilities)
+    .mockReset()
+    .mockResolvedValue({ mayCreateOrganization: true })
 })
 
 /** Enough of an inventory for the delete dialog to judge whether it blocks (spec 01.3). */
@@ -183,4 +192,25 @@ test('a refused deletion is shown in the dialog, which stays open (spec 01.4)', 
     ),
   ).toBeInTheDocument()
   expect(screen.getByRole('dialog', { name: /delete organization/i })).toBeInTheDocument()
+})
+
+test('New organization is absent when the deployment reserves it to administrators', async () => {
+  // spec 01.5 with spec 01.4: a control nobody here may use is not offered,
+  // and the server refuses the write whether or not the screen does
+  vi.mocked(listOrganizations).mockResolvedValue(organizations)
+  vi.mocked(getOrganizationCapabilities).mockResolvedValue({ mayCreateOrganization: false })
+  renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
+
+  await screen.findByText('Ecoriv Holdings')
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: /new organization/i })).not.toBeInTheDocument(),
+  )
+})
+
+test('New organization is offered while creation is open to everyone', async () => {
+  vi.mocked(listOrganizations).mockResolvedValue(organizations)
+  vi.mocked(getOrganizationCapabilities).mockResolvedValue({ mayCreateOrganization: true })
+  renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
+
+  expect(await screen.findByRole('button', { name: /new organization/i })).toBeInTheDocument()
 })

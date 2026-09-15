@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-13
+last_reviewed: 2026-09-14
 ---
 
 # Backend modules
@@ -14,16 +14,19 @@ diagram here is enforced, not aspirational.
 ```mermaid
 flowchart TB
     accTitle: The backend modules and the events between them
-    accDescr: The user module publishes account events that mail consumes. The ghg module publishes run and publication events, calls the media module's public API for evidence files and the user module's directory for actors. Shared holds cross-cutting web and error handling.
+    accDescr: The user module publishes account events that mail consumes. The ghg module publishes run and publication events, calls the media module's public API for evidence files, the user module's directory for actors, and the platform module for the deployment's policy. Platform depends only on user, never on ghg, because ghg reads it. Shared holds cross-cutting web and error handling.
     user["user\nAccounts, sessions, access requests"]
     ghg["ghg\nGHG Protocol accounting"]
     mail["mail\nOutbound email"]
     media["media\nS3-compatible object storage"]
+    platform["platform\nDeployment policy"]
     shared["shared\nWeb config, problem details"]
     user -- "UserCreated\nAccessRequestApproved\nAccessRequestDenied" --> mail
     ghg -- "GhgRunCompleted\nInventoryPublished" --> mail
     ghg -- "MediaStorage" --> media
     ghg -- "UserDirectory, AuthenticatedUser" --> user
+    ghg -- "PlatformSettings" --> platform
+    platform -- "AuthenticatedUser" --> user
     shared -.-> user
     shared -.-> ghg
 ```
@@ -36,6 +39,7 @@ flowchart TB
 | `ghg` | Everything the GHG Protocol specs describe: organizations, entities, facilities, activity data, factors, boundaries, inventories, runs, base years, reports (specs 02 to 08), plus membership, support access and the organization tombstone (specs 01.2, 01.3). | Events `GhgRunCompleted`, `InventoryPublished` | Every `ghg_*` table, including the factor pack catalogue below |
 | `mail` | Turns other modules' events into SMTP messages. Owns no tables and exposes no API. Delivery is at-least-once through the Modulith event registry; unsent mail is retried on restart. | none | none (the event publication log is Modulith's) |
 | `media` | Object storage for evidence and profile files on any S3-compatible store: MinIO locally, a Railway bucket in production. | `MediaStorage` | `media_files` |
+| `platform` | The deployment's own policy an administrator sets in the administration panel (spec 01.5): how long support access lasts, and who may create a reporting organization. Never depends on `ghg`, which reads it; `ModularityTests` pins that. | `PlatformSettings` | `platform_settings`, `platform_setting_changes` |
 | `shared` | Cross-cutting infrastructure: web configuration, RFC 9457 problem details, the global exception handler. Business logic never lives here. | n/a | none |
 
 ### Where a factor pack lives
@@ -94,6 +98,13 @@ evidence through `MediaStorage`.
   administrator-only endpoints live under `/api/admin/**`, which
   `SecurityConfig` reserves for the ADMIN platform role, and the service
   checks the role again.
+- The administration panel's landing figures come from **two endpoints**,
+  `/api/admin/summary/accounts` from `user` and `/api/admin/summary/platform`
+  from `ghg`, and the browser puts them together. Do not merge them. `ghg`
+  already depends on `user`, so one combined endpoint hosted in `user` is a
+  dependency cycle, and a `platform` module that both held the settings and
+  counted organizations would be the same cycle the other way. Each module
+  counting what it owns is what keeps the graph acyclic (spec 01.5).
 
 ## Generated documentation
 

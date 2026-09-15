@@ -10,7 +10,6 @@ import type { PillTone } from '../../components/StatusPill'
 import { Tabs } from '../../components/Tabs'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
-import { AdminHeader } from './components/AdminHeader'
 import { BlastRadiusDrawer } from './components/BlastRadiusDrawer'
 import { PackRowFormModal } from './components/PackRowFormModal'
 import { PublishEditionDialog } from './components/PublishEditionDialog'
@@ -95,250 +94,232 @@ export function AdminFactorPackEditionPage() {
   const changes = changesQuery.data ?? []
 
   if (editionQuery.isPending) {
-    return (
-      <div className="min-h-screen">
-        <AdminHeader current="/admin/factor-packs" />
-        <main className="mx-auto max-w-5xl px-6 py-10">
-          <Skeleton className="h-32" aria-label="Loading the edition" />
-        </main>
-      </div>
-    )
+    return <Skeleton className="h-32" aria-label="Loading the edition" />
   }
 
   if (!edition) {
     return (
-      <div className="min-h-screen">
-        <AdminHeader current="/admin/factor-packs" />
-        <main className="mx-auto max-w-5xl px-6 py-10">
-          <GlassCard className="p-10 text-center">
-            <h1 className="text-lg">That edition was not found</h1>
-            <Link to="/admin/factor-packs" className="mt-2 inline-block text-sm text-link">
-              Back to the factor packs
-            </Link>
-          </GlassCard>
-        </main>
-      </div>
+      <GlassCard className="p-10 text-center">
+        <h1 className="text-lg">That edition was not found</h1>
+        <Link to="/admin/factor-packs" className="mt-2 inline-block text-sm text-link">
+          Back to the factor packs
+        </Link>
+      </GlassCard>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <AdminHeader current="/admin/factor-packs" />
-
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <Link to="/admin/factor-packs" className="text-sm text-link">
-          Factor packs
-        </Link>
-        <div className="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl">{edition.editionId}</h1>
-              <StatusPill tone={tones[edition.status]}>{edition.status}</StatusPill>
-            </div>
-            <p className="mt-1 text-sm text-ink-muted">
-              {edition.name} · {edition.rowCount.toLocaleString()} rows ·{' '}
-              {edition.holderCount === 0
-                ? 'held by no organization'
-                : `held by ${edition.holderCount} organization${edition.holderCount === 1 ? '' : 's'}`}
-            </p>
-            {!edition.mutable && (
-              <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-                This edition is published, so its rows, metadata and values never change again:
-                reports already rest on them. Clone it into a new draft to correct a row.
-              </p>
-            )}
+    <div>
+      <Link to="/admin/factor-packs" className="text-sm text-link">
+        Factor packs
+      </Link>
+      <div className="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl">{edition.editionId}</h1>
+            <StatusPill tone={tones[edition.status]}>{edition.status}</StatusPill>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {edition.mutable && (
-              <>
-                <Button onClick={() => setDialog({ kind: 'row', row: null })}>Add row</Button>
-                <Button
-                  variant="ghost"
-                  className="px-3 py-1.5 text-sm"
-                  onClick={() => setDialog({ kind: 'publish' })}
-                >
-                  Publish
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                  onClick={() => setDialog({ kind: 'deleteEdition' })}
-                >
-                  Delete draft
-                </Button>
-              </>
-            )}
-            <Button
-              variant="ghost"
-              className="px-3 py-1.5 text-sm"
-              onClick={() => setBlastRadiusOpen(true)}
-            >
-              Blast radius
-            </Button>
-            {edition.status === 'PUBLISHED' && (
+          <p className="mt-1 text-sm text-ink-muted">
+            {edition.name} · {edition.rowCount.toLocaleString()} rows ·{' '}
+            {edition.holderCount === 0
+              ? 'held by no organization'
+              : `held by ${edition.holderCount} organization${edition.holderCount === 1 ? '' : 's'}`}
+          </p>
+          {!edition.mutable && (
+            <p className="mt-2 max-w-2xl text-sm text-ink-muted">
+              This edition is published, so its rows, metadata and values never change again:
+              reports already rest on them. Clone it into a new draft to correct a row.
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {edition.mutable && (
+            <>
+              <Button onClick={() => setDialog({ kind: 'row', row: null })}>Add row</Button>
+              <Button
+                variant="ghost"
+                className="px-3 py-1.5 text-sm"
+                onClick={() => setDialog({ kind: 'publish' })}
+              >
+                Publish
+              </Button>
               <Button
                 variant="ghost"
                 className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                onClick={() => setDialog({ kind: 'withdraw' })}
+                onClick={() => setDialog({ kind: 'deleteEdition' })}
               >
-                Withdraw
+                Delete draft
               </Button>
-            )}
-          </div>
-        </div>
-
-        <Tabs
-          label="The edition"
-          value={tab}
-          onChange={setTab}
-          tabs={[
-            { value: 'rows', label: 'Rows', count: edition.rowCount },
-            { value: 'metadata', label: 'Metadata' },
-            { value: 'validation', label: 'Validation', count: findings.length },
-            { value: 'changes', label: 'Changes', count: changes.length },
-          ]}
-        />
-
-        <div className="mt-6">
-          {tab === 'rows' && (
-            <>
-              <div className="mb-4 flex flex-wrap gap-3">
-                <div className="min-w-48 flex-1">
-                  <InputField
-                    label="Search"
-                    placeholder="A code, a name or a detail"
-                    value={search}
-                    onChange={(event) => {
-                      setSearch(event.target.value)
-                      setPage(0)
-                    }}
-                  />
-                </div>
-                <div className="min-w-48 flex-1">
-                  <SelectField
-                    label="Publisher's category"
-                    value={category}
-                    onChange={(event) => {
-                      setCategory(event.target.value)
-                      setPage(0)
-                    }}
-                  >
-                    <option value="">Every category</option>
-                    {(rows?.categories ?? []).map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </SelectField>
-                </div>
-              </div>
-
-              {rowsQuery.isPending && <Skeleton className="h-40" aria-label="Loading the rows" />}
-
-              {rows && rows.total === 0 && (
-                <GlassCard className="p-10 text-center">
-                  <h2 className="text-lg">No rows</h2>
-                  <p className="mt-1 text-sm text-ink-muted">
-                    {search || category
-                      ? 'No row of this edition matches the filter.'
-                      : 'This edition is empty. Add a row, or clone a predecessor into a new draft.'}
-                  </p>
-                </GlassCard>
-              )}
-
-              {rows && rows.total > 0 && (
-                <GlassCard className="p-2">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                        <th className="px-3 py-2 font-semibold">Code</th>
-                        <th className="px-3 py-2 font-semibold">Name</th>
-                        <th className="px-3 py-2 font-semibold">Unit</th>
-                        <th className="px-3 py-2 font-semibold">kg CO2e</th>
-                        <th className="px-3 py-2 font-semibold">Approved</th>
-                        <th className="px-3 py-2" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.items.map((row) => (
-                        <tr key={row.id} className="border-b border-teal/5 last:border-0">
-                          <td className="px-3 py-2 font-mono text-xs break-all">{row.code}</td>
-                          <td className="px-3 py-2">{row.name}</td>
-                          <td className="px-3 py-2 text-ink-muted">{row.unit}</td>
-                          <td className="px-3 py-2 text-ink-muted">{row.kgCo2ePerUnit}</td>
-                          <td className="px-3 py-2 text-ink-muted">
-                            {row.approved ? 'Yes' : 'No'}
-                          </td>
-                          <td className="px-3 py-2 text-right whitespace-nowrap">
-                            <Button
-                              variant="ghost"
-                              className="px-2 py-1 text-xs"
-                              aria-label={`Edit ${row.code}`}
-                              onClick={() => setDialog({ kind: 'row', row })}
-                            >
-                              Edit
-                            </Button>
-                            {edition.mutable && (
-                              <Button
-                                variant="ghost"
-                                className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                                aria-label={`Delete ${row.code}`}
-                                onClick={() => setDialog({ kind: 'deleteRow', row })}
-                              >
-                                Delete
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </GlassCard>
-              )}
-
-              {rows && rows.total > PAGE_SIZE && (
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  <Button
-                    variant="ghost"
-                    className="px-3 py-1.5 text-sm"
-                    disabled={page === 0}
-                    onClick={() => setPage((current) => Math.max(0, current - 1))}
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-ink-muted">
-                    {page * PAGE_SIZE + 1} to {Math.min((page + 1) * PAGE_SIZE, rows.total)} of{' '}
-                    {rows.total.toLocaleString()}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    className="px-3 py-1.5 text-sm"
-                    disabled={(page + 1) * PAGE_SIZE >= rows.total}
-                    onClick={() => setPage((current) => current + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
             </>
           )}
-
-          {tab === 'metadata' && <MetadataTab edition={edition} />}
-
-          {tab === 'validation' && (
-            <ValidationTab findings={findings} loading={validationQuery.isPending} />
-          )}
-
-          {tab === 'changes' && (
-            <ChangesTab
-              changes={changes}
-              loading={changesQuery.isPending}
-              predecessorId={edition.supersedesId}
-              mutable={edition.mutable}
-            />
+          <Button
+            variant="ghost"
+            className="px-3 py-1.5 text-sm"
+            onClick={() => setBlastRadiusOpen(true)}
+          >
+            Blast radius
+          </Button>
+          {edition.status === 'PUBLISHED' && (
+            <Button
+              variant="ghost"
+              className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+              onClick={() => setDialog({ kind: 'withdraw' })}
+            >
+              Withdraw
+            </Button>
           )}
         </div>
-      </main>
+      </div>
+
+      <Tabs
+        label="The edition"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { value: 'rows', label: 'Rows', count: edition.rowCount },
+          { value: 'metadata', label: 'Metadata' },
+          { value: 'validation', label: 'Validation', count: findings.length },
+          { value: 'changes', label: 'Changes', count: changes.length },
+        ]}
+      />
+
+      <div className="mt-6">
+        {tab === 'rows' && (
+          <>
+            <div className="mb-4 flex flex-wrap gap-3">
+              <div className="min-w-48 flex-1">
+                <InputField
+                  label="Search"
+                  placeholder="A code, a name or a detail"
+                  value={search}
+                  onChange={(event) => {
+                    setSearch(event.target.value)
+                    setPage(0)
+                  }}
+                />
+              </div>
+              <div className="min-w-48 flex-1">
+                <SelectField
+                  label="Publisher's category"
+                  value={category}
+                  onChange={(event) => {
+                    setCategory(event.target.value)
+                    setPage(0)
+                  }}
+                >
+                  <option value="">Every category</option>
+                  {(rows?.categories ?? []).map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </SelectField>
+              </div>
+            </div>
+
+            {rowsQuery.isPending && <Skeleton className="h-40" aria-label="Loading the rows" />}
+
+            {rows && rows.total === 0 && (
+              <GlassCard className="p-10 text-center">
+                <h2 className="text-lg">No rows</h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  {search || category
+                    ? 'No row of this edition matches the filter.'
+                    : 'This edition is empty. Add a row, or clone a predecessor into a new draft.'}
+                </p>
+              </GlassCard>
+            )}
+
+            {rows && rows.total > 0 && (
+              <GlassCard className="p-2">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+                      <th className="px-3 py-2 font-semibold">Code</th>
+                      <th className="px-3 py-2 font-semibold">Name</th>
+                      <th className="px-3 py-2 font-semibold">Unit</th>
+                      <th className="px-3 py-2 font-semibold">kg CO2e</th>
+                      <th className="px-3 py-2 font-semibold">Approved</th>
+                      <th className="px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.items.map((row) => (
+                      <tr key={row.id} className="border-b border-teal/5 last:border-0">
+                        <td className="px-3 py-2 font-mono text-xs break-all">{row.code}</td>
+                        <td className="px-3 py-2">{row.name}</td>
+                        <td className="px-3 py-2 text-ink-muted">{row.unit}</td>
+                        <td className="px-3 py-2 text-ink-muted">{row.kgCo2ePerUnit}</td>
+                        <td className="px-3 py-2 text-ink-muted">{row.approved ? 'Yes' : 'No'}</td>
+                        <td className="px-3 py-2 text-right whitespace-nowrap">
+                          <Button
+                            variant="ghost"
+                            className="px-2 py-1 text-xs"
+                            aria-label={`Edit ${row.code}`}
+                            onClick={() => setDialog({ kind: 'row', row })}
+                          >
+                            Edit
+                          </Button>
+                          {edition.mutable && (
+                            <Button
+                              variant="ghost"
+                              className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                              aria-label={`Delete ${row.code}`}
+                              onClick={() => setDialog({ kind: 'deleteRow', row })}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </GlassCard>
+            )}
+
+            {rows && rows.total > PAGE_SIZE && (
+              <div className="mt-4 flex items-center justify-between text-sm">
+                <Button
+                  variant="ghost"
+                  className="px-3 py-1.5 text-sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((current) => Math.max(0, current - 1))}
+                >
+                  Previous
+                </Button>
+                <span className="text-ink-muted">
+                  {page * PAGE_SIZE + 1} to {Math.min((page + 1) * PAGE_SIZE, rows.total)} of{' '}
+                  {rows.total.toLocaleString()}
+                </span>
+                <Button
+                  variant="ghost"
+                  className="px-3 py-1.5 text-sm"
+                  disabled={(page + 1) * PAGE_SIZE >= rows.total}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === 'metadata' && <MetadataTab edition={edition} />}
+
+        {tab === 'validation' && (
+          <ValidationTab findings={findings} loading={validationQuery.isPending} />
+        )}
+
+        {tab === 'changes' && (
+          <ChangesTab
+            changes={changes}
+            loading={changesQuery.isPending}
+            predecessorId={edition.supersedesId}
+            mutable={edition.mutable}
+          />
+        )}
+      </div>
 
       {blastRadiusOpen && (
         <BlastRadiusDrawer

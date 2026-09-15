@@ -17,6 +17,7 @@ import {
   uploadFactorPackEvidence,
   withdrawFactorPackEdition,
 } from './api'
+import { adminSummaryKey } from './useSummary'
 import type {
   CreateFamilyInput,
   EditionInput,
@@ -56,7 +57,13 @@ export function useFactorPackValidationQuery(editionId: string) {
 
 function useInvalidateFactorPacks() {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: adminFactorPacksKey })
+  // the dashboard counts draft, published and withdrawn editions, so it moves
+  // with every write here (spec 01.5)
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: adminFactorPacksKey }),
+      queryClient.invalidateQueries({ queryKey: adminSummaryKey }),
+    ])
 }
 
 export function useCreateFactorPackFamily() {

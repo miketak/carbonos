@@ -17,6 +17,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 01.2 | [Organization membership, roles and attribution](01.2-organization-membership-and-roles.md) | Ch. 7 | Implemented |
 | 01.3 | [Organization confidentiality and deletion safeguards](01.3-organization-confidentiality-and-deletion-safeguards.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
 | 01.4 | [Role-aware UI and visible refusals](01.4-role-aware-ui-and-visible-refusals.md) | Ch. 7 | Implemented |
+| 01.5 | [The platform administration panel](01.5-the-platform-administration-panel.md) | Ch. 7, 9, ISO 14064-1, ISO 14064-3 | Approved |
 | 02 | [Organization and facts](02-organization-and-facts.md) | Ch. 6, 7 | Implemented |
 | 02.1 | [Emission factor library, provenance and packs](02.1-emission-factor-library.md) | Ch. 6, 9, Scope 2 Guidance | Implemented |
 | 02.2 | [Units, densities, and custom units](02.2-units-densities-and-custom-units.md) | Ch. 6, 7 | Implemented |

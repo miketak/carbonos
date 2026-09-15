@@ -14,4 +14,7 @@ public interface AccessRequestRepository extends JpaRepository<AccessRequest, UU
 
 	List<AccessRequest> findAllByOrderByCreatedAtDesc();
 
+	/** The count the administration panel's badge carries (spec 01.5). */
+	long countByStatus(AccessRequestStatus status);
+
 }

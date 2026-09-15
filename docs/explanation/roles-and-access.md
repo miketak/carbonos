@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-13
+last_reviewed: 2026-09-14
 ---
 
 # Roles and access
@@ -72,13 +72,18 @@ it an explicit, visible, expiring act.
 
 A platform administrator finds the organization in an administrator-only
 list, then assumes access with a reason of at least ten characters. The
-grant lasts 24 hours from the moment it is taken, or until the
-administrator ends it.
+grant lasts for the window the platform operator has set, 24 hours by
+default and at most 72, from the moment it is taken, or until the
+administrator ends it. A grant keeps the window it was taken under, so
+changing the setting never moves access that is already live.
 
-While it is active, the administrator has an owner's rights, with two
+While it is active, the administrator has an owner's rights, with three
 exceptions that never transfer: **deleting the organization** and
-**changing its membership**. Both are reserved to an owner by membership.
-An administrator who tries either gets 403.
+**changing its membership**, both reserved to an owner by membership, and
+**accepting or declining a factor pack notice**, which is the
+organization's own decision about its numbers. An administrator who tries
+any of the three gets 403. Marking a run final and publishing do transfer,
+so an administrator can finish a run for a client who cannot.
 
 The organization's own people can see all of it. Assuming, ending and
 expiring are recorded in the organization's history as

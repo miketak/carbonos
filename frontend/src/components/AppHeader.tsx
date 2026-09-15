@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
-import { Button } from '../../../components/Button'
-import { useLogout } from '../../auth/useLogout'
-import { useSession } from '../../auth/useSession'
+import { Button } from './Button'
+import { useLogout } from '../features/auth/useLogout'
+import { useSession } from '../features/auth/useSession'
 
-/** The shared CarbonOS top bar; `children` renders in the right cluster (e.g. the org switcher). */
-export function GhgHeader({ children }: { children?: ReactNode }) {
+/** The shared CarbonOS top bar; `children` renders in the right cluster (the org switcher, the area name). */
+export function AppHeader({ children }: { children?: ReactNode }) {
   const session = useSession()
   const signOut = useLogout()
 

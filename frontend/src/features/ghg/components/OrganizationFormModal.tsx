@@ -4,6 +4,7 @@ import { Button } from '../../../components/Button'
 import { InputField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
+import { useSession } from '../../auth/useSession'
 import { useCreateOrganization, useUpdateOrganization } from '../useGhg'
 import type { Organization } from '../api'
 
@@ -13,7 +14,16 @@ interface OrganizationFormModalProps {
   onSaved: (message: string) => void
 }
 
-/** Create or edit a reporting organization. Accounting choices live on its inventories. */
+/**
+ * Create or edit a reporting organization. Accounting choices live on its
+ * inventories.
+ *
+ * While the deployment reserves creation to administrators (spec 01.5), the
+ * form asks for the account that becomes the owner. An administrator must not
+ * become the owner of a client's organization: that would be standing
+ * membership with no reason, no expiry and no record, which is the access
+ * spec 01.3 exists to abolish.
+ */
 export function OrganizationFormModal({
   organization,
   onClose,
@@ -26,6 +36,11 @@ export function OrganizationFormModal({
   const [name, setName] = useState(organization?.name ?? '')
   const [address, setAddress] = useState(organization?.address ?? '')
   const [contact, setContact] = useState(organization?.contact ?? '')
+  const [ownerEmail, setOwnerEmail] = useState('')
+  const session = useSession()
+  // only an administrator ever sees this field: while creation is open, the
+  // creator is the owner and there is nothing to ask
+  const namesTheOwner = !organization && session.data?.role === 'ADMIN'
 
   const errors = fieldErrors(mutation.error)
   const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
@@ -36,6 +51,7 @@ export function OrganizationFormModal({
       name,
       ...(address.trim() !== '' ? { address } : {}),
       ...(contact.trim() !== '' ? { contact } : {}),
+      ...(namesTheOwner && ownerEmail.trim() !== '' ? { ownerEmail: ownerEmail.trim() } : {}),
     }
     const handlers = {
       onSuccess: () => onSaved(`${name.trim()} ${organization ? 'updated' : 'created'}.`),
@@ -70,6 +86,17 @@ export function OrganizationFormModal({
           onChange={(event) => setContact(event.target.value)}
           error={errors?.contact}
         />
+        {namesTheOwner && (
+          <InputField
+            label="Owner's email (optional)"
+            type="email"
+            placeholder="kojo@sankofa.test"
+            value={ownerEmail}
+            onChange={(event) => setOwnerEmail(event.target.value)}
+            error={errors?.ownerEmail}
+            hint="An existing account, which becomes the organization's owner. Leave it empty to own it yourself. Naming somebody else means you are not a member, so you will need support access to open it."
+          />
+        )}
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">
             {generalError}

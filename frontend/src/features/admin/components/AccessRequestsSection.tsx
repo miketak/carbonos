@@ -10,7 +10,11 @@ import {
 } from '../useAccessRequests'
 import type { AccessRequest } from '../api'
 
-/** The admin queue of spec 01.1: pending access requests with approve/deny. */
+/**
+ * The queue of spec 01.1: pending access requests with approve and deny. The
+ * page it sits on carries the heading and the sidebar carries the count
+ * (spec 01.5), so it renders neither.
+ */
 export function AccessRequestsSection() {
   const requestsQuery = useAccessRequestsQuery()
   const approve = useApproveAccessRequest()
@@ -34,15 +38,8 @@ export function AccessRequestsSection() {
   }
 
   return (
-    <section className="mb-8">
-      <div className="mb-3 flex items-center gap-2">
-        <h2 className="text-lg">Access requests</h2>
-        {pending.length > 0 && (
-          <span className="rounded-full bg-teal-deep px-2 py-0.5 text-xs font-bold text-white">
-            {pending.length}
-          </span>
-        )}
-      </div>
+    <section>
+      <h2 className="mb-3 text-lg">Waiting for a decision</h2>
 
       <GlassCard className="overflow-x-auto">
         {requestsQuery.isPending && (

@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
-import { GhgHeader } from './components/GhgHeader'
+import { AppHeader } from '../../components/AppHeader'
 import { ReadOnlyBanner } from './components/ReadOnlyBanner'
 import { useFactorPackNoticesQuery, useOrganizationQuery, useOrganizationsQuery } from './useGhg'
 import type { Organization } from './api'
@@ -130,14 +130,14 @@ export function OrganizationLayout() {
 
   return (
     <div className="min-h-screen">
-      <GhgHeader>
+      <AppHeader>
         <OrgSwitcher
           organizations={organizations}
           organizationId={organizationId}
           fallbackName={organizationName}
           onSwitch={switchOrganization}
         />
-      </GhgHeader>
+      </AppHeader>
 
       <div className="flex flex-col md:flex-row">
         <aside

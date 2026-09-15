@@ -16,14 +16,16 @@ export function LoginPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/app'
+  const from = (location.state as { from?: string } | null)?.from
 
   const signIn = useMutation({
     mutationFn: () => login(email, password),
     onSuccess: (user) => {
       queryClient.setQueryData(sessionQueryKey, user)
       triggerSplash()
-      void navigate(from, { replace: true })
+      // a deep link wins; otherwise an administrator's work starts in the
+      // administration panel and everybody else's in the product (spec 01.5)
+      void navigate(from ?? (user.role === 'ADMIN' ? '/admin' : '/app'), { replace: true })
     },
   })
 

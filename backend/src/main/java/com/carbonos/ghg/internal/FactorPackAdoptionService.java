@@ -419,7 +419,7 @@ public class FactorPackAdoptionService {
 	public FactorPackImportService.ImportResult accept(UUID noticeId, String recalculationCase, String note) {
 		var notice = decidable(noticeId);
 		var organization = organization(notice.getOrganizationId());
-		access.checkApprove(organization);
+		access.checkTenantDecision(organization, "adopt an edition for an organization");
 		var answer = answerOf(recalculationCase);
 		var diff = diffOf(notice);
 		if (diff.gwpBasisChanged() && answer == FactorPackNotice.RecalculationCase.VINTAGE_PROGRESSION) {
@@ -476,7 +476,7 @@ public class FactorPackAdoptionService {
 	public NoticeView decline(UUID noticeId, String note) {
 		var notice = decidable(noticeId);
 		var organization = organization(notice.getOrganizationId());
-		access.checkApprove(organization);
+		access.checkTenantDecision(organization, "decline an edition for an organization");
 		notice.decide(FactorPackNotice.Status.DECLINED, access.currentUserId(), access.currentUserEmail(),
 				access.roleIn(organization).orElse(OrgRole.REVIEWER), null, trimToNull(note), null, null);
 		auditEvents.save(new GhgAuditEvent(notice.getOrganizationId(), GhgAuditEvent.Action.FACTOR_PACK_DECLINED,

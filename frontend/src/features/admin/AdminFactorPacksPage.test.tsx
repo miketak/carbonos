@@ -6,6 +6,32 @@ import { AdminFactorPacksPage } from './AdminFactorPacksPage'
 import type { FactorPackEdition, FactorPackFamily } from './api'
 
 vi.mock('./api', () => ({
+  getAccountsSummary: vi.fn().mockResolvedValue({
+    usersTotal: 0,
+    usersActive: 0,
+    usersPending: 0,
+    administrators: 1,
+    accessRequestsPending: 0,
+  }),
+  getPlatformSummary: vi.fn().mockResolvedValue({
+    organizations: 0,
+    packFamilies: 0,
+    publishedEditions: 0,
+    draftEditionCount: 0,
+    withdrawnEditions: 0,
+    openNotices: 0,
+    draftEditions: [],
+    grants: [],
+    recentActivity: [],
+  }),
+  getPlatformSettings: vi.fn().mockResolvedValue({
+    supportAccessWindowHours: 24,
+    organizationCreation: 'EVERYONE',
+    updatedAt: '2026-09-14T00:00:00Z',
+    updatedBy: null,
+  }),
+  updatePlatformSettings: vi.fn(),
+  listPlatformSettingChanges: vi.fn().mockResolvedValue([]),
   listFactorPacks: vi.fn(),
   createFactorPackFamily: vi.fn(),
   createFactorPackEdition: vi.fn(),

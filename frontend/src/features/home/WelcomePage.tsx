@@ -59,20 +59,12 @@ export function WelcomePage() {
               Edit profile
             </Link>
             {user?.role === 'ADMIN' && (
-              <>
-                <Link
-                  to="/admin/users"
-                  className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-link transition-colors duration-150 hover:bg-teal/10"
-                >
-                  Manage users
-                </Link>
-                <Link
-                  to="/admin/factor-packs"
-                  className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-link transition-colors duration-150 hover:bg-teal/10"
-                >
-                  Factor packs
-                </Link>
-              </>
+              <Link
+                to="/admin"
+                className="inline-block rounded-lg border border-teal/30 px-6 py-2.5 font-semibold text-link transition-colors duration-150 hover:bg-teal/10"
+              >
+                Administration
+              </Link>
             )}
           </div>
         </GlassCard>

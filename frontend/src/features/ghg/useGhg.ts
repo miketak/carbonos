@@ -72,6 +72,8 @@ import {
   listMembers,
   listOrganizationEvents,
   listOrganizationUnits,
+  getOrganizationCapabilities,
+  getPublicPlatformSettings,
   listOrganizations,
   listRuns,
   listStreams,
@@ -145,6 +147,8 @@ import type {
 } from './api'
 
 export const organizationsKey = ['ghg', 'organizations'] as const
+export const organizationCapabilitiesKey = ['ghg', 'organizations', 'capabilities'] as const
+export const platformSettingsKey = ['platform', 'settings'] as const
 export const factorsKey = (orgId: string) => ['ghg', 'emission-factors', orgId] as const
 export const factorPacksKey = ['ghg', 'factor-packs'] as const
 export const membersKey = (orgId: string) => ['ghg', 'members', orgId] as const
@@ -198,6 +202,28 @@ export const reportKey = (runId: string) => ['ghg', 'report', runId] as const
 
 export function useOrganizationsQuery() {
   return useQuery({ queryKey: organizationsKey, queryFn: listOrganizations })
+}
+
+/**
+ * Whether this caller may create an organization (spec 01.5). A hosted
+ * deployment may reserve it to administrators, and the screen mirrors the
+ * server rather than offering a control the write would refuse (spec 01.4).
+ */
+export function useOrganizationCapabilitiesQuery() {
+  return useQuery({
+    queryKey: organizationCapabilitiesKey,
+    queryFn: getOrganizationCapabilities,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+/** The support-access window in force, for the copy that explains it (spec 01.5). */
+export function usePublicPlatformSettingsQuery() {
+  return useQuery({
+    queryKey: platformSettingsKey,
+    queryFn: getPublicPlatformSettings,
+    staleTime: 5 * 60 * 1000,
+  })
 }
 
 export function useOrganizationQuery(id: string) {

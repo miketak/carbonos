@@ -29,18 +29,14 @@ anything today; each will be asked again the first time a client hits it.
 
 - [ ] **D-01** May an organization owner revoke an administrator's active
   support access? Today only the administrator can end it early, and it
-  expires on its own after 24 hours (spec 01.3).
-- [ ] **D-02** Should the 24-hour support window be shorter or configurable
-  per deployment? It is currently fixed (spec 01.3).
-- [ ] **D-03** Should **New organization** stay open to every signed-in user,
-  or be reserved to administrators on a hosted deployment (spec 01.4)?
+  expires on its own after the window in force (spec 01.3). Response: No
 - [ ] **D-04** Should freezing an inventory also wait for COMPLETENESS
   warnings (straddling records, months with no data), or only for
-  CLASSIFICATION errors as it does now (spec 05.5)?
+  CLASSIFICATION errors as it does now (spec 05.5) Response: as it is now is fine.
 - [ ] **D-05** Should an upstream rule fire for a primary line in scope 3
   category 8 (a leased asset under equity share)? It does not today, and the
   category 8 line says upstream emissions are optional under the Technical
-  Guidance (spec 04.7).
+  Guidance (spec 04.7). 
 - [ ] **D-06** Should a Montreal Protocol gas exclusion carry a CO2e figure
   for information, or the gas mass alone as it does now (spec 04.8)?
 
@@ -57,6 +53,14 @@ anything today; each will be asked again the first time a client hits it.
   masses: pro-rated lines there still carry full-period gas figures. They are
   snapshots and are left as calculated. Decide whether any dev or QA run
   needs recalculating before it is shown to anyone.
+
+- [ ] **FU-05** A per-organization privileged-access statement: every support
+  grant on one organization for a reporting period, with its duration and
+  what was done under it, as a filtered view or an export on the organization
+  overview. The events are already in the organization's history and every
+  act under a grant carries the "under support access" marker, but assembling
+  the period's statement means reading it by eye. This is the first thing a
+  client's IT-controls enquiry asks for (specs 01.3, 01.5).
 
 ## Questions the factor pack specs left open
 

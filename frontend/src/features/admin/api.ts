@@ -452,3 +452,109 @@ export function withdrawFactorPackEdition(
     body: JSON.stringify({ reason }),
   })
 }
+
+/* The administration panel's landing figures and the deployment's policy (spec 01.5). */
+
+/** The accounts half, from the `user` module. */
+export interface AccountsSummary {
+  usersTotal: number
+  usersActive: number
+  usersPending: number
+  administrators: number
+  accessRequestsPending: number
+}
+
+/** A draft edition waiting for an approver who is not its curator (spec 02.5). */
+export interface SummaryDraftEdition {
+  editionId: string
+  packKey: string
+  name: string
+  curatorEmail: string | null
+  rowCount: number
+  /** False when the caller curated it, so the queue never offers work publication would refuse. */
+  mayApprove: boolean
+}
+
+/** One support grant, live or closed in the last 30 days: the privileged-access register. */
+export interface SummaryGrant {
+  organizationId: string
+  organizationName: string
+  adminEmail: string
+  reason: string
+  grantedAt: string
+  expiresAt: string
+  endedAt: string | null
+  /** Whether the caller is the administrator holding it. */
+  mine: boolean
+}
+
+export interface SummaryActivity {
+  at: string
+  action: string
+  actor: string
+  subject: string
+}
+
+/**
+ * The platform half, from the `ghg` module. It carries no tenant inventory
+ * data: `openNotices` is a bare total across the platform, never a list
+ * naming which organization has an undecided methodology change (spec 01.5).
+ */
+export interface PlatformSummary {
+  organizations: number
+  packFamilies: number
+  publishedEditions: number
+  draftEditionCount: number
+  withdrawnEditions: number
+  openNotices: number
+  draftEditions: SummaryDraftEdition[]
+  grants: SummaryGrant[]
+  recentActivity: SummaryActivity[]
+}
+
+export type OrganizationCreation = 'EVERYONE' | 'ADMINISTRATORS'
+
+export interface PlatformSettings {
+  supportAccessWindowHours: number
+  organizationCreation: OrganizationCreation
+  updatedAt: string
+  updatedBy: string | null
+}
+
+export interface PlatformSettingsInput {
+  supportAccessWindowHours: number
+  organizationCreation: OrganizationCreation
+  reason: string
+}
+
+export interface PlatformSettingChange {
+  setting: string
+  oldValue: string
+  newValue: string
+  reason: string
+  actorEmail: string
+  changedAt: string
+}
+
+export function getAccountsSummary(): Promise<AccountsSummary> {
+  return api<AccountsSummary>('/api/admin/summary/accounts')
+}
+
+export function getPlatformSummary(): Promise<PlatformSummary> {
+  return api<PlatformSummary>('/api/admin/summary/platform')
+}
+
+export function getPlatformSettings(): Promise<PlatformSettings> {
+  return api<PlatformSettings>('/api/admin/settings')
+}
+
+export function updatePlatformSettings(input: PlatformSettingsInput): Promise<PlatformSettings> {
+  return api<PlatformSettings>('/api/admin/settings', {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function listPlatformSettingChanges(): Promise<PlatformSettingChange[]> {
+  return api<PlatformSettingChange[]>('/api/admin/settings/history')
+}

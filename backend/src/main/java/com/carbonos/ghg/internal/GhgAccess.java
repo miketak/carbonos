@@ -9,6 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.ErrorResponseException;
 
+import com.carbonos.platform.PlatformSettings;
 import com.carbonos.user.AuthenticatedUser;
 
 /**
@@ -46,12 +47,26 @@ public class GhgAccess {
 		}
 	}
 
+	/** A support administrator acting where the organization alone decides (specs 02.7, 01.5). */
+	public static class TenantDecisionException extends ErrorResponseException {
+
+		TenantDecisionException(String act) {
+			super(HttpStatus.FORBIDDEN);
+			setTitle("Access denied");
+			setDetail("Support access cannot " + act
+					+ ". That is the organization's own decision, so a reviewer or an owner of the organization "
+					+ "has to make it.");
+		}
+	}
+
 	private final OrganizationMemberRepository members;
 	private final SupportAccessRepository supportAccess;
+	private final PlatformSettings settings;
 
-	GhgAccess(OrganizationMemberRepository members, SupportAccessRepository supportAccess) {
+	GhgAccess(OrganizationMemberRepository members, SupportAccessRepository supportAccess, PlatformSettings settings) {
 		this.members = members;
 		this.supportAccess = supportAccess;
+		this.settings = settings;
 	}
 
 	/** The current session's user id, for stamping ownership on creation. */
@@ -129,6 +144,21 @@ public class GhgAccess {
 		}
 	}
 
+	/**
+	 * A member who may make a decision that is the organization's alone, such as
+	 * adopting a new factor pack edition (spec 02.7). Support access does not
+	 * carry it: the platform curates and publishes the edition, so letting the
+	 * platform accept it for the tenant would put both sides of that decision in
+	 * one pair of hands (spec 01.5). Marking a run final and publishing stay
+	 * available under a grant, so support can still finish a run for a client.
+	 */
+	void checkTenantDecision(Organization organization, String act) {
+		checkApprove(organization);
+		if (isUnderSupportAccess(organization)) {
+			throw new TenantDecisionException(act);
+		}
+	}
+
 	/** A member who manages the organization's facts and header; support access counts (spec 01.3). */
 	void checkOwner(Organization organization) {
 		if (!role(organization).isOwner()) {
@@ -150,6 +180,21 @@ public class GhgAccess {
 	/** A platform administrator, whatever their membership; 403 otherwise. */
 	void checkAdmin() {
 		if (!isCurrentUserAdmin()) {
+			throw new AdminRequiredException();
+		}
+	}
+
+	/**
+	 * Whether the caller may create a reporting organization (spec 01.5,
+	 * decision D-03). A hosted deployment may reserve it to administrators.
+	 */
+	boolean mayCreateOrganization() {
+		return settings.organizationCreation() == PlatformSettings.OrganizationCreation.EVERYONE
+				|| isCurrentUserAdmin();
+	}
+
+	void checkMayCreateOrganization() {
+		if (!mayCreateOrganization()) {
 			throw new AdminRequiredException();
 		}
 	}
