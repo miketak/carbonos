@@ -142,6 +142,7 @@ nav:
               - specs/04.6-activity-register-drafts-readiness-and-source-documents.md
               - specs/04.7-derived-fuel-and-energy-related-lines.md
               - specs/04.8-exclusions-without-a-false-zero-and-gases-outside-the-scopes.md
+              - specs/04.9-a-corrections-reason-where-reliance-begins.md
           - "05 Inventories and calculation":
               - specs/05-inventories-and-calculation.md
               - specs/05.1-inventory-lifecycle-and-run-snapshots.md
