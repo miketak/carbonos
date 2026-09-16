@@ -9,7 +9,10 @@ import { SupportAccessBanner } from './components/SupportAccessBanner'
 import { useFactorPackNoticesQuery, useOrganizationQuery, useOrganizationsQuery } from './useGhg'
 import type { Organization } from './api'
 
-const sections = [
+/** A sidebar entry. `ownerOnly` keeps it out of the nav for everybody else (spec 01.7). */
+type Section = { to: string; label: string; end: boolean; icon: string; ownerOnly?: boolean }
+
+const sections: Section[] = [
   { to: '.', label: 'Overview', end: true, icon: 'M3 10.5 12 3l9 7.5M5 9.5V21h5v-6h4v6h5V9.5' },
   {
     to: 'entities',
@@ -55,19 +58,32 @@ const sections = [
     end: false,
     icon: 'M3 6h18M3 12h18M3 18h18M7 3v3M12 3v3M17 3v3',
   },
+  {
+    // spec 01.7: the owner's own panel, apart at the end as the deployment's policy is in /admin
+    to: 'settings',
+    label: 'Settings',
+    end: false,
+    ownerOnly: true,
+    icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
+  },
 ]
 
 const collapseKey = 'ghg.sidebar'
 
-/* dividers group the nav: Overview | the GHG flow (entities, facilities, activity, inventories, base year) | reference */
-const dividerAfter = new Set([0, 5])
+/* dividers group the nav: Overview | the GHG flow (entities, facilities, activity, inventories,
+   base year) | reference | settings. Named by the section each follows rather than by index, so
+   hiding an entry never slides a divider onto the wrong row (spec 01.7). */
+const dividerAfterSlug = new Set(['.', 'base-year', 'units'])
 
 /* the navigation entry that carries the open-notice count (spec 02.7) */
 const badgedSection = 'factor-updates'
 
-/* pill position: 36px rows + 6px flex gap; each divider adds 1px + one extra gap */
-function pillOffset(index: number): number {
-  const dividersBefore = [...dividerAfter].filter((at) => at < index).length
+/* pill position: 36px rows + 6px flex gap; each divider adds 1px + one extra gap. It counts over
+   the sections actually rendered, because a hidden entry shifts every row below it. */
+function pillOffset(rendered: Section[], index: number): number {
+  const dividersBefore = rendered
+    .slice(0, index)
+    .filter((section) => dividerAfterSlug.has(section.to)).length
   return index * 42 + dividersBefore * 7
 }
 
@@ -127,8 +143,13 @@ export function OrganizationLayout() {
     void navigate(`/app/ghg/${id}${section ? `/${section}` : ''}`)
   }
 
+  // spec 01.7: Settings is the owner's, and the first entry in this nav that is conditional.
+  // Support access never grants it, so the membership role is what decides, not `mayOwn`.
+  const isOwner = organizationQuery.data?.myRole === 'OWNER'
+  const visibleSections = sections.filter((section) => !section.ownerOnly || isOwner)
+
   const sectionSlug = location.pathname.split('/')[4] ?? ''
-  const activeIndex = sections.findIndex(
+  const activeIndex = visibleSections.findIndex(
     (section) => (section.to === '.' ? '' : section.to) === sectionSlug,
   )
 
@@ -177,10 +198,10 @@ export function OrganizationLayout() {
                 <span
                   aria-hidden="true"
                   className="absolute left-0 hidden h-9 w-full rounded-lg bg-teal-deep transition-transform duration-200 ease-out md:block"
-                  style={{ transform: `translateY(${pillOffset(activeIndex)}px)` }}
+                  style={{ transform: `translateY(${pillOffset(visibleSections, activeIndex)}px)` }}
                 />
               )}
-              {sections.map((section, index) => (
+              {visibleSections.map((section, index) => (
                 <Fragment key={section.label}>
                   <NavLink
                     to={section.to}
@@ -211,7 +232,7 @@ export function OrganizationLayout() {
                       </span>
                     )}
                   </NavLink>
-                  {dividerAfter.has(index) && (
+                  {dividerAfterSlug.has(section.to) && index < visibleSections.length - 1 && (
                     <div aria-hidden="true" className="mx-3 hidden h-px bg-teal/15 md:block" />
                   )}
                 </Fragment>

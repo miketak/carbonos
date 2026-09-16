@@ -1,19 +1,22 @@
 import { GlassCard } from '../../../components/GlassCard'
-import { actionLabels, formatDateTime } from '../format'
-import { useOrganizationEventsQuery, usePublicPlatformSettingsQuery } from '../useGhg'
+import { formatDateTime } from '../format'
+import { usePublicPlatformSettingsQuery } from '../useGhg'
 import type { Organization } from '../api'
 
 /**
  * Who from the platform team can see inside this organization, and why (spec
- * 01.3). An active grant is shown with its expiry; past grants stay listed.
+ * 01.3). An active grant is shown with its expiry.
+ *
+ * It stays on the overview because spec 01.6 requires the page a member lands
+ * on to state a live grant. The history of grants assumed and ended moved to
+ * the settings page with the rest of the organization's own record (spec 01.7),
+ * so this card carries the grant and nothing else.
  */
 export function SupportAccessCard({ organization }: { organization: Organization }) {
-  const eventsQuery = useOrganizationEventsQuery(organization.id)
   const settingsQuery = usePublicPlatformSettingsQuery()
   const grants = organization.supportAccess ?? []
-  const events = eventsQuery.data ?? []
 
-  if (grants.length === 0 && events.length === 0) return null
+  if (grants.length === 0) return null
 
   // spec 01.5: the window the operator has set, not a number baked into the copy
   const hours = settingsQuery.data?.supportAccessWindowHours
@@ -28,36 +31,17 @@ export function SupportAccessCard({ organization }: { organization: Organization
         case. Every grant is recorded, and every act under it is attributed to the administrator.
         Adopting a new factor pack edition stays your decision, whoever is here.
       </p>
-      {grants.length > 0 ? (
-        <ul className="mt-4 flex flex-col gap-2 text-sm">
-          {grants.map((grant) => (
-            <li
-              key={`${grant.adminEmail}-${grant.grantedAt}`}
-              className="font-medium text-dark-teal"
-            >
-              Support access: {grant.adminEmail} since {formatDateTime(grant.grantedAt)}:{' '}
-              {grant.reason}
-              <span className="block text-xs font-normal text-ink-muted">
-                Until {formatDateTime(grant.expiresAt)}.
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-4 text-sm font-medium text-dark-teal">
-          Nobody holds support access to this organization.
-        </p>
-      )}
-      {events.length > 0 && (
-        <ul className="mt-4 flex flex-col gap-1 border-t border-teal/10 pt-4 text-sm text-ink-muted">
-          {events.map((event) => (
-            <li key={event.id}>
-              {formatDateTime(event.at)} · {actionLabels[event.action]} · {event.actor}:{' '}
-              {event.reason}
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="mt-4 flex flex-col gap-2 text-sm">
+        {grants.map((grant) => (
+          <li key={`${grant.adminEmail}-${grant.grantedAt}`} className="font-medium text-dark-teal">
+            Support access: {grant.adminEmail} since {formatDateTime(grant.grantedAt)}:{' '}
+            {grant.reason}
+            <span className="block text-xs font-normal text-ink-muted">
+              Until {formatDateTime(grant.expiresAt)}.
+            </span>
+          </li>
+        ))}
+      </ul>
     </GlassCard>
   )
 }
