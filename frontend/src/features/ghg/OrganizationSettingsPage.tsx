@@ -192,22 +192,27 @@ function Settings({ organization }: { organization: Organization }) {
         )}
       </GlassCard>
 
-      <h2 className="mt-8 mb-3 text-lg">Danger zone</h2>
-      <GlassCard className="border-red-200 p-6">
-        <h3 className="font-medium">Delete this organization</h3>
-        <p className="mt-1 text-sm text-ink-muted">
+      <h2 className="mt-8 mb-3 text-lg text-red-700">Danger zone</h2>
+      {/* Not a GlassCard: this one has to look unlike the cards above it, and a
+          border colour passed to GlassCard loses to its own anyway, because both
+          are border-colour utilities and the generated stylesheet decides, not
+          the order of the class attribute. The tinted panel is the warning
+          surface ImportActivitiesModal already uses. */}
+      <div className="rounded-xl border border-red-200 bg-red-50/60 p-6">
+        <h3 className="font-medium text-red-800">Delete this organization</h3>
+        <p className="mt-1 text-sm text-red-700/80">
           Everything under it goes: facilities, activity data, inventories and runs. An organization
           with a published record cannot be deleted. You will be asked to type the name and give a
           reason, and the deletion is kept (spec 01.3).
         </p>
         <Button
           variant="ghost"
-          className="mt-4 text-red-600 hover:bg-red-50"
+          className="mt-4 border border-red-300 bg-white/70 text-red-700 hover:bg-red-100"
           onClick={() => setDeleting(true)}
         >
           Delete organization
         </Button>
-      </GlassCard>
+      </div>
 
       {deleting && (
         <DeleteOrganizationDialog
