@@ -21,13 +21,23 @@ factors, the residual mix, the criteria or the scope 2 arithmetic.
   Ghana grid factor.
 - A small PDF to attach as a retirement statement.
 
+**The page.** An inventory opens as a workbench (spec 05.6): the name and
+the lifecycle bar above, then the pre-flight banner, then five tabs in the
+order the work happens: **Records**, **Boundary**, **Method**, **Runs**,
+**Report**. Each step below names the tab it is on. The tab is in the URL,
+so a link opens the same tab and a reload keeps it.
+
+Every case here is on the **Method** tab, which holds the upstream rules
+and the market-based instruments. The pre-flight warnings it mentions are
+in the banner above the tabs, in full under the register on **Records**.
+
 ## A. Recording instruments
 
 ### A0. A negative factor is refused inline
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On the instruments card, type -0.1 in **kg CO2e per kWh**, a source, and 20,000 MWh covered. Add. | The form stays put, with "kg CO₂e per kWh must be 0 or more." under the factor; nothing is recorded and no toast appears. | | |
+| 1 | On the **Method** tab, on the instruments card, type -0.1 in **kg CO2e per kWh**, a source, and 20,000 MWh covered. Add. | The form stays put, with "kg CO₂e per kWh must be 0 or more." under the factor; nothing is recorded and no toast appears. | | |
 | 2 | Clear the factor. | | | |
 
 ### A1. An instrument with a criterion unanswered is not applied

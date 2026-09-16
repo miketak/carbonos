@@ -27,13 +27,24 @@ calculation, the report composite, the PDF or the CSV exports.
 - A calculator. Do not eyeball the figures.
 - A PDF reader and a spreadsheet application.
 
+**The page.** An inventory opens as a workbench (spec 05.6): the name and
+the lifecycle bar above, then the pre-flight banner, then five tabs in the
+order the work happens: **Records**, **Boundary**, **Method**, **Runs**,
+**Report**. Each step below names the tab it is on. The tab is in the URL,
+so a link opens the same tab and a reload keeps it.
+
+Sections A and D are on the **Runs** tab, which also holds the scope
+breakdown and the inventory's history. Section B's header metadata is on
+**Report**. Classification in case B1a is done in the drawer on
+**Records**.
+
 ## A. Launching runs
 
 ### A1. The first run
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | In the launch section, keep the proposed label "Run 001" and launch. | The run page opens with "13 lines". The run cites boundary version 4 (versions 1 and 2 in procedure 4, 3 at the end of procedure 5, 4 at the end of procedure 6: every freeze cuts one) and is attributed to you as prepared by. | | |
+| 1 | On the **Runs** tab, keep the proposed label "Run 001" and launch. | The run page opens with "13 lines". The run cites boundary version 4 (versions 1 and 2 in procedure 4, 3 at the end of procedure 5, 4 at the end of procedure 6: every freeze cuts one) and is attributed to you as prepared by. | | |
 
 ### A2. The arithmetic re-performs
 
@@ -85,7 +96,7 @@ the mining pack.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Reopen the inventory, add a record "R-22 top-up" of 85 kg at Tarkwa Processing Plant inside the period, and open it for classification. | The picker offers **HCFC-22 (R-22)**. | | |
+| 1 | Reopen the inventory, add a record "R-22 top-up" of 85 kg at Tarkwa Processing Plant inside the period, then on **Records** click the row to open the drawer. | The picker offers **HCFC-22 (R-22)**. | | |
 | 2 | Try to classify it as scope 3, purchased goods and services. | The change is refused: "'HCFC-22 (R-22)' is a gas outside the scopes (Montreal Protocol) and is reported separately, never in scope 3. Classify it as scope 1, or choose a Kyoto-gas factor." | | |
 | 3 | Classify it with the factor's own defaults (scope 1, fugitive emissions), freeze and read the pre-flight. | The **Emission factor** gate warns: "1 record uses a factor for a gas outside the scopes (Montreal Protocol). Its mass is reported in the block 'Gases outside the scopes (Montreal Protocol)' with the CO2e its source publishes for information, and no scope total includes it." The gate does not block. | | |
 | 4 | Launch a run and read section 6a of the report. | The block lists "HCFC-22 (R-22)", 85 kg, basis "Calculated with a factor", "149,600 kg CO₂e, AR5 as published", and the record reference, under the sentence "Reported separately as optional information under Chapter 4 and Chapter 9; not included in any scope." | | |

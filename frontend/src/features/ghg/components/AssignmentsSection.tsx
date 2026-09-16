@@ -1,36 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
+import { Modal } from '../../../components/Modal'
 import { Skeleton } from '../../../components/Skeleton'
 import { useToast } from '../../../components/toast'
 import { refusalMessage } from '../../../lib/api'
+import { useShortcuts } from '../../../lib/useShortcuts'
+import { PAGE_SIZE, useInventoryFilters } from '../inventoryFilters'
 import {
   categories,
   categoriesForScope,
-  categoryLabel,
   exclusionLabels,
-  factorIdentity,
-  formatCo2e,
   formatPeriod,
   isAutomaticReason,
-  isOutsideScopesReason,
-  manualExclusionReasons,
   leaseLabels,
-  publicationLine,
+  manualExclusionReasons,
   scopeLabels,
 } from '../format'
 import { mayWrite, WRITE_TOOLTIP } from '../roles'
 import type { MyRole } from '../roles'
-import { convertQuantity, DIMENSION_LABELS, needsDensity, unitDimension } from '../units'
 import {
   useAssignmentPageQuery,
   useClassifyAssignment,
   useCoverageQuery,
   useDensitiesQuery,
   useEmissionFactorsByIdQuery,
-  useEmissionFactorsQuery,
   useFacilitiesQuery,
   useExcludeAssignment,
   useIncludeAssignment,
@@ -38,844 +33,72 @@ import {
   useSyncAssignments,
   useUnitsQuery,
 } from '../useGhg'
-import { ScopeBadge } from './badges'
+import { AssignmentDrawer } from './AssignmentDrawer'
+import { AssignmentStatusPills } from './badges'
 import { RoleButton } from './RoleButton'
+import { TapCheckbox } from './TapCheckbox'
 import type {
   ActivityCategory,
   Assignment,
   AssignmentStatus,
-  CoverageRow,
   ClassifyInput,
-  Density,
-  Dimension,
+  CoverageRow,
   EmissionFactor,
   ExcludeInput,
   ExclusionReason,
   GhgScope,
   LeaseType,
-  Unit,
 } from '../api'
 
-const PAGE_SIZE = 50
+type Dialog = { kind: 'bulkExclude'; ids: string[] } | null
 
-/** How many factors the picker holds at once; a search narrows a bigger library (FU-03). */
-const PICKER_PAGE_SIZE = 50
-
-const selectClasses =
-  'w-full rounded-lg border border-teal/40 bg-white/70 px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60'
+function Kbd({ children }: { children: string }) {
+  return (
+    <kbd className="ml-1 rounded border border-current/30 px-1 font-mono text-[10px] opacity-70">
+      {children}
+    </kbd>
+  )
+}
 
 /**
- * This inventory's decision about one fact, as pill(s). When excluded, the pill
- * is removable: the cross re-includes the fact (DR-03), and an automatic
- * exclusion says why in words (spec 03.2).
+ * The classification a row carries, as text (spec 05.5). The editor is in the
+ * drawer; the row only has to say what was decided, which means the factor's
+ * name, its unit, the packs that deliver it and whether anyone approved it.
  */
-function StatusPills({
+function FactorCell({
   assignment,
-  editable,
-  onInclude,
+  factor,
 }: {
   assignment: Assignment
-  editable: boolean
-  onInclude: () => void
+  factor: EmissionFactor | undefined
 }) {
-  if (!assignment.included) {
+  if (!assignment.included) return <span className="text-xs text-ink-muted">·</span>
+  if (!factor)
     return (
-      <span className="inline-flex flex-wrap items-center gap-1 rounded-full bg-slate-200 py-0.5 pr-1 pl-2.5 text-xs font-semibold text-slate-600">
-        Excluded · {assignment.exclusionReason ? exclusionLabels[assignment.exclusionReason] : ''}
-        {assignment.exclusionDetail && (
-          <span className="font-normal text-slate-500">({assignment.exclusionDetail})</span>
-        )}
-        {assignment.exclusionJustification && (
-          <span className="font-normal text-slate-500">
-            {assignment.exclusionJustification}
-            {/* spec 04.8: a record nobody sized reads as "not estimated", never as ~0 */}
-            {assignment.gas !== null ? `; ${assignment.gas}, outside the scopes` : ''}
-            {assignment.estimateState === 'NOT_ESTIMATED' ? '; not estimated' : ''}
-            {assignment.estimateState === 'EMITS_NOTHING' ? '; emits nothing' : ''}
-            {assignment.estimateState === 'ESTIMATED' && assignment.estimatedKgCo2e !== null
-              ? `; about ${formatCo2e(assignment.estimatedKgCo2e)} left out`
-              : ''}
-          </span>
-        )}
-        {editable && (
-          <button
-            type="button"
-            onClick={onInclude}
-            aria-label={`Re-include ${assignment.activityType}`}
-            title="Re-include"
-            className="flex size-5 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-300 hover:text-slate-700"
-          >
-            ✕
-          </button>
-        )}
+      <span className="text-xs text-amber-700">
+        {assignment.suggestedFactorName
+          ? `Suggested: ${assignment.suggestedFactorName}`
+          : 'No factor chosen'}
       </span>
     )
-  }
-  if (assignment.classified) {
-    return (
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block rounded-full bg-teal/15 px-2.5 py-0.5 text-xs font-semibold text-dark-teal">
-          Included
+  return (
+    <>
+      <span className="block">
+        {factor.name}
+        <span className="text-ink-muted"> (/{factor.unit})</span>
+      </span>
+      <span className="block text-xs text-ink-muted">
+        {factor.packs.join(', ')}
+        {assignment.leaseType ? ` · ${leaseLabels[assignment.leaseType].toLowerCase()}` : ''}
+        {assignment.proxy ? ' · proxy' : ''}
+        {assignment.densityMaterial ? ` · via ${assignment.densityMaterial}` : ''}
+      </span>
+      {!factor.approved && (
+        <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
+          not approved
         </span>
-        {assignment.scope && <ScopeBadge scope={assignment.scope} />}
-        {assignment.inherited && (
-          <span
-            className="inline-block rounded-full border border-teal/30 px-2 py-0.5 text-xs text-ink-muted"
-            title="Copied from the source inventory's decision about this record (spec 05.3)"
-          >
-            inherited
-          </span>
-        )}
-      </span>
-    )
-  }
-  return (
-    <span className="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-      Unclassified
-    </span>
-  )
-}
-
-/**
- * The "10,000 US-gallon → 37,854.12 litre × 2.66 kg CO₂e/litre" line, through a
- * density when mass meets volume (spec 02.2), or null when no conversion applies.
- */
-function conversionPreview(
-  units: Unit[],
-  assignment: Assignment,
-  factor: EmissionFactor,
-  density: Density | undefined,
-): string | null {
-  if (factor.unit.toLowerCase() === assignment.unit.toLowerCase()) return null
-  let converted = convertQuantity(units, assignment.quantity, assignment.unit, factor.unit)
-  let via = ''
-  if (converted === null && density && needsDensity(units, assignment.unit, factor.unit)) {
-    const fromMass = unitDimension(units, assignment.unit) === 'MASS'
-    if (fromMass) {
-      const kg = convertQuantity(units, assignment.quantity, assignment.unit, 'kg')
-      converted =
-        kg === null ? null : convertQuantity(units, kg / density.kgPerLitre, 'litre', factor.unit)
-    } else {
-      const litres = convertQuantity(units, assignment.quantity, assignment.unit, 'litre')
-      converted =
-        litres === null
-          ? null
-          : convertQuantity(units, litres * density.kgPerLitre, 'kg', factor.unit)
-    }
-    via = ` (density of ${density.material}, ${density.kgPerLitre} kg/litre)`
-  }
-  if (converted === null) return null
-  const shown = converted.toLocaleString(undefined, { maximumFractionDigits: 4 })
-  return `${assignment.quantity.toLocaleString()} ${assignment.unit} → ${shown} ${factor.unit}${via} × ${factor.kgCo2ePerUnit} kg CO₂e/${factor.unit}`
-}
-
-/** The category to send for a scope: the factor's default when it belongs, else the scope's first. */
-function categoryFor(scope: GhgScope, factor: EmissionFactor): ActivityCategory {
-  if (factor.defaultScope === scope) return factor.defaultCategory
-  return categoriesForScope(scope)[0].category
-}
-
-/**
- * Classification as an accounting decision (spec 04.1): the factor, then the
- * scope and category the accountant chooses, or a lease type from which
- * Appendix F derives them under the inventory's approach.
- */
-function ClassifyControls({
-  assignment,
-  organizationId,
-  factors,
-  units,
-  densities,
-  editable,
-  onClassify,
-}: {
-  assignment: Assignment
-  organizationId: string
-  /** The factors this page's records already reference, resolved by identifier (FU-03). */
-  factors: EmissionFactor[]
-  units: Unit[]
-  densities: Density[]
-  editable: boolean
-  onClassify: (input: ClassifyInput) => void
-}) {
-  // CLASS-01, widened for conversion: offer factors whose unit shares the fact's
-  // dimension (convertible), and, when the organization has densities, factors
-  // across the mass-volume divide (spec 02.2). For an unregistered unit, fall
-  // back to an exact-string match; those never auto-convert. FU-03: the
-  // database applies this, so a library of thousands costs the picker a page.
-  const dimension = unitDimension(units, assignment.unit)
-  const bridges = densities.length > 0 && (dimension === 'MASS' || dimension === 'VOLUME')
-  const dimensions: Dimension[] =
-    dimension === null ? [] : bridges ? ['MASS', 'VOLUME'] : [dimension]
-  // a per-litre factor on a mass record (or the reverse) cannot be sent without a density (spec 02.2):
-  // hold the pick locally until the density is chosen, then send both together
-  const [pendingFactorId, setPendingFactorId] = useState<string | null>(null)
-  // a proxy flag is only sent together with its justification (the backend refuses one without)
-  const [proxyTicked, setProxyTicked] = useState(false)
-  // spec 05.5: a row shows its factor as text; the picker opens on demand, with the grouped,
-  // searchable contents of spec 02.3, and asks the server for one page of them
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const [factorSearch, setFactorSearch] = useState('')
-  // spec 02.3: an unapproved factor is hidden until asked for, so nobody picks one without seeing it
-  const [showUnapproved, setShowUnapproved] = useState(false)
-  const pickerQuery = useEmissionFactorsQuery(
-    organizationId,
-    {
-      q: factorSearch.trim() === '' ? undefined : factorSearch.trim(),
-      includeUnapproved: showUnapproved,
-      unit: dimension === null ? assignment.unit : undefined,
-      dimension: dimensions.length > 0 ? dimensions : undefined,
-      size: PICKER_PAGE_SIZE,
-    },
-    { enabled: pickerOpen },
-  )
-  const selected = factors.find(
-    (factor) => factor.id === (assignment.emissionFactorId ?? pendingFactorId),
-  )
-  const page = pickerQuery.data
-  const matched = page?.items ?? []
-  // keep the current classification visible even when its unit no longer fits the record; a
-  // search is the one filter it does not survive, because the server decides what matches
-  const shown =
-    selected && factorSearch.trim() === '' && !matched.some((factor) => factor.id === selected.id)
-      ? [selected, ...matched]
-      : matched
-  const hiddenUnapproved = showUnapproved ? 0 : (page?.unapproved ?? 0)
-  const beyondPage = Math.max(0, (page?.total ?? 0) - matched.length)
-  // nothing at all fits this record's unit, which is worth saying before a search narrows it further
-  const noneFit = pickerOpen && !pickerQuery.isPending && factorSearch.trim() === '' && !page?.total
-  // spec 02.10 retired the shared library, so there is one tier and no grouping: every factor the
-  // picker offers is this organization's, ordered by the database so the order holds across pages.
-  const density = densities.find((candidate) => candidate.id === assignment.densityId)
-  const densityNeeded = !!selected && needsDensity(units, assignment.unit, selected.unit)
-  const preview = selected ? conversionPreview(units, assignment, selected, density) : null
-  const scope = assignment.scope ?? selected?.defaultScope ?? 'SCOPE_1'
-  const leased = assignment.leaseType !== null
-  // spec 04.7 (finding F34): any factor can be used in any scope with a justification; only a
-  // lease type fixes the scope, because Appendix F derives it (spec 04.1)
-  // spec 04.3: the stream's default when the record has one, else the factor's
-  const defaultScope = assignment.defaultScope ?? selected?.defaultScope ?? null
-  const departs = !!selected && !leased && !!assignment.scope && assignment.scope !== defaultScope
-  // what the current classification carries, so a justification or proxy flag does not drop it
-  const current = (): ClassifyInput =>
-    assignment.leaseType
-      ? {
-          emissionFactorId: selected!.id,
-          leaseType: assignment.leaseType,
-          densityId: assignment.densityId ?? undefined,
-        }
-      : {
-          emissionFactorId: selected!.id,
-          scope: assignment.scope ?? undefined,
-          category: assignment.category ?? undefined,
-          densityId: assignment.densityId ?? undefined,
-        }
-  const carry = {
-    scopeJustification: assignment.scopeJustification ?? undefined,
-    proxy: assignment.proxy || undefined,
-    proxyJustification: assignment.proxyJustification ?? undefined,
-  }
-
-  return (
-    <div className="flex flex-col gap-1 md:w-80">
-      {selected && !pickerOpen && (
-        <p className="text-sm">
-          <span className="font-medium">{selected.name}</span>
-          <span className="text-ink-muted"> (/{selected.unit})</span>
-          {selected.sourceActivity && (
-            <span className="text-ink-muted"> · {selected.sourceActivity}</span>
-          )}
-          {selected.packs.map((pack) => (
-            <span
-              key={pack}
-              className="ml-1 rounded-full border border-teal/30 px-1.5 text-xs text-ink-muted"
-              title="Delivered by a factor pack"
-            >
-              {pack}
-            </span>
-          ))}
-          {!selected.approved && (
-            <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
-              not approved
-            </span>
-          )}
-          {editable && (
-            <button
-              type="button"
-              className="ml-2 text-xs text-link hover:underline"
-              onClick={() => setPickerOpen(true)}
-            >
-              Change factor…
-            </button>
-          )}
-        </p>
       )}
-      {!selected && !pickerOpen && editable && (
-        <Button
-          variant="ghost"
-          className="self-start px-2.5 py-1 text-xs"
-          onClick={() => setPickerOpen(true)}
-        >
-          Choose factor…
-        </Button>
-      )}
-      {!selected && !pickerOpen && !editable && (
-        <span className="text-xs text-ink-muted">No factor chosen</span>
-      )}
-      {pickerOpen && (
-        <div
-          role="group"
-          aria-label={`Factor picker for ${assignment.activityType}`}
-          className="flex flex-col gap-1 rounded-md border border-line p-2"
-        >
-          <input
-            aria-label={`Search factors for ${assignment.activityType}`}
-            value={factorSearch}
-            placeholder="Search by name, publication or pack"
-            onChange={(event) => setFactorSearch(event.target.value)}
-            className={selectClasses}
-          />
-          <label className="flex items-center gap-1.5 text-xs text-ink-muted">
-            <input
-              type="checkbox"
-              checked={showUnapproved}
-              onChange={(event) => setShowUnapproved(event.target.checked)}
-            />
-            Show unapproved
-            {hiddenUnapproved > 0 && !showUnapproved && ` (${hiddenUnapproved} hidden)`}
-          </label>
-          {/* DR-04: each option carries its publication and tags, so two factors of the same
-              name and unit never read alike (spec 02.3) */}
-          <div
-            aria-label={`Classify ${assignment.activityType}`}
-            className="max-h-64 overflow-y-auto rounded-md border border-line"
-          >
-            {pickerQuery.isPending && (
-              <p className="p-2 text-xs text-ink-muted">Searching the library…</p>
-            )}
-            {!pickerQuery.isPending && shown.length === 0 && (
-              <p className="p-2 text-xs text-ink-muted">No factor matches this search.</p>
-            )}
-            <ul>
-              {shown.map((factor) => (
-                <li key={factor.id}>
-                  <button
-                    type="button"
-                    aria-pressed={factor.id === assignment.emissionFactorId}
-                    className={`w-full px-2 py-1.5 text-left hover:bg-surface-muted ${
-                      factor.id === assignment.emissionFactorId ? 'bg-surface-muted' : ''
-                    }`}
-                    onClick={() => {
-                      setPickerOpen(false)
-                      setFactorSearch('')
-                      if (
-                        needsDensity(units, assignment.unit, factor.unit) &&
-                        !assignment.densityId
-                      ) {
-                        setPendingFactorId(factor.id)
-                        return
-                      }
-                      setPendingFactorId(null)
-                      onClassify({
-                        emissionFactorId: factor.id,
-                        // spec 04.3: the record's stream fixes the default scope; the factor only suggests one
-                        scope: assignment.defaultScope ?? factor.defaultScope,
-                        category: assignment.defaultScope
-                          ? (assignment.defaultCategory ?? factor.defaultCategory)
-                          : factor.defaultCategory,
-                        densityId: needsDensity(units, assignment.unit, factor.unit)
-                          ? (assignment.densityId ?? undefined)
-                          : undefined,
-                      })
-                    }}
-                  >
-                    <span className="text-sm">
-                      <span className="font-medium">{factor.name}</span>
-                      <span className="text-ink-muted"> (/{factor.unit})</span>
-                      {!factor.approved && (
-                        <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
-                          unapproved
-                        </span>
-                      )}
-                    </span>
-                    {/* FU-03: 1,157 of the 1,868 DEFRA rows share a display name, and the three
-                            butane rows differ only by unit. The publisher's activity and the value
-                            go beside the name, so no two options are indistinguishable. */}
-                    <span className="block text-xs text-ink-muted">{factorIdentity(factor)}</span>
-                    <span className="block text-xs text-ink-muted">
-                      {publicationLine(factor)}
-                      {factor.packs.length > 0 && ` · ${factor.packs.join(', ')}`}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          {beyondPage > 0 && (
-            <p className="text-xs text-ink-muted">
-              {beyondPage.toLocaleString()} more match. Narrow the search to see them.
-            </p>
-          )}
-          <button
-            type="button"
-            className="self-start text-xs text-ink-muted hover:underline"
-            onClick={() => {
-              setPickerOpen(false)
-              setFactorSearch('')
-            }}
-          >
-            Close picker
-          </button>
-        </div>
-      )}
-      {!selected && assignment.suggestedFactorId && editable && (
-        <button
-          type="button"
-          className="self-start text-xs text-link hover:underline"
-          onClick={() => {
-            const factor = factors.find(
-              (candidate) => candidate.id === assignment.suggestedFactorId,
-            )
-            if (factor)
-              onClassify({
-                emissionFactorId: factor.id,
-                scope: assignment.defaultScope ?? factor.defaultScope,
-                category: assignment.defaultScope
-                  ? (assignment.defaultCategory ?? factor.defaultCategory)
-                  : factor.defaultCategory,
-              })
-          }}
-        >
-          Suggested for this facility's grid: {assignment.suggestedFactorName}
-        </button>
-      )}
-      {assignment.inheritedLeaseType && (
-        <p className="text-xs text-amber-700">
-          Leased facility: {leaseLabels[assignment.inheritedLeaseType].toLowerCase()} inherited
-          {assignment.leaseType === null && selected ? ' (set aside for this record)' : ''}.
-        </p>
-      )}
-      {noneFit && (
-        <p className="text-xs text-ink-muted">
-          No factor matches {assignment.unit}
-          {dimension ? ` (${DIMENSION_LABELS[dimension].toLowerCase()})` : ''}: add a matching
-          factor or record it in a compatible unit.
-        </p>
-      )}
-      {preview && <p className="text-xs text-ink-muted tabular-nums">{preview}</p>}
-      {selected && densityNeeded && !assignment.densityId && (
-        <p className="text-xs text-amber-700">
-          {assignment.unit} meets a factor per {selected.unit}: choose the density that converts
-          between them to finish classifying.
-        </p>
-      )}
-      {selected && densityNeeded && (
-        <select
-          aria-label={`${assignment.activityType} density`}
-          value={assignment.densityId ?? ''}
-          disabled={!editable}
-          onChange={(event) => {
-            setPendingFactorId(null)
-            onClassify({
-              emissionFactorId: selected.id,
-              scope: assignment.scope ?? assignment.defaultScope ?? selected.defaultScope,
-              category:
-                assignment.category ?? assignment.defaultCategory ?? selected.defaultCategory,
-              densityId: event.target.value === '' ? undefined : event.target.value,
-              ...carry,
-            })
-          }}
-          className={selectClasses}
-        >
-          <option value="">Choose the density that converts…</option>
-          {densities.map((candidate) => (
-            <option key={candidate.id} value={candidate.id}>
-              {candidate.material}, {candidate.kgPerLitre} kg/litre
-              {candidate.typical ? ' (typical value)' : ''}
-            </option>
-          ))}
-        </select>
-      )}
-      {selected && (
-        <div className="flex flex-wrap gap-1">
-          <select
-            aria-label={`${assignment.activityType} scope`}
-            value={scope}
-            disabled={!editable || leased}
-            onChange={(event) => {
-              const chosen = event.target.value as GhgScope
-              onClassify({
-                emissionFactorId: selected.id,
-                scope: chosen,
-                category: categoryFor(chosen, selected),
-                densityId: assignment.densityId ?? undefined,
-              })
-            }}
-            className={`${selectClasses} w-auto flex-1`}
-          >
-            {(Object.keys(scopeLabels) as GhgScope[]).map((value) => (
-              <option key={value} value={value}>
-                {scopeLabels[value]}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label={`${assignment.activityType} category`}
-            value={assignment.category ?? ''}
-            disabled={!editable || leased}
-            onChange={(event) =>
-              onClassify({
-                emissionFactorId: selected.id,
-                scope,
-                category: event.target.value as ActivityCategory,
-                densityId: assignment.densityId ?? undefined,
-              })
-            }
-            className={`${selectClasses} w-auto flex-1`}
-          >
-            {categoriesForScope(scope).map((entry) => (
-              <option key={entry.category} value={entry.category}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label={`${assignment.activityType} lease type`}
-            value={assignment.leaseType ?? ''}
-            disabled={!editable}
-            onChange={(event) => {
-              const lease = event.target.value as LeaseType | ''
-              onClassify(
-                lease === ''
-                  ? {
-                      emissionFactorId: selected.id,
-                      scope: selected.defaultScope,
-                      category: selected.defaultCategory,
-                      densityId: assignment.densityId ?? undefined,
-                      ignoreFacilityLease: assignment.inheritedLeaseType !== null,
-                    }
-                  : {
-                      emissionFactorId: selected.id,
-                      leaseType: lease,
-                      densityId: assignment.densityId ?? undefined,
-                    },
-              )
-            }}
-            className={`${selectClasses} w-full`}
-          >
-            <option value="">Not a leased asset</option>
-            {Object.entries(leaseLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          {assignment.scope && defaultScope && assignment.scope !== defaultScope && (
-            <p className="w-full text-xs text-ink-muted">
-              {assignment.defaultScope ? 'The stream' : `'${selected.name}'`} suggests{' '}
-              {scopeLabels[defaultScope]}
-              {leased ? ' (leased asset, Appendix F)' : ''}.
-            </p>
-          )}
-          {departs && (
-            <JustificationInput
-              label={`${assignment.activityType} scope justification`}
-              value={assignment.scopeJustification}
-              placeholder="Why the scope departs from the default (at least 10 characters)"
-              minLength={10}
-              editable={editable}
-              onSave={(text) => onClassify({ ...current(), ...carry, scopeJustification: text })}
-            />
-          )}
-          <label className="flex w-full items-center gap-2 text-xs text-ink-muted">
-            <input
-              type="checkbox"
-              aria-label={`${assignment.activityType} proxy factor`}
-              checked={assignment.proxy || proxyTicked}
-              disabled={!editable}
-              onChange={(event) => {
-                setProxyTicked(event.target.checked)
-                if (!event.target.checked && assignment.proxy)
-                  onClassify({
-                    ...current(),
-                    ...carry,
-                    proxy: false,
-                    proxyJustification: undefined,
-                  })
-              }}
-              className="h-4 w-4 accent-teal-deep"
-            />
-            Proxy factor: stands in for one that is not published or not yet approved
-          </label>
-          {(assignment.proxy || proxyTicked) && (
-            <JustificationInput
-              label={`${assignment.activityType} proxy justification`}
-              value={assignment.proxyJustification}
-              placeholder="What the factor stands in for (at least 5 characters)"
-              minLength={5}
-              editable={editable}
-              onSave={(text) =>
-                onClassify({ ...current(), ...carry, proxy: true, proxyJustification: text })
-              }
-            />
-          )}
-          {assignment.category && (
-            <p className="w-full text-xs text-ink-muted">{categoryLabel(assignment.category)}</p>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/** A short reason saved when the field loses focus and the text is long enough (spec 04.3). */
-function JustificationInput({
-  label,
-  value,
-  placeholder,
-  minLength,
-  editable,
-  onSave,
-}: {
-  label: string
-  value: string | null
-  placeholder: string
-  minLength: number
-  editable: boolean
-  onSave: (text: string) => void
-}) {
-  const [text, setText] = useState(value ?? '')
-  const tooShort = text.trim().length > 0 && text.trim().length < minLength
-  return (
-    <div className="flex w-full flex-col gap-1">
-      <input
-        aria-label={label}
-        value={text}
-        placeholder={placeholder}
-        maxLength={500}
-        disabled={!editable}
-        aria-invalid={tooShort}
-        onChange={(event) => setText(event.target.value)}
-        onBlur={() => {
-          if (text.trim().length >= minLength && text.trim() !== (value ?? '')) onSave(text.trim())
-        }}
-        className={`${selectClasses} w-full`}
-      />
-      {tooShort && (
-        <p role="alert" className="text-xs font-medium text-red-600">
-          At least {minLength} characters.
-        </p>
-      )}
-    </div>
-  )
-}
-
-/**
- * DR-03: exclusion is a deliberate button-and-popover, not a disguised dropdown.
- * The button opens a small menu to capture the required reason; a reason the
- * review cannot compute itself then asks for the justification and the
- * estimated magnitude Chapter 9 wants (spec 04.4). Nothing changes until the
- * form is submitted. Renders nothing once excluded (the removable status chip
- * owns the reversal).
- */
-function ExcludeMenu({
-  assignment,
-  units,
-  onExclude,
-}: {
-  assignment: Assignment
-  units: Unit[]
-  onExclude: (input: ExcludeInput) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [chosen, setChosen] = useState<ExclusionReason | null>(null)
-  const [justification, setJustification] = useState('')
-  const [estimated, setEstimated] = useState('')
-  // spec 04.8: the three states a preparer can answer with, so nobody types a false zero
-  const [notEstimated, setNotEstimated] = useState(false)
-  const [emitsNothing, setEmitsNothing] = useState(false)
-  const [gas, setGas] = useState('')
-  const ref = useRef<HTMLDivElement>(null)
-  const montreal = chosen !== null && isOutsideScopesReason(chosen)
-  const magnitudeAnswered = montreal || notEstimated || emitsNothing || estimated.trim() !== ''
-
-  const reset = () => {
-    setChosen(null)
-    setJustification('')
-    setEstimated('')
-    setNotEstimated(false)
-    setEmitsNothing(false)
-    setGas('')
-  }
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault()
-    if (!chosen) return
-    onExclude(
-      montreal
-        ? { reason: chosen, justification: justification.trim(), gas: gas.trim() }
-        : notEstimated
-          ? { reason: chosen, justification: justification.trim(), notEstimated: true }
-          : emitsNothing
-            ? {
-                reason: chosen,
-                justification: justification.trim(),
-                estimatedKgCo2e: 0,
-                emitsNothing: true,
-              }
-            : {
-                reason: chosen,
-                justification: justification.trim(),
-                estimatedKgCo2e: Number(estimated),
-              },
-    )
-    reset()
-  }
-
-  useEffect(() => {
-    if (!open) return
-    const onDown = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
-    }
-    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setOpen(false)
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
-  return (
-    <div ref={ref} className="relative inline-block text-left">
-      <Button
-        variant="ghost"
-        className="px-2.5 py-1 text-xs"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        Exclude…
-      </Button>
-      {open && (
-        <div
-          role="menu"
-          aria-label={`Exclude ${assignment.activityType}: choose a reason`}
-          className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-xl border border-teal/15 bg-white shadow-[0_8px_28px_rgba(9,168,149,0.18)]"
-        >
-          <p className="border-b border-teal/10 px-3 py-2 text-xs font-semibold text-ink-muted">
-            Exclude: reason
-          </p>
-          {/* spec 04.8: the Montreal reason reports a mass of gas, so it needs a mass unit */}
-          {manualExclusionReasons
-            .filter(
-              (value) =>
-                !isOutsideScopesReason(value) || unitDimension(units, assignment.unit) === 'MASS',
-            )
-            .map((value) => (
-              <button
-                key={value}
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setOpen(false)
-                  if (isAutomaticReason(value)) onExclude({ reason: value })
-                  else setChosen(value)
-                }}
-                className="block w-full px-3 py-2 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
-              >
-                {exclusionLabels[value]}
-              </button>
-            ))}
-        </div>
-      )}
-      {chosen && (
-        <form
-          onSubmit={submit}
-          aria-label={`Exclude ${assignment.activityType}: justification`}
-          className="absolute right-0 z-20 mt-1 flex w-80 flex-col gap-2 rounded-xl border border-teal/15 bg-white p-3 text-left shadow-[0_8px_28px_rgba(9,168,149,0.18)]"
-        >
-          <p className="text-xs font-semibold text-ink-muted">{exclusionLabels[chosen]}</p>
-          <InputField
-            label="Justification"
-            placeholder="Why this record is left out"
-            value={justification}
-            minLength={10}
-            maxLength={500}
-            required
-            onChange={(event) => setJustification(event.target.value)}
-          />
-          {montreal ? (
-            <InputField
-              label="Gas"
-              placeholder="HCFC-22"
-              value={gas}
-              maxLength={60}
-              required
-              hint="The mass this record holds is reported in the block Gases outside the scopes (Montreal Protocol), never as CO₂e."
-              onChange={(event) => setGas(event.target.value)}
-            />
-          ) : (
-            <>
-              <InputField
-                label="Estimated emissions left out (kg CO₂e)"
-                type="number"
-                min="0"
-                step="0.001"
-                value={estimated}
-                disabled={notEstimated || emitsNothing}
-                hint="The report totals these per reason."
-                onChange={(event) => setEstimated(event.target.value)}
-              />
-              <label className="flex items-center gap-2 text-xs text-ink-muted">
-                <input
-                  type="checkbox"
-                  aria-label="This record emits nothing"
-                  checked={emitsNothing}
-                  disabled={notEstimated}
-                  onChange={(event) => {
-                    setEmitsNothing(event.target.checked)
-                    if (event.target.checked) setEstimated('0')
-                  }}
-                  className="h-4 w-4 accent-teal-deep"
-                />
-                This record emits nothing
-              </label>
-              <label className="flex items-center gap-2 text-xs text-ink-muted">
-                <input
-                  type="checkbox"
-                  aria-label="Not estimated"
-                  checked={notEstimated}
-                  disabled={emitsNothing}
-                  onChange={(event) => {
-                    setNotEstimated(event.target.checked)
-                    if (event.target.checked) setEstimated('')
-                  }}
-                  className="h-4 w-4 accent-teal-deep"
-                />
-                Not estimated: there is no basis to size this record
-              </label>
-            </>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" className="px-2.5 py-1 text-xs" onClick={reset}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="px-2.5 py-1 text-xs"
-              disabled={
-                justification.trim().length < 10 ||
-                !magnitudeAnswered ||
-                (montreal && gas.trim() === '')
-              }
-            >
-              Exclude
-            </Button>
-          </div>
-        </form>
-      )}
-    </div>
+    </>
   )
 }
 
@@ -892,26 +115,8 @@ export function AssignmentsSection({
   myRole?: MyRole | null
 }) {
   const writable = editable && mayWrite(myRole)
-  const [search, setSearch] = useState('')
-  const [facilityId, setFacilityId] = useState('')
-  const [status, setStatus] = useState<AssignmentStatus | ''>('')
-  // spec 05.5: review at scale filters by the classification too
-  const [scope, setScope] = useState<GhgScope | ''>('')
-  const [category, setCategory] = useState<ActivityCategory | ''>('')
-  const [streamId, setStreamId] = useState('')
-  const [leaseType, setLeaseType] = useState<LeaseType | ''>('')
-  const [page, setPage] = useState(0)
-  const assignmentsQuery = useAssignmentPageQuery(inventoryId, {
-    q: search.trim() === '' ? undefined : search.trim(),
-    facilityId: facilityId || undefined,
-    status: status || undefined,
-    scope: scope || undefined,
-    category: category || undefined,
-    streamId: streamId || undefined,
-    leaseType: leaseType || undefined,
-    page,
-    size: PAGE_SIZE,
-  })
+  const { filters, set, query } = useInventoryFilters()
+  const assignmentsQuery = useAssignmentPageQuery(inventoryId, query)
   const facilitiesQuery = useFacilitiesQuery(organizationId)
   const streamsQuery = useStreamsQuery(organizationId)
   const coverageQuery = useCoverageQuery(inventoryId)
@@ -922,19 +127,24 @@ export function AssignmentsSection({
   const exclude = useExcludeAssignment(inventoryId)
   const include = useIncludeAssignment(inventoryId)
   const toast = useToast()
+  const [dialog, setDialog] = useState<Dialog>(null)
+  const [cursorId, setCursorId] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [excluding, setExcluding] = useState(false)
+  const searchRef = useRef<HTMLInputElement>(null)
 
   const assignments = assignmentsQuery.data?.items
   const counts = assignmentsQuery.data
   const total = counts?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const filtered =
-    search.trim() !== '' ||
-    facilityId !== '' ||
-    status !== '' ||
-    scope !== '' ||
-    category !== '' ||
-    streamId !== '' ||
-    leaseType !== ''
+    query.q !== undefined ||
+    filters.facility !== '' ||
+    filters.status !== '' ||
+    filters.scope !== '' ||
+    filters.category !== '' ||
+    filters.stream !== '' ||
+    filters.lease !== ''
   // FU-03: the rows need the factors they already reference, not the library. A page of 50
   // records references at most 100 factors, asked for by identifier.
   const referencedFactorIds = (assignments ?? []).flatMap((assignment) =>
@@ -946,6 +156,7 @@ export function AssignmentsSection({
   const factors = factorsQuery.data?.items ?? []
   const densities = densitiesQuery.data ?? []
   const units = unitsQuery.data ?? []
+  const drawerOpen = filters.record !== null
 
   const onClassify = (assignment: Assignment) => (input: ClassifyInput) =>
     classify.mutate(
@@ -962,312 +173,506 @@ export function AssignmentsSection({
       onError: (error) => toast(refusalMessage(error, myRole), 'error'),
     })
 
-  return (
-    <GlassCard className="p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl">Activity view</h2>
-          <p className="text-sm text-ink-muted">
-            This inventory's accounting decisions about the facts. The records themselves are never
-            modified.
-          </p>
-        </div>
-        <RoleButton
-          allowed={mayWrite(myRole)}
-          tooltip={WRITE_TOOLTIP}
-          className="px-4 py-1.5 text-sm"
-          busy={sync.isPending}
-          disabled={!editable}
-          title={editable ? undefined : 'Reopen the inventory as a draft to review activity data'}
-          onClick={() =>
-            sync.mutate(undefined, {
-              onSuccess: ({ created, updated }) => {
-                const parts = []
-                if (created > 0)
-                  parts.push(`${created} new record${created === 1 ? '' : 's'} under review`)
-                if (updated > 0)
-                  parts.push(`${updated} stale decision${updated === 1 ? '' : 's'} refreshed`)
-                toast(
-                  parts.length === 0
-                    ? 'All activity records are already reviewed.'
-                    : parts.join(' · ') + '.',
-                )
-              },
-              onError: (error) => toast(refusalMessage(error, myRole), 'error'),
-            })
-          }
-        >
-          Review activity data
-        </RoleButton>
-      </div>
+  // the keyboard cursor follows the open record, and never points outside the page
+  const openOnPage = filters.record && assignments?.some((a) => a.id === filters.record)
+  const effectiveCursorId = openOnPage
+    ? filters.record
+    : cursorId && assignments?.some((a) => a.id === cursorId)
+      ? cursorId
+      : null
 
-      {counts && counts.included + counts.excluded + counts.unclassified > 0 && (
-        <div className="mt-4 grid gap-2 md:grid-cols-3 md:items-end xl:grid-cols-4">
-          <InputField
-            label="Search the view"
-            placeholder="Activity, facility, stream, factor, unit, evidence"
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value)
-              setPage(0)
-            }}
-          />
-          <SelectField
-            label="Facility"
-            value={facilityId}
-            onChange={(event) => {
-              setFacilityId(event.target.value)
-              setPage(0)
-            }}
+  const move = (step: 1 | -1) => {
+    if (!assignments || assignments.length === 0) return
+    const index = assignments.findIndex((a) => a.id === effectiveCursorId)
+    const next = index < 0 ? (step === 1 ? 0 : assignments.length - 1) : index + step
+    if (next < 0 || next >= assignments.length) return
+    setCursorId(assignments[next].id)
+    // jsdom has no scrollIntoView; browsers keep the cursor row in view
+    document.querySelector<HTMLElement>('[data-cursor]')?.scrollIntoView?.({ block: 'nearest' })
+  }
+
+  useShortcuts(
+    {
+      '/': () => searchRef.current?.focus(),
+      j: () => move(1),
+      k: () => move(-1),
+      ArrowDown: () => move(1),
+      ArrowUp: () => move(-1),
+      Enter: () => effectiveCursorId && set({ record: effectiveCursorId }),
+    },
+    dialog === null,
+  )
+
+  const allSelected =
+    (assignments?.length ?? 0) > 0 && (assignments ?? []).every((a) => selected.has(a.id))
+
+  return (
+    <section className={drawerOpen ? 'transition-[padding] duration-200 md:pr-[36rem]' : ''}>
+      <GlassCard>
+        <div className="flex flex-wrap items-end justify-between gap-3 px-4 pt-5">
+          <div>
+            <h2 className="text-xl">Activity view</h2>
+            <p className="text-sm text-ink-muted">
+              This inventory's accounting decisions about the facts. The records themselves are
+              never modified.
+            </p>
+          </div>
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
+            className="px-4 py-1.5 text-sm"
+            busy={sync.isPending}
+            disabled={!editable}
+            title={editable ? undefined : 'Reopen the inventory as a draft to review activity data'}
+            onClick={() =>
+              sync.mutate(undefined, {
+                onSuccess: ({ created, updated }) => {
+                  const parts = []
+                  if (created > 0)
+                    parts.push(`${created} new record${created === 1 ? '' : 's'} under review`)
+                  if (updated > 0)
+                    parts.push(`${updated} stale decision${updated === 1 ? '' : 's'} refreshed`)
+                  toast(
+                    parts.length === 0
+                      ? 'All activity records are already reviewed.'
+                      : parts.join(' · ') + '.',
+                  )
+                },
+                onError: (error) => toast(refusalMessage(error, myRole), 'error'),
+              })
+            }
           >
-            <option value="">All facilities</option>
-            {(facilitiesQuery.data ?? []).map((facility) => (
-              <option key={facility.id} value={facility.id}>
-                {facility.name}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="Status"
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as AssignmentStatus | '')
-              setPage(0)
-            }}
-          >
-            <option value="">
-              All ({counts.included + counts.excluded + counts.unclassified})
-            </option>
-            <option value="UNCLASSIFIED">Unclassified ({counts.unclassified})</option>
-            <option value="INCLUDED">Included and classified ({counts.included})</option>
-            <option value="EXCLUDED">Excluded ({counts.excluded})</option>
-          </SelectField>
-          <SelectField
-            label="Scope"
-            value={scope}
-            onChange={(event) => {
-              const next = event.target.value as GhgScope | ''
-              setScope(next)
-              if (
-                category !== '' &&
-                next !== '' &&
-                !categoriesForScope(next).some((c) => c.category === category)
-              )
-                setCategory('')
-              setPage(0)
-            }}
-          >
-            <option value="">All scopes</option>
-            {(Object.keys(scopeLabels) as GhgScope[]).map((value) => (
-              <option key={value} value={value}>
-                {scopeLabels[value]}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="Category"
-            value={category}
-            onChange={(event) => {
-              setCategory(event.target.value as ActivityCategory | '')
-              setPage(0)
-            }}
-          >
-            <option value="">All categories</option>
-            {(scope === '' ? categories : categoriesForScope(scope)).map((entry) => (
-              <option key={entry.category} value={entry.category}>
-                {entry.label}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="Stream"
-            value={streamId}
-            onChange={(event) => {
-              setStreamId(event.target.value)
-              setPage(0)
-            }}
-          >
-            <option value="">All streams</option>
-            {(streamsQuery.data ?? []).map((stream) => (
-              <option key={stream.id} value={stream.id}>
-                {stream.facilityName} · {stream.name}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="Lease"
-            value={leaseType}
-            onChange={(event) => {
-              setLeaseType(event.target.value as LeaseType | '')
-              setPage(0)
-            }}
-          >
-            <option value="">Any lease treatment</option>
-            {Object.entries(leaseLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </SelectField>
+            Review activity data
+          </RoleButton>
         </div>
-      )}
-      {assignmentsQuery.isPending && (
-        <div aria-label="Loading assignments" className="mt-4">
-          <Skeleton className="h-16" />
-        </div>
-      )}
-      {assignments?.length === 0 && filtered && (
-        <p className="mt-4 text-sm text-ink-muted">No records match the search or the filters.</p>
-      )}
-      {assignments?.length === 0 && !filtered && (
-        <p className="mt-4 text-sm text-ink-muted">
-          Nothing under review yet: hit "Review activity data" to pull in the organization's
-          records.
-        </p>
-      )}
-      {assignments && assignments.length > 0 && (
-        <>
-          {/* desktop: table */}
-          <div className="mt-4 hidden overflow-x-auto md:block">
+
+        {counts && counts.included + counts.excluded + counts.unclassified > 0 && (
+          /* wraps rather than squeezes when the drawer takes the right third of the page */
+          <div className="mt-4 flex flex-wrap items-end gap-2 border-b border-teal/10 px-4 pb-3 [&>*]:min-w-[10rem] [&>*]:flex-1">
+            <div className="min-w-[16rem] flex-[3]">
+              <InputField
+                ref={searchRef}
+                label="Search the view"
+                placeholder="Activity, facility, stream, factor, unit, evidence"
+                value={filters.q}
+                onChange={(event) => set({ q: event.target.value })}
+              />
+            </div>
+            <SelectField
+              label="Facility"
+              value={filters.facility}
+              onChange={(event) => set({ facility: event.target.value })}
+            >
+              <option value="">All facilities</option>
+              {(facilitiesQuery.data ?? []).map((facility) => (
+                <option key={facility.id} value={facility.id}>
+                  {facility.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField
+              label="Status"
+              value={filters.status}
+              onChange={(event) => set({ status: event.target.value as AssignmentStatus | '' })}
+            >
+              <option value="">
+                All ({counts.included + counts.excluded + counts.unclassified})
+              </option>
+              <option value="UNCLASSIFIED">Unclassified ({counts.unclassified})</option>
+              <option value="INCLUDED">Included and classified ({counts.included})</option>
+              <option value="EXCLUDED">Excluded ({counts.excluded})</option>
+            </SelectField>
+            <SelectField
+              label="Scope"
+              value={filters.scope}
+              onChange={(event) => {
+                const scope = event.target.value as GhgScope | ''
+                const keepCategory =
+                  filters.category === '' ||
+                  scope === '' ||
+                  categoriesForScope(scope).some((entry) => entry.category === filters.category)
+                set({ scope, ...(keepCategory ? {} : { category: '' }) })
+              }}
+            >
+              <option value="">All scopes</option>
+              {(Object.keys(scopeLabels) as GhgScope[]).map((value) => (
+                <option key={value} value={value}>
+                  {scopeLabels[value]}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField
+              label="Category"
+              value={filters.category}
+              onChange={(event) => set({ category: event.target.value as ActivityCategory | '' })}
+            >
+              <option value="">All categories</option>
+              {(filters.scope === '' ? categories : categoriesForScope(filters.scope)).map(
+                (entry) => (
+                  <option key={entry.category} value={entry.category}>
+                    {entry.label}
+                  </option>
+                ),
+              )}
+            </SelectField>
+            <SelectField
+              label="Stream"
+              value={filters.stream}
+              onChange={(event) => set({ stream: event.target.value })}
+            >
+              <option value="">All streams</option>
+              {(streamsQuery.data ?? []).map((stream) => (
+                <option key={stream.id} value={stream.id}>
+                  {stream.facilityName} · {stream.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField
+              label="Lease"
+              value={filters.lease}
+              onChange={(event) => set({ lease: event.target.value as LeaseType | '' })}
+            >
+              <option value="">Any lease treatment</option>
+              {Object.entries(leaseLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </SelectField>
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          {assignmentsQuery.isPending && (
+            <div aria-label="Loading assignments" className="flex flex-col gap-2 p-4">
+              <Skeleton className="h-8" />
+              <Skeleton className="h-8" />
+            </div>
+          )}
+          {assignments?.length === 0 && filtered && (
+            <div className="p-8 text-center">
+              <h3 className="font-semibold">No records match</h3>
+              <p className="mt-1 text-sm text-ink-muted">
+                Clear the search or the filters to see the rest of the view.
+              </p>
+            </div>
+          )}
+          {assignments?.length === 0 && !filtered && (
+            <div className="p-8 text-center">
+              <h3 className="font-semibold">Nothing under review yet</h3>
+              <p className="mt-1 text-sm text-ink-muted">
+                Hit "Review activity data" to pull in the organization's records.
+              </p>
+            </div>
+          )}
+          {assignments && assignments.length > 0 && (
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                  <th className="px-3 py-2 font-semibold">Fact</th>
-                  <th className="px-3 py-2 font-semibold">Status</th>
-                  <th className="px-3 py-2 font-semibold">Classification</th>
-                  <th className="px-3 py-2" />
+                  {writable && (
+                    <th className="w-10 py-2 pl-2">
+                      <TapCheckbox
+                        label="Select all on this page"
+                        checked={allSelected}
+                        onChange={(checked) =>
+                          setSelected(checked ? new Set(assignments.map((a) => a.id)) : new Set())
+                        }
+                      />
+                    </th>
+                  )}
+                  <th className="px-3 py-3 font-semibold">Fact</th>
+                  <th className="px-3 py-3 font-semibold">Facility / period</th>
+                  <th className="px-3 py-3 text-right font-semibold">Quantity</th>
+                  <th className="px-3 py-3 font-semibold">Factor</th>
+                  <th className="px-3 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {assignments.map((assignment) => (
-                  <tr key={assignment.id} className="border-b border-teal/5 last:border-0">
-                    <td className="px-3 py-2">
-                      <span className="font-medium">{assignment.activityType}</span>
-                      <span className="block text-xs text-ink-muted">
-                        {assignment.facilityName} · {assignment.quantity.toLocaleString()}{' '}
-                        {assignment.unit} ·{' '}
-                        {formatPeriod(assignment.periodStart, assignment.periodEnd)}
-                      </span>
-                      {assignment.changedSincePublication &&
-                        assignment.changedSincePublication.length > 0 && (
-                          <span className="block text-xs text-amber-700">
-                            Changed since publication:{' '}
-                            {assignment.changedSincePublication.join(', ')}
-                          </span>
-                        )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <StatusPills
-                        assignment={assignment}
-                        editable={writable}
-                        onInclude={onInclude(assignment)}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      {assignment.included ? (
-                        <ClassifyControls
+                {assignments.map((assignment) => {
+                  const open = assignment.id === filters.record
+                  const cursor = assignment.id === effectiveCursorId
+                  return (
+                    <tr
+                      key={assignment.id}
+                      aria-selected={open}
+                      data-cursor={cursor || undefined}
+                      onClick={() => set({ record: assignment.id })}
+                      className={`cursor-pointer border-b border-teal/5 transition-colors duration-100 last:border-0 ${
+                        open ? 'bg-teal/10' : cursor ? 'bg-teal/5' : 'hover:bg-teal/5'
+                      }`}
+                    >
+                      {writable && (
+                        <td className="py-2 pl-2" onClick={(event) => event.stopPropagation()}>
+                          <TapCheckbox
+                            label={`Select ${assignment.activityType}`}
+                            checked={selected.has(assignment.id)}
+                            onChange={(checked) =>
+                              setSelected((current) => {
+                                const next = new Set(current)
+                                if (checked) next.add(assignment.id)
+                                else next.delete(assignment.id)
+                                return next
+                              })
+                            }
+                          />
+                        </td>
+                      )}
+                      <td className="px-3 py-3">
+                        <button
+                          type="button"
+                          className="text-left font-medium text-dark-teal focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            set({ record: assignment.id })
+                          }}
+                        >
+                          {assignment.activityType}
+                        </button>
+                        {assignment.changedSincePublication &&
+                          assignment.changedSincePublication.length > 0 && (
+                            <span className="block text-xs text-amber-700">
+                              Changed since publication:{' '}
+                              {assignment.changedSincePublication.join(', ')}
+                            </span>
+                          )}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="block">{assignment.facilityName}</span>
+                        <span className="block text-xs text-ink-muted">
+                          {formatPeriod(assignment.periodStart, assignment.periodEnd)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-right whitespace-nowrap tabular-nums">
+                        {assignment.quantity.toLocaleString()}
+                        <span className="block text-xs text-ink-muted">{assignment.unit}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <FactorCell
                           assignment={assignment}
-                          organizationId={organizationId}
-                          factors={factors}
-                          units={units}
-                          densities={densities}
+                          factor={factors.find(
+                            (factor) => factor.id === assignment.emissionFactorId,
+                          )}
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        <AssignmentStatusPills
+                          assignment={assignment}
                           editable={writable}
-                          onClassify={onClassify(assignment)}
+                          onInclude={onInclude(assignment)}
                         />
-                      ) : (
-                        <span className="text-xs text-ink-muted">·</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right whitespace-nowrap">
-                      {assignment.included && writable && (
-                        <ExcludeMenu
-                          assignment={assignment}
-                          units={units}
-                          onExclude={onExclude(assignment)}
-                        />
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
-          </div>
-
-          {pageCount > 1 && (
-            <div className="mt-2 flex items-center justify-between text-xs text-ink-muted">
-              <span>
-                {total.toLocaleString()} records, page {page + 1} of {pageCount}
-              </span>
-              <span className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  className="px-2 py-1 text-xs"
-                  disabled={page === 0}
-                  onClick={() => setPage(page - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="px-2 py-1 text-xs"
-                  disabled={page + 1 >= pageCount}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Next
-                </Button>
-              </span>
-            </div>
           )}
+        </div>
 
-          <CoverageMatrix rows={coverageQuery.data ?? []} />
+        {total > 0 && (
+          <div className="flex items-center justify-between border-t border-teal/10 px-4 py-2 text-xs text-ink-muted">
+            <span>
+              {(assignments?.length ?? 0).toLocaleString()} of {total.toLocaleString()} record
+              {total === 1 ? '' : 's'}
+              {pageCount > 1 ? `, page ${filters.page + 1} of ${pageCount}` : ''}
+            </span>
+            <span className="flex items-center gap-2">
+              {pageCount > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-1 text-xs"
+                    disabled={filters.page === 0}
+                    onClick={() => set({ page: filters.page - 1 })}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-1 text-xs"
+                    disabled={filters.page + 1 >= pageCount}
+                    onClick={() => set({ page: filters.page + 1 })}
+                  >
+                    Next
+                  </Button>
+                </>
+              )}
+              {selected.size > 0 ? (
+                <span className="flex items-center gap-2">
+                  <span>{selected.size} selected</span>
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-1 text-xs"
+                    onClick={() => setDialog({ kind: 'bulkExclude', ids: [...selected] })}
+                  >
+                    Exclude {selected.size} selected
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-1 text-xs"
+                    onClick={() => setSelected(new Set())}
+                  >
+                    Clear
+                  </Button>
+                </span>
+              ) : (
+                !drawerOpen && (
+                  <span>
+                    Select a row to classify
+                    <Kbd>j</Kbd>
+                    <Kbd>k</Kbd>
+                    <Kbd>↵</Kbd>
+                  </span>
+                )
+              )}
+            </span>
+          </div>
+        )}
+      </GlassCard>
 
-          {/* mobile: one card per fact */}
-          <ul className="mt-4 flex flex-col gap-3 md:hidden">
-            {assignments.map((assignment) => (
-              <li
-                key={assignment.id}
-                className="flex flex-col gap-2 rounded-xl border border-teal/10 bg-white/40 p-3"
-              >
-                <div>
-                  <p className="font-medium">{assignment.activityType}</p>
-                  <p className="text-xs text-ink-muted">
-                    {assignment.facilityName} · {assignment.quantity.toLocaleString()}{' '}
-                    {assignment.unit} · {formatPeriod(assignment.periodStart, assignment.periodEnd)}
-                  </p>
-                </div>
-                <StatusPills
-                  assignment={assignment}
-                  editable={writable}
-                  onInclude={onInclude(assignment)}
-                />
-                {assignment.included && (
-                  <>
-                    <ClassifyControls
-                      assignment={assignment}
-                      organizationId={organizationId}
-                      factors={factors}
-                      units={units}
-                      densities={densities}
-                      editable={writable}
-                      onClassify={onClassify(assignment)}
-                    />
-                    {writable && (
-                      <div>
-                        <ExcludeMenu
-                          assignment={assignment}
-                          units={units}
-                          onExclude={onExclude(assignment)}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        </>
+      <CoverageMatrix rows={coverageQuery.data ?? []} />
+
+      {drawerOpen && (
+        <AssignmentDrawer
+          key={filters.record}
+          organizationId={organizationId}
+          assignmentId={filters.record ?? ''}
+          pageItems={assignments ?? []}
+          factors={factors}
+          units={units}
+          densities={densities}
+          editable={writable}
+          onNavigate={(id) => set({ record: id })}
+          onClose={() => set({ record: null })}
+          onClassify={onClassify}
+          onExclude={onExclude}
+          onInclude={onInclude}
+        />
       )}
-    </GlassCard>
+
+      {dialog?.kind === 'bulkExclude' && (
+        <BulkExcludeDialog
+          count={dialog.ids.length}
+          busy={excluding}
+          onClose={() => setDialog(null)}
+          onConfirm={async (input) => {
+            setExcluding(true)
+            const failed: string[] = []
+            for (const id of dialog.ids) {
+              try {
+                await exclude.mutateAsync({ id, input })
+              } catch (error) {
+                const record = assignments?.find((a) => a.id === id)
+                failed.push(`${record?.activityType ?? id}: ${refusalMessage(error, myRole)}`)
+              }
+            }
+            setExcluding(false)
+            setDialog(null)
+            setSelected(new Set())
+            const excluded = dialog.ids.length - failed.length
+            if (failed.length === 0)
+              toast(`${excluded} record${excluded === 1 ? '' : 's'} excluded.`)
+            else toast(`${excluded} excluded. Not excluded: ${failed.join('; ')}`, 'error')
+          }}
+        />
+      )}
+    </section>
+  )
+}
+
+/**
+ * Leaves a page's worth of records out under one reason and one justification
+ * (spec 05.6). A run of records excluded for the same reason is the case the
+ * register meets most: a stream that is out of the boundary, a facility that
+ * reports its own inventory.
+ *
+ * The magnitude is deliberately not asked for here. Chapter 9 wants a size per
+ * record, and one number typed once cannot be it, so the bulk form takes only
+ * the answers that are honestly shared: what the records are not estimated at,
+ * or that they emit nothing.
+ */
+function BulkExcludeDialog({
+  count,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  count: number
+  busy: boolean
+  onClose: () => void
+  onConfirm: (input: ExcludeInput) => void
+}) {
+  // the automatic reasons are the review's own, never a preparer's
+  const reasons = manualExclusionReasons.filter((reason) => !isAutomaticReason(reason))
+  const [reason, setReason] = useState<ExclusionReason>(reasons[0])
+  const [justification, setJustification] = useState('')
+  const [emitsNothing, setEmitsNothing] = useState(false)
+  const valid = justification.trim().length >= 10
+
+  return (
+    <Modal title={`Exclude ${count} record${count === 1 ? '' : 's'}?`} onClose={onClose}>
+      <p className="text-sm text-ink-muted">
+        One reason and one justification are recorded against every record selected. A record a
+        published run already counted is left in place and named in the result.
+      </p>
+      <div className="mt-4 flex flex-col gap-3">
+        <SelectField
+          label="Reason"
+          value={reason}
+          onChange={(event) => setReason(event.target.value as ExclusionReason)}
+        >
+          {reasons.map((value) => (
+            <option key={value} value={value}>
+              {exclusionLabels[value]}
+            </option>
+          ))}
+        </SelectField>
+        <InputField
+          label="Justification"
+          placeholder="Why these records are left out"
+          value={justification}
+          minLength={10}
+          maxLength={500}
+          required
+          onChange={(event) => setJustification(event.target.value)}
+        />
+        <label className="flex items-center gap-2 text-xs text-ink-muted">
+          <input
+            type="checkbox"
+            aria-label="These records emit nothing"
+            checked={emitsNothing}
+            onChange={(event) => setEmitsNothing(event.target.checked)}
+            className="h-4 w-4 accent-teal-deep"
+          />
+          These records emit nothing. Leave it unticked and each is recorded as not estimated (spec
+          04.8), which is the honest answer when nobody has sized them.
+        </label>
+      </div>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          disabled={!valid}
+          busy={busy}
+          onClick={() =>
+            onConfirm(
+              emitsNothing
+                ? {
+                    reason,
+                    justification: justification.trim(),
+                    estimatedKgCo2e: 0,
+                    emitsNothing: true,
+                  }
+                : { reason, justification: justification.trim(), notEstimated: true },
+            )
+          }
+        >
+          Exclude {count}
+        </Button>
+      </div>
+    </Modal>
   )
 }
 

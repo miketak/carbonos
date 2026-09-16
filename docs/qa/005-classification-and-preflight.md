@@ -58,6 +58,18 @@ Ghana (2024)** and the other data years. No pack publishes an explosives
 factor since spec 02.9, so the cases use **Emulsion explosive (supplier)**,
 the organization's own factor from procedure 2, section F3.
 
+
+**The page.** An inventory opens as a workbench (spec 05.6): the name and
+the lifecycle bar above, then the pre-flight banner, then five tabs in the
+order the work happens: **Records**, **Boundary**, **Method**, **Runs**,
+**Report**. Each step below names the tab it is on. The tab is in the URL,
+so a link opens the same tab and a reload keeps it.
+
+Sections A to C work on the **Records** tab, section D on **Records** (the
+coverage matrix under the register), section E on **Boundary** (the
+declaration) and **Method** (the upstream rules), and section F on the
+lifecycle bar and the banner.
+
 ## A. Review and the view
 
 ### A1. Review pulls every record in and decides the obvious ones
@@ -78,24 +90,30 @@ the organization's own factor from procedure 2, section F3.
 | --- | --- | --- | --- | --- |
 | 1 | Search for `diesel`; filter by facility S2; filter by status Unclassified. | Each narrows the list; the counts in the status filter do not change (they describe the whole view, not the page). | | |
 | 2 | Clear them, then set **Scope** to "Scope 2", **Stream** to "Tarkwa Processing Plant · Mill grid supply", **Lease** to "Operating lease (leased in)", and pick a **Category** (the list follows the chosen scope). | Each narrows the list the same way; with nothing classified yet the scope, category and lease filters return "No records match the search or the filters." Come back to them after section B. | | |
-| 3 | Look at any row. | No factor list is rendered: an unclassified row offers **Choose factor…**; a classified row prints its factor as text. | | |
+| 3 | Look at any row. | It is one line: the fact, its facility and period, the quantity, the factor as text (or "No factor chosen") and the status pills. No editor renders in the row. | | |
+| 4 | Reload the page with the filters set, then press the back button. | The filters come back: the tab, the search, every filter, the page and the open record are in the URL (spec 05.6). The back button steps back through the view rather than leaving the page. | | |
 
 ## B. Classification as a decision
 
-To classify a record, click **Choose factor…** on its row (**Change
+To classify a record, click its row. A drawer opens on the right, beside
+the register, with **Classify** and **Exclude** tabs (spec 05.6); the list
+stays live behind it and the record is named in the URL, so a link reopens
+the same record. On the Classify tab, click **Choose factor…** (**Change
 factor…** once a factor is chosen), narrow the list with the search box and
 click the factor. The picker asks the server for one page of options with
 its filters applied, so an imported edition of thousands of rows never
-reaches the browser. The row then prints the factor with its unit, the
+reaches the browser. The drawer then prints the factor with its unit, the
 publisher's activity when it has one, a tag for every pack that delivered
 it and "not approved" when it is not, and the scope, category and lease
-controls appear under it.
+controls appear under it. There is no Save button: each control is one
+accounting decision, sent as it is made. Use the `‹` and `›` buttons in the
+drawer's footer to walk the page, or close it and press `j`, `k` and Enter.
 
 ### B0. What the picker shows
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open the picker on R1 (haul fleet diesel) and read it before typing anything. | The list is fetched when the picker opens and shows "Searching the library…" for an instant. The options are one list, not two: spec 02.10 retired the shared library, so every factor the picker offers is this organization's. Each option prints the factor name and its unit on one line, then the publisher's activity with the value per unit under it, then the publication with its years and the pack tags, for example "Liquid fuels / Diesel (100% mineral diesel) · 2.661 kg CO₂e / litre" above "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file: Fuels / Liquid fuels / Diesel (100% mineral diesel) (published 2026, data year 2026) · defra-2026". | | |
+| 1 | Open R1 (haul fleet diesel), then the picker on the Classify tab, and read it before typing anything. | The list is fetched when the picker opens and shows "Searching the library…" for an instant. The options are one list, not two: spec 02.10 retired the shared library, so every factor the picker offers is this organization's. Each option prints the factor name and its unit on one line, then the publisher's activity with the value per unit under it, then the publication with its years and the pack tags, for example "Liquid fuels / Diesel (100% mineral diesel) · 2.661 kg CO₂e / litre" above "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file: Fuels / Liquid fuels / Diesel (100% mineral diesel) (published 2026, data year 2026) · defra-2026". | | |
 | 2 | Look for the derived Ghana T&D loss factor, which is not approved. | It is not listed, and the checkbox reads **Show unapproved** with a count of the rows it hides. | | |
 | 3 | Tick **Show unapproved**. | The list is fetched again and the unapproved rows appear, each with an **unapproved** mark beside its name, so nothing can be picked without seeing that it is unapproved. | | |
 | 4 | Type `ghana` in the search box. | The list narrows to rows that pack delivered: the search runs on the server and covers the pack tag and the publisher's taxonomy as well as the name and the publication. Clear it before classifying. | | |
@@ -112,15 +130,15 @@ controls appear under it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Classify R3 (petrol, no stream) with **Petrol** and change the scope to scope 3, category purchased goods and services. | Choosing scope 3 sets the category to purchased goods and services, the row says "'Petrol (100% mineral petrol)' suggests Scope 1." and shows a **scope justification** field. | | |
-| 2 | Open the pre-flight. | The **Classification** gate blocks ("... is classified in scope 3; 'Petrol (100% mineral petrol)' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1."). | | |
+| 1 | Classify R3 (petrol, no stream) with **Petrol** and change the scope to scope 3, category purchased goods and services. | Choosing scope 3 sets the category to purchased goods and services, the drawer says "'Petrol (100% mineral petrol)' suggests Scope 1." and shows a **scope justification** field. | | |
+| 2 | Read the pre-flight under the register. | The **Classification** gate blocks ("... is classified in scope 3; 'Petrol (100% mineral petrol)' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1."). | | |
 | 3 | Type the justification "Fleet operated by a contractor from May" and let the field lose focus. | The gate is silent. | | |
 
 ### B2a. The scope select is enabled for every factor (spec 04.7, finding F34)
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open R2 (mill electricity), classified with the Ghana grid factor, and read the scope select. | The select is enabled and the sentence "This factor's scope is inherent." is nowhere on the row. | | |
+| 1 | Open R2 (mill electricity), classified with the Ghana grid factor, and read the scope select on the Classify tab. | The select is enabled and the sentence "This factor's scope is inherent." is nowhere in the drawer. | | |
 | 2 | Change its scope to scope 3 and the category to **13. Downstream leased assets**. | The row says the stream or the factor suggests Scope 2 and shows a **scope justification** field; the **Classification** gate blocks until at least 10 characters are recorded. | | |
 | 3 | Record "consumed by the tenant at the asset leased out" and let the field lose focus, then set the scope back to scope 2, purchased electricity. | The gate is silent, and the classification returns to scope 2. | | |
 
@@ -128,7 +146,7 @@ controls appear under it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open R11 (ANFO in `tonne ANFO`) for classification and read the picker. | With the picker open the list is empty and the row reads "No factor matches tonne ANFO: add a matching factor or record it in a compatible unit." (the message follows the picker's own answer, so it appears once the picker is opened). | | |
+| 1 | Open R11 (ANFO in `tonne ANFO`) and read the picker. | With the picker open the list is empty and the drawer reads "No factor matches tonne ANFO: add a matching factor or record it in a compatible unit." (the message follows the picker's own answer, so it appears once the picker is opened). | | |
 | 2 | Under **Activity data**, correct R11's unit to **tonne** with the reason "Unit typed as tonne ANFO; the registered unit is tonne". | | | |
 | 3 | Back in the view, classify R11 with **Emulsion explosive (supplier)**, the organization's own factor from procedure 2 (F3). Leave it unapproved: case B6 reads the gate refusing it. Tick **proxy** and give the justification "national all-types default; supplier-specific factor pending approval". | The proxy flag and justification are saved (the justification saves when the field loses focus) and the line will print them. No pack offers an explosives factor, so a hand-entered one is the only route (spec 02.9). | | |
 
@@ -136,7 +154,7 @@ controls appear under it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Classify R17 (12 tonne of diesel) with **Diesel** (per litre). | The factor is offered because densities exist. Picking it does not classify yet: the row says "tonne meets a factor per litre: choose the density that converts between them to finish classifying." and the gate still lists R17 as unclassified. | | |
+| 1 | Classify R17 (12 tonne of diesel) with **Diesel** (per litre). | The factor is offered because densities exist. Picking it does not classify yet: the drawer says "tonne meets a factor per litre: choose the density that converts between them to finish classifying." and the gate still lists R17 as unclassified. | | |
 | 2 | Choose the **typical** Diesel density, read the pre-flight. | With the typical density the preview reads "12 tonne → 14,285.7143 litre (density of Diesel, 0.84 kg/litre) × 2.66 kg CO₂e/litre" and the gate warns to replace it with the supplier's specification. | | |
 | 3 | Then choose **Diesel (GOIL, 2025 CoA)**. | With the GOIL density the preview reads 12 tonne → 14,414.4144 litre and the gate is silent. | | |
 
@@ -170,7 +188,7 @@ Procedure 7 checks both lines.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Classify R2 (mill electricity) with the Ghana grid factor and set the lease type **Operating lease (leased in)**. | Under operational control it stays scope 2 with the lease recorded on the row and no scope note (Appendix F gives the lessee the same answer as the default, so nothing departs). | | |
+| 1 | Classify R2 (mill electricity) with the Ghana grid factor and set the lease type **Operating lease (leased in)**. | Under operational control it stays scope 2 with the lease recorded in the drawer and on the row, and no scope note (Appendix F gives the lessee the same answer as the default, so nothing departs). | | |
 | 2 | Clear the lease afterwards. | | | |
 
 ## C. Exclusions with a reason
@@ -179,7 +197,7 @@ Procedure 7 checks both lines.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On R8 (waste), click **Exclude…** and choose **Methodology exclusion**. | The exclusion form opens with a justification, a magnitude field, and the two statements "This record emits nothing" and "Not estimated: there is no basis to size this record". | | |
+| 1 | Open R8 (waste), switch to the **Exclude** tab and choose **Methodology exclusion**. | The exclusion form opens under the reasons with a justification, a magnitude field, and the two statements "This record emits nothing" and "Not estimated: there is no basis to size this record". | | |
 | 2 | Submit with a 5-character justification. | The form's Exclude button stays disabled with the short justification, and again while the magnitude is empty and neither statement is ticked. | | |
 | 3 | Then submit with "domestic waste; the library's commercial and industrial landfill factor does not fit; supplier study pending" and 259000 kg CO2e. | The record shows "Excluded · Methodology exclusion", the justification and "about 259 t CO₂e left out". | | |
 
@@ -191,7 +209,7 @@ estimate is of the right order.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Re-include R8, click **Exclude…**, choose **Methodology exclusion**, type "domestic waste; no published factor fits; supplier study pending", and leave the magnitude empty. | Exclude stays disabled: one of the three answers is needed. | | |
+| 1 | Re-include R8, open it, go to the **Exclude** tab, choose **Methodology exclusion**, type "domestic waste; no published factor fits; supplier study pending", and leave the magnitude empty. | Exclude stays disabled: one of the three answers is needed. | | |
 | 2 | Tick **Not estimated: there is no basis to size this record** and submit. | The magnitude field greys out, Exclude becomes available, and the record then reads "Excluded · Methodology exclusion", the justification and "; not estimated". It never reads "about 0 kg CO₂e". | | |
 | 3 | Re-include R8, exclude it again with the same reason and justification, and this time tick **This record emits nothing**. | The magnitude fills with 0 and the record reads "; emits nothing". | | |
 | 4 | Re-include R8 and restore the exclusion of C1: the same justification and 259000 kg CO2e. | The record reads "about 259 t CO₂e left out" again, as later procedures expect. | | |
@@ -200,8 +218,8 @@ estimate is of the right order.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On R3 (petrol, in litres), click **Exclude…** and read the menu. | **Outside the scopes: Montreal Protocol gas** is not offered: the block reports a mass of gas, so the reason needs a mass unit. Close the menu. | | |
-| 2 | On R6 (chiller refrigerant top-up, 45 kg), click **Exclude…**. | The reason is offered. | | |
+| 1 | Open R3 (petrol, in litres) and read the **Exclude** tab. | **Outside the scopes: Montreal Protocol gas** is not offered: the block reports a mass of gas, so the reason needs a mass unit. | | |
+| 2 | Open R6 (chiller refrigerant top-up, 45 kg) and read the **Exclude** tab. | The reason is offered. | | |
 | 3 | Choose it and read the form. | It asks for a justification and for a **Gas**, and for no magnitude at all. | | |
 | 4 | Type "HCFC-22 is a Montreal Protocol gas, reported outside the scopes", type "HCFC-22" in **Gas**, and submit. | The record reads "Excluded · Outside the scopes: Montreal Protocol gas" with the justification and "; HCFC-22, outside the scopes". | | |
 | 5 | Re-include R6 and classify it with **Blends: R407C, Emissions including only Kyoto products** again. | R6 is back as B7 left it, which procedures 7 and 9 depend on. | | |
@@ -211,6 +229,27 @@ estimate is of the right order.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Re-include R12 (2026), then exclude it again with **Outside reporting period**. | No justification is asked; the detail reads the reporting period. | | |
+
+### C3. A page of records is excluded under one reason (spec 05.6)
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Filter the view to the 2024 rows imported in procedure 3, tick **Select all on this page**, and read the footer bar. | It reads "50 selected" with **Exclude 50 selected** and **Clear**. | | |
+| 2 | Click **Exclude 50 selected**. | A dialog asks for one reason and one justification. It does **not** ask for a magnitude: Chapter 9 wants a size per record, and one number typed once cannot be it. | | |
+| 3 | Choose **Not applicable**, type a justification of at least 10 characters and confirm. | A toast counts what was excluded. Each record reads "Excluded" and, in the drawer, "not estimated" (spec 04.8), because nobody sized them. The selection clears. | | |
+| 4 | Tick **This record emits nothing** instead on a second selection and confirm. | Those records are recorded at 0 kg CO₂e with the emits-nothing statement, not as not estimated. | | |
+| 5 | Select a record a published run already counted and try the same. | It is left in place and named in the error toast; the rest go through. | | |
+
+### C4. The keyboard walks the page (spec 05.6)
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | With no drawer open, press `/`. | The search box takes focus. | | |
+| 2 | Press Escape or click away, then press `j` three times and `k` once. | A cursor highlight moves down the rows and back up. It never leaves the page: at the last row `j` does nothing. | | |
+| 3 | Press Enter. | The record under the cursor opens in the drawer and the URL gains `record=`. | | |
+| 4 | Press `‹` and `›` in the drawer's footer. | The drawer walks the page without refetching the list; the counter reads "n/50". | | |
+| 5 | Press Escape. | The drawer closes and `record=` leaves the URL. | | |
+| 6 | Type `j` inside the search box. | It is a letter. Shortcuts do not fire in a field. | | |
 
 ## D. Periods and coverage
 
