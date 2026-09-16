@@ -368,13 +368,19 @@ public class FactorPackImportService {
 				row.citationUrl(pack), row.citationYear(pack), row.dataYear(), trimToNull(row.notes()));
 	}
 
-	/** The grid a pack row serves (spec 03.4): Ember rows carry the alpha-3 code, eGRID rows the subregion. */
+	/**
+	 * The grid a pack row serves (spec 03.4): a national grid row names its country in the third
+	 * segment and eGRID rows the subregion. The shape is the publisher's prefix then {@code grid},
+	 * so {@code EMBER:grid:GHA:2024} and {@code GHANA:grid:GHA:2024} both read GHA. Keying on the
+	 * segment rather than on one publisher's prefix is what kept the suggestion alive when spec
+	 * 02.9 narrowed the catalogue and the Ember pack left.
+	 */
 	static String gridRegionOf(String code) {
 		if (code == null) {
 			return null;
 		}
 		var parts = code.split(":");
-		if (code.startsWith("EMBER:grid:") && parts.length >= 3) {
+		if (parts.length >= 3 && "grid".equals(parts[1])) {
 			return parts[2];
 		}
 		if (code.startsWith("EPA:Electricity_US_eGRID_subregion") && parts.length >= 3) {

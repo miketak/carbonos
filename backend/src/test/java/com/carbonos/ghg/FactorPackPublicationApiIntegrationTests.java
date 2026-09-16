@@ -148,7 +148,7 @@ class FactorPackPublicationApiIntegrationTests {
 		facilities.deleteAll();
 		entities.deleteAll();
 		organizations.deleteAll();
-		// the ten V43 seeded editions stay; everything this class published goes. Notices first, because a
+		// the seeded editions stay; everything this class published goes. Notices first, because a
 		// notice points at an edition and nothing cascades from the edition to it, then the editions
 		// newest first, because a successor holds a foreign key to the predecessor it superseded.
 		notices.deleteAll();

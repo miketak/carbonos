@@ -127,6 +127,8 @@ nav:
               - specs/02.6-versioned-pack-import.md
               - specs/02.7-adopting-a-new-edition.md
               - specs/02.8-viewing-a-packs-factors.md
+              - specs/02.9-narrowing-the-catalogue-to-defra-and-ghana.md
+              - specs/02.10-retiring-the-shared-factor-library.md
           - "03 Organizational boundary":
               - specs/03-organizational-boundary.md
               - specs/03.1-legal-entities-and-table-1.md

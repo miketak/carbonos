@@ -24,8 +24,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 /**
- * An emission factor: a row of the shared library (read-only) or an
- * organization's own factor with its provenance (spec 02.1). A factor suggests
+ * An emission factor: an organization's own row, with its provenance (spec
+ * 02.1). Spec 02.10 retired the shared library, so every factor belongs to an
+ * organization and arrives by a pack import or by hand. A factor suggests
  * a default scope and category (spec 04.1) and carries per-gas components
  * (spec 07.1): kg of CO2, CH4, N2O, SF6 and NF3 per unit, the mass and
  * composition of HFC and PFC blends per unit (spec 07.2), whether its methane
@@ -111,8 +112,8 @@ public class EmissionFactor {
 
 	// --- spec 02.1: ownership, provenance, approval and the pack a factor came from ---
 
-	// null for the shared library; an organization's own factor otherwise
-	@Column(name = "organization_id")
+	// every factor belongs to an organization (spec 02.10); V51 made the column NOT NULL
+	@Column(name = "organization_id", nullable = false)
 	private UUID organizationId;
 
 	@Column(name = "source_url", length = 500)

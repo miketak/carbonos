@@ -281,7 +281,7 @@ export interface Gases {
 
 export interface EmissionFactor {
   id: string
-  /** Null for the shared library; the owning organization otherwise (spec 02.1). */
+  /** The owning organization; every factor has one since spec 02.10 (spec 02.1). */
   organizationId: string | null
   name: string
   /** The scope and category the factor suggests; the accountant decides (spec 04.1). */
@@ -356,9 +356,6 @@ export interface FactorVersion {
   locallyEdited: boolean
 }
 
-/** Which tier of the library a query wants: both, the organization's own, or the shared rows. */
-export type FactorTier = 'ALL' | 'OWN' | 'LIBRARY'
-
 /**
  * What the picker asks the library for (FU-03). Every field is applied in SQL:
  * nothing is filtered in the browser, because a published edition can be
@@ -369,7 +366,6 @@ export interface EmissionFactorQuery {
   q?: string
   /** False hides rows a preparer must not pick unseen (spec 02.3). */
   includeUnapproved?: boolean
-  tier?: FactorTier
   sourceCategory?: string
   sourceActivity?: string
   sourceDetail?: string
@@ -2003,10 +1999,9 @@ export function deleteStream(id: string): Promise<void> {
 // --- emission factors --------------------------------------------------------
 
 /**
- * One page of the shared library and the organization's own factors (spec
- * 02.1), filtered and ordered by the database (FU-03). The organization's own
- * rows come first, then the shared library, so the picker's grouping survives
- * paging.
+ * One page of the organization's factors (spec 02.1), filtered and ordered by
+ * the database (FU-03). Spec 02.10 retired the shared library, so there is one
+ * tier: every row the page returns belongs to this organization.
  */
 export function listEmissionFactors(
   organizationId: string,
@@ -2015,7 +2010,6 @@ export function listEmissionFactors(
   const search = new URLSearchParams()
   if (query.q) search.set('q', query.q)
   if (query.includeUnapproved === false) search.set('includeUnapproved', 'false')
-  if (query.tier && query.tier !== 'ALL') search.set('tier', query.tier)
   if (query.sourceCategory) search.set('sourceCategory', query.sourceCategory)
   if (query.sourceActivity) search.set('sourceActivity', query.sourceActivity)
   if (query.sourceDetail) search.set('sourceDetail', query.sourceDetail)

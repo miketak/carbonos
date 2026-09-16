@@ -244,15 +244,8 @@ function ClassifyControls({
   const beyondPage = Math.max(0, (page?.total ?? 0) - matched.length)
   // nothing at all fits this record's unit, which is worth saying before a search narrows it further
   const noneFit = pickerOpen && !pickerQuery.isPending && factorSearch.trim() === '' && !page?.total
-  // spec 02.3: the organization's own factors first, then the shared library. The order comes
-  // from the database, so the grouping holds across pages.
-  const groups = [
-    {
-      label: 'This organization',
-      factors: shown.filter((factor) => factor.organizationId !== null),
-    },
-    { label: 'Shared library', factors: shown.filter((factor) => factor.organizationId === null) },
-  ].filter((group) => group.factors.length > 0)
+  // spec 02.10 retired the shared library, so there is one tier and no grouping: every factor the
+  // picker offers is this organization's, ordered by the database so the order holds across pages.
   const density = densities.find((candidate) => candidate.id === assignment.densityId)
   const densityNeeded = !!selected && needsDensity(units, assignment.unit, selected.unit)
   const preview = selected ? conversionPreview(units, assignment, selected, density) : null
@@ -360,72 +353,63 @@ function ClassifyControls({
             {pickerQuery.isPending && (
               <p className="p-2 text-xs text-ink-muted">Searching the library…</p>
             )}
-            {!pickerQuery.isPending && groups.length === 0 && (
+            {!pickerQuery.isPending && shown.length === 0 && (
               <p className="p-2 text-xs text-ink-muted">No factor matches this search.</p>
             )}
-            {groups.map((group) => (
-              <div key={group.label}>
-                <p className="sticky top-0 bg-surface-muted px-2 py-1 text-xs font-semibold text-ink-muted">
-                  {group.label}
-                </p>
-                <ul>
-                  {group.factors.map((factor) => (
-                    <li key={factor.id}>
-                      <button
-                        type="button"
-                        aria-pressed={factor.id === assignment.emissionFactorId}
-                        className={`w-full px-2 py-1.5 text-left hover:bg-surface-muted ${
-                          factor.id === assignment.emissionFactorId ? 'bg-surface-muted' : ''
-                        }`}
-                        onClick={() => {
-                          setPickerOpen(false)
-                          setFactorSearch('')
-                          if (
-                            needsDensity(units, assignment.unit, factor.unit) &&
-                            !assignment.densityId
-                          ) {
-                            setPendingFactorId(factor.id)
-                            return
-                          }
-                          setPendingFactorId(null)
-                          onClassify({
-                            emissionFactorId: factor.id,
-                            // spec 04.3: the record's stream fixes the default scope; the factor only suggests one
-                            scope: assignment.defaultScope ?? factor.defaultScope,
-                            category: assignment.defaultScope
-                              ? (assignment.defaultCategory ?? factor.defaultCategory)
-                              : factor.defaultCategory,
-                            densityId: needsDensity(units, assignment.unit, factor.unit)
-                              ? (assignment.densityId ?? undefined)
-                              : undefined,
-                          })
-                        }}
-                      >
-                        <span className="text-sm">
-                          <span className="font-medium">{factor.name}</span>
-                          <span className="text-ink-muted"> (/{factor.unit})</span>
-                          {!factor.approved && (
-                            <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
-                              unapproved
-                            </span>
-                          )}
+            <ul>
+              {shown.map((factor) => (
+                <li key={factor.id}>
+                  <button
+                    type="button"
+                    aria-pressed={factor.id === assignment.emissionFactorId}
+                    className={`w-full px-2 py-1.5 text-left hover:bg-surface-muted ${
+                      factor.id === assignment.emissionFactorId ? 'bg-surface-muted' : ''
+                    }`}
+                    onClick={() => {
+                      setPickerOpen(false)
+                      setFactorSearch('')
+                      if (
+                        needsDensity(units, assignment.unit, factor.unit) &&
+                        !assignment.densityId
+                      ) {
+                        setPendingFactorId(factor.id)
+                        return
+                      }
+                      setPendingFactorId(null)
+                      onClassify({
+                        emissionFactorId: factor.id,
+                        // spec 04.3: the record's stream fixes the default scope; the factor only suggests one
+                        scope: assignment.defaultScope ?? factor.defaultScope,
+                        category: assignment.defaultScope
+                          ? (assignment.defaultCategory ?? factor.defaultCategory)
+                          : factor.defaultCategory,
+                        densityId: needsDensity(units, assignment.unit, factor.unit)
+                          ? (assignment.densityId ?? undefined)
+                          : undefined,
+                      })
+                    }}
+                  >
+                    <span className="text-sm">
+                      <span className="font-medium">{factor.name}</span>
+                      <span className="text-ink-muted"> (/{factor.unit})</span>
+                      {!factor.approved && (
+                        <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
+                          unapproved
                         </span>
-                        {/* FU-03: 1,157 of the 1,868 DEFRA rows share a display name, and the three
+                      )}
+                    </span>
+                    {/* FU-03: 1,157 of the 1,868 DEFRA rows share a display name, and the three
                             butane rows differ only by unit. The publisher's activity and the value
                             go beside the name, so no two options are indistinguishable. */}
-                        <span className="block text-xs text-ink-muted">
-                          {factorIdentity(factor)}
-                        </span>
-                        <span className="block text-xs text-ink-muted">
-                          {publicationLine(factor)}
-                          {factor.packs.length > 0 && ` · ${factor.packs.join(', ')}`}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+                    <span className="block text-xs text-ink-muted">{factorIdentity(factor)}</span>
+                    <span className="block text-xs text-ink-muted">
+                      {publicationLine(factor)}
+                      {factor.packs.length > 0 && ` · ${factor.packs.join(', ')}`}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
           {beyondPage > 0 && (
             <p className="text-xs text-ink-muted">

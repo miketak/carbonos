@@ -36,16 +36,16 @@ with full provenance and importable packs (spec 02.1). Each factor has a
 name, a **default** scope and category (a suggestion; spec 04.1), whether it
 is scope-agnostic, unit, value in kg CO2e per unit, per-gas components (spec
 07.1), and a cited source.
-Seventeen are seeded from the UK Department for Environment, Food and Rural
+Fourteen are seeded from the UK Department for Environment, Food and Rural
 Affairs (DEFRA) 2025 factors, the IPCC Fifth Assessment Report (AR5) 100-year
-global warming potentials, IPCC 2006 process factors, and an Ecoriv Ghana grid
-factor. They span natural gas, liquefied petroleum gas (LPG), diesel, petrol,
-R-410A leakage, Ghana and UK grid electricity, district heat, car and
-long-haul flight travel, bus commuting, landfill waste, water supply,
-ammonium nitrate fuel oil (ANFO) explosives, quicklime calcination, wood
-pellets, and district cooling, each citing its publication, table and data
-year (spec 02.1). Organizations add their own factors and import packs at
-runtime.
+global warming potentials, and an Ecoriv Ghana grid factor. They span natural
+gas, liquefied petroleum gas (LPG), diesel, petrol, R-410A leakage, Ghana and
+UK grid electricity, district heat, car and long-haul flight travel, bus
+commuting, landfill waste, water supply and wood pellets, each citing its
+publication, table and data year (spec 02.1). Explosives, quicklime
+calcination and district cooling were seeded until spec 02.9 narrowed the
+library to DESNZ and Ghana sources. Organizations add their own factors and
+import packs at runtime.
 
 ### Classification
 
@@ -64,8 +64,9 @@ Given the QA scenario's ANFO explosives recorded in "tonne ANFO": no factor
 matches a custom unit, and choosing "Waste to landfill (/tonne)" produces
 the blocking finding
 `'ANFO explosives consumed' is recorded in tonne ANFO (unrecognized) but its factor 'Waste to landfill' is per tonne (mass)`.
-Recorded in tonnes, the ANFO detonation factor classifies it as a scope 1
-process emission.
+Recorded in tonnes, an explosives factor the organization has entered itself
+classifies it as a scope 1 process emission; no pack publishes one (spec
+02.9).
 
 ### Exclusion
 

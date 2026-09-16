@@ -156,8 +156,6 @@ export function factorPage(
   const needle = query.q?.trim().toLowerCase() ?? ''
   let matched = items.filter((factor) => {
     if (query.ids && !query.ids.includes(factor.id)) return false
-    if (query.tier === 'OWN' && factor.organizationId === null) return false
-    if (query.tier === 'LIBRARY' && factor.organizationId !== null) return false
     if (query.unit && factor.unit.toLowerCase() !== query.unit.toLowerCase()) return false
     if (
       query.dimension &&
@@ -182,7 +180,7 @@ export function factorPage(
   })
   const unapproved = matched.filter((factor) => !factor.approved).length
   if (query.includeUnapproved === false) matched = matched.filter((factor) => factor.approved)
-  // the server's order: the organization's own rows first, then the shared library
+  // the server's order: one tier since spec 02.10, by scope, name and unit
   matched = [...matched].sort(
     (a, b) => Number(a.organizationId === null) - Number(b.organizationId === null),
   )

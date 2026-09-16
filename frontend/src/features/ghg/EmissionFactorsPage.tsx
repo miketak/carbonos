@@ -300,9 +300,10 @@ function FactorTable({
 }
 
 /**
- * The emission factor library (spec 02.1): the shared, read-only seed and the
- * organization's own factors with full provenance, plus the packs built from
- * published tables that an organization imports as its own factors.
+ * The organization's emission factors (spec 02.1) with full provenance, and the
+ * packs built from published tables that it imports as its own. Spec 02.10
+ * retired the shared library: an organization starts with nothing and
+ * establishes its baseline by importing a pack or entering a factor by hand.
  */
 export function EmissionFactorsPage() {
   const { organizationId = '' } = useParams()
@@ -332,20 +333,13 @@ export function EmissionFactorsPage() {
   }
   const ownQuery = useEmissionFactorsQuery(organizationId, {
     ...filters,
-    tier: 'OWN',
     page,
-    size: FACTOR_PAGE_SIZE,
-  })
-  const libraryQuery = useEmissionFactorsQuery(organizationId, {
-    ...filters,
-    tier: 'LIBRARY',
     size: FACTOR_PAGE_SIZE,
   })
   const facetsQuery = useEmissionFactorFacetsQuery(organizationId, category || undefined)
   const own = ownQuery.data?.items ?? []
   const ownTotal = ownQuery.data?.total ?? 0
   const hiddenUnapproved = ownQuery.data?.unapproved ?? 0
-  const library = libraryQuery.data?.items ?? []
   const pageCount = Math.max(1, Math.ceil(ownTotal / FACTOR_PAGE_SIZE))
   const filtered =
     search.trim() !== '' || category !== '' || activity !== '' || unit !== '' || !showUnapproved
@@ -372,9 +366,9 @@ export function EmissionFactorsPage() {
         <div>
           <h1 className="text-xl">Emission factors</h1>
           <p className="text-sm text-ink-muted">
-            The shared library plus this organization's own factors, each with its source, vintage
-            and validity. Only approved factors can be run. A factor suggests a scope; the
-            classification decides (Corporate Standard chapter 4).
+            This organization's factors, each with its source, vintage and validity. Import a pack
+            to establish a baseline, or add one by hand. Only approved factors can be run. A factor
+            suggests a scope; the classification decides (Corporate Standard chapter 4).
           </p>
         </div>
         <RoleButton
@@ -552,14 +546,6 @@ export function EmissionFactorsPage() {
             </Button>
           </div>
         )}
-      </GlassCard>
-
-      <GlassCard className="animate-fade-up overflow-x-auto p-0">
-        <h2 className="px-4 pt-4 text-lg">Shared library</h2>
-        <p className="px-4 pb-2 text-xs text-ink-muted">
-          Seeded and read-only; every factor cites its publication, table and data year.
-        </p>
-        {library.length > 0 && <FactorTable factors={library} editable={false} />}
       </GlassCard>
 
       {adding && (

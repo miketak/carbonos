@@ -80,9 +80,9 @@ test('each queue row links to the page that clears it', async () => {
         mayApprove: false,
       },
       {
-        editionId: 'epa-2027',
-        packKey: 'epa',
-        name: 'EPA 2027',
+        editionId: 'ghana-2027',
+        packKey: 'ghana',
+        name: 'Ghana 2027',
         curatorEmail: 'kofi@ecoriv.com',
         rowCount: 8,
         mayApprove: true,

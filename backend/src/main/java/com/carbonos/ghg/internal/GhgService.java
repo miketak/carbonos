@@ -628,27 +628,20 @@ public class GhgService {
 
 	// --- emission factors (spec 02.1) --------------------------------------------
 
-	@Transactional(readOnly = true)
-	public List<EmissionFactor> listEmissionFactors() {
-		return emissionFactors.findAllByOrganizationIdIsNullOrderByDefaultScopeAscNameAsc();
-	}
-
 	/**
-	 * What the picker asks the library for (spec 02.3, FU-03): the tier or
-	 * tiers, whether unapproved rows are revealed, a search over name,
+	 * What the picker asks the library for (spec 02.3, FU-03): whether
+	 * unapproved rows are revealed, a search over name,
 	 * publication, the publisher's taxonomy and the pack tags, the taxonomy
 	 * filters spec 02.5 made possible, a unit or the dimensions a record can
 	 * be classified with (spec 02.2), a set of identifiers when a caller only
 	 * wants the factors its rows already reference, and the page.
 	 */
-	public record FactorQuery(String q, boolean includeUnapproved, FactorTier tier, String sourceCategory,
-			String sourceActivity, String sourceDetail, String unit, Set<Dimension> dimensions, List<UUID> ids,
-			int page, int size) {
+	public record FactorQuery(String q, boolean includeUnapproved, String sourceCategory, String sourceActivity,
+			String sourceDetail, String unit, Set<Dimension> dimensions, List<UUID> ids, int page, int size) {
 
-		/** Everything the picker shows by default: both tiers, unapproved rows included, first page. */
+		/** Everything the picker shows by default: unapproved rows included, first page. */
 		public static FactorQuery all() {
-			return new FactorQuery(null, true, FactorTier.ALL, null, null, null, null, Set.of(), null, 0,
-					MAX_FACTOR_PAGE);
+			return new FactorQuery(null, true, null, null, null, null, Set.of(), null, 0, MAX_FACTOR_PAGE);
 		}
 	}
 
@@ -664,10 +657,9 @@ public class GhgService {
 	private static final int MAX_FACTOR_PAGE = 200;
 
 	/**
-	 * The shared library and the organization's own factors, filtered, ordered
-	 * and paged by the database (FU-03). The order is the picker's grouping:
-	 * the organization's own rows first, then the shared library, each by
-	 * scope, name and unit.
+	 * The organization's factors, filtered, ordered and paged by the database
+	 * (FU-03), by scope, name and unit. Since spec 02.10 retired the shared
+	 * library there is one tier: every factor belongs to an organization.
 	 */
 	@Transactional(readOnly = true)
 	public FactorPage searchEmissionFactors(UUID organizationId, FactorQuery query) {
@@ -806,11 +798,8 @@ public class GhgService {
 	}
 
 	private EmissionFactor getOwnFactor(UUID id) {
+		// spec 02.10: there is no read-only tier left to refuse, so ownership is the only check
 		var factor = emissionFactors.findById(id).orElseThrow(() -> GhgNotFoundException.emissionFactor(id));
-		if (factor.getOrganizationId() == null) {
-			throw new GhgRuleViolationException("'" + factor.getName()
-					+ "' is a shared library factor and cannot be changed. Add an organization factor instead.");
-		}
 		access.checkWrite(getOrganization(factor.getOrganizationId()));
 		return factor;
 	}

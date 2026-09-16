@@ -28,7 +28,7 @@ import jakarta.persistence.Table;
 @Table(name = "ghg_factor_pack_editions")
 public class FactorPackEdition {
 
-	/** The provenance of the ten editions the seed created, which alone may publish without an approver. */
+	/** The provenance of the editions the seed created, which alone may publish without an approver. */
 	public static final String SEED_UNCHECKED = "SEED_UNCHECKED";
 
 	/** The provenance of every edition authored in the console: checked against the publication. */

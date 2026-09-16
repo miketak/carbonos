@@ -30,7 +30,7 @@ const organization: Organization = {
 
 const diesel: EmissionFactor = {
   id: 'f-1',
-  organizationId: null,
+  organizationId: 'org-1',
   name: 'Diesel (100% mineral diesel)',
   defaultScope: 'SCOPE_1',
   defaultCategory: 'MOBILE_COMBUSTION',
@@ -89,11 +89,11 @@ const hfo: EmissionFactor = {
   validFrom: '2025-01-01',
   validTo: '2025-12-31',
   approved: false,
-  pack: 'sector-mining',
-  packs: ['refrigerants-ar5', 'sector-mining'],
+  pack: 'defra-2026',
+  packs: ['defra-2026', 'ghana'],
   packCode: 'X',
   gridRegion: null,
-  sourceEdition: 'sector-mining',
+  sourceEdition: 'defra-2026',
 }
 
 /** A factor entered by hand: the only kind that can be deleted (spec 02.6). */
@@ -109,14 +109,14 @@ const supplier: EmissionFactor = {
 }
 
 const pack: FactorPack = {
-  id: 'sector-mining',
-  name: 'Sector pack: mining (Ghana and West Africa)',
-  source: 'Selection from the DEFRA 2026, EPA Hub 2025, IPCC 2006 and NGA 2024 packs',
-  sourceUrl: '',
+  id: 'defra-2026',
+  name: 'UK Government (DESNZ) GHG conversion factors 2026',
+  source: 'UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file',
+  sourceUrl: 'https://example.test/ghg-conversion-factors-2026.xlsx',
   publicationYear: 2026,
   gwpBasis: 'AR5',
-  license: 'See each factor',
-  retrieved: '2026-09-09',
+  license: 'Open Government Licence v3.0',
+  retrieved: '2026-09-08',
   factorCount: 53,
   notes: 'Fuels, explosives, lime, refrigerants, grid power.',
 }
@@ -164,7 +164,7 @@ beforeEach(() => {
     })
   vi.mocked(getOrganization).mockReset()
   vi.mocked(importFactorPack).mockReset().mockResolvedValue({
-    edition: 'sector-mining',
+    edition: 'defra-2026',
     appliesFrom: '2026-01-01',
     created: 53,
     versioned: 0,
@@ -187,7 +187,7 @@ function renderPage() {
   })
 }
 
-test('lists the shared library and the organization factors with their provenance and approval', async () => {
+test('lists the organization factors with their provenance and approval', async () => {
   renderPage()
 
   expect(await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).toBeInTheDocument()
@@ -200,12 +200,12 @@ test('lists the shared library and the organization factors with their provenanc
   expect(within(ownRow).getByText('Not approved')).toBeInTheDocument()
   // spec 02.3: the packs that delivered the row stand in a column of their own, apart from the source
   const packTags = within(ownRow).getAllByTitle('Delivered by a factor pack')
-  expect(packTags.map((tag) => tag.textContent)).toEqual(['refrigerants-ar5', 'sector-mining'])
-  expect(within(ownRow).queryByText(/GOIL.*sector-mining/)).not.toBeInTheDocument()
-  const libraryRow = screen.getByText('Diesel (100% mineral diesel)').closest('tr')!
-  expect(within(libraryRow).getByText('Approved')).toBeInTheDocument()
-  expect(within(libraryRow).queryByRole('button')).not.toBeInTheDocument()
-  expect(within(libraryRow).getByText(/CH₄ 0\.0001 \(fossil\)/)).toBeInTheDocument()
+  expect(packTags.map((tag) => tag.textContent)).toEqual(['defra-2026', 'ghana'])
+  expect(within(ownRow).queryByText(/GOIL.*defra-2026/)).not.toBeInTheDocument()
+  // spec 02.10: every row is the organization's, so a hand-entered one offers its actions
+  const dieselRow = screen.getByText('Diesel (100% mineral diesel)').closest('tr')!
+  expect(within(dieselRow).getByText('Approved')).toBeInTheDocument()
+  expect(within(dieselRow).getByText(/CH₄ 0\.0001 \(fossil\)/)).toBeInTheDocument()
 })
 
 test('imports a pack and approves a factor', async () => {
@@ -213,10 +213,10 @@ test('imports a pack and approves a factor', async () => {
   renderPage()
 
   await user.click(await screen.findByRole('button', { name: /^Import pack/ }))
-  await waitFor(() => expect(importFactorPack).toHaveBeenCalledWith('org-1', 'sector-mining'))
+  await waitFor(() => expect(importFactorPack).toHaveBeenCalledWith('org-1', 'defra-2026'))
   expect(
     await screen.findByText(
-      /sector-mining, applying from 2026-01-01: 53 added, 0 versioned, 3 tagged, 0 unchanged/,
+      /defra-2026, applying from 2026-01-01: 53 added, 0 versioned, 3 tagged, 0 unchanged/,
     ),
   ).toBeInTheDocument()
 
@@ -227,7 +227,7 @@ test('imports a pack and approves a factor', async () => {
 test('the import toast names the rows the registry could not convert (spec 02.6)', async () => {
   const user = userEvent.setup()
   vi.mocked(importFactorPack).mockResolvedValue({
-    edition: 'sector-mining',
+    edition: 'defra-2026',
     appliesFrom: '2026-01-01',
     created: 51,
     versioned: 0,
@@ -314,13 +314,14 @@ test('the search, the taxonomy filters and the pager run on the server (FU-03)',
   // an imported edition is thousands of rows; the page must never hold them all
   const rows = Array.from({ length: 120 }, (_, index) => ({
     ...hfo,
-    id: `f-${index}`,
+    id: `f-row-${index}`,
     name: `Gaseous fuels: Butane ${index}`,
     sourceCategory: index % 2 === 0 ? 'Fuels' : 'WTT- fuels',
     sourceActivity: 'Gaseous fuels / Butane',
     sourceDetail: null,
   }))
-  mockEmissionFactors([diesel, ...rows])
+  // spec 02.10: one tier, so the page holds exactly what the organization owns
+  mockEmissionFactors(rows)
   renderPage()
 
   // the organization's table shows one page of the total, and says what the total is
@@ -328,7 +329,7 @@ test('the search, the taxonomy filters and the pager run on the server (FU-03)',
   await waitFor(() =>
     expect(listEmissionFactors).toHaveBeenCalledWith(
       'org-1',
-      expect.objectContaining({ tier: 'OWN', page: 0, size: 50 }),
+      expect.objectContaining({ page: 0, size: 50 }),
     ),
   )
   expect(screen.getByText('Page 1 of 3')).toBeInTheDocument()
@@ -341,7 +342,7 @@ test('the search, the taxonomy filters and the pager run on the server (FU-03)',
   await waitFor(() =>
     expect(listEmissionFactors).toHaveBeenCalledWith(
       'org-1',
-      expect.objectContaining({ sourceCategory: 'WTT- fuels', tier: 'OWN', page: 0 }),
+      expect.objectContaining({ sourceCategory: 'WTT- fuels', page: 0 }),
     ),
   )
   expect(await screen.findByText('60 factors match')).toBeInTheDocument()
@@ -351,7 +352,7 @@ test('the search, the taxonomy filters and the pager run on the server (FU-03)',
   await waitFor(() =>
     expect(listEmissionFactors).toHaveBeenCalledWith(
       'org-1',
-      expect.objectContaining({ q: 'butane 7', tier: 'OWN' }),
+      expect.objectContaining({ q: 'butane 7' }),
     ),
   )
 })
@@ -438,11 +439,11 @@ test("a pack's factors are read without importing it, and rows sharing a name ar
 
   await user.click(
     await screen.findByRole('button', {
-      name: /view the factors in sector pack: mining/i,
+      name: /view the factors in uk government \(desnz\)/i,
     }),
   )
 
-  const drawer = await screen.findByRole('dialog', { name: /sector pack: mining/i })
+  const drawer = await screen.findByRole('dialog', { name: /uk government \(desnz\)/i })
   await waitFor(() => expect(listPackRows).toHaveBeenCalled())
   // the two Butane rows share a name and differ only by unit, so the unit and the value are shown
   expect(within(drawer).getAllByText('Gaseous fuels: Butane')).toHaveLength(2)

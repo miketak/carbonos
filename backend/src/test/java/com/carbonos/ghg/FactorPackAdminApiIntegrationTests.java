@@ -73,7 +73,7 @@ class FactorPackAdminApiIntegrationTests {
 	@BeforeEach
 	@AfterEach
 	void removeTestEditions() {
-		// the ten V43 seeded editions stay; every draft a test wrote goes, and its rows with it
+		// the two seeded editions stay; every draft a test wrote goes, and its rows with it
 		editions.findAllByStatusOrderByEditionIdAsc(FactorPackStatus.DRAFT).forEach(editions::delete);
 		editions.flush();
 		families.findAllByOrderByPackKeyAsc()
@@ -204,7 +204,7 @@ class FactorPackAdminApiIntegrationTests {
 		createDraft(DRAFT, "ghana");
 
 		var packs = body(mvc.perform(get("/api/ghg/factor-packs").with(asMember())).andExpect(status().isOk()));
-		assertThat(JsonPath.<List<String>>read(packs, "$[*].id")).doesNotContain(DRAFT).hasSize(10);
+		assertThat(JsonPath.<List<String>>read(packs, "$[*].id")).doesNotContain(DRAFT).hasSize(2);
 		// nor by its identifier, which is what an import would ask for
 		mvc.perform(get("/api/ghg/factor-packs/" + DRAFT).with(asMember())).andExpect(status().isNotFound());
 	}

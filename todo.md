@@ -84,18 +84,29 @@ officer said a verifier would ask for.
 ## Emission factors still unsourced
 
 No published factor exists for these, so a supplier or study factor is
-entered by hand. The pack cards say so. Sourcing one is now an authoring job
-rather than an engineering one: a curator adds the row to a draft edition in
-the admin console and an approver publishes it (spec 02.5). Nothing is
-generated from a script and no release is needed.
+entered by hand. Sourcing one is an authoring job rather than an engineering
+one: a curator adds the row to a draft edition in the admin console and an
+approver publishes it (spec 02.5). Nothing is generated from a script and no
+release is needed.
+
+Spec 02.9 narrowed the catalogue to DESNZ and Ghana, so the sector packs that
+carried the templates and defaults below are gone. The list grew rather than
+shrank: nothing published now covers explosives, lime or clinker calcination,
+or a gas recorded as itself either.
 
 - [ ] **EF-01** Sodium cyanide (a material cat. 1 line at every Ghanaian gold
-  plant). The mining pack ships a supplier-factor template, not a value.
+  plant).
 - [ ] **EF-02** Tailings and mine water treatment methane.
 - [ ] **EF-03** Grinding media wear.
 - [ ] **EF-04** Composition and flare-efficiency inputs that would derive CO2
-  and CH4 from a site gas analysis. The IPCC defaults ship; the site-specific
-  path does not (spec 02.4).
+  and CH4 from a site gas analysis. No flaring row ships at all now.
+- [ ] **EF-05** Explosives detonation, and quicklime or clinker calcination.
+  Both were seeded library rows until spec 02.9; neither DESNZ nor the Ghana
+  pack publishes one, so nothing in the catalogue is classified as a process
+  emission.
+- [ ] **EF-06** A gas recorded as itself (CH4, N2O, CO2, SF6, NF3 per kg of
+  gas). The rows left with spec 02.9; the per-gas GWP arithmetic behind them
+  is untouched, so restoring them is one edition, not a code change.
 
 ## Next audit
 

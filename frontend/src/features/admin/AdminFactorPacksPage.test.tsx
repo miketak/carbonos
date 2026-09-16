@@ -171,19 +171,19 @@ test('a published edition is cloned into a new draft, rows and all', async () =>
 
 test('a new family is created with its key and kind', async () => {
   const user = userEvent.setup()
-  vi.mocked(createFactorPackFamily).mockResolvedValue({ ...family, packKey: 'ipcc-process' })
+  vi.mocked(createFactorPackFamily).mockResolvedValue({ ...family, packKey: 'test-selection' })
   renderPage()
 
   await user.click(await screen.findByRole('button', { name: /add family/i }))
   const dialog = await screen.findByRole('dialog', { name: /add a pack family/i })
-  await user.type(within(dialog).getByLabelText(/^key$/i), 'ipcc-process')
-  await user.type(within(dialog).getByLabelText(/^name$/i), 'IPCC 2006 process defaults')
+  await user.type(within(dialog).getByLabelText(/^key$/i), 'test-selection')
+  await user.type(within(dialog).getByLabelText(/^name$/i), 'A selection for a sector')
   await user.selectOptions(within(dialog).getByLabelText(/kind/i), 'SECTOR')
   await user.click(within(dialog).getByRole('button', { name: /add family/i }))
 
   await waitFor(() =>
     expect(createFactorPackFamily).toHaveBeenCalledWith(
-      expect.objectContaining({ packKey: 'ipcc-process', kind: 'SECTOR' }),
+      expect.objectContaining({ packKey: 'test-selection', kind: 'SECTOR' }),
     ),
   )
 })
