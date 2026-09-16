@@ -51,20 +51,66 @@ import com.jayway.jsonpath.JsonPath;
 @Import(TestcontainersConfiguration.class)
 class GhgApiIntegrationTests {
 
-	// the seeded Diesel factor: scope 1 by default, scope-agnostic, litre, 2.66 kgCO2e/litre
-	private static final String DIESEL_FACTOR = "c4a1f001-0000-4000-8000-000000000003";
-	// the seeded Ghana grid electricity factor: scope 2, inherent, kWh, 0.441 kgCO2e/kWh
-	private static final String GRID_FACTOR = "c4a1f001-0000-4000-8000-000000000006";
-	// waste to landfill: scope 3, tonne, 446.2 = 12.2 CO2 + 15.5 CH4 x 28
-	private static final String LANDFILL_FACTOR = "c4a1f001-0000-4000-8000-000000000012";
-	// ANFO explosives: scope 1 process emission, tonne, 170
-	private static final String ANFO_FACTOR = "c4a1f001-0000-4000-8000-000000000014";
-	// wood pellets: biomass, tonne, 14.99 CO2e from CH4 and N2O plus 1800 biogenic CO2
-	private static final String BIOMASS_FACTOR = "c4a1f001-0000-4000-8000-000000000016";
-	// refrigerant R-410A: an HFC blend, 50% HFC-32 and 50% HFC-125 by mass: 1,923.5 kg CO2e/kg under AR5, 2,255.5 under AR6
-	private static final String R410A_FACTOR = "c4a1f001-0000-4000-8000-000000000005";
-	// district cooling: scope 2, kWh, 0.12
-	private static final String COOLING_FACTOR = "c4a1f001-0000-4000-8000-000000000017";
+	// Spec 02.10 retired the shared library: an organization starts with no factors and establishes
+	// its baseline by importing a pack or entering its own. These five were the seeded rows the cases
+	// were written against, so each test's organization now creates them, with the values unchanged so
+	// every figure below still reconciles. Held per organization, because that is what they now are.
+
+	// scope 1 by default, scope-agnostic, litre, 2.66 = 2.6307 CO2 + 0.0001 CH4 x 28 + 0.0001 N2O x 265
+	private static final String DIESEL_JSON = """
+			{"name": "Diesel (100% mineral diesel)", "defaultScope": "SCOPE_1",
+			 "defaultCategory": "MOBILE_COMBUSTION", "scopeAgnostic": true, "unit": "litre",
+			 "kgCo2ePerUnit": 2.66, "co2KgPerUnit": 2.6307, "ch4KgPerUnit": 0.0001, "ch4Fossil": true,
+			 "n2oKgPerUnit": 0.0001,
+			 "source": "UK Government GHG Conversion Factors for Company Reporting 2025, Fuels"}""";
+
+	// scope 2, inherent (never scope-agnostic), kWh, 0.441 CO2e/kWh
+	private static final String GRID_JSON = """
+			{"name": "Grid electricity (Ghana, Ecoriv 2025)", "defaultScope": "SCOPE_2",
+			 "defaultCategory": "PURCHASED_ELECTRICITY", "scopeAgnostic": false, "unit": "kWh",
+			 "kgCo2ePerUnit": 0.441, "co2KgPerUnit": 0.441,
+			 "source": "Ecoriv factor library 2025: a secondary estimate"}""";
+
+	// scope 3, tonne, 446.2 = 12.2 CO2 + 15.5 CH4 (biogenic) x 28
+	private static final String LANDFILL_JSON = """
+			{"name": "Commercial and industrial waste to landfill", "defaultScope": "SCOPE_3",
+			 "defaultCategory": "WASTE_GENERATED", "scopeAgnostic": false, "unit": "tonne",
+			 "kgCo2ePerUnit": 446.2, "co2KgPerUnit": 12.2, "ch4KgPerUnit": 15.5, "ch4Fossil": false,
+			 "source": "UK Government GHG Conversion Factors for Company Reporting 2025, Waste disposal"}""";
+
+	// biomass, tonne, 14.99 CO2e from CH4 and N2O plus 1,800 kg biogenic CO2 reported apart
+	private static final String BIOMASS_JSON = """
+			{"name": "Wood pellets (biomass)", "defaultScope": "SCOPE_1",
+			 "defaultCategory": "STATIONARY_COMBUSTION", "scopeAgnostic": true, "unit": "tonne",
+			 "kgCo2ePerUnit": 14.99, "ch4KgPerUnit": 0.1, "ch4Fossil": false, "n2oKgPerUnit": 0.046,
+			 "biogenicCo2KgPerUnit": 1800,
+			 "source": "UK Government GHG Conversion Factors for Company Reporting 2025, Bioenergy"}""";
+
+	// an HFC blend, 50% HFC-32 and 50% HFC-125 by mass: 1,923.5 kg CO2e/kg under AR5, 2,255.5 under AR6
+	private static final String R410A_JSON = """
+			{"name": "Refrigerant R-410A leakage", "defaultScope": "SCOPE_1",
+			 "defaultCategory": "FUGITIVE_EMISSIONS", "scopeAgnostic": false, "unit": "kg",
+			 "kgCo2ePerUnit": 1923.5, "hfcsKgPerUnit": 1.0,
+			 "blendComposition": "HFC-32:0.5,HFC-125:0.5", "blendGwpSource": "AR5",
+			 "source": "IPCC AR5 WG1 Table 8.A.1 100-year potentials (HFC-32 677, HFC-125 3,170)"}""";
+
+	// scope 1 by default, scope-agnostic, m3, 2.045 = 2.04095 CO2 + 0.00005 CH4 x 28 + 0.00001 N2O x 265
+	private static final String NATURAL_GAS_JSON = """
+			{"name": "Natural gas", "defaultScope": "SCOPE_1",
+			 "defaultCategory": "STATIONARY_COMBUSTION", "scopeAgnostic": true, "unit": "m3",
+			 "kgCo2ePerUnit": 2.045, "co2KgPerUnit": 2.04095, "ch4KgPerUnit": 0.00005, "ch4Fossil": true,
+			 "n2oKgPerUnit": 0.00001,
+			 "source": "UK Government GHG Conversion Factors for Company Reporting 2025, Fuels"}""";
+
+	// scope 3 business travel, passenger-km, 0.195 CO2e all as CO2 (with radiative forcing)
+	private static final String FLIGHT_JSON = """
+			{"name": "Business travel - long-haul flight", "defaultScope": "SCOPE_3",
+			 "defaultCategory": "BUSINESS_TRAVEL", "scopeAgnostic": false, "unit": "passenger-km",
+			 "kgCo2ePerUnit": 0.195, "co2KgPerUnit": 0.195,
+			 "source": "UK Government GHG Conversion Factors for Company Reporting 2025, Business travel: air"}""";
+
+	/** One baseline factor per organization, created on first use and remembered for the test. */
+	private final java.util.Map<String, String> baselineFactors = new java.util.concurrent.ConcurrentHashMap<>();
 
 	@Autowired
 	MockMvc mvc;
@@ -125,6 +171,7 @@ class GhgApiIntegrationTests {
 
 	@BeforeEach
 	void resetGhgData() {
+		baselineFactors.clear();
 		baseYears.deleteAll();
 		runs.deleteAll();
 		assignments.deleteAll();
@@ -303,6 +350,72 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk()));
 		List<String> ids = JsonPath.read(listing, "$[?(@.activityId == '" + activityId + "')].id");
 		return ids.getFirst();
+	}
+
+	/**
+	 * The organization's own explosives factor, per tonne, scope 1 process emission. Spec 02.9
+	 * narrowed the catalogue to DESNZ and Ghana, and neither publishes a factor for explosives,
+	 * so a supplier or study figure entered by hand is now the only route. That is what a
+	 * Ghanaian gold plant actually does, and it is what these tests exercise.
+	 */
+	String createExplosivesFactor(String orgId) throws Exception {
+		var factor = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Explosives detonation (ANFO, emulsion)", "defaultScope": "SCOPE_1",
+						 "defaultCategory": "PROCESS_EMISSIONS", "unit": "tonne", "kgCo2ePerUnit": 170,
+						 "co2KgPerUnit": 170,
+						 "source": "Supplier figure: 0.17 t CO2-e per t of explosive, all types"}"""))
+			.andExpect(status().isCreated()));
+		return JsonPath.read(factor, "$.id");
+	}
+
+	/**
+	 * A baseline factor of this organization, created once and remembered. Spec 02.10 leaves an
+	 * organization with nothing until it imports a pack or enters a factor, so a test that wants to
+	 * classify something creates what it needs, which is what a preparer now does.
+	 */
+	String baseline(String orgId, String json) throws Exception {
+		var key = orgId + "/" + json.hashCode();
+		var cached = baselineFactors.get(key);
+		if (cached != null) {
+			return cached;
+		}
+		var created = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content(json))
+			.andExpect(status().isCreated()));
+		String id = JsonPath.read(created, "$.id");
+		baselineFactors.put(key, id);
+		return id;
+	}
+
+	String diesel(String orgId) throws Exception {
+		return baseline(orgId, DIESEL_JSON);
+	}
+
+	String grid(String orgId) throws Exception {
+		return baseline(orgId, GRID_JSON);
+	}
+
+	String landfill(String orgId) throws Exception {
+		return baseline(orgId, LANDFILL_JSON);
+	}
+
+	String biomass(String orgId) throws Exception {
+		return baseline(orgId, BIOMASS_JSON);
+	}
+
+	String r410a(String orgId) throws Exception {
+		return baseline(orgId, R410A_JSON);
+	}
+
+	String naturalGas(String orgId) throws Exception {
+		return baseline(orgId, NATURAL_GAS_JSON);
+	}
+
+	String flight(String orgId) throws Exception {
+		return baseline(orgId, FLIGHT_JSON);
 	}
 
 	/** Classifies with the factor's default scope and category. */
@@ -505,7 +618,7 @@ class GhgApiIntegrationTests {
 		assertThat(JsonPath.<List<Double>>read(boundary, "$[?(@.entityName == 'BGB')].effectiveEconomicInterestPercent")
 			.getFirst()).isEqualTo(41.5);
 		// 1000 L x 2.66 x 41.5% = 1103.9 kg
-		prepare(equity, diesel, DIESEL_FACTOR);
+		prepare(equity, diesel, diesel(orgId));
 		run(equity, "Run 001").andExpect(status().isCreated())
 			.andExpect(jsonPath("$.run.totalKgCo2e").value(1103.9))
 			.andExpect(jsonPath("$.lines[0].weight").value(0.415));
@@ -686,7 +799,7 @@ class GhgApiIntegrationTests {
 
 		// the run is at the full share for the September record, and the version carries the window
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + september + "')].id").getFirst(),
-				DIESEL_FACTOR);
+				diesel(orgId));
 		freeze(inventoryId);
 		run(inventoryId, "Run 001").andExpect(status().isCreated())
 			.andExpect(jsonPath("$.run.totalKgCo2e").value(2660.0))
@@ -774,16 +887,16 @@ class GhgApiIntegrationTests {
 		String hired = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + contractor + "')].id").getFirst();
 
 		// defaults: Diesel suggests scope 1 mobile combustion
-		classify(own, DIESEL_FACTOR);
+		classify(own, diesel(orgId));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
 			.andExpect(jsonPath("$[?(@.id == '" + own + "')].scope").value("SCOPE_1"))
 			.andExpect(jsonPath("$[?(@.id == '" + own + "')].category").value("MOBILE_COMBUSTION"));
 		// the contractor's diesel is the same physics in scope 3
-		classifyAs(hired, DIESEL_FACTOR, "SCOPE_3", "PURCHASED_GOODS_SERVICES").andExpect(status().isOk())
+		classifyAs(hired, diesel(orgId), "SCOPE_3", "PURCHASED_GOODS_SERVICES").andExpect(status().isOk())
 			.andExpect(jsonPath("$.scope").value("SCOPE_3"))
 			.andExpect(jsonPath("$.category").value("PURCHASED_GOODS_SERVICES"));
 		// a category from the wrong scope is refused outright
-		classifyAs(hired, DIESEL_FACTOR, "SCOPE_3", "MOBILE_COMBUSTION").andExpect(status().isConflict());
+		classifyAs(hired, diesel(orgId), "SCOPE_3", "MOBILE_COMBUSTION").andExpect(status().isConflict());
 		// spec 04.3: the departure from the factor's default blocks until a reason is recorded, then it is silent
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"))
@@ -793,7 +906,7 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"emissionFactorId": "%s", "scope": "SCOPE_3", "category": "PURCHASED_GOODS_SERVICES",
 					 "scopeJustification": "Contractor-owned and operated fleet; the company does not direct its operation"}"""
-				.formatted(DIESEL_FACTOR)))
+				.formatted(diesel(orgId))))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.scopeJustification").value(org.hamcrest.Matchers.startsWith("Contractor-owned")));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
@@ -820,7 +933,7 @@ class GhgApiIntegrationTests {
 		var assignmentId = syncAndGetAssignmentId(inventoryId, activityId);
 
 		// spec 04.3: no scope is inherent; a departure without a reason blocks the run
-		classifyAs(assignmentId, GRID_FACTOR, "SCOPE_1", "STATIONARY_COMBUSTION").andExpect(status().isOk());
+		classifyAs(assignmentId, grid(orgId), "SCOPE_1", "STATIONARY_COMBUSTION").andExpect(status().isOk());
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"))
 			.andExpect(jsonPath("$.gates[2].findings[0].message")
@@ -906,16 +1019,16 @@ class GhgApiIntegrationTests {
 		String wasteAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + waste + "')].id").getFirst();
 		// the factor alone classifies each record in its stream's default: scope 1 for the gensets, scope 3 for the
 		// contractor's fleet, with no warning about "suggests scope 1"
-		classify(gensetAssignment, DIESEL_FACTOR);
-		classify(fleetAssignment, DIESEL_FACTOR);
+		classify(gensetAssignment, diesel(orgId));
+		classify(fleetAssignment, diesel(orgId));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
 			.andExpect(jsonPath("$[?(@.id == '" + gensetAssignment + "')].scope").value("SCOPE_1"))
 			.andExpect(jsonPath("$[?(@.id == '" + gensetAssignment + "')].category").value("STATIONARY_COMBUSTION"))
 			.andExpect(jsonPath("$[?(@.id == '" + fleetAssignment + "')].scope").value("SCOPE_3"))
 			.andExpect(jsonPath("$[?(@.id == '" + fleetAssignment + "')].category").value("PURCHASED_GOODS_SERVICES"));
 		// a category outside the stream's kind is refused; the landfill factor in scope 1 needs a reason
-		classifyAs(wasteAssignment, LANDFILL_FACTOR, "SCOPE_3", "BUSINESS_TRAVEL").andExpect(status().isConflict());
-		classifyAs(wasteAssignment, LANDFILL_FACTOR, "SCOPE_1", "FUGITIVE_EMISSIONS").andExpect(status().isOk());
+		classifyAs(wasteAssignment, landfill(orgId), "SCOPE_3", "BUSINESS_TRAVEL").andExpect(status().isConflict());
+		classifyAs(wasteAssignment, landfill(orgId), "SCOPE_1", "FUGITIVE_EMISSIONS").andExpect(status().isOk());
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"))
 			.andExpect(jsonPath("$.gates[2].findings[0].message")
@@ -925,14 +1038,14 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"emissionFactorId": "%s", "scope": "SCOPE_1", "category": "FUGITIVE_EMISSIONS",
 					 "scopeJustification": "Company-operated landfill on the mining lease: a direct source", "proxy": true}"""
-				.formatted(LANDFILL_FACTOR)))
+				.formatted(landfill(orgId))))
 			.andExpect(status().isConflict());
 		mvc.perform(put("/api/ghg/assignments/" + wasteAssignment + "/classify").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"emissionFactorId": "%s", "scope": "SCOPE_1", "category": "FUGITIVE_EMISSIONS",
 					 "scopeJustification": "Company-operated landfill on the mining lease: a direct source",
 					 "proxy": true, "proxyJustification": "DEFRA commercial waste to landfill stands in for an unlined site landfill"}"""
-				.formatted(LANDFILL_FACTOR)))
+				.formatted(landfill(orgId))))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.proxy").value(true));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
@@ -975,7 +1088,7 @@ class GhgApiIntegrationTests {
 		var equity = createInventory(orgId, "Equity view", "EQUITY_SHARE");
 		putBoundary(operational, office);
 		putBoundary(equity, office);
-		var gas = "c4a1f001-0000-4000-8000-000000000001";
+		var gas = naturalGas(orgId);
 
 		// an operating lease the company holds: scope 1 under operational control, scope 3 under equity share
 		mvc.perform(put("/api/ghg/assignments/" + syncAndGetAssignmentId(operational, activityId) + "/classify")
@@ -1007,8 +1120,9 @@ class GhgApiIntegrationTests {
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, pit);
 		var assignmentId = syncAndGetAssignmentId(inventoryId, activityId);
+		var explosives = createExplosivesFactor(orgId);
 
-		classify(assignmentId, ANFO_FACTOR);
+		classify(assignmentId, explosives);
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
 			.andExpect(jsonPath("$[0].scope").value("SCOPE_1"))
 			.andExpect(jsonPath("$[0].category").value("PROCESS_EMISSIONS"));
@@ -1043,13 +1157,13 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"));
 
 		// wrong-unit factor: Diesel expects litres, the fact is in kWh
-		classify(assignmentId, DIESEL_FACTOR);
+		classify(assignmentId, diesel(orgId));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.ready").value(false))
 			.andExpect(jsonPath("$.gates[3].status").value("BLOCKED"));
 
 		// matching factor and a frozen inventory clear every gate
-		classify(assignmentId, GRID_FACTOR);
+		classify(assignmentId, grid(orgId));
 		freeze(inventoryId);
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.ready").value(true))
@@ -1070,7 +1184,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(asMember()).with(csrf()))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.errors.records[0].problem").value("is not classified"));
-		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
 		freeze(inventoryId);
 
 		run(inventoryId, "Run 001").andExpect(status().isConflict())
@@ -1087,7 +1201,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Equity View", "EQUITY_SHARE");
 		putBoundary(inventoryId, facilityId);
-		prepare(inventoryId, activityId, DIESEL_FACTOR);
+		prepare(inventoryId, activityId, diesel(orgId));
 
 		// 1000 L x 2.66 kg/L x 40% = 1064 kg
 		var result = run(inventoryId, "Run 001").andExpect(status().isCreated())
@@ -1129,7 +1243,7 @@ class GhgApiIntegrationTests {
 		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
 		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, plant);
-		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		prepare(inventoryId, diesel, diesel(orgId));
 		String first = runAndGetId(inventoryId, "Run 001");
 		String second = runAndGetId(inventoryId, "Run 002");
 		// hard delete is gone
@@ -1187,11 +1301,11 @@ class GhgApiIntegrationTests {
 
 		var corporate = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(corporate, facilityId);
-		prepare(corporate, activityId, DIESEL_FACTOR);
+		prepare(corporate, activityId, diesel(orgId));
 
 		var equity = createInventory(orgId, "2025 Equity", "EQUITY_SHARE");
 		putBoundary(equity, facilityId);
-		prepare(equity, activityId, DIESEL_FACTOR);
+		prepare(equity, activityId, diesel(orgId));
 
 		// operational control: 100% -> 2660 kg; equity share: 40% -> 1064 kg
 		run(corporate, "Run 001").andExpect(status().isCreated())
@@ -1207,22 +1321,6 @@ class GhgApiIntegrationTests {
 	// --- unit conversion (spec 05) ------------------------------------------
 
 	@Test
-	void everySeededFactorUnitIsAConvertibleUnit() {
-		assertThat(emissionFactors.findAllByOrganizationIdIsNullOrderByDefaultScopeAscNameAsc()).allSatisfy(factor -> assertThat(
-				unitConverter.dimensionOf(factor.getUnit()))
-			.as("factor '%s' unit '%s' must be a registered unit", factor.getName(), factor.getUnit())
-			.isPresent());
-	}
-
-	@Test
-	void everySeededFactorsGasSplitAddsUpToItsCo2eUnderAr5() {
-		assertThat(emissionFactors.findAll()).allSatisfy(factor -> assertThat(
-				factor.kgCo2ePerUnit(com.carbonos.ghg.internal.GwpSet.AR5))
-			.as("factor '%s'", factor.getName())
-			.isEqualByComparingTo(factor.getKgCo2ePerUnit()));
-	}
-
-	@Test
 	void anActivityIsConvertedIntoTheFactorsUnitBeforeCalculating() throws Exception {
 		var orgId = createOrganization("Ecoriv Holdings");
 		var facilityId = createFacility(orgId, "Tema Plant");
@@ -1230,7 +1328,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "10000", "US-gallon", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
-		prepare(inventoryId, activityId, DIESEL_FACTOR);
+		prepare(inventoryId, activityId, diesel(orgId));
 
 		// 10,000 US-gal x 3.785411784 = 37,854.11784 L x 2.66 x 100% = 100,691.953 kg (HALF_UP)
 		run(inventoryId, "Run 001").andExpect(status().isCreated())
@@ -1251,7 +1349,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "800", "kWh", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
-		prepare(inventoryId, activityId, DIESEL_FACTOR);
+		prepare(inventoryId, activityId, diesel(orgId));
 
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.ready").value(false))
@@ -1268,7 +1366,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
-		prepare(inventoryId, activityId, DIESEL_FACTOR);
+		prepare(inventoryId, activityId, diesel(orgId));
 		String runId = runAndGetId(inventoryId, "Run 001");
 
 		// an unrelated member sees nothing and can touch nothing: always 404, never 403
@@ -1307,7 +1405,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
-		prepare(inventoryId, activityId, DIESEL_FACTOR);
+		prepare(inventoryId, activityId, diesel(orgId));
 		run(inventoryId, "Run 001").andExpect(status().isCreated());
 
 		mvc.perform(delete("/api/ghg/activities/" + activityId).with(asMember()).with(csrf()))
@@ -1326,7 +1424,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
-		prepare(inventoryId, activityId, DIESEL_FACTOR);
+		prepare(inventoryId, activityId, diesel(orgId));
 		String runId = runAndGetId(inventoryId, "Run 001");
 
 		mvc.perform(put("/api/ghg/activities/" + activityId).with(asMember()).with(csrf())
@@ -1400,7 +1498,7 @@ class GhgApiIntegrationTests {
 		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
 		var inventoryId = createInventory(orgId, "2025 Equity View", "EQUITY_SHARE");
 		putBoundary(inventoryId, facilityId);
-		classify(syncAndGetAssignmentId(inventoryId, activityId), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, activityId), diesel(orgId));
 
 		// everything else is green, but the inventory is still a draft
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
@@ -1446,7 +1544,7 @@ class GhgApiIntegrationTests {
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
 		var assignmentId = syncAndGetAssignmentId(inventoryId, activityId);
-		classify(assignmentId, DIESEL_FACTOR);
+		classify(assignmentId, diesel(orgId));
 		freeze(inventoryId);
 
 		// both halves of the view are read-only: boundary, assignments, review, and the approach
@@ -1457,7 +1555,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(delete("/api/ghg/inventories/" + inventoryId + "/boundary/" + facilityId).with(asMember())
 			.with(csrf()))
 			.andExpect(status().isConflict());
-		classifyAs(assignmentId, DIESEL_FACTOR, "SCOPE_1", "MOBILE_COMBUSTION").andExpect(status().isConflict());
+		classifyAs(assignmentId, diesel(orgId), "SCOPE_1", "MOBILE_COMBUSTION").andExpect(status().isConflict());
 		mvc.perform(put("/api/ghg/assignments/" + assignmentId + "/exclude").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"reason": "OTHER"}"""))
@@ -1552,7 +1650,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'WARNING')].message").value(org.hamcrest.Matchers
 				.hasItem(org.hamcrest.Matchers.startsWith("Takoradi Port Co has a 0% accounting share"))));
-		classify(syncAndGetAssignmentId(inventoryId, pitDiesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, pitDiesel), diesel(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		assertThat(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + shiploader + "')].exclusionDetail")
 			.getFirst()).isEqualTo("Takoradi Port Co: 0% accounting share under operational control");
@@ -1576,13 +1674,14 @@ class GhgApiIntegrationTests {
 		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
 		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
 		var anfo = createActivity(orgId, pit, "ANFO explosives consumed", "10", "tonne", "2025-08-31");
+		var explosives = createExplosivesFactor(orgId);
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, pit);
 		var dieselAssignment = syncAndGetAssignmentId(inventoryId, diesel);
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		String anfoAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + anfo + "')].id")
 			.getFirst();
-		classify(dieselAssignment, DIESEL_FACTOR);
+		classify(dieselAssignment, diesel(orgId));
 		mvc.perform(put("/api/ghg/assignments/" + anfoAssignment + "/exclude").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"reason": "METHODOLOGY", "justification": "emulsion explosive without a published factor", "estimatedKgCo2e": 120}"""))
@@ -1599,7 +1698,7 @@ class GhgApiIntegrationTests {
 		reopen(inventoryId);
 		mvc.perform(put("/api/ghg/assignments/" + anfoAssignment + "/include").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
-		classify(anfoAssignment, ANFO_FACTOR);
+		classify(anfoAssignment, explosives);
 		freeze(inventoryId);
 		run(inventoryId, "Run 002").andExpect(status().isCreated())
 			.andExpect(jsonPath("$.lines.length()").value(2))
@@ -1621,7 +1720,7 @@ class GhgApiIntegrationTests {
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, facilityId);
 		excludeFacility(inventoryId, otherId, "NOT_APPLICABLE", "Mothballed all year");
-		prepare(inventoryId, activityId, DIESEL_FACTOR);
+		prepare(inventoryId, activityId, diesel(orgId));
 		String runId = runAndGetId(inventoryId, "Run 001");
 
 		// a draft cannot be published, and a frozen inventory needs a final run first
@@ -1720,10 +1819,10 @@ class GhgApiIntegrationTests {
 		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
 		putBoundary(base, pit);
 		putBoundary(base, terminal);
-		classify(syncAndGetAssignmentId(base, pitDiesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(base, pitDiesel), diesel(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + base + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + portDiesel + "')].id").getFirst(),
-				DIESEL_FACTOR);
+				diesel(orgId));
 		freeze(base);
 		String baseRun = runAndGetId(base, "Base 2024");
 		mvc.perform(post("/api/ghg/runs/" + baseRun + "/finalize").with(asMember()).with(csrf()))
@@ -1874,7 +1973,7 @@ class GhgApiIntegrationTests {
 		var pitDiesel = createActivity(orgId, pit, "Haul fleet diesel", "10000", "litre", "2024-06-30");
 		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
 		putBoundary(base, pit);
-		prepare(base, pitDiesel, DIESEL_FACTOR);
+		prepare(base, pitDiesel, diesel(orgId));
 		mvc.perform(post("/api/ghg/runs/" + runAndGetId(base, "Base 2024") + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
@@ -1926,7 +2025,7 @@ class GhgApiIntegrationTests {
 		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
 		putBoundary(base, pit);
 		excludeFacility(base, terminal, "NOT_APPLICABLE", "Acquired in 2025");
-		prepare(base, pitDiesel, DIESEL_FACTOR);
+		prepare(base, pitDiesel, diesel(orgId));
 		runAndGetId(base, "Base 2024");
 		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -1967,7 +2066,7 @@ class GhgApiIntegrationTests {
 		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
 		putBoundary(base, pit);
 		excludeFacility(base, camp, "NOT_APPLICABLE", "Not yet built in 2024");
-		prepare(base, pitDiesel, DIESEL_FACTOR);
+		prepare(base, pitDiesel, diesel(orgId));
 		runAndGetId(base, "Base 2024");
 		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -1992,10 +2091,10 @@ class GhgApiIntegrationTests {
 		var waste = createActivity(orgId, plant, "Waste to landfill", "1", "tonne", "2025-03-01");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, plant);
-		classify(syncAndGetAssignmentId(inventoryId, pellets), BIOMASS_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, pellets), biomass(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + waste + "')].id").getFirst(),
-				LANDFILL_FACTOR);
+				landfill(orgId));
 		freeze(inventoryId);
 
 		// pellets: 10 t x (0.1 CH4 + 0.046 N2O) = 1 kg CH4, 0.46 kg N2O -> 28 + 121.9 = 149.9 kg CO2e, plus
@@ -2025,7 +2124,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.gwpSet").value("AR6")));
 		String ar6Id = JsonPath.read(ar6, "$.id");
 		putBoundary(ar6Id, plant);
-		classify(syncAndGetAssignmentId(ar6Id, pellets), BIOMASS_FACTOR);
+		classify(syncAndGetAssignmentId(ar6Id, pellets), biomass(orgId));
 		// 1 x 27.9 + 0.46 x 273 = 153.48; the landfill record is included and unclassified, so exclude it before the
 		// freeze, which waits for a clean classification (spec 05.5)
 		var ar6Listing = body(mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/assignments").with(asMember())));
@@ -2067,10 +2166,10 @@ class GhgApiIntegrationTests {
 					{"available": false}"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.residualMixAvailable").value(false));
-		classify(syncAndGetAssignmentId(inventoryId, plantPower), GRID_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, plantPower), grid(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + officePower + "')].id").getFirst(),
-				GRID_FACTOR);
+				grid(orgId));
 		freeze(inventoryId);
 
 		// location-based: 1,000 x 0.441 + 1,000 x 0.441 = 882; market-based: 1,000 x 0.05 + 441 = 491
@@ -2102,7 +2201,7 @@ class GhgApiIntegrationTests {
 		var plain = createInventory(orgId, "2025 Plain", "OPERATIONAL_CONTROL");
 		putBoundary(plain, plant);
 		excludeFacility(plain, office, "NOT_APPLICABLE", "Office reported by the landlord");
-		prepare(plain, plantPower, GRID_FACTOR);
+		prepare(plain, plantPower, grid(orgId));
 		var plainDetail = body(run(plain, "Run 001").andExpect(status().isCreated())
 			.andExpect(jsonPath("$.run.scope2MarketBasedKgCo2e").value(441.0))
 			.andExpect(jsonPath("$.run.scope2MarketBasis").value("GRID_AVERAGE"))
@@ -2148,10 +2247,10 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"available": false}"""))
 			.andExpect(status().isOk());
-		classify(syncAndGetAssignmentId(inventoryId, firstHalf), GRID_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, firstHalf), grid(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + secondHalf + "')].id").getFirst(),
-				GRID_FACTOR);
+				grid(orgId));
 		freeze(inventoryId);
 		// location-based: 46,500,000 kWh x 0.441 = 20,506,500 kg. Market-based: the first read is covered for
 		// 20,000,000 of its 30,000,000 kWh, the rest and the second read take the grid average:
@@ -2229,7 +2328,7 @@ class GhgApiIntegrationTests {
 					{"available": true, "kgCo2ePerKwh": 0.35}"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.residualMixKgCo2ePerKwh").value(0.35));
-		prepare(inventoryId, plantPower, GRID_FACTOR);
+		prepare(inventoryId, plantPower, grid(orgId));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[3].findings[0].message")
 				.value(org.hamcrest.Matchers.containsString("falls back to the residual mix")));
@@ -2265,13 +2364,22 @@ class GhgApiIntegrationTests {
 		var plant = createFacility(orgId, "Tema Plant");
 		var leak = createActivity(orgId, plant, "Chiller refrigerant top-up", "10", "kg", "2025-05-01");
 		var cooling = createActivity(orgId, plant, "District cooling", "1000", "kWh", "2025-06-01");
+		// no pack publishes a district cooling factor, so the supplier's figure is entered by hand
+		var coolingFactor = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "District cooling", "defaultScope": "SCOPE_2",
+						 "defaultCategory": "PURCHASED_COOLING", "unit": "kWh", "kgCo2ePerUnit": 0.12,
+						 "co2KgPerUnit": 0.12, "source": "Supplier disclosure 2025"}"""))
+			.andExpect(status().isCreated()));
+		String coolingFactorId = JsonPath.read(coolingFactor, "$.id");
 		// under AR5 the blend's source and the inventory agree: one assessment report
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, plant);
-		classify(syncAndGetAssignmentId(inventoryId, leak), R410A_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, leak), r410a(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + cooling + "')].id").getFirst(),
-				COOLING_FACTOR);
+				coolingFactorId);
 		// purchased cooling is scope 2 (Chapter 4)
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
 			.andExpect(jsonPath("$[?(@.activityId == '" + cooling + "')].scope").value("SCOPE_2"))
@@ -2299,10 +2407,10 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isCreated()));
 		String ar6Id = JsonPath.read(ar6, "$.id");
 		putBoundary(ar6Id, plant);
-		classify(syncAndGetAssignmentId(ar6Id, leak), R410A_FACTOR);
+		classify(syncAndGetAssignmentId(ar6Id, leak), r410a(orgId));
 		var ar6Listing = body(mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + cooling + "')].id").getFirst(),
-				COOLING_FACTOR);
+				coolingFactorId);
 		freeze(ar6Id);
 		var ar6Detail = body(run(ar6Id, "Run 001").andExpect(status().isCreated())
 			.andExpect(jsonPath("$.run.byGas.hfcsKgCo2e").value(22555.0))
@@ -2324,22 +2432,23 @@ class GhgApiIntegrationTests {
 		var topUp = createActivity(orgId, plant, "R-410A top-up, plant chillers", "85", "kg", "2025-08-01");
 		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
 		var waste = createActivity(orgId, plant, "Camp waste to landfill", "1", "tonne", "2025-08-01");
-		// the library states the composition and the AR5 basis of the seeded figure
-		mvc.perform(get("/api/ghg/emission-factors").with(asMember()))
-			.andExpect(jsonPath("$[?(@.id == '" + R410A_FACTOR + "')].kgCo2ePerUnit").value(1923.5))
-			.andExpect(jsonPath("$[?(@.id == '" + R410A_FACTOR + "')].blendComposition").value("50% HFC-32, 50% HFC-125"))
-			.andExpect(jsonPath("$[?(@.id == '" + R410A_FACTOR + "')].ch4Fossil").value(true))
-			.andExpect(jsonPath("$[?(@.id == '" + DIESEL_FACTOR + "')].ch4Fossil").value(true))
-			.andExpect(jsonPath("$[?(@.id == '" + LANDFILL_FACTOR + "')].ch4Fossil").value(false));
+		// the factor states the composition and the AR5 basis of the figure it was entered with
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("ids", r410a(orgId) + "," + diesel(orgId) + "," + landfill(orgId)))
+			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].kgCo2ePerUnit").value(1923.5))
+			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].blendComposition").value("50% HFC-32, 50% HFC-125"))
+			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].ch4Fossil").value(true))
+			.andExpect(jsonPath("$.items[?(@.id == '" + diesel(orgId) + "')].ch4Fossil").value(true))
+			.andExpect(jsonPath("$.items[?(@.id == '" + landfill(orgId) + "')].ch4Fossil").value(false));
 		// AR5: 85 kg x (0.5 x 677 + 0.5 x 3,170) = 85 x 1,923.5 = 163,497.5 kg, about 163.5 t
 		var ar5 = createInventory(orgId, "FY2025 AR5", "OPERATIONAL_CONTROL");
 		putBoundary(ar5, plant);
-		classify(syncAndGetAssignmentId(ar5, topUp), R410A_FACTOR);
+		classify(syncAndGetAssignmentId(ar5, topUp), r410a(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + ar5 + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + diesel + "')].id").getFirst(),
-				DIESEL_FACTOR);
+				diesel(orgId));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + waste + "')].id").getFirst(),
-				LANDFILL_FACTOR);
+				landfill(orgId));
 		freeze(ar5);
 		run(ar5, "Run 001").andExpect(status().isCreated())
 			.andExpect(jsonPath("$.lines[?(@.activityId == '" + topUp + "')].kgCo2e").value(163497.5))
@@ -2356,12 +2465,12 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isCreated()));
 		String ar6Id = JsonPath.read(ar6, "$.id");
 		putBoundary(ar6Id, plant);
-		classify(syncAndGetAssignmentId(ar6Id, topUp), R410A_FACTOR);
+		classify(syncAndGetAssignmentId(ar6Id, topUp), r410a(orgId));
 		var ar6Listing = body(mvc.perform(get("/api/ghg/inventories/" + ar6Id + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + diesel + "')].id").getFirst(),
-				DIESEL_FACTOR);
+				diesel(orgId));
 		classify(JsonPath.<List<String>>read(ar6Listing, "$[?(@.activityId == '" + waste + "')].id").getFirst(),
-				LANDFILL_FACTOR);
+				landfill(orgId));
 		freeze(ar6Id);
 		var detail = body(run(ar6Id, "Run 001").andExpect(status().isCreated())
 			.andExpect(jsonPath("$.lines[?(@.activityId == '" + topUp + "')].kgCo2e").value(191717.5))
@@ -2389,7 +2498,7 @@ class GhgApiIntegrationTests {
 		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, pit);
-		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
 		freeze(inventoryId);
 		// two operations are neither in the boundary nor excluded with a reason: the gate blocks the run
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
@@ -2471,7 +2580,7 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"scope3Categories": ["MOBILE_COMBUSTION"]}"""))
 			.andExpect(status().isConflict());
-		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		prepare(inventoryId, diesel, diesel(orgId));
 		String runId = runAndGetId(inventoryId, "Run 001");
 
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
@@ -2550,9 +2659,9 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[?(@.activityId == '" + annual + "')].included").value(true))
 			.andExpect(jsonPath("$[?(@.activityId == '" + straddle + "')].included").value(true)));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + annual + "')].id").getFirst(),
-				DIESEL_FACTOR);
+				diesel(orgId));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + straddle + "')].id").getFirst(),
-				DIESEL_FACTOR);
+				diesel(orgId));
 		// coverage: diesel every month from the annual record; LPG in December only
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/coverage").with(asMember()))
 			.andExpect(jsonPath("$.length()").value(2))
@@ -2620,12 +2729,12 @@ class GhgApiIntegrationTests {
 		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, obuomId);
 		putBoundary(inventoryId, pit);
-		classify(syncAndGetAssignmentId(inventoryId, power), GRID_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, power), grid(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + diesel + "')].id").getFirst(),
-				DIESEL_FACTOR);
+				diesel(orgId));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + travel + "')].id").getFirst(),
-				"c4a1f001-0000-4000-8000-000000000010");
+				flight(orgId));
 		// the header the accountant types: an approver override, assurance, an intensity denominator
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/report-metadata").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -2689,12 +2798,12 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.header.publishedBy").value("kojo@ecoriv.com"))
 			.andExpect(jsonPath("$.header.supersededBy").value("FY2025 (restated)"));
 		// the correction inherits the boundary; classify its records again (ticket T-12 will carry them over)
-		classify(syncAndGetAssignmentId(correctionId, power), GRID_FACTOR);
+		classify(syncAndGetAssignmentId(correctionId, power), grid(orgId));
 		var restatedListing = body(mvc.perform(get("/api/ghg/inventories/" + correctionId + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(restatedListing, "$[?(@.activityId == '" + diesel + "')].id").getFirst(),
-				DIESEL_FACTOR);
+				diesel(orgId));
 		classify(JsonPath.<List<String>>read(restatedListing, "$[?(@.activityId == '" + travel + "')].id").getFirst(),
-				"c4a1f001-0000-4000-8000-000000000010");
+				flight(orgId));
 		freeze(correctionId);
 		String restated = runAndGetId(correctionId, "Run 001");
 		mvc.perform(get("/api/ghg/runs/" + restated + "/report").with(asMember()))
@@ -2718,10 +2827,10 @@ class GhgApiIntegrationTests {
 					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0.05, "source": "Supplier REC 2025",
 					 "meetsQualityCriteria": true, "coveredKwh": 400}"""))
 			.andExpect(status().isOk());
-		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + power + "')].id").getFirst(),
-				GRID_FACTOR);
+				grid(orgId));
 		freeze(inventoryId);
 		String runId = runAndGetId(inventoryId, "Run 001");
 
@@ -2761,7 +2870,7 @@ class GhgApiIntegrationTests {
 				+ "period_days,covered_days,period_share,kg_co2e,");
 		assertThat(rows).hasSize(3);
 		var dieselRow = java.util.Arrays.stream(rows).filter(row -> row.contains("Genset diesel")).findFirst().orElseThrow();
-		assertThat(dieselRow).contains("," + diesel + ",ACT-0001,").contains(",INV-2938,").contains("," + DIESEL_FACTOR + ",")
+		assertThat(dieselRow).contains("," + diesel + ",ACT-0001,").contains(",INV-2938,").contains("," + diesel(orgId) + ",")
 			.contains(",2660,").contains(",AR5,");
 		// byte-identical on a second download
 		assertThat(body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember())))).isEqualTo(csv);
@@ -2863,9 +2972,9 @@ class GhgApiIntegrationTests {
 		String gridId = JsonPath.read(grid, "$.id");
 		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, plant);
-		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
-		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + leak + "')].id").getFirst(), R410A_FACTOR);
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + leak + "')].id").getFirst(), r410a(orgId));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + power + "')].id").getFirst(), gridId);
 		freeze(inventoryId);
 		// the gate says what the report does with the CO2e-only factor
@@ -2973,15 +3082,17 @@ class GhgApiIntegrationTests {
 	void anOrganizationAddsItsOwnFactorsAndImportsAPack() throws Exception {
 		var orgId = createOrganization("Asante Gold Resources");
 		var plant = createFacility(orgId, "Obuom Processing Plant");
-		// the seeded library cites its sources; the district cooling assumption is not approved
-		var library = body(mvc.perform(get("/api/ghg/emission-factors").with(asMember()))
-			.andExpect(jsonPath("$[?(@.id == '" + DIESEL_FACTOR + "')].source")
+		// spec 02.10: an organization starts empty and owns every factor it holds
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
+			.andExpect(jsonPath("$.total").value(0));
+		var own = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("ids", diesel(orgId) + "," + grid(orgId)))
+			.andExpect(jsonPath("$.items[?(@.id == '" + diesel(orgId) + "')].source")
 				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("UK Government GHG Conversion Factors"))))
-			.andExpect(jsonPath("$[?(@.id == '" + DIESEL_FACTOR + "')].publicationYear").value(2025))
-			.andExpect(jsonPath("$[?(@.id == '" + GRID_FACTOR + "')].co2eOnly").value(false))
-			.andExpect(jsonPath("$[?(@.id == '" + COOLING_FACTOR + "')].source")
-				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("Ecoriv assumption")))));
-		assertThat(JsonPath.<List<Object>>read(library, "$[*].organizationId")).containsOnlyNulls();
+			.andExpect(jsonPath("$.items[?(@.id == '" + grid(orgId) + "')].co2eOnly").value(false)));
+		assertThat(JsonPath.<List<Object>>read(own, "$.items[*].organizationId"))
+			.isNotEmpty()
+			.doesNotContainNull();
 		// a supplier-specific factor with its provenance, unapproved until the sustainability lead signs it off
 		var hfo = body(mvc
 			.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
@@ -2997,19 +3108,17 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.approved").value(false))
 			.andExpect(jsonPath("$.validTo").value("2025-12-31")));
 		String hfoId = JsonPath.read(hfo, "$.id");
-		// an unregistered unit is refused; a library factor cannot be edited; another tenant cannot see the factor
+		// an unregistered unit is refused, and another tenant cannot see the factor
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"name": "Drums", "defaultScope": "SCOPE_1", "defaultCategory": "STATIONARY_COMBUSTION",
 					 "unit": "drum", "kgCo2ePerUnit": 500, "source": "Site estimate"}"""))
 			.andExpect(status().isConflict());
-		mvc.perform(post("/api/ghg/emission-factors/" + DIESEL_FACTOR + "/unapprove").with(asMember()).with(csrf()))
-			.andExpect(status().isConflict());
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asOutsider()))
 			.andExpect(status().isNotFound());
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).param("size", "200"))
 			.andExpect(jsonPath("$.items[?(@.id == '" + hfoId + "')].name").value("Heavy fuel oil (GOIL analysis 2025)"))
-			.andExpect(jsonPath("$.items[?(@.id == '" + DIESEL_FACTOR + "')]").isNotEmpty());
+			.andExpect(jsonPath("$.items[?(@.id == '" + diesel(orgId) + "')]").isNotEmpty());
 		// the gate blocks a run on an unapproved factor; approval clears it
 		var fuel = createActivity(orgId, plant, "HFO burned in the power plant", "10", "tonne", "2025-06-30");
 		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
@@ -3033,37 +3142,44 @@ class GhgApiIntegrationTests {
 		// a factor a run applied cannot be deleted
 		mvc.perform(delete("/api/ghg/emission-factors/" + hfoId).with(asMember()).with(csrf()))
 			.andExpect(status().isConflict());
-		// the packs: the mining pack imports its factors, twice over without duplicates
+		// the packs: after spec 02.9 the catalogue offers DESNZ and Ghana, and nothing else
 		mvc.perform(get("/api/ghg/factor-packs").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2))
 			.andExpect(jsonPath("$[?(@.id == 'defra-2026')].factorCount").value(org.hamcrest.Matchers.hasItem(
 					org.hamcrest.Matchers.greaterThan(1000))))
-			.andExpect(jsonPath("$[?(@.id == 'sector-mining')]").isNotEmpty())
-			.andExpect(jsonPath("$[?(@.id == 'refrigerants-ar5')]").isNotEmpty());
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+			.andExpect(jsonPath("$[?(@.id == 'ghana')].factorCount")
+				.value(org.hamcrest.Matchers.hasItem(7)));
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import").with(asMember())
 			.with(csrf()))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.created").value(org.hamcrest.Matchers.greaterThan(40)))
+			.andExpect(jsonPath("$.created").value(org.hamcrest.Matchers.greaterThan(1000)))
 			.andExpect(jsonPath("$.versioned").value(0))
 			// spec 02.6: the result names the edition imported, not the family
-			.andExpect(jsonPath("$.edition").value("sector-mining"))
+			.andExpect(jsonPath("$.edition").value("defra-2026"))
 			// spec 02.6: every row of a shipped pack is in a unit the registry converts
 			.andExpect(jsonPath("$.skippedUnits").isEmpty());
 		// spec 02.6: the same edition again is idempotent, so every row reads unchanged and no version is cut
-		var again = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import")
+		var again = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import")
 			.with(asMember()).with(csrf())).andExpect(jsonPath("$.created").value(0))
 			.andExpect(jsonPath("$.versioned").value(0)));
-		assertThat(JsonPath.<Integer>read(again, "$.unchanged")).isGreaterThan(40);
+		assertThat(JsonPath.<Integer>read(again, "$.unchanged")).isGreaterThan(1000);
+		// spec 02.6: the Ghana edition applies from 2025-01-01, which falls inside the frozen FY2025,
+		// so importing it here is refused. A reported period keeps the factors it reported with.
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import").with(asMember())
+			.with(csrf())).andExpect(status().isConflict());
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/no-such-pack/import").with(asMember())
 			.with(csrf())).andExpect(status().isNotFound());
-		// an imported blend follows the inventory's GWP set: R-407C is 23% HFC-32, 25% HFC-125, 52% HFC-134a
 		var factors = allFactors(orgId);
-		String r407c = JsonPath.<List<String>>read(factors, "$[?(@.name == 'Refrigerant R-407C leakage')].id").getFirst();
-		assertThat(JsonPath.<List<String>>read(factors, "$[?(@.name == 'Refrigerant R-407C leakage')].blendComposition")
-			.getFirst()).isEqualTo("23% HFC-32, 25% HFC-125, 52% HFC-134a");
-		assertThat(JsonPath.<List<String>>read(factors, "$[?(@.name == 'Refrigerant R-407C leakage')].pack").getFirst())
-			.isEqualTo("sector-mining");
-		assertThat(JsonPath.<List<Boolean>>read(factors, "$[?(@.name == 'Grid electricity T&D losses, Ghana (derived)')].approved")
-			.getFirst()).isFalse();
+		// DESNZ publishes its refrigerant blends as a CO2e figure with the gas mass beside it, and
+		// no composition: the refrigerants pack that carried compositions left with spec 02.9, so a
+		// blend imported from a pack no longer reconverts. The mass is still reported as a mass.
+		String r407c = JsonPath.<List<String>>read(factors,
+				"$[?(@.packCode == 'DEFRA:Refrigerant_other:Blends_R407C:Emissions_including_only_Kyoto_products:kg')].id")
+			.getFirst();
+		assertThat(JsonPath.<List<String>>read(factors, "$[?(@.id == '" + r407c + "')].pack").getFirst())
+			.isEqualTo("defra-2026");
+		assertThat(JsonPath.<List<Object>>read(factors, "$[?(@.id == '" + r407c + "')].blendComposition").getFirst())
+			.isNull();
 		var leak = createActivity(orgId, plant, "R-407C top-up", "10", "kg", "2025-08-01");
 		var ar6 = body(mvc
 			.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
@@ -3080,11 +3196,11 @@ class GhgApiIntegrationTests {
 						{"reason": "NOT_APPLICABLE", "justification": "not a source of this inventory", "estimatedKgCo2e": 0, "emitsNothing": true}"""))
 			.andExpect(status().isOk());
 		freeze(ar6Id);
-		// AR6: 0.23 x 771 + 0.25 x 3,740 + 0.52 x 1,530 = 177.33 + 935 + 795.6 = 1,907.93 per kg; 10 kg = 19,079.3
+		// 10 kg of gas at the published 1,624 kg CO2e per kg, and 10 kg of HFCs in the by-gas table
 		run(ar6Id, "Run 001").andExpect(status().isCreated())
-			.andExpect(jsonPath("$.lines[0].kgCo2ePerUnit").value(1907.93))
-			.andExpect(jsonPath("$.lines[0].kgCo2e").value(19079.3))
-			.andExpect(jsonPath("$.lines[0].blendGwpSource").value("AR6"));
+			.andExpect(jsonPath("$.lines[0].kgCo2ePerUnit").value(1624.0))
+			.andExpect(jsonPath("$.lines[0].kgCo2e").value(16240.0))
+			.andExpect(jsonPath("$.run.byGas.hfcsKg").value(10.0));
 	}
 
 	/**
@@ -3096,7 +3212,7 @@ class GhgApiIntegrationTests {
 	@Test
 	void importDoesNotUnretireAFactorWhoseValidityWasEnded() throws Exception {
 		var orgId = createOrganization("Asante Gold Resources");
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
 		var imported = allFactors(orgId);
 		String dieselId = JsonPath.<List<String>>read(imported,
@@ -3116,7 +3232,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.validTo").value("2025-12-31"))
 			.andExpect(jsonPath("$.locallyEdited").value(true));
 		// the same pack again leaves the edited row exactly as it is and names it as a conflict
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import").with(asMember())
 			.with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.conflicts").value(org.hamcrest.Matchers.hasItem(dieselCode)));
@@ -3356,7 +3472,7 @@ class GhgApiIntegrationTests {
 		String assignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + diesel + "')].id").getFirst();
 		mvc.perform(put("/api/ghg/assignments/" + assignment + "/classify").with(as(abena)).with(csrf())
 			.contentType("application/json").content("""
-					{"emissionFactorId": "%s"}""".formatted(DIESEL_FACTOR)))
+					{"emissionFactorId": "%s"}""".formatted(diesel(orgId))))
 			.andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(as(abena)).with(csrf()))
 			.andExpect(status().isOk());
@@ -3478,7 +3594,7 @@ class GhgApiIntegrationTests {
 		var assignment = syncAndGetAssignmentId(inventoryId, diesel);
 		mvc.perform(put("/api/ghg/assignments/" + assignment + "/classify").with(asAdmin(admin)).with(csrf())
 			.contentType("application/json").content("""
-					{"emissionFactorId": "%s"}""".formatted(DIESEL_FACTOR)))
+					{"emissionFactorId": "%s"}""".formatted(diesel(orgId))))
 			.andExpect(status().isOk());
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
 			.andExpect(jsonPath("$[?(@.action == 'CLASSIFIED')].actor")
@@ -3546,7 +3662,7 @@ class GhgApiIntegrationTests {
 		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
 		var inventoryId = createInventory(orgId, "FY2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, plant);
-		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		prepare(inventoryId, diesel, diesel(orgId));
 		var runId = runAndGetId(inventoryId, "Run 001");
 		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
@@ -3733,7 +3849,7 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"reason": "NOT_APPLICABLE", "justification": "grinding media wear is not a combustion source", "estimatedKgCo2e": 0, "emitsNothing": true}"""))
 			.andExpect(status().isOk());
-		classify(dieselAssignment, DIESEL_FACTOR);
+		classify(dieselAssignment, diesel(orgId));
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/report-metadata").with(asMember()).with(csrf())
 			.contentType("application/json")
 			.content("""
@@ -3863,21 +3979,21 @@ class GhgApiIntegrationTests {
 		// mass against a per-litre factor needs a density; with the typical one the gate warns, with the supplier's it is silent
 		mvc.perform(put("/api/ghg/assignments/" + massAssignment + "/classify").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"emissionFactorId": "%s"}""".formatted(DIESEL_FACTOR)))
+					{"emissionFactorId": "%s"}""".formatted(diesel(orgId))))
 			.andExpect(status().is(422))
 			.andExpect(jsonPath("$.errors.densityId").exists());
 		mvc.perform(put("/api/ghg/assignments/" + massAssignment + "/classify").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"emissionFactorId": "%s", "densityId": "%s"}""".formatted(DIESEL_FACTOR, typicalDensity)))
+					{"emissionFactorId": "%s", "densityId": "%s"}""".formatted(diesel(orgId), typicalDensity)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.densityMaterial").value("Diesel"));
-		classify(drumAssignment, DIESEL_FACTOR);
+		classify(drumAssignment, diesel(orgId));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[3].findings[?(@.severity == 'WARNING')].message")
 				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("typical density of Diesel"))));
 		mvc.perform(put("/api/ghg/assignments/" + massAssignment + "/classify").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"emissionFactorId": "%s", "densityId": "%s"}""".formatted(DIESEL_FACTOR, supplierDensity)))
+					{"emissionFactorId": "%s", "densityId": "%s"}""".formatted(diesel(orgId), supplierDensity)))
 			.andExpect(status().isOk());
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[3].findings[?(@.message =~ /.*typical density.*/)]").isEmpty());
@@ -4067,7 +4183,7 @@ class GhgApiIntegrationTests {
 					{"financialControlOverride": true}"""))
 			.andExpect(jsonPath("$.accountingShare").value(1));
 		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
-		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
 		freeze(inventoryId);
 		var versionId = JsonPath.<String>read(body(mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))),
 				"$.currentBoundaryVersionId");
@@ -4091,7 +4207,7 @@ class GhgApiIntegrationTests {
 		reopen(inventoryId);
 		// a second record makes the comparison run 10% heavier: 2,660 + 266 = 2,926 vs 2,660
 		var more = createActivity(orgId, pit, "Haul fleet diesel, corrected", "100", "litre", "2025-06-30");
-		classify(syncAndGetAssignmentId(inventoryId, more), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, more), diesel(orgId));
 		freeze(inventoryId);
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -4115,6 +4231,12 @@ class GhgApiIntegrationTests {
 	@Test
 	void facilityAttributesSuggestTheGridFactorAndRecordsInheritTheLease() throws Exception {
 		var orgId = createOrganization("Sankofa Gold plc");
+		// spec 02.10: a grid region reaches a factor by importing the pack that publishes the grid,
+		// which is where the row identifier naming the country comes from (spec 03.4)
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import").with(asMember())
+			.with(csrf())).andExpect(status().isOk());
+		var ghanaGrid = JsonPath.<List<String>>read(allFactors(orgId),
+				"$[?(@.packCode == 'GHANA:grid:GHA:2024')].id").getFirst();
 		// a warehouse leased in under an operating lease from July, in Ghana: the grid follows the country
 		var warehouse = mvc.perform(post("/api/ghg/organizations/" + orgId + "/facilities").with(asMember()).with(csrf())
 			.contentType("application/json")
@@ -4139,23 +4261,23 @@ class GhgApiIntegrationTests {
 		putBoundary(inventoryId, warehouseId);
 		var augustAssignment = syncAndGetAssignmentId(inventoryId, power);
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
-		// the seeded Ghana grid is suggested for region GHA; the June record is before the lease
+		// the Ghana pack's grid row is suggested for region GHA; the June record is before the lease
 		assertThat(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + power + "')].suggestedFactorId").getFirst())
-			.isEqualTo(GRID_FACTOR);
+			.isEqualTo(ghanaGrid);
 		assertThat(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + power + "')].inheritedLeaseType").getFirst())
 			.isEqualTo("OPERATING_LEASE_IN");
 		assertThat(JsonPath.<List<Object>>read(listing, "$[?(@.activityId == '" + junePower + "')].inheritedLeaseType").getFirst())
 			.isNull();
 		// classifying with no lease type applies the inherited one: Appendix F under equity share puts an operating
 		// lease in scope 3 upstream leased assets; ignoring the facility's lease keeps scope 2
-		classify(augustAssignment, GRID_FACTOR);
+		classify(augustAssignment, grid(orgId));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
 			.andExpect(jsonPath("$[?(@.activityId == '" + power + "')].leaseType").value("OPERATING_LEASE_IN"))
 			.andExpect(jsonPath("$[?(@.activityId == '" + power + "')].scope").value("SCOPE_3"))
 			.andExpect(jsonPath("$[?(@.activityId == '" + power + "')].category").value("UPSTREAM_LEASED_ASSETS"));
 		mvc.perform(put("/api/ghg/assignments/" + augustAssignment + "/classify").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"emissionFactorId": "%s", "ignoreFacilityLease": true}""".formatted(GRID_FACTOR)))
+					{"emissionFactorId": "%s", "ignoreFacilityLease": true}""".formatted(grid(orgId))))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.leaseType").doesNotExist())
 			.andExpect(jsonPath("$.scope").value("SCOPE_2"));
@@ -4224,7 +4346,7 @@ class GhgApiIntegrationTests {
 		var dieselAssignment = syncAndGetAssignmentId(source, diesel);
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + source + "/assignments").with(asMember())));
 		String lpgAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + lpg + "')].id").getFirst();
-		classifyAs(dieselAssignment, DIESEL_FACTOR, "SCOPE_1", "MOBILE_COMBUSTION").andExpect(status().isOk());
+		classifyAs(dieselAssignment, diesel(orgId), "SCOPE_1", "MOBILE_COMBUSTION").andExpect(status().isOk());
 		mvc.perform(put("/api/ghg/assignments/" + lpgAssignment + "/exclude").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"reason": "METHODOLOGY", "justification": "camp LPG is below the materiality threshold", "estimatedKgCo2e": 750}"""))
@@ -4287,7 +4409,7 @@ class GhgApiIntegrationTests {
 		String lpgInCorrection = JsonPath.<List<String>>read(correctionListing, "$[?(@.activityId == '" + lpg + "')].id").getFirst();
 		mvc.perform(put("/api/ghg/assignments/" + lpgInCorrection + "/include").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
-		classify(lpgInCorrection, DIESEL_FACTOR);
+		classify(lpgInCorrection, diesel(orgId));
 		mvc.perform(post("/api/ghg/inventories/" + correctionId + "/assignments/sync").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		var correctionListing2 = body(mvc.perform(get("/api/ghg/inventories/" + correctionId + "/assignments").with(asMember())));
@@ -4319,7 +4441,7 @@ class GhgApiIntegrationTests {
 		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, pit);
-		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		prepare(inventoryId, diesel, diesel(orgId));
 		var runId = runAndGetId(inventoryId, "Run 001");
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -4372,14 +4494,11 @@ class GhgApiIntegrationTests {
 		var flights = createActivity(orgId, pit, "Staff flights", "5000", "passenger-km", "2025-05-10");
 		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, pit);
-		classify(syncAndGetAssignmentId(inventoryId, power), GRID_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, power), grid(orgId));
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		String flightsAssignment = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + flights + "')].id").getFirst();
-		// business travel: the seeded flight factor
-		var factors = allFactors(orgId);
-		String flightFactor = JsonPath.<List<String>>read(factors,
-				"$[?(@.defaultCategory == 'BUSINESS_TRAVEL' && @.unit == 'passenger-km' && @.approved == true)].id").getFirst();
-		classify(flightsAssignment, flightFactor);
+		// business travel: the organization's own flight factor (spec 02.10 leaves no seeded one)
+		classify(flightsAssignment, flight(orgId));
 
 		// an instrument with one criterion unanswered is not applied, and the gate counts it
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/market-factors/" + pit).with(asMember()).with(csrf())
@@ -4801,7 +4920,7 @@ class GhgApiIntegrationTests {
 		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, mine);
 		putBoundary(inventoryId, plant);
-		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		prepare(inventoryId, diesel, diesel(orgId));
 		var runId = runAndGetId(inventoryId, "Run 001");
 		mvc.perform(get("/api/ghg/runs/" + runId).with(asMember()))
 			.andExpect(jsonPath("$.lines[0].recordRef").value("ACT-0001"));
@@ -4860,8 +4979,8 @@ class GhgApiIntegrationTests {
 		excludeEntity(source, wassa, "METHODOLOGY", "0% under operational control");
 		excludeEntity(source, ahafo, "METHODOLOGY", "Methodology exclusion, 0% under operational control");
 		excludeEntity(source, bonsu, "NON_GHG", "Royalty holder: no operations of its own");
-		classifyLeased(syncAndGetAssignmentId(source, officeDiesel), DIESEL_FACTOR, "OPERATING_LEASE_IN");
-		classifyLeased(syncAndGetAssignmentId(source, officePower), GRID_FACTOR, "OPERATING_LEASE_IN");
+		classifyLeased(syncAndGetAssignmentId(source, officeDiesel), diesel(orgId), "OPERATING_LEASE_IN");
+		classifyLeased(syncAndGetAssignmentId(source, officePower), grid(orgId), "OPERATING_LEASE_IN");
 		mvc.perform(get("/api/ghg/inventories/" + source + "/assignments").with(asMember()))
 			.andExpect(jsonPath("$[?(@.activityId == '" + officeDiesel + "')].scope").value("SCOPE_1"))
 			.andExpect(jsonPath("$[?(@.activityId == '" + officePower + "')].scope").value("SCOPE_2"))
@@ -4893,8 +5012,8 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[?(@.activityId == '" + officePower + "')].scope").value("SCOPE_3"))
 			.andExpect(jsonPath("$[?(@.activityId == '" + officePower + "')].inherited").value(true));
 		// the first review re-examines the automatic exclusions against the new boundary
-		classify(syncAndGetAssignmentId(equity, wassaDiesel), DIESEL_FACTOR);
-		classify(syncAndGetAssignmentId(equity, ahafoDiesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(equity, wassaDiesel), diesel(orgId));
+		classify(syncAndGetAssignmentId(equity, ahafoDiesel), diesel(orgId));
 		mvc.perform(get("/api/ghg/inventories/" + equity + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'ERROR')]").isEmpty());
 		freeze(equity);
@@ -4966,7 +5085,7 @@ class GhgApiIntegrationTests {
 		putBoundary(equity, pit);
 		excludeEntity(equity, wassa, "METHODOLOGY", "Associate: not operated by the company");
 		excludeEntity(equity, bonsu, "NON_GHG", "Royalty holder: no operations of its own");
-		classify(syncAndGetAssignmentId(equity, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(equity, diesel), diesel(orgId));
 		freeze(equity);
 		mvc.perform(get("/api/ghg/inventories/" + equity + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.ready").value(false))
@@ -5025,7 +5144,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.errors.records[0].problem").value("is not classified"));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.freezeBlockers.length()").value(2));
-		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(asMember()).with(csrf()))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.startsWith("1 record blocks the freeze: ACT-0002")));
@@ -5087,7 +5206,7 @@ class GhgApiIntegrationTests {
 		var diesel = createActivity(orgId, pit, "Genset diesel", "1000", "litre", "2025-06-30");
 		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, pit);
-		prepare(inventoryId, diesel, DIESEL_FACTOR);
+		prepare(inventoryId, diesel, diesel(orgId));
 		var runId = runAndGetId(inventoryId, "Run 003");
 
 		// a preparer cannot designate; a reviewer's note over 500 characters is refused; the note lands everywhere
@@ -5172,14 +5291,14 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk());
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
 		for (var activity : electricity) {
-			classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + activity + "')].id").getFirst(), GRID_FACTOR);
+			classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + activity + "')].id").getFirst(), grid(orgId));
 		}
 		for (var activity : diesel.subList(0, 10)) {
-			classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + activity + "')].id").getFirst(), DIESEL_FACTOR);
+			classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + activity + "')].id").getFirst(), diesel(orgId));
 		}
 		// one camp genset is leased in: under equity share an operating lease lands in scope 3, category 8
 		classifyLeased(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + diesel.get(10) + "')].id").getFirst(),
-				DIESEL_FACTOR, "OPERATING_LEASE_IN");
+				diesel(orgId), "OPERATING_LEASE_IN");
 
 		// the counts describe the whole view whatever the page; the filters narrow the items
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
@@ -5214,75 +5333,74 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.total").value(25));
 	}
 
-	// --- factor identity across packs and sector-pack completeness (specs 02.3, 02.4) ---
+	// --- factor identity across packs (spec 02.3) ---
 
-	/** Audit findings F22 and F23 (spec 02.3): the publication row is the factor's identity. */
+	/**
+	 * Audit findings F22 and F23 (spec 02.3): the publication row is the factor's
+	 * identity, and a row carries the provenance of the publication it comes
+	 * from rather than of the pack that delivered it. The Ghana pack is what
+	 * shows the difference now that spec 02.9 has narrowed the catalogue: it is
+	 * published in 2025 under its own name, and its grid rows are Ember's, with
+	 * Ember's data years. That one row delivered by two packs gains a tag rather
+	 * than a copy is proved in {@code FactorPackImportIntegrationTests}, on two
+	 * editions that share a code; no two shipped packs do.
+	 */
 	@Test
 	void aPublicationRowIsOneFactorWhateverPackDeliversIt() throws Exception {
 		var orgId = createOrganization("Asante Gold Resources (identity)");
-		var first = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/refrigerants-ar5/import")
+		var first = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import")
 			.with(asMember()).with(csrf())).andExpect(status().isOk()).andExpect(jsonPath("$.tagged").value(0)));
-		assertThat(JsonPath.<Integer>read(first, "$.created")).isGreaterThan(40);
-		// the second pack selects rows the first already delivered: it tags them, it never copies them
-		var second = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import")
-			.with(asMember()).with(csrf())).andExpect(status().isOk()));
-		assertThat(JsonPath.<Integer>read(second, "$.tagged")).isGreaterThan(0);
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-oil-and-gas/import").with(asMember())
-			.with(csrf())).andExpect(status().isOk());
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import").with(asMember()).with(csrf()))
-			.andExpect(status().isOk());
+		assertThat(JsonPath.<Integer>read(first, "$.created")).isEqualTo(7);
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
 		var factors = allFactors(orgId);
+		// the derived T&D loss factor arrives unapproved: its year's loss rate is not confirmed
+		assertThat(JsonPath.<List<Boolean>>read(factors,
+				"$[?(@.name == 'Grid electricity T&D losses, Ghana (derived)')].approved").getFirst()).isFalse();
 		List<String> codes = JsonPath.<List<String>>read(factors, "$[*].packCode")
 			.stream()
 			.filter(java.util.Objects::nonNull)
 			.toList();
 		assertThat(codes).isNotEmpty().doesNotHaveDuplicates();
-		// "Refrigerant R-410A leakage (/kg)" appears once among the organization's own factors, carrying every
-		// pack that delivered it (the shared library keeps its own row: spec 02.3 merges nothing across tiers)
-		var own = "$[?(@.organizationId == '" + orgId + "' && @.name == 'Refrigerant R-410A leakage')]";
-		List<String> r410a = JsonPath.read(factors, own + ".id");
-		assertThat(r410a).hasSize(1);
-		assertThat(JsonPath.<List<List<String>>>read(factors, own + ".packs").getFirst())
-			.contains("refrigerants-ar5", "sector-mining", "sector-oil-and-gas");
-		// a sector-pack row cites the publication it comes from, not the pack that delivered it
-		var lime = "$[?(@.organizationId == '" + orgId + "' && @.name == 'Quicklime (high-calcium lime) calcination')]";
-		assertThat(JsonPath.<List<String>>read(factors, lime + ".source").getFirst())
-			.startsWith("IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3");
-		assertThat(JsonPath.<List<Integer>>read(factors, lime + ".publicationYear").getFirst()).isEqualTo(2006);
-		assertThat(JsonPath.<List<Integer>>read(factors, lime + ".dataYear").getFirst()).isEqualTo(2006);
-		assertThat(JsonPath.<List<List<String>>>read(factors, lime + ".packs").getFirst()).contains("sector-mining");
+		// the Ghana grid row cites Ember and Ember's data year, not the Ghana pack and its 2025
+		var grid = "$[?(@.organizationId == '" + orgId + "' && @.packCode == 'GHANA:grid:GHA:2024')]";
+		List<String> gridIds = JsonPath.read(factors, grid + ".id");
+		assertThat(gridIds).hasSize(1);
+		assertThat(JsonPath.<List<String>>read(factors, grid + ".source").getFirst())
+			.startsWith("Ember Yearly Electricity Data");
+		assertThat(JsonPath.<List<Integer>>read(factors, grid + ".dataYear").getFirst()).isEqualTo(2024);
+		assertThat(JsonPath.<List<List<String>>>read(factors, grid + ".packs").getFirst()).contains("ghana");
 		// approval is a property of the one factor: a re-import neither approves nor unapproves it
-		String r410aId = r410a.getFirst();
-		mvc.perform(post("/api/ghg/emission-factors/" + r410aId + "/unapprove").with(asMember()).with(csrf()))
+		String gridId = gridIds.getFirst();
+		mvc.perform(post("/api/ghg/emission-factors/" + gridId + "/unapprove").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
-			.param("ids", r410aId))
-			.andExpect(jsonPath("$.items[?(@.id == '" + r410aId + "')].approved")
+			.param("ids", gridId))
+			.andExpect(jsonPath("$.items[?(@.id == '" + gridId + "')].approved")
 				.value(org.hamcrest.Matchers.hasItem(false)));
 		// the picker's filters: unapproved rows hidden unless asked for, and a search over name, source and tag
 		var approvedOnly = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors")
-			.with(asMember()).param("includeUnapproved", "false").param("ids", r410aId)));
-		assertThat(JsonPath.<List<String>>read(approvedOnly, "$.items[?(@.id == '" + r410aId + "')].id")).isEmpty();
+			.with(asMember()).param("includeUnapproved", "false").param("ids", gridId)));
+		assertThat(JsonPath.<List<String>>read(approvedOnly, "$.items[?(@.id == '" + gridId + "')].id")).isEmpty();
 		var searched = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
-			.param("q", "sector-oil-and-gas")));
+			.param("q", "ghana")));
 		assertThat(JsonPath.<Integer>read(searched, "$.total")).isPositive()
 			.isLessThan(JsonPath.<List<String>>read(factors, "$[*].id").size());
 		// the report's factor table prints the publication, its years and the tags apart from the source
 		var plant = createFacility(orgId, "Obuom Processing Plant");
-		var activity = createActivity(orgId, plant, "Lime for the CIL circuit", "40", "tonne", "2025-06-30");
+		var activity = createActivity(orgId, plant, "Grid power, Obuom", "40", "kWh", "2025-06-30");
 		var inventoryId = createInventory(orgId, "FY2025 identity", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, plant);
-		String limeId = JsonPath.<List<String>>read(factors, lime + ".id").getFirst();
-		prepare(inventoryId, activity, limeId);
+		mvc.perform(post("/api/ghg/emission-factors/" + gridId + "/approve").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		prepare(inventoryId, activity, gridId);
 		var runId = runAndGetId(inventoryId, "Run 001");
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
-			.andExpect(jsonPath("$.factors[0].publicationYear").value(2006))
-			.andExpect(jsonPath("$.factors[0].dataYear").value(2006))
-			.andExpect(jsonPath("$.factors[0].packs").value(org.hamcrest.Matchers.hasItem("sector-mining")))
+			.andExpect(jsonPath("$.factors[0].publicationYear").value(2025))
+			.andExpect(jsonPath("$.factors[0].dataYear").value(2024))
+			.andExpect(jsonPath("$.factors[0].packs").value(org.hamcrest.Matchers.hasItem("ghana")))
 			.andExpect(jsonPath("$.factors[0].reportingBasis").value("SCOPES"));
 	}
 
@@ -5299,16 +5417,16 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
 
-		// the default page is bounded: 1,868 imported rows plus the shared library, 50 at a time
+		// the default page is bounded: 1,868 imported rows, 50 at a time
 		var first = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()))
 			.andExpect(status().isOk()));
 		assertThat(JsonPath.<List<String>>read(first, "$.items[*].id")).hasSize(50);
+		// exactly the edition, and nothing else: spec 02.10 leaves no seeded rows beside it
 		var total = JsonPath.<Integer>read(first, "$.total");
-		assertThat(total).isGreaterThan(1868);
+		assertThat(total).isEqualTo(1868);
 		assertThat(JsonPath.<Integer>read(first, "$.size")).isEqualTo(50);
-		// the organization's own factors come first, so the picker's grouping survives paging
 		assertThat(JsonPath.<List<Object>>read(first, "$.items[?(@.organizationId == null)].id")).isEmpty();
-		// and no caller can ask for the library in one go
+		// and no caller can ask for every factor in one go
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).param("size", "5000"))
 			.andExpect(jsonPath("$.size").value(200))
 			.andExpect(jsonPath("$.items.length()").value(200));
@@ -5369,11 +5487,10 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.total").value(1))
 			.andExpect(jsonPath("$.items[0].id").value(butaneId));
 
-		// the shared library is its own tier, and stays small
+		// spec 02.10: there is no tier to ask for, and every row the page returns is the organization's
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
-			.param("tier", "LIBRARY").param("size", "200"))
-			.andExpect(jsonPath("$.items[?(@.organizationId != null)]").isEmpty())
-			.andExpect(jsonPath("$.total").value(org.hamcrest.Matchers.lessThan(total)));
+			.param("size", "200"))
+			.andExpect(jsonPath("$.items[?(@.organizationId == null)]").isEmpty());
 	}
 
 	/** Audit finding F56 (spec 02.4): a Montreal Protocol gas is disclosed, never counted in a scope. */
@@ -5381,7 +5498,7 @@ class GhgApiIntegrationTests {
 	void aNonKyotoGasIsReportedOutsideTheScopes() throws Exception {
 		var orgId = createOrganization("Asante Gold Resources (non-Kyoto)");
 		var plant = createFacility(orgId, "Obuom Processing Plant");
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/sector-mining/import").with(asMember())
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/defra-2026/import").with(asMember())
 			.with(csrf())).andExpect(status().isOk());
 		var factors = allFactors(orgId);
 		var hcfc = "$[?(@.name == 'HCFC-22 (R-22)')]";
@@ -5392,7 +5509,7 @@ class GhgApiIntegrationTests {
 		var topUp = createActivity(orgId, plant, "R-22 top-up", "85", "kg", "2025-08-01");
 		var inventoryId = createInventory(orgId, "FY2025 non-Kyoto", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, plant);
-		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
 		var topUpAssignment = syncAndGetAssignmentId(inventoryId, topUp);
 		// a gas outside the scopes cannot be classified into scope 3
 		classifyAs(topUpAssignment, hcfcId, "SCOPE_3", "PURCHASED_GOODS_SERVICES").andExpect(status().isConflict());
@@ -5419,38 +5536,6 @@ class GhgApiIntegrationTests {
 		// the line is still a snapshot line, and the lines CSV carries its basis
 		var csv = body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember())));
 		assertThat(csv).contains("reporting_basis").contains("OUTSIDE_SCOPES_NON_KYOTO");
-	}
-
-	/** Spec 02.4: a gas recorded as itself follows the inventory's GWP set through the per-gas arithmetic. */
-	@Test
-	void aGasEmittedAsItselfFollowsTheGwpSet() throws Exception {
-		var orgId = createOrganization("Takoradi Gas (gases)");
-		var plant = createFacility(orgId, "Atuabo Gas Plant");
-		var library = body(mvc.perform(get("/api/ghg/emission-factors").with(asMember())));
-		String methane = JsonPath
-			.<List<String>>read(library, "$[?(@.name == 'Methane (CH4) emitted as gas, fossil origin')].id")
-			.getFirst();
-		var vent = createActivity(orgId, plant, "Compressor vent, measured", "12000", "kg", "2025-07-31");
-		var ar5 = createInventory(orgId, "FY2025 AR5", "OPERATIONAL_CONTROL");
-		putBoundary(ar5, plant);
-		prepare(ar5, vent, methane);
-		var ar5Run = runAndGetId(ar5, "Run 001");
-		mvc.perform(get("/api/ghg/runs/" + ar5Run + "/report").with(asMember()))
-			.andExpect(jsonPath("$.run.scope1KgCo2e").value(336000.0))
-			.andExpect(jsonPath("$.byGas[?(@.gas == 'CH4')].kg").value(org.hamcrest.Matchers.hasItem(12000.0)))
-			.andExpect(jsonPath("$.byGas[?(@.gas == 'CH4')].kgCo2e").value(org.hamcrest.Matchers.hasItem(336000.0)));
-		// the same 12 t of fossil methane on the AR6 basis
-		var ar6 = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember())
-			.with(csrf()).contentType("application/json").content("""
-					{"name": "FY2025 AR6", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
-					 "purpose": "Corporate reporting", "consolidationApproach": "OPERATIONAL_CONTROL",
-					 "gwpSet": "AR6"}""")).andExpect(status().isCreated()));
-		String ar6Id = JsonPath.read(ar6, "$.id");
-		putBoundary(ar6Id, plant);
-		prepare(ar6Id, vent, methane);
-		var ar6Run = runAndGetId(ar6Id, "Run 001");
-		mvc.perform(get("/api/ghg/runs/" + ar6Run + "/report").with(asMember()))
-			.andExpect(jsonPath("$.run.scope1KgCo2e").value(357600.0));
 	}
 
 	/**
@@ -5488,38 +5573,38 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"scope3Categories": ["FUEL_ENERGY_RELATED", "PURCHASED_GOODS_SERVICES"]}"""))
 			.andExpect(status().isOk());
-		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
-		classify(syncAndGetAssignmentId(inventoryId, power), GRID_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
+		classify(syncAndGetAssignmentId(inventoryId, power), grid(orgId));
 		// the contractor's fuel is already a scope 3 figure: its upstream emissions are the contractor's category 3
 		mvc.perform(put("/api/ghg/assignments/" + syncAndGetAssignmentId(inventoryId, hired) + "/classify")
 			.with(asMember()).with(csrf()).contentType("application/json").content("""
 					{"emissionFactorId": "%s", "scope": "SCOPE_3", "category": "PURCHASED_GOODS_SERVICES",
-					 "scopeJustification": "Contractor-owned fleet, purchased as a service"}""".formatted(DIESEL_FACTOR)))
+					 "scopeJustification": "Contractor-owned fleet, purchased as a service"}""".formatted(diesel(orgId))))
 			.andExpect(status().isOk());
 
 		// a pair whose units do not convert is refused, and so is a second rule of the same kind
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "WELL_TO_TANK"}"""
-				.formatted(DIESEL_FACTOR, tdId)))
+				.formatted(diesel(orgId), tdId)))
 			.andExpect(status().is(422))
 			.andExpect(jsonPath("$.errors.upstreamFactorId").exists());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "WELL_TO_TANK"}"""
-				.formatted(DIESEL_FACTOR, wttId)))
+				.formatted(diesel(orgId), wttId)))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.primaryFactorName").value("Diesel (100% mineral diesel)"))
 			.andExpect(jsonPath("$.upstreamFactorName").value("Well-to-tank diesel"));
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "WELL_TO_TANK"}"""
-				.formatted(DIESEL_FACTOR, wttId)))
+				.formatted(diesel(orgId), wttId)))
 			.andExpect(status().isConflict());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "TRANSMISSION_AND_DISTRIBUTION"}"""
-				.formatted(GRID_FACTOR, tdId)))
+				.formatted(grid(orgId), tdId)))
 			.andExpect(status().isCreated());
 		// the card counts the included scope 1 and scope 2 records each rule applies to
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()))
@@ -5550,7 +5635,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "TRANSMISSION_AND_DISTRIBUTION"}"""
-				.formatted(DIESEL_FACTOR, wttId)))
+				.formatted(diesel(orgId), wttId)))
 			.andExpect(status().isConflict());
 
 		var detail = body(run(inventoryId, "Run 001").andExpect(status().isCreated()));
@@ -5635,7 +5720,7 @@ class GhgApiIntegrationTests {
 		var haulage = createActivity(orgId, pit, "Haulage, tonne-km", "1200", "tonne-km", "2025-06-30");
 		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
 		putBoundary(inventoryId, pit);
-		classify(syncAndGetAssignmentId(inventoryId, diesel), DIESEL_FACTOR);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
 		var cyanideId = syncAndGetAssignmentId(inventoryId, cyanide);
 		var twinId = syncAndGetAssignmentId(inventoryId, twin);
 		var topUpId = syncAndGetAssignmentId(inventoryId, topUp);

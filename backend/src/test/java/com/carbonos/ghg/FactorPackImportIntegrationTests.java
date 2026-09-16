@@ -65,6 +65,11 @@ class FactorPackImportIntegrationTests {
 
 	private static final String SECOND = "importtest-2027";
 
+	/** A second family whose edition selects a row {@link #FIRST} already delivered (spec 02.3). */
+	private static final String SELECTION_FAMILY = "selectiontest";
+
+	private static final String SELECTION = "selectiontest-2026";
+
 	private static final String DIESEL = "TEST:diesel";
 
 	private static final String PETROL = "TEST:petrol";
@@ -146,16 +151,18 @@ class FactorPackImportIntegrationTests {
 		facilities.deleteAll();
 		entities.deleteAll();
 		organizations.deleteAll();
-		// the ten V43 seeded editions stay; everything this class published goes, newest first, because a
+		// the two seeded editions stay; everything this class published goes, newest first, because a
 		// successor holds a foreign key to the predecessor it superseded
 		notices.deleteAll();
-		var written = new java.util.ArrayList<>(editions.findAllByPackKeyOrderByEditionIdAsc(FAMILY));
-		java.util.Collections.reverse(written);
-		for (var edition : written) {
-			editions.delete(edition);
-			editions.flush();
+		for (var family : java.util.List.of(FAMILY, SELECTION_FAMILY)) {
+			var written = new java.util.ArrayList<>(editions.findAllByPackKeyOrderByEditionIdAsc(family));
+			java.util.Collections.reverse(written);
+			for (var edition : written) {
+				editions.delete(edition);
+				editions.flush();
+			}
+			families.findById(family).ifPresent(families::delete);
 		}
-		families.findById(FAMILY).ifPresent(families::delete);
 	}
 
 	// --- the catalogue fixture ----------------------------------------------
@@ -630,5 +637,66 @@ class FactorPackImportIntegrationTests {
 		assertThat(JsonPath.<List<String>>read(again, "$.discontinued")).isEmpty();
 		assertThat(emissionFactors.findAllByOrganizationIdAndPackCodeIsNotNull(UUID.fromString(orgId)))
 			.hasSize(created);
+	}
+
+	/**
+	 * An edition of a second family that selects the diesel row of
+	 * {@link #FIRST}: same code, same value, same provenance. That is what a
+	 * sector pack used to be, and what a curator can still author.
+	 */
+	void publishTheSelectionEdition() throws Exception {
+		mvc.perform(post("/api/admin/factor-packs").with(asCurator()).with(csrf()).contentType("application/json")
+			.content("""
+					{"packKey": "%s", "name": "A test selection", "kind": "SECTOR",
+					 "summary": "Selected from a test publication."}""".formatted(SELECTION_FAMILY)))
+			.andExpect(status().isCreated());
+		mvc.perform(post("/api/admin/factor-packs/" + SELECTION_FAMILY + "/editions").with(asCurator()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"editionId": "%s", "cloneFrom": null, "name": "A test selection 2026",
+					 "source": "Selection from a test publication, 2026 tables",
+					 "sourceUrl": "https://example.test/tables-2026.xlsx",
+					 "publicationYear": 2026, "gwpBasis": "AR5", "license": "See each factor's source",
+					 "retrieved": "2026-01-04", "notes": "For the tests.", "appliesFrom": "2026-01-01"}"""
+				.formatted(SELECTION)))
+			.andExpect(status().isCreated());
+		addRow(SELECTION, row(DIESEL, "Diesel", "litre", "2.66", 2026)).andExpect(status().isCreated());
+		uploadEvidence(SELECTION, "The 2026 tables, as published.");
+		publish(SELECTION, "2026-01-01");
+	}
+
+	/**
+	 * Spec 02.3: one publication row is one factor, whatever pack delivers it. A
+	 * second edition selecting a row the organization already holds adds its tag
+	 * rather than a copy or a new version, and the factor keeps citing the
+	 * publication it came from. No two shipped packs share a code since spec
+	 * 02.9 narrowed the catalogue to DESNZ and Ghana, so the two editions this
+	 * builds are what proves it.
+	 */
+	@Test
+	void aSecondPackSelectingTheSameRowTagsItRatherThanCopyingIt() throws Exception {
+		publishTheFirstEdition();
+		publishTheSelectionEdition();
+		var orgId = createOrganization("Asante Gold Resources (identity)");
+		var first = importEdition(orgId, FIRST);
+		assertThat(JsonPath.<Integer>read(first, "$.created")).isEqualTo(3);
+		assertThat(JsonPath.<Integer>read(first, "$.tagged")).isZero();
+
+		var second = importEdition(orgId, SELECTION);
+		// the row is already held with the same value, so it is tagged: nothing is created or versioned
+		assertThat(JsonPath.<Integer>read(second, "$.created")).isZero();
+		assertThat(JsonPath.<Integer>read(second, "$.versioned")).isZero();
+		assertThat(JsonPath.<Integer>read(second, "$.tagged")).isEqualTo(1);
+
+		var factors = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("size", "200")));
+		var diesel = "$.items[?(@.packCode == '" + DIESEL + "')]";
+		assertThat(JsonPath.<List<String>>read(factors, diesel + ".id")).as("one factor, not two").hasSize(1);
+		assertThat(JsonPath.<List<List<String>>>read(factors, diesel + ".packs").getFirst())
+			.containsExactlyInAnyOrder(FIRST, SELECTION);
+		// the tag says which pack delivered it; the source still says which publication it came from
+		assertThat(JsonPath.<List<String>>read(factors, diesel + ".source").getFirst())
+			.startsWith("A test publication, 2026 tables");
+		assertThat(emissionFactors.findAllByOrganizationIdAndPackCodeIsNotNull(UUID.fromString(orgId))).hasSize(3);
 	}
 }

@@ -25,10 +25,10 @@ function organization(myRole: Organization['myRole']): Organization {
 
 const openNotice: FactorPackNotice = {
   id: 'notice-1',
-  editionId: 'sector-mining-2027',
-  editionName: 'Mining sector pack 2027',
-  packKey: 'sector-mining',
-  predecessorEditionId: 'sector-mining-2026',
+  editionId: 'defra-2027',
+  editionName: 'DESNZ conversion factors 2027',
+  packKey: 'defra',
+  predecessorEditionId: 'defra-2026',
   status: 'OPEN',
   editionStatus: 'PUBLISHED',
   withdrawalReason: null,
@@ -67,9 +67,9 @@ const withdrawn: FactorPackNotice = {
 
 const diff: FactorPackDiff = {
   noticeId: 'notice-1',
-  editionId: 'sector-mining-2027',
-  editionName: 'Mining sector pack 2027',
-  predecessorEditionId: 'sector-mining-2026',
+  editionId: 'defra-2027',
+  editionName: 'DESNZ conversion factors 2027',
+  predecessorEditionId: 'defra-2026',
   appliesFrom: '2027-01-01',
   status: 'OPEN',
   rows: [
@@ -123,10 +123,10 @@ beforeEach(() => {
 test('the inbox lists one row per notice with what a decision would move', async () => {
   renderPage()
 
-  const row = (await screen.findByText('Mining sector pack 2027')).closest('tr')
+  const row = (await screen.findByText('DESNZ conversion factors 2027')).closest('tr')
   expect(row).not.toBeNull()
   const cells = within(row as HTMLElement)
-  expect(cells.getByText('sector-mining-2027', { exact: false })).toBeInTheDocument()
+  expect(cells.getByText('defra-2027', { exact: false })).toBeInTheDocument()
   // rows affected, rows moving more than five percent, and the estimated tonnage movement
   expect(cells.getByText('12')).toBeInTheDocument()
   expect(cells.getByText('3')).toBeInTheDocument()
@@ -153,9 +153,11 @@ test('reviewing a notice opens the diff beside the list', async () => {
   const user = userEvent.setup()
   renderPage()
 
-  await user.click(await screen.findByRole('button', { name: /Review Mining sector pack 2027/ }))
+  await user.click(
+    await screen.findByRole('button', { name: /Review DESNZ conversion factors 2027/ }),
+  )
 
-  const drawer = await screen.findByRole('dialog', { name: 'Mining sector pack 2027' })
+  const drawer = await screen.findByRole('dialog', { name: 'DESNZ conversion factors 2027' })
   expect(within(drawer).getByText('Diesel (average biofuel blend)')).toBeInTheDocument()
   expect(getFactorPackDiff).toHaveBeenCalledWith('notice-1')
 })

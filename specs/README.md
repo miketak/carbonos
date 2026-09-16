@@ -23,11 +23,13 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 02.1 | [Emission factor library, provenance and packs](02.1-emission-factor-library.md) | Ch. 6, 9, Scope 2 Guidance | Implemented |
 | 02.2 | [Units, densities, and custom units](02.2-units-densities-and-custom-units.md) | Ch. 6, 7 | Implemented |
 | 02.3 | [Factor identity across packs](02.3-factor-identity-across-packs.md) | Ch. 1, 7, 9 | Implemented |
-| 02.4 | [Sector pack completeness: gases as themselves, flaring, Montreal Protocol gases, purchased goods](02.4-sector-pack-completeness.md) | Ch. 4, 6, 9, Scope 3 Standard cat. 1 | Implemented |
+| 02.4 | [Sector pack completeness: gases as themselves, flaring, Montreal Protocol gases, purchased goods](02.4-sector-pack-completeness.md) | Ch. 4, 6, 9, Scope 3 Standard cat. 1 | Superseded in part by 02.9 |
 | 02.5 | [Factor pack editions: authoring, validation and publication](02.5-factor-pack-editions.md) | Ch. 1, 6, 9, ISO 14064-1 | Implemented |
 | 02.6 | [Versioned pack import: a factor's lineage and its vintages](02.6-versioned-pack-import.md) | Ch. 1, 9, ISO 14064-1 | Implemented |
 | 02.7 | [Adopting a new edition](02.7-adopting-a-new-edition.md) | Ch. 1, 5, 9, ISO 14064-1 | Implemented |
 | 02.8 | [Viewing a pack's factors](02.8-viewing-a-packs-factors.md) | Ch. 6, 9 | Approved |
+| 02.9 | [Narrowing the catalogue to DEFRA and Ghana](02.9-narrowing-the-catalogue-to-defra-and-ghana.md) | Ch. 6, 7, 9, ISO 14064-1 | Implemented |
+| 02.10 | [Retiring the shared factor library](02.10-retiring-the-shared-factor-library.md) | Ch. 6, 7, 9, ISO 14064-1 | Implemented |
 | 03 | [Organizational boundary](03-organizational-boundary.md) | Ch. 3 | Implemented |
 | 03.1 | [Legal entities and Table 1](03.1-legal-entities-and-table-1.md) | Ch. 3 | Implemented |
 | 03.2 | [Effective-dated membership](03.2-effective-dated-membership.md) | Ch. 3, 5 | Implemented |

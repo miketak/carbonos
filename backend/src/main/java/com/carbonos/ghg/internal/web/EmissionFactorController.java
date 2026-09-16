@@ -22,7 +22,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.ghg.internal.Dimension;
 import com.carbonos.ghg.internal.EmissionFactor;
-import com.carbonos.ghg.internal.FactorTier;
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.UnitConverter;
 import com.carbonos.ghg.internal.web.dto.EmissionFactorFacetsResponse;
@@ -45,31 +44,23 @@ class EmissionFactorController {
 		this.units = units;
 	}
 
-	@GetMapping("/emission-factors")
-	List<EmissionFactorResponse> library() {
-		return ghgService.listEmissionFactors().stream().map(this::toResponse).toList();
-	}
-
 	/**
-	 * One page of the shared library and the organization's own factors (spec
-	 * 02.1), filtered, ordered and paged by the database (FU-03).
+	 * One page of the organization's factors (spec 02.10), filtered, ordered
+	 * and paged by the database (FU-03).
 	 *
 	 * <p>{@code includeUnapproved=false} hides rows a preparer must not pick
 	 * unseen (spec 02.3) and {@code q} searches name, publication, the
-	 * publisher's taxonomy and the pack tags. {@code tier} chooses the shared
-	 * library or the organization's own rows; {@code sourceCategory},
+	 * publisher's taxonomy and the pack tags. {@code sourceCategory},
 	 * {@code sourceActivity} and {@code sourceDetail} filter on the
 	 * publisher's taxonomy (spec 02.5); {@code unit} and {@code dimension}
 	 * narrow to the factors a record in a given unit can be classified with
 	 * (spec 02.2); {@code ids} asks for named rows only, which is how a page
-	 * of records resolves the factors it already references. The rows come
-	 * back with the organization's own first, then the shared library.
+	 * of records resolves the factors it already references.
 	 */
 	@GetMapping("/organizations/{organizationId}/emission-factors")
 	EmissionFactorPageResponse list(@PathVariable UUID organizationId,
 			@RequestParam(defaultValue = "true") boolean includeUnapproved,
 			@RequestParam(required = false) String q,
-			@RequestParam(defaultValue = "ALL") FactorTier tier,
 			@RequestParam(required = false) String sourceCategory,
 			@RequestParam(required = false) String sourceActivity,
 			@RequestParam(required = false) String sourceDetail,
@@ -78,7 +69,7 @@ class EmissionFactorController {
 			@RequestParam(required = false) List<UUID> ids,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "50") int size) {
-		var query = new GhgService.FactorQuery(q, includeUnapproved, tier, sourceCategory, sourceActivity, sourceDetail,
+		var query = new GhgService.FactorQuery(q, includeUnapproved, sourceCategory, sourceActivity, sourceDetail,
 				unit, dimension == null ? Set.of() : Set.copyOf(dimension), ids, page, size);
 		var result = ghgService.searchEmissionFactors(organizationId, query);
 		// spec 02.6: a lineage with more than one vintage comes back with its chain, read for the whole page

@@ -48,11 +48,15 @@ fleet diesel record (1,250,000 US-gallon, corrected to 1,200,000), **R11**
 the ANFO record (8400 `tonne ANFO`), and "the drums record" the 5-drum
 record. The numbering skips refs the cases do not need.
 
-The cases name factors in short. The library lists them as **Diesel (100%
-mineral diesel)**, **Petrol (100% mineral petrol)**, **Grid electricity
-(Ghana, Ecoriv 2025)**, **Explosives detonation (ANFO, emulsion)**,
-**Commercial and industrial waste to landfill** and, from the pack
-imported in procedure 2, **Refrigerant R-407C leakage**.
+The cases name factors in short. Since spec 02.10 there is no seeded library,
+so every one of them comes from the two packs procedure 2 imports or was
+entered by hand there. From **DESNZ 2026**: **Liquid fuels: Diesel (100%
+mineral diesel)**, **Liquid fuels: Petrol (100% mineral petrol)**,
+**Commercial and industrial waste to landfill** and **Blends: R407C, Emissions
+including only Kyoto products**. From the **Ghana** pack: **Grid electricity,
+Ghana (2024)** and the other data years. No pack publishes an explosives
+factor since spec 02.9, so the cases use **Emulsion explosive (supplier)**,
+the organization's own factor from procedure 2, section F3.
 
 ## A. Review and the view
 
@@ -91,10 +95,10 @@ controls appear under it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open the picker on R1 (haul fleet diesel) and read it before typing anything. | The list is fetched when the picker opens and shows "Searching the library…" for an instant. The options are then grouped, **This organization** first and **Shared library** after it. Each option prints the factor name and its unit on one line, then the publisher's activity with the value per unit under it, then the publication with its years and the pack tags, for example "Liquid fuels / Diesel (100% mineral diesel) · 2.661 kg CO₂e / litre" above "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file: Fuels / Liquid fuels / Diesel (100% mineral diesel) (published 2026, data year 2026) · sector-mining". | | |
+| 1 | Open the picker on R1 (haul fleet diesel) and read it before typing anything. | The list is fetched when the picker opens and shows "Searching the library…" for an instant. The options are one list, not two: spec 02.10 retired the shared library, so every factor the picker offers is this organization's. Each option prints the factor name and its unit on one line, then the publisher's activity with the value per unit under it, then the publication with its years and the pack tags, for example "Liquid fuels / Diesel (100% mineral diesel) · 2.661 kg CO₂e / litre" above "UK Government (DESNZ) GHG Conversion Factors for Company Reporting, flat file: Fuels / Liquid fuels / Diesel (100% mineral diesel) (published 2026, data year 2026) · defra-2026". | | |
 | 2 | Look for the derived Ghana T&D loss factor, which is not approved. | It is not listed, and the checkbox reads **Show unapproved** with a count of the rows it hides. | | |
 | 3 | Tick **Show unapproved**. | The list is fetched again and the unapproved rows appear, each with an **unapproved** mark beside its name, so nothing can be picked without seeing that it is unapproved. | | |
-| 4 | Type `sector-mining` in the search box. | The list narrows to rows that pack delivered: the search runs on the server and covers the pack tag and the publisher's taxonomy as well as the name and the publication. Clear it before classifying. | | |
+| 4 | Type `ghana` in the search box. | The list narrows to rows that pack delivered: the search runs on the server and covers the pack tag and the publisher's taxonomy as well as the name and the publication. Clear it before classifying. | | |
 | 5 | Count the options in the picker and read the line under the list. | The picker holds at most 50 options at once. When more match, a line under the list says how many, for example "412 more match. Narrow the search to see them." With the two packs of procedure 2 imported there are fewer than 50, so no such line appears; procedure 2, section F3 checks the same picker against a published edition of 1,868 rows. | | |
 
 ### B1. A stream sets the default and a contractor lands in scope 3
@@ -126,7 +130,7 @@ controls appear under it.
 | --- | --- | --- | --- | --- |
 | 1 | Open R11 (ANFO in `tonne ANFO`) for classification and read the picker. | With the picker open the list is empty and the row reads "No factor matches tonne ANFO: add a matching factor or record it in a compatible unit." (the message follows the picker's own answer, so it appears once the picker is opened). | | |
 | 2 | Under **Activity data**, correct R11's unit to **tonne** with the reason "Unit typed as tonne ANFO; the registered unit is tonne". | | | |
-| 3 | Back in the view, classify R11 with **Explosives detonation (ANFO, emulsion)**, tick **proxy** and give the justification "national all-types default; supplier-specific factor pending approval". | The proxy flag and justification are saved (the justification saves when the field loses focus) and the line will print them. | | |
+| 3 | Back in the view, classify R11 with **Emulsion explosive (supplier)**, the organization's own factor from procedure 2 (F3). Leave it unapproved: case B6 reads the gate refusing it. Tick **proxy** and give the justification "national all-types default; supplier-specific factor pending approval". | The proxy flag and justification are saved (the justification saves when the field loses focus) and the line will print them. No pack offers an explosives factor, so a hand-entered one is the only route (spec 02.9). | | |
 
 ### B4. Mass meets volume through a density
 
@@ -146,7 +150,7 @@ controls appear under it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Find R18 (warehouse electricity). | The row offers the button "Suggested for this facility's grid: Grid electricity (Ghana, Ecoriv 2025)" and says "Leased facility: operating lease (leased in) inherited." | | |
+| 1 | Find R18 (warehouse electricity). | The row offers the button "Suggested for this facility's grid: Grid electricity, Ghana (2024)", the Ghana pack's row for the data year (spec 03.4) and says "Leased facility: operating lease (leased in) inherited." | | |
 | 2 | Click the suggestion. | Clicking the suggestion classifies the record; under operational control the lease keeps it in scope 2. | | |
 | 3 | Choose **Not a leased asset** in the lease control. | "(set aside for this record)" is added. | | |
 | 4 | Set it back to the operating lease. | | | |
@@ -158,7 +162,7 @@ controls appear under it.
 | 1 | Re-classify R11 (explosives, now in tonne) with the unapproved **Emulsion explosive (supplier)** factor from procedure 2 (F3), read the gate. | **Emission factors** blocks: "'ANFO explosives consumed' uses 'Emulsion explosive (supplier)', which is not approved. Approve it under Emission factors, or choose another." (it also warns: "'Emulsion explosive (supplier)' publishes CO2e only. Its emissions are counted in the scope totals and appear in the by-gas table on the row 'CO2e from factors without a gas split', not under CO2, CH4 or N2O."). | | |
 | 2 | Then approve the factor under **Emission factors** and read the gate again. | After approval (no toast; the row now reads Approved) the gate no longer blocks. | | |
 | 3 | While R11 is still classified with it, click **Delete** on **Emulsion explosive (supplier)** under **Emission factors**. | The delete is refused with a message naming the inventory that classified with it: "'Emulsion explosive (supplier)' is applied by a classification in '2025 Operational'. Choose another factor there before deleting it." The factor is still listed, and the message is not the server failure "CarbonOS could not reach the server. Try again." | | |
-| 4 | Re-classify R11 as in B3 (the seeded factor, flagged as a proxy), and classify R6 (refrigerant, kg) with **Refrigerant R-407C leakage**. | | | |
+| 4 | Re-classify R11 as in B3 (the supplier factor, flagged as a proxy), and classify R6 (refrigerant, kg) with **Blends: R407C, Emissions including only Kyoto products**. | | | |
 
 Procedure 7 checks both lines.
 
@@ -200,7 +204,7 @@ estimate is of the right order.
 | 2 | On R6 (chiller refrigerant top-up, 45 kg), click **Exclude…**. | The reason is offered. | | |
 | 3 | Choose it and read the form. | It asks for a justification and for a **Gas**, and for no magnitude at all. | | |
 | 4 | Type "HCFC-22 is a Montreal Protocol gas, reported outside the scopes", type "HCFC-22" in **Gas**, and submit. | The record reads "Excluded · Outside the scopes: Montreal Protocol gas" with the justification and "; HCFC-22, outside the scopes". | | |
-| 5 | Re-include R6 and classify it with **Refrigerant R-407C leakage** again. | R6 is back as B7 left it, which procedures 7 and 9 depend on. | | |
+| 5 | Re-include R6 and classify it with **Blends: R407C, Emissions including only Kyoto products** again. | R6 is back as B7 left it, which procedures 7 and 9 depend on. | | |
 
 ### C2. An automatic reason keeps its computed detail
 
@@ -254,7 +258,7 @@ estimate is of the right order.
 | 2 | Read the **Classification** gate. | A warning "Fuel- and energy-related activities is declared, but no upstream rule matches a scope 1 or scope 2 factor in this view; add a rule or say why category 3 is not quantified." | | |
 | 3 | Under **Emission factors**, add an organization factor **Well-to-tank diesel**, per litre, scope 3, category 3, 0.6 kg CO2e per litre, source "DEFRA 2025 well-to-tank", and approve it. | | | |
 | 4 | On the inventory page, open the **Upstream rules** card, choose **Diesel (100% mineral diesel)** as the primary factor, **Well-to-tank diesel** as the upstream factor, the kind **Well-to-tank (upstream emissions of the fuel)**, and click **Add rule**. | The rule appears in the table with the number of included scope 1 and scope 2 records it applies to. | | |
-| 5 | Add a second rule pairing **Diesel (100% mineral diesel)** with **Grid electricity (Ghana, Ecoriv 2025)**. | Refused: the upstream factor is per kWh, which does not convert from a factor per litre. | | |
+| 5 | Add a second rule pairing **Liquid fuels: Diesel (100% mineral diesel)** with **Grid electricity, Ghana (2024)**. | Refused: the upstream factor is per kWh, which does not convert from a factor per litre. | | |
 | 6 | Add the well-to-tank rule a second time. | Refused: one primary factor carries at most one rule of each kind. | | |
 | 7 | Read the **Classification** gate again. | The warning is gone, and an information line reads "1 upstream rule: Diesel (100% mineral diesel) → Well-to-tank diesel (well-to-tank)." | | |
 

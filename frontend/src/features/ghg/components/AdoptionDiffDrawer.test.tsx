@@ -13,10 +13,10 @@ import type { FactorPackDiff, FactorPackNotice } from '../api'
 
 const notice: FactorPackNotice = {
   id: 'notice-1',
-  editionId: 'sector-mining-2027',
-  editionName: 'Mining sector pack 2027',
-  packKey: 'sector-mining',
-  predecessorEditionId: 'sector-mining-2026',
+  editionId: 'defra-2027',
+  editionName: 'DESNZ conversion factors 2027',
+  packKey: 'defra',
+  predecessorEditionId: 'defra-2026',
   status: 'OPEN',
   editionStatus: 'PUBLISHED',
   withdrawalReason: null,
@@ -40,9 +40,9 @@ const notice: FactorPackNotice = {
 
 const diff: FactorPackDiff = {
   noticeId: 'notice-1',
-  editionId: 'sector-mining-2027',
-  editionName: 'Mining sector pack 2027',
-  predecessorEditionId: 'sector-mining-2026',
+  editionId: 'defra-2027',
+  editionName: 'DESNZ conversion factors 2027',
+  predecessorEditionId: 'defra-2026',
   appliesFrom: '2027-01-01',
   status: 'OPEN',
   rows: [
@@ -109,7 +109,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(getFactorPackDiff).mockResolvedValue(diff)
   vi.mocked(acceptFactorPackNotice).mockResolvedValue({
-    edition: 'sector-mining-2027',
+    edition: 'defra-2027',
     appliesFrom: '2027-01-01',
     created: 1,
     versioned: 1,
@@ -212,7 +212,7 @@ test('a locked period is named in place, and the refusal is rendered where the d
   })
   vi.mocked(acceptFactorPackNotice).mockRejectedValue(
     new ApiError(409, {
-      detail: "'sector-mining-2027' applies from 2027-01-01, which falls inside '2027'.",
+      detail: "'defra-2027' applies from 2027-01-01, which falls inside '2027'.",
     }),
   )
   const user = userEvent.setup()

@@ -235,7 +235,7 @@ class ReportPdfLayoutTest {
 				new ReportResponse.FactorRow(UUID.randomUUID(), "Grid electricity, Ghana (2024)", "kWh", GwpSet.AR5,
 						new BigDecimal("0.469"), BigDecimal.ZERO, BigDecimal.ZERO, true, BigDecimal.ZERO, BigDecimal.ZERO,
 						BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null, "Ember 2024", 2025,
-						2024, List.of("ghana", "sector-mining"), ReportingBasis.SCOPES, null, null));
+						2024, List.of("ghana"), ReportingBasis.SCOPES, "ghana", java.time.LocalDate.of(2025, 1, 1)));
 		var byFacility = List.of(new ReportResponse.Breakdown(FACILITY_ID, FIRST_FACILITY, total, BigDecimal.ZERO, BigDecimal.ZERO,
 				BigDecimal.ZERO, total, tonnes(total)),
 				new ReportResponse.Breakdown(UUID.randomUUID(), "Nkran Camp", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,

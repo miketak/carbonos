@@ -2,7 +2,6 @@ package com.carbonos.ghg.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -14,34 +13,31 @@ import org.springframework.context.annotation.Import;
 import com.carbonos.TestcontainersConfiguration;
 
 /**
- * What the seeded editions must contain (specs 02.3, 02.4 and 02.5). The
- * catalogue {@code V43} seeded is the source of truth: the ten JSON files that
- * seed was built from, and the script that wrote them, are gone, so there is no
- * file left to disagree with the database. What the oracle used to prove row by
- * row is now proved by shape and by sample: the ten editions are there with the
- * row counts they shipped, the two read paths agree on every card field, every
- * row cites the publication it comes from, Montreal Protocol rows report
- * outside the scopes, the mining pack carries the purchased-goods rows its card
- * promises, and the oil and gas pack carries flaring rows with the table they
- * come from, each asserted against the values this file states rather than
- * against a copy of the corpus.
+ * What the seeded editions must contain (specs 02.3, 02.5 and 02.9). The
+ * catalogue is the source of truth: the JSON files the seed was built from, and
+ * the script that wrote them, are gone, so there is no file left to disagree
+ * with the database. What the oracle used to prove row by row is proved by
+ * shape and by sample: the two editions are there with the row counts they
+ * ship, the two read paths agree on every card field, every row cites the
+ * publication it comes from, and Montreal Protocol rows report outside the
+ * scopes.
  *
- * <p>Its last assertions are the guard the publication rules add: all ten pass
- * every rule of {@link FactorPackValidation}, so the rules and the corpus we
- * shipped cannot drift apart, and not one row relies on an exemption. Three
- * rows of two seeded editions once carried a derivation narrative longer than
- * the citation column; {@code V45} widened the column to hold a full citation
- * and the exemption went with it, so {@code SEED_UNCHECKED} now carries the
- * missing approver and nothing else.
+ * <p>Spec 02.9 narrowed the catalogue from ten editions to two. {@code V43}
+ * seeded ten and {@code V50} removed the eight CarbonOS does not stand behind,
+ * so what this file asserts is what survives both: {@code defra-2026} and
+ * {@code ghana}. The assertions that reached into the EPA Hub, IPCC, NGA and
+ * sector packs went with those packs.
+ *
+ * <p>Its last assertions are the guard the publication rules add: both editions
+ * pass every rule of {@link FactorPackValidation}, so the rules and the corpus
+ * we shipped cannot drift apart, and not one row relies on an exemption.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class SeededFactorPackEditionsTest {
 
-	/** The rows each pack shipped with, which the seeded editions must still carry exactly. */
-	private static final Map<String, Integer> SHIPPED_ROW_COUNTS = Map.of("defra-2026", 1868, "epa-hub-2025", 548,
-			"ember-grid-2025", 141, "sector-construction", 80, "sector-oil-and-gas", 74, "refrigerants-ar5", 56,
-			"sector-mining", 56, "ghana", 7, "ipcc-2006-process", 5, "nga-2024-explosives", 1);
+	/** The rows each pack ships with, which the seeded editions must still carry exactly. */
+	private static final Map<String, Integer> SHIPPED_ROW_COUNTS = Map.of("defra-2026", 1868, "ghana", 7);
 
 	@Autowired
 	private FactorPacks packs;
@@ -68,13 +64,13 @@ class SeededFactorPackEditionsTest {
 	}
 
 	@Test
-	void theTenSeededEditionsCarryTheRowsTheyShippedWith() {
+	void theTwoSeededEditionsCarryTheRowsTheyShippedWith() {
 		assertThat(packs.all().stream().map(FactorPacks.Pack::id))
 			.containsExactlyInAnyOrderElementsOf(SHIPPED_ROW_COUNTS.keySet());
 		// the header projection counts the same rows without assembling them
 		assertThat(packs.headers()).allSatisfy(header -> assertThat(header.factorCount()).as(header.id())
 			.isEqualTo(SHIPPED_ROW_COUNTS.get(header.id())));
-		assertThat(packs.headers().stream().mapToInt(FactorPacks.PackHeader::factorCount).sum()).isEqualTo(2836);
+		assertThat(packs.headers().stream().mapToInt(FactorPacks.PackHeader::factorCount).sum()).isEqualTo(1875);
 		var headers = packs.headers()
 			.stream()
 			.collect(Collectors.toMap(FactorPacks.PackHeader::id, header -> header));
@@ -105,6 +101,17 @@ class SeededFactorPackEditionsTest {
 				assertThat(factor.defaultScope()).as("%s / %s", as, factor.code()).isNotNull();
 			});
 		}
+	}
+
+	@Test
+	void theCatalogueOffersOnlyTheTwoPublicationsWeStandBehind() {
+		// spec 02.9: what an organization can import is DESNZ and Ghana, and nothing else. The
+		// console stays open, so this asserts what the seed leaves behind rather than a ceiling
+		// on what a curator may later author.
+		assertThat(editions.findAll()).extracting(FactorPackEdition::getPackKey)
+			.containsOnly("defra", "ghana");
+		assertThat(packs.headers()).extracting(FactorPacks.PackHeader::id)
+			.containsExactlyInAnyOrder("defra-2026", "ghana");
 	}
 
 	@Test
@@ -154,17 +161,17 @@ class SeededFactorPackEditionsTest {
 		assertThat(aluminium.sourceCategory()).isEqualTo("Waste disposal");
 		assertThat(aluminium.sourceActivity()).isEqualTo("Metal / Metal: aluminium cans and foil (excl. forming)");
 		assertThat(aluminium.sourceDetail()).isEqualTo("Combustion");
-		// an EPA Hub row: the third part is the detail, not part of the activity
-		var anthracite = row(pack("epa-hub-2025"),
-				"EPA:Stationary_combustion:Anthracite:Coal_and_Coke_per_short_ton:short_ton");
-		assertThat(anthracite.sourceCategory()).isEqualTo("Stationary combustion");
-		assertThat(anthracite.sourceActivity()).isEqualTo("Anthracite");
-		assertThat(anthracite.sourceDetail()).isEqualTo("Coal and Coke; per short ton");
+		// a Ghana grid row: the country is the activity and the data year is the detail, so two
+		// years of the same series are told apart by their parts rather than by their name
+		var ghana2024 = row(pack("ghana"), "GHANA:grid:GHA:2024");
+		assertThat(ghana2024.sourceCategory()).isEqualTo("Electricity (national grid, generation-based)");
+		assertThat(ghana2024.sourceActivity()).isEqualTo("Ghana (GHA)");
+		assertThat(ghana2024.sourceDetail()).contains("data year 2024").contains("location-based");
 		// a hand-written derivation cites a document rather than a table row: the citation is the detail
-		var clinker = row(pack("ipcc-2006-process"), "IPCC:2006:clinker");
-		assertThat(clinker.sourceCategory()).isNull();
-		assertThat(clinker.sourceActivity()).isNull();
-		assertThat(clinker.sourceDetail()).contains("Volume 3, Chapter 2");
+		var losses = row(pack("ghana"), "GHANA:td-losses");
+		assertThat(losses.sourceCategory()).isNull();
+		assertThat(losses.sourceActivity()).isNull();
+		assertThat(losses.sourceDetail()).contains("Scope 3 category 3");
 		// three butane rows share a display name and differ by unit, which is why the parts are kept apart
 		assertThat(pack("defra-2026").factors()
 			.stream()
@@ -180,12 +187,13 @@ class SeededFactorPackEditionsTest {
 				assertThat(factor.basis()).as("%s / %s basis", pack.id(), factor.code()).isNotNull();
 			}
 		}
-		// a sector pack is a selection: the IPCC lime row keeps IPCC's citation and year, not the pack's 2026
-		var lime = row(pack("sector-mining"), "IPCC:2006:lime-high-calcium");
-		assertThat(lime.sourcePublication()).startsWith("IPCC 2006 Guidelines");
-		assertThat(lime.publicationYear()).isEqualTo(2006);
-		assertThat(lime.dataYear()).isEqualTo(2006);
-		assertThat(lime.citation(pack("sector-mining"))).contains("Volume 3, Chapter 2, Table 2.4");
+		// a row cites its own publication, never its pack (spec 02.3). The Ghana pack is published in
+		// 2025 and its grid rows are Ember's, so an Ember citation survives the Ember pack's removal:
+		// dropping a pack from the catalogue never rewrites where a figure came from.
+		var ghana2024 = row(pack("ghana"), "GHANA:grid:GHA:2024");
+		assertThat(ghana2024.sourcePublication()).startsWith("Ember Yearly Electricity Data");
+		assertThat(ghana2024.dataYear()).isEqualTo(2024);
+		assertThat(ghana2024.citation(pack("ghana"))).contains("Ghana (GHA)").contains("data year 2024");
 	}
 
 	@Test
@@ -207,75 +215,16 @@ class SeededFactorPackEditionsTest {
 				"CFC-12 (R-12)");
 		var hcfc22 = montreal.stream().filter(factor -> factor.name().equals("HCFC-22 (R-22)")).findFirst().orElseThrow();
 		assertThat(hcfc22.kgCo2ePerUnit()).isEqualByComparingTo("1760");
-		// the refrigerants pack and both sector packs select the HCFC-22 row
-		for (var id : List.of("refrigerants-ar5", "sector-mining", "sector-oil-and-gas")) {
-			assertThat(pack(id).factors().stream().map(FactorPacks.PackFactor::name)).as(id).contains("HCFC-22 (R-22)");
-		}
-		// no row outside the scopes leaks into a pack under a Kyoto-gas name
-		assertThat(pack("refrigerants-ar5").factors()
+		// the refrigerants pack left with spec 02.9, so DESNZ is now the only route to R-22, and it
+		// has to stay outside the scopes: a Montreal Protocol gas in a scope 1 total breaks Chapter 4
+		assertThat(defra.factors()
 			.stream()
 			.filter(factor -> factor.basis() == ReportingBasis.OUTSIDE_SCOPES_NON_KYOTO)
-			.map(FactorPacks.PackFactor::name)).containsExactly("HCFC-22 (R-22)");
+			.map(FactorPacks.PackFactor::code)).allSatisfy(code -> assertThat(code).contains("Montreal_protocol_products"));
 	}
 
 	@Test
-	void theMiningPackCarriesThePurchasedGoodsRowsItsCardPromises() {
-		var mining = pack("sector-mining");
-		var templates = List.of("TEMPLATE:supplier:quicklime", "TEMPLATE:supplier:cement",
-				"TEMPLATE:supplier:sodium-cyanide", "TEMPLATE:supplier:grinding-media");
-		for (var code : templates) {
-			var template = row(mining, code);
-			assertThat(template.approved()).as(code).isFalse();
-			assertThat(template.kgCo2ePerUnit()).as(code).isEqualByComparingTo("0");
-			assertThat(template.unit()).as(code).isEqualTo("tonne");
-			assertThat(template.defaultScope()).as(code).isEqualTo(Scope.SCOPE_3);
-			assertThat(template.defaultCategory()).as(code).isEqualTo(ActivityCategory.PURCHASED_GOODS_SERVICES);
-			assertThat(template.notes()).as(code).contains("the run is blocked");
-		}
-		var concrete = row(mining, "DEFRA:Material_use:Construction_Concrete:Primary_material_production:tonnes");
-		assertThat(concrete.kgCo2ePerUnit()).isEqualByComparingTo("118.80307");
-		assertThat(concrete.defaultCategory()).isEqualTo(ActivityCategory.PURCHASED_GOODS_SERVICES);
-		var metals = row(mining, "DEFRA:Material_use:Construction_Metals:Primary_material_production:tonnes");
-		assertThat(metals.kgCo2ePerUnit()).isEqualByComparingTo("3821.94858");
-		assertThat(metals.notes()).contains("construction-metal average").contains("proxy");
-		// the land-clearing row, unapproved, per hectare, cited by table
-		var clearing = row(mining, "IPCC:2006:land-clearing-tropical-moist-forest");
-		assertThat(clearing.approved()).isFalse();
-		assertThat(clearing.unit()).isEqualTo("hectare");
-		assertThat(clearing.kgCo2ePerUnit()).isEqualByComparingTo("555602.666667");
-		assertThat(clearing.sourceDetail()).contains("Table 4.7").contains("Table 4.4").contains("Table 4.3");
-		// the card says what the pack holds and what it does not
-		assertThat(mining.notes()).contains("supplier-factor templates")
-			.contains("Tailings and mine-water treatment have no published factor");
-	}
-
-	@Test
-	void theOilAndGasPackCarriesFlaringRowsWithTheTableTheyComeFrom() {
-		var oilgas = pack("sector-oil-and-gas");
-		var gas = row(oilgas, "IPCC:2006:flaring-gas-production");
-		assertThat(gas.approved()).isFalse();
-		assertThat(gas.unit()).isEqualTo("1000m3");
-		assertThat(gas.co2()).isEqualByComparingTo("1.2");
-		assertThat(gas.ch4()).isEqualByComparingTo("0.00076");
-		assertThat(gas.n2o()).isEqualByComparingTo("0.000021");
-		assertThat(gas.sourceDetail()).contains("Table 4.2.4").contains("1.B.2.b.ii").contains("Gg per 10^6 m3");
-		var oil = row(oilgas, "IPCC:2006:flaring-oil-production");
-		assertThat(oil.unit()).isEqualTo("m3");
-		assertThat(oil.co2()).isEqualByComparingTo("41.0");
-		assertThat(oil.sourceDetail()).contains("Table 4.2.4").contains("1.B.2.a.ii").contains("Gg per 10^3 m3");
-		var flared = row(oilgas, "IPCC:2006:flaring-per-m3-flared");
-		assertThat(flared.co2()).isEqualByComparingTo("2.0");
-		assertThat(flared.ch4()).isEqualByComparingTo("0.012");
-		assertThat(flared.sourceDetail()).contains("Table 4.2.5, footnote (e)").contains("98%");
-		var proxy = row(oilgas, "PROXY:2026:flared-gas-as-natural-gas");
-		assertThat(proxy.approved()).isFalse();
-		assertThat(proxy.kgCo2ePerUnit()).isEqualByComparingTo("2.02633");
-		assertThat(proxy.notes()).contains("assumes complete combustion");
-		assertThat(oilgas.notes()).contains("Flaring ships four unapproved rows");
-	}
-
-	@Test
-	void allTenSeededEditionsPassEveryPublicationRule() {
+	void bothSeededEditionsPassEveryPublicationRule() {
 		for (var editionId : SHIPPED_ROW_COUNTS.keySet()) {
 			var edition = editions.findById(editionId).orElseThrow();
 			var findings = validation.validate(edition, rows.findAllByEditionIdOrderByOrdinalAsc(editionId));
@@ -286,10 +235,9 @@ class SeededFactorPackEditionsTest {
 	@Test
 	void noSeededRowReliesOnTheCitationLengthExemption() {
 		// spec 02.5 rule 2: the citation an import builds fits ghg_emission_factors.source, so a published
-		// edition never depends on the truncation spec 02.6 keeps as a backstop. Three rows shipped before
-		// the catalogue existed did not fit varchar(500), and the rule exempted them, which put a hole in
-		// it. V45 widened the column to varchar(2000): the longest citation the row columns can produce is
-		// 1,328 characters, so there is nothing left for an exemption to cover.
+		// edition never depends on the truncation spec 02.6 keeps as a backstop. The three rows that once
+		// needed an exemption were in the sector packs and left with spec 02.9; V45's varchar(2000) leaves
+		// the longest surviving citation, the Ghana T&D derivation, with room to spare.
 		var overLong = new java.util.ArrayList<String>();
 		var longest = 0;
 		String longestCode = null;
@@ -305,28 +253,9 @@ class SeededFactorPackEditionsTest {
 			}
 		}
 		assertThat(overLong).as("rows relying on an exemption").isEmpty();
-		// the three that used to break the rule now fit, and the longest of them is one of them
-		assertThat(longest).as("the longest seeded citation, at %s", longestCode).isEqualTo(572);
-		assertThat(longestCode).isEqualTo("sector-oil-and-gas / IPCC:2006:flaring-gas-production");
-	}
-
-	@Test
-	void theThreeLongCitationsFitTheWidenedColumn() {
-		// the three rows the exemption used to cover, named so that a change to their detail is noticed
-		var lengths = new java.util.LinkedHashMap<String, Integer>();
-		for (var editionId : List.of("sector-mining", "sector-oil-and-gas")) {
-			for (var row : rows.findAllByEditionIdOrderByOrdinalAsc(editionId)) {
-				if (row.getCode().startsWith("IPCC:2006:flaring")
-						|| row.getCode().equals("IPCC:2006:land-clearing-tropical-moist-forest")) {
-					lengths.put(editionId + " / " + row.getCode(), row.citation().length());
-				}
-			}
-		}
-		assertThat(lengths).containsEntry("sector-oil-and-gas / IPCC:2006:flaring-gas-production", 572)
-			.containsEntry("sector-oil-and-gas / IPCC:2006:flaring-per-m3-flared", 528)
-			.containsEntry("sector-mining / IPCC:2006:land-clearing-tropical-moist-forest", 528);
-		assertThat(lengths.values()).allSatisfy(length -> assertThat(length)
-			.isLessThanOrEqualTo(FactorPackValidation.MAX_CITATION_LENGTH));
+		assertThat(longest).as("the longest seeded citation, at %s", longestCode).isEqualTo(336);
+		assertThat(longestCode).isEqualTo("ghana / GHANA:td-losses");
+		assertThat(longest).isLessThanOrEqualTo(FactorPackValidation.MAX_CITATION_LENGTH);
 	}
 
 	@Test

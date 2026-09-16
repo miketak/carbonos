@@ -46,8 +46,8 @@ calculation, the report composite, the PDF or the CSV exports.
 | 5 | Check Diesel by tanker (R17). | 12,000 kg ÷ 0.8325 = 14,414.414414 litre × 2.66 = 38,342.342 kg, with the note "12 tonne = 12000 kg ÷ 0.8325 kg/litre = 14414.414414 litre (density of Diesel (GOIL, 2025 CoA))" | | |
 | 6 | Check Diesel in drums. | 5 × 200 = 1,000 litre × 2.66 = 2,660 kg, "1 drum = 200 litre" | | |
 | 7 | Check Straddling diesel (R19). | 10,000 × 2.66 × 50% = 13,300 kg, "pro-rated: 31 of 62 days inside the reporting period and the membership window (50%)"; its gas columns carry the same 50% (CO2 10,000 × 2.6307 × 50% = 13,153.5 kg) | | |
-| 8 | Check ANFO explosives (R11). | 8,400 × 170 = 1,428,000 kg, scope 1 process, proxy flag and justification printed | | |
-| 9 | Check Chiller refrigerant top-up (R6). | 45 kg × 1,624.21 = 73,089.45 kg, HFCs 45 kg of gas in the by-gas columns (AR5: 0.23 × 677 + 0.25 × 3,170 + 0.52 × 1,300) | | |
+| 8 | Check ANFO explosives (R11), classified with the organization's own **Emulsion explosive (supplier)** factor. | 8,400 × 170 = 1,428,000 kg, scope 1 process, proxy flag and justification printed | | |
+| 9 | Check Chiller refrigerant top-up (R6). | 45 kg × 1,624 = 73,080 kg, HFCs 45 kg of gas in the by-gas columns. DESNZ publishes the CO2e figure for the blend and the gas mass beside it, so the value is the published one rather than one derived from a composition (spec 02.9). | | |
 | 10 | Check Camp LPG (two records). | 18,000 × 1.557 = 28,026 kg each | | |
 | 11 | Check Mill grid electricity (R2). | 48,500,000 × 0.441 = 21,388,500 kg; market-based 14,820,000 kg as written down in procedure 6, with the note "20,000,000 kWh at 0 kg/kWh (certificate); 28,500,000 kWh at 0.52 kg/kWh (residual mix)" | | |
 | 12 | Check Office grid electricity (R4). | 210,000 × 0.441 = 92,610 kg; market-based 109,200 kg | | |

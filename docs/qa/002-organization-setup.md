@@ -159,29 +159,27 @@ its boundary, refuses removal; procedure 3 checks the first.
 
 ## F. Emission factors
 
-### F1. The shared library is cited and read-only
+### F1. An organization starts with no factors
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Emission factors** and read the shared library. | Every factor cites a publication, a table and a data year; none says "approx.". The Ghana grid factor (**Grid electricity (Ghana, Ecoriv 2025)**, 0.441 kg CO2e/kWh) says it is a secondary estimate and points to the Ember figure. Library factors offer no edit or delete action. | | |
+| 1 | Open **Emission factors** on a freshly created organization. | **This organization's factors** is empty and there is no shared library card: spec 02.10 retired the seeded tier, so a company chooses the baseline it accounts on rather than inheriting one. The **Factor packs** card offers DESNZ 2026 and Ghana. | | |
+| 2 | Open a record's factor picker before importing anything. | The picker offers nothing and says so. Nothing can be classified until a pack is imported or a factor is entered by hand, which is the point. | | |
 
 ### F2. Importing a pack
 
-| Step | Action | Expected result | Pass/Fail | Notes |
-| --- | --- | --- | --- | --- |
-| 1 | Import the **Sector pack: mining (Ghana and West Africa)** pack (the Import pack button on its card; the button's accessible name carries the pack's name). | The import reports "sector-mining, applying from 2026-01-01: 56 added, 0 versioned, 0 tagged, 0 unchanged." and says nothing more: every row of a shipped pack is in a unit the registry converts, nothing was held before, and nothing was dropped. A pack carrying a unit the registry does not hold adds a sentence to the same message, "1 row skipped, in a unit the registry cannot convert:" and then each row it left out with the unit that stopped it. The organization's factors now include refrigerants with a blend composition, diesel per tonne and per litre, explosives, and the Ghana grid by year, each citing the publication it comes from (not the pack) with its URL. Six rows arrive **Not approved** with an Approve button: the derived Ghana T&D loss factor, the four supplier-factor templates (quicklime, cement, sodium cyanide, grinding media) and the land-clearing row. Leave them. | | |
-| 2 | Import it again. | The second import reports "sector-mining, applying from 2026-01-01: 0 added, 0 versioned, 0 tagged, 56 unchanged.", again with no skipped rows. Re-importing the same edition is a no-op: it cuts no version and rewrites no value. | | |
-| 3 | Read the **Source and vintage** column of the imported **Liquid fuels: Diesel (100% mineral diesel)** row, per litre. | It says "valid 2026-01-01 to …": every version an import writes starts on the edition's applies-from date. The row shows no version chain yet, because the lineage holds one version. | | |
-| 4 | Read the action column of any imported row. | Where a hand-entered factor offers **Delete**, a pack-derived row reads "Retire, not delete". Hover it: a pack-derived factor is never deleted, because its versions are the record of what was calculated with. | | |
-| 5 | Read the **Packs** column of any imported row, and its **Source and vintage** column. | The pack tag sits in the Packs column on its own; the Source column names the publication, for example "IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 3 (Industrial Processes and Product Use): Volume 3, Chapter 2, Table 2.4 ...", published 2006, not the sector pack or the year 2026. | | |
-| 6 | Read the row **HCFC-22 (R-22)**. | Under the name it says "Outside the scopes (Montreal Protocol, not a Kyoto gas)". | | |
-
-### F2a. A second pack tags a row it shares, it never copies it
+The catalogue offers two packs and only two (spec 02.9): the DESNZ
+conversion factors and the Ghana pack.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Import **Refrigerants and other fluorinated gases (EPA Hub, IPCC AR5)**. | The import reports rows added and a non-zero **tagged** count: the refrigerant rows the mining pack already delivered carry identical values, so they gain this edition's tag rather than a copy or a new version. | | |
-| 2 | Search the factor table for **Refrigerant R-410A leakage**. | Exactly one row carries that name among the organization's own factors, and its Packs column lists both `refrigerants-ar5` and `sector-mining`. | | |
+| 1 | Read the **Factor packs** card. | Exactly two cards: **UK Government (DESNZ) GHG conversion factors 2026** and **Ghana: grid electricity and transmission losses**. Each names its source, publication year, GWP basis, licence and retrieval date. | | |
+| 2 | Import the **Ghana: grid electricity and transmission losses** pack (the Import pack button on its card; the button's accessible name carries the pack's name). | The import reports "ghana, applying from 2025-01-01: 7 added, 0 versioned, 0 tagged, 0 unchanged." and says nothing more: every row of a shipped pack is in a unit the registry converts, nothing was held before, and nothing was dropped. A pack carrying a unit the registry does not hold adds a sentence to the same message, "1 row skipped, in a unit the registry cannot convert:" and then each row it left out with the unit that stopped it. The organization's factors now include the Ghana grid by data year, each citing the publication it comes from (not the pack) with its URL. One row arrives **Not approved** with an Approve button: the derived Ghana T&D loss factor. Leave it. | | |
+| 3 | Import it again. | The second import reports "ghana, applying from 2025-01-01: 0 added, 0 versioned, 0 tagged, 7 unchanged.", again with no skipped rows. Re-importing the same edition is a no-op: it cuts no version and rewrites no value. | | |
+| 4 | Read the **Source and vintage** column of the imported **Grid electricity, Ghana (2024)** row. | It says "valid 2025-01-01 to ...": every version an import writes starts on the edition's applies-from date. The row shows no version chain yet, because the lineage holds one version. | | |
+| 5 | Read the action column of any imported row. | Where a hand-entered factor offers **Delete**, a pack-derived row reads "Retire, not delete". Hover it: a pack-derived factor is never deleted, because its versions are the record of what was calculated with. | | |
+| 6 | Read the **Packs** column of that row, and its **Source and vintage** column. | The pack tag `ghana` sits in the Packs column on its own; the Source column names the publication, "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh): Electricity (national grid, generation-based) / Ghana (GHA) / data year 2024 ...", published 2025, not the Ghana pack. A pack selects a row; it does not become its publisher. | | |
+| 7 | Import the **UK Government (DESNZ) GHG conversion factors 2026** pack, then search the factor table for **HCFC-22 (R-22)**. | The import reports 1,868 added. Under the name of the HCFC-22 row it says "Outside the scopes (Montreal Protocol, not a Kyoto gas)". DESNZ is the only route to a Montreal Protocol gas now that the refrigerants pack has gone, and it must not land in a scope 1 total. | | |
 
 ### F2b. A later edition cuts a version, and what that makes visible
 
@@ -192,8 +190,8 @@ Two consequences are correct and worth seeing.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Inventories**, create a draft inventory **FY2025** for 2025-01-01 to 2025-12-31, put a facility in its boundary, classify one record with an imported pack factor, and read the validation panel. | It raises a **warning** (not an error): the factor "is valid from 2026-01-01, which does not cover the reporting period". This is new and it is correct: the version the organization holds is the 2026 vintage, and 2025 is before it. The run is not blocked. Delete the inventory afterwards. | | |
-| 2 | As a platform administrator, publish a later edition of the mining pack under **Factor packs** in the admin console, applying from a date after every locked period (procedure 9 covers authoring and publication). Then, as the preparer, import it. | The import reports counts under four headings: added, versioned, tagged, unchanged. A row whose value moved is **versioned**: the row you held is closed the day before the new edition applies and a new version carries the new value from that day. A row the new edition drops is listed as discontinued and nothing retires it. A row you edited here is listed as a conflict and is left exactly as you left it. | | |
+| 1 | Open **Inventories**, create a draft inventory **FY2025** for 2025-01-01 to 2025-12-31, put a facility in its boundary, classify one record with a factor imported from **DESNZ 2026** (not a Ghana one, which applies from 2025-01-01 and covers the period), and read the validation panel. | It raises a **warning** (not an error): the factor "is valid from 2026-01-01, which does not cover the reporting period". This is new and it is correct: the version the organization holds is the 2026 vintage, and 2025 is before it. The run is not blocked. Delete the inventory afterwards. | | |
+| 2 | As a platform administrator, publish a later edition of the Ghana pack under **Factor packs** in the admin console, applying from a date after every locked period (procedure 9 covers authoring and publication). Then, as the preparer, import it. | The import reports counts under four headings: added, versioned, tagged, unchanged. A row whose value moved is **versioned**: the row you held is closed the day before the new edition applies and a new version carries the new value from that day. A row the new edition drops is listed as discontinued and nothing retires it. A row you edited here is listed as a conflict and is left exactly as you left it. | | |
 | 3 | Read the **Source and vintage** column of a versioned row. | It offers "2 versions of this factor". Open it: the older version reads the old edition with its window ending the day before the new one applies, and the live version reads the new edition from its applies-from date, marked "(live)". | | |
 | 4 | Open a run made before the import and read its **Emission factors applied** table (procedure 7 has one). | Every figure is exactly what it was. The table names the edition and the vintage behind each factor; a run made before this release names none, which is honest rather than a guess. | | |
 | 5 | Import an edition whose applies-from date falls inside a **Frozen**, **Final** or **Published** inventory's period. | The import is refused with 409 naming that inventory and its status, and nothing is written. A reported period keeps the factors it reported with. | | |
@@ -218,8 +216,7 @@ unrecognizable.
 | 8 | Open **Scale Test Co**'s settings and delete it, giving a reason. | The organization and its factors are gone, and the later procedures still see the seeded organization only. | | |
 
 Then remove nothing: the rest of procedure 2 and procedure 5 expect both
-packs. Every other pack is importable too; do not import them, or the factor
-pickers of procedure 5 fill with rows the cases do not name.
+packs, which since spec 02.9 are the only two the catalogue holds.
 
 ### F3. An organization's own factor with provenance
 
@@ -230,15 +227,19 @@ pickers of procedure 5 fill with rows the cases do not name.
 
 Procedure 5 shows the gate refusing it until it is approved.
 
-### F4. A blend follows the inventory's GWP set
+### F4. A blend from the pack, and one that follows the inventory's GWP set
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Find the imported R-407C factor. | The row **Refrigerant R-407C leakage** shows "1624 kg CO2e/kg", the blend "23% HFC-32, 25% HFC-125, 52% HFC-134a" and a source naming IPCC AR5. | | |
+| 1 | Find the imported R-407C factor. | The row **Blends: R407C, Emissions including only Kyoto products** shows "1624 kg CO2e/kg" and a source naming the DESNZ 2026 flat file. Its **Blend** column is empty: DESNZ publishes the CO2e figure with the gas mass beside it and no composition. | | |
+| 2 | Add a factor by hand with a blend composition, for example **Refrigerant R-410A leakage**, per kg, 1923.5, composition "HFC-32:0.5,HFC-125:0.5" on the AR5 basis. | It is listed as the organization's own with its blend shown. A composition is the only route to a figure that reconverts under the inventory's GWP set, and no pack carries one since spec 02.9. | | |
 
-The run derives the figure from the composition and the inventory's GWP
-set: 0.23 × 677 + 0.25 × 3,170 + 0.52 × 1,300 = 1,624.21 kg CO2e per kg
-under AR5 (procedure 7 A2 checks the line).
+The refrigerants pack that shipped a composition for every blend left with
+spec 02.9, so a blend a pack delivers no longer reconverts. Where a
+composition is recorded, as on the R-410A library row, the run still derives
+the figure from it and the inventory's GWP set: 0.5 × 677 + 0.5 × 3,170 =
+1,923.5 kg CO2e per kg under AR5, and 0.5 × 771 + 0.5 × 3,740 = 2,255.5 under
+AR6 (procedure 7 A2 checks the line).
 
 ## Sign-off
 

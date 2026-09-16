@@ -385,10 +385,10 @@ function renderPage() {
   })
 }
 
-/** The shared-library diesel row every picker test starts from. */
+/** The organization's diesel row every picker test starts from. */
 const dieselFactor: EmissionFactor = {
   id: 'ef-1',
-  organizationId: null,
+  organizationId: 'org-1',
   name: 'Diesel',
   defaultScope: 'SCOPE_1',
   defaultCategory: 'MOBILE_COMBUSTION',
@@ -558,7 +558,7 @@ test('setting a membership window sends the effective date to the entity treatme
   )
 })
 
-test('the picker groups its options, cites each publication and hides unapproved rows (spec 02.3)', async () => {
+test('the picker cites each publication and hides unapproved rows (spec 02.3)', async () => {
   const user = userEvent.setup()
   mockEmissionFactors([
     dieselFactor,
@@ -570,8 +570,8 @@ test('the picker groups its options, cites each publication and hides unapproved
       source: 'GOIL fuel analysis certificate 2025-03',
       publicationYear: 2025,
       dataYear: 2025,
-      pack: 'sector-mining',
-      packs: ['sector-mining'],
+      pack: 'defra-2026',
+      packs: ['defra-2026'],
       packCode: 'GOIL:diesel',
       approved: false,
     },
@@ -580,26 +580,27 @@ test('the picker groups its options, cites each publication and hides unapproved
 
   await user.click((await screen.findAllByRole('button', { name: /choose factor/i }))[0])
   const picker = screen.getAllByLabelText('Classify Diesel consumption')[0]
-  // the two factors share a name and unit; the publication line tells them apart
-  expect(await within(picker).findByText('Shared library')).toBeInTheDocument()
+  // the two factors share a name and unit; the publication line tells them apart. Spec 02.10
+  // retired the shared library, so the picker is one flat list with no tier headings.
   expect(
-    within(picker).getByText(/DEFRA 2025 \(published 2025, data year 2025\)/),
+    await within(picker).findByText(/DEFRA 2025 \(published 2025, data year 2025\)/),
   ).toBeInTheDocument()
-  // the unapproved row is hidden until the toggle reveals it (FU-03: the server hides it)
+  expect(within(picker).queryByText('Shared library')).not.toBeInTheDocument()
   expect(within(picker).queryByText('This organization')).not.toBeInTheDocument()
+  // the unapproved row is hidden until the toggle reveals it (FU-03: the server hides it)
+  expect(within(picker).queryByText('unapproved')).not.toBeInTheDocument()
   await user.click(screen.getAllByLabelText(/Show unapproved/)[0])
-  expect(await within(picker).findByText('This organization')).toBeInTheDocument()
-  expect(within(picker).getByText('unapproved')).toBeInTheDocument()
-  expect(
-    within(picker).getByText(/GOIL fuel analysis certificate.*sector-mining/),
-  ).toBeInTheDocument()
+  expect(await within(picker).findByText('unapproved')).toBeInTheDocument()
+  expect(within(picker).getByText(/GOIL fuel analysis certificate.*defra-2026/)).toBeInTheDocument()
   // the search covers the pack tag as well as the name and the publication
   await user.type(
     screen.getAllByLabelText('Search factors for Diesel consumption')[0],
-    'sector-mining',
+    'defra-2026',
   )
-  await waitFor(() => expect(within(picker).queryByText('Shared library')).not.toBeInTheDocument())
-  expect(within(picker).getByText('This organization')).toBeInTheDocument()
+  await waitFor(() =>
+    expect(within(picker).queryByText(/DEFRA 2025 \(published 2025/)).not.toBeInTheDocument(),
+  )
+  expect(within(picker).getByText(/GOIL fuel analysis certificate/)).toBeInTheDocument()
 })
 
 test('the picker asks the server for its page and tells same-named factors apart (FU-03)', async () => {
@@ -1172,7 +1173,7 @@ test('the activity view suggests the grid factor of the facility and names an in
   mockEmissionFactors([
     {
       id: 'ef-grid',
-      organizationId: null,
+      organizationId: 'org-1',
       name: 'Grid electricity, Ghana (2024)',
       defaultScope: 'SCOPE_2',
       defaultCategory: 'PURCHASED_ELECTRICITY',
@@ -1187,7 +1188,7 @@ test('the activity view suggests the grid factor of the facility and names an in
       blendComposition: null,
       ch4Fossil: true,
       co2eOnly: true,
-      source: 'Ember 2025',
+      source: 'Ember Yearly Electricity Data',
       sourceUrl: null,
       publicationYear: 2025,
       dataYear: 2024,
@@ -1195,9 +1196,9 @@ test('the activity view suggests the grid factor of the facility and names an in
       validTo: null,
       note: null,
       approved: true,
-      pack: 'ember-grid-2025',
-      packs: ['ember-grid-2025'],
-      packCode: 'EMBER:grid:GHA:2024',
+      pack: 'ghana',
+      packs: ['ghana'],
+      packCode: 'GHANA:grid:GHA:2024',
       gridRegion: 'GHA',
       reportingBasis: 'SCOPES',
       sourceCategory: null,

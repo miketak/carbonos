@@ -14,8 +14,8 @@ import jakarta.persistence.criteria.Predicate;
 /**
  * The factor picker's query, in SQL (FU-03). Every filter the picker and the
  * emission factors page offer is a predicate the database applies before the
- * page is cut: the two tiers (spec 02.1), the approval toggle (spec 02.3), a
- * search over name, publication, the publisher's taxonomy and the pack tags,
+ * page is cut: the owning organization (spec 02.10), the approval toggle
+ * (spec 02.3), a search over name, publication, the publisher's taxonomy and the pack tags,
  * the taxonomy columns spec 02.5 added, and the unit a record can be
  * classified with (spec 02.2). Nothing is filtered in Java, so importing an
  * edition of 1,868 rows costs the picker a page, not the whole library.
@@ -27,9 +27,13 @@ import jakarta.persistence.criteria.Predicate;
  */
 final class EmissionFactorSearch {
 
-	/** The picker's order: the organization's own rows first, then scope, name, unit, id. */
-	static final Sort ORDER = Sort.by(Sort.Order.asc("organizationId").nullsLast(), Sort.Order.asc("defaultScope"),
-			Sort.Order.asc("name"), Sort.Order.asc("unit"), Sort.Order.asc("id"));
+	/**
+	 * The picker's order: scope, name, unit, then the identifier last so a page boundary never
+	 * repeats or drops a row. It led with the owning organization until spec 02.10 retired the
+	 * shared library; with one tier there is nothing left for that key to separate.
+	 */
+	static final Sort ORDER = Sort.by(Sort.Order.asc("defaultScope"), Sort.Order.asc("name"),
+			Sort.Order.asc("unit"), Sort.Order.asc("id"));
 
 	private EmissionFactorSearch() {
 	}
@@ -45,7 +49,7 @@ final class EmissionFactorSearch {
 		var needle = like(query.q());
 		return (root, cq, cb) -> {
 			var predicates = new ArrayList<Predicate>();
-			predicates.add(tier(organizationId, query.tier(), root, cb));
+			predicates.add(cb.equal(root.get("organizationId"), organizationId));
 			if (!query.includeUnapproved()) {
 				predicates.add(cb.isTrue(root.get("approved")));
 			}
@@ -80,16 +84,6 @@ final class EmissionFactorSearch {
 	/** Whether a factor is approved, for the count of what the toggle is hiding. */
 	static Specification<EmissionFactor> unapproved() {
 		return (root, cq, cb) -> cb.isFalse(root.get("approved"));
-	}
-
-	private static Predicate tier(UUID organizationId, FactorTier tier, jakarta.persistence.criteria.Root<?> root,
-			jakarta.persistence.criteria.CriteriaBuilder cb) {
-		var owner = root.get("organizationId");
-		return switch (tier) {
-			case OWN -> cb.equal(owner, organizationId);
-			case LIBRARY -> cb.isNull(owner);
-			case ALL -> cb.or(cb.isNull(owner), cb.equal(owner, organizationId));
-		};
 	}
 
 	private static java.util.Optional<Predicate> equalsIgnoringCase(jakarta.persistence.criteria.Root<?> root,
