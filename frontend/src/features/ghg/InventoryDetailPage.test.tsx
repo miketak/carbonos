@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { InventoryDetailPage } from './InventoryDetailPage'
+import type { InventoryTab } from './inventoryFilters'
 import type {
   Assignment,
   AssignmentPage,
@@ -378,9 +379,14 @@ const run: Run = {
   createdAt: '2026-09-02T10:00:00Z',
 }
 
-function renderPage() {
+/**
+ * The workbench opens on Records (spec 05.6). A test that exercises another
+ * tab names it, the way a reader reaches it: through the URL, which is where
+ * the tab lives so a link reopens the same view.
+ */
+function renderPage(tab?: InventoryTab) {
   return renderWithProviders(<InventoryDetailPage />, {
-    route: '/app/ghg/org-1/inventories/inv-1',
+    route: `/app/ghg/org-1/inventories/inv-1${tab ? `?tab=${tab}` : ''}`,
     path: '/app/ghg/:organizationId/inventories/:inventoryId',
   })
 }
@@ -483,7 +489,7 @@ beforeEach(() => {
   mockEmissionFactors([dieselFactor])
 })
 
-test('renders entities with their share and facilities, assignments, and holds the launch', async () => {
+test('the workbench opens on the records, with the gates and the banner (spec 05.6)', async () => {
   renderPage()
 
   expect(
@@ -491,29 +497,41 @@ test('renders entities with their share and facilities, assignments, and holds t
   ).toBeInTheDocument()
   expect(screen.getByText('GWP AR5')).toBeInTheDocument()
 
-  // boundary: the JV is in with its Table 1 share; its depot and the parent are out
+  // the banner states readiness wherever the reader is standing
+  expect(await screen.findByText('Launch on hold')).toBeInTheDocument()
+
+  // the records are the work surface, so they are what opens
+  expect(screen.getAllByText('Diesel consumption')[0]).toBeInTheDocument()
+  expect(screen.getAllByText('Unclassified')[0]).toBeInTheDocument()
+
+  // the gates are read beside the records that fail them
+  expect(await screen.findByText('LAUNCH ON HOLD')).toBeInTheDocument()
+  expect(screen.getByText(/'Diesel consumption' is unclassified/)).toBeInTheDocument()
+  expect(screen.getByText('Base year')).toBeInTheDocument()
+})
+
+test('the boundary tab holds the entities with their Table 1 share', async () => {
+  renderPage('boundary')
+
+  // the JV is in with its Table 1 share; its depot and the parent are out
   expect(await screen.findByText('Tema JV')).toBeInTheDocument()
   expect(screen.getByText('40%')).toBeInTheDocument()
   expect(screen.getByText(/joint venture under joint financial control/)).toBeInTheDocument()
   expect(screen.getByLabelText('Tema Plant in boundary')).toBeChecked()
   expect(screen.getByLabelText('Tema Depot in boundary')).not.toBeChecked()
   expect(screen.getByLabelText('Ecoriv Holdings in boundary')).not.toBeChecked()
+})
 
-  // assignments: the fact is visible and unclassified (desktop table and mobile card both render)
-  expect(screen.getAllByText('Diesel consumption')[0]).toBeInTheDocument()
-  expect(screen.getAllByText('Unclassified')[0]).toBeInTheDocument()
+test('the runs tab holds the launch, which the gates keep disabled', async () => {
+  renderPage('runs')
 
-  // pre-flight: launch is on hold with the blocking finding listed
-  expect(await screen.findByText('LAUNCH ON HOLD')).toBeInTheDocument()
-  expect(screen.getByText(/'Diesel consumption' is unclassified/)).toBeInTheDocument()
-  expect(screen.getByText('Base year')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeDisabled()
+  expect(await screen.findByRole('button', { name: /launch calculation run/i })).toBeDisabled()
 })
 
 test('ticking an entity in sends an empty treatment so the server prefills from its facts', async () => {
   const user = userEvent.setup()
   vi.mocked(setEntityTreatment).mockResolvedValue({ ...boundary[1], inBoundary: true })
-  renderPage()
+  renderPage('boundary')
 
   await user.click(await screen.findByLabelText('Ecoriv Holdings in boundary'))
   await waitFor(() => expect(setEntityTreatment).toHaveBeenCalledWith('inv-1', 'ent-2', {}))
@@ -522,7 +540,7 @@ test('ticking an entity in sends an empty treatment so the server prefills from 
 test('ticking a facility in sends an empty treatment for its entity', async () => {
   const user = userEvent.setup()
   vi.mocked(setBoundaryTreatment).mockResolvedValue(boundary[0])
-  renderPage()
+  renderPage('boundary')
 
   await user.click(await screen.findByLabelText('Tema Depot in boundary'))
   await waitFor(() => expect(setBoundaryTreatment).toHaveBeenCalledWith('inv-1', 'fac-2', {}))
@@ -531,7 +549,7 @@ test('ticking a facility in sends an empty treatment for its entity', async () =
 test('a facility left out of the boundary records why (Chapter 9, spec 07.2)', async () => {
   const user = userEvent.setup()
   vi.mocked(excludeFacility).mockResolvedValue(boundary[0])
-  renderPage()
+  renderPage('boundary')
 
   await user.selectOptions(
     await screen.findByLabelText('Tema Depot left out because'),
@@ -545,7 +563,7 @@ test('a facility left out of the boundary records why (Chapter 9, spec 07.2)', a
 test('setting a membership window sends the effective date to the entity treatment', async () => {
   const user = userEvent.setup()
   vi.mocked(setEntityTreatment).mockResolvedValue({ ...boundary[0], effectiveFrom: '2025-07-01' })
-  renderPage()
+  renderPage('boundary')
 
   const from = await screen.findByLabelText('Tema JV member from')
   await user.click(from)
@@ -759,9 +777,10 @@ test('review activity data reports how many records were pulled in', async () =>
 
 test('launch is enabled when every gate passes', async () => {
   vi.mocked(getValidation).mockResolvedValue(passingReport)
-  renderPage()
+  renderPage('runs')
 
-  expect(await screen.findByText('READY TO LAUNCH')).toBeInTheDocument()
+  // the banner carries readiness to whichever tab the reader is on (spec 05.6)
+  expect(await screen.findByText('Ready to launch a run')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeEnabled()
 })
 
@@ -788,7 +807,6 @@ test('a draft inventory is flagged, blocks the run, and freezes after confirming
 
   expect(await screen.findByText('DRAFT')).toBeInTheDocument()
   expect(await screen.findByText(/inventory is a draft\. Freeze it/)).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeDisabled()
 
   // the lifecycle bar's button opens a confirm dialog; the dialog's button does the freeze
   await user.click(await screen.findByRole('button', { name: /freeze inventory/i }))
@@ -809,7 +827,7 @@ test('a frozen inventory is read-only, offers reopen, and lists its versions', a
     currentBoundaryVersionNo: 2,
   })
   vi.mocked(listBoundaryVersions).mockResolvedValue([v2, v1])
-  renderPage()
+  renderPage('boundary')
 
   expect(await screen.findByText('FROZEN · BOUNDARY v2')).toBeInTheDocument()
   expect(await screen.findByLabelText('Tema JV in boundary')).toBeDisabled()
@@ -819,7 +837,6 @@ test('a frozen inventory is read-only, offers reopen, and lists its versions', a
   expect(screen.getByRole('button', { name: /reopen as draft/i })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /^publish$/i })).toBeDisabled()
   expect(screen.queryByRole('button', { name: /freeze inventory/i })).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /review activity data/i })).toBeDisabled()
 
   // history: newest first, each naming who froze it and how many facilities it held; the lifecycle bar
   // names the numbering (spec 05.5)
@@ -838,7 +855,7 @@ test('a frozen inventory is read-only, offers reopen, and lists its versions', a
 test('expanding a version loads the boundary it recorded', async () => {
   const user = userEvent.setup()
   vi.mocked(listBoundaryVersions).mockResolvedValue([v1])
-  renderPage()
+  renderPage('boundary')
 
   await user.click(await screen.findByRole('button', { name: /^Boundary version 1 · frozen/ }))
   await waitFor(() => expect(getBoundaryVersion).toHaveBeenCalledWith('bv-1'))
@@ -906,6 +923,24 @@ test('a final inventory offers to withdraw the designation or publish', async ()
   await waitFor(() => expect(publishInventory).toHaveBeenCalledWith('inv-1'))
 })
 
+test('a frozen inventory refuses a re-sync of its records (spec 05.1)', async () => {
+  vi.mocked(getInventory).mockResolvedValue({ ...inventory, status: 'FROZEN' })
+  renderPage()
+
+  expect(await screen.findByRole('button', { name: /review activity data/i })).toBeDisabled()
+})
+
+test('a published inventory cannot launch another run (spec 05.1)', async () => {
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'PUBLISHED',
+    finalRunId: 'run-1',
+  })
+  renderPage('runs')
+
+  expect(await screen.findByRole('button', { name: /launch calculation run/i })).toBeDisabled()
+})
+
 test('a published inventory is a record that offers a correction', async () => {
   vi.mocked(getInventory).mockResolvedValue({
     ...inventory,
@@ -920,7 +955,6 @@ test('a published inventory is a record that offers a correction', async () => {
   expect(await screen.findByText('PUBLISHED · BOUNDARY v1')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /create correction/i })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /^publish$/i })).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeDisabled()
 })
 
 test('a run is voided with a reason, never deleted, and keeps its number', async () => {
@@ -953,7 +987,7 @@ test('a run is voided with a reason, never deleted, and keeps its number', async
     },
   ])
   vi.mocked(voidRun).mockResolvedValue({ ...run, id: 'run-2', runNo: 2, voided: true })
-  renderPage()
+  renderPage('runs')
 
   // the next label counts on from the highest number, voided runs included; no delete button anywhere
   expect(await screen.findByLabelText('Run label')).toHaveValue('Run 003')
@@ -1162,7 +1196,7 @@ test('an entity at 0% under the approach cannot be ticked in and says why (spec 
       shareUnderApproach: 0,
     },
   ])
-  renderPage()
+  renderPage('boundary')
 
   expect(await screen.findByText(/Outside the boundary under equity share/)).toBeInTheDocument()
   expect(screen.getByLabelText('Takoradi Port Co in boundary')).toBeDisabled()
@@ -1290,7 +1324,7 @@ test('a correction asks for its reason and the page names what an inventory inhe
 test('a declared category can say why it is not quantified this year (spec 07.6)', async () => {
   const user = userEvent.setup()
   vi.mocked(setOperationalBoundary).mockResolvedValue(inventory)
-  renderPage()
+  renderPage('boundary')
 
   await user.click(await screen.findByLabelText('15. Investments'))
   await user.type(
@@ -1424,7 +1458,7 @@ test('marking a run final is confirmed with a note by a reviewer (spec 05.5)', a
     finalDesignatedAt: '2026-09-12T10:00:00Z',
     finalNote: 'reconciled against the fuel ledger',
   })
-  renderPage()
+  renderPage('runs')
 
   await user.click(await screen.findByRole('button', { name: /mark as final/i }))
   const dialog = await screen.findByRole('dialog', { name: /mark run 001 as final/i })
@@ -1461,7 +1495,7 @@ test('a preparer sees Mark as final disabled with the role it needs (spec 01.4, 
     createdAt: '2026-08-01T00:00:00Z',
   })
   vi.mocked(listRuns).mockResolvedValue([run])
-  renderPage()
+  renderPage('runs')
 
   const button = await screen.findByRole('button', { name: /mark as final/i })
   await waitFor(() => expect(button).toBeDisabled())
@@ -1601,13 +1635,14 @@ test('a verifier sees the launch and freeze buttons disabled with the role they 
     createdAt: '2026-08-01T00:00:00Z',
   })
   vi.mocked(getValidation).mockResolvedValue(passingReport)
-  renderPage()
+  renderPage('runs')
 
   const launch = await screen.findByRole('button', { name: /launch calculation run/i })
   await waitFor(() => expect(launch).toBeDisabled())
   expect(launch).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
   expect(launch).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
 
+  // the freeze is in the lifecycle strip, which every tab carries
   const freeze = screen.getByRole('button', { name: /freeze inventory/i })
   expect(freeze).toBeDisabled()
   expect(freeze).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
@@ -1626,7 +1661,7 @@ test('a preparer can freeze and launch (spec 01.4)', async () => {
     createdAt: '2026-08-01T00:00:00Z',
   })
   vi.mocked(getValidation).mockResolvedValue(passingReport)
-  renderPage()
+  renderPage('runs')
 
   expect(await screen.findByRole('button', { name: /launch calculation run/i })).toBeEnabled()
   expect(screen.getByRole('button', { name: /freeze inventory/i })).toBeEnabled()
@@ -1724,7 +1759,7 @@ test('the upstream rules card lists the rules and adds one (spec 04.7)', async (
     kind: 'TRANSMISSION_AND_DISTRIBUTION',
     matchingLines: 0,
   })
-  renderPage()
+  renderPage('method')
 
   const table = await screen.findByRole('table', { name: 'Upstream rules' })
   expect(within(table).getByText('Well-to-tank diesel')).toBeInTheDocument()
