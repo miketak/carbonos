@@ -1,10 +1,9 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { ApiError } from '../../lib/api'
 import { renderWithProviders } from '../../test/utils'
 import { OrganizationsPage } from './OrganizationsPage'
-import type { Inventory, Organization } from './api'
+import type { Organization } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 vi.mock('../auth/api', () => ({
@@ -53,11 +52,6 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({ mayCreateOrganization: true })
 })
-
-/** Enough of an inventory for the delete dialog to judge whether it blocks (spec 01.3). */
-function inventoryStub(name: string, status: Inventory['status'], finalRunId: string | null) {
-  return { id: `inv-${name}`, name, status, finalRunId } as Inventory
-}
 
 test('shows a loading skeleton while pending', () => {
   vi.mocked(listOrganizations).mockReturnValue(new Promise(() => {}))
@@ -110,105 +104,30 @@ test('creates an organization through the modal', async () => {
   expect(await screen.findByText(/ecoriv holdings created/i)).toBeInTheDocument()
 })
 
-test('a verifier sees the card without Edit and Delete to use (spec 01.4)', async () => {
-  vi.mocked(listOrganizations).mockResolvedValue([{ ...organizations[0], myRole: 'VERIFIER' }])
+test('an owner is offered the way into Settings, a verifier is not (spec 01.7)', async () => {
+  vi.mocked(listOrganizations).mockResolvedValue([
+    organizations[0],
+    { ...organizations[1], myRole: 'VERIFIER' },
+  ])
   renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
 
-  const edit = await screen.findByRole('button', { name: /edit/i })
-  expect(edit).toBeDisabled()
-  expect(edit).toHaveAttribute('title', 'Needs the Owner role.')
-  expect(edit).toHaveAccessibleDescription('Needs the Owner role.')
-  expect(screen.getByRole('button', { name: /delete/i })).toBeDisabled()
+  // the list opens organizations; administering one is its own page now
+  const settings = await screen.findAllByRole('link', { name: /settings/i })
+  expect(settings).toHaveLength(1)
+  expect(settings[0]).toHaveAttribute('href', '/app/ghg/org-1/settings')
+  expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument()
   // anyone may create their own organization and become its owner
   expect(screen.getByRole('button', { name: /new organization/i })).toBeEnabled()
 })
 
-test('an administrator under support access sees the badge and no Delete (specs 01.3, 01.4)', async () => {
+test('an administrator under support access sees the badge and no Settings (specs 01.3, 01.7)', async () => {
   vi.mocked(listOrganizations).mockResolvedValue([{ ...organizations[0], myRole: 'ADMIN' }])
   renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
 
   expect(await screen.findByText('Support access')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /edit/i })).toBeEnabled()
-  expect(screen.getByRole('button', { name: /delete/i })).toBeDisabled()
-})
-
-test('the delete dialog lists the inventories that keep the organization on file (spec 01.3)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(listOrganizations).mockResolvedValue([organizations[0]])
-  vi.mocked(listInventories).mockResolvedValue([
-    inventoryStub('FY2025 Corporate', 'PUBLISHED', 'run-1'),
-    inventoryStub('FY2026 Corporate', 'DRAFT', null),
-  ])
-  renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
-
-  await user.click(await screen.findByRole('button', { name: /delete/i }))
-  const dialog = await screen.findByRole('dialog', { name: /delete organization/i })
-  expect(await within(dialog).findByText('FY2025 Corporate: Published')).toBeInTheDocument()
-  expect(within(dialog).queryByText('FY2026 Corporate: Published')).not.toBeInTheDocument()
-  expect(
-    within(dialog).getByText(
-      /Publish records are kept: withdraw the final designation or supersede the published inventory first\./,
-    ),
-  ).toBeInTheDocument()
-  expect(within(dialog).getByRole('button', { name: /^delete$/i })).toBeDisabled()
-  expect(within(dialog).queryByLabelText(/to confirm/i)).not.toBeInTheDocument()
-})
-
-test('deleting takes the name typed exactly and a reason (spec 01.3)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(listOrganizations).mockResolvedValue([organizations[0]])
-  vi.mocked(deleteOrganization).mockResolvedValue(undefined)
-  renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
-
-  await user.click(await screen.findByRole('button', { name: /delete/i }))
-  const dialog = await screen.findByRole('dialog', { name: /delete organization/i })
-  const confirm = within(dialog).getByRole('button', { name: /^delete$/i })
-  expect(confirm).toBeDisabled()
-
-  await user.type(within(dialog).getByLabelText(/type ecoriv holdings to confirm/i), 'ecoriv')
-  await user.type(within(dialog).getByLabelText(/reason/i), 'test tenant, no client data')
-  expect(confirm).toBeDisabled()
-
-  await user.clear(within(dialog).getByLabelText(/type ecoriv holdings to confirm/i))
-  await user.type(
-    within(dialog).getByLabelText(/type ecoriv holdings to confirm/i),
-    'Ecoriv Holdings',
-  )
-  expect(confirm).toBeEnabled()
-  await user.click(confirm)
-
-  await waitFor(() =>
-    expect(deleteOrganization).toHaveBeenCalledWith('org-1', {
-      name: 'Ecoriv Holdings',
-      reason: 'test tenant, no client data',
-    }),
-  )
-  expect(await screen.findByText(/ecoriv holdings deleted/i)).toBeInTheDocument()
-})
-
-test('a refused deletion is shown in the dialog, which stays open (spec 01.4)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(listOrganizations).mockResolvedValue([organizations[0]])
-  vi.mocked(deleteOrganization).mockRejectedValue(
-    new ApiError(409, { detail: "'Ecoriv Holdings' cannot be deleted while its records stand." }),
-  )
-  renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
-
-  await user.click(await screen.findByRole('button', { name: /delete/i }))
-  const dialog = await screen.findByRole('dialog', { name: /delete organization/i })
-  await user.type(
-    within(dialog).getByLabelText(/type ecoriv holdings to confirm/i),
-    'Ecoriv Holdings',
-  )
-  await user.type(within(dialog).getByLabelText(/reason/i), 'test tenant, no client data')
-  await user.click(within(dialog).getByRole('button', { name: /^delete$/i }))
-
-  expect(
-    await within(dialog).findByText(
-      /'Ecoriv Holdings' cannot be deleted while its records stand\./,
-    ),
-  ).toBeInTheDocument()
-  expect(screen.getByRole('dialog', { name: /delete organization/i })).toBeInTheDocument()
+  // support access never grants membership changes or deletion (spec 01.3)
+  expect(screen.queryByRole('link', { name: /settings/i })).not.toBeInTheDocument()
 })
 
 test('New organization is absent when the deployment reserves it to administrators', async () => {

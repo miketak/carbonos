@@ -24,6 +24,7 @@ import { FacilitiesPage } from '../features/ghg/FacilitiesPage'
 import { InventoriesPage } from '../features/ghg/InventoriesPage'
 import { InventoryDetailPage } from '../features/ghg/InventoryDetailPage'
 import { OrganizationLayout } from '../features/ghg/OrganizationLayout'
+import { OrganizationSettingsPage } from '../features/ghg/OrganizationSettingsPage'
 import { OrganizationsPage } from '../features/ghg/OrganizationsPage'
 import { OverviewPage } from '../features/ghg/OverviewPage'
 import { RunDetailPage } from '../features/ghg/RunDetailPage'
@@ -75,6 +76,7 @@ export function App() {
           <Route path="factors" element={<EmissionFactorsPage />} />
           <Route path="factor-updates" element={<FactorPackUpdatesPage />} />
           <Route path="units" element={<UnitsPage />} />
+          <Route path="settings" element={<OrganizationSettingsPage />} />
         </Route>
         <Route
           path="/app/profile"

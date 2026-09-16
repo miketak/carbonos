@@ -99,7 +99,7 @@ on staging. The development team covers it.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | In the private window, signed in as the Newcomer, create the organization **Sankofa Gold plc**. | The GHG home lists only this organization. | | |
-| 2 | Open its overview. | The overview lists the Newcomer under **Members** with the role OWNER. | | |
+| 2 | Open it, then open **Settings** from the sidebar. | **Settings** is the last entry in the sidebar, under a divider, with a gear. The page lists the Newcomer under **Members** with the role OWNER. | | |
 
 ### B2. An outsider gets nothing
 
@@ -112,7 +112,7 @@ on staging. The development team covers it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As the Newcomer, on the members card, add the Analyst's email with the role **PREPARER** and the Auditor's email with the role **VERIFIER**. | The two members appear with their roles. | | |
+| 1 | As the Newcomer, on **Settings**, add the Analyst's email with the role **PREPARER** and the Auditor's email with the role **VERIFIER**. | The two members appear with their roles. | | |
 | 2 | Add `nobody@example.test`. | Refused under the field with "No account with that email. Add the user under Manage users first. Ask a platform administrator to add them." The typed address stays in the field. | | |
 | 3 | Add the Analyst a second time. | Refused as already a member. | | |
 
@@ -124,7 +124,7 @@ on staging. The development team covers it.
 | 2 | Add the facility **QA scratch site**, record one activity on it ("QA scratch diesel", 100 litre, any date in 2025), create the inventory **QA scratch** (2025, operational control) and freeze it. | Every write succeeds. | | |
 | 3 | Launch a run (allowed for a preparer). | The run launches. | | |
 | 4 | Look at **Mark as final** on the run. | The button is disabled with the tooltip "Needs the Reviewer or Owner role." (spec 05.5; a direct request is refused with "This action needs the REVIEWER or OWNER role in the organization."). **Publish** stays disabled ("Designate a final run first") until a run is final, so a preparer never reaches it. | | |
-| 5 | Open the organization overview. | The members card has no form and no role selects: a preparer does not manage membership. | | |
+| 5 | Look at the sidebar, then type `/settings` on the end of the organization's URL. | There is no **Settings** entry, and the typed address answers "Settings are the owner's", naming the role it needs. A preparer does not administer the organization. | | |
 
 Procedure 2 removes these three scratch objects before it builds the
 scenario, so keep the names.
@@ -138,7 +138,7 @@ scenario, so keep the names.
 | 3 | Look at the activity register. | There is no **+ Add activity** and no **Import CSV**. Opening a record opens the drawer in read mode: facts, evidence and history, no fields and no **Save**. | | |
 | 4 | Look at the legal entities, facilities, emission factors and units pages. | The add, edit and remove controls are either absent or disabled with the tooltip "Needs the Preparer, Reviewer or Owner role." | | |
 | 5 | Look at the inventory page. | **Launch calculation run** is disabled with the tooltip "Needs the Preparer, Reviewer or Owner role."; **Mark as final** and **Publish** are disabled with "Needs the Reviewer or Owner role." | | |
-| 6 | On the GHG home, look at the organization card. | **Edit** and **Delete** are disabled with "Needs the Owner role."; **New organization** stays available, because anyone may create their own. | | |
+| 6 | On the GHG home, look at the organization card. | It offers **Open** and nothing else: administering an organization is its owner's **Settings** page (spec 01.7), and a verifier has no link to it. **New organization** stays available, because anyone may create their own. | | |
 
 Exports are checked in procedure 7.
 
@@ -168,22 +168,22 @@ Exports are checked in procedure 7.
 | 6 | Open the GHG home. | Sankofa Gold plc is now listed with a **Support access** badge and opens. | | |
 | 7 | Open the activity register, then legal entities, then inventories. | Every page carries a banner naming Sankofa Gold plc, saying you are inside under support access, giving the moment it expires, and saying every act is recorded in the organization's history. It is not only on the overview. | | |
 | 8 | On the organization, classify one record or change the header. | The act succeeds. | | |
-| 9 | Open the organization overview and read the **Support access** card. | It names the admin's email, the time the access was taken, the reason, and the expiry; the history below lists "Support access assumed". | | |
-| 10 | Look at the members card and at **Delete** on the organization card. | The members form and the role selects are absent, and **Delete** is disabled: support access never grants membership changes or deletion. | | |
+| 9 | Open the organization overview and read the **Support access** card. | It names the admin's email, the time the access was taken, the reason, and the expiry. The history of grants is on the owner's **Settings** page, which support access does not open. | | |
+| 10 | Look at the sidebar, and at the organization's card on the GHG home. | There is no **Settings** entry and no **Settings** link on the card, and typing `/settings` answers that support access does not carry it: support access never grants membership changes or deletion. | | |
 | 11 | Back on `/admin/organizations`, click **End access**. | The GHG home no longer lists Sankofa Gold plc. | | |
 | 12 | Paste the organization's URL again. | Not found, and the page says support access ends on its own when its window expires and that an administrator holds no standing access without a grant. It does not say the organization may have been deleted. | | |
-| 13 | As the Newcomer, open the overview's **Support access** card. | The history lists "Support access assumed" and "Support access ended", each with the admin's email. | | |
+| 13 | As the Newcomer, open **Settings** and read **History**. | It lists "Support access assumed" and "Support access ended", each with the admin's email, the moment and the reason. | | |
 
 ### B9. An organization is not deleted while it has a published record
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As the Newcomer, create the throwaway organization **QA tombstone**. | It is created and the Newcomer is its owner. | | |
-| 2 | On its card, click **Delete**. | The dialog asks for the organization's name typed exactly and a reason, and **Delete** stays disabled until both are given. | | |
+| 2 | Open it, then **Settings**, and under **Danger zone** click **Delete organization**. | The dialog asks for the organization's name typed exactly and a reason, and **Delete** stays disabled until both are given. | | |
 | 3 | Type `qa tombstone` (lower case) and a reason of 10 characters or more. | **Delete** stays disabled: the name must match exactly. | | |
 | 4 | Correct the name to `QA tombstone` and confirm. | The organization disappears from the list, and its URL is not found. | | |
 | 5 | Create **QA tombstone** again. | Accepted: a removed name is released for reuse. Delete it again the same way. | | |
-| 6 | On the card of Sankofa Gold plc, whose inventory procedures 7 and 8 publish, click **Delete**. | Once an inventory of it is published or final, the dialog lists it (for example "QA scratch: Published") and refuses with "Publish records are kept: withdraw the final designation or supersede the published inventory first." Skip this step on a first pass, before anything is published. | | |
+| 6 | On **Settings** for Sankofa Gold plc, whose inventory procedures 7 and 8 publish, click **Delete organization**. | Once an inventory of it is published or final, the dialog lists it (for example "QA scratch: Published") and refuses with "Publish records are kept: withdraw the final designation or supersede the published inventory first." Skip this step on a first pass, before anything is published. | | |
 
 ## Sign-off
 

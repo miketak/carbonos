@@ -5,19 +5,16 @@ import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { DeleteOrganizationDialog } from './components/DeleteOrganizationDialog'
 import { AppHeader } from '../../components/AppHeader'
 import { OrganizationFormModal } from './components/OrganizationFormModal'
-import { RoleButton } from './components/RoleButton'
-import { mayManageMembership, mayOwn, OWNER_TOOLTIP } from './roles'
 import { useOrganizationCapabilitiesQuery, useOrganizationsQuery } from './useGhg'
-import type { Organization } from './api'
 
-type Dialog =
-  | { kind: 'create' }
-  | { kind: 'edit'; organization: Organization }
-  | { kind: 'delete'; organization: Organization }
-  | null
+/**
+ * Only creation lives here now. Editing an organization and deleting it moved
+ * to its own settings page (spec 01.7): this list opens organizations, it no
+ * longer administers them.
+ */
+type Dialog = { kind: 'create' } | null
 
 /** Entry point of the GHG workflow: the reporting organizations. */
 export function OrganizationsPage() {
@@ -105,24 +102,14 @@ export function OrganizationsPage() {
                 >
                   Open
                 </Link>
-                <RoleButton
-                  allowed={mayOwn(organization.myRole)}
-                  tooltip={OWNER_TOOLTIP}
-                  variant="ghost"
-                  className="px-3 py-1.5 text-sm"
-                  onClick={() => setDialog({ kind: 'edit', organization })}
-                >
-                  Edit
-                </RoleButton>
-                <RoleButton
-                  allowed={mayManageMembership(organization.myRole)}
-                  tooltip={OWNER_TOOLTIP}
-                  variant="ghost"
-                  className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                  onClick={() => setDialog({ kind: 'delete', organization })}
-                >
-                  Delete
-                </RoleButton>
+                {organization.myRole === 'OWNER' && (
+                  <Link
+                    to={`/app/ghg/${organization.id}/settings`}
+                    className="inline-block rounded-lg px-3 py-1.5 text-sm font-medium text-link transition-colors duration-150 hover:bg-teal/10"
+                  >
+                    Settings
+                  </Link>
+                )}
               </div>
             </GlassCard>
           ))}
@@ -133,26 +120,6 @@ export function OrganizationsPage() {
         <OrganizationFormModal
           onClose={() => setDialog(null)}
           onSaved={(message) => {
-            setDialog(null)
-            toast(message)
-          }}
-        />
-      )}
-      {dialog?.kind === 'edit' && (
-        <OrganizationFormModal
-          organization={dialog.organization}
-          onClose={() => setDialog(null)}
-          onSaved={(message) => {
-            setDialog(null)
-            toast(message)
-          }}
-        />
-      )}
-      {dialog?.kind === 'delete' && (
-        <DeleteOrganizationDialog
-          organization={dialog.organization}
-          onClose={() => setDialog(null)}
-          onDeleted={(message) => {
             setDialog(null)
             toast(message)
           }}

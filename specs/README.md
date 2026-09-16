@@ -19,6 +19,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 01.4 | [Role-aware UI and visible refusals](01.4-role-aware-ui-and-visible-refusals.md) | Ch. 7 | Implemented |
 | 01.5 | [The platform administration panel](01.5-the-platform-administration-panel.md) | Ch. 7, 9, ISO 14064-1, ISO 14064-3 | Approved |
 | 01.6 | [Landing, the account menu, and retiring the resume upload](01.6-landing-the-account-menu-and-retiring-the-resume-upload.md) | Ch. 7, ISO 14064-1 | Approved |
+| 01.7 | [The organization settings area](01.7-the-organization-settings-area.md) | Ch. 7, ISO 14064-1 | Implemented |
 | 02 | [Organization and facts](02-organization-and-facts.md) | Ch. 6, 7 | Implemented |
 | 02.1 | [Emission factor library, provenance and packs](02.1-emission-factor-library.md) | Ch. 6, 9, Scope 2 Guidance | Implemented |
 | 02.2 | [Units, densities, and custom units](02.2-units-densities-and-custom-units.md) | Ch. 6, 7 | Implemented |

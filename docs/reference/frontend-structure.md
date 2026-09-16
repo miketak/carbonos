@@ -47,6 +47,13 @@ administration sections once in its own `sections` array. Adding a page is a
 child route and one entry there. `RequireAuth role="ADMIN"` wraps the layout,
 not each page, so a member never sees the sidebar at all.
 
+`OrganizationLayout` works the same way, with one difference: a section may
+carry `ownerOnly`, which keeps it out of the nav for everybody but an owner by
+membership (spec 01.7). The active-pill arithmetic counts rows and dividers
+over the sections actually rendered, so a hidden entry never slides the pill
+onto the wrong row, and dividers are named by the section they follow rather
+than by index.
+
 ## Feature to module
 
 | Feature | Backend module | Pages |
@@ -55,7 +62,7 @@ not each page, so a member never sees the sidebar at all.
 | `access` | `user` | Request access, set password |
 | `admin` | `user`, `ghg`, `platform` | The administration shell and its dashboard, which opens on what needs a decision (spec 01.5); the access-request queue and the record of what was decided (spec 01.1); the users list; the organizations list where a platform administrator assumes support access (spec 01.3); the factor pack catalogue and the edition workbench, where a pack family, a draft edition and its rows are authored and the validation report is read (spec 02.5); the platform settings and the history of every change to them (spec 01.5) |
 | `profile` | `user`, `media` | Profile and avatar (the resume upload was retired by spec 01.6) |
-| `ghg` | `ghg` | Organizations, overview, entities, facilities, activity data and its source documents, units, emission factors, inventories, inventory detail, run detail, base year |
+| `ghg` | `ghg` | Organizations, overview, entities, facilities, activity data and its source documents, units, emission factors, inventories, inventory detail, run detail, base year, and the organization settings page where an owner administers members, details, history and deletion (spec 01.7) |
 | `home` | none | The public landing page, and the post-sign-in resolver at `/app` (spec 01.6) |
 
 ## The API wrapper
