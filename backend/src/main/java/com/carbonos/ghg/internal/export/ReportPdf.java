@@ -337,13 +337,29 @@ public final class ReportPdf {
 					"Source (publication)");
 			for (var f : report.factors()) {
 				var vintage = f.vintage();
-				row(factors, f.name(), plain(f.kgCo2ePerUnit()) + " / " + f.unit(), gasSplit(f), ReportLabels.label(f.gwpSet()),
+				// spec 07.4: a blend published under another set and not re-derived is said so, per row
+				var gwp = ReportLabels.label(f.gwpSet())
+						+ (f.blendGwpSource() != null && !f.blendGwpSource().equals(f.gwpSet().name())
+								? "; CO2e as published, " + f.blendGwpSource() + ", not rebased" : "");
+				row(factors, f.name(), plain(f.kgCo2ePerUnit()) + " / " + f.unit(), gasSplit(f), gwp,
 						vintage != null ? vintage
 								: f.packs() == null || f.packs().isEmpty() ? "entered by hand"
 										: String.join(", ", f.packs()) + ", vintage not recorded",
 						f.source() + years(f));
 			}
 			document.add(factors);
+			// spec 02.11: a factor approved by the person who entered it, nobody else being able to check
+			// it at the time, is disclosed with the report rather than hidden in the register
+			var selfApproved = report.factors()
+				.stream()
+				.filter(ReportResponse.FactorRow::selfApproved)
+				.map(f -> f.name() + (f.approvedBy() == null ? "" : " (" + f.approvedBy() + ")"))
+				.toList();
+			if (!selfApproved.isEmpty()) {
+				document.add(new Paragraph("Approved by the person who entered them, no other member of the "
+						+ "organization being able to check them at the time: " + String.join("; ", selfApproved) + ".",
+						SMALL));
+			}
 
 			var dq = report.dataQuality();
 			paragraph(document, "8a. Data quality and uncertainty", dq.statement()

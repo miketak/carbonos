@@ -34,6 +34,8 @@ const statusStyles: Record<RecalculationStatus, string> = {
   FLAGGED: 'bg-amber-100 text-amber-800',
   RECALCULATED: 'bg-accent-green/25 text-dark-teal',
   DECLINED: 'bg-slate-200 text-slate-600',
+  // spec 06: a removal put back as the base year held it changed nothing against it
+  SUPERSEDED: 'bg-slate-100 text-slate-500',
 }
 
 /**

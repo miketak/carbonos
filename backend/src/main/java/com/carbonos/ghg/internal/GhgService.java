@@ -701,6 +701,7 @@ public class GhgService {
 				facts.defaultCategory(), facts.scopeAgnostic(), facts.unit().trim(), facts.kgCo2ePerUnit(),
 				facts.gases(), trimToNull(facts.blendComposition()), trimToNull(facts.blendGwpSource()),
 				facts.provenance(), facts.approved(), null, null);
+		factor.recordCreator(access.currentUserEmail());
 		factor.setReportingBasis(facts.reportingBasis());
 		return emissionFactors.save(factor);
 	}
@@ -720,9 +721,35 @@ public class GhgService {
 		return factor;
 	}
 
+	/**
+	 * Approval is a control (spec 02.11; Corporate Standard chapter 7, ISO
+	 * 14064-1 section 8.1): the record names who approved the factor and when.
+	 * The person who typed a factor in does not approve it while another member
+	 * who may write could check it; where nobody else can, the approval is
+	 * recorded as a self-approval and the report says so.
+	 */
 	public EmissionFactor setFactorApproval(UUID id, boolean approved) {
 		var factor = getOwnFactor(id);
-		factor.setApproved(approved);
+		if (!approved) {
+			factor.unapprove();
+			return factor;
+		}
+		var approver = access.currentUserEmail();
+		var own = factor.getCreatedBy() != null && factor.getCreatedBy().equalsIgnoreCase(approver);
+		if (own) {
+			var others = members.findAllByOrganizationIdOrderByCreatedAtAsc(factor.getOrganizationId())
+				.stream()
+				.filter(member -> member.getRole() != OrgRole.VERIFIER && !member.getEmail().equalsIgnoreCase(approver))
+				.toList();
+			if (!others.isEmpty()) {
+				var checker = others.getFirst();
+				throw new GhgRuleViolationException("You entered '" + factor.getName()
+						+ "'. A factor is checked by someone other than the person who typed it (Corporate Standard "
+						+ "chapter 7): ask " + (checker.getDisplayName() == null ? checker.getEmail() : checker.getDisplayName())
+						+ " to approve it.");
+			}
+		}
+		factor.approve(approver, own);
 		return factor;
 	}
 

@@ -11,7 +11,13 @@ import { fieldErrors, refusalMessage } from '../../lib/api'
 import { ScopeBadge } from './components/badges'
 import { PackRowsDrawer } from './components/PackRowsDrawer'
 import { RoleButton } from './components/RoleButton'
-import { categoriesForScope, categoryLabel, reportingBasisLabels, scopeLabels } from './format'
+import {
+  categoriesForScope,
+  categoryLabel,
+  formatDateTime,
+  reportingBasisLabels,
+  scopeLabels,
+} from './format'
 import { mayWrite, WRITE_TOOLTIP } from './roles'
 import {
   useCreateEmissionFactor,
@@ -241,9 +247,19 @@ function FactorTable({
             </td>
             <td className="px-4 py-3">
               {factor.approved ? (
-                <span className="rounded-full bg-accent-green/25 px-2 py-0.5 text-xs font-semibold text-dark-teal">
-                  Approved
-                </span>
+                <>
+                  <span className="rounded-full bg-accent-green/25 px-2 py-0.5 text-xs font-semibold text-dark-teal">
+                    Approved
+                  </span>
+                  {/* spec 02.11: approval is a control, so the record names who and when */}
+                  {factor.approvedBy && (
+                    <span className="mt-1 block text-xs text-ink-muted">
+                      by {factor.approvedBy}
+                      {factor.approvedAt ? ` on ${formatDateTime(factor.approvedAt)}` : ''}
+                      {factor.selfApproved ? ' (self-approved: nobody else could check it)' : ''}
+                    </span>
+                  )}
+                </>
               ) : (
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
                   Not approved

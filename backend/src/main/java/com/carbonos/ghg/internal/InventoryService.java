@@ -732,10 +732,53 @@ public class InventoryService {
 			throw new GhgRuleViolationException("Run " + run.getRunNo() + " is voided and cannot be designated final.");
 		}
 		refuseWhileARecalculationHolds(inventory, "marked final");
+		var holds = finalHolds(inventory);
+		if (!holds.isEmpty()) {
+			throw new GhgRuleViolationException("Run " + run.getRunNo() + " cannot be designated final. "
+					+ String.join(" ", holds));
+		}
 		inventory.designateFinal(runId, access.currentUserEmail(), reviewNote);
 		record(inventory, run, GhgAuditEvent.Action.FINAL_DESIGNATED,
 				"run " + run.getRunNo() + " designated final" + (reviewNote == null ? "" : ": " + reviewNote));
 		return inventory;
+	}
+
+	/**
+	 * What stops a run from being the final result (spec 05.7). A draft run may
+	 * carry a planning value; the figure the report and the base year attach to
+	 * may not. A typical density stands only as a documented proxy, and a blend
+	 * whose CO2e is published under another GWP set and cannot be re-derived
+	 * from a composition would put two sets in one inventory (2013 required
+	 * gases amendment: one set across the inventory).
+	 */
+	List<String> finalHolds(Inventory inventory) {
+		var holds = new ArrayList<String>();
+		var gwp = inventory.getGwpSet();
+		for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventory.getId())) {
+			var factor = assignment.getEmissionFactor();
+			if (!assignment.isIncluded() || factor == null) {
+				continue;
+			}
+			var record = assignment.getActivity().getActivityType();
+			var density = assignment.getDensity();
+			if (density != null && density.isTypical()
+					&& !(assignment.isProxy() && assignment.getProxyJustification() != null)) {
+				holds.add("'" + record + "' converts through the typical density of " + density.getMaterial() + " ("
+						+ plain(density.getKgPerLitre()) + " kg/litre), a planning value: record the supplier's "
+						+ "density under Units, or flag the classification as a proxy with a justification that says "
+						+ "why the typical value stands (spec 02.2).");
+			}
+			var blendBasis = factor.getBlendGwpSource();
+			if (blendBasis != null && !blendBasis.equals(gwp.name()) && !factor.blendConvertsWith(gwp)
+					&& (factor.getHfcsKgPerUnit().signum() > 0 || factor.getPfcsKgPerUnit().signum() > 0)) {
+				holds.add("'" + record + "' uses '" + factor.getName() + "', whose CO2e is published under "
+						+ blendBasis + " and cannot be re-derived under " + gwp.name()
+						+ " (no composition recorded): record the blend's composition, choose a factor on "
+						+ gwp.name() + ", or run the inventory on " + blendBasis
+						+ " (one GWP set across the inventory).");
+			}
+		}
+		return holds;
 	}
 
 	/** Withdraws the final designation; the reason is recorded as an audit event (spec 05.2). */
@@ -2095,6 +2138,17 @@ public class InventoryService {
 						+ "' publishes CO2e only. Its emissions are counted in the scope totals and appear in the by-gas "
 						+ "table on the row 'CO2e from factors without a gas split', not under CO2, CH4 or N2O."));
 			}
+			// spec 05.7: a blend published under another set and not re-derived is said before the final run
+			var blendBasis = chosen.getBlendGwpSource();
+			if (blendBasis != null && !blendBasis.equals(inventory.getGwpSet().name())
+					&& !chosen.blendConvertsWith(inventory.getGwpSet())
+					&& (chosen.getHfcsKgPerUnit().signum() > 0 || chosen.getPfcsKgPerUnit().signum() > 0)) {
+				factorFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType() + "' uses '"
+						+ chosen.getName() + "', whose CO2e is published under " + blendBasis
+						+ " and cannot be re-derived under " + inventory.getGwpSet().name()
+						+ " (no composition recorded). A run prints it as published; a final run needs one GWP "
+						+ "set across the inventory."));
+			}
 			if (Conversion.needsDensity(units, activityUnit, factorUnit)) {
 				// spec 02.2: mass and volume meet through a density; a typical value is disclosed
 				if (assignment.getDensity() == null) {
@@ -2103,11 +2157,13 @@ public class InventoryService {
 							+ chosen.getName() + "' is per " + describeUnit(units, factorUnit)
 							+ ": choose the density that converts between them (record one under Units if none fits)."));
 				}
-				else if (assignment.getDensity().isTypical()) {
+				else if (assignment.getDensity().isTypical()
+						&& !(assignment.isProxy() && assignment.getProxyJustification() != null)) {
 					factorFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType()
 							+ "' converts through the typical density of " + assignment.getDensity().getMaterial() + " ("
 							+ plain(assignment.getDensity().getKgPerLitre())
-							+ " kg/litre). Replace it with the supplier's specification before a final run."));
+							+ " kg/litre), a planning value. A run may use it; a final run may not: record the "
+							+ "supplier's density, or flag the classification as a proxy with a justification."));
 				}
 			}
 			else if (!isReconcilable(units, activityUnit, factorUnit)) {

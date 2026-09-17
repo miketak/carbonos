@@ -64,6 +64,10 @@ const diesel: EmissionFactor = {
   validTo: null,
   note: null,
   approved: true,
+  createdBy: null,
+  approvedBy: null,
+  approvedAt: null,
+  selfApproved: false,
   pack: null,
   packs: [],
   packCode: null,
@@ -90,6 +94,10 @@ const hfo: EmissionFactor = {
   validFrom: '2025-01-01',
   validTo: '2025-12-31',
   approved: false,
+  createdBy: null,
+  approvedBy: null,
+  approvedAt: null,
+  selfApproved: false,
   pack: 'defra-2026',
   packs: ['defra-2026', 'ghana'],
   packCode: 'X',
@@ -341,20 +349,48 @@ test('a hand-entered blend carries its gas mass and composition, and arrives una
   await user.type(within(dialog).getByLabelText(/^Source \(/), 'IPCC AR5 GWP100')
   await user.click(within(dialog).getByRole('button', { name: /^add factor$/i }))
 
-  await waitFor(() =>
-    expect(createEmissionFactor).toHaveBeenCalledWith(
-      'org-1',
-      expect.objectContaining({
-        name: 'Refrigerant R-410A leakage',
-        unit: 'kg',
-        kgCo2ePerUnit: 1923.5,
-        hfcsKgPerUnit: 1,
-        blendComposition: 'HFC-32:0.5,HFC-125:0.5',
-        blendGwpSource: 'AR5',
-        approved: false,
-      }),
-    ),
+  await waitFor(
+    () =>
+      expect(createEmissionFactor).toHaveBeenCalledWith(
+        'org-1',
+        expect.objectContaining({
+          name: 'Refrigerant R-410A leakage',
+          unit: 'kg',
+          kgCo2ePerUnit: 1923.5,
+          hfcsKgPerUnit: 1,
+          blendComposition: 'HFC-32:0.5,HFC-125:0.5',
+          blendGwpSource: 'AR5',
+          approved: false,
+        }),
+      ),
+    // a dozen typed fields on a slow machine: the mutation lands a little after the click
+    { timeout: 5000 },
   )
+})
+
+test('an approved factor names its approver, and a self-approval says nobody else could check it (spec 02.11)', async () => {
+  mockEmissionFactors([
+    {
+      ...hfo,
+      approved: true,
+      approvedBy: 'abena@sankofa.test',
+      approvedAt: '2026-09-17T08:00:00Z',
+    },
+    {
+      ...supplier,
+      approved: true,
+      approvedBy: 'kojo@ecoriv.com',
+      approvedAt: '2026-09-17T08:05:00Z',
+      selfApproved: true,
+    },
+  ])
+  renderPage()
+
+  const hfoRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
+  expect(within(hfoRow).getByText(/by abena@sankofa\.test on/)).toBeInTheDocument()
+  expect(within(hfoRow).queryByText(/self-approved/)).not.toBeInTheDocument()
+  const ownRow = screen.getByText('Quicklime (supplier declaration 2026)').closest('tr')!
+  expect(within(ownRow).getByText(/self-approved: nobody else could check it/)).toBeInTheDocument()
 })
 
 test('the search, the taxonomy filters and the pager run on the server (FU-03)', async () => {

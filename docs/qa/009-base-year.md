@@ -98,11 +98,12 @@ here.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Reopen the 2026 inventory, click **Edit inventory**, set the GWP set to AR6, save, and read the gate. | The header badge reads "GWP AR6" and the **Base year** gate warns "This inventory uses IPCC AR6 potentials; the 2025 base year uses IPCC AR5. The required-gases amendment recommends the same set for both." | | |
-| 2 | Set it back to AR5. | The warning goes. | | |
+| 2 | Read the **Emission factors** gate while the set is AR6. | It warns about R6's factor: "'Chiller refrigerant top-up' uses 'Blends: R407C, Emissions including only Kyoto products', whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded). A run prints it as published; a final run needs one GWP set across the inventory." A run's report would read "CO2e as published, AR5; not rebased" on that row, and **Mark as final** would refuse the run on those words (spec 05.7). | | |
+| 3 | Set it back to AR5. | Both warnings go. | | |
 
 ## E. A version cut before the designation
 
-Run this case last: it clears the base year, which removes the
+Run these cases last: they clear the base year, which removes the
 recalculation history above.
 
 ### E1. The next freeze after the designation is weighed against the base-year boundary
@@ -112,7 +113,16 @@ recalculation history above.
 | 1 | Under **Base year** click **Clear base year**. Create **2026 Scratch**: operational control, 2026-01-01 to 2026-12-31, pre-populated, and freeze it with every facility in. | The inventory freezes; the base-year page records nothing, because there is no base year to weigh against. | | |
 | 2 | Designate 2025 Operational as the base year again (5%, the same reason and convention). | The designation lists no candidates. | | |
 | 3 | Reopen 2026 Scratch, untick S2 with the reason **Not applicable**, "JV interest sold in January 2026", and freeze. | A FLAGGED candidate reads "structural change: Tarkwa Processing Plant removed; 51.77% of base-year emissions, above the 5% threshold, recalculation required". Version 1 was cut before the base year existed and was never weighed, so this freeze compares with the base-year boundary rather than with version 1 (spec 06); without that rule the divestment would never be flagged. | | |
-| 4 | Decline the candidate with a note, then delete 2026 Scratch through its settings. | The organization is back to the inventories the earlier procedures left. | | |
+| 4 | Reopen 2026 Scratch, tick S2 back in with no membership window, and freeze. | No "added" candidate appears. The removal candidate now reads **SUPERSEDED** with the note "put back in boundary version 3 as the base year held it": against the base year nothing changed (spec 06). The 2026 Scratch **Base year** gate passes. | | |
+| 5 | Delete 2026 Scratch through its settings. | The organization is back to the inventories the earlier procedures left. | | |
+
+### E2. The designation weighs the years already frozen
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Clear the base year again. Create **2026 Scratch B** (operational control, 2026), untick S2 with the reason **Not applicable**, "JV interest sold in January 2026", and freeze. | It freezes; nothing is recorded, there being no base year. | | |
+| 2 | Designate 2025 Operational as the base year (5%, the same reason and convention) and read **Recalculation history** without freezing anything. | The designation itself records the FLAGGED candidate "Tarkwa Processing Plant removed; 51.77% ..." against boundary version 1 of 2026 Scratch B: a year that reported first is weighed the day the base year exists (spec 06). | | |
+| 3 | Decline it with a note and delete 2026 Scratch B. | | | |
 
 ## Sign-off
 

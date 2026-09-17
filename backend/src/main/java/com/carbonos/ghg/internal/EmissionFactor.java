@@ -184,6 +184,19 @@ public class EmissionFactor {
 	@Column(name = "grid_region", length = 40)
 	private String gridRegion;
 
+	// spec 02.11: approval is a control, so the record says who entered the factor and who checked it
+	@Column(name = "created_by", length = 320)
+	private String createdBy;
+
+	@Column(name = "approved_by", length = 320)
+	private String approvedBy;
+
+	@Column(name = "approved_at")
+	private Instant approvedAt;
+
+	@Column(name = "self_approved", nullable = false)
+	private boolean selfApproved;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -285,6 +298,42 @@ public class EmissionFactor {
 
 	void setApproved(boolean approved) {
 		this.approved = approved;
+	}
+
+	/** Who typed the factor in, recorded once at creation; a pack row has no author. */
+	void recordCreator(String email) {
+		this.createdBy = email;
+	}
+
+	/** Approves for use in runs, naming the approver; {@code self} marks that nobody else could check it. */
+	void approve(String by, boolean self) {
+		this.approved = true;
+		this.approvedBy = by;
+		this.approvedAt = Instant.now();
+		this.selfApproved = self;
+	}
+
+	void unapprove() {
+		this.approved = false;
+		this.approvedBy = null;
+		this.approvedAt = null;
+		this.selfApproved = false;
+	}
+
+	public String getCreatedBy() {
+		return createdBy;
+	}
+
+	public String getApprovedBy() {
+		return approvedBy;
+	}
+
+	public Instant getApprovedAt() {
+		return approvedAt;
+	}
+
+	public boolean isSelfApproved() {
+		return selfApproved;
 	}
 
 	public String getPack() {

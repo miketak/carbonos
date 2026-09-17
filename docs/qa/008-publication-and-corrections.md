@@ -22,6 +22,15 @@ publication, corrections, the report snapshot or the audit events.
 
 ## A. Final designation
 
+### A0. A final run refuses a planning value (spec 05.7)
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Reopen 2025 Operational as a draft (reason "checking the final-run holds"), open R17 (12 tonne of diesel) on **Records**, and switch its density back to the **typical** Diesel value. Read the pre-flight. | The **Emission factors** gate warns: "'Diesel by tanker' converts through the typical density of Diesel (0.84 kg/litre), a planning value. A run may use it; a final run may not: record the supplier's density, or flag the classification as a proxy with a justification." | | |
+| 2 | Freeze, launch a run, and click **Mark as final** on it. | Refused: "Run 00n cannot be designated final. 'Diesel by tanker' converts through the typical density of Diesel (0.84 kg/litre), a planning value: record the supplier's density under Units, or flag the classification as a proxy with a justification that says why the typical value stands (spec 02.2)." The report and the base year attach to the final run, so a planning value stops here and not before. | | |
+| 3 | Reopen, tick **Proxy factor** on R17 with the justification "No certificate of analysis for this delivery; typical mid-range density", freeze, run, and mark it final. | The designation goes through: the typical value stands as a documented proxy, and the run line prints "(density of Diesel, typical value)" with the justification. | | |
+| 4 | Withdraw the designation with a reason, reopen, restore the **Diesel (GOIL, 2025 CoA)** density and untick the proxy flag, freeze, and void the two scratch runs with a reason. | The inventory is back where procedure 7 left it for A1 below. | | |
+
 ### A1. Designating and withdrawing
 
 | Step | Action | Expected result | Pass/Fail | Notes |

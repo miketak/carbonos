@@ -107,6 +107,13 @@ public class GhgRunFactor {
 	@Column(name = "reporting_basis", nullable = false, length = 30)
 	private ReportingBasis reportingBasis = ReportingBasis.SCOPES;
 
+	// spec 02.11: who approved the factor the run applied, as it stood then
+	@Column(name = "approved_by", length = 320)
+	private String approvedBy;
+
+	@Column(name = "self_approved", nullable = false)
+	private boolean selfApproved;
+
 	protected GhgRunFactor() {
 	}
 
@@ -137,6 +144,8 @@ public class GhgRunFactor {
 		var tags = String.join(", ", factor.getPacks());
 		this.packs = tags.isEmpty() ? null : tags.length() > 200 ? tags.substring(0, 197) + "..." : tags;
 		this.reportingBasis = factor.getReportingBasis();
+		this.approvedBy = factor.getApprovedBy();
+		this.selfApproved = factor.isSelfApproved();
 	}
 
 	public UUID getId() {
@@ -237,5 +246,13 @@ public class GhgRunFactor {
 
 	public ReportingBasis getReportingBasis() {
 		return reportingBasis;
+	}
+
+	public String getApprovedBy() {
+		return approvedBy;
+	}
+
+	public boolean isSelfApproved() {
+		return selfApproved;
 	}
 }

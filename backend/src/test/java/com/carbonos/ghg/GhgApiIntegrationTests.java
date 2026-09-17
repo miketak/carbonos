@@ -2127,6 +2127,178 @@ class GhgApiIntegrationTests {
 	}
 
 	@Test
+	void aTypicalDensityHoldsTheFinalRunUntilItIsDocumentedOrFlaggedAsAProxy() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var tanker = createActivity(orgId, pit, "Diesel by tanker", "12", "tonne", "2025-03-31");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		var typical = JsonPath.<List<String>>read(
+				body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/densities").with(asMember()))),
+				"$[?(@.material == 'Diesel' && @.typical == true)].id").getFirst();
+		var assignmentId = syncAndGetAssignmentId(inventoryId, tanker);
+		mvc.perform(put("/api/ghg/assignments/" + assignmentId + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s", "densityId": "%s"}""".formatted(diesel(orgId), typical)))
+			.andExpect(status().isOk());
+		// spec 05.7: a run may use the planning value and says so; the final result may not
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[3].findings[0].message")
+				.value(org.hamcrest.Matchers.containsString("a planning value. A run may use it; a final run may not")));
+		freeze(inventoryId);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.allOf(
+					org.hamcrest.Matchers.containsString("cannot be designated final"),
+					org.hamcrest.Matchers.containsString("typical density of Diesel (0.84 kg/litre)"))));
+		// the proxy flag with its justification is the documented route to keep the typical value
+		reopen(inventoryId);
+		mvc.perform(put("/api/ghg/assignments/" + assignmentId + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s", "densityId": "%s", "proxy": true,
+					 "proxyJustification": "No certificate of analysis for this delivery; typical mid-range density"}"""
+				.formatted(diesel(orgId), typical)))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].findings[*].message").value(org.hamcrest.Matchers.not(
+					org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("a planning value")))));
+		freeze(inventoryId);
+		var documented = runAndGetId(inventoryId, "Run 002");
+		mvc.perform(post("/api/ghg/runs/" + documented + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("FINAL"));
+	}
+
+	@Test
+	void approvalNamesTheApproverAndRefusesTheAuthorWhileAnotherMemberCanCheck() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		// alone in the organization, the author's approval is recorded as a self-approval
+		var ownFactor = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.with(csrf()).contentType("application/json").content(DIESEL_JSON.replace("\"approved\": true", "\"approved\": false")))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.createdBy").value("kojo@ecoriv.com")));
+		String alone = JsonPath.read(ownFactor, "$.id");
+		mvc.perform(post("/api/ghg/emission-factors/" + alone + "/approve").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.approved").value(true))
+			.andExpect(jsonPath("$.approvedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.selfApproved").value(true));
+		// with a second member who may write, the author is refused and told whom to ask
+		var abena = userService.create("abena@sankofa.test", "Abena Owusu", com.carbonos.user.internal.UserRole.MEMBER,
+				"analyst-passw0rd");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "abena@sankofa.test", "role": "REVIEWER"}"""))
+			.andExpect(status().isCreated());
+		var second = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.with(csrf()).contentType("application/json").content(NATURAL_GAS_JSON)).andExpect(status().isCreated()));
+		String checked = JsonPath.read(second, "$.id");
+		mvc.perform(post("/api/ghg/emission-factors/" + checked + "/approve").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("ask Abena Owusu to approve it")));
+		mvc.perform(post("/api/ghg/emission-factors/" + checked + "/approve").with(as(abena)).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.approvedBy").value("abena@sankofa.test"))
+			.andExpect(jsonPath("$.selfApproved").value(false));
+		mvc.perform(post("/api/ghg/emission-factors/" + checked + "/unapprove").with(as(abena)).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.approvedBy").doesNotExist());
+	}
+
+	@Test
+	void designatingTheBaseYearWeighsTheYearsAlreadyFrozenAndPuttingAFacilityBackSupersedesItsRemoval() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var port = createEntity(orgId, "Takoradi Port Co", "SUBSIDIARY", "100", true);
+		var terminal = createFacility(orgId, "Takoradi Port Loadout", port);
+		var pitDiesel = createActivity(orgId, pit, "Haul fleet diesel", "10000", "litre", "2024-06-30");
+		var portDiesel = createActivity(orgId, terminal, "Shiploader diesel", "500", "litre", "2024-09-30");
+		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
+		putBoundary(base, pit);
+		putBoundary(base, terminal);
+		classify(syncAndGetAssignmentId(base, pitDiesel), diesel(orgId));
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + base + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + portDiesel + "')].id").getFirst(),
+				diesel(orgId));
+		freeze(base);
+		mvc.perform(post("/api/ghg/runs/" + runAndGetId(base, "Base 2024") + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+
+		// 2025 was frozen without the terminal before anyone named a base year
+		var current = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(current, pit);
+		excludeFacility(current, terminal, "NOT_APPLICABLE", "Divested 2025-01-01");
+		freeze(current);
+		// the designation sweeps the years already frozen (Chapter 5: the comparison exists once the base year does)
+		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"inventoryId": "%s", "thresholdPercent": 3, "reason": "First verifiable year"}""".formatted(base)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.recalculations.length()").value(1))
+			.andExpect(jsonPath("$.recalculations[0].status").value("FLAGGED"))
+			.andExpect(jsonPath("$.recalculations[0].boundaryVersionNo").value(1))
+			.andExpect(jsonPath("$.recalculations[0].reason")
+				.value(org.hamcrest.Matchers.startsWith("structural change: Takoradi Port Loadout removed; 4.76%")));
+		mvc.perform(get("/api/ghg/inventories/" + current + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[4].status").value("BLOCKED"));
+		// a second freeze with the same boundary weighs nothing new: version 1 is on the record
+		reopen(current);
+		freeze(current);
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
+			.andExpect(jsonPath("$.recalculations.length()").value(1));
+		// put back exactly as the base year held it: no change against the base year, so the undecided
+		// removal is superseded rather than an "added" candidate raised on top of it
+		reopen(current);
+		putBoundary(current, terminal);
+		freeze(current);
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
+			.andExpect(jsonPath("$.recalculations.length()").value(1))
+			.andExpect(jsonPath("$.recalculations[0].status").value("SUPERSEDED"))
+			.andExpect(jsonPath("$.recalculations[0].decisionNote")
+				.value("put back in boundary version 3 as the base year held it"));
+		mvc.perform(get("/api/ghg/inventories/" + current + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[4].status").value("PASSED"));
+	}
+
+	@Test
+	void aBlendPublishedUnderAnotherGwpSetHoldsTheFinalRun() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var plant = createFacility(orgId, "Tarkwa Processing Plant");
+		var topUp = createActivity(orgId, plant, "Chiller refrigerant top-up", "45", "kg", "2025-09-15");
+		// a blend whose CO2e the source publishes under AR5, with no composition to re-derive it from
+		var published = body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.with(csrf()).contentType("application/json")
+			.content(R410A_JSON.replace("\"blendComposition\": \"HFC-32:0.5,HFC-125:0.5\", ", "")))
+			.andExpect(status().isCreated()));
+		String blend = JsonPath.read(published, "$.id");
+		var ar6 = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "2025 AR6", "periodStart": "2025-01-01", "periodEnd": "2025-12-31",
+						 "consolidationApproach": "OPERATIONAL_CONTROL", "gwpSet": "AR6"}"""))
+			.andExpect(status().isCreated()));
+		String inventoryId = JsonPath.read(ar6, "$.id");
+		putBoundary(inventoryId, plant);
+		classify(syncAndGetAssignmentId(inventoryId, topUp), blend);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[3].status").value("WARNINGS"))
+			.andExpect(jsonPath("$.gates[3].findings[*].message").value(org.hamcrest.Matchers.hasItem(
+					org.hamcrest.Matchers.containsString("published under AR5 and cannot be re-derived under AR6"))));
+		freeze(inventoryId);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		// the run prints the figure as published, and the report says on which basis (spec 07.4)
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.factors[0].gwpSet").value("AR6"))
+			.andExpect(jsonPath("$.factors[0].blendGwpSource").value("AR5"));
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(
+					"whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded)")));
+	}
+
+	@Test
 	void aFacilityThatDidNotExistInTheBaseYearIsOrganicGrowthNotAStructuralChange() throws Exception {
 		var orgId = createOrganization("Sankofa Gold plc");
 		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");

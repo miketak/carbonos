@@ -71,6 +71,7 @@ const recalculationStyles: Record<RecalculationStatus, string> = {
   FLAGGED: 'bg-amber-100 text-amber-800',
   RECALCULATED: 'bg-accent-green/25 text-dark-teal',
   DECLINED: 'bg-slate-200 text-slate-600',
+  SUPERSEDED: 'bg-slate-100 text-slate-500',
 }
 
 /**
@@ -1208,10 +1209,26 @@ function FactorTable({ factors }: { factors: Report['factors'] }) {
                 {f.kgCo2ePerUnit} / {f.unit}
               </td>
               <td className="py-1 pr-2 text-xs text-ink-muted">{gases(f)}</td>
-              <td className="py-1 pr-2 text-xs">IPCC {f.gwpSet}</td>
+              <td className="py-1 pr-2 text-xs">
+                IPCC {f.gwpSet}
+                {/* spec 07.4: a blend published under another set and not re-derived says so */}
+                {f.blendGwpSource && f.blendGwpSource !== f.gwpSet && (
+                  <span className="block text-amber-700">
+                    CO₂e as published, {f.blendGwpSource}; not rebased
+                  </span>
+                )}
+              </td>
               {/* spec 02.3: the packs that delivered the row, always apart from its publication */}
               <td className="py-1 pr-2 text-xs text-ink-muted">
                 {f.packs && f.packs.length > 0 ? f.packs.join(', ') : 'entered by hand'}
+                {f.selfApproved && (
+                  <span
+                    className="block"
+                    title="Approved by the person who entered it, nobody else being able to check it at the time (spec 02.11)"
+                  >
+                    self-approved{f.approvedBy ? ` by ${f.approvedBy}` : ''}
+                  </span>
+                )}
               </td>
               <td className="py-1 text-xs text-ink-muted">{publicationLine(f)}</td>
             </tr>
