@@ -150,6 +150,7 @@ public final class ReportLabels {
 				case FLAGGED -> "Flagged";
 				case RECALCULATED -> "Recalculated";
 				case DECLINED -> "Declined";
+				case SUPERSEDED -> "Superseded";
 			};
 			case RecalculationTrigger trigger -> switch (trigger) {
 				case STRUCTURAL_CHANGE -> "Structural change";

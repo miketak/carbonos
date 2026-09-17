@@ -130,6 +130,7 @@ nav:
               - specs/02.8-viewing-a-packs-factors.md
               - specs/02.9-narrowing-the-catalogue-to-defra-and-ghana.md
               - specs/02.10-retiring-the-shared-factor-library.md
+              - specs/02.11-approval-as-a-control.md
           - "03 Organizational boundary":
               - specs/03-organizational-boundary.md
               - specs/03.1-legal-entities-and-table-1.md
@@ -155,6 +156,7 @@ nav:
               - specs/05.4-copying-a-view-across-consolidation-approaches.md
               - specs/05.5-review-at-scale-and-deliberate-lifecycle-acts.md
               - specs/05.6-the-inventory-workbench.md
+              - specs/05.7-what-a-final-run-refuses.md
           - "06 Tracking emissions over time":
               - specs/06-tracking-emissions-over-time.md
               - specs/06.1-recalculation-policy-conformance.md

@@ -344,6 +344,8 @@ const report: Report = {
     {
       factorId: 'f-1',
       name: 'Diesel',
+      approvedBy: null,
+      selfApproved: false,
       unit: 'litre',
       gwpSet: 'AR5',
       kgCo2ePerUnit: 2.66,
@@ -589,6 +591,30 @@ test('names every assessment report when a blend kept another one', async () => 
 
   expect(await screen.findByText(/More than one assessment report was used/)).toBeInTheDocument()
   expect(screen.getByText(/Assessment reports used: AR6, AR5/)).toBeInTheDocument()
+})
+
+test('a blend published under another set and not re-derived says so on its row (spec 05.7, 07.4)', async () => {
+  vi.mocked(getReport).mockResolvedValue({
+    ...report,
+    methodology: { ...report.methodology, gwpSet: 'AR6' },
+    factors: [
+      {
+        ...report.factors[0],
+        name: 'Blends: R407C',
+        gwpSet: 'AR6',
+        blendGwpSource: 'AR5',
+        blendComposition: null,
+        selfApproved: true,
+        approvedBy: 'kojo@ecoriv.com',
+      },
+    ],
+  })
+  renderRunDetailPage()
+
+  const table = await screen.findByRole('table', { name: 'Emission factors applied' })
+  expect(within(table).getByText(/CO₂e as published, AR5; not rebased/)).toBeInTheDocument()
+  // spec 02.11: a self-approval is disclosed with the factor the run applied
+  expect(within(table).getByText(/self-approved by kojo@ecoriv\.com/)).toBeInTheDocument()
 })
 
 test('prints the operational boundary declaration and the exclusions grouped by reason', async () => {

@@ -49,7 +49,7 @@ export type StraddleTreatment = 'PRO_RATE' | 'BLOCK'
 export type MarketInstrument = 'SUPPLIER_SPECIFIC' | 'CONTRACT' | 'CERTIFICATE' | 'RESIDUAL_MIX'
 /** What a run's market-based scope 2 figure rests on (spec 07.3). */
 export type Scope2MarketBasis = 'INSTRUMENTS' | 'RESIDUAL_MIX' | 'GRID_AVERAGE'
-export type RecalculationStatus = 'FLAGGED' | 'RECALCULATED' | 'DECLINED'
+export type RecalculationStatus = 'FLAGGED' | 'RECALCULATED' | 'DECLINED' | 'SUPERSEDED'
 export type RecalculationTrigger = 'STRUCTURAL_CHANGE' | 'METHODOLOGY_CHANGE' | 'ERROR_CORRECTION'
 /** How a mid-year structural change is accounted (spec 06.1): from its date, or for the whole year. */
 export type StructuralChangeConvention = 'TRANSACTION_DATE' | 'WHOLE_YEAR'
@@ -312,6 +312,12 @@ export interface EmissionFactor {
   validTo: string | null
   note: string | null
   approved: boolean
+  /** Who typed the factor in; null for a pack row (spec 02.11). */
+  createdBy: string | null
+  approvedBy: string | null
+  approvedAt: string | null
+  /** Approved by the person who entered it, nobody else being able to check it at the time. */
+  selfApproved: boolean
   /** The first pack that delivered the factor; `packs` carries every tag (spec 02.3). */
   pack: string | null
   /** Every pack that delivered this publication row, alphabetical (spec 02.3). */
@@ -1820,6 +1826,8 @@ export interface FactorRow {
   packs?: string[]
   /** Absent on a run launched before spec 02.4. */
   reportingBasis?: ReportingBasis
+  approvedBy: string | null
+  selfApproved: boolean
 }
 
 /**

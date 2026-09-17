@@ -35,7 +35,18 @@ optional `baseYear` integer on the inventory connected to nothing.
   before the base year was designated was never weighed, so the next freeze
   after the designation compares with the base-year boundary again rather
   than with that version; otherwise a divestment recorded before anyone
-  named the base year would never be flagged. A facility added or
+  named the base year would never be flagged. Designating the base year also
+  **sweeps** the inventories already frozen under the same approach for a
+  later period and weighs each current boundary against the base year at
+  once, so a year that reported first is measured the day the base year
+  exists (Chapter 5 asks for the comparison whenever there is a base year to
+  compare with).
+- **Putting a facility back supersedes its removal.** A facility removed and
+  then put back exactly as the base year held it (no membership window) is no
+  structural change against the base year: its undecided removal candidate
+  is marked **SUPERSEDED** with the version that restored it, and no "added"
+  candidate is raised. A removal already recalculated stands, and a facility
+  put back under a different window is a change and is weighed as one. A facility added or
   removed, or a membership window changed (spec 03.2), is a candidate
   structural change. The affected facilities are weighed by their base-year
   emissions (from the base run's lines) as a percent of the base-year total;

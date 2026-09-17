@@ -70,11 +70,40 @@ public class BaseYearService {
 		}
 		var trimmedReason = reason.trim();
 		var effectiveConvention = convention == null ? StructuralChangeConvention.TRANSACTION_DATE : convention;
-		return baseYears.findByOrganizationId(organizationId).map(existing -> {
+		var baseYear = baseYears.findByOrganizationId(organizationId).map(existing -> {
 			existing.update(inventory, thresholdPercent, trimmedReason, effectiveConvention);
 			return existing;
 		}).orElseGet(() -> baseYears
 			.save(new BaseYear(organization, inventory, thresholdPercent, trimmedReason, effectiveConvention)));
+		sweep(baseYear);
+		return baseYear;
+	}
+
+	/**
+	 * Weighs the inventories already frozen against the base year just named.
+	 * A year that reported before anyone designated the base year has a
+	 * boundary nobody measured; Chapter 5 asks for the comparison whenever the
+	 * base year exists, not only for freezes that happen to come later.
+	 */
+	private void sweep(BaseYear baseYear) {
+		baseYears.flush();
+		var base = baseYear.getInventory();
+		for (var inventory : inventories.findAllByOrganizationIdOrderByCreatedAtDesc(base.getOrganization().getId())) {
+			if (inventory.getId().equals(base.getId()) || inventory.getStatus() == InventoryStatus.DRAFT
+					|| inventory.getCurrentBoundaryVersionId() == null
+					|| inventory.getConsolidationApproach() != base.getConsolidationApproach()
+					|| !inventory.getPeriodStart().isAfter(base.getPeriodEnd())) {
+				continue;
+			}
+			var alreadyWeighed = baseYear.getRecalculations()
+				.stream()
+				.anyMatch(candidate -> inventory.getCurrentBoundaryVersionId().equals(candidate.getBoundaryVersionId()));
+			if (alreadyWeighed) {
+				continue;
+			}
+			boundaryVersions.findWithEntriesById(inventory.getCurrentBoundaryVersionId())
+				.ifPresent(version -> evaluateStructuralChange(inventory, version, Optional.empty()));
+		}
 	}
 
 	/**
@@ -155,7 +184,7 @@ public class BaseYearService {
 			.filter(candidate -> candidate.getId().equals(recalculationId))
 			.findFirst()
 			.orElseThrow(() -> GhgNotFoundException.recalculation(recalculationId));
-		if (decision == RecalculationStatus.FLAGGED) {
+		if (decision == RecalculationStatus.FLAGGED || decision == RecalculationStatus.SUPERSEDED) {
 			throw new GhgRuleViolationException("A decision is either RECALCULATED or DECLINED.");
 		}
 		if (decision == RecalculationStatus.RECALCULATED) {
@@ -219,7 +248,8 @@ public class BaseYearService {
 		// from the first freeze made after the base year existed: a version cut before the
 		// designation was never measured, so the comparison starts again from the base-year
 		// boundary, or a divestment recorded in that first version would never be flagged.
-		var weighed = previous.filter(cut -> !cut.getFrozenAt().isBefore(baseYear.getCreatedAt()));
+		var weighed = previous.filter(cut -> !cut.getFrozenAt().isBefore(baseYear.getCreatedAt())
+				|| baseYear.getRecalculations().stream().anyMatch(r -> cut.getId().equals(r.getBoundaryVersionId())));
 		var baseline = weighed.or(() -> baseInventory.getConsolidationApproach() == inventory
 			.getConsolidationApproach() && baseInventory.getCurrentBoundaryVersionId() != null
 					? boundaryVersions.findWithEntriesById(baseInventory.getCurrentBoundaryVersionId())
@@ -227,7 +257,37 @@ public class BaseYearService {
 		if (baseline.isEmpty()) {
 			return;
 		}
-		var changes = structuralChanges(baseline.get(), version);
+		var changes = new HashMap<>(structuralChanges(baseline.get(), version));
+		// A facility taken out and then put back exactly as the base year held it is no structural
+		// change against the base year. Its undecided removal candidate is superseded rather than a
+		// second candidate raised for the "addition"; a removal already recalculated stands, and a
+		// facility put back under a different window is a change and is weighed as one.
+		var baseBoundary = baseInventory.getConsolidationApproach() == inventory.getConsolidationApproach()
+				&& baseInventory.getCurrentBoundaryVersionId() != null
+						? boundaryVersions.findWithEntriesById(baseInventory.getCurrentBoundaryVersionId())
+						: Optional.<BoundaryVersion>empty();
+		if (baseBoundary.isPresent()) {
+			var againstBase = structuralChanges(baseBoundary.get(), version);
+			for (var entry : List.copyOf(changes.entrySet())) {
+				if (!entry.getValue().endsWith(" added") || againstBase.containsKey(entry.getKey())) {
+					continue;
+				}
+				var name = entry.getValue().substring(0, entry.getValue().length() - " added".length());
+				var superseded = baseYear.getRecalculations()
+					.stream()
+					.filter(candidate -> candidate.getStatus() == RecalculationStatus.FLAGGED
+							&& inventory.getId().equals(candidate.getTriggeringInventoryId())
+							&& candidate.getReason().contains(name + " removed"))
+					.toList();
+				if (superseded.isEmpty()) {
+					continue;
+				}
+				superseded.forEach(candidate -> candidate.decide(RecalculationStatus.SUPERSEDED, null,
+						"put back in boundary version " + version.getVersionNo() + " as the base year held it",
+						access.currentUserEmail()));
+				changes.remove(entry.getKey());
+			}
+		}
 		if (changes.isEmpty()) {
 			return;
 		}

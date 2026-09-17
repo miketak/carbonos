@@ -30,6 +30,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 02.7 | [Adopting a new edition](02.7-adopting-a-new-edition.md) | Ch. 1, 5, 9, ISO 14064-1 | Implemented |
 | 02.8 | [Viewing a pack's factors](02.8-viewing-a-packs-factors.md) | Ch. 6, 9 | Approved |
 | 02.9 | [Narrowing the catalogue to DEFRA and Ghana](02.9-narrowing-the-catalogue-to-defra-and-ghana.md) | Ch. 6, 7, 9, ISO 14064-1 | Implemented |
+| 02.11 | [Approval as a control](02.11-approval-as-a-control.md) | Ch. 7, ISO 14064-1 | Implemented |
 | 02.10 | [Retiring the shared factor library](02.10-retiring-the-shared-factor-library.md) | Ch. 6, 7, 9, ISO 14064-1 | Implemented |
 | 03 | [Organizational boundary](03-organizational-boundary.md) | Ch. 3 | Implemented |
 | 03.1 | [Legal entities and Table 1](03.1-legal-entities-and-table-1.md) | Ch. 3 | Implemented |
@@ -53,6 +54,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 05.4 | [Copying a view across consolidation approaches](05.4-copying-a-view-across-consolidation-approaches.md) | Ch. 3, 9, App. F | Implemented |
 | 05.5 | [Review at scale and deliberate lifecycle acts](05.5-review-at-scale-and-deliberate-lifecycle-acts.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
 | 05.6 | [The inventory as a workbench](05.6-the-inventory-workbench.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
+| 05.7 | [What a final run refuses](05.7-what-a-final-run-refuses.md) | Ch. 1, 4, 9, ISO 14064-1 | Implemented |
 | 06 | [Tracking emissions over time](06-tracking-emissions-over-time.md) | Ch. 5 | Implemented |
 | 06.1 | [Recalculation policy conformance](06.1-recalculation-policy-conformance.md) | Ch. 5, 9 | Implemented |
 | 07 | [Reporting and verification](07-reporting-and-verification.md) | Ch. 9, 10 | Implemented |

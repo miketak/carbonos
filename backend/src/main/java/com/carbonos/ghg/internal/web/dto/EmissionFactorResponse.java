@@ -1,6 +1,7 @@
 package com.carbonos.ghg.internal.web.dto;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -17,7 +18,8 @@ public record EmissionFactorResponse(UUID id, UUID organizationId, String name, 
 		BigDecimal kgCo2ePerUnit, Gases gases, BigDecimal biogenicCo2KgPerUnit, GwpSet gwpSet, String blendGwpSource,
 		String blendComposition, boolean ch4Fossil, boolean co2eOnly, String source, String sourceUrl,
 		Integer publicationYear, Integer dataYear, LocalDate validFrom, LocalDate validTo, String note,
-		boolean approved, String pack, List<String> packs, String packCode, String gridRegion,
+		boolean approved, String createdBy, String approvedBy, Instant approvedAt, boolean selfApproved,
+		String pack, List<String> packs, String packCode, String gridRegion,
 		ReportingBasis reportingBasis, String sourceCategory, String sourceActivity, String sourceDetail,
 		String sourceEdition, boolean locallyEdited, UUID supersededById, List<Version> versions) {
 
@@ -57,7 +59,8 @@ public record EmissionFactorResponse(UUID id, UUID organizationId, String name, 
 				factor.getBiogenicCo2KgPerUnit(), GwpSet.AR5, factor.getBlendGwpSource(), factor.describeBlend(),
 				factor.isCh4Fossil(), factor.isCo2eOnly(), factor.getSource(), factor.getSourceUrl(),
 				factor.getPublicationYear(), factor.getDataYear(), factor.getValidFrom(), factor.getValidTo(),
-				factor.getNote(), factor.isApproved(), factor.getPack(), factor.getPacks(), factor.getPackCode(),
+				factor.getNote(), factor.isApproved(), factor.getCreatedBy(), factor.getApprovedBy(),
+				factor.getApprovedAt(), factor.isSelfApproved(), factor.getPack(), factor.getPacks(), factor.getPackCode(),
 				factor.getGridRegion(), factor.getReportingBasis(), factor.getSourceCategory(),
 				factor.getSourceActivity(), factor.getSourceDetail(), factor.getSourceEdition(),
 				factor.isLocallyEdited(), factor.getSupersededById(), versions.stream().map(Version::of).toList());
