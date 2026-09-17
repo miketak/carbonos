@@ -64,7 +64,7 @@ do what a user does, with the QA procedures as your script.
 1. Read [spec 00, Principles and domain model](../specs/00-principles-and-domain-model.md)
    once, start to finish. It is about fifteen minutes. Pay attention to the
    three invariants: facts, views, and computations.
-2. Open [QA procedure 2, Organization setup](../reference/qa/002-organization-setup.md)
+2. Open [QA procedure 2, Organization setup](../reference/qa/mining/002-organization-setup.md)
    and run it on your local instance. It creates Sankofa Gold plc, a
    Ghanaian gold miner, with its entities, facilities, source streams and
    units.
@@ -73,8 +73,8 @@ do what a user does, with the QA procedures as your script.
     have either found a bug or misread the product, and both are worth
     raising on day 5.
 
-3. Run [procedure 3, Activity data](../reference/qa/003-activity-data.md)
-   and [procedure 4, Boundary and inventory lifecycle](../reference/qa/004-boundary-and-lifecycle.md).
+3. Run [procedure 3, Activity data](../reference/qa/mining/003-activity-data.md)
+   and [procedure 4, Boundary and inventory lifecycle](../reference/qa/mining/004-boundary-and-lifecycle.md).
 
     By the end you have an inventory with a frozen boundary. The
     [inventory lifecycle](../explanation/inventory-lifecycle.md) explains

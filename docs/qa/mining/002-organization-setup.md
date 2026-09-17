@@ -4,13 +4,13 @@
 streams, units and emission factors can be recorded with the facts and the
 provenance a verifier expects, and that the rules on each are enforced.
 
-**Covers** [spec 02](../../specs/02-organization-and-facts.md),
-[spec 02.1](../../specs/02.1-emission-factor-library.md),
-[spec 02.2](../../specs/02.2-units-densities-and-custom-units.md),
-[spec 03.1](../../specs/03.1-legal-entities-and-table-1.md),
-[spec 03.3](../../specs/03.3-table-1-completeness.md),
-[spec 03.4](../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md)
-and [spec 04.3](../../specs/04.3-source-streams-and-scope-choice.md).
+**Covers** [spec 02](../../../specs/02-organization-and-facts.md),
+[spec 02.1](../../../specs/02.1-emission-factor-library.md),
+[spec 02.2](../../../specs/02.2-units-densities-and-custom-units.md),
+[spec 03.1](../../../specs/03.1-legal-entities-and-table-1.md),
+[spec 03.3](../../../specs/03.3-table-1-completeness.md),
+[spec 03.4](../../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md)
+and [spec 04.3](../../../specs/04.3-source-streams-and-scope-choice.md).
 
 **Estimated time:** 75 minutes.
 

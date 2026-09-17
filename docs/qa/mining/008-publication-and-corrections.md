@@ -5,10 +5,10 @@ right role, that a published report never changes, that what came after is
 shown apart, and that a correction inherits the view with a reason and
 reports what it changed.
 
-**Covers** [spec 05.1](../../specs/05.1-inventory-lifecycle-and-run-snapshots.md),
-[spec 05.2](../../specs/05.2-run-numbering-and-voiding.md),
-[spec 05.3](../../specs/05.3-inheritance-and-the-published-record.md) and
-[spec 01.2](../../specs/01.2-organization-membership-and-roles.md) (roles).
+**Covers** [spec 05.1](../../../specs/05.1-inventory-lifecycle-and-run-snapshots.md),
+[spec 05.2](../../../specs/05.2-run-numbering-and-voiding.md),
+[spec 05.3](../../../specs/05.3-inheritance-and-the-published-record.md) and
+[spec 01.2](../../../specs/01.2-organization-membership-and-roles.md) (roles).
 
 **Estimated time:** 45 minutes.
 

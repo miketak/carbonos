@@ -131,7 +131,7 @@ it establishes the cross-module event pattern.
 - `GhgApiIntegrationTests.organizationsAreInvisibleToNonOwners` and the
   boundary-version isolation test: outsider 404s across organizations,
   activities, inventories, runs and versions; administrator oversight.
-- Manual: `docs/qa/003-inventory.md` section A (admin creates the accounts,
+- Manual: `docs/qa/mining/003-inventory.md` section A (admin creates the accounts,
   member has no admin area) and section K (tenant isolation).
 
 ## Non-goals and open questions

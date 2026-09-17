@@ -7,7 +7,7 @@ last_reviewed: 2026-09-10
 
 The QA team works in Google Workspace and types the verdicts of a procedure
 into its own copy of a Google Doc. `make qa-docs` produces the documents from
-`docs/qa`: pandoc converts the README and each procedure to DOCX with the
+`docs/qa/<persona>` (mining by default): pandoc converts the persona's README and each procedure to DOCX with the
 title, the version, working links and landscape pages, and you upload the
 files to the shared Drive folder, where Drive turns them into Google Docs. There is no
 workflow for this on purpose: a round of testing happens far less often than
@@ -16,8 +16,8 @@ a push, so the export is run by hand before a round.
 ```mermaid
 flowchart LR
     accTitle: How a QA procedure becomes a Google Doc
-    accDescr: make qa-docs converts docs/qa with pandoc, rewriting spec links to GitHub, setting landscape pages and outlining the tables, into DOCX files under build/qa-docs; the maintainer uploads them to the shared Drive folder, which converts them to Google Docs.
-    md[docs/qa/*.md] -->|make qa-docs| docx[build/qa-docs/*.docx]
+    accDescr: make qa-docs converts one persona under docs/qa with pandoc, rewriting spec links to GitHub, setting landscape pages and outlining the tables, into DOCX files under build/qa-docs; the maintainer uploads them to the shared Drive folder, which converts them to Google Docs.
+    md[docs/qa/mining/*.md] -->|make qa-docs| docx[build/qa-docs/*.docx]
     docx -->|upload by hand| drive[Drive folder, converted to Google Docs]
 ```
 

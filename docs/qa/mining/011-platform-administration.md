@@ -7,12 +7,12 @@ say: the support-access window governs new grants without moving grants
 already in force, and reserving organization creation to administrators seats
 the client as owner rather than the administrator.
 
-**Covers** [spec 01.5](../../specs/01.5-the-platform-administration-panel.md)
+**Covers** [spec 01.5](../../../specs/01.5-the-platform-administration-panel.md)
 whole, the administration half of
-[spec 01.6](../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md),
+[spec 01.6](../../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md),
 and the parts of
-[spec 01.3](../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md)
-and [spec 02.7](../../specs/02.7-adopting-a-new-edition.md) that the settings
+[spec 01.3](../../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md)
+and [spec 02.7](../../../specs/02.7-adopting-a-new-edition.md) that the settings
 change.
 
 **Estimated time:** 50 minutes.

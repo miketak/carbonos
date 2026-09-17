@@ -5,16 +5,16 @@ arithmetic a verifier can re-perform, that runs are numbered and voided
 rather than deleted, that the report carries every Chapter 9 element, and
 that the exports match the page.
 
-**Covers** [spec 05](../../specs/05-inventories-and-calculation.md),
-[spec 05.1](../../specs/05.1-inventory-lifecycle-and-run-snapshots.md),
-[spec 05.2](../../specs/05.2-run-numbering-and-voiding.md),
-[spec 07](../../specs/07-reporting-and-verification.md),
-[spec 07.1](../../specs/07.1-reporting-completeness.md),
-[spec 07.2](../../specs/07.2-required-disclosures.md),
-[spec 07.3](../../specs/07.3-scope-2-instrument-coverage.md),
-[spec 07.4](../../specs/07.4-report-tables-factors-and-metadata.md),
-[spec 07.5](../../specs/07.5-report-export.md) and the report parts of
-[spec 04.4](../../specs/04.4-activity-data-quality-evidence-and-corrections.md).
+**Covers** [spec 05](../../../specs/05-inventories-and-calculation.md),
+[spec 05.1](../../../specs/05.1-inventory-lifecycle-and-run-snapshots.md),
+[spec 05.2](../../../specs/05.2-run-numbering-and-voiding.md),
+[spec 07](../../../specs/07-reporting-and-verification.md),
+[spec 07.1](../../../specs/07.1-reporting-completeness.md),
+[spec 07.2](../../../specs/07.2-required-disclosures.md),
+[spec 07.3](../../../specs/07.3-scope-2-instrument-coverage.md),
+[spec 07.4](../../../specs/07.4-report-tables-factors-and-metadata.md),
+[spec 07.5](../../../specs/07.5-report-export.md) and the report parts of
+[spec 04.4](../../../specs/04.4-activity-data-quality-evidence-and-corrections.md).
 
 **Estimated time:** 75 minutes.
 

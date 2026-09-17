@@ -18,5 +18,5 @@ the code disagree, the code wins and the page needs a pull request.
 | [Environments](environments.md) | Local, staging and production: addresses, services and variables. |
 | [Conventions](conventions.md) | Branching, commits, versions, code style and writing style. |
 | [Specs](../specs/README.md) | What the product must do, chapter by chapter of the GHG Protocol. |
-| [QA procedures](qa/README.md) | Objective-led manual test scripts for staging. |
+| [QA procedures](qa/README.md) | Objective-led manual test scripts, one pack per persona (mining first). |
 | [Decision records](../adr/README.md) | Why the tooling and the structure are the way they are. |

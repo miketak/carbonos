@@ -9,9 +9,9 @@ invisible to every organization until it is published; and that the
 organization, not the platform, decides whether to adopt a published
 edition.
 
-**Covers** [spec 02.5](../../specs/02.5-factor-pack-editions.md) whole:
+**Covers** [spec 02.5](../../../specs/02.5-factor-pack-editions.md) whole:
 authoring in sections A to C, publication in section D. Section E covers
-[spec 02.7](../../specs/02.7-adopting-a-new-edition.md): the notice reaching
+[spec 02.7](../../../specs/02.7-adopting-a-new-edition.md): the notice reaching
 the organization's own workspace, the diff behind it, and the decision a
 reviewer or an owner records on it. Section F covers the withdrawal and leaves
 the environment tidy.

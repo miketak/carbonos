@@ -5,17 +5,17 @@ accounting decision, that departures from the default need a justification,
 that mass and volume reconcile through a density, and that the pre-flight
 gates block a run that would misstate the inventory.
 
-**Covers** [spec 04](../../specs/04-operational-boundary-and-classification.md),
-[spec 04.1](../../specs/04.1-scope-as-accounting-decision.md),
-[spec 04.2](../../specs/04.2-activity-periods-and-pro-rating.md),
-[spec 04.3](../../specs/04.3-source-streams-and-scope-choice.md),
-[spec 04.4](../../specs/04.4-activity-data-quality-evidence-and-corrections.md)
-(exclusions), [spec 02.2](../../specs/02.2-units-densities-and-custom-units.md),
-[spec 03.4](../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md)
-(suggestions and leases), [spec 05](../../specs/05-inventories-and-calculation.md)
-(gates) and [spec 07.6](../../specs/07.6-scope2-instrument-criteria-and-scope3-crosscheck.md)
+**Covers** [spec 04](../../../specs/04-operational-boundary-and-classification.md),
+[spec 04.1](../../../specs/04.1-scope-as-accounting-decision.md),
+[spec 04.2](../../../specs/04.2-activity-periods-and-pro-rating.md),
+[spec 04.3](../../../specs/04.3-source-streams-and-scope-choice.md),
+[spec 04.4](../../../specs/04.4-activity-data-quality-evidence-and-corrections.md)
+(exclusions), [spec 02.2](../../../specs/02.2-units-densities-and-custom-units.md),
+[spec 03.4](../../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md)
+(suggestions and leases), [spec 05](../../../specs/05-inventories-and-calculation.md)
+(gates) and [spec 07.6](../../../specs/07.6-scope2-instrument-criteria-and-scope3-crosscheck.md)
 (the declaration cross-check), and
-[spec 05.5](../../specs/05.5-review-at-scale-and-deliberate-lifecycle-acts.md)
+[spec 05.5](../../../specs/05.5-review-at-scale-and-deliberate-lifecycle-acts.md)
 (the filters, the factor as text, the freeze gate).
 
 **Estimated time:** 90 minutes.

@@ -152,7 +152,7 @@ organization names; the reporting-company entity and facility default;
 entity delete guards; future-dated facts refused; corrections leave runs
 untouched; delete guards. `UnitConverterTest`: dimensional conversions, alias
 normalization, cross-dimension refusal, seeded-unit coverage. Manual:
-`docs/qa/003-inventory.md` sections B and C. Frontend: `EntitiesPage.test.tsx`,
+`docs/qa/mining/003-inventory.md` sections B and C. Frontend: `EntitiesPage.test.tsx`,
 `FacilitiesPage.test.tsx`.
 
 ## Non-goals and open questions

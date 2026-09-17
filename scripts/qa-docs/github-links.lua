@@ -1,13 +1,13 @@
 -- Rewrites the relative links of a QA procedure so they work outside the repo.
 --
--- Inside the repo a procedure links to its specs as ../../specs/NN.md and to
+-- Inside the repo a procedure links to its specs as ../../../specs/NN.md and to
 -- its siblings as 00N-name.md. In a Google Doc those paths are dead, so every
 -- relative link becomes <repo_url>/blob/<git_ref>/<path resolved from the
 -- repository root>. Absolute links and in-document anchors are left alone.
 --
 -- Metadata expected (passed with -M): repo_url, git_ref, source_path (the
 -- Markdown file's path from the repository root, for example
--- docs/qa/001-access-and-roles.md).
+-- docs/qa/mining/001-access-and-roles.md).
 
 local repo_url = ""
 local git_ref = "main"

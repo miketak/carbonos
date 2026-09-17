@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Export the QA procedures (docs/qa) as DOCX files ready for Google Docs.
+"""Export one persona's QA procedures (docs/qa/<persona>) as DOCX files ready for Google Docs.
 
-Converts docs/qa/README.md and docs/qa/NNN-*.md with pandoc: the H1 becomes the
+Converts docs/qa/<persona>/README.md and docs/qa/<persona>/NNN-*.md with pandoc: the H1 becomes the
 title, a subtitle carries the git ref and build date, relative links point at
 GitHub, the pages are landscape so the step tables have room, and every table
 gets an outline. Upload the files to the shared Drive folder by hand; Drive
@@ -22,7 +22,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-QA_DIR = REPO_ROOT / "docs" / "qa"
+QA_ROOT = REPO_ROOT / "docs" / "qa"
+DEFAULT_PERSONA = "mining"
 LUA_FILTERS = [
     REPO_ROOT / "scripts" / "qa-docs" / "github-links.lua",
     REPO_ROOT / "scripts" / "qa-docs" / "step-tables.lua",
@@ -86,8 +87,13 @@ def _git(*args: str) -> str:
 # --- naming ------------------------------------------------------------------------
 
 
-def source_files() -> list[Path]:
-    return [QA_DIR / "README.md", *sorted(QA_DIR.glob("[0-9][0-9][0-9]-*.md"))]
+def source_files(persona: str = DEFAULT_PERSONA) -> list[Path]:
+    """The persona's README (the "start here" document) and its numbered procedures."""
+    qa_dir = QA_ROOT / persona
+    if not (qa_dir / "README.md").is_file():
+        personas = sorted(p.name for p in QA_ROOT.iterdir() if (p / "README.md").is_file())
+        raise SystemExit(f"No QA persona named '{persona}' under docs/qa; found: {', '.join(personas) or 'none'}")
+    return [qa_dir / "README.md", *sorted(qa_dir.glob("[0-9][0-9][0-9]-*.md"))]
 
 
 def doc_name(source: Path) -> str:
@@ -111,7 +117,7 @@ def docx_path(out_dir: Path, source: Path) -> Path:
 # --- build ---------------------------------------------------------------------------
 
 
-def build(out_dir: Path) -> list[tuple[str, Path]]:
+def build(out_dir: Path, persona: str = DEFAULT_PERSONA) -> list[tuple[str, Path]]:
     pandoc = shutil.which("pandoc")
     if pandoc is None:
         sys.exit("pandoc is not installed: apt-get install pandoc, brew install pandoc, or see the how-to.")
@@ -119,7 +125,7 @@ def build(out_dir: Path) -> list[tuple[str, Path]]:
     out_dir = out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     built: list[tuple[str, Path]] = []
-    for source in source_files():
+    for source in source_files(persona):
         target = docx_path(out_dir, source)
         command = [
             pandoc,
@@ -223,8 +229,9 @@ def add_table_borders(docx: Path, eighths: int = TABLE_BORDER_EIGHTHS) -> int:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "build" / "qa-docs", help="where the DOCX files go")
+    parser.add_argument("--persona", default=DEFAULT_PERSONA, help="the folder under docs/qa to export (default: mining)")
     args = parser.parse_args(argv)
-    build(args.out)
+    build(args.out, args.persona)
 
 
 if __name__ == "__main__":

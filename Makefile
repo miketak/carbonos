@@ -65,5 +65,5 @@ vale:             ## Vale (advisory) on markdown changed against $(BASE); skips 
 	  files=$$( { git diff --name-only --diff-filter=ACMR "$$(git merge-base $(BASE) HEAD)" -- '*.md'; git ls-files --others --exclude-standard -- '*.md'; } | sort -u); \
 	  if [ -n "$$files" ]; then vale --no-exit $$files; else echo "no markdown changed against $(BASE)"; fi
 
-qa-docs:          ## export docs/qa as DOCX under build/qa-docs, ready to upload to Google Drive (needs pandoc)
-	uv run --locked python scripts/publish_qa_docs.py --out build/qa-docs
+qa-docs:          ## export a persona's QA procedures as DOCX under build/qa-docs: make qa-docs [PERSONA=mining] (needs pandoc)
+	uv run --locked python scripts/publish_qa_docs.py --out build/qa-docs --persona $(or $(PERSONA),mining)

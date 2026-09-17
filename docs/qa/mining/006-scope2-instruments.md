@@ -5,9 +5,9 @@ instruments that pass every Scope 2 Quality Criterion, that coverage and
 period are applied line by line, and that the report discloses the
 residual mix and the method either way.
 
-**Covers** [spec 07.2](../../specs/07.2-required-disclosures.md),
-[spec 07.3](../../specs/07.3-scope-2-instrument-coverage.md) and
-[spec 07.6](../../specs/07.6-scope2-instrument-criteria-and-scope3-crosscheck.md).
+**Covers** [spec 07.2](../../../specs/07.2-required-disclosures.md),
+[spec 07.3](../../../specs/07.3-scope-2-instrument-coverage.md) and
+[spec 07.6](../../../specs/07.6-scope2-instrument-criteria-and-scope3-crosscheck.md).
 
 **Estimated time:** 45 minutes.
 
