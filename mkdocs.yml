@@ -154,6 +154,7 @@ nav:
               - specs/05.3-inheritance-and-the-published-record.md
               - specs/05.4-copying-a-view-across-consolidation-approaches.md
               - specs/05.5-review-at-scale-and-deliberate-lifecycle-acts.md
+              - specs/05.6-the-inventory-workbench.md
           - "06 Tracking emissions over time":
               - specs/06-tracking-emissions-over-time.md
               - specs/06.1-recalculation-policy-conformance.md

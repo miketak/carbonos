@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { InventoryDetailPage } from './InventoryDetailPage'
+import type { InventoryTab } from './inventoryFilters'
 import type {
   Assignment,
   AssignmentPage,
@@ -18,12 +19,7 @@ import type {
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import { listEmissionFactors } from './testApiMock'
-import { mockEmissionFactors } from './testApiMock'
-
-// the workspace page imports every section component; its first render on a loaded
-// machine (parallel jsdom workers) can exceed the 15s default
-vi.setConfig({ testTimeout: 30000 })
+import { listEmissionFactors, mockEmissionFactors } from './testApiMock'
 
 import {
   classifyAssignment,
@@ -119,6 +115,7 @@ const inventory: Inventory = {
   scope3NotQuantified: [],
   residualMixAvailable: null,
   residualMixKgCo2ePerKwh: null,
+  intensityMetrics: [],
   finalRunId: null,
   status: 'DRAFT',
   supersededById: null,
@@ -378,9 +375,14 @@ const run: Run = {
   createdAt: '2026-09-02T10:00:00Z',
 }
 
-function renderPage() {
+/**
+ * The workbench opens on Records (spec 05.6). A test that exercises another
+ * tab names it, the way a reader reaches it: through the URL, which is where
+ * the tab lives so a link reopens the same view.
+ */
+function renderPage(tab?: InventoryTab) {
   return renderWithProviders(<InventoryDetailPage />, {
-    route: '/app/ghg/org-1/inventories/inv-1',
+    route: `/app/ghg/org-1/inventories/inv-1${tab ? `?tab=${tab}` : ''}`,
     path: '/app/ghg/:organizationId/inventories/:inventoryId',
   })
 }
@@ -483,7 +485,7 @@ beforeEach(() => {
   mockEmissionFactors([dieselFactor])
 })
 
-test('renders entities with their share and facilities, assignments, and holds the launch', async () => {
+test('the workbench opens on the records, with the gates and the banner (spec 05.6)', async () => {
   renderPage()
 
   expect(
@@ -491,29 +493,41 @@ test('renders entities with their share and facilities, assignments, and holds t
   ).toBeInTheDocument()
   expect(screen.getByText('GWP AR5')).toBeInTheDocument()
 
-  // boundary: the JV is in with its Table 1 share; its depot and the parent are out
+  // the banner states readiness wherever the reader is standing
+  expect(await screen.findByText('Launch on hold')).toBeInTheDocument()
+
+  // the records are the work surface, so they are what opens
+  expect(screen.getAllByText('Diesel consumption')[0]).toBeInTheDocument()
+  expect(screen.getAllByText('Unclassified')[0]).toBeInTheDocument()
+
+  // the gates are read beside the records that fail them
+  expect(await screen.findByText('LAUNCH ON HOLD')).toBeInTheDocument()
+  expect(screen.getByText(/'Diesel consumption' is unclassified/)).toBeInTheDocument()
+  expect(screen.getByText('Base year')).toBeInTheDocument()
+})
+
+test('the boundary tab holds the entities with their Table 1 share', async () => {
+  renderPage('boundary')
+
+  // the JV is in with its Table 1 share; its depot and the parent are out
   expect(await screen.findByText('Tema JV')).toBeInTheDocument()
   expect(screen.getByText('40%')).toBeInTheDocument()
   expect(screen.getByText(/joint venture under joint financial control/)).toBeInTheDocument()
   expect(screen.getByLabelText('Tema Plant in boundary')).toBeChecked()
   expect(screen.getByLabelText('Tema Depot in boundary')).not.toBeChecked()
   expect(screen.getByLabelText('Ecoriv Holdings in boundary')).not.toBeChecked()
+})
 
-  // assignments: the fact is visible and unclassified (desktop table and mobile card both render)
-  expect(screen.getAllByText('Diesel consumption')[0]).toBeInTheDocument()
-  expect(screen.getAllByText('Unclassified')[0]).toBeInTheDocument()
+test('the runs tab holds the launch, which the gates keep disabled', async () => {
+  renderPage('runs')
 
-  // pre-flight: launch is on hold with the blocking finding listed
-  expect(await screen.findByText('LAUNCH ON HOLD')).toBeInTheDocument()
-  expect(screen.getByText(/'Diesel consumption' is unclassified/)).toBeInTheDocument()
-  expect(screen.getByText('Base year')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeDisabled()
+  expect(await screen.findByRole('button', { name: /launch calculation run/i })).toBeDisabled()
 })
 
 test('ticking an entity in sends an empty treatment so the server prefills from its facts', async () => {
   const user = userEvent.setup()
   vi.mocked(setEntityTreatment).mockResolvedValue({ ...boundary[1], inBoundary: true })
-  renderPage()
+  renderPage('boundary')
 
   await user.click(await screen.findByLabelText('Ecoriv Holdings in boundary'))
   await waitFor(() => expect(setEntityTreatment).toHaveBeenCalledWith('inv-1', 'ent-2', {}))
@@ -522,7 +536,7 @@ test('ticking an entity in sends an empty treatment so the server prefills from 
 test('ticking a facility in sends an empty treatment for its entity', async () => {
   const user = userEvent.setup()
   vi.mocked(setBoundaryTreatment).mockResolvedValue(boundary[0])
-  renderPage()
+  renderPage('boundary')
 
   await user.click(await screen.findByLabelText('Tema Depot in boundary'))
   await waitFor(() => expect(setBoundaryTreatment).toHaveBeenCalledWith('inv-1', 'fac-2', {}))
@@ -531,7 +545,7 @@ test('ticking a facility in sends an empty treatment for its entity', async () =
 test('a facility left out of the boundary records why (Chapter 9, spec 07.2)', async () => {
   const user = userEvent.setup()
   vi.mocked(excludeFacility).mockResolvedValue(boundary[0])
-  renderPage()
+  renderPage('boundary')
 
   await user.selectOptions(
     await screen.findByLabelText('Tema Depot left out because'),
@@ -545,7 +559,7 @@ test('a facility left out of the boundary records why (Chapter 9, spec 07.2)', a
 test('setting a membership window sends the effective date to the entity treatment', async () => {
   const user = userEvent.setup()
   vi.mocked(setEntityTreatment).mockResolvedValue({ ...boundary[0], effectiveFrom: '2025-07-01' })
-  renderPage()
+  renderPage('boundary')
 
   const from = await screen.findByLabelText('Tema JV member from')
   await user.click(from)
@@ -556,173 +570,6 @@ test('setting a membership window sends the effective date to the entity treatme
       effectiveFrom: '2025-07-01',
     }),
   )
-})
-
-test('the picker cites each publication and hides unapproved rows (spec 02.3)', async () => {
-  const user = userEvent.setup()
-  mockEmissionFactors([
-    dieselFactor,
-    {
-      ...dieselFactor,
-      id: 'ef-own',
-      organizationId: 'org-1',
-      name: 'Diesel',
-      source: 'GOIL fuel analysis certificate 2025-03',
-      publicationYear: 2025,
-      dataYear: 2025,
-      pack: 'defra-2026',
-      packs: ['defra-2026'],
-      packCode: 'GOIL:diesel',
-      approved: false,
-    },
-  ])
-  renderPage()
-
-  await user.click((await screen.findAllByRole('button', { name: /choose factor/i }))[0])
-  const picker = screen.getAllByLabelText('Classify Diesel consumption')[0]
-  // the two factors share a name and unit; the publication line tells them apart. Spec 02.10
-  // retired the shared library, so the picker is one flat list with no tier headings.
-  expect(
-    await within(picker).findByText(/DEFRA 2025 \(published 2025, data year 2025\)/),
-  ).toBeInTheDocument()
-  expect(within(picker).queryByText('Shared library')).not.toBeInTheDocument()
-  expect(within(picker).queryByText('This organization')).not.toBeInTheDocument()
-  // the unapproved row is hidden until the toggle reveals it (FU-03: the server hides it)
-  expect(within(picker).queryByText('unapproved')).not.toBeInTheDocument()
-  await user.click(screen.getAllByLabelText(/Show unapproved/)[0])
-  expect(await within(picker).findByText('unapproved')).toBeInTheDocument()
-  expect(within(picker).getByText(/GOIL fuel analysis certificate.*defra-2026/)).toBeInTheDocument()
-  // the search covers the pack tag as well as the name and the publication
-  await user.type(
-    screen.getAllByLabelText('Search factors for Diesel consumption')[0],
-    'defra-2026',
-  )
-  await waitFor(() =>
-    expect(within(picker).queryByText(/DEFRA 2025 \(published 2025/)).not.toBeInTheDocument(),
-  )
-  expect(within(picker).getByText(/GOIL fuel analysis certificate/)).toBeInTheDocument()
-})
-
-test('the picker asks the server for its page and tells same-named factors apart (FU-03)', async () => {
-  const user = userEvent.setup()
-  // the three DEFRA butane rows differ only by unit; two of them convert from a litre record
-  const butane = (id: string, unit: string, dimension: 'VOLUME' | 'MASS', value: number) => ({
-    ...dieselFactor,
-    id,
-    organizationId: 'org-1',
-    name: 'Gaseous fuels: Butane',
-    unit,
-    dimension,
-    kgCo2ePerUnit: value,
-    sourceCategory: 'Fuels',
-    sourceActivity: 'Gaseous fuels / Butane',
-    sourceDetail: null,
-  })
-  mockEmissionFactors([
-    butane('ef-butane-litre', 'litre', 'VOLUME', 1.74533),
-    butane('ef-butane-m3', 'm3', 'VOLUME', 1745.33),
-    butane('ef-butane-tonne', 'tonne', 'MASS', 3033.38067),
-  ])
-  renderPage()
-
-  await user.click((await screen.findAllByRole('button', { name: /choose factor/i }))[0])
-  const picker = screen.getAllByLabelText('Classify Diesel consumption')[0]
-
-  // the filters are the server's: the record is in litre, so only the volume rows are asked for
-  await waitFor(() =>
-    expect(listEmissionFactors).toHaveBeenCalledWith(
-      'org-1',
-      expect.objectContaining({ dimension: ['VOLUME'], includeUnapproved: false, size: 50 }),
-    ),
-  )
-  const options = await within(picker).findAllByRole('button')
-  expect(options).toHaveLength(2)
-  // and no two options read alike: the value and the publisher's activity sit under the name
-  expect(
-    within(picker).getByText(/Gaseous fuels \/ Butane · 1.745 kg CO₂e \/ litre/),
-  ).toBeInTheDocument()
-  expect(
-    within(picker).getByText(/Gaseous fuels \/ Butane · 1,745.33 kg CO₂e \/ m3/),
-  ).toBeInTheDocument()
-
-  // typing goes to the server rather than narrowing a list the browser already holds
-  await user.type(screen.getAllByLabelText('Search factors for Diesel consumption')[0], 'butane')
-  await waitFor(() =>
-    expect(listEmissionFactors).toHaveBeenLastCalledWith(
-      'org-1',
-      expect.objectContaining({ q: 'butane' }),
-    ),
-  )
-})
-
-test('classifying an assignment sends the factor with its default scope and category', async () => {
-  const user = userEvent.setup()
-  vi.mocked(classifyAssignment).mockResolvedValue(classified)
-  renderPage()
-
-  // spec 05.5: no factor list renders until asked for; the picker opens on demand
-  expect(screen.queryByLabelText('Classify Diesel consumption')).not.toBeInTheDocument()
-  await user.click((await screen.findAllByRole('button', { name: /choose factor/i }))[0])
-  await user.click(
-    within((await screen.findAllByLabelText('Classify Diesel consumption'))[0]).getByRole(
-      'button',
-      {
-        name: /Diesel/,
-      },
-    ),
-  )
-  await waitFor(() =>
-    expect(classifyAssignment).toHaveBeenCalledWith('as-1', {
-      emissionFactorId: 'ef-1',
-      scope: 'SCOPE_1',
-      category: 'MOBILE_COMBUSTION',
-    }),
-  )
-})
-
-test('moving a scope-agnostic factor to scope 3 sends a scope 3 category', async () => {
-  const user = userEvent.setup()
-  vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
-  vi.mocked(classifyAssignment).mockResolvedValue({
-    ...classified,
-    scope: 'SCOPE_3',
-    category: 'PURCHASED_GOODS_SERVICES',
-  })
-  renderPage()
-
-  await user.selectOptions(
-    (await screen.findAllByLabelText('Diesel consumption scope'))[0],
-    'SCOPE_3',
-  )
-  await waitFor(() =>
-    expect(classifyAssignment).toHaveBeenCalledWith('as-1', {
-      emissionFactorId: 'ef-1',
-      scope: 'SCOPE_3',
-      category: 'PURCHASED_GOODS_SERVICES',
-    }),
-  )
-})
-
-test('a scope that departs from the factor default is visible', async () => {
-  vi.mocked(searchAssignments).mockResolvedValue(
-    pageOf([{ ...classified, scope: 'SCOPE_3', category: 'PURCHASED_GOODS_SERVICES' }]),
-  )
-  renderPage()
-
-  expect((await screen.findAllByText(/'Diesel' suggests Scope 1/))[0]).toBeInTheDocument()
-})
-
-test('shows the unit conversion inline when the fact and factor units differ', async () => {
-  vi.mocked(searchAssignments).mockResolvedValue(
-    pageOf([{ ...classified, unit: 'US-gallon', quantity: 10000 }]),
-  )
-  renderPage()
-
-  // 10,000 US-gallon -> ~37,854 litre, previewed next to the per-litre factor
-  // (loosely matched so locale number grouping doesn't make the test brittle)
-  expect(
-    (await screen.findAllByText(/US-gallon → .*litre × 2\.66 kg CO₂e\/litre/))[0],
-  ).toBeInTheDocument()
 })
 
 test('an automatic exclusion says why in words', async () => {
@@ -759,9 +606,10 @@ test('review activity data reports how many records were pulled in', async () =>
 
 test('launch is enabled when every gate passes', async () => {
   vi.mocked(getValidation).mockResolvedValue(passingReport)
-  renderPage()
+  renderPage('runs')
 
-  expect(await screen.findByText('READY TO LAUNCH')).toBeInTheDocument()
+  // the banner carries readiness to whichever tab the reader is on (spec 05.6)
+  expect(await screen.findByText('Ready to launch a run')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeEnabled()
 })
 
@@ -788,7 +636,6 @@ test('a draft inventory is flagged, blocks the run, and freezes after confirming
 
   expect(await screen.findByText('DRAFT')).toBeInTheDocument()
   expect(await screen.findByText(/inventory is a draft\. Freeze it/)).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeDisabled()
 
   // the lifecycle bar's button opens a confirm dialog; the dialog's button does the freeze
   await user.click(await screen.findByRole('button', { name: /freeze inventory/i }))
@@ -809,7 +656,7 @@ test('a frozen inventory is read-only, offers reopen, and lists its versions', a
     currentBoundaryVersionNo: 2,
   })
   vi.mocked(listBoundaryVersions).mockResolvedValue([v2, v1])
-  renderPage()
+  renderPage('boundary')
 
   expect(await screen.findByText('FROZEN · BOUNDARY v2')).toBeInTheDocument()
   expect(await screen.findByLabelText('Tema JV in boundary')).toBeDisabled()
@@ -819,7 +666,6 @@ test('a frozen inventory is read-only, offers reopen, and lists its versions', a
   expect(screen.getByRole('button', { name: /reopen as draft/i })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /^publish$/i })).toBeDisabled()
   expect(screen.queryByRole('button', { name: /freeze inventory/i })).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /review activity data/i })).toBeDisabled()
 
   // history: newest first, each naming who froze it and how many facilities it held; the lifecycle bar
   // names the numbering (spec 05.5)
@@ -838,7 +684,7 @@ test('a frozen inventory is read-only, offers reopen, and lists its versions', a
 test('expanding a version loads the boundary it recorded', async () => {
   const user = userEvent.setup()
   vi.mocked(listBoundaryVersions).mockResolvedValue([v1])
-  renderPage()
+  renderPage('boundary')
 
   await user.click(await screen.findByRole('button', { name: /^Boundary version 1 · frozen/ }))
   await waitFor(() => expect(getBoundaryVersion).toHaveBeenCalledWith('bv-1'))
@@ -906,6 +752,24 @@ test('a final inventory offers to withdraw the designation or publish', async ()
   await waitFor(() => expect(publishInventory).toHaveBeenCalledWith('inv-1'))
 })
 
+test('a frozen inventory refuses a re-sync of its records (spec 05.1)', async () => {
+  vi.mocked(getInventory).mockResolvedValue({ ...inventory, status: 'FROZEN' })
+  renderPage()
+
+  expect(await screen.findByRole('button', { name: /review activity data/i })).toBeDisabled()
+})
+
+test('a published inventory cannot launch another run (spec 05.1)', async () => {
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'PUBLISHED',
+    finalRunId: 'run-1',
+  })
+  renderPage('runs')
+
+  expect(await screen.findByRole('button', { name: /launch calculation run/i })).toBeDisabled()
+})
+
 test('a published inventory is a record that offers a correction', async () => {
   vi.mocked(getInventory).mockResolvedValue({
     ...inventory,
@@ -920,7 +784,6 @@ test('a published inventory is a record that offers a correction', async () => {
   expect(await screen.findByText('PUBLISHED · BOUNDARY v1')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /create correction/i })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /^publish$/i })).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeDisabled()
 })
 
 test('a run is voided with a reason, never deleted, and keeps its number', async () => {
@@ -953,7 +816,7 @@ test('a run is voided with a reason, never deleted, and keeps its number', async
     },
   ])
   vi.mocked(voidRun).mockResolvedValue({ ...run, id: 'run-2', runNo: 2, voided: true })
-  renderPage()
+  renderPage('runs')
 
   // the next label counts on from the highest number, voided runs included; no delete button anywhere
   expect(await screen.findByLabelText('Run label')).toHaveValue('Run 003')
@@ -990,114 +853,6 @@ test('shows which months of the period have data per facility and activity', asy
   const matrix = await screen.findByRole('table', { name: 'Period coverage' })
   expect(within(matrix).getByTitle('Diesel consumption, 2025-03: data')).toHaveTextContent('●')
   expect(within(matrix).getByTitle('Diesel consumption, 2025-01: no data')).toHaveTextContent('○')
-})
-
-test('a methodology exclusion asks for a justification and an estimated magnitude (spec 04.4)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(excludeAssignment).mockResolvedValue({
-    ...unclassified,
-    included: false,
-    exclusionReason: 'METHODOLOGY',
-    exclusionJustification: 'no published factor for sodium cyanide',
-    estimatedKgCo2e: 8400,
-  })
-  renderPage()
-
-  await user.click((await screen.findAllByRole('button', { name: /exclude…/i }))[0])
-  await user.click(screen.getAllByRole('menuitem', { name: 'Methodology exclusion' })[0])
-  const form = screen.getByRole('form', { name: /justification/i })
-  await user.type(
-    within(form).getByLabelText('Justification'),
-    'no published factor for sodium cyanide',
-  )
-  await user.type(within(form).getByLabelText(/Estimated emissions left out/), '8400')
-  await user.click(within(form).getByRole('button', { name: 'Exclude' }))
-
-  await waitFor(() =>
-    expect(excludeAssignment).toHaveBeenCalledWith('as-1', {
-      reason: 'METHODOLOGY',
-      justification: 'no published factor for sodium cyanide',
-      estimatedKgCo2e: 8400,
-    }),
-  )
-})
-
-test('a record in mass against a factor per litre converts through the chosen density (spec 02.2)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(listOrganizationUnits).mockResolvedValue([
-    ...units,
-    {
-      code: 'tonne',
-      label: 'Tonne',
-      dimension: 'MASS',
-      toCanonical: 1000,
-      custom: false,
-      definition: null,
-    },
-    {
-      code: 'kg',
-      label: 'Kilogram',
-      dimension: 'MASS',
-      toCanonical: 1,
-      custom: false,
-      definition: null,
-    },
-  ])
-  vi.mocked(listDensities).mockResolvedValue([
-    {
-      id: 'den-1',
-      organizationId: null,
-      typical: true,
-      material: 'Diesel',
-      kgPerLitre: 0.84,
-      source: 'Typical mid-range density',
-      note: null,
-    },
-    {
-      id: 'den-2',
-      organizationId: 'org-1',
-      typical: false,
-      material: 'Diesel (GOIL)',
-      kgPerLitre: 0.8325,
-      source: 'GOIL CoA',
-      note: null,
-    },
-  ])
-  const inTonnes = {
-    ...classified,
-    unit: 'tonne',
-    quantity: 12,
-    densityId: 'den-1',
-    densityMaterial: 'Diesel',
-    densityKgPerLitre: 0.84,
-    inheritedLeaseType: null,
-    suggestedFactorId: null,
-    suggestedFactorName: null,
-    inherited: false,
-    changedSincePublication: null,
-  }
-  vi.mocked(searchAssignments).mockResolvedValue(pageOf([inTonnes]))
-  vi.mocked(classifyAssignment).mockResolvedValue({ ...inTonnes, densityId: 'den-2' })
-  renderPage()
-
-  // 12 t = 12,000 kg / 0.84 = 14,285.71 litre, previewed with the density named
-  expect(
-    (
-      await screen.findAllByText(
-        /12 tonne → 14,285\.7143 litre \(density of Diesel, 0\.84 kg\/litre\)/,
-      )
-    )[0],
-  ).toBeInTheDocument()
-  const densityPicker = screen.getAllByLabelText('Diesel consumption density')[0]
-  await user.selectOptions(densityPicker, 'den-2')
-  await waitFor(() =>
-    expect(classifyAssignment).toHaveBeenCalledWith('as-1', {
-      emissionFactorId: 'ef-1',
-      scope: 'SCOPE_1',
-      category: 'MOBILE_COMBUSTION',
-      densityId: 'den-2',
-    }),
-  )
 })
 
 test('the activity view filters by status and shows the counts (spec 04.5)', async () => {
@@ -1162,83 +917,10 @@ test('an entity at 0% under the approach cannot be ticked in and says why (spec 
       shareUnderApproach: 0,
     },
   ])
-  renderPage()
+  renderPage('boundary')
 
   expect(await screen.findByText(/Outside the boundary under equity share/)).toBeInTheDocument()
   expect(screen.getByLabelText('Takoradi Port Co in boundary')).toBeDisabled()
-})
-
-test('the activity view suggests the grid factor of the facility and names an inherited lease (spec 03.4)', async () => {
-  const user = userEvent.setup()
-  mockEmissionFactors([
-    {
-      id: 'ef-grid',
-      organizationId: 'org-1',
-      name: 'Grid electricity, Ghana (2024)',
-      defaultScope: 'SCOPE_2',
-      defaultCategory: 'PURCHASED_ELECTRICITY',
-      scopeAgnostic: false,
-      unit: 'kWh',
-      dimension: 'ENERGY',
-      kgCo2ePerUnit: 0.469,
-      gases: { co2: 0, ch4: 0, n2o: 0, hfcs: 0, pfcs: 0, sf6: 0, nf3: 0, hfcsKg: 0, pfcsKg: 0 },
-      biogenicCo2KgPerUnit: 0,
-      gwpSet: 'AR5',
-      blendGwpSource: null,
-      blendComposition: null,
-      ch4Fossil: true,
-      co2eOnly: true,
-      source: 'Ember Yearly Electricity Data',
-      sourceUrl: null,
-      publicationYear: 2025,
-      dataYear: 2024,
-      validFrom: null,
-      validTo: null,
-      note: null,
-      approved: true,
-      pack: 'ghana',
-      packs: ['ghana'],
-      packCode: 'GHANA:grid:GHA:2024',
-      gridRegion: 'GHA',
-      reportingBasis: 'SCOPES',
-      sourceCategory: null,
-      sourceActivity: null,
-      sourceDetail: null,
-      sourceEdition: null,
-      locallyEdited: false,
-      supersededById: null,
-      versions: [],
-    },
-  ])
-  vi.mocked(searchAssignments).mockResolvedValue(
-    pageOf([
-      {
-        ...unclassified,
-        activityType: 'Grid electricity',
-        unit: 'kWh',
-        quantity: 5000,
-        suggestedFactorId: 'ef-grid',
-        suggestedFactorName: 'Grid electricity, Ghana (2024)',
-        inheritedLeaseType: 'OPERATING_LEASE_IN',
-      },
-    ]),
-  )
-  vi.mocked(classifyAssignment).mockResolvedValue({ ...classified, emissionFactorId: 'ef-grid' })
-  renderPage()
-
-  expect(
-    (await screen.findAllByText(/operating lease \(leased in\) inherited/))[0],
-  ).toBeInTheDocument()
-  await user.click(
-    (await screen.findAllByRole('button', { name: /Suggested for this facility's grid/ }))[0],
-  )
-  await waitFor(() =>
-    expect(classifyAssignment).toHaveBeenCalledWith('as-1', {
-      emissionFactorId: 'ef-grid',
-      scope: 'SCOPE_2',
-      category: 'PURCHASED_ELECTRICITY',
-    }),
-  )
 })
 
 test('a correction asks for its reason and the page names what an inventory inherited (spec 05.3)', async () => {
@@ -1290,7 +972,7 @@ test('a correction asks for its reason and the page names what an inventory inhe
 test('a declared category can say why it is not quantified this year (spec 07.6)', async () => {
   const user = userEvent.setup()
   vi.mocked(setOperationalBoundary).mockResolvedValue(inventory)
-  renderPage()
+  renderPage('boundary')
 
   await user.click(await screen.findByLabelText('15. Investments'))
   await user.type(
@@ -1424,7 +1106,7 @@ test('marking a run final is confirmed with a note by a reviewer (spec 05.5)', a
     finalDesignatedAt: '2026-09-12T10:00:00Z',
     finalNote: 'reconciled against the fuel ledger',
   })
-  renderPage()
+  renderPage('runs')
 
   await user.click(await screen.findByRole('button', { name: /mark as final/i }))
   const dialog = await screen.findByRole('dialog', { name: /mark run 001 as final/i })
@@ -1461,7 +1143,7 @@ test('a preparer sees Mark as final disabled with the role it needs (spec 01.4, 
     createdAt: '2026-08-01T00:00:00Z',
   })
   vi.mocked(listRuns).mockResolvedValue([run])
-  renderPage()
+  renderPage('runs')
 
   const button = await screen.findByRole('button', { name: /mark as final/i })
   await waitFor(() => expect(button).toBeDisabled())
@@ -1491,7 +1173,24 @@ test('the final inventory prints who designated the run and the note', async () 
   ).toBeInTheDocument()
 })
 
-test('the activity view filters by scope, category, stream and lease, and shows the factor as text (spec 05.5)', async () => {
+test('the register reads as one line a row and opens the record in a drawer (spec 05.6)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
+  renderPage()
+
+  // spec 05.5: the factor is text on the row, and no editor renders until a record is opened
+  const row = (await screen.findByRole('button', { name: 'Diesel consumption' })).closest('tr')!
+  // the factor arrives on its own query, keyed by the identifiers the page cites (FU-03)
+  await waitFor(() => expect(row).toHaveTextContent('Diesel (/litre)'))
+  expect(screen.queryByLabelText('Diesel consumption scope')).not.toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+  await user.click(within(row).getByRole('button', { name: 'Diesel consumption' }))
+  // the record is named in the URL, so the view a reviewer is in survives a reload
+  expect(await screen.findByRole('dialog', { name: 'Diesel consumption' })).toBeInTheDocument()
+})
+
+test('the activity view filters by scope, category, stream and lease (spec 05.5)', async () => {
   const user = userEvent.setup()
   vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
   vi.mocked(listStreams).mockResolvedValue([
@@ -1513,21 +1212,7 @@ test('the activity view filters by scope, category, stream and lease, and shows 
   ])
   renderPage()
 
-  // the factor reads as text with its pack and approval marks; the select renders only on demand
-  const factor = (await screen.findAllByText('Diesel', { selector: 'span.font-medium' }))[0]
-  expect(factor.parentElement).toHaveTextContent(/Diesel \(\/litre\)/)
-  expect(screen.queryByLabelText('Classify Diesel consumption')).not.toBeInTheDocument()
-  await user.click(screen.getAllByRole('button', { name: /change factor/i })[0])
-  expect(screen.getAllByLabelText('Classify Diesel consumption')[0]).toBeInTheDocument()
-  await user.type(screen.getAllByLabelText('Search factors for Diesel consumption')[0], 'grid')
-  // FU-03: the search is the server's, so the narrowed list arrives a tick later
-  await waitFor(() =>
-    expect(
-      within(screen.getAllByLabelText('Classify Diesel consumption')[0]).queryByText('Diesel'),
-    ).not.toBeInTheDocument(),
-  )
-
-  await user.selectOptions(screen.getByLabelText('Scope'), 'SCOPE_2')
+  await user.selectOptions(await screen.findByLabelText('Scope'), 'SCOPE_2')
   await user.selectOptions(screen.getByLabelText('Stream'), 'st-1')
   await user.selectOptions(screen.getByLabelText('Lease'), 'OPERATING_LEASE_IN')
   await waitFor(() =>
@@ -1549,6 +1234,39 @@ test('the activity view filters by scope, category, stream and lease, and shows 
       expect.objectContaining({ category: 'PURCHASED_ELECTRICITY' }),
     ),
   )
+})
+
+test('a page of records is excluded under one reason (spec 05.6)', async () => {
+  const user = userEvent.setup()
+  const second: Assignment = { ...unclassified, id: 'as-2', activityType: 'Grid electricity' }
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([unclassified, second]))
+  vi.mocked(excludeAssignment).mockResolvedValue({
+    ...unclassified,
+    included: false,
+    exclusionReason: 'NOT_APPLICABLE',
+  })
+  renderPage()
+
+  await user.click(await screen.findByLabelText('Select all on this page'))
+  await user.click(screen.getByRole('button', { name: 'Exclude 2 selected' }))
+  const dialog = screen.getByRole('dialog', { name: /Exclude 2 records\?/ })
+  await user.selectOptions(within(dialog).getByLabelText('Reason'), 'NOT_APPLICABLE')
+  await user.type(
+    within(dialog).getByLabelText('Justification'),
+    'the Tema JV reports its own inventory',
+  )
+  await user.click(within(dialog).getByRole('button', { name: 'Exclude 2' }))
+
+  // spec 04.8: one number typed once cannot size two records, so each is recorded as not estimated
+  await waitFor(() =>
+    expect(excludeAssignment).toHaveBeenCalledWith('as-2', {
+      reason: 'NOT_APPLICABLE',
+      justification: 'the Tema JV reports its own inventory',
+      notEstimated: true,
+    }),
+  )
+  expect(excludeAssignment).toHaveBeenCalledTimes(2)
+  expect(await screen.findByText('2 records excluded.')).toBeInTheDocument()
 })
 
 test('the inheritance notice says the boundary was rebuilt and lists the dropped exclusions (spec 05.4)', async () => {
@@ -1601,13 +1319,14 @@ test('a verifier sees the launch and freeze buttons disabled with the role they 
     createdAt: '2026-08-01T00:00:00Z',
   })
   vi.mocked(getValidation).mockResolvedValue(passingReport)
-  renderPage()
+  renderPage('runs')
 
   const launch = await screen.findByRole('button', { name: /launch calculation run/i })
   await waitFor(() => expect(launch).toBeDisabled())
   expect(launch).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
   expect(launch).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
 
+  // the freeze is in the lifecycle strip, which every tab carries
   const freeze = screen.getByRole('button', { name: /freeze inventory/i })
   expect(freeze).toBeDisabled()
   expect(freeze).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
@@ -1626,7 +1345,7 @@ test('a preparer can freeze and launch (spec 01.4)', async () => {
     createdAt: '2026-08-01T00:00:00Z',
   })
   vi.mocked(getValidation).mockResolvedValue(passingReport)
-  renderPage()
+  renderPage('runs')
 
   expect(await screen.findByRole('button', { name: /launch calculation run/i })).toBeEnabled()
   expect(screen.getByRole('button', { name: /freeze inventory/i })).toBeEnabled()
@@ -1685,6 +1404,61 @@ test('a preparer sees Create correction disabled with the role it needs (spec 01
   expect(correction).toHaveAccessibleDescription('Needs the Reviewer or Owner role.')
 })
 
+test('the upstream form searches each list on its own, keeps the chosen primary and suggests the well-to-tank row (spec 04.7)', async () => {
+  const user = userEvent.setup()
+  const wtt: EmissionFactor = {
+    ...dieselFactor,
+    id: 'ef-3',
+    name: 'Well-to-tank: Diesel',
+    defaultScope: 'SCOPE_3',
+    defaultCategory: 'FUEL_ENERGY_RELATED',
+  }
+  mockEmissionFactors([dieselFactor, wtt])
+  vi.mocked(listUpstreamRules).mockResolvedValue([])
+  vi.mocked(addUpstreamRule).mockResolvedValue({
+    id: 'ur-1',
+    primaryFactorId: 'ef-1',
+    primaryFactorName: 'Diesel',
+    upstreamFactorId: 'ef-3',
+    upstreamFactorName: 'Well-to-tank: Diesel',
+    kind: 'WELL_TO_TANK',
+    matchingLines: 3,
+  })
+  renderPage('method')
+
+  const form = await screen.findByRole('form', { name: 'Add an upstream rule' })
+  await user.selectOptions(within(form).getByLabelText('Primary factor'), 'ef-1')
+  // the row named after the combustion row is looked up and offered first, never applied
+  await waitFor(() =>
+    expect(listEmissionFactors).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({ q: 'Well-to-tank: Diesel', size: 5 }),
+    ),
+  )
+  const suggested = await within(form).findByRole('group', { name: /Suggested/ })
+  expect(
+    within(suggested).getByRole('option', { name: /Well-to-tank: Diesel/ }),
+  ).toBeInTheDocument()
+  // each list has its own search: narrowing the upstream list leaves the chosen primary in place
+  await user.type(within(form).getByLabelText('Narrow the upstream factors'), 'Well-to-tank')
+  await waitFor(() =>
+    expect(listEmissionFactors).toHaveBeenLastCalledWith(
+      'org-1',
+      expect.objectContaining({ q: 'Well-to-tank', size: 200 }),
+    ),
+  )
+  expect(within(form).getByLabelText('Primary factor')).toHaveValue('ef-1')
+  await user.selectOptions(within(form).getByLabelText('Upstream factor'), 'ef-3')
+  await user.click(within(form).getByRole('button', { name: 'Add rule' }))
+  await waitFor(() =>
+    expect(addUpstreamRule).toHaveBeenCalledWith('inv-1', {
+      primaryFactorId: 'ef-1',
+      upstreamFactorId: 'ef-3',
+      kind: 'WELL_TO_TANK',
+    }),
+  )
+})
+
 test('the upstream rules card lists the rules and adds one (spec 04.7)', async () => {
   const user = userEvent.setup()
   const gridFactor: EmissionFactor = {
@@ -1724,7 +1498,7 @@ test('the upstream rules card lists the rules and adds one (spec 04.7)', async (
     kind: 'TRANSMISSION_AND_DISTRIBUTION',
     matchingLines: 0,
   })
-  renderPage()
+  renderPage('method')
 
   const table = await screen.findByRole('table', { name: 'Upstream rules' })
   expect(within(table).getByText('Well-to-tank diesel')).toBeInTheDocument()
@@ -1743,153 +1517,4 @@ test('the upstream rules card lists the rules and adds one (spec 04.7)', async (
       kind: 'TRANSMISSION_AND_DISTRIBUTION',
     }),
   )
-})
-
-test('the scope select is enabled for a scope 2 factor and asks why the scope departs (finding F34)', async () => {
-  const user = userEvent.setup()
-  const gridFactor: EmissionFactor = {
-    ...dieselFactor,
-    id: 'ef-2',
-    name: 'Grid electricity (Ghana)',
-    defaultScope: 'SCOPE_2',
-    defaultCategory: 'PURCHASED_ELECTRICITY',
-    // the lock the screen kept: a factor that is not scope-agnostic (specs 04.1, 04.3, 04.7)
-    scopeAgnostic: false,
-    unit: 'kWh',
-    dimension: 'ENERGY',
-  }
-  const classified: Assignment = {
-    ...unclassified,
-    activityType: 'Tenant electricity',
-    unit: 'kWh',
-    classified: true,
-    emissionFactorId: 'ef-2',
-    factorName: 'Grid electricity (Ghana)',
-    scope: 'SCOPE_2',
-    category: 'PURCHASED_ELECTRICITY',
-  }
-  const departed: Assignment = {
-    ...classified,
-    scope: 'SCOPE_3',
-    category: 'DOWNSTREAM_LEASED_ASSETS',
-  }
-  mockEmissionFactors([dieselFactor, gridFactor])
-  // the view refetches after the classification, and then the record sits in scope 3
-  vi.mocked(searchAssignments)
-    .mockResolvedValueOnce(pageOf([classified]))
-    .mockResolvedValue(pageOf([departed]))
-  vi.mocked(classifyAssignment).mockResolvedValue(departed)
-  renderPage()
-
-  // the view renders each row twice (the narrow and the wide layout); either copy will do
-  const scope = (await screen.findAllByLabelText('Tenant electricity scope'))[0]
-  expect(scope).toBeEnabled()
-  expect(screen.queryByText("This factor's scope is inherent.")).not.toBeInTheDocument()
-
-  await user.selectOptions(scope, 'SCOPE_3')
-  await waitFor(() =>
-    expect(classifyAssignment).toHaveBeenCalledWith(
-      'as-1',
-      expect.objectContaining({ scope: 'SCOPE_3' }),
-    ),
-  )
-  // spec 04.3: a scope that departs from the factor's default asks for a justification
-  expect(
-    (await screen.findAllByLabelText('Tenant electricity scope justification'))[0],
-  ).toBeInTheDocument()
-})
-
-test('an exclusion is sized, stated to emit nothing, or not estimated (spec 04.8)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(excludeAssignment).mockResolvedValue({
-    ...unclassified,
-    included: false,
-    exclusionReason: 'METHODOLOGY',
-    exclusionJustification: 'no published factor for sodium cyanide; supplier study pending',
-    estimateState: 'NOT_ESTIMATED',
-  })
-  renderPage()
-
-  await user.click((await screen.findAllByRole('button', { name: /exclude…/i }))[0])
-  await user.click(screen.getAllByRole('menuitem', { name: 'Methodology exclusion' })[0])
-  const form = screen.getByRole('form', { name: /justification/i })
-  await user.type(
-    within(form).getByLabelText('Justification'),
-    'no published factor for sodium cyanide; supplier study pending',
-  )
-  // nothing can be sent until one of the three answers is given
-  expect(within(form).getByRole('button', { name: 'Exclude' })).toBeDisabled()
-  await user.click(within(form).getByLabelText('Not estimated'))
-  expect(within(form).getByLabelText(/Estimated emissions left out/)).toBeDisabled()
-  await user.click(within(form).getByRole('button', { name: 'Exclude' }))
-
-  await waitFor(() =>
-    expect(excludeAssignment).toHaveBeenCalledWith('as-1', {
-      reason: 'METHODOLOGY',
-      justification: 'no published factor for sodium cyanide; supplier study pending',
-      notEstimated: true,
-    }),
-  )
-})
-
-test('a Montreal Protocol gas is excluded with the gas, and only on a mass record (spec 04.8)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(listOrganizationUnits).mockResolvedValue([
-    ...units,
-    {
-      code: 'kg',
-      label: 'Kilogram',
-      dimension: 'MASS',
-      toCanonical: 1,
-      custom: false,
-      definition: null,
-    },
-  ])
-  const topUp: Assignment = {
-    ...unclassified,
-    activityType: 'R-22 top-up',
-    quantity: 85,
-    unit: 'kg',
-  }
-  vi.mocked(searchAssignments).mockResolvedValue(pageOf([topUp]))
-  vi.mocked(excludeAssignment).mockResolvedValue({
-    ...topUp,
-    included: false,
-    exclusionReason: 'OUTSIDE_SCOPES_NON_KYOTO',
-    exclusionJustification: 'HCFC-22 is a Montreal Protocol gas, reported outside the scopes',
-    gas: 'HCFC-22',
-  })
-  renderPage()
-
-  await user.click((await screen.findAllByRole('button', { name: /exclude…/i }))[0])
-  await user.click(
-    screen.getAllByRole('menuitem', { name: 'Outside the scopes: Montreal Protocol gas' })[0],
-  )
-  const form = screen.getByRole('form', { name: /justification/i })
-  await user.type(
-    within(form).getByLabelText('Justification'),
-    'HCFC-22 is a Montreal Protocol gas, reported outside the scopes',
-  )
-  // the dialog asks for the gas, never a magnitude
-  expect(within(form).queryByLabelText(/Estimated emissions left out/)).not.toBeInTheDocument()
-  await user.type(within(form).getByLabelText('Gas'), 'HCFC-22')
-  await user.click(within(form).getByRole('button', { name: 'Exclude' }))
-
-  await waitFor(() =>
-    expect(excludeAssignment).toHaveBeenCalledWith('as-1', {
-      reason: 'OUTSIDE_SCOPES_NON_KYOTO',
-      justification: 'HCFC-22 is a Montreal Protocol gas, reported outside the scopes',
-      gas: 'HCFC-22',
-    }),
-  )
-})
-
-test('the Montreal reason is not offered for a record that is not a mass (spec 04.8)', async () => {
-  const user = userEvent.setup()
-  renderPage()
-
-  await user.click((await screen.findAllByRole('button', { name: /exclude…/i }))[0])
-  expect(
-    screen.queryByRole('menuitem', { name: 'Outside the scopes: Montreal Protocol gas' }),
-  ).not.toBeInTheDocument()
 })

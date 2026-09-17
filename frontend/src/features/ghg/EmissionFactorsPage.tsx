@@ -592,13 +592,23 @@ function FactorFormModal({
   const [ch4, setCh4] = useState('')
   const [ch4Fossil, setCh4Fossil] = useState(true)
   const [n2o, setN2o] = useState('')
+  // spec 02.1, 02.9: a blend's split is the only route to a figure that reconverts under the
+  // inventory's GWP set; a published CO2e without one is kept as the source states it
+  const [hfcs, setHfcs] = useState('')
+  const [pfcs, setPfcs] = useState('')
+  const [sf6, setSf6] = useState('')
+  const [nf3, setNf3] = useState('')
+  const [blendComposition, setBlendComposition] = useState('')
+  const [blendGwpSource, setBlendGwpSource] = useState('')
   const [source, setSource] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
   const [publicationYear, setPublicationYear] = useState('')
   const [dataYear, setDataYear] = useState('')
   const [validFrom, setValidFrom] = useState('')
   const [validTo, setValidTo] = useState('')
-  const [approved, setApproved] = useState(true)
+  // spec 02.1: use in a run is a deliberate review step (Corporate Standard chapter 7, ISO 14064-1
+  // section 8.1), so a factor arrives unapproved and someone ticks it after checking it
+  const [approved, setApproved] = useState(false)
   // spec 02.4: a Montreal Protocol gas is disclosed outside the scopes, never inside one
   const [reportingBasis, setReportingBasis] = useState<ReportingBasis>('SCOPES')
   const errors = fieldErrors(create.error)
@@ -618,6 +628,12 @@ function FactorFormModal({
         ch4KgPerUnit: ch4 === '' ? undefined : Number(ch4),
         ch4Fossil,
         n2oKgPerUnit: n2o === '' ? undefined : Number(n2o),
+        hfcsKgPerUnit: hfcs === '' ? undefined : Number(hfcs),
+        pfcsKgPerUnit: pfcs === '' ? undefined : Number(pfcs),
+        sf6KgPerUnit: sf6 === '' ? undefined : Number(sf6),
+        nf3KgPerUnit: nf3 === '' ? undefined : Number(nf3),
+        blendComposition: blendComposition.trim() === '' ? undefined : blendComposition.trim(),
+        blendGwpSource: blendGwpSource === '' ? undefined : blendGwpSource,
         source,
         sourceUrl: sourceUrl.trim() === '' ? undefined : sourceUrl,
         publicationYear: publicationYear === '' ? undefined : Number(publicationYear),
@@ -717,6 +733,56 @@ function FactorFormModal({
           />
           Methane is of fossil origin
         </label>
+        {/* Corporate Standard chapter 4: the seven gas groups. A blend's mass goes under HFCs or
+            PFCs, and the composition below splits it by species. */}
+        <InputField
+          label="HFCs kg per unit (optional)"
+          type="number"
+          step="0.000001"
+          value={hfcs}
+          hint="For a refrigerant per kg of gas, 1."
+          onChange={(event) => setHfcs(event.target.value)}
+        />
+        <InputField
+          label="PFCs kg per unit (optional)"
+          type="number"
+          step="0.000001"
+          value={pfcs}
+          onChange={(event) => setPfcs(event.target.value)}
+        />
+        <InputField
+          label="SF₆ kg per unit (optional)"
+          type="number"
+          step="0.000001"
+          value={sf6}
+          onChange={(event) => setSf6(event.target.value)}
+        />
+        <InputField
+          label="NF₃ kg per unit (optional)"
+          type="number"
+          step="0.000001"
+          value={nf3}
+          onChange={(event) => setNf3(event.target.value)}
+        />
+        <InputField
+          label="Blend composition (optional)"
+          placeholder="HFC-32:0.5,HFC-125:0.5"
+          value={blendComposition}
+          error={errors?.blendComposition}
+          hint="Mass fractions per species. With a composition the run re-derives the figure under the inventory's GWP set."
+          onChange={(event) => setBlendComposition(event.target.value)}
+        />
+        <SelectField
+          label="GWP basis of the published figure"
+          value={blendGwpSource}
+          hint="Which set the source used for its CO₂e; printed when the figure cannot be re-derived."
+          onChange={(event) => setBlendGwpSource(event.target.value)}
+        >
+          <option value="">Not stated by the source</option>
+          <option value="AR5">AR5</option>
+          <option value="AR6">AR6</option>
+          <option value="AR4">AR4</option>
+        </SelectField>
         <div className="md:col-span-2">
           <InputField
             label="Source (publication, table, data year)"

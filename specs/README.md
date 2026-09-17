@@ -52,6 +52,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 05.3 | [Inheritance between inventories and the published record](05.3-inheritance-and-the-published-record.md) | Ch. 1, 5, 9, 10 | Implemented |
 | 05.4 | [Copying a view across consolidation approaches](05.4-copying-a-view-across-consolidation-approaches.md) | Ch. 3, 9, App. F | Implemented |
 | 05.5 | [Review at scale and deliberate lifecycle acts](05.5-review-at-scale-and-deliberate-lifecycle-acts.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
+| 05.6 | [The inventory as a workbench](05.6-the-inventory-workbench.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
 | 06 | [Tracking emissions over time](06-tracking-emissions-over-time.md) | Ch. 5 | Implemented |
 | 06.1 | [Recalculation policy conformance](06.1-recalculation-policy-conformance.md) | Ch. 5, 9 | Implemented |
 | 07 | [Reporting and verification](07-reporting-and-verification.md) | Ch. 9, 10 | Implemented |

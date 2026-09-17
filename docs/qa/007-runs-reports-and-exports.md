@@ -27,13 +27,24 @@ calculation, the report composite, the PDF or the CSV exports.
 - A calculator. Do not eyeball the figures.
 - A PDF reader and a spreadsheet application.
 
+**The page.** An inventory opens as a workbench (spec 05.6): the name and
+the lifecycle bar above, then the pre-flight banner, then five tabs in the
+order the work happens: **Records**, **Boundary**, **Method**, **Runs**,
+**Report**. Each step below names the tab it is on. The tab is in the URL,
+so a link opens the same tab and a reload keeps it.
+
+Sections A and D are on the **Runs** tab, which also holds the scope
+breakdown and the inventory's history. Section B's header metadata is on
+**Report**. Classification in case B1a is done in the drawer on
+**Records**.
+
 ## A. Launching runs
 
 ### A1. The first run
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | In the launch section, keep the proposed label "Run 001" and launch. | The run page opens with "13 lines". The run cites boundary version 4 (versions 1 and 2 in procedure 4, 3 at the end of procedure 5, 4 at the end of procedure 6: every freeze cuts one) and is attributed to you as prepared by. | | |
+| 1 | On the **Runs** tab, keep the proposed label "Run 001" and launch. | The run page opens with "13 lines". The run cites boundary version 4 (versions 1 and 2 in procedure 4, 3 at the end of procedure 5, 4 at the end of procedure 6: every freeze cuts one) and is attributed to you as prepared by. | | |
 
 ### A2. The arithmetic re-performs
 
@@ -85,7 +96,7 @@ the mining pack.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Reopen the inventory, add a record "R-22 top-up" of 85 kg at Tarkwa Processing Plant inside the period, and open it for classification. | The picker offers **HCFC-22 (R-22)**. | | |
+| 1 | Reopen the inventory, add a record "R-22 top-up" of 85 kg at Tarkwa Processing Plant inside the period, then on **Records** click the row to open the drawer. | The picker offers **HCFC-22 (R-22)**. | | |
 | 2 | Try to classify it as scope 3, purchased goods and services. | The change is refused: "'HCFC-22 (R-22)' is a gas outside the scopes (Montreal Protocol) and is reported separately, never in scope 3. Classify it as scope 1, or choose a Kyoto-gas factor." | | |
 | 3 | Classify it with the factor's own defaults (scope 1, fugitive emissions), freeze and read the pre-flight. | The **Emission factor** gate warns: "1 record uses a factor for a gas outside the scopes (Montreal Protocol). Its mass is reported in the block 'Gases outside the scopes (Montreal Protocol)' with the CO2e its source publishes for information, and no scope total includes it." The gate does not block. | | |
 | 4 | Launch a run and read section 6a of the report. | The block lists "HCFC-22 (R-22)", 85 kg, basis "Calculated with a factor", "149,600 kg CO₂e, AR5 as published", and the record reference, under the sentence "Reported separately as optional information under Chapter 4 and Chapter 9; not included in any scope." | | |
@@ -99,15 +110,15 @@ run 003 and every figure the other cases check stay where they are.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Reopen **2025 Operational** as a draft with the reason "scratch run for the category 3 and exclusion checks". Declare **3. Fuel- and energy-related activities**, add the **Well-to-tank diesel** factor and the well-to-tank rule of procedure 5 case E3, re-exclude R8 as **Methodology exclusion** with **Not estimated**, and exclude R6 as **Outside the scopes: Montreal Protocol gas** with the gas "HCFC-22". Freeze and launch **Run 004**. | The run is created. | | |
+| 1 | Reopen **2025 Operational** as a draft with the reason "scratch run for the category 3 and exclusion checks". Declare **3. Fuel- and energy-related activities**, add the well-to-tank rule of procedure 5 case E3 (the DESNZ well-to-tank row), re-exclude R8 as **Methodology exclusion** with **Not estimated**, and add a scratch record **R-22 top-up (scratch)** of 45 kg at Tarkwa Processing Plant inside the period, review it in, and exclude it as **Outside the scopes: Montreal Protocol gas** with the gas "HCFC-22". Freeze and launch **Run 004**. | The run is created. R6 (the R-407C top-up) stays classified: R-407C is an HFC blend, a Kyoto gas counted in scope 1 (Corporate Standard chapter 4), and must never be moved outside the scopes. | | |
 | 2 | Read section 05, scope 3 by category. | **3. Fuel- and energy-related activities** carries a figure and a line count, one derived line per included scope 1 diesel line, and the declaration table no longer reads it as "declared, not quantified". | | |
 | 3 | Read section 10, the snapshot lines. | Each derived line is marked **Derived line** and says which line it rides on, for example "well-to-tank of ACT-0012 Haul fleet diesel". A derived line carries no market-based figure and no lease type. | | |
 | 4 | Read section 05, each gas, and its footing row. | The row "Total (scope 2 location-based), ties to section 04" still equals the section 04 total with the derived lines present: a derived line whose upstream factor publishes a gas split feeds the gas rows, and one whose factor publishes CO2e only feeds "CO₂e from factors without a gas split". | | |
 | 5 | Read section 08, methodology. | A list **Upstream rules (category 3)** names the rule, its kind and how many lines it derived, and the statement says transmission and distribution losses are computed on every kilowatt-hour consumed, at the location-based factor. | | |
 | 6 | Read section 09, the per-reason summary. | **Methodology exclusion** reads "1 not estimated" and never "0 kg CO₂e"; **Outside the scopes: Montreal Protocol gas** reads "see Gases outside the scopes (Montreal Protocol)"; R8's own row reads "not estimated". | | |
-| 7 | Read section 6a. | A row reads the gas "HCFC-22", 45 kg, the basis "Recorded mass of an excluded record", "not quantified" for the CO2e, and R6's record reference. The scope totals are unchanged by it. | | |
-| 8 | Download `lines.csv` and `exclusions.csv`. | Each derived line's row carries `derived_from_line_id` (the parent line's id, which appears as another row's `line_id`) and `derived_kind`. The exclusions file carries `estimate_state` `NOT_ESTIMATED` with an empty `estimated_kg_co2e` for R8, and the gas for R6. | | |
-| 9 | Void run 004 with the reason "scratch run for the category 3 and exclusion checks", reopen the draft, remove the rule, undeclare category 3, restore R8's sized exclusion and R6's classification as procedure 5 leaves them, and freeze again. | The view is back where procedure 5 left it and run 003 stands untouched. | | |
+| 7 | Read section 6a. | A row reads the gas "HCFC-22", 45 kg, the basis "Recorded mass of an excluded record", "not quantified" for the CO2e, and the scratch record's reference. The scope 1 total still counts R6's 73,080 kg. | | |
+| 8 | Download `lines.csv` and `exclusions.csv`. | Each derived line's row carries `derived_from_line_id` (the parent line's id, which appears as another row's `line_id`) and `derived_kind`. The exclusions file carries `estimate_state` `NOT_ESTIMATED` with an empty `estimated_kg_co2e` for R8, and the gas for the scratch R-22 record. | | |
+| 9 | Void run 004 with the reason "scratch run for the category 3 and exclusion checks", reopen the draft, remove the rule, undeclare category 3, restore R8's sized exclusion as procedure 5 leaves it, remove the scratch R-22 record with a reason, and freeze again. | The view is back where procedure 5 left it and run 003 stands untouched. | | |
 
 ### B2. Scope 2 disclosures### B2. Scope 2 disclosures
 

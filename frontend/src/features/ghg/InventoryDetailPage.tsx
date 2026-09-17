@@ -6,6 +6,7 @@ import { InputField, TextAreaField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
 import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
+import { Tabs } from '../../components/Tabs'
 import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
 import { AssignmentsSection } from './components/AssignmentsSection'
@@ -16,12 +17,15 @@ import { InventoryFormModal } from './components/InventoryFormModal'
 import { LifecycleBar } from './components/LifecycleBar'
 import { MarketFactorsCard } from './components/MarketFactorsCard'
 import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
+import { PreflightBanner } from './components/PreflightBanner'
 import { PreflightPanel } from './components/PreflightPanel'
 import { ReportMetadataCard } from './components/ReportMetadataCard'
 import { UpstreamRulesCard } from './components/UpstreamRulesCard'
 import { RoleButton } from './components/RoleButton'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
 import { actionLabels, approachLabels, exclusionLabels, formatCo2e } from './format'
+import { useInventoryFilters } from './inventoryFilters'
+import type { InventoryTab } from './inventoryFilters'
 import { APPROVE_TOOLTIP, mayApprove, mayWrite, WRITE_TOOLTIP } from './roles'
 import {
   useBoundaryQuery,
@@ -32,6 +36,8 @@ import {
   useFinalizeRun,
   useInventoryQuery,
   useOrganizationQuery,
+  useAssignmentPageQuery,
+  useCoverageQuery,
   useRunsQuery,
   useValidationQuery,
 } from './useGhg'
@@ -50,7 +56,14 @@ export function describeDroppedExclusion(
   return `${who}: ${exclusionLabels[dropped.reason]} dropped, ${share}`
 }
 
-/** One inventory's workspace: lifecycle, boundary, declaration, activity view, instruments, runs. */
+/**
+ * One inventory's workbench (spec 05.6). The register is the work surface and
+ * everything else is a tab, because classifying records is an all-day job and
+ * the boundary, the method and the report header are set once and left.
+ *
+ * The tab lives in the URL with the register's filters, so a link opens the
+ * view a reviewer was working in and the back button steps through it.
+ */
 export function InventoryDetailPage() {
   const { organizationId = '', inventoryId = '' } = useParams()
   const inventoryQuery = useInventoryQuery(inventoryId)
@@ -58,7 +71,18 @@ export function InventoryDetailPage() {
   const inheritanceQuery = useInheritanceQuery(inventoryId)
   const organizationQuery = useOrganizationQuery(organizationId)
   const toast = useToast()
+  const { filters, set, query } = useInventoryFilters()
   const [editing, setEditing] = useState(false)
+  // The workbench renders once the inventory has loaded, but nothing its tabs
+  // ask for depends on that answer: they need only the identifier in the
+  // address. Asking now runs them alongside the inventory instead of one hop
+  // behind it, which is a whole round trip off the first paint of the register
+  // and the pre-flight (spec 05.6). React Query hands the same answers to the
+  // tab that asks again.
+  useValidationQuery(inventoryId)
+  useRunsQuery(inventoryId)
+  useAssignmentPageQuery(inventoryId, query)
+  useCoverageQuery(inventoryId)
 
   if (inventoryQuery.isPending) {
     return (
@@ -125,66 +149,78 @@ export function InventoryDetailPage() {
           {inventory.periodStart} → {inventory.periodEnd}
           {inventory.purpose ? ` · ${inventory.purpose}` : ''}
         </p>
-        {inventory.supersededById && (
-          <p className="mt-1 text-sm">
-            <Link
-              to={`../${inventory.supersededById}`}
-              relative="path"
-              className="font-semibold text-link"
-            >
-              Superseded by a correction
-            </Link>
-          </p>
-        )}
-        {inheritance && (
-          <p className="mt-1 text-sm text-ink-muted">
-            {inventory.correctionReason ? 'Correction of ' : 'View copied from '}
-            <Link
-              to={`../${inheritance.sourceInventoryId}`}
-              relative="path"
-              className="font-semibold text-link"
-            >
-              {inheritance.sourceName ?? 'another inventory'}
-            </Link>
-            : {inheritance.inherited} decision
-            {inheritance.inherited === 1 ? '' : 's'} inherited
-            {inheritance.undecided > 0
-              ? `, ${inheritance.undecided} record${inheritance.undecided === 1 ? '' : 's'} of this period the source never decided on`
-              : ''}
-            .{inventory.correctionReason ? ` Reason: ${inventory.correctionReason}` : ''}
-            {inheritance.boundaryRebuilt &&
-              ` Boundary rebuilt from Table 1 under ${approachLabels[inventory.consolidationApproach].toLowerCase()}` +
-                (inheritance.leaseRederived > 0
-                  ? `; ${inheritance.leaseRederived} leased assignment${inheritance.leaseRederived === 1 ? '' : 's'} moved scope under Appendix F.`
-                  : '.')}
-          </p>
-        )}
-        {inheritance && inheritance.droppedExclusions.length > 0 && editable && (
-          <div className="mt-1 text-sm text-amber-700">
-            <p>
-              {inheritance.droppedExclusions.length} boundary exclusion
-              {inheritance.droppedExclusions.length === 1 ? '' : 's'} of the source{' '}
-              {inheritance.droppedExclusions.length === 1 ? 'was' : 'were'} dropped: the operation
-              holds a share under this approach and joins the boundary. Record a reason again if it
-              should stay out.
-            </p>
-            <ul aria-label="Dropped exclusions" className="list-disc pl-5 text-xs">
-              {inheritance.droppedExclusions.map((dropped) => (
-                <li key={`${dropped.entityId ?? ''}:${dropped.facilityId ?? ''}`}>
-                  {describeDroppedExclusion(dropped, inventory.consolidationApproach)}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {inventory.status === 'PUBLISHED' && (
-          <p className="mt-1 text-sm text-amber-700">
-            Published: the activity view shows each record as the published run snapshotted it, and
-            marks records whose facts changed since.
-          </p>
+        {(inventory.supersededById || inheritance || inventory.status === 'PUBLISHED') && (
+          <details className="mt-2 text-sm">
+            <summary className="cursor-pointer text-ink-muted hover:text-dark-teal">
+              Where this inventory came from
+            </summary>
+            <div className="mt-1">
+              {inventory.supersededById && (
+                <p className="mt-1 text-sm">
+                  <Link
+                    to={`../${inventory.supersededById}`}
+                    relative="path"
+                    className="font-semibold text-link"
+                  >
+                    Superseded by a correction
+                  </Link>
+                </p>
+              )}
+              {inheritance && (
+                <p className="mt-1 text-sm text-ink-muted">
+                  {inventory.correctionReason ? 'Correction of ' : 'View copied from '}
+                  <Link
+                    to={`../${inheritance.sourceInventoryId}`}
+                    relative="path"
+                    className="font-semibold text-link"
+                  >
+                    {inheritance.sourceName ?? 'another inventory'}
+                  </Link>
+                  : {inheritance.inherited} decision
+                  {inheritance.inherited === 1 ? '' : 's'} inherited
+                  {inheritance.undecided > 0
+                    ? `, ${inheritance.undecided} record${inheritance.undecided === 1 ? '' : 's'} of this period the source never decided on`
+                    : ''}
+                  .{inventory.correctionReason ? ` Reason: ${inventory.correctionReason}` : ''}
+                  {inheritance.boundaryRebuilt &&
+                    ` Boundary rebuilt from Table 1 under ${approachLabels[inventory.consolidationApproach].toLowerCase()}` +
+                      (inheritance.leaseRederived > 0
+                        ? `; ${inheritance.leaseRederived} leased assignment${inheritance.leaseRederived === 1 ? '' : 's'} moved scope under Appendix F.`
+                        : '.')}
+                </p>
+              )}
+              {inheritance && inheritance.droppedExclusions.length > 0 && editable && (
+                <div className="mt-1 text-sm text-amber-700">
+                  <p>
+                    {inheritance.droppedExclusions.length} boundary exclusion
+                    {inheritance.droppedExclusions.length === 1 ? '' : 's'} of the source{' '}
+                    {inheritance.droppedExclusions.length === 1 ? 'was' : 'were'} dropped: the
+                    operation holds a share under this approach and joins the boundary. Record a
+                    reason again if it should stay out.
+                  </p>
+                  <ul aria-label="Dropped exclusions" className="list-disc pl-5 text-xs">
+                    {inheritance.droppedExclusions.map((dropped) => (
+                      <li key={`${dropped.entityId ?? ''}:${dropped.facilityId ?? ''}`}>
+                        {describeDroppedExclusion(dropped, inventory.consolidationApproach)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {inventory.status === 'PUBLISHED' && (
+                <p className="mt-1 text-sm text-amber-700">
+                  Published: the activity view shows each record as the published run snapshotted
+                  it, and marks records whose facts changed since.
+                </p>
+              )}
+            </div>
+          </details>
         )}
       </div>
 
+      {/* The lifecycle is a control strip under the title, not one more card in
+          the stack: it is where the acts live and it has to be reachable from
+          every tab. */}
       <div className="animate-fade-up" style={{ '--stagger': 1 } as CSSProperties}>
         <LifecycleBar inventory={inventory} inBoundaryCount={inBoundaryCount} myRole={myRole} />
       </div>
@@ -200,33 +236,119 @@ export function InventoryDetailPage() {
           }}
         />
       )}
+
       <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
-        <BoundarySection inventory={inventory} myRole={myRole} />
-      </div>
-      <div className="animate-fade-up" style={{ '--stagger': 3 } as CSSProperties}>
-        <OperationalBoundaryCard key={inventory.status} inventory={inventory} myRole={myRole} />
-      </div>
-      <div className="animate-fade-up" style={{ '--stagger': 4 } as CSSProperties}>
-        <AssignmentsSection
+        <InventoryWorkbench
           organizationId={organizationId}
           inventoryId={inventoryId}
+          inventory={inventory}
           editable={editable}
           myRole={myRole}
+          tab={filters.tab}
+          onTab={(tab) => set({ tab })}
+          onResolve={() => set({ tab: 'records', status: 'UNCLASSIFIED' })}
         />
       </div>
-      <div className="animate-fade-up" style={{ '--stagger': 5 } as CSSProperties}>
-        <UpstreamRulesCard organizationId={organizationId} inventory={inventory} myRole={myRole} />
-        <MarketFactorsCard organizationId={organizationId} inventory={inventory} myRole={myRole} />
+    </div>
+  )
+}
+
+/**
+ * The banner, the tabs and the body of the active tab. Only the active tab's
+ * sections mount, so opening an inventory no longer fires every query the page
+ * has between it.
+ */
+function InventoryWorkbench({
+  organizationId,
+  inventoryId,
+  inventory,
+  editable,
+  myRole,
+  tab,
+  onTab,
+  onResolve,
+}: {
+  organizationId: string
+  inventoryId: string
+  inventory: Inventory
+  editable: boolean
+  myRole: Organization['myRole']
+  tab: InventoryTab
+  onTab: (tab: InventoryTab) => void
+  onResolve: () => void
+}) {
+  const validationQuery = useValidationQuery(inventoryId)
+  const runsQuery = useRunsQuery(inventoryId)
+  const boundaryQuery = useBoundaryQuery(inventoryId)
+  const report = validationQuery.data
+
+  const inBoundary =
+    boundaryQuery.data?.reduce(
+      (count, entity) => count + entity.facilities.filter((facility) => facility.inBoundary).length,
+      0,
+    ) ?? undefined
+
+  return (
+    <div className="flex flex-col gap-4">
+      {report && <PreflightBanner report={report} onResolve={onResolve} />}
+
+      <Tabs<InventoryTab>
+        label="The inventory"
+        value={tab}
+        onChange={onTab}
+        tabs={[
+          { value: 'records', label: 'Records' },
+          { value: 'boundary', label: 'Boundary', count: inBoundary },
+          { value: 'method', label: 'Method' },
+          { value: 'runs', label: 'Runs', count: runsQuery.data?.length },
+          { value: 'report', label: 'Report' },
+        ]}
+      />
+
+      {tab === 'records' && (
+        <div className="flex flex-col gap-6">
+          <AssignmentsSection
+            organizationId={organizationId}
+            inventoryId={inventoryId}
+            editable={editable}
+            myRole={myRole}
+          />
+          {report && <PreflightPanel report={report} />}
+        </div>
+      )}
+
+      {tab === 'boundary' && (
+        <div className="flex flex-col gap-6">
+          <BoundarySection inventory={inventory} myRole={myRole} />
+          <OperationalBoundaryCard key={inventory.status} inventory={inventory} myRole={myRole} />
+        </div>
+      )}
+
+      {tab === 'method' && (
+        <div className="flex flex-col gap-6">
+          <UpstreamRulesCard
+            organizationId={organizationId}
+            inventory={inventory}
+            myRole={myRole}
+          />
+          <MarketFactorsCard
+            organizationId={organizationId}
+            inventory={inventory}
+            myRole={myRole}
+          />
+        </div>
+      )}
+
+      {tab === 'runs' && <LaunchSection inventory={inventory} myRole={myRole} />}
+
+      {tab === 'report' && (
         <ReportMetadataCard
           key={`header-${inventory.status}`}
           inventory={inventory}
-          intensityMetrics={[]}
+          intensityMetrics={inventory.intensityMetrics}
           myRole={myRole}
         />
-      </div>
-      <div className="animate-fade-up" style={{ '--stagger': 6 } as CSSProperties}>
-        <LaunchSection inventory={inventory} myRole={myRole} />
-      </div>
+      )}
     </div>
   )
 }
@@ -268,9 +390,8 @@ function LaunchSection({
   return (
     <div className="grid items-start gap-6 xl:grid-cols-2">
       <div className="flex flex-col gap-4">
-        {validationQuery.isPending && <Skeleton className="h-40" />}
-        {report && <PreflightPanel report={report} />}
-
+        {/* the gates are read on the Records tab, beside the records that fail
+            them; here the launch button only states whether it may go */}
         <GlassCard className="flex flex-wrap items-center gap-3 p-5">
           <input
             aria-label="Run label"

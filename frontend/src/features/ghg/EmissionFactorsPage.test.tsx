@@ -15,6 +15,7 @@ import {
   listFactorPacks,
   listPackRows,
   setFactorApproval,
+  createEmissionFactor,
 } from './api'
 
 const organization: Organization = {
@@ -307,6 +308,53 @@ test('a preparer can add, import, approve and delete factors (spec 01.4)', async
   expect(within(ownRow).getByRole('button', { name: /approve/i })).toBeEnabled()
   const handRow = screen.getByText('Quicklime (supplier declaration 2026)').closest('tr')!
   expect(within(handRow).getByRole('button', { name: /delete factor/i })).toBeEnabled()
+})
+
+test('a hand-entered blend carries its gas mass and composition, and arrives unapproved (spec 02.1, chapter 4)', async () => {
+  const user = userEvent.setup()
+  mockEmissionFactors([diesel])
+  vi.mocked(createEmissionFactor).mockResolvedValue({
+    ...supplier,
+    name: 'Refrigerant R-410A leakage',
+  })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: /^add factor$/i }))
+  const dialog = screen.getByRole('dialog')
+  // use in a run is a review step: nobody approves a factor by forgetting to untick a box
+  expect(within(dialog).getByLabelText(/approved for use in runs/i)).not.toBeChecked()
+  await user.type(
+    within(dialog).getByLabelText('Name', { exact: true }),
+    'Refrigerant R-410A leakage',
+  )
+  await user.selectOptions(
+    within(dialog).getByLabelText('Category', { exact: true }),
+    'FUGITIVE_EMISSIONS',
+  )
+  const unit = within(dialog).getByLabelText('Unit', { exact: true })
+  if (unit.tagName === 'SELECT') await user.selectOptions(unit, 'kg')
+  else await user.type(unit, 'kg')
+  await user.type(within(dialog).getByLabelText('kg CO₂e per unit', { exact: true }), '1923.5')
+  await user.type(within(dialog).getByLabelText(/HFCs kg per unit/), '1')
+  await user.type(within(dialog).getByLabelText(/Blend composition/), 'HFC-32:0.5,HFC-125:0.5')
+  await user.selectOptions(within(dialog).getByLabelText(/GWP basis/), 'AR5')
+  await user.type(within(dialog).getByLabelText(/^Source \(/), 'IPCC AR5 GWP100')
+  await user.click(within(dialog).getByRole('button', { name: /^add factor$/i }))
+
+  await waitFor(() =>
+    expect(createEmissionFactor).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({
+        name: 'Refrigerant R-410A leakage',
+        unit: 'kg',
+        kgCo2ePerUnit: 1923.5,
+        hfcsKgPerUnit: 1,
+        blendComposition: 'HFC-32:0.5,HFC-125:0.5',
+        blendGwpSource: 'AR5',
+        approved: false,
+      }),
+    ),
+  )
 })
 
 test('the search, the taxonomy filters and the pager run on the server (FU-03)', async () => {

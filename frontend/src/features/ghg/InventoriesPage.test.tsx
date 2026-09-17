@@ -35,6 +35,7 @@ const draft: Inventory = {
   scope3NotQuantified: [],
   residualMixAvailable: null,
   residualMixKgCo2ePerKwh: null,
+  intensityMetrics: [],
   finalRunId: null,
   status: 'DRAFT',
   supersededById: null,

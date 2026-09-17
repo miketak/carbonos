@@ -24,6 +24,16 @@ inventories, boundaries, versions or the lifecycle.
 
 - Sankofa Gold plc as procedures 2 and 3 leave it.
 
+**The page.** An inventory opens as a workbench (spec 05.6): the name and
+the lifecycle bar above, then the pre-flight banner, then five tabs in the
+order the work happens: **Records**, **Boundary**, **Method**, **Runs**,
+**Report**. Each step below names the tab it is on. The tab is in the URL,
+so a link opens the same tab and a reload keeps it.
+
+Section B works on the **Boundary** tab, section C on the lifecycle bar
+above the tabs, and the pre-flight findings are under the register on
+**Records**.
+
 ## A. Creating inventories
 
 ### A1. Pre-population from the approach
@@ -54,7 +64,7 @@ inventories, boundaries, versions or the lifecycle.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | In 2025 Operational, untick S5 (the exploration camp). | S5's row shows the reason control ("Why is it left out?"). | | |
-| 2 | Open the pre-flight (the launch section). | The **Reporting boundary** gate blocks: "'Nkran Exploration Camp' (Sankofa Gold plc) is neither in the boundary nor excluded with a reason. Tick it in, or record why it is left out.". | | |
+| 2 | Read the pre-flight banner above the tabs, then the full findings under the register on the **Records** tab. | The **Reporting boundary** gate blocks: "'Nkran Exploration Camp' (Sankofa Gold plc) is neither in the boundary nor excluded with a reason. Tick it in, or record why it is left out.". | | |
 
 ### B2. Recording the reasons
 

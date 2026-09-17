@@ -30,7 +30,7 @@ section.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Base year**. If procedure 8 designated 2025 Operational, read the designation; otherwise designate it now with a 5% threshold, the reason "First year with metered data across every site" and the transaction-date convention. | The page shows the year, the reason, the threshold and the convention (Corporate Standard chapter 5 requires the reason and a stated significance threshold), and under **Established by** the base-year run: "Run 006 · 41,526.69 t CO₂e", the final run of the published inventory. | | |
+| 1 | Open **Base year**. If procedure 8 designated 2025 Operational, read the designation; otherwise designate it now with a 5% threshold, the reason "First year with metered data across every site" and the transaction-date convention. | The page shows the year, the reason, the threshold and the convention (Corporate Standard chapter 5 requires a recalculation policy with a significance threshold the company sets, and the reason for the year), and under **Established by** the base-year run: "Run 006 · 41,526.69 t CO₂e", the final run of the published inventory. | | |
 
 ## B. Structural changes
 
@@ -67,7 +67,7 @@ here.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | On the first candidate click **Record recalculated base** and pick "Run 005 · 41,526.69 t CO₂e" from the list of the base-year inventory's runs (it stands in for a recalculated base; the arithmetic of a recalculation is a non-goal). | The first card reads RECALCULATED with who decided and "recalculated base: Run 005". | | |
-| 2 | On the second click **Decline** with the note "Office 0.2% on its own; the plant recalculation carries the cumulative effect". | The second card reads DECLINED with the note and who decided; the 2026 gate passes. | | |
+| 2 | Read the second card again, then click **Decline** with the note "Office 0.22% on its own, below the threshold; the running sum restarted at the plant recalculation". | Once the first candidate is recalculated the running sum starts again from it (spec 06.1), so the second card now weighs the office alone, 0.22%, below the threshold. It reads DECLINED with the note and who decided; the 2026 gate passes. | | |
 
 ## C. Manual candidates
 
@@ -99,6 +99,20 @@ here.
 | --- | --- | --- | --- | --- |
 | 1 | Reopen the 2026 inventory, click **Edit inventory**, set the GWP set to AR6, save, and read the gate. | The header badge reads "GWP AR6" and the **Base year** gate warns "This inventory uses IPCC AR6 potentials; the 2025 base year uses IPCC AR5. The required-gases amendment recommends the same set for both." | | |
 | 2 | Set it back to AR5. | The warning goes. | | |
+
+## E. A version cut before the designation
+
+Run this case last: it clears the base year, which removes the
+recalculation history above.
+
+### E1. The next freeze after the designation is weighed against the base-year boundary
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Under **Base year** click **Clear base year**. Create **2026 Scratch**: operational control, 2026-01-01 to 2026-12-31, pre-populated, and freeze it with every facility in. | The inventory freezes; the base-year page records nothing, because there is no base year to weigh against. | | |
+| 2 | Designate 2025 Operational as the base year again (5%, the same reason and convention). | The designation lists no candidates. | | |
+| 3 | Reopen 2026 Scratch, untick S2 with the reason **Not applicable**, "JV interest sold in January 2026", and freeze. | A FLAGGED candidate reads "structural change: Tarkwa Processing Plant removed; 51.77% of base-year emissions, above the 5% threshold, recalculation required". Version 1 was cut before the base year existed and was never weighed, so this freeze compares with the base-year boundary rather than with version 1 (spec 06); without that rule the divestment would never be flagged. | | |
+| 4 | Decline the candidate with a note, then delete 2026 Scratch through its settings. | The organization is back to the inventories the earlier procedures left. | | |
 
 ## Sign-off
 

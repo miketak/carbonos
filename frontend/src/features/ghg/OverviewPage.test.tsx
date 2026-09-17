@@ -71,6 +71,7 @@ const inventory: Inventory = {
   scope3NotQuantified: [],
   residualMixAvailable: null,
   residualMixKgCo2ePerKwh: null,
+  intensityMetrics: [],
   finalRunId: 'run-1',
   status: 'FINAL',
   supersededById: null,

@@ -222,7 +222,7 @@ packs, which since spec 02.9 are the only two the catalogue holds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Add a factor **Emulsion explosive (supplier)**: scope 1 process emissions, per tonne, 170 kg CO2e, source "Supplier technical data sheet 2025", data year 2025, valid from 2025-01-01, leaving **Reporting basis** on "Counted in the scopes", **not approved**. | The factor is listed as the organization's own without the **Approved** badge, because **Approved for use in runs** was left unticked. Its Packs column reads "entered by hand". | | |
+| 1 | Add a factor **Emulsion explosive (supplier)**: scope 1 process emissions, per tonne, 170 kg CO2e, source "Supplier technical data sheet 2025", data year 2025, valid from 2025-01-01, leaving **Reporting basis** on "Counted in the scopes". Read **Approved for use in runs** before saving. | The box is **unticked when the form opens**: use in a run is a review step, not a box nobody cleared (spec 02.1). Leave it so. The factor is listed as the organization's own without the **Approved** badge; its Packs column reads "entered by hand". | | |
 | 2 | Open **Add factor** again and read the **Reporting basis** field. | It offers "Counted in the scopes" and "Outside the scopes (Montreal Protocol, not a Kyoto gas)", with a note that Chapter 4 counts the seven Kyoto gas groups and that a Montreal Protocol gas is reported separately. Cancel without saving. | | |
 
 Procedure 5 shows the gate refusing it until it is approved.
@@ -232,7 +232,8 @@ Procedure 5 shows the gate refusing it until it is approved.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Find the imported R-407C factor. | The row **Blends: R407C, Emissions including only Kyoto products** shows "1624 kg CO2e/kg" and a source naming the DESNZ 2026 flat file. Its **Blend** column is empty: DESNZ publishes the CO2e figure with the gas mass beside it and no composition. | | |
-| 2 | Add a factor by hand with a blend composition, for example **Refrigerant R-410A leakage**, per kg, 1923.5, composition "HFC-32:0.5,HFC-125:0.5" on the AR5 basis. | It is listed as the organization's own with its blend shown. A composition is the only route to a figure that reconverts under the inventory's GWP set, and no pack carries one since spec 02.9. | | |
+| 2 | Add a factor by hand with a blend composition: **Refrigerant R-410A leakage**, scope 1 fugitive emissions, per kg, 1923.5 kg CO2e, **HFCs kg per unit** 1, **Blend composition** "HFC-32:0.5,HFC-125:0.5", **GWP basis of the published figure** AR5, source "IPCC AR5 WG1 Table 8.A.1". | It is listed as the organization's own with its blend shown ("50% HFC-32, 50% HFC-125"). A composition is the only route to a figure that reconverts under the inventory's GWP set, and no pack carries one since spec 02.9. The HFC mass is what the by-gas table reports (Corporate Standard chapter 4). | | |
+| 3 | Try the same with the composition "HFC-32:0.5,HFC-125:0.6". | Refused under the field: "The mass fractions of a blend must add up to 1 (for example HFC-32:0.5,HFC-125:0.5)." A split that does not account for the whole blend would count part of the gas twice or not at all. | | |
 
 The refrigerants pack that shipped a composition for every blend left with
 spec 02.9, so a blend a pack delivers no longer reconverts. Where a

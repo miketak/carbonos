@@ -71,7 +71,7 @@ class InventoryController {
 
 	@GetMapping("/organizations/{organizationId}/inventories")
 	List<InventoryResponse> list(@PathVariable UUID organizationId) {
-		return inventoryService.list(organizationId).stream().map(InventoryResponse::from).toList();
+		return inventoryService.list(organizationId).stream().map(this::respond).toList();
 	}
 
 	@PostMapping("/organizations/{organizationId}/inventories")
@@ -84,17 +84,17 @@ class InventoryController {
 			.path("/api/ghg/inventories/{id}")
 			.buildAndExpand(inventory.getId())
 			.toUri();
-		return ResponseEntity.created(location).body(InventoryResponse.from(inventory));
+		return ResponseEntity.created(location).body(respond(inventory));
 	}
 
 	@GetMapping("/inventories/{id}")
 	InventoryResponse get(@PathVariable UUID id) {
-		return InventoryResponse.from(inventoryService.get(id));
+		return respond(inventoryService.get(id));
 	}
 
 	@PutMapping("/inventories/{id}")
 	InventoryResponse update(@PathVariable UUID id, @Valid @RequestBody InventoryRequest body) {
-		return InventoryResponse.from(inventoryService.update(id, body.name(), body.periodStart(), body.periodEnd(),
+		return respond(inventoryService.update(id, body.name(), body.periodStart(), body.periodEnd(),
 				body.purpose(), body.baseYear(), body.consolidationApproach(), body.gwpSet(), body.straddleTreatment()));
 	}
 
@@ -112,7 +112,7 @@ class InventoryController {
 
 	@PutMapping("/inventories/{id}/operational-boundary")
 	InventoryResponse operationalBoundary(@PathVariable UUID id, @Valid @RequestBody OperationalBoundaryRequest body) {
-		return InventoryResponse.from(inventoryService.setOperationalBoundary(id, body.scope3Categories(),
+		return respond(inventoryService.setOperationalBoundary(id, body.scope3Categories(),
 				body.exclusionsRationale(), body.notQuantified() == null ? java.util.List.of()
 						: body.notQuantified()
 							.stream()
@@ -226,24 +226,24 @@ class InventoryController {
 	/** Reopening needs a reason (spec 05.5); the version it supersedes records it. */
 	@PostMapping("/inventories/{id}/reopen")
 	InventoryResponse reopen(@PathVariable UUID id, @RequestBody(required = false) ReopenRequest body) {
-		return InventoryResponse.from(inventoryService.reopen(id, body == null ? null : body.reason()));
+		return respond(inventoryService.reopen(id, body == null ? null : body.reason()));
 	}
 
 	/** Designates the final run, with the reviewer's optional note (spec 05.5). */
 	@PostMapping("/inventories/{id}/finalize")
 	InventoryResponse finalizeInventory(@PathVariable UUID id, @Valid @RequestBody FinalizeRequest body) {
-		return InventoryResponse.from(inventoryService.designateFinal(id, body.runId(), body.note()));
+		return respond(inventoryService.designateFinal(id, body.runId(), body.note()));
 	}
 
 	@PostMapping("/inventories/{id}/withdraw-final")
 	InventoryResponse withdrawFinal(@PathVariable UUID id, @Valid @RequestBody ReasonRequest body) {
-		return InventoryResponse.from(inventoryService.withdrawFinal(id, body.reason()));
+		return respond(inventoryService.withdrawFinal(id, body.reason()));
 	}
 
 	/** The report header: approver, assurance, intensity denominators (spec 07.4). */
 	@PutMapping("/inventories/{id}/report-metadata")
 	InventoryResponse reportMetadata(@PathVariable UUID id, @Valid @RequestBody ReportMetadataRequest body) {
-		return InventoryResponse.from(inventoryService.setReportMetadata(id, body.approvedBy(),
+		return respond(inventoryService.setReportMetadata(id, body.approvedBy(),
 				body.assuranceLevel(), body.assuranceProvider(), body.assuranceStatement(), body.uncertaintyStatement(),
 				body.intensityMetrics()
 					.stream()
@@ -262,7 +262,7 @@ class InventoryController {
 	InventoryResponse publish(@PathVariable UUID id) {
 		var inventory = inventoryService.publish(id);
 		reports.snapshotPublished(inventory.getId(), inventory.getFinalRunId());
-		return InventoryResponse.from(inventoryService.get(id));
+		return respond(inventoryService.get(id));
 	}
 
 	/** What the inventory inherited from its source (spec 05.3); 204 when nothing was copied. */
@@ -282,7 +282,7 @@ class InventoryController {
 			.path("/api/ghg/inventories/{id}")
 			.buildAndExpand(successor.getId())
 			.toUri();
-		return ResponseEntity.created(location).body(InventoryResponse.from(successor));
+		return ResponseEntity.created(location).body(respond(successor));
 	}
 
 	// --- market-based scope 2 (spec 07.1) ---------------------------------------
@@ -302,7 +302,7 @@ class InventoryController {
 	/** Whether a residual mix is available for the instruments' markets (spec 07.2). */
 	@PutMapping("/inventories/{id}/residual-mix")
 	InventoryResponse residualMix(@PathVariable UUID id, @Valid @RequestBody ResidualMixRequest body) {
-		return InventoryResponse.from(inventoryService.setResidualMix(id, body.available(), body.kgCo2ePerKwh()));
+		return respond(inventoryService.setResidualMix(id, body.available(), body.kgCo2ePerKwh()));
 	}
 
 	@DeleteMapping("/inventories/{id}/market-factors/{facilityId}")
@@ -386,5 +386,9 @@ class InventoryController {
 	@GetMapping("/inventories/{id}/validation")
 	ValidationReportResponse validation(@PathVariable UUID id) {
 		return ValidationReportResponse.from(inventoryService.validate(id), inventoryService.freezeBlockers(id));
+	}
+	/** The inventory as the client holds it, with its saved intensity denominators (spec 05.6). */
+	private InventoryResponse respond(Inventory inventory) {
+		return InventoryResponse.from(inventory, inventoryService.intensityMetrics(inventory.getId()));
 	}
 }
