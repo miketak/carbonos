@@ -212,7 +212,7 @@ keeps the frozen facility name after a rename and is 404 to an outsider;
 entity edits raise the drift warning without touching treatment or version;
 membership windows; zero-share entities recorded as excluded. Frontend:
 `InventoryDetailPage.test.tsx`, `RunDetailPage.test.tsx`. Manual:
-`docs/qa/003-inventory.md` sections D, E, G, H, I, J.
+`docs/qa/mining/003-inventory.md` sections D, E, G, H, I, J.
 
 ## Non-goals and open questions
 

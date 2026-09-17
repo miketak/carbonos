@@ -173,17 +173,19 @@ nav:
           - "08 Form validation and UI polish": specs/08-form-validation-and-ui-polish.md
       - QA procedures:
           - reference/qa/README.md
-          - reference/qa/001-access-and-roles.md
-          - reference/qa/002-organization-setup.md
-          - reference/qa/003-activity-data.md
-          - reference/qa/004-boundary-and-lifecycle.md
-          - reference/qa/005-classification-and-preflight.md
-          - reference/qa/006-scope2-instruments.md
-          - reference/qa/007-runs-reports-and-exports.md
-          - reference/qa/008-publication-and-corrections.md
-          - reference/qa/009-base-year.md
-          - reference/qa/010-factor-pack-maintenance.md
-          - reference/qa/011-platform-administration.md
+          - Mining (Sankofa Gold plc):
+              - reference/qa/mining/README.md
+              - reference/qa/mining/001-access-and-roles.md
+              - reference/qa/mining/002-organization-setup.md
+              - reference/qa/mining/003-activity-data.md
+              - reference/qa/mining/004-boundary-and-lifecycle.md
+              - reference/qa/mining/005-classification-and-preflight.md
+              - reference/qa/mining/006-scope2-instruments.md
+              - reference/qa/mining/007-runs-reports-and-exports.md
+              - reference/qa/mining/008-publication-and-corrections.md
+              - reference/qa/mining/009-base-year.md
+              - reference/qa/mining/010-factor-pack-maintenance.md
+              - reference/qa/mining/011-platform-administration.md
       - Decision records:
           - adr/README.md
           - adr/0001-use-material-for-mkdocs-with-uv.md

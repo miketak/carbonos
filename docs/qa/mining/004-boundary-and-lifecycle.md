@@ -5,15 +5,15 @@ approach, that every operation left out carries a reason, that freezing
 cuts an immutable boundary version, and that the lifecycle refuses every
 write it must.
 
-**Covers** [spec 03](../../specs/03-organizational-boundary.md),
-[spec 03.2](../../specs/03.2-effective-dated-membership.md),
-[spec 03.4](../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md),
-[spec 05.1](../../specs/05.1-inventory-lifecycle-and-run-snapshots.md),
-[spec 05.4](../../specs/05.4-copying-a-view-across-consolidation-approaches.md)
+**Covers** [spec 03](../../../specs/03-organizational-boundary.md),
+[spec 03.2](../../../specs/03.2-effective-dated-membership.md),
+[spec 03.4](../../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md),
+[spec 05.1](../../../specs/05.1-inventory-lifecycle-and-run-snapshots.md),
+[spec 05.4](../../../specs/05.4-copying-a-view-across-consolidation-approaches.md)
 (a copy across approaches),
-[spec 05.5](../../specs/05.5-review-at-scale-and-deliberate-lifecycle-acts.md)
+[spec 05.5](../../../specs/05.5-review-at-scale-and-deliberate-lifecycle-acts.md)
 (the freeze gate, the reopen reason, the version labels) and
-[spec 07.2](../../specs/07.2-required-disclosures.md) (exclusions).
+[spec 07.2](../../../specs/07.2-required-disclosures.md) (exclusions).
 
 **Estimated time:** 60 minutes.
 

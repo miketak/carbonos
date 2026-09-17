@@ -102,7 +102,7 @@ None.
 `GhgApiIntegrationTests`: classification defaults scope and category from
 the factor without touching the fact, and the accountant may choose
 otherwise; unit mismatch blocks; every seeded factor unit is registered. Frontend: dimension-filtered picker, conversion preview, exclusion
-menu. Manual: `docs/qa/003-inventory.md` section F.
+menu. Manual: `docs/qa/mining/003-inventory.md` section F.
 
 ## Non-goals and open questions
 

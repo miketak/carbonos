@@ -67,7 +67,7 @@ edits, and a published inventory cannot change at all (spec 05.1).
 - Open the inventory's version history and expand any version to see the
   boundary exactly as frozen, with the freezer's identity.
 - Compare two inventories over the same facts under different approaches.
-- Follow the manual verification script `docs/qa/003-inventory.md`, whose
+- Follow the manual verification script `docs/qa/mining/003-inventory.md`, whose
   expected totals are computed independently of the engine.
 
 A verifier is a signed-in user of the organization; there is no verifier role
@@ -96,7 +96,7 @@ notification or export consumer.
 card including an entity with no line, scope 2 both ways, the gases, the
 declaration and grouped exclusions, the pre-versioning message.
 `OverviewPage.test.tsx`. `GhgApiIntegrationTests`: the report endpoint.
-Manual: `docs/qa/003-inventory.md` sections H, I, J.
+Manual: `docs/qa/mining/003-inventory.md` sections H, I, J.
 
 ## Non-goals and open questions
 

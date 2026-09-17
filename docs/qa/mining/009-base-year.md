@@ -5,9 +5,9 @@ policy, that structural changes are detected at freeze and weighed
 cumulatively, that manual candidates are raised and decided, and that the
 report shows the profile over time.
 
-**Covers** [spec 06](../../specs/06-tracking-emissions-over-time.md),
-[spec 06.1](../../specs/06.1-recalculation-policy-conformance.md) and the
-comparison run of [spec 03.4](../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md).
+**Covers** [spec 06](../../../specs/06-tracking-emissions-over-time.md),
+[spec 06.1](../../../specs/06.1-recalculation-policy-conformance.md) and the
+comparison run of [spec 03.4](../../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md).
 
 **Estimated time:** 60 minutes.
 

@@ -4,12 +4,12 @@
 request flow, that an owner can add them to an organization with a role,
 and that each role can do exactly what it allows and nothing more.
 
-**Covers** [spec 01](../../specs/01-identity-and-access.md),
-[spec 01.1](../../specs/01.1-access-requests.md),
-[spec 01.2](../../specs/01.2-organization-membership-and-roles.md),
-[spec 01.3](../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md)
-[spec 01.4](../../specs/01.4-role-aware-ui-and-visible-refusals.md)
-and [spec 01.6](../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md).
+**Covers** [spec 01](../../../specs/01-identity-and-access.md),
+[spec 01.1](../../../specs/01.1-access-requests.md),
+[spec 01.2](../../../specs/01.2-organization-membership-and-roles.md),
+[spec 01.3](../../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md)
+[spec 01.4](../../../specs/01.4-role-aware-ui-and-visible-refusals.md)
+and [spec 01.6](../../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md).
 
 **Estimated time:** 75 minutes.
 

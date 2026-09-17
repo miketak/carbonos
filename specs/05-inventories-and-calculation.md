@@ -159,7 +159,7 @@ and reconciliation; the four gates; run refused while blocked; snapshot and
 final designation; two inventories accounting one fact differently; US-gallon
 converted to litre in the run; cross-dimension units block. `UnitConverterTest`.
 Frontend: pre-flight panel, launch gating, review toast, run list. Manual:
-`docs/qa/003-inventory.md` sections E to J, with hand-computed totals.
+`docs/qa/mining/003-inventory.md` sections E to J, with hand-computed totals.
 
 ## Non-goals and open questions
 

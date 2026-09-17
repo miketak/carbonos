@@ -7,11 +7,11 @@ how ready it is, that every correction and removal carries a reason and
 leaves a history, that evidence attaches to a record and is listed as source
 documents, and that the register stays usable with many records.
 
-**Covers** [spec 02](../../specs/02-organization-and-facts.md),
-[spec 04.2](../../specs/04.2-activity-periods-and-pro-rating.md),
-[spec 04.4](../../specs/04.4-activity-data-quality-evidence-and-corrections.md),
-[spec 04.5](../../specs/04.5-bulk-import-and-activity-register.md) and
-[spec 04.6](../../specs/04.6-activity-register-drafts-readiness-and-source-documents.md).
+**Covers** [spec 02](../../../specs/02-organization-and-facts.md),
+[spec 04.2](../../../specs/04.2-activity-periods-and-pro-rating.md),
+[spec 04.4](../../../specs/04.4-activity-data-quality-evidence-and-corrections.md),
+[spec 04.5](../../../specs/04.5-bulk-import-and-activity-register.md) and
+[spec 04.6](../../../specs/04.6-activity-register-drafts-readiness-and-source-documents.md).
 
 **Estimated time:** 75 minutes.
 
