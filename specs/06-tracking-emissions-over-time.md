@@ -31,7 +31,11 @@ optional `baseYear` integer on the inventory connected to nothing.
   accountant.
 - Freezing any other inventory of the organization measures the new boundary
   version against the version before it (or, for a first freeze, the
-  base-year inventory's boundary under the same approach). A facility added or
+  base-year inventory's boundary under the same approach). A version cut
+  before the base year was designated was never weighed, so the next freeze
+  after the designation compares with the base-year boundary again rather
+  than with that version; otherwise a divestment recorded before anyone
+  named the base year would never be flagged. A facility added or
   removed, or a membership window changed (spec 03.2), is a candidate
   structural change. The affected facilities are weighed by their base-year
   emissions (from the base run's lines) as a percent of the base-year total;

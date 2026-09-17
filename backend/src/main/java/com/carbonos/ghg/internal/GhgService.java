@@ -818,11 +818,18 @@ public class GhgService {
 			throw new InvalidPeriodException();
 		}
 		if (facts.blendComposition() != null && !facts.blendComposition().isBlank()) {
+			BlendComposition composition;
 			try {
-				BlendComposition.parse(facts.blendComposition());
+				composition = BlendComposition.parse(facts.blendComposition());
 			}
 			catch (RuntimeException ex) {
-				throw new GhgRuleViolationException("The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.");
+				throw new GhgFieldException("blendComposition",
+						"The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.");
+			}
+			// a split that does not add up would count part of the gas twice or not at all
+			if (!composition.sumsToOne()) {
+				throw new GhgFieldException("blendComposition",
+						"The mass fractions of a blend must add up to 1 (for example HFC-32:0.5,HFC-125:0.5).");
 			}
 		}
 	}

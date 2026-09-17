@@ -214,7 +214,13 @@ public class BaseYearService {
 		if (baseRunId == null) {
 			return; // no base-year emissions to measure against yet
 		}
-		var baseline = previous.or(() -> baseInventory.getConsolidationApproach() == inventory
+		// A later freeze is weighed against this inventory's previous version, so each change is
+		// flagged once and the earlier ones count cumulatively (Chapter 5). That chain only holds
+		// from the first freeze made after the base year existed: a version cut before the
+		// designation was never measured, so the comparison starts again from the base-year
+		// boundary, or a divestment recorded in that first version would never be flagged.
+		var weighed = previous.filter(cut -> !cut.getFrozenAt().isBefore(baseYear.getCreatedAt()));
+		var baseline = weighed.or(() -> baseInventory.getConsolidationApproach() == inventory
 			.getConsolidationApproach() && baseInventory.getCurrentBoundaryVersionId() != null
 					? boundaryVersions.findWithEntriesById(baseInventory.getCurrentBoundaryVersionId())
 					: Optional.empty());

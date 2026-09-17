@@ -19,7 +19,7 @@ import type {
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import { mockEmissionFactors } from './testApiMock'
+import { listEmissionFactors, mockEmissionFactors } from './testApiMock'
 
 import {
   classifyAssignment,
@@ -115,6 +115,7 @@ const inventory: Inventory = {
   scope3NotQuantified: [],
   residualMixAvailable: null,
   residualMixKgCo2ePerKwh: null,
+  intensityMetrics: [],
   finalRunId: null,
   status: 'DRAFT',
   supersededById: null,
@@ -1401,6 +1402,61 @@ test('a preparer sees Create correction disabled with the role it needs (spec 01
   await waitFor(() => expect(correction).toBeDisabled())
   expect(correction).toHaveAttribute('title', 'Needs the Reviewer or Owner role.')
   expect(correction).toHaveAccessibleDescription('Needs the Reviewer or Owner role.')
+})
+
+test('the upstream form searches each list on its own, keeps the chosen primary and suggests the well-to-tank row (spec 04.7)', async () => {
+  const user = userEvent.setup()
+  const wtt: EmissionFactor = {
+    ...dieselFactor,
+    id: 'ef-3',
+    name: 'Well-to-tank: Diesel',
+    defaultScope: 'SCOPE_3',
+    defaultCategory: 'FUEL_ENERGY_RELATED',
+  }
+  mockEmissionFactors([dieselFactor, wtt])
+  vi.mocked(listUpstreamRules).mockResolvedValue([])
+  vi.mocked(addUpstreamRule).mockResolvedValue({
+    id: 'ur-1',
+    primaryFactorId: 'ef-1',
+    primaryFactorName: 'Diesel',
+    upstreamFactorId: 'ef-3',
+    upstreamFactorName: 'Well-to-tank: Diesel',
+    kind: 'WELL_TO_TANK',
+    matchingLines: 3,
+  })
+  renderPage('method')
+
+  const form = await screen.findByRole('form', { name: 'Add an upstream rule' })
+  await user.selectOptions(within(form).getByLabelText('Primary factor'), 'ef-1')
+  // the row named after the combustion row is looked up and offered first, never applied
+  await waitFor(() =>
+    expect(listEmissionFactors).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({ q: 'Well-to-tank: Diesel', size: 5 }),
+    ),
+  )
+  const suggested = await within(form).findByRole('group', { name: /Suggested/ })
+  expect(
+    within(suggested).getByRole('option', { name: /Well-to-tank: Diesel/ }),
+  ).toBeInTheDocument()
+  // each list has its own search: narrowing the upstream list leaves the chosen primary in place
+  await user.type(within(form).getByLabelText('Narrow the upstream factors'), 'Well-to-tank')
+  await waitFor(() =>
+    expect(listEmissionFactors).toHaveBeenLastCalledWith(
+      'org-1',
+      expect.objectContaining({ q: 'Well-to-tank', size: 200 }),
+    ),
+  )
+  expect(within(form).getByLabelText('Primary factor')).toHaveValue('ef-1')
+  await user.selectOptions(within(form).getByLabelText('Upstream factor'), 'ef-3')
+  await user.click(within(form).getByRole('button', { name: 'Add rule' }))
+  await waitFor(() =>
+    expect(addUpstreamRule).toHaveBeenCalledWith('inv-1', {
+      primaryFactorId: 'ef-1',
+      upstreamFactorId: 'ef-3',
+      kind: 'WELL_TO_TANK',
+    }),
+  )
 })
 
 test('the upstream rules card lists the rules and adds one (spec 04.7)', async () => {

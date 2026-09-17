@@ -445,6 +445,54 @@ test('a record in mass against a factor per litre converts through the chosen de
   )
 })
 
+test('picking a per-litre factor for a tonne record asks for the density before classifying (spec 02.2)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listOrganizationUnits).mockResolvedValue([...units, tonne, kg])
+  vi.mocked(listDensities).mockResolvedValue([
+    {
+      id: 'den-1',
+      organizationId: 'org-1',
+      typical: false,
+      material: 'Diesel (GOIL)',
+      kgPerLitre: 0.8325,
+      source: 'GOIL CoA',
+      note: null,
+    },
+  ])
+  const inTonnes: Assignment = { ...unclassified, unit: 'tonne', quantity: 12 }
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([inTonnes]))
+  vi.mocked(classifyAssignment).mockResolvedValue({
+    ...inTonnes,
+    classified: true,
+    emissionFactorId: 'ef-1',
+    scope: 'SCOPE_1',
+    category: 'MOBILE_COMBUSTION',
+    densityId: 'den-1',
+  })
+  renderDrawer()
+
+  await user.click(await screen.findByRole('button', { name: /choose factor/i }))
+  await user.click(
+    within(await screen.findByLabelText('Classify Diesel consumption')).getByRole('button', {
+      name: /Diesel/,
+    }),
+  )
+  // the pick is held, not sent: the factor is per litre and the record is a mass. The factor is
+  // not among the ones the page's records cite, so the drawer has to keep the picked row itself
+  expect(classifyAssignment).not.toHaveBeenCalled()
+  expect(await screen.findByText(/tonne meets a factor per litre/)).toBeInTheDocument()
+  expect(screen.getByText('Diesel', { selector: 'span.font-medium' })).toBeInTheDocument()
+  await user.selectOptions(screen.getByLabelText('Diesel consumption density'), 'den-1')
+  await waitFor(() =>
+    expect(classifyAssignment).toHaveBeenCalledWith('as-1', {
+      emissionFactorId: 'ef-1',
+      scope: 'SCOPE_1',
+      category: 'MOBILE_COMBUSTION',
+      densityId: 'den-1',
+    }),
+  )
+})
+
 test('the drawer suggests the grid factor of the facility and names an inherited lease (spec 03.4)', async () => {
   const user = userEvent.setup()
   mockEmissionFactors([

@@ -154,8 +154,8 @@ drawer's footer to walk the page, or close it and press `j`, `k` and Enter.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Classify R17 (12 tonne of diesel) with **Diesel** (per litre). | The factor is offered because densities exist. Picking it does not classify yet: the drawer says "tonne meets a factor per litre: choose the density that converts between them to finish classifying." and the gate still lists R17 as unclassified. | | |
-| 2 | Choose the **typical** Diesel density, read the pre-flight. | With the typical density the preview reads "12 tonne → 14,285.7143 litre (density of Diesel, 0.84 kg/litre) × 2.66 kg CO₂e/litre" and the gate warns to replace it with the supplier's specification. | | |
+| 1 | Classify R17 (12 tonne of diesel) with **Liquid fuels: Diesel (100% mineral diesel)** per litre from DESNZ 2026. | The factor is offered because densities exist. Picking it does not classify yet: the drawer keeps the picked row in view and says "tonne meets a factor per litre: choose the density that converts between them to finish classifying."; the gate still lists R17 as unclassified. (Nothing is sent until the density is chosen, so the picked factor is held by the drawer itself, not read back from the record.) | | |
+| 2 | Choose the **typical** Diesel density, read the pre-flight. | With the typical density the preview reads "12 tonne → 14,285.7143 litre (density of Diesel, 0.84 kg/litre) × 2.66155 kg CO₂e/litre" (the DESNZ 2026 figure) and the gate warns to replace it with the supplier's specification: a typical density is a planning value, and the report discloses the material, the kg/litre and its source on the line (spec 02.2). | | |
 | 3 | Then choose **Diesel (GOIL, 2025 CoA)**. | With the GOIL density the preview reads 12 tonne → 14,414.4144 litre and the gate is silent. | | |
 
 ### B5. A custom unit converts
@@ -295,9 +295,11 @@ estimate is of the right order.
 | --- | --- | --- | --- | --- |
 | 1 | Declare **3. Fuel- and energy-related activities** in the declaration card and save. | | | |
 | 2 | Read the **Classification** gate. | A warning "Fuel- and energy-related activities is declared, but no upstream rule matches a scope 1 or scope 2 factor in this view; add a rule or say why category 3 is not quantified." | | |
-| 3 | Under **Emission factors**, add an organization factor **Well-to-tank diesel**, per litre, scope 3, category 3, 0.6 kg CO2e per litre, source "DEFRA 2025 well-to-tank", and approve it. | | | |
-| 4 | On the inventory page, open the **Upstream rules** card, choose **Diesel (100% mineral diesel)** as the primary factor, **Well-to-tank diesel** as the upstream factor, the kind **Well-to-tank (upstream emissions of the fuel)**, and click **Add rule**. | The rule appears in the table with the number of included scope 1 and scope 2 records it applies to. | | |
-| 5 | Add a second rule pairing **Liquid fuels: Diesel (100% mineral diesel)** with **Grid electricity, Ghana (2024)**. | Refused: the upstream factor is per kWh, which does not convert from a factor per litre. | | |
+| 3 | Under **Emission factors**, search for **Well-to-tank: Liquid fuels: Diesel (100% mineral diesel)** (per litre). | The DESNZ 2026 edition carries the well-to-tank row of every combustion row it publishes, with the same vintage; it is the row to pair, not a hand-typed figure. It is approved with the edition. | | |
+| 4 | On the **Method** tab, in **Add an upstream rule**, type "100% mineral diesel" in **Narrow the primary factors** and choose **Liquid fuels: Diesel (100% mineral diesel) (/litre)** as the primary factor. Read the **Upstream factor** list. | The list opens with a group **Suggested: named after the primary factor** holding **Well-to-tank: Liquid fuels: Diesel (100% mineral diesel) (/litre)**; the rest of the approved factors follow. The suggestion is offered, never applied. | | |
+| 4a | Type "Well-to-tank" in **Narrow the upstream factors**. | Only the upstream list narrows; the chosen primary factor stays chosen. Each list has its own search (spec 04.7). | | |
+| 4b | Choose the suggested row, the kind **Well-to-tank (upstream emissions of the fuel)**, and click **Add rule**. | The rule appears in the table with the number of included scope 1 and scope 2 records it applies to. | | |
+| 5 | Add a second rule pairing **Liquid fuels: Diesel (100% mineral diesel)** with **Grid electricity, Ghana (2024)** (narrow the upstream list to "Ghana"). | Refused: the upstream factor is per kWh, which does not convert from a factor per litre. | | |
 | 6 | Add the well-to-tank rule a second time. | Refused: one primary factor carries at most one rule of each kind. | | |
 | 7 | Read the **Classification** gate again. | The warning is gone, and an information line reads "1 upstream rule: Diesel (100% mineral diesel) → Well-to-tank diesel (well-to-tank)." | | |
 

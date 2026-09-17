@@ -34,6 +34,12 @@ record BlendComposition(Map<String, BigDecimal> fractions) {
 		return new BlendComposition(java.util.Collections.unmodifiableMap(fractions));
 	}
 
+	/** Whether the mass fractions account for the whole blend (Corporate Standard chapter 4: every species counted). */
+	boolean sumsToOne() {
+		var total = fractions.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+		return total.subtract(BigDecimal.ONE).abs().compareTo(new BigDecimal("0.001")) <= 0;
+	}
+
 	/** kg CO2e per kg of blend under the set, or null when the set lacks a species of it. */
 	BigDecimal kgCo2ePerKg(GwpSet gwp) {
 		var total = BigDecimal.ZERO;

@@ -36,6 +36,8 @@ import {
   useFinalizeRun,
   useInventoryQuery,
   useOrganizationQuery,
+  useAssignmentPageQuery,
+  useCoverageQuery,
   useRunsQuery,
   useValidationQuery,
 } from './useGhg'
@@ -69,8 +71,18 @@ export function InventoryDetailPage() {
   const inheritanceQuery = useInheritanceQuery(inventoryId)
   const organizationQuery = useOrganizationQuery(organizationId)
   const toast = useToast()
-  const { filters, set } = useInventoryFilters()
+  const { filters, set, query } = useInventoryFilters()
   const [editing, setEditing] = useState(false)
+  // The workbench renders once the inventory has loaded, but nothing its tabs
+  // ask for depends on that answer: they need only the identifier in the
+  // address. Asking now runs them alongside the inventory instead of one hop
+  // behind it, which is a whole round trip off the first paint of the register
+  // and the pre-flight (spec 05.6). React Query hands the same answers to the
+  // tab that asks again.
+  useValidationQuery(inventoryId)
+  useRunsQuery(inventoryId)
+  useAssignmentPageQuery(inventoryId, query)
+  useCoverageQuery(inventoryId)
 
   if (inventoryQuery.isPending) {
     return (
@@ -333,10 +345,7 @@ function InventoryWorkbench({
         <ReportMetadataCard
           key={`header-${inventory.status}`}
           inventory={inventory}
-          // Saved denominators do not come back: nothing exposes them on a GET,
-          // so the form starts empty and a save rewrites the set. Tracked as a
-          // defect rather than papered over here (spec 05.6).
-          intensityMetrics={[]}
+          intensityMetrics={inventory.intensityMetrics}
           myRole={myRole}
         />
       )}

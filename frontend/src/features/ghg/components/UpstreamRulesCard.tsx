@@ -14,12 +14,28 @@ import {
   useUpstreamRulesQuery,
 } from '../useGhg'
 import { RoleButton } from './RoleButton'
-import type { Inventory, UpstreamRuleKind } from '../api'
+import type { EmissionFactor, Inventory, UpstreamRuleKind } from '../api'
 
 const kinds: UpstreamRuleKind[] = ['WELL_TO_TANK', 'TRANSMISSION_AND_DISTRIBUTION']
 
-/** How many factors the two selects offer at once; the search narrows a bigger library (FU-03). */
+/** How many factors each select offers at once; the search narrows a bigger library (FU-03). */
 const FACTOR_CHOICES = 200
+
+/** The list with the chosen factor pinned at the top when the search no longer returns it. */
+function withChosen(items: EmissionFactor[], chosen: EmissionFactor | null): EmissionFactor[] {
+  if (!chosen || items.some((factor) => factor.id === chosen.id)) return items
+  return [chosen, ...items]
+}
+
+function describe(factor: EmissionFactor): string {
+  return `${factor.name} (/${factor.unit})${factor.sourceActivity ? ` · ${factor.sourceActivity}` : ''}`
+}
+
+function beyondHint(beyond: number): string | undefined {
+  return beyond > 0
+    ? `${beyond.toLocaleString()} more approved factors. Narrow the search to reach them.`
+    : undefined
+}
 
 /**
  * Upstream rules (spec 04.7): category 3 of the Scope 3 Standard is made of
@@ -41,32 +57,68 @@ export function UpstreamRulesCard({
   const editable = inventory.status === 'DRAFT'
   const rulesQuery = useUpstreamRulesQuery(inventoryId)
   // FU-03: only approved factors can carry a rule, and the search narrows them in SQL: a
-  // select of every row of an imported edition is unusable
-  const [factorSearch, setFactorSearch] = useState('')
-  const factorsQuery = useEmissionFactorsQuery(organizationId, {
-    q: factorSearch.trim() === '' ? undefined : factorSearch.trim(),
+  // select of every row of an imported edition is unusable. Each select has its own search:
+  // the combustion row and its upstream row rarely answer to the same words (an edition holds
+  // hundreds of "Well-to-tank:" rows), and one box narrowing both lists could never show the
+  // pair at once. A chosen factor stays pinned in its list whatever the search says next.
+  const [primarySearch, setPrimarySearch] = useState('')
+  const [upstreamSearch, setUpstreamSearch] = useState('')
+  const primaryQuery = useEmissionFactorsQuery(organizationId, {
+    q: primarySearch.trim() === '' ? undefined : primarySearch.trim(),
+    includeUnapproved: false,
+    size: FACTOR_CHOICES,
+  })
+  const upstreamQuery = useEmissionFactorsQuery(organizationId, {
+    q: upstreamSearch.trim() === '' ? undefined : upstreamSearch.trim(),
     includeUnapproved: false,
     size: FACTOR_CHOICES,
   })
   const add = useAddUpstreamRule(inventoryId)
   const remove = useRemoveUpstreamRule(inventoryId)
   const toast = useToast()
-  const [primaryFactorId, setPrimaryFactorId] = useState('')
-  const [upstreamFactorId, setUpstreamFactorId] = useState('')
+  const [primary, setPrimary] = useState<EmissionFactor | null>(null)
+  const [upstream, setUpstream] = useState<EmissionFactor | null>(null)
   const [kind, setKind] = useState<UpstreamRuleKind>('WELL_TO_TANK')
+  // DESNZ names the upstream row after the combustion row ("Well-to-tank: Liquid fuels: Diesel
+  // ..."), so once the primary is chosen its match is one search away. It is offered at the top
+  // of the list, never applied: pairing the two is the preparer's methodological choice (Scope 3
+  // Standard chapter 7), and the list itself stays whatever the search says.
+  const suggestionQuery = useEmissionFactorsQuery(
+    organizationId,
+    { q: primary ? `Well-to-tank: ${primary.name}` : undefined, includeUnapproved: false, size: 5 },
+    { enabled: primary !== null && kind === 'WELL_TO_TANK' },
+  )
 
   const rules = rulesQuery.data ?? []
-  const factors = factorsQuery.data?.items ?? []
-  const beyondChoices = Math.max(0, (factorsQuery.data?.total ?? 0) - factors.length)
+  const primaryChoices = withChosen(primaryQuery.data?.items ?? [], primary)
+  const suggested =
+    primary && kind === 'WELL_TO_TANK'
+      ? (suggestionQuery.data?.items ?? []).filter((factor) => factor.id !== primary.id)
+      : []
+  const upstreamChoices = withChosen(
+    (upstreamQuery.data?.items ?? []).filter(
+      (factor) => !suggested.some((s) => s.id === factor.id),
+    ),
+    upstream,
+  )
+  const beyondPrimary = Math.max(
+    0,
+    (primaryQuery.data?.total ?? 0) - (primaryQuery.data?.items.length ?? 0),
+  )
+  const beyondUpstream = Math.max(
+    0,
+    (upstreamQuery.data?.total ?? 0) - (upstreamQuery.data?.items.length ?? 0),
+  )
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    if (!primary || !upstream) return
     add.mutate(
-      { primaryFactorId, upstreamFactorId, kind },
+      { primaryFactorId: primary.id, upstreamFactorId: upstream.id, kind },
       {
         onSuccess: () => {
-          setPrimaryFactorId('')
-          setUpstreamFactorId('')
+          setPrimary(null)
+          setUpstream(null)
           toast('Upstream rule added.')
         },
         onError: (error) => toast(refusalMessage(error, myRole), 'error'),
@@ -134,46 +186,67 @@ export function UpstreamRulesCard({
           aria-label="Add an upstream rule"
           className="mt-4 grid gap-3 md:grid-cols-4"
         >
-          <InputField
-            label="Narrow the factors"
-            placeholder="Name, publication, taxonomy or pack tag"
-            value={factorSearch}
-            hint={
-              beyondChoices > 0
-                ? `${beyondChoices.toLocaleString()} more approved factors. Narrow the search to reach them.`
-                : undefined
-            }
-            onChange={(event) => setFactorSearch(event.target.value)}
-          />
-          <SelectField
-            label="Primary factor"
-            value={primaryFactorId}
-            required
-            onChange={(event) => setPrimaryFactorId(event.target.value)}
-          >
-            <option value="">Choose the factor the records already use…</option>
-            {factors.map((factor) => (
-              <option key={factor.id} value={factor.id}>
-                {factor.name} (/{factor.unit})
-                {factor.sourceActivity ? ` · ${factor.sourceActivity}` : ''}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="Upstream factor"
-            value={upstreamFactorId}
-            required
-            hint="Its unit must convert from the primary factor's."
-            onChange={(event) => setUpstreamFactorId(event.target.value)}
-          >
-            <option value="">Choose the upstream factor…</option>
-            {factors.map((factor) => (
-              <option key={factor.id} value={factor.id}>
-                {factor.name} (/{factor.unit})
-                {factor.sourceActivity ? ` · ${factor.sourceActivity}` : ''}
-              </option>
-            ))}
-          </SelectField>
+          <div className="flex flex-col gap-3">
+            <InputField
+              label="Narrow the primary factors"
+              placeholder="Name, publication, taxonomy or pack tag"
+              value={primarySearch}
+              hint={beyondHint(beyondPrimary)}
+              onChange={(event) => setPrimarySearch(event.target.value)}
+            />
+            <SelectField
+              label="Primary factor"
+              value={primary?.id ?? ''}
+              required
+              onChange={(event) =>
+                setPrimary(primaryChoices.find((f) => f.id === event.target.value) ?? null)
+              }
+            >
+              <option value="">Choose the factor the records already use…</option>
+              {primaryChoices.map((factor) => (
+                <option key={factor.id} value={factor.id}>
+                  {describe(factor)}
+                </option>
+              ))}
+            </SelectField>
+          </div>
+          <div className="flex flex-col gap-3">
+            <InputField
+              label="Narrow the upstream factors"
+              placeholder="Well-to-tank, T&D losses…"
+              value={upstreamSearch}
+              hint={beyondHint(beyondUpstream)}
+              onChange={(event) => setUpstreamSearch(event.target.value)}
+            />
+            <SelectField
+              label="Upstream factor"
+              value={upstream?.id ?? ''}
+              required
+              hint="Its unit must convert from the primary factor's."
+              onChange={(event) =>
+                setUpstream(
+                  [...suggested, ...upstreamChoices].find((f) => f.id === event.target.value) ??
+                    null,
+                )
+              }
+            >
+              <option value="">Choose the upstream factor…</option>
+              {suggested.length > 0 && (
+                <optgroup label="Suggested: named after the primary factor">
+                  {suggested.map((factor) => (
+                    <option key={factor.id} value={factor.id}>
+                      {describe(factor)}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {upstreamChoices.map((factor) => (
+                <option key={factor.id} value={factor.id}>
+                  {describe(factor)}
+                </option>
+              ))}
+            </SelectField>
+          </div>
           <SelectField
             label="Kind"
             value={kind}
@@ -192,7 +265,7 @@ export function UpstreamRulesCard({
               type="submit"
               className="px-4 py-1.5 text-sm"
               busy={add.isPending}
-              disabled={primaryFactorId === '' || upstreamFactorId === ''}
+              disabled={primary === null || upstream === null}
             >
               Add rule
             </RoleButton>

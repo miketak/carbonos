@@ -15,6 +15,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.web.dto.FinalNoteRequest;
+import com.carbonos.ghg.internal.Inventory;
 import com.carbonos.ghg.internal.web.dto.InventoryResponse;
 import com.carbonos.ghg.internal.web.dto.ReasonRequest;
 import com.carbonos.ghg.internal.web.dto.RunDetailResponse;
@@ -58,7 +59,7 @@ class RunController {
 	@PostMapping("/runs/{id}/finalize")
 	InventoryResponse finalizeRun(@PathVariable UUID id, @Valid @RequestBody(required = false) FinalNoteRequest body) {
 		var run = inventoryService.getRun(id);
-		return InventoryResponse.from(inventoryService.designateFinal(run.getInventory().getId(), id,
+		return respond(inventoryService.designateFinal(run.getInventory().getId(), id,
 				body == null ? null : body.note()));
 	}
 
@@ -66,5 +67,9 @@ class RunController {
 	@PostMapping("/runs/{id}/void")
 	RunResponse voidRun(@PathVariable UUID id, @Valid @RequestBody ReasonRequest body) {
 		return RunResponse.from(inventoryService.voidRun(id, body.reason()));
+	}
+	/** The inventory as the client holds it, with its saved intensity denominators (spec 05.6). */
+	private InventoryResponse respond(Inventory inventory) {
+		return InventoryResponse.from(inventory, inventoryService.intensityMetrics(inventory.getId()));
 	}
 }

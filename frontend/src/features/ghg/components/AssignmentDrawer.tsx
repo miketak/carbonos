@@ -326,8 +326,10 @@ function ClassifyPanel({
   const dimensions: Dimension[] =
     dimension === null ? [] : bridges ? ['MASS', 'VOLUME'] : [dimension]
   // a per-litre factor on a mass record (or the reverse) cannot be sent without a density (spec 02.2):
-  // hold the pick locally until the density is chosen, then send both together
-  const [pendingFactorId, setPendingFactorId] = useState<string | null>(null)
+  // hold the pick locally until the density is chosen, then send both together. The whole factor
+  // is held, not its id: `factors` only carries what the page's records already cite, so a
+  // factor picked a moment ago is not in it yet, and an id alone would resolve to nothing.
+  const [pendingFactor, setPendingFactor] = useState<EmissionFactor | null>(null)
   // a proxy flag is only sent together with its justification (the backend refuses one without)
   const [proxyTicked, setProxyTicked] = useState(false)
   // spec 05.5: a row shows its factor as text; the picker opens on demand, with the grouped,
@@ -347,9 +349,10 @@ function ClassifyPanel({
     },
     { enabled: pickerOpen },
   )
-  const selected = factors.find(
-    (factor) => factor.id === (assignment.emissionFactorId ?? pendingFactorId),
-  )
+  const selected = assignment.emissionFactorId
+    ? (factors.find((factor) => factor.id === assignment.emissionFactorId) ??
+      (pendingFactor?.id === assignment.emissionFactorId ? pendingFactor : undefined))
+    : (pendingFactor ?? undefined)
   const page = pickerQuery.data
   const matched = page?.items ?? []
   // keep the current classification visible even when its unit no longer fits the record; a
@@ -490,10 +493,10 @@ function ClassifyPanel({
                         needsDensity(units, assignment.unit, factor.unit) &&
                         !assignment.densityId
                       ) {
-                        setPendingFactorId(factor.id)
+                        setPendingFactor(factor)
                         return
                       }
-                      setPendingFactorId(null)
+                      setPendingFactor(null)
                       onClassify({
                         emissionFactorId: factor.id,
                         // spec 04.3: the record's stream fixes the default scope; the factor only suggests one
@@ -593,7 +596,7 @@ function ClassifyPanel({
           value={assignment.densityId ?? ''}
           disabled={!editable}
           onChange={(event) => {
-            setPendingFactorId(null)
+            setPendingFactor(null)
             onClassify({
               emissionFactorId: selected.id,
               scope: assignment.scope ?? assignment.defaultScope ?? selected.defaultScope,

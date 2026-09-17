@@ -2058,6 +2058,75 @@ class GhgApiIntegrationTests {
 	}
 
 	@Test
+	void aDivestmentFrozenBeforeTheBaseYearExistedIsWeighedAtTheNextFreeze() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var port = createEntity(orgId, "Takoradi Port Co", "SUBSIDIARY", "100", true);
+		var terminal = createFacility(orgId, "Takoradi Port Loadout", port);
+		var pitDiesel = createActivity(orgId, pit, "Haul fleet diesel", "10000", "litre", "2024-06-30");
+		var portDiesel = createActivity(orgId, terminal, "Shiploader diesel", "500", "litre", "2024-09-30");
+
+		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
+		putBoundary(base, pit);
+		putBoundary(base, terminal);
+		classify(syncAndGetAssignmentId(base, pitDiesel), diesel(orgId));
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + base + "/assignments").with(asMember())));
+		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + portDiesel + "')].id").getFirst(),
+				diesel(orgId));
+		freeze(base);
+		String baseRun = runAndGetId(base, "Base 2024");
+		mvc.perform(post("/api/ghg/runs/" + baseRun + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+
+		// 2025 is frozen once with the whole boundary, before anyone designates a base year
+		var current = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(current, pit);
+		putBoundary(current, terminal);
+		freeze(current);
+		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"inventoryId": "%s", "thresholdPercent": 3, "reason": "First verifiable year"}""".formatted(base)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.recalculations.length()").value(0));
+
+		// the terminal is divested after the designation: version 1 was never weighed against the base
+		// year, so the second freeze compares with the base-year boundary rather than with version 1
+		reopen(current);
+		mvc.perform(delete("/api/ghg/inventories/" + current + "/boundary/" + terminal).with(asMember()).with(csrf()))
+			.andExpect(status().isNoContent());
+		excludeFacility(current, terminal, "NOT_APPLICABLE", "Divested 2025-01-01");
+		freeze(current);
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
+			.andExpect(jsonPath("$.recalculations.length()").value(1))
+			.andExpect(jsonPath("$.recalculations[0].status").value("FLAGGED"))
+			.andExpect(jsonPath("$.recalculations[0].boundaryVersionNo").value(2))
+			.andExpect(jsonPath("$.recalculations[0].affectedPercent").value(4.76))
+			.andExpect(jsonPath("$.recalculations[0].reason").value("structural change: Takoradi Port Loadout removed; "
+					+ "4.76% of base-year emissions, above the 3% threshold, recalculation required"));
+
+		// from here the chain holds: a third freeze with nothing changed weighs nothing new
+		reopen(current);
+		freeze(current);
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
+			.andExpect(jsonPath("$.recalculations.length()").value(1));
+	}
+
+	@Test
+	void aBlendWhoseFractionsDoNotAddUpIsRefusedAsAFieldError() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		// Corporate Standard chapter 4: a split that does not account for the whole blend would count
+		// part of the gas twice or leave it out, so the form's own field carries the refusal
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+			.contentType("application/json").content(R410A_JSON.replace("HFC-125:0.5", "HFC-125:0.6")))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.blendComposition").exists());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember()).with(csrf())
+			.contentType("application/json").content(R410A_JSON.replace("HFC-32:0.5,HFC-125:0.5", "HFC-32 0.5")))
+			.andExpect(status().is(422))
+			.andExpect(jsonPath("$.errors.blendComposition").exists());
+	}
+
+	@Test
 	void aFacilityThatDidNotExistInTheBaseYearIsOrganicGrowthNotAStructuralChange() throws Exception {
 		var orgId = createOrganization("Sankofa Gold plc");
 		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
@@ -2743,7 +2812,14 @@ class GhgApiIntegrationTests {
 					 "intensityMetrics": [{"name": "Gold produced", "value": 1000, "unit": "oz"}]}"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.assuranceLevel").value("LIMITED"))
-			.andExpect(jsonPath("$.approvedBy").value("Ama Mensah, Sustainability Lead"));
+			.andExpect(jsonPath("$.approvedBy").value("Ama Mensah, Sustainability Lead"))
+			.andExpect(jsonPath("$.intensityMetrics[0].name").value("Gold produced"));
+		// spec 05.6: the denominators come back with the inventory, so the header form starts from them
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
+			.andExpect(jsonPath("$.intensityMetrics.length()").value(1))
+			.andExpect(jsonPath("$.intensityMetrics[0].name").value("Gold produced"))
+			.andExpect(jsonPath("$.intensityMetrics[0].value").value(1000))
+			.andExpect(jsonPath("$.intensityMetrics[0].unit").value("oz"));
 		freeze(inventoryId);
 		String runId = runAndGetId(inventoryId, "Run 001");
 		// scope 1 diesel 2,660; scope 2 electricity 441; scope 3 flights 10,000 x 0.195 = 1,950; total 5,051 kg

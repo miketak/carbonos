@@ -802,6 +802,8 @@ export interface Inventory {
   residualMixAvailable: boolean | null
   residualMixKgCo2ePerKwh: number | null
   finalRunId: string | null
+  /** The denominators the report divides the total by (spec 07.4), as saved. */
+  intensityMetrics: IntensityMetricInput[]
   status: InventoryStatus
   supersededById: string | null
   /** The inventory this one copied its view from, and why a correction was made (spec 05.3). */
