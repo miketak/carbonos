@@ -2,7 +2,9 @@ import { screen, waitFor } from '@testing-library/react'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { ApiError } from '../../lib/api'
 import { renderWithProviders } from '../../test/utils'
+import { useLocation } from 'react-router-dom'
 import { RequireAuth } from './RequireAuth'
+import { beginSignOut, endSignOut } from './signOut'
 import type { SessionUser } from './api'
 
 vi.mock('./api', () => ({
@@ -24,7 +26,14 @@ const user = (role: SessionUser['role']): SessionUser => ({
 
 beforeEach(() => {
   vi.mocked(me).mockReset()
+  endSignOut()
 })
+
+/** Stands in for the login page and prints the state the bounce carried. */
+function LoginEcho() {
+  const location = useLocation()
+  return <p>login state {JSON.stringify(location.state)}</p>
+}
 
 test('redirects to /login when there is no session', async () => {
   vi.mocked(me).mockRejectedValue(new ApiError(401))
@@ -60,4 +69,31 @@ test('renders children for an ADMIN', async () => {
   )
 
   expect(await screen.findByText('secret')).toBeInTheDocument()
+})
+
+test('the bounce carries the page as a deep link for a visitor', async () => {
+  vi.mocked(me).mockRejectedValue(new ApiError(401))
+  renderWithProviders(
+    <RequireAuth>
+      <p>secret</p>
+    </RequireAuth>,
+    { route: '/admin/users', extraRoutes: [{ path: '/login', element: <LoginEcho /> }] },
+  )
+
+  expect(await screen.findByText('login state {"from":"/admin/users"}')).toBeInTheDocument()
+})
+
+test('the bounce carries no deep link while a sign-out is in flight', async () => {
+  // spec 01.6: the bounce made when the session empties can land after the
+  // sign-out's own navigation, so it must not hand the page to the next account
+  vi.mocked(me).mockRejectedValue(new ApiError(401))
+  beginSignOut()
+  renderWithProviders(
+    <RequireAuth>
+      <p>secret</p>
+    </RequireAuth>,
+    { route: '/admin/users', extraRoutes: [{ path: '/login', element: <LoginEcho /> }] },
+  )
+
+  expect(await screen.findByText('login state {"signedOut":true}')).toBeInTheDocument()
 })

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { GlassCard } from '../../components/GlassCard'
 import { LoadingCard } from '../../components/LoadingCard'
+import { isSigningOut } from './signOut'
 import { useSession } from './useSession'
 import type { Role } from './api'
 
@@ -20,7 +21,16 @@ export function RequireAuth({ role, children }: RequireAuthProps) {
 
   const user = session.data ?? null
   if (!user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+    // a visitor bounced from a page returns to it after signing in; an account
+    // signing out does not hand that page to the next one (spec 01.6)
+    const signedOut = isSigningOut()
+    return (
+      <Navigate
+        to="/login"
+        state={signedOut ? { signedOut } : { from: location.pathname }}
+        replace
+      />
+    )
   }
 
   if (role && user.role !== role) {
