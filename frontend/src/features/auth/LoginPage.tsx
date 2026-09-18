@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -7,6 +7,7 @@ import { InputField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
 import { ApiError } from '../../lib/api'
 import { login } from './api'
+import { endSignOut } from './signOut'
 import { triggerSplash } from './SplashScreen'
 import { sessionQueryKey } from './useSession'
 
@@ -20,6 +21,8 @@ export function LoginPage() {
   // a sign-out clears the deep link: the next account lands where its own
   // work starts, not on the page the previous account was bounced from
   const from = state.signedOut ? undefined : state.from
+  // the sign-out that brought a visitor here is over once the page is up
+  useEffect(endSignOut, [])
 
   const signIn = useMutation({
     mutationFn: () => login(email, password),
