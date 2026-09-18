@@ -44,7 +44,7 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Open **Base year** and click **Designate base year**. Choose FY2025, significance threshold 5, the reason "First year with metered data at every site", and **From the transaction date (membership windows)**. Save. | The page shows the year, the reason, "5% of base-year emissions" and the convention. **Established by** reads "Run 005 · 120.37 t CO₂e", the final run of the published inventory. | | |
-| 2 | Read the candidates. | One FLAGGED candidate at once, against FY2026 version 2: "structural change: Tema Depot removed · 11.06% of base-year emissions, above the threshold". The designation weighed the frozen year without a new freeze. | | |
+| 2 | Read the candidates. | One FLAGGED candidate at once, against FY2026 version 2: "structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required". The designation weighed the frozen year without a new freeze. | | |
 | 3 | Open FY2026 and read the **Base year** gate. | An error: "Base year flagged for recalculation (structural change: Tema Depot removed). An inventory that reports against the base year cannot be marked final or published until the recalculation is completed or declined. Calculation runs stay available, because quantifying the movement is how a recalculation is assessed.". | | |
 | 4 | Click **Mark as final** on FY2026's run. | Refused with the same sentence. Launch a run: it goes through. | | |
 | 5 | Open the equity view and read its gate. | A warning, not an error, ending "This inventory is not held because it is an equity share view and the base year is operational control". | | |
@@ -56,7 +56,7 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Reopen FY2026 with the reason "Sale fell through", tick Tema Depot back in, and freeze. | "Boundary version 3". On **Base year** the candidate reads SUPERSEDED with "put back in boundary version 3 as the base year held it". FY2026's gate passes. | | |
-| 2 | Reopen with the reason "Sale completed after all", untick Tema Depot with the same reason as case A1, and freeze. | "Boundary version 4". A new FLAGGED candidate reads "Tema Depot removed · 11.06% of base-year emissions, above the threshold". | | |
+| 2 | Reopen with the reason "Sale completed after all", untick Tema Depot with the same reason as case A1, and freeze. | "Boundary version 4". A new FLAGGED candidate reads "structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required". | | |
 
 ## D. Deciding
 
@@ -71,7 +71,7 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Raise a recalculation candidate**: trigger error correction, what changed "Scratch: reading the refusal", no share, no comparison run. Submit. | Refused: "Give the affected share of base-year emissions, or name a comparison run of the base-year inventory.". | | |
+| 1 | Click **Raise a candidate**: trigger error correction, what changed "Scratch: reading the refusal", no share, no comparison run. Submit. | Refused: "Give the affected share of base-year emissions, or name a comparison run of the base-year inventory.". | | |
 | 2 | Change the trigger to methodology change, what changed "Grid factor vintage moved to ghana-2027-gov", affected share 2.87. Submit. | A FLAGGED card reads "2.87% of base-year emissions, below the threshold". The running sum restarted at the recalculation of case D1, so the 11.06% is not added to it. | | |
 | 3 | Click **Decline** on it with the note "Below the 5% threshold; the notice records the answer". | DECLINED with the note and Ama's email. | | |
 
@@ -81,7 +81,7 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Reopen FY2026 with the reason "Reading the GWP flag", **Edit inventory**, GWP set AR6, save, freeze, launch a run, and open its report. | The base-year section says the inventory is not comparable with the base year because of a different GWP set. | | |
+| 1 | Reopen FY2026 with the reason "Reading the GWP flag", **Edit inventory**, GWP set AR6, save, freeze, launch a run, and open its report. | The base-year section reads "This run and the base year use different GWP sets; the required-gases amendment recommends the same set for both.". | | |
 | 2 | Reopen, set AR5 back, and freeze. | FY2026 is where procedure 7 left it, one boundary version on. | | |
 
 ## F. The organization's record

@@ -48,7 +48,7 @@ way. Then the freeze cuts a version.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open ACT-0001 (Boiler LPG, 2,400 litre). Search the picker for "LPG" and choose **Gaseous fuels: LPG** per litre. | The record reads included, scope 1, stationary combustion, with the preview "2,400 litre × 1.55713 kg CO₂e/litre". The stream's default scope is taken without a justification. | | |
+| 1 | Open ACT-0001 (Boiler LPG, 2,400 litre). Search the picker for "LPG" and choose **Gaseous fuels: LPG** per litre. | The picker offers the `defra-2025` version, the one live in the period. The record reads included, scope 1, stationary combustion, at 1.55713 kg CO₂e/litre; there is no arithmetic preview line, because the record's unit is the factor's own (the preview appears only where a unit converts, as cases B2 and B4 show). The stream's default scope is taken without a justification. | | |
 
 ### B2. The grid factor is suggested
 
@@ -62,8 +62,8 @@ way. Then the freeze cuts a version.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Open ACT-0003 (delivery fleet diesel) and choose **Liquid fuels: Diesel (100% mineral diesel)** per litre. | Scope 3, **1. Purchased goods and services**, with no justification field: the stream is operated by a contractor. The drawer says the lease "operating lease (leased in)" is inherited from Tema Depot. | | |
-| 2 | Read the **Classification** gate. | A warning: "Records are classified into scope 3 1. Purchased goods and services but the declaration does not list it as covered. Declare it, or reclassify the records.". | | |
-| 3 | On **Method**, tick **1. Purchased goods and services** and save. | The warning goes. | | |
+| 2 | Read the **Classification** gate. | A warning that begins "Records are classified into scope 3 purchased goods services but the declaration does not list it as covered." and asks to declare it or reclassify the records. | | |
+| 3 | On **Boundary**, in the declaration, tick **1. Purchased goods and services** and save. | The warning goes. | | |
 
 ### B4. Mass meets volume through a density
 
@@ -84,11 +84,11 @@ way. Then the freeze cuts a version.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On ACT-0001, change the scope to scope 3 and the category to **1. Purchased goods and services**. | The drawer says the factor suggests scope 1 and shows a **scope justification** field. The **Classification** gate blocks: the record is classified in scope 3 without a justification. | | |
+| 1 | On ACT-0001, change the scope to scope 3 and the category to **1. Purchased goods and services**. | The drawer says "The stream suggests Scope 1." and shows a **scope justification** field. The **Classification** gate blocks: the record is classified in scope 3 without a justification. | | |
 | 2 | Set the scope back to 1. | The gate is silent again. | | |
-| 3 | On ACT-0010 (staff flights), choose **Long-haul flights (supplier)**, tick **proxy factor** and leave the justification empty. | Refused: "A proxy factor needs a justification: say what the factor stands in for.". | | |
-| 4 | Type "Travel agent's average; no per-flight data" and let the field lose focus. | Saved. Scope 3, **6. Business travel**. The gate warns that records are classified into business travel but the declaration does not list it. | | |
-| 5 | On **Method**, tick **6. Business travel** and save. | The warning goes. | | |
+| 3 | On ACT-0010 (staff flights), choose **Long-haul flights (supplier)** and tick **proxy factor**. | A justification field opens and nothing is sent until it is filled: the drawer never records a proxy without its justification, so the rule "A proxy factor needs a justification: say what the factor stands in for." is met before the API is reached. | | |
+| 4 | Type "Travel agent's average; no per-flight data" and let the field lose focus. | Saved. Scope 3, **6. Business travel**. The gate warns that records are classified into scope 3 business travel but the declaration does not list it as covered. | | |
+| 5 | On **Boundary**, in the declaration, tick **6. Business travel** and save. | The warning goes. | | |
 
 ### B7. An unapproved factor blocks until the reviewer approves it
 
@@ -132,7 +132,7 @@ way. Then the freeze cuts a version.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open ACT-0006 (year-end boiler LPG, 2025-12-15 to 2026-01-15) and choose **Gaseous fuels: LPG** per litre. | Classified. **Activity data completeness** warns that 17 of 32 days fall inside the reporting period and the run pro-rates the record. | | |
+| 1 | Open ACT-0006 (year-end boiler LPG, 2025-12-15 to 2026-01-15) and choose **Gaseous fuels: LPG** per litre. | Classified. **Activity data completeness** warns: "'Year-end boiler LPG' (Kumasi Plant) covers 2025-12-15 to 2026-01-15; 17 of 32 days fall inside the reporting period and the membership window: the run pro-rates it to 53.13%.". | | |
 | 2 | Click **Edit inventory**, set the straddle treatment to **Block the run until the record is split**, save, and read the gate. | The same finding is an error. | | |
 | 3 | Set it back to **Pro-rate by days (default)**. | A warning again. | | |
 
@@ -142,8 +142,8 @@ way. Then the freeze cuts a version.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Method**, tick **3. Fuel- and energy-related activities** and save. | The gate warns that category 3 is declared but no upstream rule matches a scope 1 or scope 2 factor in this view. | | |
-| 2 | In **Add an upstream rule**, type "LPG" in **Narrow the primary factors** and choose **Gaseous fuels: LPG (/litre)**. Read the **Upstream factor** list. | A group **Suggested: named after the primary factor** holds **Well-to-tank: Gaseous fuels: LPG (/litre)**. The suggestion is offered, never applied. | | |
+| 1 | On **Boundary**, in the declaration, tick **3. Fuel- and energy-related activities** and save. | The gate warns that category 3 is declared but no upstream rule matches a scope 1 or scope 2 factor in this view. | | |
+| 2 | On **Method**, in **Add an upstream rule**, type "LPG" in **Narrow the primary factors** and choose **Gaseous fuels: LPG (/litre)**. Read the **Upstream factor** list. | A group **Suggested: named after the primary factor** holds **Well-to-tank: Gaseous fuels: LPG (/litre)**, the `defra-2025` version: both lists offer only the versions live in the inventory's period. The suggestion is offered, never applied. | | |
 | 3 | Choose it and add. | "Upstream rule added." The warning goes. Every LPG litre now carries a well-to-tank line at 0.18551 kg CO₂e/litre. | | |
 | 4 | Add a second rule: primary **Gaseous fuels: LPG (/litre)**, upstream **Grid electricity, Ghana (2024)** (narrow to "Ghana"). | Refused: the upstream factor is per kWh, which does not convert from a factor per litre. | | |
 
@@ -153,7 +153,7 @@ way. Then the freeze cuts a version.
 | --- | --- | --- | --- | --- |
 | 1 | Under the instruments card, add for Kumasi Plant: instrument certificate, 0 kg CO₂e per kWh, source "I-REC(E) Ghana 2025", covered quantity 150 MWh, reference "IREC-GH-2025-0091", registry "I-TRACK", vintage 2025, and answer criteria 1, 2, 4, 5, 6, 7 and 8 **Met**, leaving 3 at **Not yet answered**. | "Instrument recorded for Kumasi Plant." The row reads "Not applied: 1 unanswered". | | |
 | 2 | Read the **Emission factors** gate. | "The instrument for Kumasi Plant does not meet the Scope 2 Quality Criteria (1 of the eight criteria not yet answered): the market-based figure falls back to location-based.". | | |
-| 3 | Edit the instrument and answer criterion 3 **Met**. | The row no longer reads "Not applied". The gate warns instead: "The instrument for Kumasi Plant covers 150,000 kWh but the facility's scope 2 electricity in its period is 120,000 kWh: the excess covers nothing.". | | |
+| 3 | Edit the instrument and answer criterion 3 **Met** (the form's button still reads **Add instrument**; it saves the edit). | The row no longer reads "Not applied". The gate warns instead: "The instrument for Kumasi Plant covers 150,000 kWh but the facility's scope 2 electricity in its period is 120,000 kWh: the excess covers nothing.". | | |
 | 4 | Edit the covered quantity to 120. | The warning goes. | | |
 
 ### E3. The residual mix is stated either way

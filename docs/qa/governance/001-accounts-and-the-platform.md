@@ -50,7 +50,7 @@ signs in with the accounts it creates.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Add Kofi Mensah (the Kofi alias, role **Member**, `Kofi-pass-2026`), Esi Boateng (`Esi-pass-2026`) and Yaw Darko (`Yaw-pass-2026`) the same way. | Each appears as Member, Active. The list holds five accounts. | | |
-| 2 | Click **Add user** once more with the Kofi alias and any valid password. | Refused: "An account or pending request already exists for '<the Kofi alias>'.". The list still holds five. | | |
+| 2 | Click **Add user** once more with the Kofi alias and any valid password. | Refused: "A user with email '<the Kofi alias>' already exists.". The list still holds five. The public request path of case C1 says less on purpose: an administrator may learn that an account exists, a visitor may not. | | |
 | 3 | Open the dashboard. | **Users** reads 5 with "5 active, 0 pending". | | |
 
 ## C. An account requested by email

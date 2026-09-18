@@ -137,9 +137,9 @@ organization it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Emission factors**. | **Our factors** is empty. The **Factor packs** card lists the three shipped editions, `defra-2025`, `defra-2026` and `ghana`, each with **View factors** and **Import pack**. | | |
+| 1 | Open **Emission factors**. | **This organization's factors** is empty. The **Factor packs** card lists the three shipped editions by their display names, "UK Government (DESNZ) GHG conversion factors 2025", "UK Government (DESNZ) GHG conversion factors 2026" and "Ghana: grid electricity and transmission losses", each with **View the factors in …** and **Import pack**. The identifiers `defra-2025`, `defra-2026` and `ghana` appear on the imported rows and in every citation. | | |
 | 2 | Click **Import pack** on the Ghana pack. | The import reports "ghana, applying from 2025-01-01: 7 added, 0 versioned, 0 tagged, 0 unchanged.". Seven rows arrive; "Grid electricity T&D losses, Ghana (derived)" reads **Not approved** with an **Approve** button. Leave it. | | |
-| 3 | Click **Import pack** on the DESNZ 2025 pack. | The import reports "defra-2025, applying from 2025-01-01: 1928 added, 0 versioned, 0 tagged, 0 unchanged.". The table pages at 50 and the search narrows it. | | |
+| 3 | Click **Import pack** on the DESNZ 2025 pack. | After a few seconds the import reports "defra-2025, applying from 2025-01-01: 1928 added, 0 versioned, 0 tagged, 0 unchanged.". The table pages at 50 and the search narrows it. | | |
 | 4 | Click **Import pack** on the DESNZ 2026 pack. | The import reports "defra-2026, applying from 2026-01-01: 385 added, 1483 versioned, 0 tagged, 0 unchanged." and that 445 lineages this edition drops were retired by nobody, naming three of them. A row both years carry, such as **Gaseous fuels: LPG** per litre, now shows two versions: `defra-2025` from 2025-01-01 to 2025-12-31 and `defra-2026` from 2026-01-01. | | |
 | 5 | Read the action column of any imported row. | Where a hand-entered factor would offer **Delete**, a pack-derived row reads "Retire, not delete": its versions are the record of what was calculated with. | | |
 
@@ -147,7 +147,7 @@ organization it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Add an emission factor**: name "R-410A (composition)", suggested scope 1, category fugitive emissions, unit `kg`, kg CO₂e per unit 1923.5, HFCs kg per unit 1, **Blend composition** `HFC-32:0.5,HFC-125:0.6`, **GWP basis of the published figure** AR5, source "Supplier safety data sheet, 2025", publication year 2025, data year 2025. Add. | Refused: "The mass fractions of a blend must add up to 1 (for example HFC-32:0.5,HFC-125:0.5).". | | |
+| 1 | Click **Add factor** (the dialog is titled "Add an emission factor"): name "R-410A (composition)", suggested scope 1, category fugitive emissions, unit `kg`, kg CO₂e per unit 1923.5, HFCs kg per unit 1, **Blend composition** `HFC-32:0.5,HFC-125:0.6`, **GWP basis of the published figure** AR5, source "Supplier safety data sheet, 2025", publication year 2025, data year 2025. Add. | Refused: "The mass fractions of a blend must add up to 1 (for example HFC-32:0.5,HFC-125:0.5).". | | |
 | 2 | Change the composition to `HFC-32:0.5,HFC-125:0.5` and add. | The row is listed as **Not approved**. An approval is a separate act by a separate person; the form does not tick it for you. | | |
 | 3 | Add "Long-haul flights (supplier)": suggested scope 3, category business travel, unit `passenger-km`, kg CO₂e per unit 0.195, source "Travel agent's emissions statement, 2025", publication year 2025, data year 2025. | Listed as **Not approved**. | | |
 
@@ -166,7 +166,7 @@ organization it builds.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Yaw in the private window, click **New organization** and create "Solo Ltd". | Yaw is its owner. A verifier elsewhere is an owner here: roles are per organization. | | |
-| 2 | Under **Emission factors**, add "Diesel (Solo)": scope 1, stationary combustion, unit `litre`, 2.66 kg CO₂e per unit, source "Own transcription of DESNZ 2026". | Listed as **Not approved**. | | |
+| 2 | Under **Emission factors**, click **Add factor** and add "Diesel (Solo)": scope 1, stationary combustion, unit `litre`, 2.66 kg CO₂e per unit, source "Own transcription of DESNZ 2025". | Listed as **Not approved**. | | |
 | 3 | Click **Approve**. | Approved. The row reads "by <the Yaw alias>" and "(self-approved: nobody else could check it)". Nobody else is a member, so the refusal of case F3 does not apply, and the record says so. Procedure 6 reads the sentence on a report. | | |
 | 4 | Sign out of the private window. | | | |
 
