@@ -72,6 +72,8 @@ class FactorPackPublicationApiIntegrationTests {
 
 	private static final String SECOND = "testpack-2027";
 
+	private static final String THIRD = "testpack-2028";
+
 	@Autowired
 	MockMvc mvc;
 
@@ -264,6 +266,33 @@ class FactorPackPublicationApiIntegrationTests {
 		addRow(SECOND, row("TEST:lpg", "LPG", "litre", "1.56", 2027)).andExpect(status().isCreated());
 		// the cloned petrol row keeps the 2026 provenance, which is what an unchanged row means
 		uploadEvidence(SECOND, "The 2027 tables, as published.");
+	}
+
+	/** The organization adopts the 2027 edition, which cuts a second version of the diesel lineage. */
+	void adoptTheSecondEdition(String organizationId) throws Exception {
+		var notice = notices.findAllByEditionIdOrderByRaisedAtAsc(SECOND)
+			.stream()
+			.filter(candidate -> candidate.getOrganizationId().equals(UUID.fromString(organizationId)))
+			.findFirst()
+			.orElseThrow(() -> new AssertionError("no notice for " + organizationId));
+		mvc.perform(post("/api/ghg/factor-pack-notices/" + notice.getId() + "/accept").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"recalculationCase": "VINTAGE_PROGRESSION", "note": "The 2027 tables are the current vintage."}"""))
+			.andExpect(status().isOk());
+	}
+
+	/** The 2028 draft, cloned from 2027: diesel moves again, from 2.80 to 2.95. */
+	void authorTheThirdEdition() throws Exception {
+		createDraft(THIRD, SECOND, 2028);
+		var rows = body(mvc.perform(get("/api/admin/factor-packs/editions/" + THIRD + "/rows").with(asCurator())
+			.param("size", "200")).andExpect(status().isOk()));
+		var dieselId = JsonPath.<List<String>>read(rows, "$.items[?(@.code == 'TEST:diesel')].id").getFirst();
+		mvc.perform(put("/api/admin/factor-packs/editions/" + THIRD + "/rows/" + dieselId).with(asCurator())
+			.with(csrf())
+			.contentType("application/json")
+			.content(row("TEST:diesel", "Diesel", "litre", "2.95", 2028))).andExpect(status().isOk());
+		uploadEvidence(THIRD, "The 2028 tables, as published.");
 	}
 
 	// --- the tenant fixture -------------------------------------------------
@@ -637,6 +666,115 @@ class FactorPackPublicationApiIntegrationTests {
 		// the diff hash is what a verifier confirms the diff the decider saw against
 		assertThat(notice.getDiffHash()).hasSize(64);
 		assertThat(notices.findAllByOrganizationIdOrderByRaisedAtDesc(UUID.fromString(other))).isEmpty();
+	}
+
+	/**
+	 * The console shows one report for an edition past its draft, and it is the
+	 * withdrawal impact: nothing moves and nothing is estimated, so no
+	 * organization in it carries movement, a last run or a locked period. A
+	 * tester reading a published edition next to the "1 row affected" the
+	 * organization's notice says must not see "0 would move".
+	 */
+	@Test
+	void theBlastRadiusOfAPublishedEditionIsTheWithdrawalImpact() throws Exception {
+		publishTheFirstEdition();
+		var orgId = holdingOrganization("Asante Gold Resources");
+
+		var report = blastRadius(FIRST);
+		assertThat(JsonPath.<String>read(report, "$.act")).isEqualTo("WITHDRAW");
+		assertThat(JsonPath.<Integer>read(report, "$.holderCount")).isEqualTo(1);
+		assertThat(JsonPath.<Integer>read(report, "$.openNoticeCount")).isEqualTo(0);
+		assertThat(JsonPath.<List<Object>>read(report, "$.rows")).isEmpty();
+		assertThat(JsonPath.<Integer>read(report, "$.rowsChanged")).isEqualTo(0);
+		assertThat(JsonPath.<List<String>>read(report, "$.organizations[*].organizationId")).containsExactly(orgId);
+		assertThat(JsonPath.<List<Integer>>read(report, "$.organizations[*].lineagesHeld")).containsExactly(3);
+		assertThat(JsonPath.<List<Integer>>read(report, "$.organizations[*].rowsMoving")).containsExactly(0);
+		assertThat(JsonPath.<List<Integer>>read(report, "$.organizations[*].rowsOverThreshold")).containsExactly(0);
+		assertThat(JsonPath.<List<Number>>read(report, "$.organizations[*].estimatedKgCo2eDelta").getFirst().doubleValue())
+			.isZero();
+		assertThat(JsonPath.<List<String>>read(report, "$.organizations[*].lastRunLabel")).containsOnlyNulls();
+		assertThat(JsonPath.<List<String>>read(report, "$.organizations[0].lockedPeriods[*].name")).isEmpty();
+		assertThat(JsonPath.<List<String>>read(report, "$.organizations[0].blocked")).isEmpty();
+	}
+
+	/**
+	 * An adoption cuts a second version of a lineage (spec 02.6 rule 7). The
+	 * next publication counts the lineage once, against its live version, so the
+	 * notice says "1 row affected" and not two; and the blast radius read before
+	 * it counts the same.
+	 */
+	@Test
+	void aVersionedLineageIsCountedOnceWhenNoticesAreRaised() throws Exception {
+		publishTheFirstEdition();
+		var orgId = holdingOrganization("Asante Gold Resources");
+		authorTheSecondEdition();
+		publish(SECOND).andExpect(status().isOk());
+		adoptTheSecondEdition(orgId);
+		// the diesel lineage now carries two versions: 2.66 closed at 2026-12-31, 2.80 live from 2027-01-01
+		var diesel = emissionFactors.findAllByOrganizationIdAndPackCodeIsNotNull(UUID.fromString(orgId))
+			.stream()
+			.filter(factor -> "TEST:diesel".equals(factor.getPackCode()))
+			.toList();
+		assertThat(diesel).hasSize(2);
+		assertThat(diesel.stream().filter(com.carbonos.ghg.internal.EmissionFactor::isLive)).singleElement()
+			.satisfies(live -> assertThat(live.getKgCo2ePerUnit()).isEqualByComparingTo("2.80"));
+
+		authorTheThirdEdition();
+		var report = blastRadius(THIRD);
+		assertThat(JsonPath.<String>read(report, "$.predecessorEditionId")).isEqualTo(SECOND);
+		// diesel, petrol and LPG: the closed diesel version is not a fourth lineage
+		assertThat(JsonPath.<List<Integer>>read(report, "$.organizations[*].lineagesHeld")).containsExactly(3);
+		assertThat(JsonPath.<List<Integer>>read(report, "$.organizations[*].rowsMoving")).containsExactly(1);
+		// 2.80 to 2.95 is 5.36 percent
+		assertThat(JsonPath.<List<Integer>>read(report, "$.organizations[*].rowsOverThreshold")).containsExactly(1);
+		// the run was priced with the closed version at 2.66: 2,660 kg scaled by 2.95 / 2.66 moves 290
+		assertThat(JsonPath.<List<Double>>read(report, "$.organizations[*].estimatedKgCo2eDelta").getFirst())
+			.isEqualTo(290.0, within(0.5));
+
+		publish(THIRD, asApprover(), """
+				{"sourceDocument": "A test publication, 2028 tables (PDF)", "appliesFrom": "2028-01-01"}""")
+			.andExpect(status().isOk());
+		var raised = notices.findAllByEditionIdOrderByRaisedAtAsc(THIRD);
+		assertThat(raised).hasSize(1);
+		assertThat(raised.getFirst().getRowsAffected()).isEqualTo(1);
+		assertThat(raised.getFirst().getRowsOverThreshold()).isEqualTo(1);
+		assertThat(raised.getFirst().getEstimatedKgCo2eDelta()).isEqualByComparingTo("290.000");
+	}
+
+	/**
+	 * A withdrawn edition is never the predecessor. A draft cloned from the
+	 * edition that stood before the retraction is diffed against that edition,
+	 * so every row of it reads unchanged rather than as a move away from the
+	 * values the publisher retracted.
+	 */
+	@Test
+	void aWithdrawnEditionIsNeverThePredecessor() throws Exception {
+		publishTheFirstEdition();
+		authorTheSecondEdition();
+		publish(SECOND).andExpect(status().isOk());
+		mvc.perform(post("/api/admin/factor-packs/editions/" + SECOND + "/withdraw").with(asApprover()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"reason": "The publisher retracted the 2027 tables pending a correction."}"""))
+			.andExpect(status().isOk());
+
+		createDraft(THIRD, FIRST, 2028);
+		uploadEvidence(THIRD, "The 2028 tables, as published.");
+		var report = blastRadius(THIRD);
+		assertThat(JsonPath.<String>read(report, "$.predecessorEditionId")).isEqualTo(FIRST);
+		assertThat(JsonPath.<Integer>read(report, "$.rowsUnchanged")).isEqualTo(3);
+		assertThat(JsonPath.<Integer>read(report, "$.rowsChanged")).isEqualTo(0);
+		assertThat(JsonPath.<Integer>read(report, "$.rowsAdded")).isEqualTo(0);
+		assertThat(JsonPath.<Integer>read(report, "$.rowsDiscontinued")).isEqualTo(0);
+
+		// and publication freezes the same predecessor into the record
+		publish(THIRD, asApprover(), """
+				{"sourceDocument": "A test publication, 2028 tables (PDF)", "appliesFrom": "2028-01-01"}""")
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/admin/factor-packs/editions/" + THIRD).with(asCurator()))
+			.andExpect(jsonPath("$.supersedesId").value(FIRST));
+		mvc.perform(get("/api/admin/factor-packs/editions/" + SECOND).with(asCurator()))
+			.andExpect(jsonPath("$.status").value("WITHDRAWN"));
 	}
 
 	// --- withdrawal ---------------------------------------------------------

@@ -195,7 +195,8 @@ public class FactorPackPublication {
 	 * One notice per organization holding a lineage the predecessor carried
 	 * (spec 02.7). An organization holding none gets none, and nothing about
 	 * its factors, assignments or runs is touched: the notice is the whole of
-	 * what a publication does to a tenant.
+	 * what a publication does to a tenant. A lineage is counted once, against
+	 * its live version, however many versions an earlier adoption cut.
 	 */
 	private void raiseNotices(FactorPackEdition edition, FactorPackEdition predecessor,
 			List<FactorPackRow> predecessorRows, List<FactorPackRow> editionRows) {
@@ -217,7 +218,7 @@ public class FactorPackPublication {
 			var affected = 0;
 			var overThreshold = 0;
 			var scopes = new java.util.TreeSet<String>();
-			for (var factor : entry.getValue()) {
+			for (var factor : FactorPackBlastRadius.liveByCode(entry.getValue()).values()) {
 				var row = proposed.get(factor.getPackCode());
 				var newValue = row == null ? null : row.getKgCo2ePerUnit();
 				comparison.put(factor.getPackCode(), plain(factor.getKgCo2ePerUnit()) + "|"
@@ -234,23 +235,11 @@ public class FactorPackPublication {
 					}
 				}
 			}
-			var delta = estimatedDelta(entry.getKey(), entry.getValue(), proposed);
+			var delta = blastRadius.estimatedDeltaOf(entry.getKey(), entry.getValue(), proposed);
 			notices.save(new FactorPackNotice(entry.getKey(), edition.getEditionId(), predecessor.getEditionId(),
 					FactorPackBlastRadius.diffHash(comparison), affected, overThreshold, delta,
 					scopes.isEmpty() ? null : String.join(",", scopes)));
 		}
-	}
-
-	/**
-	 * The organization's share of the movement. The blast radius owns the
-	 * arithmetic, so the figure the notice carries is the figure the maintainer
-	 * read before publishing.
-	 */
-	private BigDecimal estimatedDelta(UUID organizationId, List<EmissionFactor> theirs,
-			LinkedHashMap<String, FactorPackRow> proposed) {
-		var byCode = new LinkedHashMap<String, EmissionFactor>();
-		theirs.forEach(factor -> byCode.putIfAbsent(factor.getPackCode(), factor));
-		return blastRadius.estimatedDeltaOf(organizationId, byCode, proposed);
 	}
 
 	// --- withdrawal ---------------------------------------------------------
