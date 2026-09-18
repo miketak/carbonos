@@ -1274,6 +1274,9 @@ export interface AuditEvent {
     | 'ADMIN_ACCESS_ENDED'
     | 'ADMIN_ACCESS_EXPIRED'
     | 'ORGANIZATION_DELETED'
+    | 'ORGANIZATION_CREATED'
+    | 'FACTOR_PACK_ADOPTED'
+    | 'FACTOR_PACK_DECLINED'
   runId: string | null
   runNo: number | null
   actor: string

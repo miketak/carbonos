@@ -436,4 +436,7 @@ export const actionLabels: Record<AuditEvent['action'], string> = {
   ADMIN_ACCESS_ENDED: 'Support access ended',
   ADMIN_ACCESS_EXPIRED: 'Support access expired',
   ORGANIZATION_DELETED: 'Organization removed',
+  ORGANIZATION_CREATED: 'Organization created',
+  FACTOR_PACK_ADOPTED: 'Factor pack adopted',
+  FACTOR_PACK_DECLINED: 'Factor pack declined',
 }
