@@ -45,31 +45,31 @@ public class GhgRunFactor {
 	@Column(name = "kg_co2e_per_unit", nullable = false, precision = 12, scale = 6)
 	private BigDecimal kgCo2ePerUnit;
 
-	@Column(name = "co2_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "co2_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal co2KgPerUnit;
 
-	@Column(name = "ch4_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "ch4_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal ch4KgPerUnit;
 
 	@Column(name = "ch4_fossil", nullable = false)
 	private boolean ch4Fossil;
 
-	@Column(name = "n2o_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "n2o_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal n2oKgPerUnit;
 
-	@Column(name = "hfcs_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "hfcs_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal hfcsKgPerUnit;
 
-	@Column(name = "pfcs_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "pfcs_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal pfcsKgPerUnit;
 
-	@Column(name = "sf6_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "sf6_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal sf6KgPerUnit;
 
-	@Column(name = "nf3_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "nf3_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal nf3KgPerUnit;
 
-	@Column(name = "biogenic_co2_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "biogenic_co2_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal biogenicCo2KgPerUnit;
 
 	@Column(name = "blend_composition", length = 255)

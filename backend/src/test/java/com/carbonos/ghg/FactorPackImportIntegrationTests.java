@@ -778,6 +778,59 @@ class FactorPackImportIntegrationTests {
 	}
 
 	/**
+	 * A factor carries the gas masses its publication states (spec 02.6). DESNZ
+	 * states diesel's methane and nitrous oxide to eight decimals; rounded to
+	 * six on import, the run rebuilt 2.661585 kg CO2e per litre from them
+	 * instead of the published 2.66155, which is what the governance pack's
+	 * arithmetic found. The masses now survive the import, and the run prices
+	 * 5,000 litres at 13,307.75 kg.
+	 */
+	@Test
+	void anImportKeepsTheGasMassesThePublicationStates() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		importEdition(orgId, "defra-2025");
+		var diesel = live(orgId, "DEFRA:Fuels:Liquid_fuels_Diesel_100_mineral_diesel_:litres");
+		assertThat(diesel.getKgCo2ePerUnit()).isEqualByComparingTo("2.66155");
+		assertThat(diesel.getCh4KgPerUnit()).isEqualByComparingTo("0.00001036");
+		assertThat(diesel.getN2oKgPerUnit()).isEqualByComparingTo("0.00012483");
+
+		var facilityId = createFacility(orgId);
+		var activityId = JsonPath.<String>read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+				.contentType("application/json")
+				.content("""
+						{"facilityId": "%s", "activityType": "Delivery fleet diesel", "quantity": 5000, "unit": "litre",
+						 "periodStart": "2025-08-01", "periodEnd": "2025-08-31", "dataSource": "Contractor invoice",
+						 "evidenceRef": "CT-2025-08", "dataQuality": "MEASURED"}""".formatted(facilityId)))
+			.andExpect(status().isCreated())), "$.id");
+		var inventoryId = JsonPath.<String>read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asMember()).with(csrf())
+				.contentType("application/json")
+				.content("""
+						{"name": "FY2025", "periodStart": "2025-01-01", "periodEnd": "2025-12-31", "purpose": "Corporate reporting",
+						 "consolidationApproach": "OPERATIONAL_CONTROL"}"""))
+			.andExpect(status().isCreated())), "$.id");
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/" + facilityId).with(asMember())
+			.with(csrf()).contentType("application/json").content("{}")).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		var assignmentId = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + activityId + "')].id")
+			.getFirst();
+		mvc.perform(put("/api/ghg/assignments/" + assignmentId + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("""
+					{"emissionFactorId": "%s"}""".formatted(diesel.getId()))).andExpect(status().isOk());
+		var runId = freezeAndRun(inventoryId);
+		mvc.perform(get("/api/ghg/runs/" + runId).with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(13307.75))
+			.andExpect(jsonPath("$.lines[0].kgCo2ePerUnit").value(2.66155))
+			.andExpect(jsonPath("$.lines[0].byGas.ch4Kg").value(0.052))
+			.andExpect(jsonPath("$.lines[0].byGas.n2oKg").value(0.624));
+	}
+
+	/**
 	 * The load case of spec 02.6: defra-2026 imported twice into one
 	 * organization. The first import creates 1,868 lineages and the second must
 	 * report every one of them unchanged, cutting nothing.

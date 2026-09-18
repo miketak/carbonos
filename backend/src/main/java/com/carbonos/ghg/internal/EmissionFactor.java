@@ -61,13 +61,13 @@ public class EmissionFactor {
 	@Column(name = "kg_co2e_per_unit", nullable = false, precision = 12, scale = 6)
 	private BigDecimal kgCo2ePerUnit;
 
-	@Column(name = "co2_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "co2_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal co2KgPerUnit;
 
-	@Column(name = "ch4_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "ch4_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal ch4KgPerUnit;
 
-	@Column(name = "n2o_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "n2o_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal n2oKgPerUnit;
 
 	@Column(name = "hfcs_kg_co2e_per_unit", nullable = false, precision = 12, scale = 6)
@@ -76,21 +76,21 @@ public class EmissionFactor {
 	@Column(name = "pfcs_kg_co2e_per_unit", nullable = false, precision = 12, scale = 6)
 	private BigDecimal pfcsKgCo2ePerUnit;
 
-	@Column(name = "sf6_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "sf6_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal sf6KgPerUnit;
 
-	@Column(name = "nf3_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "nf3_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal nf3KgPerUnit;
 
-	@Column(name = "biogenic_co2_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "biogenic_co2_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal biogenicCo2KgPerUnit;
 
 	// the mass of the HFC and PFC blends per unit, and the assessment report whose potentials
 	// the source applied to turn them into CO2e (spec 07.2, the 2013 amendment)
-	@Column(name = "hfcs_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "hfcs_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal hfcsKgPerUnit;
 
-	@Column(name = "pfcs_kg_per_unit", nullable = false, precision = 12, scale = 6)
+	@Column(name = "pfcs_kg_per_unit", nullable = false, precision = 20, scale = 10)
 	private BigDecimal pfcsKgPerUnit;
 
 	@Column(name = "blend_gwp_source", length = 20)
