@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.carbonos.TestcontainersConfiguration;
+import com.carbonos.ghg.internal.ActivityRecord;
 import com.carbonos.ghg.internal.ActivityRecordRepository;
 import com.carbonos.ghg.internal.BaseYearRepository;
 import com.carbonos.ghg.internal.BoundaryTreatmentRepository;
@@ -4376,6 +4377,19 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.unclassified").value(13))
 			.andExpect(jsonPath("$.items.length()").value(4));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember()).param("q", "camp"))
+			.andExpect(jsonPath("$.total").value(1));
+		// each row carries the record's reference, and the reference finds the row (spec 04.6)
+		var campPage = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page")
+			.with(asMember()).param("q", "camp")));
+		String campRef = JsonPath.read(campPage, "$.items[0].recordRef");
+		String campActivity = JsonPath.read(campPage, "$.items[0].activityId");
+		int campNo = JsonPath.read(campPage, "$.items[0].recordNo");
+		org.assertj.core.api.Assertions.assertThat(campRef).isEqualTo(ActivityRecord.ref(campNo));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember()).param("q", campRef))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].activityId").value(campActivity));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments/page").with(asMember())
+			.param("q", campRef.toLowerCase(java.util.Locale.ROOT).replace("act-", "act")))
 			.andExpect(jsonPath("$.total").value(1));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/coverage").with(asMember()))
 			.andExpect(jsonPath("$[?(@.streamName == 'Standby gensets')].coveredMonths.length()").value(12))
