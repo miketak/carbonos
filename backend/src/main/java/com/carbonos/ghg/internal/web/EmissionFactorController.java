@@ -67,10 +67,14 @@ class EmissionFactorController {
 			@RequestParam(required = false) String unit,
 			@RequestParam(required = false) List<Dimension> dimension,
 			@RequestParam(required = false) List<UUID> ids,
+			@RequestParam(required = false) java.time.LocalDate periodStart,
+			@RequestParam(required = false) java.time.LocalDate periodEnd,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "50") int size) {
+		// spec 02.6: with a period, only the versions whose validity overlaps it, so a record is classified
+		// with the vintage live in its year
 		var query = new GhgService.FactorQuery(q, includeUnapproved, sourceCategory, sourceActivity, sourceDetail,
-				unit, dimension == null ? Set.of() : Set.copyOf(dimension), ids, page, size);
+				unit, dimension == null ? Set.of() : Set.copyOf(dimension), ids, periodStart, periodEnd, page, size);
 		var result = ghgService.searchEmissionFactors(organizationId, query);
 		// spec 02.6: a lineage with more than one vintage comes back with its chain, read for the whole page
 		var chains = ghgService.versionChains(organizationId, result.items());

@@ -65,6 +65,7 @@ export function AssignmentDrawer({
   units,
   densities,
   editable,
+  period,
   onNavigate,
   onClose,
   onClassify,
@@ -80,6 +81,8 @@ export function AssignmentDrawer({
   densities: Density[]
   /** The inventory takes writes and this reader may make them. */
   editable: boolean
+  /** The inventory's reporting period: the picker offers the versions live in it (spec 02.6). */
+  period?: { start: string; end: string }
   onNavigate: (id: string) => void
   onClose: () => void
   onClassify: (assignment: Assignment) => (input: ClassifyInput) => void
@@ -112,6 +115,7 @@ export function AssignmentDrawer({
       units={units}
       densities={densities}
       editable={editable}
+      period={period}
       onNavigate={onNavigate}
       onClose={onClose}
       onClassify={onClassify(assignment)}
@@ -131,6 +135,7 @@ function AssignmentPanel({
   units,
   densities,
   editable,
+  period,
   onNavigate,
   onClose,
   onClassify,
@@ -146,6 +151,7 @@ function AssignmentPanel({
   units: Unit[]
   densities: Density[]
   editable: boolean
+  period?: { start: string; end: string }
   onNavigate: (id: string) => void
   onClose: () => void
   onClassify: (input: ClassifyInput) => void
@@ -232,6 +238,7 @@ function AssignmentPanel({
               units={units}
               densities={densities}
               editable={editable}
+              period={period}
               onClassify={onClassify}
             />
           )}
@@ -305,6 +312,7 @@ function ClassifyPanel({
   units,
   densities,
   editable,
+  period,
   onClassify,
 }: {
   assignment: Assignment
@@ -314,6 +322,7 @@ function ClassifyPanel({
   units: Unit[]
   densities: Density[]
   editable: boolean
+  period?: { start: string; end: string }
   onClassify: (input: ClassifyInput) => void
 }) {
   // CLASS-01, widened for conversion: offer factors whose unit shares the fact's
@@ -345,6 +354,9 @@ function ClassifyPanel({
       includeUnapproved: showUnapproved,
       unit: dimension === null ? assignment.unit : undefined,
       dimension: dimensions.length > 0 ? dimensions : undefined,
+      // spec 02.6: only the versions live in the inventory's period; a split period offers both
+      periodStart: period?.start,
+      periodEnd: period?.end,
       size: PICKER_PAGE_SIZE,
     },
     { enabled: pickerOpen },

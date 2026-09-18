@@ -106,10 +106,14 @@ export function AdoptionDiffDrawer({
       { noticeId: notice.id, recalculationCase: answer, note: note.trim() || undefined },
       {
         onSuccess: (result) => {
+          const movedCount = result.moved.reduce((sum, entry) => sum + entry.assignments, 0)
           toast(
             `Adopted ${notice.editionId}: ${result.versioned} version${
               result.versioned === 1 ? '' : 's'
-            } cut, ${result.created} lineage${result.created === 1 ? '' : 's'} added.`,
+            } cut, ${result.created} lineage${result.created === 1 ? '' : 's'} added` +
+              (movedCount > 0
+                ? `, ${movedCount} classification${movedCount === 1 ? '' : 's'} moved to the new vintage.`
+                : '.'),
           )
           onClose()
         },

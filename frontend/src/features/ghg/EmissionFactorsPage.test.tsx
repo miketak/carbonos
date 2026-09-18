@@ -183,6 +183,7 @@ beforeEach(() => {
     conflicts: [],
     discontinued: [],
     splitPeriods: [],
+    moved: [],
   })
   vi.mocked(setFactorApproval)
     .mockReset()
@@ -249,6 +250,7 @@ test('the import toast names the rows the registry could not convert (spec 02.6)
     conflicts: [],
     discontinued: [],
     splitPeriods: [],
+    moved: [],
   })
   renderPage()
 
@@ -503,6 +505,7 @@ test('the import toast names conflicts, discontinued lineages and a split period
     conflicts: ['DEFRA:Fuels:Diesel'],
     discontinued: ['DEFRA:Retired_row:tonnes'],
     splitPeriods: [{ inventoryId: 'inv-1', name: 'FY2027' }],
+    moved: [{ inventoryId: 'inv-1', name: 'FY2027', assignments: 3 }],
   })
   renderPage()
 
@@ -515,6 +518,8 @@ test('the import toast names conflicts, discontinued lineages and a split period
   expect(toast).toHaveTextContent(
     'It applies inside FY2027, so that period would be calculated on two editions.',
   )
+  // spec 02.6 rule 7: the drafts the import moved onto the new vintage are named with their counts
+  expect(toast).toHaveTextContent('3 classifications in FY2027 moved to the new vintage.')
 })
 
 test("a pack's factors are read without importing it, and rows sharing a name are told apart (spec 02.8)", async () => {

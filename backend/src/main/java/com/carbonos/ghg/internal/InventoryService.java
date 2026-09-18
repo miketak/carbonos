@@ -1245,8 +1245,17 @@ public class InventoryService {
 	 */
 	private static boolean derives(InventoryAssignment assignment, UpstreamRule rule) {
 		return assignment.isIncluded() && assignment.isClassified()
-				&& assignment.getEmissionFactor().getId().equals(rule.getPrimaryFactor().getId())
+				&& lineageKey(assignment.getEmissionFactor()).equals(lineageKey(rule.getPrimaryFactor()))
 				&& (assignment.getScope() == Scope.SCOPE_1 || assignment.getScope() == Scope.SCOPE_2);
+	}
+
+	/**
+	 * What a rule matches a classification on (spec 04.7): the lineage when the
+	 * factor came from a pack, so a later vintage of the same row still fires
+	 * the rule, and the factor itself when it was entered by hand.
+	 */
+	private static String lineageKey(EmissionFactor factor) {
+		return factor.getPackCode() != null ? "code:" + factor.getPackCode() : "id:" + factor.getId();
 	}
 
 	/**
@@ -1694,7 +1703,12 @@ public class InventoryService {
 		return activity.getFacility().leaseOver(activity.getPeriodStart(), activity.getPeriodEnd());
 	}
 
-	/** The grid factor suggested for a record's facility (spec 03.4): the newest approved one of its region. */
+	/**
+	 * The grid factor suggested for a record's facility (spec 03.4): of its
+	 * region's approved factors, the newest data year among the versions that
+	 * cover the inventory period, then among those that overlap it, then among
+	 * the live ones; a tie on the year goes to the later vintage (spec 02.6).
+	 */
 	public record Suggestion(UUID factorId, String factorName) {
 	}
 
@@ -1704,7 +1718,8 @@ public class InventoryService {
 		if (assignments.isEmpty()) {
 			return result;
 		}
-		var organizationId = assignments.getFirst().getInventory().getOrganization().getId();
+		var inventory = assignments.getFirst().getInventory();
+		var organizationId = inventory.getOrganization().getId();
 		var byRegion = new HashMap<String, EmissionFactor>();
 		// only the grid rows, asked for in SQL: a library of thousands must not be loaded to
 		// suggest a factor for one facility's region (FU-03)
@@ -1713,10 +1728,9 @@ public class InventoryService {
 				continue;
 			}
 			var current = byRegion.get(factor.getGridRegion());
-			var newer = current == null || year(factor) > year(current)
-					|| (year(factor) == year(current) && current.getOrganizationId() == null
-							&& factor.getOrganizationId() != null);
-			if (newer) {
+			if (current == null || suggestionRank(factor, inventory) > suggestionRank(current, inventory)
+					|| (suggestionRank(factor, inventory) == suggestionRank(current, inventory)
+							&& laterVintage(factor, current))) {
 				byRegion.put(factor.getGridRegion(), factor);
 			}
 		}
@@ -1741,6 +1755,40 @@ public class InventoryService {
 	private static int year(EmissionFactor factor) {
 		return factor.getDataYear() != null ? factor.getDataYear()
 				: factor.getPublicationYear() != null ? factor.getPublicationYear() : 0;
+	}
+
+	/**
+	 * How well a grid factor fits the inventory: its tier (covers the period,
+	 * overlaps it, live, or closed before it) in the thousands, then its data
+	 * year, so a version that covers the period outranks a newer one that does
+	 * not, and the newest wins within a tier.
+	 */
+	private static int suggestionRank(EmissionFactor factor, Inventory inventory) {
+		var start = inventory.getPeriodStart();
+		var end = inventory.getPeriodEnd();
+		int tier;
+		if (factor.coversPeriod(start, end)) {
+			tier = 3;
+		}
+		else if ((factor.getValidFrom() == null || !factor.getValidFrom().isAfter(end))
+				&& (factor.getValidTo() == null || !factor.getValidTo().isBefore(start))) {
+			tier = 2;
+		}
+		else if (factor.isLive()) {
+			tier = 1;
+		}
+		else {
+			tier = 0;
+		}
+		return tier * 10_000 + year(factor);
+	}
+
+	/** Whether {@code factor} is a later vintage of the same year than {@code current}. */
+	private static boolean laterVintage(EmissionFactor factor, EmissionFactor current) {
+		if (factor.getValidFrom() == null) {
+			return false;
+		}
+		return current.getValidFrom() == null || factor.getValidFrom().isAfter(current.getValidFrom());
 	}
 
 	// --- validation gates ----------------------------------------------------
@@ -2404,9 +2452,9 @@ public class InventoryService {
 				.thenComparing(a -> a.getActivity().getCreatedAt()))
 			.toList();
 		// spec 04.7: the rules of the view, grouped by the primary factor they ride on
-		var rulesByFactor = new java.util.LinkedHashMap<UUID, List<UpstreamRule>>();
+		var rulesByFactor = new java.util.LinkedHashMap<String, List<UpstreamRule>>();
 		for (var rule : upstreamRules.findAllByInventoryIdOrderByCreatedAtAsc(inventoryId)) {
-			rulesByFactor.computeIfAbsent(rule.getPrimaryFactor().getId(), key -> new ArrayList<>()).add(rule);
+			rulesByFactor.computeIfAbsent(lineageKey(rule.getPrimaryFactor()), key -> new ArrayList<>()).add(rule);
 		}
 		for (var assignment : ordered) {
 			if (!assignment.isIncluded()) {
@@ -2463,7 +2511,7 @@ public class InventoryService {
 			run.addLine(line);
 			// spec 04.7: the category 3 lines that ride on this one, right after it
 			if (assignment.getScope() == Scope.SCOPE_1 || assignment.getScope() == Scope.SCOPE_2) {
-				for (var rule : rulesByFactor.getOrDefault(factor.getId(), List.of())) {
+				for (var rule : rulesByFactor.getOrDefault(lineageKey(factor), List.of())) {
 					var upstream = rule.getUpstreamFactor();
 					factorsUsed.putIfAbsent(upstream.getId(), upstream);
 					run.addLine(derivedLine(run, assignment, line, rule, units, gwp, convertedQuantity,

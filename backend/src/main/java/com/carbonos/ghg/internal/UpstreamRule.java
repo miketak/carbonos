@@ -81,6 +81,19 @@ public class UpstreamRule {
 		return upstreamFactor;
 	}
 
+	/**
+	 * Moves the rule to later versions of the same lineages (spec 02.6 rule 7).
+	 * A null leaves that side as it is.
+	 */
+	void repoint(EmissionFactor primary, EmissionFactor upstream) {
+		if (primary != null) {
+			this.primaryFactor = primary;
+		}
+		if (upstream != null) {
+			this.upstreamFactor = upstream;
+		}
+	}
+
 	public UpstreamRuleKind getKind() {
 		return kind;
 	}

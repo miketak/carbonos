@@ -637,11 +637,13 @@ public class GhgService {
 	 * wants the factors its rows already reference, and the page.
 	 */
 	public record FactorQuery(String q, boolean includeUnapproved, String sourceCategory, String sourceActivity,
-			String sourceDetail, String unit, Set<Dimension> dimensions, List<UUID> ids, int page, int size) {
+			String sourceDetail, String unit, Set<Dimension> dimensions, List<UUID> ids, LocalDate periodStart,
+			LocalDate periodEnd, int page, int size) {
 
 		/** Everything the picker shows by default: unapproved rows included, first page. */
 		public static FactorQuery all() {
-			return new FactorQuery(null, true, null, null, null, null, Set.of(), null, 0, MAX_FACTOR_PAGE);
+			return new FactorQuery(null, true, null, null, null, null, Set.of(), null, null, null, 0,
+					MAX_FACTOR_PAGE);
 		}
 	}
 

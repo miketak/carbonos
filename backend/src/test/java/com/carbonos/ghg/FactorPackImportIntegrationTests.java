@@ -612,6 +612,52 @@ class FactorPackImportIntegrationTests {
 		assertThat(JsonPath.<List<String>>read(result, "$.splitPeriods[*].inventoryId")).containsExactly(inventoryId);
 	}
 
+	@Test
+	void aSplitPeriodDraftMovesOnlyRecordsFromTheAppliesFromDate() throws Exception {
+		publishTheFirstEdition();
+		var orgId = createOrganization("Asante Gold Resources");
+		importEdition(orgId, FIRST);
+		var facilityId = createFacility(orgId);
+		var before = factorId(orgId, DIESEL);
+		// a fiscal year the next edition splits: one record before the date, one after, both on the incumbent
+		var inventoryId = inventoryWithDiesel(orgId, facilityId, "FY2026", "2026-01-01", "2026-09-30");
+		var augustActivity = JsonPath.<String>read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+				.contentType("application/json")
+				.content("""
+						{"facilityId": "%s", "activityType": "Diesel", "quantity": 1000, "unit": "litre",
+						 "periodStart": "2026-08-01", "periodEnd": "2026-08-31", "dataSource": "Fuel invoice",
+						 "evidenceRef": "INV-2939", "dataQuality": "MEASURED"}""".formatted(facilityId)))
+			.andExpect(status().isCreated())), "$.id");
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		var august = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + augustActivity + "')].id")
+			.getFirst();
+		mvc.perform(put("/api/ghg/assignments/" + august + "/classify").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"emissionFactorId": "%s"}""".formatted(before))).andExpect(status().isOk());
+
+		publishTheSecondEdition("2026-07-01");
+		var result = importEdition(orgId, SECOND);
+		var after = factorId(orgId, DIESEL);
+		// spec 02.6 rule 7: the August record moves to the new vintage, the January one keeps the old
+		assertThat(JsonPath.<List<Integer>>read(result, "$.moved[*].assignments")).containsExactly(1);
+		var moved = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		assertThat(JsonPath.<List<String>>read(moved, "$[?(@.id == '" + august + "')].emissionFactorId"))
+			.containsExactly(after);
+		assertThat(JsonPath.<List<String>>read(moved, "$[?(@.id != '" + august + "')].emissionFactorId"))
+			.containsExactly(before);
+		// the run names both editions in its factor table
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/freeze").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		var run = body(mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/runs").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Two vintages"}""")).andExpect(status().isCreated()));
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(run, "$.run.id") + "/report").with(asMember()))
+			.andExpect(jsonPath("$.factors[*].sourceEdition").value(org.hamcrest.Matchers.hasItems(FIRST, SECOND)));
+	}
+
 	/**
 	 * The load case of spec 02.6: defra-2026 imported twice into one
 	 * organization. The first import creates 1,868 lineages and the second must

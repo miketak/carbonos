@@ -119,6 +119,7 @@ beforeEach(() => {
     conflicts: [],
     discontinued: [],
     splitPeriods: [],
+    moved: [],
   })
   vi.mocked(declineFactorPackNotice).mockResolvedValue({ ...notice, status: 'DECLINED' })
 })

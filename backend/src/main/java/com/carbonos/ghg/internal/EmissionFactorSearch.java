@@ -63,6 +63,13 @@ final class EmissionFactorSearch {
 			if (!unitSpellings.isEmpty()) {
 				predicates.add(cb.lower(root.get("unit")).in(unitSpellings));
 			}
+			if (query.periodStart() != null && query.periodEnd() != null) {
+				// spec 02.6: a version whose validity overlaps the period; a split period still offers both
+				predicates.add(cb.or(cb.isNull(root.get("validFrom")),
+						cb.lessThanOrEqualTo(root.get("validFrom"), query.periodEnd())));
+				predicates.add(cb.or(cb.isNull(root.get("validTo")),
+						cb.greaterThanOrEqualTo(root.get("validTo"), query.periodStart())));
+			}
 			if (needle != null) {
 				// a null column yields null, never true, so an absent taxonomy simply does not match
 				var text = new ArrayList<Predicate>(List.of(contains(cb, root.get("name"), needle),

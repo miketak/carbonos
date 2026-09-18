@@ -344,6 +344,185 @@ class FactorPackAdoptionApiIntegrationTests {
 		return runId;
 	}
 
+	@Test
+	void acceptingMovesOpenDraftClassificationsToTheNewVintage() throws Exception {
+		var holder = holder();
+		var before = factorId(holder.orgId(), "ADOPT:diesel");
+
+		var result = body(accept(noticeId(holder.orgId()), "VINTAGE_PROGRESSION", "The 2027 tables, from 2026.",
+				asOwner()).andExpect(status().isOk()));
+		var after = factorId(holder.orgId(), "ADOPT:diesel");
+		assertThat(after).isNotEqualTo(before);
+		// spec 02.6 rule 7: the 2026 draft, classified on the 2026 tables before the adoption, is moved
+		assertThat(JsonPath.<List<String>>read(result, "$.moved[*].inventoryId"))
+			.containsExactly(holder.draftInventoryId());
+		assertThat(JsonPath.<List<Integer>>read(result, "$.moved[*].assignments")).containsExactly(1);
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + holder.draftInventoryId() + "/assignments")
+			.with(asOwner())).andExpect(status().isOk()));
+		assertThat(JsonPath.<List<String>>read(listing, "$[*].emissionFactorId")).containsExactly(after);
+		mvc.perform(get("/api/ghg/inventories/" + holder.draftInventoryId() + "/events").with(asOwner()))
+			.andExpect(jsonPath("$[?(@.action == 'REVIEWED')].reason").value(org.hamcrest.Matchers.hasItem(
+					org.hamcrest.Matchers.containsString("1 classification moved to '" + SECOND + "' from 2026-01-01"))));
+		// no coverage warning remains, and the next run prices the new value and cites the new edition
+		mvc.perform(get("/api/ghg/inventories/" + holder.draftInventoryId() + "/validation").with(asOwner()))
+			.andExpect(jsonPath("$.gates[?(@.gate == 'EMISSION_FACTOR')].findings[*].message").value(
+					org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(
+							org.hamcrest.Matchers.containsString("does not cover the reporting period")))));
+		mvc.perform(post("/api/ghg/inventories/" + holder.draftInventoryId() + "/freeze").with(asOwner())
+			.with(csrf())).andExpect(status().isOk());
+		var run = body(mvc
+			.perform(post("/api/ghg/inventories/" + holder.draftInventoryId() + "/runs").with(asOwner()).with(csrf())
+				.contentType("application/json").content("""
+						{"label": "On the 2027 tables"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2800.0)));
+		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(run, "$.run.id") + "/report").with(asOwner()))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].sourceEdition").value(
+					org.hamcrest.Matchers.hasItem(SECOND)))
+			.andExpect(jsonPath("$.factors[?(@.name == 'Diesel')].validFrom").value(
+					org.hamcrest.Matchers.hasItem("2026-01-01")));
+		// the base year's run is a snapshot and keeps its figure
+		mvc.perform(get("/api/ghg/runs/" + holder.baseRunId()).with(asOwner()))
+			.andExpect(jsonPath("$.totalKgCo2e").value(2660.0));
+	}
+
+	@Test
+	void acceptingLeavesEarlierPeriodDraftsAndLockedInventoriesAlone() throws Exception {
+		var holder = holder();
+		var before = factorId(holder.orgId(), "ADOPT:diesel");
+		// a 2025 draft: its period ends before the edition applies, so it keeps its vintage
+		var earlierActivity = createActivity(holder.orgId(), holder.facilityId(), "2025-06-01", "1000");
+		var earlier = createInventory(holder.orgId(), "2025", "2025-01-01", "2025-12-31", holder.facilityId(),
+				earlierActivity);
+		// a frozen 2027 inventory: the edition applies before its period, which is allowed, but a locked
+		// inventory keeps the factors it was frozen with
+		var laterActivity = createActivity(holder.orgId(), holder.facilityId(), "2027-06-01", "1000");
+		var later = createInventory(holder.orgId(), "2027", "2027-01-01", "2027-12-31", holder.facilityId(),
+				laterActivity);
+		mvc.perform(post("/api/ghg/inventories/" + later + "/freeze").with(asOwner()).with(csrf()))
+			.andExpect(status().isOk());
+
+		var result = body(accept(noticeId(holder.orgId()), "VINTAGE_PROGRESSION", "The 2027 tables, from 2026.",
+				asOwner()).andExpect(status().isOk()));
+		assertThat(JsonPath.<List<String>>read(result, "$.moved[*].inventoryId"))
+			.containsExactly(holder.draftInventoryId());
+		for (var untouched : List.of(earlier, later)) {
+			var listing = body(mvc.perform(get("/api/ghg/inventories/" + untouched + "/assignments").with(asOwner()))
+				.andExpect(status().isOk()));
+			assertThat(JsonPath.<List<String>>read(listing, "$[*].emissionFactorId")).containsExactly(before);
+		}
+		// the frozen inventory still runs on the value it was frozen with, and the gate says its factor
+		// no longer covers the period
+		mvc.perform(post("/api/ghg/inventories/" + later + "/runs").with(asOwner()).with(csrf())
+			.contentType("application/json").content("""
+					{"label": "Frozen before the adoption"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2660.0));
+		mvc.perform(get("/api/ghg/inventories/" + later + "/validation").with(asOwner()))
+			.andExpect(jsonPath("$.gates[?(@.gate == 'EMISSION_FACTOR')].findings[*].message").value(
+					org.hamcrest.Matchers.hasItem(
+							org.hamcrest.Matchers.containsString("does not cover the reporting period"))));
+	}
+
+	@Test
+	void thePickerOffersTheVersionLiveInTheInventoryPeriod() throws Exception {
+		var holder = holder();
+		accept(noticeId(holder.orgId()), "VINTAGE_PROGRESSION", "The 2027 tables, from 2026.", asOwner())
+			.andExpect(status().isOk());
+		var live = factorId(holder.orgId(), "ADOPT:diesel");
+		// without a period every version is a row; with one, only the version whose validity overlaps it
+		mvc.perform(get("/api/ghg/organizations/" + holder.orgId() + "/emission-factors?q=Diesel").with(asOwner()))
+			.andExpect(jsonPath("$.items.length()").value(2));
+		mvc.perform(get("/api/ghg/organizations/" + holder.orgId()
+				+ "/emission-factors?q=Diesel&periodStart=2026-01-01&periodEnd=2026-12-31").with(asOwner()))
+			.andExpect(jsonPath("$.items.length()").value(1))
+			.andExpect(jsonPath("$.items[0].id").value(live))
+			.andExpect(jsonPath("$.items[0].kgCo2ePerUnit").value(2.8));
+		mvc.perform(get("/api/ghg/organizations/" + holder.orgId()
+				+ "/emission-factors?q=Diesel&periodStart=2025-01-01&periodEnd=2025-12-31").with(asOwner()))
+			.andExpect(jsonPath("$.items.length()").value(1))
+			.andExpect(jsonPath("$.items[0].kgCo2ePerUnit").value(2.66));
+	}
+
+	@Test
+	void theGridSuggestionFollowsTheInventoryPeriod() throws Exception {
+		// a grid family whose 2027 edition moves the 2024 Ghana row from 0.468809 to 0.44 for 2026 onwards
+		createDraft(GRID_FIRST, null, 2025, "AR5", "2025-01-01");
+		addRow(GRID_FIRST, gridRow("ADOPT:grid:GHA:2024", "Grid electricity, Ghana (2024)", "0.468809", 2024))
+			.andExpect(status().isCreated());
+		uploadEvidence(GRID_FIRST, "Ember, 2025.");
+		publish(GRID_FIRST, "2025-01-01").andExpect(status().isOk());
+		var orgId = createOrganization("Asante Gold Resources");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/" + GRID_FIRST + "/import")
+			.with(asOwner()).with(csrf())).andExpect(status().isOk());
+		createDraft(GRID_SECOND, GRID_FIRST, 2027, "AR5", "2026-01-01");
+		var rows = body(mvc.perform(get("/api/admin/factor-packs/editions/" + GRID_SECOND + "/rows")
+			.with(asCurator())).andExpect(status().isOk()));
+		var rowId = JsonPath.<List<String>>read(rows, "$.items[?(@.code == 'ADOPT:grid:GHA:2024')].id").getFirst();
+		mvc.perform(put("/api/admin/factor-packs/editions/" + GRID_SECOND + "/rows/" + rowId).with(asCurator())
+			.with(csrf()).contentType("application/json")
+			.content(gridRow("ADOPT:grid:GHA:2024", "Grid electricity, Ghana (2024)", "0.44", 2024)))
+			.andExpect(status().isOk());
+		uploadEvidence(GRID_SECOND, "Ember, 2027.");
+		publish(GRID_SECOND, "2026-01-01").andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/" + GRID_SECOND + "/import")
+			.with(asOwner()).with(csrf())).andExpect(status().isOk());
+		var live = factorId(orgId, "ADOPT:grid:GHA:2024");
+
+		// a facility on the Ghana grid, with an electricity record in 2026 and one in 2025
+		var facilityId = JsonPath.<String>read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/facilities").with(asOwner()).with(csrf())
+				.contentType("application/json").content("""
+						{"name": "Obuom Processing Plant", "location": "Obuom", "gridRegion": "GHA"}"""))
+			.andExpect(status().isCreated())), "$.id");
+		var suggestionsByYear = new java.util.HashMap<String, String>();
+		for (var year : List.of("2026", "2025")) {
+			var activityId = JsonPath.<String>read(body(mvc
+				.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asOwner()).with(csrf())
+					.contentType("application/json")
+					.content("""
+							{"facilityId": "%s", "activityType": "Grid electricity", "quantity": 110000,
+							 "unit": "kWh", "periodStart": "%s-06-01", "periodEnd": "%s-06-30",
+							 "dataSource": "ECG invoice", "evidenceRef": "ECG-06", "dataQuality": "MEASURED"}"""
+						.formatted(facilityId, year, year)))
+				.andExpect(status().isCreated())), "$.id");
+			var inventoryId = JsonPath.<String>read(body(mvc
+				.perform(post("/api/ghg/organizations/" + orgId + "/inventories").with(asOwner()).with(csrf())
+					.contentType("application/json")
+					.content("""
+							{"name": "FY%s", "periodStart": "%s-01-01", "periodEnd": "%s-12-31",
+							 "purpose": "Corporate reporting", "consolidationApproach": "OPERATIONAL_CONTROL"}"""
+						.formatted(year, year, year)))
+				.andExpect(status().isCreated())), "$.id");
+			mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/" + facilityId).with(asOwner())
+				.with(csrf()).contentType("application/json").content("{}")).andExpect(status().isOk());
+			mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asOwner())
+				.with(csrf())).andExpect(status().isOk());
+			var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments")
+				.with(asOwner())).andExpect(status().isOk()));
+			suggestionsByYear.put(year, JsonPath.<List<String>>read(listing,
+					"$[?(@.activityId == '" + activityId + "')].suggestedFactorId").getFirst());
+		}
+		// spec 03.4: the version that covers the inventory period is the one suggested
+		assertThat(suggestionsByYear.get("2026")).isEqualTo(live);
+		assertThat(suggestionsByYear.get("2025")).isNotEqualTo(live).isNotNull();
+	}
+
+	private static final String GRID_FIRST = "adoptgrid-2025";
+
+	private static final String GRID_SECOND = "adoptgrid-2027";
+
+	private static String gridRow(String code, String name, String value, int year) {
+		return """
+				{"code": "%s", "name": "%s", "defaultScope": "SCOPE_2",
+				 "defaultCategory": "PURCHASED_ELECTRICITY", "scopeAgnostic": false, "unit": "kWh",
+				 "dataYear": %d, "sourcePublication": "Ember Yearly Electricity Data, %d",
+				 "sourceUrl": "https://example.test/ember-%d.xlsx", "publicationYear": %d,
+				 "sourceCategory": "Electricity", "sourceActivity": "Ghana (GHA)",
+				 "approved": true, "kgCo2ePerUnit": %s}"""
+			.formatted(code, name, year, year, year, year, value);
+	}
+
 	/** The whole fixture: the catalogue, the holder, its base year and its open draft. */
 	Holder holder() throws Exception {
 		return holder(new BigDecimal("5"));

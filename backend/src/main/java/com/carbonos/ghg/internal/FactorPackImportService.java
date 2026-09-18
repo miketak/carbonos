@@ -63,7 +63,7 @@ public class FactorPackImportService {
 	 */
 	public record ImportResult(String edition, LocalDate appliesFrom, int created, int versioned, int tagged,
 			int unchanged, List<SkippedRow> skippedUnits, List<String> conflicts, List<String> discontinued,
-			List<InventoryRef> splitPeriods) {
+			List<InventoryRef> splitPeriods, List<MovedInventory> moved) {
 
 		/**
 		 * A row the registry cannot convert, carried back by its publication row
@@ -80,6 +80,13 @@ public class FactorPackImportService {
 		 */
 		public record InventoryRef(UUID inventoryId, String name) {
 		}
+
+		/**
+		 * A draft inventory whose classifications the import moved to the
+		 * versions it cut (spec 02.6 rule 7), with how many moved.
+		 */
+		public record MovedInventory(UUID inventoryId, String name, int assignments) {
+		}
 	}
 
 	private final OrganizationRepository organizations;
@@ -87,6 +94,12 @@ public class FactorPackImportService {
 	private final EmissionFactorRepository emissionFactors;
 
 	private final InventoryRepository inventories;
+
+	private final InventoryAssignmentRepository assignments;
+
+	private final UpstreamRuleRepository upstreamRules;
+
+	private final GhgAuditEventRepository auditEvents;
 
 	private final FactorPackEditionRepository editions;
 
@@ -99,11 +112,16 @@ public class FactorPackImportService {
 	private final EntityManager entityManager;
 
 	FactorPackImportService(OrganizationRepository organizations, EmissionFactorRepository emissionFactors,
-			InventoryRepository inventories, FactorPackEditionRepository editions, FactorPacks factorPacks,
-			UnitConverter units, GhgAccess access, EntityManager entityManager) {
+			InventoryRepository inventories, InventoryAssignmentRepository assignments,
+			UpstreamRuleRepository upstreamRules, GhgAuditEventRepository auditEvents,
+			FactorPackEditionRepository editions, FactorPacks factorPacks, UnitConverter units, GhgAccess access,
+			EntityManager entityManager) {
 		this.organizations = organizations;
 		this.emissionFactors = emissionFactors;
 		this.inventories = inventories;
+		this.assignments = assignments;
+		this.upstreamRules = upstreamRules;
+		this.auditEvents = auditEvents;
 		this.editions = editions;
 		this.factorPacks = factorPacks;
 		this.units = units;
@@ -149,6 +167,8 @@ public class FactorPackImportService {
 		var skippedUnits = new ArrayList<ImportResult.SkippedRow>();
 		var conflicts = new ArrayList<String>();
 		var delivered = new LinkedHashSet<String>();
+		// every earlier version a cut superseded, keyed by its id, to the version that replaced it
+		var replaced = new LinkedHashMap<UUID, EmissionFactor>();
 		int applied = 0;
 
 		for (var row : pack.factors()) {
@@ -189,7 +209,15 @@ public class FactorPackImportService {
 				tagged++;
 			}
 			else {
-				cutAVersion(organizationId, row, pack, values, appliesFrom, incumbent, lineages);
+				var version = cutAVersion(organizationId, row, pack, values, appliesFrom, incumbent, lineages);
+				if (version != null) {
+					// every earlier version of the lineage now points at the one the cut wrote
+					for (var earlier : lineages.get(row.code())) {
+						if (earlier != version) {
+							replaced.put(earlier.getId(), version);
+						}
+					}
+				}
 				versioned++;
 			}
 
@@ -199,9 +227,66 @@ public class FactorPackImportService {
 		}
 		entityManager.flush();
 
+		var moved = replaced.isEmpty() ? List.<ImportResult.MovedInventory>of()
+				: moveOpenDrafts(organizationId, editionId, appliesFrom, replaced);
 		return new ImportResult(editionId, appliesFrom, created, versioned, tagged, unchanged, List.copyOf(skippedUnits),
 				List.copyOf(conflicts), discontinued(editionId, delivered, lineages),
-				versioned == 0 ? List.of() : splitPeriods(organizationId, appliesFrom));
+				versioned == 0 ? List.of() : splitPeriods(organizationId, appliesFrom), moved);
+	}
+
+	/**
+	 * Spec 02.6 rule 7, the other half. A version cut is worth nothing to a
+	 * draft that keeps pointing at the version it superseded, so the open
+	 * drafts the edition applies to are moved to the versions it cut: every
+	 * classification in a draft whose whole period lies on or after the
+	 * applies-from date, and, in a draft the date splits, every classification
+	 * whose record starts on or after it, so the run discloses both editions.
+	 * The same goes for the upstream rules that ride on those factors.
+	 *
+	 * <p>Only approved versions are moved to: an unapproved edition row is a
+	 * template until someone checks it (spec 02.11), and the coverage warning
+	 * says so meanwhile. Locked inventories keep the factors they reported
+	 * with, and earlier periods keep their vintage. Each draft that moved
+	 * records the act in its history beside the adoption.
+	 */
+	private List<ImportResult.MovedInventory> moveOpenDrafts(UUID organizationId, String editionId,
+			LocalDate appliesFrom, Map<UUID, EmissionFactor> replaced) {
+		var moved = new ArrayList<ImportResult.MovedInventory>();
+		for (var inventory : inventories.findAllByOrganizationIdAndStatusOrderByPeriodStartAsc(organizationId,
+				InventoryStatus.DRAFT)) {
+			if (inventory.getPeriodEnd().isBefore(appliesFrom)) {
+				continue;
+			}
+			var wholePeriod = !inventory.getPeriodStart().isBefore(appliesFrom);
+			int count = 0;
+			for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventory.getId())) {
+				var factor = assignment.getEmissionFactor();
+				var version = factor == null ? null : replaced.get(factor.getId());
+				if (version == null || !version.isApproved()) {
+					continue;
+				}
+				if (wholePeriod || !assignment.getActivity().getPeriodStart().isBefore(appliesFrom)) {
+					assignment.repoint(version);
+					count++;
+				}
+			}
+			for (var rule : upstreamRules.findAllByInventoryIdOrderByCreatedAtAsc(inventory.getId())) {
+				var primary = replaced.get(rule.getPrimaryFactor().getId());
+				var upstream = replaced.get(rule.getUpstreamFactor().getId());
+				if ((primary != null && primary.isApproved()) || (upstream != null && upstream.isApproved())) {
+					rule.repoint(primary != null && primary.isApproved() ? primary : null,
+							upstream != null && upstream.isApproved() ? upstream : null);
+				}
+			}
+			if (count > 0) {
+				auditEvents.save(new GhgAuditEvent(inventory, null, GhgAuditEvent.Action.REVIEWED,
+						access.currentUserId(), access.currentUserEmail(),
+						access.attributed(inventory.getOrganization(), count + " classification"
+								+ (count == 1 ? "" : "s") + " moved to '" + editionId + "' from " + appliesFrom)));
+				moved.add(new ImportResult.MovedInventory(inventory.getId(), inventory.getName(), count));
+			}
+		}
+		return List.copyOf(moved);
 	}
 
 	/**
@@ -216,8 +301,8 @@ public class FactorPackImportService {
 	 * same start, so the correction replaces the values of that vintage in
 	 * place. The lineage keeps one version per vintage either way.
 	 */
-	private void cutAVersion(UUID organizationId, FactorPacks.PackFactor row, FactorPacks.Pack pack, Values values,
-			LocalDate appliesFrom, EmissionFactor incumbent, Map<String, List<EmissionFactor>> lineages) {
+	private EmissionFactor cutAVersion(UUID organizationId, FactorPacks.PackFactor row, FactorPacks.Pack pack,
+			Values values, LocalDate appliesFrom, EmissionFactor incumbent, Map<String, List<EmissionFactor>> lineages) {
 		var approved = row.approved() && incumbent.isApproved();
 		if (appliesFrom.equals(incumbent.getValidFrom())) {
 			incumbent.update(row.name(), row.defaultScope(), row.defaultCategory(), row.scopeAgnostic(), row.unit(),
@@ -225,12 +310,14 @@ public class FactorPackImportService {
 					values.provenance(appliesFrom, incumbent.getValidTo()), approved);
 			incumbent.addPack(pack.id());
 			stamp(incumbent, row, pack.id());
-			return;
+			// the same row, corrected in place: nothing points anywhere new
+			return null;
 		}
 		incumbent.closeAt(appliesFrom.minusDays(1));
 		var version = write(organizationId, row, pack, values, appliesFrom, incumbent, approved);
 		incumbent.supersededBy(version);
 		lineages.computeIfAbsent(row.code(), key -> new ArrayList<>()).add(version);
+		return version;
 	}
 
 	/** A new version of a lineage, carrying the incumbent's pack tags forward when there is one. */

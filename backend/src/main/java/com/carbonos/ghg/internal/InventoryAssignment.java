@@ -241,6 +241,15 @@ public class InventoryAssignment {
 		return moved;
 	}
 
+	/**
+	 * Moves the classification to another version of the same lineage (spec
+	 * 02.6 rule 7): the factor alone changes; scope, category, lease, density,
+	 * proxy and justifications stay, because the unit and the meaning do.
+	 */
+	void repoint(EmissionFactor version) {
+		this.emissionFactor = version;
+	}
+
 	void exclude(ExclusionReason reason, String detail) {
 		exclude(reason, detail, null, null, null);
 	}

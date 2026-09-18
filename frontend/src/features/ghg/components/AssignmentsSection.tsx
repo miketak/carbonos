@@ -108,11 +108,14 @@ export function AssignmentsSection({
   inventoryId,
   editable,
   myRole,
+  period,
 }: {
   organizationId: string
   inventoryId: string
   editable: boolean
   myRole?: MyRole | null
+  /** The inventory's reporting period, so the picker offers the versions live in it (spec 02.6). */
+  period?: { start: string; end: string }
 }) {
   const writable = editable && mayWrite(myRole)
   const { filters, set, query } = useInventoryFilters()
@@ -542,6 +545,7 @@ export function AssignmentsSection({
           units={units}
           densities={densities}
           editable={writable}
+          period={period}
           onNavigate={(id) => set({ record: id })}
           onClose={() => set({ record: null })}
           onClassify={onClassify}
