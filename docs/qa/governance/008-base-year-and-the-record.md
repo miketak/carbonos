@@ -45,8 +45,8 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 | --- | --- | --- | --- | --- |
 | 1 | Open **Base year** and click **Designate base year**. Choose FY2025, significance threshold 5, the reason "First year with metered data at every site", and **From the transaction date (membership windows)**. Save. | The page shows the year, the reason, "5% of base-year emissions" and the convention. **Established by** reads "Run 005 · 120.37 t CO₂e", the final run of the published inventory. | | |
 | 2 | Read the candidates. | One FLAGGED candidate at once, against FY2026 version 2: "structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required". The designation weighed the frozen year without a new freeze. | | |
-| 3 | Open FY2026 and read the **Base year** gate. | An error: "Base year flagged for recalculation (structural change: Tema Depot removed). An inventory that reports against the base year cannot be marked final or published until the recalculation is completed or declined. Calculation runs stay available, because quantifying the movement is how a recalculation is assessed.". | | |
-| 4 | Click **Mark as final** on FY2026's run. | Refused with the same sentence. Launch a run: it goes through. | | |
+| 3 | Open FY2026 and read the **Base year** gate. | An error: "Base year flagged for recalculation (structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required). Record the decision under the organization's base year.". | | |
+| 4 | Click **Mark as final** on FY2026's run. | Refused: "The 2025 base year has a recalculation candidate above the significance threshold (structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required). An inventory that reports against the base year cannot be marked final until the recalculation is completed or declined. Calculation runs stay available, because quantifying the movement is how a recalculation is assessed.". Launch a run: it goes through. | | |
 | 5 | Open the equity view and read its gate. | A warning, not an error, ending "This inventory is not held because it is an equity share view and the base year is operational control". | | |
 
 ## C. Undoing the removal supersedes the candidate
@@ -73,7 +73,7 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 | --- | --- | --- | --- | --- |
 | 1 | Click **Raise a candidate**: trigger error correction, what changed "Scratch: reading the refusal", no share, no comparison run. Submit. | Refused: "Give the affected share of base-year emissions, or name a comparison run of the base-year inventory.". | | |
 | 2 | Change the trigger to methodology change, what changed "Grid factor vintage moved to ghana-2027-gov", affected share 2.87. Submit. | A FLAGGED card reads "2.87% of base-year emissions, below the threshold". The running sum restarted at the recalculation of case D1, so the 11.06% is not added to it. | | |
-| 3 | Click **Decline** on it with the note "Below the 5% threshold; the notice records the answer". | DECLINED with the note and Ama's email. | | |
+| 3 | Click **Decline** on it with the note "Below the 5% threshold; the notice records the answer". | DECLINED with the note and Ama's email. Had this candidate been raised before case D1's recalculation, the next structural change would have read "11.06% of base-year emissions on its own, 13.93% together with 1 earlier change since the 2025 base year": the running sum counts every candidate since the base or the last recalculation, declined ones included. | | |
 
 ## E. A different GWP set is flagged
 
