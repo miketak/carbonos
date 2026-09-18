@@ -106,15 +106,19 @@ public class FactorPackBlastRadius {
 
 	/**
 	 * The edition the change log is computed against: the family's most recently
-	 * published edition other than this one. A family's first edition has none,
-	 * so every row of it is an addition and nothing moves for anybody.
+	 * published edition other than this one, still standing. A withdrawn edition
+	 * is never the predecessor: the publisher retracted it, so a draft that
+	 * clones what came before it is diffed against that edition and not against
+	 * the retraction. A family's first edition has none, so every row of it is
+	 * an addition and nothing moves for anybody.
 	 */
 	@Transactional(readOnly = true)
 	public FactorPackEdition predecessorOf(FactorPackEdition edition) {
 		return editions.findAllByPackKeyOrderByEditionIdAsc(edition.getPackKey())
 			.stream()
 			.filter(candidate -> !candidate.getEditionId().equals(edition.getEditionId()))
-			.filter(candidate -> candidate.getStatus() != FactorPackStatus.DRAFT)
+			.filter(candidate -> candidate.getStatus() == FactorPackStatus.PUBLISHED
+					|| candidate.getStatus() == FactorPackStatus.SUPERSEDED)
 			.max(Comparator
 				.comparing((FactorPackEdition candidate) -> candidate.getPublishedAt() == null ? java.time.Instant.EPOCH
 						: candidate.getPublishedAt())
@@ -133,9 +137,13 @@ public class FactorPackBlastRadius {
 	}
 
 	/**
-	 * The report a maintainer reads before withdrawing: the organizations whose
+	 * The report a maintainer reads before withdrawing, and the one the console
+	 * shows for any edition that is no longer a draft: the organizations whose
 	 * open notices would close and the holders already carrying the edition. The
-	 * rows they hold stay exactly as they are.
+	 * rows they hold stay exactly as they are, so no organization impact in it
+	 * carries movement, an estimate or a locked period; each names how many
+	 * lineages the organization holds, counted once per lineage whatever the
+	 * number of versions.
 	 */
 	@Transactional(readOnly = true)
 	public Report forWithdrawal(FactorPackEdition edition) {
@@ -155,8 +163,8 @@ public class FactorPackBlastRadius {
 		for (var organizationId : affected) {
 			var theirs = byOrganization.getOrDefault(organizationId, List.of());
 			impacts.add(new OrganizationImpact(organizationId, names.getOrDefault(organizationId, "an organization"),
-					theirs.size(), 0, 0, BigDecimal.ZERO, null, openDrafts(organizationId), List.of(), List.of(),
-					List.of(), List.of(), List.of(), null));
+					liveByCode(theirs).size(), 0, 0, BigDecimal.ZERO, null, openDrafts(organizationId), List.of(),
+					List.of(), List.of(), List.of(), List.of(), null));
 		}
 		return new Report(edition.getEditionId(), edition.getPackKey(), Act.WITHDRAW, edition.getSupersedesId(), 0, 0,
 				0, 0, 0, List.of(), List.of(), List.of(), List.copyOf(impacts),
@@ -313,8 +321,7 @@ public class FactorPackBlastRadius {
 	 */
 	private OrganizationImpact impactOf(UUID organizationId, String organizationName, List<EmissionFactor> theirs,
 			List<FactorPackChange> log, Map<String, FactorPackRow> rowsByCode, Set<String> moving) {
-		var byCode = new LinkedHashMap<String, EmissionFactor>();
-		theirs.forEach(factor -> byCode.putIfAbsent(factor.getPackCode(), factor));
+		var byCode = liveByCode(theirs);
 		var lockedFactorIds = assignments.factorIdsInInventoriesWithStatus(organizationId, LOCKED);
 
 		var conflicts = new ArrayList<String>();
@@ -358,7 +365,7 @@ public class FactorPackBlastRadius {
 		}
 
 		var lastRun = runs.completedRuns(organizationId, PageRequest.of(0, 1)).stream().findFirst().orElse(null);
-		var delta = estimatedDeltaOf(organizationId, byCode, rowsByCode);
+		var delta = estimatedDeltaOf(organizationId, theirs, rowsByCode);
 		return new OrganizationImpact(organizationId, organizationName, byCode.size(), rowsMoving, rowsOverThreshold,
 				delta, lastRun == null ? null : lastRun.getLabel(), openDrafts(organizationId),
 				lockedInventories(organizationId), List.copyOf(conflicts), List.copyOf(blocked),
@@ -366,13 +373,40 @@ public class FactorPackBlastRadius {
 	}
 
 	/**
+	 * The live version of each lineage an organization holds, keyed on the code
+	 * (spec 02.6). A lineage that has been versioned by an adoption carries a
+	 * closed version beside the live one, and it is one lineage: the live
+	 * version is what the edition would move, and what every consumer compares
+	 * the proposed row against.
+	 */
+	static Map<String, EmissionFactor> liveByCode(List<EmissionFactor> theirs) {
+		var versions = new LinkedHashMap<String, List<EmissionFactor>>();
+		for (var factor : theirs) {
+			if (factor.getPackCode() != null) {
+				versions.computeIfAbsent(factor.getPackCode(), key -> new ArrayList<>()).add(factor);
+			}
+		}
+		var live = new LinkedHashMap<String, EmissionFactor>();
+		versions.forEach((code, lineage) -> {
+			var version = FactorPackImportService.liveVersionOf(lineage);
+			if (version != null) {
+				live.put(code, version);
+			}
+		});
+		return live;
+	}
+
+	/**
 	 * The tonnage the edition would move for one organization, estimated from
 	 * its last completed run: each line's emissions scaled by how far its factor
-	 * would move. It is an estimate, and the activity data behind it can change
-	 * before the next run. An organization that has never completed a run moves
-	 * nothing that can be estimated, and reads zero.
+	 * would move, measured from the version the line was priced with. Every
+	 * version the organization holds is matched, because a run over an earlier
+	 * period may have been priced with a version an adoption has since closed.
+	 * It is an estimate, and the activity data behind it can change before the
+	 * next run. An organization that has never completed a run moves nothing
+	 * that can be estimated, and reads zero.
 	 */
-	BigDecimal estimatedDeltaOf(UUID organizationId, Map<String, EmissionFactor> byCode,
+	BigDecimal estimatedDeltaOf(UUID organizationId, List<EmissionFactor> theirs,
 			Map<String, FactorPackRow> rowsByCode) {
 		var run = runs.completedRuns(organizationId, PageRequest.of(0, 1)).stream().findFirst().orElse(null);
 		if (run == null) {
@@ -382,16 +416,16 @@ public class FactorPackBlastRadius {
 		if (withLines == null) {
 			return BigDecimal.ZERO;
 		}
-		var factorIdToCode = new LinkedHashMap<UUID, String>();
-		byCode.forEach((code, factor) -> factorIdToCode.put(factor.getId(), code));
+		var byId = new LinkedHashMap<UUID, EmissionFactor>();
+		theirs.forEach(factor -> byId.put(factor.getId(), factor));
 		var delta = BigDecimal.ZERO;
 		for (var line : withLines.getLines()) {
-			var code = line.getFactorId() == null ? null : factorIdToCode.get(line.getFactorId());
-			if (code == null) {
+			var factor = line.getFactorId() == null ? null : byId.get(line.getFactorId());
+			if (factor == null || factor.getPackCode() == null) {
 				continue;
 			}
-			var proposed = rowsByCode.get(code);
-			var current = byCode.get(code).getKgCo2ePerUnit();
+			var proposed = rowsByCode.get(factor.getPackCode());
+			var current = factor.getKgCo2ePerUnit();
 			if (proposed == null || current == null || current.signum() == 0) {
 				continue;
 			}

@@ -18,6 +18,13 @@ interface BlastRadiusDrawerProps {
  * <p>Every figure in it is an estimate and says so. The tonnage comes from the
  * organization's last completed run, and the activity data behind it can
  * change before the next one.
+ *
+ * <p>The report's `act` decides the copy. A draft's report is the publication
+ * impact. Any edition past a draft gets the withdrawal impact, which moves no
+ * row and estimates nothing: it names the holders, says their rows stay as
+ * they are, and says how many open notices would close. The movement, last
+ * run and locked period lines belong to a publication and are never printed
+ * for a withdrawal.
  */
 export function BlastRadiusDrawer({ editionId, onClose }: BlastRadiusDrawerProps) {
   const query = useFactorPackBlastRadiusQuery(editionId, true)
@@ -25,7 +32,7 @@ export function BlastRadiusDrawer({ editionId, onClose }: BlastRadiusDrawerProps
 
   return (
     <Drawer
-      eyebrow="Blast radius"
+      eyebrow={report?.act === 'WITHDRAW' ? 'Withdrawal impact' : 'Blast radius'}
       title={editionId}
       subtitle={report ? headline(report) : undefined}
       footer={
@@ -40,11 +47,30 @@ export function BlastRadiusDrawer({ editionId, onClose }: BlastRadiusDrawerProps
       {query.isPending && <Skeleton className="h-40" aria-label="Reading the blast radius" />}
 
       {report?.act === 'WITHDRAW' && (
-        <p className="text-sm text-ink-muted">
-          Withdrawing takes the edition off the import list. The rows organizations already hold
-          stay exactly as they are, and the {report.openNoticeCount}{' '}
-          {report.openNoticeCount === 1 ? 'open notice closes' : 'open notices close'}.
-        </p>
+        <>
+          <p className="text-sm text-ink-muted">
+            This edition is published, so the report is the withdrawal impact. Withdrawing takes the
+            edition off the import list. The rows organizations already hold stay exactly as they
+            are: nothing moves, and there is nothing to estimate.
+          </p>
+          <p className="mt-2 text-sm">
+            <strong>{report.openNoticeCount}</strong>{' '}
+            {report.openNoticeCount === 1 ? 'open notice would close' : 'open notices would close'},
+            so nobody is asked to decide on a withdrawn edition.
+          </p>
+          {report.organizations.length === 0 && (
+            <GlassCard className="mt-4 p-6 text-center">
+              <h3 className="text-sm font-semibold">Nobody holds one of these lineages</h3>
+              <p className="mt-1 text-xs text-ink-muted">
+                No organization carries a row of it and no notice for it is open, so withdrawing
+                changes nothing for anybody.
+              </p>
+            </GlassCard>
+          )}
+          {report.organizations.map((organization) => (
+            <WithdrawalCard key={organization.organizationId} organization={organization} />
+          ))}
+        </>
       )}
 
       {report?.act === 'PUBLISH' && (
@@ -127,21 +153,21 @@ export function BlastRadiusDrawer({ editionId, onClose }: BlastRadiusDrawerProps
               </p>
             </GlassCard>
           )}
+
+          {report.organizations.length === 0 && (
+            <GlassCard className="mt-4 p-6 text-center">
+              <h3 className="text-sm font-semibold">Nobody holds one of these lineages</h3>
+              <p className="mt-1 text-xs text-ink-muted">
+                Nothing would move, and no notice would be raised.
+              </p>
+            </GlassCard>
+          )}
+
+          {report.organizations.map((organization) => (
+            <PublicationCard key={organization.organizationId} organization={organization} />
+          ))}
         </>
       )}
-
-      {report && report.organizations.length === 0 && (
-        <GlassCard className="mt-4 p-6 text-center">
-          <h3 className="text-sm font-semibold">Nobody holds one of these lineages</h3>
-          <p className="mt-1 text-xs text-ink-muted">
-            Nothing would move, and no notice would be raised.
-          </p>
-        </GlassCard>
-      )}
-
-      {report?.organizations.map((organization) => (
-        <OrganizationCard key={organization.organizationId} organization={organization} />
-      ))}
     </Drawer>
   )
 }
@@ -160,7 +186,26 @@ function Figure({ label, value }: { label: string; value: number }) {
   )
 }
 
-function OrganizationCard({ organization }: { organization: BlastRadiusOrganization }) {
+/**
+ * One holder as a withdrawal sees it. No movement, no estimate, no locked
+ * period: a withdrawal is the publisher's act and not the client's
+ * recalculation, so the only facts are what it holds and that it keeps it.
+ */
+function WithdrawalCard({ organization }: { organization: BlastRadiusOrganization }) {
+  return (
+    <GlassCard className="mt-4 p-4">
+      <h3 className="text-base">{organization.organizationName}</h3>
+      <p className="mt-0.5 text-xs text-ink-muted">
+        {organization.lineagesHeld === 0
+          ? 'Holds no row of this edition; its notice for it is open, and withdrawing closes it.'
+          : `Holds ${organization.lineagesHeld} ${organization.lineagesHeld === 1 ? 'lineage' : 'lineages'} of this edition, which stay exactly as they are.`}
+      </p>
+    </GlassCard>
+  )
+}
+
+/** One holder as a publication sees it: what would move if it adopted the edition. */
+function PublicationCard({ organization }: { organization: BlastRadiusOrganization }) {
   return (
     <GlassCard className="mt-4 p-4">
       <h3 className="text-base">{organization.organizationName}</h3>
