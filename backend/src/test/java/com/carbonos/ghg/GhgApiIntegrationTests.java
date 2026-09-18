@@ -3473,9 +3473,11 @@ class GhgApiIntegrationTests {
 		// a factor a run applied cannot be deleted
 		mvc.perform(delete("/api/ghg/emission-factors/" + hfoId).with(asMember()).with(csrf()))
 			.andExpect(status().isConflict());
-		// the packs: after spec 02.9 the catalogue offers DESNZ and Ghana, and nothing else
+		// the packs: after spec 02.9 the catalogue offers DESNZ (two vintages) and Ghana, and nothing else
 		mvc.perform(get("/api/ghg/factor-packs").with(asMember()))
-			.andExpect(jsonPath("$.length()").value(2))
+			.andExpect(jsonPath("$.length()").value(3))
+			.andExpect(jsonPath("$[?(@.id == 'defra-2025')].factorCount").value(org.hamcrest.Matchers.hasItem(
+					org.hamcrest.Matchers.greaterThan(1000))))
 			.andExpect(jsonPath("$[?(@.id == 'defra-2026')].factorCount").value(org.hamcrest.Matchers.hasItem(
 					org.hamcrest.Matchers.greaterThan(1000))))
 			.andExpect(jsonPath("$[?(@.id == 'ghana')].factorCount")

@@ -204,7 +204,7 @@ class FactorPackAdminApiIntegrationTests {
 		createDraft(DRAFT, "ghana");
 
 		var packs = body(mvc.perform(get("/api/ghg/factor-packs").with(asMember())).andExpect(status().isOk()));
-		assertThat(JsonPath.<List<String>>read(packs, "$[*].id")).doesNotContain(DRAFT).hasSize(2);
+		assertThat(JsonPath.<List<String>>read(packs, "$[*].id")).doesNotContain(DRAFT).hasSize(3);
 		// nor by its identifier, which is what an import would ask for
 		mvc.perform(get("/api/ghg/factor-packs/" + DRAFT).with(asMember())).andExpect(status().isNotFound());
 	}

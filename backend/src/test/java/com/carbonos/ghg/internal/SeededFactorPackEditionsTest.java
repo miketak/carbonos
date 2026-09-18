@@ -24,9 +24,11 @@ import com.carbonos.TestcontainersConfiguration;
  *
  * <p>Spec 02.9 narrowed the catalogue from ten editions to two. {@code V43}
  * seeded ten and {@code V50} removed the eight CarbonOS does not stand behind,
- * so what this file asserts is what survives both: {@code defra-2026} and
- * {@code ghana}. The assertions that reached into the EPA Hub, IPCC, NGA and
- * sector packs went with those packs.
+ * so what this file asserts is what survives both, {@code defra-2026} and
+ * {@code ghana}, plus the earlier DESNZ vintage {@code V54} added so a 2025
+ * reporting year has factors of its own year: {@code defra-2025}. The
+ * assertions that reached into the EPA Hub, IPCC, NGA and sector packs went
+ * with those packs.
  *
  * <p>Its last assertions are the guard the publication rules add: both editions
  * pass every rule of {@link FactorPackValidation}, so the rules and the corpus
@@ -37,7 +39,8 @@ import com.carbonos.TestcontainersConfiguration;
 class SeededFactorPackEditionsTest {
 
 	/** The rows each pack ships with, which the seeded editions must still carry exactly. */
-	private static final Map<String, Integer> SHIPPED_ROW_COUNTS = Map.of("defra-2026", 1868, "ghana", 7);
+	private static final Map<String, Integer> SHIPPED_ROW_COUNTS = Map.of("defra-2025", 1928, "defra-2026", 1868,
+			"ghana", 7);
 
 	@Autowired
 	private FactorPacks packs;
@@ -64,13 +67,13 @@ class SeededFactorPackEditionsTest {
 	}
 
 	@Test
-	void theTwoSeededEditionsCarryTheRowsTheyShippedWith() {
+	void theSeededEditionsCarryTheRowsTheyShippedWith() {
 		assertThat(packs.all().stream().map(FactorPacks.Pack::id))
 			.containsExactlyInAnyOrderElementsOf(SHIPPED_ROW_COUNTS.keySet());
 		// the header projection counts the same rows without assembling them
 		assertThat(packs.headers()).allSatisfy(header -> assertThat(header.factorCount()).as(header.id())
 			.isEqualTo(SHIPPED_ROW_COUNTS.get(header.id())));
-		assertThat(packs.headers().stream().mapToInt(FactorPacks.PackHeader::factorCount).sum()).isEqualTo(1875);
+		assertThat(packs.headers().stream().mapToInt(FactorPacks.PackHeader::factorCount).sum()).isEqualTo(3803);
 		var headers = packs.headers()
 			.stream()
 			.collect(Collectors.toMap(FactorPacks.PackHeader::id, header -> header));
@@ -107,11 +110,11 @@ class SeededFactorPackEditionsTest {
 	void theCatalogueOffersOnlyTheTwoPublicationsWeStandBehind() {
 		// spec 02.9: what an organization can import is DESNZ and Ghana, and nothing else. The
 		// console stays open, so this asserts what the seed leaves behind rather than a ceiling
-		// on what a curator may later author.
+		// on what a curator may later author. DESNZ ships two vintages, 2025 (V54) and 2026 (V43).
 		assertThat(editions.findAll()).extracting(FactorPackEdition::getPackKey)
 			.containsOnly("defra", "ghana");
 		assertThat(packs.headers()).extracting(FactorPacks.PackHeader::id)
-			.containsExactlyInAnyOrder("defra-2026", "ghana");
+			.containsExactlyInAnyOrder("defra-2025", "defra-2026", "ghana");
 	}
 
 	@Test
@@ -122,7 +125,14 @@ class SeededFactorPackEditionsTest {
 		assertThat(published).allSatisfy(edition -> {
 			var as = edition.getEditionId();
 			assertThat(edition.getEvidenceChecksum()).as(as).hasSize(64);
-			assertThat(edition.getSourceDocument()).as(as).contains(edition.getEditionId() + ".json");
+			if (as.equals("defra-2025")) {
+				// V54 was built from the publication's own flat file, so that file is its evidence
+				assertThat(edition.getSourceDocument()).as(as).endsWith("ghg-conversion-factors-2025-flat-format.xlsx");
+				assertThat(edition.getEvidenceName()).as(as).isEqualTo("ghg-conversion-factors-2025-flat-format.xlsx");
+			}
+			else {
+				assertThat(edition.getSourceDocument()).as(as).contains(edition.getEditionId() + ".json");
+			}
 			assertThat(edition.getPublishedAt()).as(as).isNotNull();
 			// each applies from 1 January of its publication year
 			assertThat(edition.getAppliesFrom()).as(as).isNotNull();
@@ -134,7 +144,7 @@ class SeededFactorPackEditionsTest {
 			assertThat(edition.getApproverUserId()).as(as).isNull();
 			assertThat(edition.getApproverName()).as(as).isNull();
 			assertThat(edition.getProvenanceNote()).as(as)
-				.contains("not of the publication")
+				.contains(as.equals("defra-2025") ? "no approver checked the rows" : "not of the publication")
 				.contains("starts at the next edition");
 		});
 	}
@@ -198,7 +208,12 @@ class SeededFactorPackEditionsTest {
 
 	@Test
 	void everyMontrealProtocolRowIsReportedOutsideTheScopes() {
-		var defra = pack("defra-2026");
+		for (var editionId : java.util.List.of("defra-2025", "defra-2026")) {
+			montrealProtocolRowsAreReportedOutsideTheScopes(pack(editionId));
+		}
+	}
+
+	private static void montrealProtocolRowsAreReportedOutsideTheScopes(FactorPacks.Pack defra) {
 		var montreal = defra.factors()
 			.stream()
 			.filter(factor -> factor.code().contains("Montreal_protocol_products"))
@@ -224,7 +239,7 @@ class SeededFactorPackEditionsTest {
 	}
 
 	@Test
-	void bothSeededEditionsPassEveryPublicationRule() {
+	void everySeededEditionPassesEveryPublicationRule() {
 		for (var editionId : SHIPPED_ROW_COUNTS.keySet()) {
 			var edition = editions.findById(editionId).orElseThrow();
 			var findings = validation.validate(edition, rows.findAllByEditionIdOrderByOrdinalAsc(editionId));

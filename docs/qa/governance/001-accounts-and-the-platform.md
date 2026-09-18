@@ -33,7 +33,7 @@ signs in with the accounts it creates.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Sign in as Admin A, open the account menu at the top right and choose **Administration**. | The platform dashboard opens. **Users** reads 1 with "1 active, 0 pending"; **Organizations** reads 0; **Factor pack editions** counts the two shipped editions; **Open adoption notices** reads 0. No tile carries a client's emissions figure. | | |
+| 1 | Sign in as Admin A, open the account menu at the top right and choose **Administration**. | The platform dashboard opens. **Users** reads 1 with "1 active, 0 pending"; **Organizations** reads 0; **Factor pack editions** counts the three shipped editions; **Open adoption notices** reads 0. No tile carries a client's emissions figure. | | |
 | 2 | Open **Users**. | One row: your email, role Admin, status Active. | | |
 
 ## B. Accounts created by an administrator

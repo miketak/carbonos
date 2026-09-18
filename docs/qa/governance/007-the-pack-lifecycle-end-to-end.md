@@ -39,7 +39,7 @@ database needs new ones.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin A, open **Administration**, then **Factor packs**. | Two families, `defra` and `ghana`, each with one PUBLISHED edition, its applies-from date, its row count and how many organizations hold it: `ghana` reads 1, Adansi Foods Ltd. | | |
+| 1 | As Admin A, open **Administration**, then **Factor packs**. | Two families, `defra` with two PUBLISHED editions (2025 and 2026) and `ghana` with one, each edition with its applies-from date, its row count and how many organizations hold it: all three read 1, Adansi Foods Ltd. | | |
 | 2 | Click **Clone** on the `ghana` edition. | The dialog "Clone ghana" says the draft starts with the 7 rows of `ghana`, copied, with the name, source, URL, year and GWP basis filled in. | | |
 | 3 | Type the identifier `ghana`. | Refused: "'ghana' already exists. An edition identifier is the citation a report prints, so it is never reused.". | | |
 | 4 | Type `ghana-2027-gov`, applies from 2026-01-01, and create. | A toast reads "ghana-2027-gov was created from ghana with its 7 rows.". The draft is listed under the family reading DRAFT, 7 rows, "No organization". | | |

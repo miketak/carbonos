@@ -137,10 +137,11 @@ organization it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Emission factors**. | **Our factors** is empty. The **Factor packs** card lists the two shipped editions, `defra-2026` and `ghana`, each with **View factors** and **Import pack**. | | |
+| 1 | Open **Emission factors**. | **Our factors** is empty. The **Factor packs** card lists the three shipped editions, `defra-2025`, `defra-2026` and `ghana`, each with **View factors** and **Import pack**. | | |
 | 2 | Click **Import pack** on the Ghana pack. | The import reports "ghana, applying from 2025-01-01: 7 added, 0 versioned, 0 tagged, 0 unchanged.". Seven rows arrive; "Grid electricity T&D losses, Ghana (derived)" reads **Not approved** with an **Approve** button. Leave it. | | |
-| 3 | Click **Import pack** on the DESNZ 2026 pack. | The import reports 1,868 added, 0 versioned. The table pages at 50 and the search narrows it. | | |
-| 4 | Read the action column of any imported row. | Where a hand-entered factor would offer **Delete**, a pack-derived row reads "Retire, not delete": its versions are the record of what was calculated with. | | |
+| 3 | Click **Import pack** on the DESNZ 2025 pack. | The import reports "defra-2025, applying from 2025-01-01: 1928 added, 0 versioned, 0 tagged, 0 unchanged.". The table pages at 50 and the search narrows it. | | |
+| 4 | Click **Import pack** on the DESNZ 2026 pack. | The import reports "defra-2026, applying from 2026-01-01: 385 added, 1483 versioned, 0 tagged, 0 unchanged." and that 445 lineages this edition drops were retired by nobody, naming three of them. A row both years carry, such as **Gaseous fuels: LPG** per litre, now shows two versions: `defra-2025` from 2025-01-01 to 2025-12-31 and `defra-2026` from 2026-01-01. | | |
+| 5 | Read the action column of any imported row. | Where a hand-entered factor would offer **Delete**, a pack-derived row reads "Retire, not delete": its versions are the record of what was calculated with. | | |
 
 ### F2. A blend's fractions add up to 1
 

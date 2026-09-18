@@ -3,6 +3,7 @@ package com.carbonos.ghg.internal;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -105,12 +106,19 @@ public class FactorPackBlastRadius {
 	}
 
 	/**
-	 * The edition the change log is computed against: the family's most recently
-	 * published edition other than this one, still standing. A withdrawn edition
-	 * is never the predecessor: the publisher retracted it, so a draft that
-	 * clones what came before it is diffed against that edition and not against
-	 * the retraction. A family's first edition has none, so every row of it is
-	 * an addition and nothing moves for anybody.
+	 * The edition the change log is computed against: the family's latest
+	 * vintage other than this one that still stands and does not apply after
+	 * it. That is the published or superseded edition with the latest
+	 * applies-from date no later than this edition's own and, between two that
+	 * apply from the same day, the one published last. An earlier vintage
+	 * published late, such as a 2025 table seeded after the 2026 one, is not
+	 * the predecessor of a 2027 draft, and the 2026 edition is not the
+	 * predecessor of that 2025 table: an edition succeeds only what came before
+	 * it. A withdrawn edition is never the predecessor: the publisher retracted
+	 * it, so a draft that clones what came before it is diffed against that
+	 * edition and not against the retraction. A family's first edition, and an
+	 * earlier vintage arriving late, has none, so every row of it is an
+	 * addition and nothing moves for anybody.
 	 */
 	@Transactional(readOnly = true)
 	public FactorPackEdition predecessorOf(FactorPackEdition edition) {
@@ -119,8 +127,12 @@ public class FactorPackBlastRadius {
 			.filter(candidate -> !candidate.getEditionId().equals(edition.getEditionId()))
 			.filter(candidate -> candidate.getStatus() == FactorPackStatus.PUBLISHED
 					|| candidate.getStatus() == FactorPackStatus.SUPERSEDED)
+			.filter(candidate -> edition.getAppliesFrom() == null || candidate.getAppliesFrom() == null
+					|| !candidate.getAppliesFrom().isAfter(edition.getAppliesFrom()))
 			.max(Comparator
-				.comparing((FactorPackEdition candidate) -> candidate.getPublishedAt() == null ? java.time.Instant.EPOCH
+				.comparing((FactorPackEdition candidate) -> candidate.getAppliesFrom() == null ? LocalDate.MIN
+						: candidate.getAppliesFrom())
+				.thenComparing(candidate -> candidate.getPublishedAt() == null ? java.time.Instant.EPOCH
 						: candidate.getPublishedAt())
 				.thenComparing(FactorPackEdition::getEditionId))
 			.orElse(null);

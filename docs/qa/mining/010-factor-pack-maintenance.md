@@ -32,9 +32,9 @@ pack console, the publication rules or the catalogue.
 - **Sankofa Gold plc** as procedure 2 leaves it, with the DESNZ 2026 pack
   imported. Without it, case A4's holder count reads zero and the rest of the
   procedure still works.
-- The two seeded editions, which every environment carries from the
-  migrations: `defra-2026` and `ghana`. Eight others shipped until
-  2026-09-15; spec 02.9 removed them.
+- The three seeded editions, which every environment carries from the
+  migrations: `defra-2025`, `defra-2026` and `ghana`. Eight others shipped
+  until 2026-09-15; spec 02.9 removed them.
 
 ## A. The catalogue
 
@@ -42,7 +42,7 @@ pack console, the publication rules or the catalogue.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Sign in as the administrator and open **Factor packs** from the landing page or the header. | The catalogue lists two families, `defra` and `ghana`, each with one edition reading PUBLISHED. Every edition shows the date it applies from, its row count and how many organizations hold it. | | |
+| 1 | Sign in as the administrator and open **Factor packs** from the landing page or the header. | The catalogue lists two families, `defra` with two editions (2025 and 2026) and `ghana` with one, every edition reading PUBLISHED. Every edition shows the date it applies from, its row count and how many organizations hold it. | | |
 | 2 | Click **Add family**, type the key `QA-Pack`, the name "QA test publication", leave the kind as SOURCE, and submit. | The form stays put with "Use lowercase letters, digits, hyphens and dots, 2 to 60 characters, as 'defra' and 'defra-2026.r2' do. It is a citation key, so it never changes." under the key. | | |
 | 3 | Change the key to `qa-pack` and submit. | The family appears at the foot of the list with "No editions yet", and a toast reads "The QA test publication family was created.". | | |
 | 4 | On the new family click **New edition**, type the identifier `qa-pack-2027`, the source "QA test tables, 2027", the URL `https://example.test/qa-2027.xlsx`, the year 2027, leave AR5, set applies-from to 2027-01-01, and create. | The draft appears under the family reading DRAFT, 0 rows, "No organization". | | |
