@@ -872,6 +872,46 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.exclusionDetail").value("reporting period 2025-01-01 to 2025-12-31"));
 	}
 
+	@Test
+	void reviewExcludesAgainARecordReIncludedByHandThatIsStillOutside() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var inPlant = createFacility(orgId, "Tema Plant");
+		var outPlant = createFacility(orgId, "Kumasi Plant");
+		var inActivity = createActivity(orgId, inPlant, "Diesel consumption", "100", "litre", "2025-03-15");
+		var lateActivity = createActivity(orgId, inPlant, "Diesel consumption", "50", "litre", "2026-02-01");
+		var strayActivity = createActivity(orgId, outPlant, "Diesel consumption", "70", "litre", "2025-05-01");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, inPlant);
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.created").value(3));
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		String late = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + lateActivity + "')].id").getFirst();
+		String stray = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + strayActivity + "')].id").getFirst();
+		String in = JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + inActivity + "')].id").getFirst();
+		classify(in, diesel(orgId));
+
+		// the accountant re-includes both by hand, then runs the review again
+		mvc.perform(put("/api/ghg/assignments/" + late + "/include").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(put("/api/ghg/assignments/" + stray + "/include").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/assignments/sync").with(asMember()).with(csrf()))
+			.andExpect(jsonPath("$.created").value(0))
+			.andExpect(jsonPath("$.updated").value(2));
+
+		// spec 05: the review decides in both directions; the computed reasons come back, the classified record stays
+		var after = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember())));
+		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + late + "')].exclusionReason").getFirst())
+			.isEqualTo("OUTSIDE_PERIOD");
+		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + stray + "')].exclusionReason").getFirst())
+			.isEqualTo("OUTSIDE_BOUNDARY");
+		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + stray + "')].exclusionDetail").getFirst())
+			.isEqualTo("facility not in the boundary");
+		assertThat(JsonPath.<List<Boolean>>read(after, "$[?(@.id == '" + in + "')].included").getFirst()).isTrue();
+		assertThat(JsonPath.<List<String>>read(after, "$[?(@.id == '" + in + "')].emissionFactorId").getFirst())
+			.isNotNull();
+	}
+
 	// --- scope as an accounting decision (spec 04.1) -----------------------------
 
 	@Test
@@ -2730,6 +2770,42 @@ class GhgApiIntegrationTests {
 	}
 
 	@Test
+	void anAssociateAtZeroShareLeftOutOfTheBoundaryWarnsInsteadOfBlocking() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var port = createEntity(orgId, "Takoradi Port Co", "ASSOCIATE", "30", false);
+		createFacility(orgId, "Takoradi Port Loadout", port);
+		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
+		freeze(inventoryId);
+
+		// spec 03.4, 07.2: the associate holds 0% under operational control and cannot be ticked in, so its
+		// facility is disclosed, not blocked; the run goes through
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.ready").value(true))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'ERROR')].message")
+				.value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(
+						org.hamcrest.Matchers.containsString("Takoradi Port Loadout")))))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith(
+						"Takoradi Port Co has a 0% accounting share under operational control, so its facilities are outside the boundary"))));
+		run(inventoryId, "Run 001").andExpect(status().isCreated());
+
+		// a recorded reason takes the warning away
+		reopen(inventoryId);
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/entities/" + port + "/exclude").with(asMember())
+			.with(csrf()).contentType("application/json").content("""
+					{"reason": "METHODOLOGY", "detail": "Associate: no operational control"}"""))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(
+						org.hamcrest.Matchers.startsWith("Takoradi Port Co has a 0% accounting share")))));
+	}
+
+	@Test
 	void anOperationLeftOutOfTheBoundaryNeedsAReasonAndTheReportListsIt() throws Exception {
 		var orgId = createOrganization("Sankofa Gold plc");
 		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
@@ -2741,13 +2817,19 @@ class GhgApiIntegrationTests {
 		putBoundary(inventoryId, pit);
 		classify(syncAndGetAssignmentId(inventoryId, diesel), diesel(orgId));
 		freeze(inventoryId);
-		// two operations are neither in the boundary nor excluded with a reason: the gate blocks the run
+		// the camp is neither in the boundary nor excluded with a reason: the gate blocks the run; the port
+		// belongs to an associate at 0% under operational control, which cannot be ticked in, so it warns
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.ready").value(false))
 			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'ERROR')].message")
-				.value(org.hamcrest.Matchers.hasItems(
-						org.hamcrest.Matchers.startsWith("'Nkran Exploration Camp' (Sankofa Gold plc) is neither"),
-						org.hamcrest.Matchers.startsWith("'Takoradi Port Loadout' (Takoradi Port Co) is neither"))));
+				.value(org.hamcrest.Matchers.hasItem(
+						org.hamcrest.Matchers.startsWith("'Nkran Exploration Camp' (Sankofa Gold plc) is neither"))))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'ERROR')].message")
+				.value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(
+						org.hamcrest.Matchers.startsWith("'Takoradi Port Loadout' (Takoradi Port Co) is neither")))))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith(
+						"Takoradi Port Co has a 0% accounting share under operational control, so its facilities are outside the boundary"))));
 		run(inventoryId, "Too early").andExpect(status().isConflict());
 		reopen(inventoryId);
 		// a facility in the boundary cannot be excluded
