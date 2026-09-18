@@ -4639,14 +4639,17 @@ class GhgApiIntegrationTests {
 		assertThat(JsonPath.<List<Number>>read(boundary, "$[?(@.entityName == 'Takoradi Port Co')].shareUnderApproach").getFirst().doubleValue()).isEqualTo(0.0);
 		assertThat(JsonPath.<List<Boolean>>read(boundary, "$[*].facilities[?(@.facilityId == '" + plant + "')].inBoundary").getFirst()).isTrue();
 		assertThat(JsonPath.<List<Boolean>>read(boundary, "$[*].facilities[?(@.facilityId == '" + camp + "')].inBoundary").getFirst()).isTrue();
-		// unticking the camp leaves it neither in nor excluded: the gate says so until a reason is recorded
+		// unticking the camp leaves it neither in nor excluded: the gate says so until a reason is recorded;
+		// the port belongs to an associate at 0% that cannot be ticked in, so it warns instead (spec 03.4)
 		mvc.perform(delete("/api/ghg/inventories/" + inventoryId + "/boundary/" + camp).with(asMember()).with(csrf()))
 			.andExpect(status().isNoContent());
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'ERROR')].message")
-				.value(org.hamcrest.Matchers.hasItems(
-						org.hamcrest.Matchers.startsWith("'Nkran Exploration Camp' (Sankofa Gold plc) is neither"),
-						org.hamcrest.Matchers.startsWith("'Takoradi Port Loadout' (Takoradi Port Co) is neither"))));
+				.value(org.hamcrest.Matchers.hasItem(
+						org.hamcrest.Matchers.startsWith("'Nkran Exploration Camp' (Sankofa Gold plc) is neither"))))
+			.andExpect(jsonPath("$.gates[0].findings[?(@.severity == 'WARNING')].message")
+				.value(org.hamcrest.Matchers.hasItem(
+						org.hamcrest.Matchers.startsWith("Takoradi Port Co has a 0% accounting share under operational control, so its facilities are outside the boundary"))));
 		excludeFacility(inventoryId, camp, "NOT_APPLICABLE", "Exploration only; no fuel or power in 2025");
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/entities/" + port + "/exclude").with(asMember())
 			.with(csrf()).contentType("application/json").content("""
