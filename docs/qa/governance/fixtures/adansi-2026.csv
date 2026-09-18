@@ -1,0 +1,3 @@
+facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note
+Kumasi Plant,Boiler LPG,Boiler LPG,2100,litre,2026-01-01,2026-01-31,Gas supplier delivery note,LPG-2026-01,MEASURED,1,2,
+Kumasi Plant,Plant grid supply,Plant grid electricity,110,MWh,2026-01-01,2026-01-31,ECG invoice,ECG-KSI-2026-01,MEASURED,1,,
