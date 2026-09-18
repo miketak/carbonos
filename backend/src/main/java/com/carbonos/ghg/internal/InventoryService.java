@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.Locale;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -433,6 +434,31 @@ public class InventoryService {
 			.filter(facility -> !excludedEntities.contains(facility.getEntity().getId())
 					&& !excludedFacilities.contains(facility.getId()))
 			.toList();
+	}
+
+	/**
+	 * Splits the undocumented omissions by the entity's share under the approach
+	 * (spec 03.4, 07.2): a facility of an entity that holds a share is an error the
+	 * accountant can resolve by ticking it in or recording a reason; a facility of
+	 * an entity at 0% cannot be ticked in, so it warns and is disclosed instead.
+	 */
+	private record Omissions(List<Facility> withAShare, List<LegalEntity> atZeroShare) {
+	}
+
+	private Omissions omissions(UUID inventoryId, Inventory inventory, List<BoundaryTreatment> treatments) {
+		var approach = inventory.getConsolidationApproach();
+		var withAShare = new ArrayList<Facility>();
+		var atZeroShare = new LinkedHashMap<UUID, LegalEntity>();
+		for (var facility : undocumentedOmissions(inventoryId, inventory.getOrganization().getId(), treatments)) {
+			var entity = facility.getEntity();
+			if (entity.share(approach).signum() == 0) {
+				atZeroShare.putIfAbsent(entity.getId(), entity);
+			}
+			else {
+				withAShare.add(facility);
+			}
+		}
+		return new Omissions(withAShare, List.copyOf(atZeroShare.values()));
 	}
 
 	/**
@@ -1398,8 +1424,10 @@ public class InventoryService {
 	/**
 	 * Reviews the organization's activity data for this inventory: creates an
 	 * assignment for every unreviewed record (auto-excluding outside-period and
-	 * outside-boundary ones with a documented reason), and re-evaluates earlier
-	 * automatic exclusions whose reason no longer holds (RECON-01). Manual
+	 * outside-boundary ones with a documented reason), re-evaluates earlier
+	 * automatic exclusions whose reason no longer holds (RECON-01), and excludes
+	 * again any included record that is now outside the period or the boundary,
+	 * whether it was re-included by hand or the boundary moved. Manual
 	 * exclusions are never touched. Draft inventories only.
 	 */
 	public SyncResult syncAssignments(UUID inventoryId) {
@@ -1423,13 +1451,17 @@ public class InventoryService {
 
 		var updated = 0;
 		for (var assignment : reviewed) {
-			// spec 04.4: a record removed since the review leaves the view with its tombstone as the reason
-			if (assignment.isIncluded() && assignment.getActivity().isDeleted()) {
+			if (assignment.isIncluded()) {
+				// an included record that is now outside the period or the boundary (removed since the review,
+				// re-included by hand, or left behind by a boundary change) is excluded again with the computed
+				// reason; a record that still belongs keeps its classification untouched
 				applyAutoExclusion(assignment, inventory, treatments);
-				updated++;
+				if (!assignment.isIncluded()) {
+					updated++;
+				}
 				continue;
 			}
-			if (assignment.isIncluded() || !isAutoReason(assignment.getExclusionReason())) {
+			if (!isAutoReason(assignment.getExclusionReason())) {
 				continue;
 			}
 			var before = assignment.getExclusionReason() + "|" + assignment.getExclusionDetail();
@@ -1881,10 +1913,19 @@ public class InventoryService {
 		}
 		if (!treatments.isEmpty()) {
 			// spec 07.2: an operation left out of the boundary is an exclusion Chapter 9 requires a reason for
-			for (var omitted : undocumentedOmissions(inventoryId, inventory.getOrganization().getId(), treatments)) {
+			var omissions = omissions(inventoryId, inventory, treatments);
+			for (var omitted : omissions.withAShare()) {
 				boundaryFindings.add(new Finding(Severity.ERROR, "'" + omitted.getName() + "' ("
 						+ omitted.getEntity().getName() + ") is neither in the boundary nor excluded with a reason. "
 						+ "Tick it in, or record why it is left out."));
+			}
+			// spec 03.4: an entity at 0% cannot be ticked in; its facilities are outside the boundary under this
+			// approach and the report discloses the exclusion, with the reason the accountant records
+			for (var entity : omissions.atZeroShare()) {
+				boundaryFindings.add(new Finding(Severity.WARNING, entity.getName()
+						+ " has a 0% accounting share under " + approach.name().toLowerCase().replace('_', ' ')
+						+ ", so its facilities are outside the boundary under this approach and the report "
+						+ "discloses the exclusion. Record why it is left out so the report says so."));
 			}
 		}
 		boundaryFindings.addAll(excludedWithAShare(inventory));

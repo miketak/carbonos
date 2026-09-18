@@ -43,7 +43,10 @@ date is outside the membership window is auto-excluded as `OUTSIDE_BOUNDARY`,
 with the reason in words. Every other record is included and unclassified.
 The same action re-evaluates earlier automatic exclusions and re-includes any
 whose reason no longer holds, such as a facility since added or a period since
-widened. Manual exclusions are never touched. The action returns
+widened, and it works the other way too: an included record that is now
+outside the period or the boundary, whether re-included by hand or left
+behind by a boundary change, is excluded again with the computed reason.
+Manual exclusions are never touched. The action returns
 `{created, updated}`, and the completeness gate warns until it has been run.
 
 ### Validation gates
