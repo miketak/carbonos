@@ -1443,11 +1443,17 @@ test('the upstream form searches each list on its own, keeps the chosen primary 
 
   const form = await screen.findByRole('form', { name: 'Add an upstream rule' })
   await user.selectOptions(within(form).getByLabelText('Primary factor'), 'ef-1')
-  // the row named after the combustion row is looked up and offered first, never applied
+  // the row named after the combustion row is looked up and offered first, never applied; every
+  // list is limited to the versions valid in the inventory's period (spec 02.6)
   await waitFor(() =>
     expect(listEmissionFactors).toHaveBeenCalledWith(
       'org-1',
-      expect.objectContaining({ q: 'Well-to-tank: Diesel', size: 5 }),
+      expect.objectContaining({
+        q: 'Well-to-tank: Diesel',
+        size: 5,
+        periodStart: '2025-01-01',
+        periodEnd: '2025-12-31',
+      }),
     ),
   )
   const suggested = await within(form).findByRole('group', { name: /Suggested/ })
@@ -1459,7 +1465,12 @@ test('the upstream form searches each list on its own, keeps the chosen primary 
   await waitFor(() =>
     expect(listEmissionFactors).toHaveBeenLastCalledWith(
       'org-1',
-      expect.objectContaining({ q: 'Well-to-tank', size: 200 }),
+      expect.objectContaining({
+        q: 'Well-to-tank',
+        size: 200,
+        periodStart: '2025-01-01',
+        periodEnd: '2025-12-31',
+      }),
     ),
   )
   expect(within(form).getByLabelText('Primary factor')).toHaveValue('ef-1')

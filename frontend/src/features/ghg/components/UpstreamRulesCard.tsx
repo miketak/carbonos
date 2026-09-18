@@ -63,15 +63,20 @@ export function UpstreamRulesCard({
   // pair at once. A chosen factor stays pinned in its list whatever the search says next.
   const [primarySearch, setPrimarySearch] = useState('')
   const [upstreamSearch, setUpstreamSearch] = useState('')
+  // spec 02.6: a rule pairs the versions live in the inventory's period, so each list and the
+  // suggestion offer only versions whose validity overlaps it, as the classification picker does
+  const period = { periodStart: inventory.periodStart, periodEnd: inventory.periodEnd }
   const primaryQuery = useEmissionFactorsQuery(organizationId, {
     q: primarySearch.trim() === '' ? undefined : primarySearch.trim(),
     includeUnapproved: false,
     size: FACTOR_CHOICES,
+    ...period,
   })
   const upstreamQuery = useEmissionFactorsQuery(organizationId, {
     q: upstreamSearch.trim() === '' ? undefined : upstreamSearch.trim(),
     includeUnapproved: false,
     size: FACTOR_CHOICES,
+    ...period,
   })
   const add = useAddUpstreamRule(inventoryId)
   const remove = useRemoveUpstreamRule(inventoryId)
@@ -85,7 +90,12 @@ export function UpstreamRulesCard({
   // Standard chapter 7), and the list itself stays whatever the search says.
   const suggestionQuery = useEmissionFactorsQuery(
     organizationId,
-    { q: primary ? `Well-to-tank: ${primary.name}` : undefined, includeUnapproved: false, size: 5 },
+    {
+      q: primary ? `Well-to-tank: ${primary.name}` : undefined,
+      includeUnapproved: false,
+      size: 5,
+      ...period,
+    },
     { enabled: primary !== null && kind === 'WELL_TO_TANK' },
   )
 
