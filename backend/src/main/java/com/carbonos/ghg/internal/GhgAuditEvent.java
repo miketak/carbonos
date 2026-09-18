@@ -31,7 +31,9 @@ public class GhgAuditEvent {
 		// becoming a member of it, so the act is recorded where the owners can read it
 		ORGANIZATION_CREATED,
 		// spec 02.7: adopting or declining a new edition of a factor pack is an act on an organization
-		FACTOR_PACK_ADOPTED, FACTOR_PACK_DECLINED
+		FACTOR_PACK_ADOPTED, FACTOR_PACK_DECLINED,
+		// spec 01.7: who was added, given another role or removed is part of the organization's history
+		MEMBER_ADDED, MEMBER_ROLE_CHANGED, MEMBER_REMOVED
 	}
 
 	@Id

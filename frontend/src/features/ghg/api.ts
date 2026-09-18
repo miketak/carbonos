@@ -1280,6 +1280,9 @@ export interface AuditEvent {
     | 'ORGANIZATION_CREATED'
     | 'FACTOR_PACK_ADOPTED'
     | 'FACTOR_PACK_DECLINED'
+    | 'MEMBER_ADDED'
+    | 'MEMBER_ROLE_CHANGED'
+    | 'MEMBER_REMOVED'
   runId: string | null
   runNo: number | null
   actor: string

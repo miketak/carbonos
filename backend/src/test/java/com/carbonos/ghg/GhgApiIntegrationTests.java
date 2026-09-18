@@ -3776,6 +3776,17 @@ class GhgApiIntegrationTests {
 		mvc.perform(delete("/api/ghg/organizations/" + orgId + "/members/" + abenaMember).with(asMember()).with(csrf()))
 			.andExpect(status().isNoContent());
 		mvc.perform(get("/api/ghg/organizations/" + orgId).with(as(abena))).andExpect(status().isNotFound());
+		// spec 01.7: every membership change is in the organization's history, under the owner who made it
+		String ownerEmail = JsonPath.<List<String>>read(members, "$[?(@.role == 'OWNER')].email").getFirst();
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("MEMBER_REMOVED"))
+			.andExpect(jsonPath("$[0].actor").value(ownerEmail))
+			.andExpect(jsonPath("$[0].reason").value("abena@client.test removed"))
+			.andExpect(jsonPath("$[?(@.action == 'MEMBER_ROLE_CHANGED')].reason")
+				.value(org.hamcrest.Matchers.hasItem("abena@client.test: PREPARER \u2192 REVIEWER")))
+			.andExpect(jsonPath("$[?(@.action == 'MEMBER_ADDED')].reason")
+				.value(org.hamcrest.Matchers.hasItems("abena@client.test added as PREPARER",
+						"kofi@verify.test added as VERIFIER")));
 	}
 
 	// --- organization confidentiality, support access and deletion (spec 01.3) ---
