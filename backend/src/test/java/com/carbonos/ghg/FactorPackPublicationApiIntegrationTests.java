@@ -74,6 +74,9 @@ class FactorPackPublicationApiIntegrationTests {
 
 	private static final String THIRD = "testpack-2028";
 
+	/** An earlier vintage published after the 2026 edition (spec 02.6 rule 8). */
+	private static final String EARLIER = "testpack-2025";
+
 	@Autowired
 	MockMvc mvc;
 
@@ -785,6 +788,41 @@ class FactorPackPublicationApiIntegrationTests {
 			.andExpect(jsonPath("$.supersedesId").value(FIRST));
 		mvc.perform(get("/api/admin/factor-packs/editions/" + SECOND).with(asCurator()))
 			.andExpect(jsonPath("$.status").value("WITHDRAWN"));
+	}
+
+	/**
+	 * An earlier vintage published late succeeds nothing and precedes nothing.
+	 * A 2025 table published after the 2026 one has no predecessor, so every
+	 * row of it is an addition and no notice is raised; it does not supersede
+	 * the 2026 edition, which stays published and importable; and a 2028 draft
+	 * is still diffed against 2026, the latest vintage, not against the edition
+	 * published last.
+	 */
+	@Test
+	void anEarlierVintagePublishedLateSucceedsNothingAndPrecedesNothing() throws Exception {
+		publishTheFirstEdition();
+		createDraft(EARLIER, null, 2025);
+		addRow(EARLIER, row("TEST:diesel", "Diesel", "litre", "2.50", 2025)).andExpect(status().isCreated());
+		addRow(EARLIER, row("TEST:petrol", "Petrol", "litre", "2.31", 2025)).andExpect(status().isCreated());
+		uploadEvidence(EARLIER, "The 2025 tables, as published.");
+		var report = blastRadius(EARLIER);
+		assertThat(JsonPath.<String>read(report, "$.predecessorEditionId")).isNull();
+		assertThat(JsonPath.<Integer>read(report, "$.rowsAdded")).isEqualTo(2);
+		assertThat(JsonPath.<Integer>read(report, "$.rowsChanged")).isEqualTo(0);
+
+		publish(EARLIER, asApprover(), """
+				{"sourceDocument": "A test publication, 2025 tables (PDF)", "appliesFrom": "2025-01-01"}""")
+			.andExpect(status().isOk());
+		assertThat(notices.findAllByEditionIdOrderByRaisedAtAsc(EARLIER)).isEmpty();
+		mvc.perform(get("/api/admin/factor-packs/editions/" + EARLIER).with(asCurator()))
+			.andExpect(jsonPath("$.status").value("PUBLISHED"))
+			.andExpect(jsonPath("$.supersedesId").isEmpty());
+		mvc.perform(get("/api/admin/factor-packs/editions/" + FIRST).with(asCurator()))
+			.andExpect(jsonPath("$.status").value("PUBLISHED"));
+
+		createDraft(THIRD, FIRST, 2028);
+		uploadEvidence(THIRD, "The 2028 tables, as published.");
+		assertThat(JsonPath.<String>read(blastRadius(THIRD), "$.predecessorEditionId")).isEqualTo(FIRST);
 	}
 
 	// --- withdrawal ---------------------------------------------------------

@@ -26,9 +26,12 @@ import jakarta.persistence.EntityManager;
  * lineage it does not hold, leaves a locally edited row alone and reports it,
  * treats the same edition as a no-op, adds a tag when the values are identical,
  * and otherwise closes the incumbent and inserts a new version starting on the
- * edition's applies-from date. Approval carries forward, because approval is a
- * decision the organization made about the lineage; a row the edition itself
- * publishes unapproved produces an unapproved version.
+ * edition's applies-from date. An edition that applies before the live version
+ * started is an earlier vintage arriving late: its version is written behind
+ * the ones the organization holds, and none of them moves. Approval carries
+ * forward, because approval is a decision the organization made about the
+ * lineage; a row the edition itself publishes unapproved produces an
+ * unapproved version.
  *
  * <p>Nothing here reaches a past run. {@code ghg_run_lines.factor_id} and
  * {@code ghg_run_factors.factor_id} are plain identifiers with no foreign key,
@@ -57,7 +60,8 @@ public class FactorPackImportService {
 	 * renamed here, once, with the counts that versioning adds.
 	 *
 	 * <p>{@code created} is lineages the organization did not hold,
-	 * {@code versioned} is versions cut, {@code tagged} is rows another edition
+	 * {@code versioned} is versions cut, ahead of the live version or behind
+	 * an earlier one, {@code tagged} is rows another edition
 	 * had already delivered whose values match exactly, and {@code unchanged} is
 	 * rows this same edition already delivered.
 	 */
@@ -167,8 +171,8 @@ public class FactorPackImportService {
 		var skippedUnits = new ArrayList<ImportResult.SkippedRow>();
 		var conflicts = new ArrayList<String>();
 		var delivered = new LinkedHashSet<String>();
-		// every earlier version a cut superseded, keyed by its id, to the version that replaced it
-		var replaced = new LinkedHashMap<UUID, EmissionFactor>();
+		// every lineage the import cut a version into, with all its versions, for the drafts to follow
+		var touched = new LinkedHashMap<String, List<EmissionFactor>>();
 		int applied = 0;
 
 		for (var row : pack.factors()) {
@@ -182,41 +186,48 @@ public class FactorPackImportService {
 				continue;
 			}
 			var values = valuesOf(row, pack);
-			var incumbent = liveVersionOf(lineages.get(row.code()));
+			var versions = lineages.get(row.code());
+			var incumbent = liveVersionOf(versions);
+			// the version the edition speaks to: the live one, unless the edition applies before it
+			// started, in which case the version in force on that day, if the lineage has one (rule 8)
+			var subject = incumbent == null ? null : subjectOf(versions, incumbent, appliesFrom);
 
 			if (incumbent == null) {
 				var version = write(organizationId, row, pack, values, appliesFrom, null, row.approved());
 				lineages.computeIfAbsent(row.code(), key -> new ArrayList<>()).add(version);
 				created++;
 			}
-			else if (incumbent.isLocallyEdited()) {
+			else if (subject == null) {
+				// spec 02.6 rule 8: the edition applies before every version the lineage holds, so its
+				// version fills the gap behind the earliest one and nothing the organization holds moves
+				fillBehind(organizationId, row, pack, values, appliesFrom, versions);
+				touched.put(row.code(), versions);
+				versioned++;
+			}
+			else if (subject.isLocallyEdited()) {
 				// spec 02.6 rule 4: the organization's own correction outranks the table until a person resolves it
 				conflicts.add(row.code());
 				continue;
 			}
-			else if (editionId.equals(incumbent.getSourceEdition())) {
+			else if (editionId.equals(subject.getSourceEdition())) {
 				// spec 02.6 rule 5: re-importing the same edition ensures the tag and changes nothing else
-				incumbent.addPack(editionId);
+				subject.addPack(editionId);
 				unchanged++;
 			}
-			else if (incumbent.sameValuesAs(row.name(), row.defaultScope(), row.defaultCategory(), row.scopeAgnostic(),
+			else if (subject.sameValuesAs(row.name(), row.defaultScope(), row.defaultCategory(), row.scopeAgnostic(),
 					row.unit(), row.kgCo2ePerUnit(), values.gases(), values.blendComposition(), values.blendGwpSource(),
-					values.provenance(appliesFrom, incumbent.getValidTo()), row.basis(), row.sourceCategory(),
+					values.provenance(appliesFrom, subject.getValidTo()), row.basis(), row.sourceCategory(),
 					row.sourceActivity(), row.sourceDetail())) {
 				// spec 02.6 rule 6: another edition delivered the same values, so there is nothing to distinguish
-				incumbent.addPack(editionId);
-				incumbent.setSourceEdition(editionId);
+				subject.addPack(editionId);
+				subject.setSourceEdition(editionId);
 				tagged++;
 			}
 			else {
-				var version = cutAVersion(organizationId, row, pack, values, appliesFrom, incumbent, lineages);
+				var version = cutAVersion(organizationId, row, pack, values, appliesFrom, subject, versions);
 				if (version != null) {
-					// every earlier version of the lineage now points at the one the cut wrote
-					for (var earlier : lineages.get(row.code())) {
-						if (earlier != version) {
-							replaced.put(earlier.getId(), version);
-						}
-					}
+					// the lineage has a version it did not have, so the drafts it applies to follow it
+					touched.put(row.code(), versions);
 				}
 				versioned++;
 			}
@@ -227,55 +238,106 @@ public class FactorPackImportService {
 		}
 		entityManager.flush();
 
-		var moved = replaced.isEmpty() ? List.<ImportResult.MovedInventory>of()
-				: moveOpenDrafts(organizationId, editionId, appliesFrom, replaced);
+		var moved = touched.isEmpty() ? List.<ImportResult.MovedInventory>of()
+				: moveOpenDrafts(organizationId, editionId, appliesFrom, touched);
 		return new ImportResult(editionId, appliesFrom, created, versioned, tagged, unchanged, List.copyOf(skippedUnits),
-				List.copyOf(conflicts), discontinued(editionId, delivered, lineages),
+				List.copyOf(conflicts), discontinued(editionId, appliesFrom, delivered, lineages),
 				versioned == 0 ? List.of() : splitPeriods(organizationId, appliesFrom), moved);
 	}
 
 	/**
-	 * Spec 02.6 rule 7, the other half. A version cut is worth nothing to a
-	 * draft that keeps pointing at the version it superseded, so the open
-	 * drafts the edition applies to are moved to the versions it cut: every
-	 * classification in a draft whose whole period lies on or after the
-	 * applies-from date, and, in a draft the date splits, every classification
-	 * whose record starts on or after it, so the run discloses both editions.
-	 * The same goes for the upstream rules that ride on those factors.
+	 * The version an edition applying on a day speaks to (spec 02.6). An
+	 * edition that applies on or after the live version started speaks to the
+	 * live version, retired or not: that is the succession rules 4 to 7 describe.
+	 * An edition that applies before the live version started is an earlier
+	 * vintage arriving late, so it speaks to the version in force on its day,
+	 * and to nothing when the lineage holds no version that early (rule 8).
+	 */
+	private static EmissionFactor subjectOf(List<EmissionFactor> versions, EmissionFactor live,
+			LocalDate appliesFrom) {
+		if (live.getValidFrom() == null || !appliesFrom.isBefore(live.getValidFrom())) {
+			return live;
+		}
+		return versionInForce(versions, appliesFrom);
+	}
+
+	/** The version of a lineage whose validity covers a day, or null when none does. */
+	static EmissionFactor versionInForce(List<EmissionFactor> versions, LocalDate day) {
+		if (versions == null) {
+			return null;
+		}
+		return versions.stream()
+			.filter(version -> version.getValidFrom() == null || !version.getValidFrom().isAfter(day))
+			.filter(version -> version.getValidTo() == null || !version.getValidTo().isBefore(day))
+			.max(Comparator.comparing(EmissionFactor::getValidFrom, Comparator.nullsFirst(Comparator.naturalOrder())))
+			.orElse(null);
+	}
+
+	/** The earliest version of a lineage that starts after a day, or null when none does. */
+	private static EmissionFactor versionAfter(List<EmissionFactor> versions, LocalDate day) {
+		return versions.stream()
+			.filter(version -> version.getValidFrom() != null && version.getValidFrom().isAfter(day))
+			.min(Comparator.comparing(EmissionFactor::getValidFrom))
+			.orElse(null);
+	}
+
+	/**
+	 * Spec 02.6 rule 8. The edition applies before every version the lineage
+	 * holds, so its version is written behind the earliest one: it starts on
+	 * the applies-from date, ends the day before that version begins, and is
+	 * superseded by it. The versions the organization holds keep their dates
+	 * and the live one stays live. Approval follows the version it sits
+	 * behind, as it is the organization's decision about the lineage.
+	 */
+	private void fillBehind(UUID organizationId, FactorPacks.PackFactor row, FactorPacks.Pack pack, Values values,
+			LocalDate appliesFrom, List<EmissionFactor> versions) {
+		var next = versionAfter(versions, appliesFrom);
+		var version = write(organizationId, row, pack, values, appliesFrom, next, row.approved() && next.isApproved());
+		version.closeAt(next.getValidFrom().minusDays(1));
+		version.supersededBy(next);
+		versions.add(version);
+	}
+
+	/**
+	 * Spec 02.6 rules 7 and 8, the other half. A version cut is worth nothing
+	 * to a draft that keeps pointing at the version beside it, so the open
+	 * drafts are moved to the version of each touched lineage in force on
+	 * their day: for a classification, the later of the record's start and the
+	 * draft's period start, so a draft whose whole period lies on or after the
+	 * applies-from date moves entirely, a draft the date splits moves the
+	 * records from that date, and a draft an earlier vintage fills in behind
+	 * moves to that vintage; for an upstream rule, the draft's period end. The
+	 * run then discloses every edition the period reached.
 	 *
 	 * <p>Only approved versions are moved to: an unapproved edition row is a
 	 * template until someone checks it (spec 02.11), and the coverage warning
 	 * says so meanwhile. Locked inventories keep the factors they reported
-	 * with, and earlier periods keep their vintage. Each draft that moved
-	 * records the act in its history beside the adoption.
+	 * with, and periods the edition does not reach keep their vintage. Each
+	 * draft that moved records the act in its history beside the adoption.
 	 */
 	private List<ImportResult.MovedInventory> moveOpenDrafts(UUID organizationId, String editionId,
-			LocalDate appliesFrom, Map<UUID, EmissionFactor> replaced) {
+			LocalDate appliesFrom, Map<String, List<EmissionFactor>> touched) {
 		var moved = new ArrayList<ImportResult.MovedInventory>();
 		for (var inventory : inventories.findAllByOrganizationIdAndStatusOrderByPeriodStartAsc(organizationId,
 				InventoryStatus.DRAFT)) {
 			if (inventory.getPeriodEnd().isBefore(appliesFrom)) {
 				continue;
 			}
-			var wholePeriod = !inventory.getPeriodStart().isBefore(appliesFrom);
 			int count = 0;
 			for (var assignment : assignments.findAllByInventoryIdOrderByCreatedAtAsc(inventory.getId())) {
-				var factor = assignment.getEmissionFactor();
-				var version = factor == null ? null : replaced.get(factor.getId());
-				if (version == null || !version.isApproved()) {
-					continue;
-				}
-				if (wholePeriod || !assignment.getActivity().getPeriodStart().isBefore(appliesFrom)) {
+				var recordStart = assignment.getActivity().getPeriodStart();
+				var day = recordStart.isAfter(inventory.getPeriodStart()) ? recordStart : inventory.getPeriodStart();
+				var version = follow(touched, assignment.getEmissionFactor(), day);
+				if (version != null) {
 					assignment.repoint(version);
 					count++;
 				}
 			}
 			for (var rule : upstreamRules.findAllByInventoryIdOrderByCreatedAtAsc(inventory.getId())) {
-				var primary = replaced.get(rule.getPrimaryFactor().getId());
-				var upstream = replaced.get(rule.getUpstreamFactor().getId());
-				if ((primary != null && primary.isApproved()) || (upstream != null && upstream.isApproved())) {
-					rule.repoint(primary != null && primary.isApproved() ? primary : null,
-							upstream != null && upstream.isApproved() ? upstream : null);
+				var primary = follow(touched, rule.getPrimaryFactor(), inventory.getPeriodEnd());
+				var upstream = follow(touched, rule.getUpstreamFactor(), inventory.getPeriodEnd());
+				if (primary != null || upstream != null) {
+					rule.repoint(primary, upstream);
 				}
 			}
 			if (count > 0) {
@@ -290,10 +352,30 @@ public class FactorPackImportService {
 	}
 
 	/**
+	 * The version of a touched lineage a pinned factor should follow on a day:
+	 * the one in force that day when it is approved and is not the factor
+	 * itself, else null. A factor outside every touched lineage follows nothing.
+	 */
+	private static EmissionFactor follow(Map<String, List<EmissionFactor>> touched, EmissionFactor factor,
+			LocalDate day) {
+		if (factor == null || factor.getPackCode() == null || !touched.containsKey(factor.getPackCode())) {
+			return null;
+		}
+		var version = versionInForce(touched.get(factor.getPackCode()), day);
+		if (version == null || version == factor || !version.isApproved()) {
+			return null;
+		}
+		return version;
+	}
+
+	/**
 	 * Spec 02.6 rule 7. The incumbent is closed the day before the edition
 	 * applies and a new version carries the edition's values from that day.
 	 * Approval carries forward from the incumbent; an edition row that is itself
 	 * unapproved produces an unapproved version whatever the incumbent said.
+	 * When the incumbent is an earlier version the edition speaks to (rule 8),
+	 * the new version ends the day before the next version begins and is
+	 * superseded by it, so the lineage stays one version per vintage in order.
 	 *
 	 * <p>Two editions that apply from the same day describe one vintage, and an
 	 * erratum is exactly that (spec 02.5). There is no room to cut a version
@@ -302,7 +384,7 @@ public class FactorPackImportService {
 	 * place. The lineage keeps one version per vintage either way.
 	 */
 	private EmissionFactor cutAVersion(UUID organizationId, FactorPacks.PackFactor row, FactorPacks.Pack pack,
-			Values values, LocalDate appliesFrom, EmissionFactor incumbent, Map<String, List<EmissionFactor>> lineages) {
+			Values values, LocalDate appliesFrom, EmissionFactor incumbent, List<EmissionFactor> versions) {
 		var approved = row.approved() && incumbent.isApproved();
 		if (appliesFrom.equals(incumbent.getValidFrom())) {
 			incumbent.update(row.name(), row.defaultScope(), row.defaultCategory(), row.scopeAgnostic(), row.unit(),
@@ -313,10 +395,15 @@ public class FactorPackImportService {
 			// the same row, corrected in place: nothing points anywhere new
 			return null;
 		}
+		var next = versionAfter(versions, appliesFrom);
 		incumbent.closeAt(appliesFrom.minusDays(1));
 		var version = write(organizationId, row, pack, values, appliesFrom, incumbent, approved);
+		if (next != null) {
+			version.closeAt(next.getValidFrom().minusDays(1));
+			version.supersededBy(next);
+		}
 		incumbent.supersededBy(version);
-		lineages.computeIfAbsent(row.code(), key -> new ArrayList<>()).add(version);
+		versions.add(version);
 		return version;
 	}
 
@@ -387,9 +474,11 @@ public class FactorPackImportService {
 	 * The lineages the organization holds from this family that the edition
 	 * dropped (spec 02.6). Nothing is retired: a publisher dropping a row is a
 	 * decision for the organization, and a silent retirement would move a number
-	 * without anyone saying so.
+	 * without anyone saying so. A lineage whose live version starts after the
+	 * edition applies came from a later vintage, which an earlier edition
+	 * cannot drop (rule 8).
 	 */
-	private List<String> discontinued(String editionId, Set<String> delivered,
+	private List<String> discontinued(String editionId, LocalDate appliesFrom, Set<String> delivered,
 			Map<String, List<EmissionFactor>> lineages) {
 		var family = editions.findById(editionId)
 			.map(edition -> Set.copyOf(editions.findAllByPackKeyOrderByEditionIdAsc(edition.getPackKey())
@@ -403,7 +492,7 @@ public class FactorPackImportService {
 				continue;
 			}
 			var live = liveVersionOf(entry.getValue());
-			if (live == null) {
+			if (live == null || (live.getValidFrom() != null && live.getValidFrom().isAfter(appliesFrom))) {
 				continue;
 			}
 			var held = live.getSourceEdition() != null && family.contains(live.getSourceEdition())

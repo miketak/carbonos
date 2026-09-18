@@ -65,6 +65,9 @@ class FactorPackImportIntegrationTests {
 
 	private static final String SECOND = "importtest-2027";
 
+	/** The 2025 edition, an earlier vintage published after the 2026 one (spec 02.6 rule 8). */
+	private static final String EARLIER = "importtest-2025";
+
 	/** A second family whose edition selects a row {@link #FIRST} already delivered (spec 02.3). */
 	private static final String SELECTION_FAMILY = "selectiontest";
 
@@ -254,6 +257,18 @@ class FactorPackImportIntegrationTests {
 		addRow(SECOND, row("TEST:lpg", "LPG", "litre", "1.56", 2027)).andExpect(status().isCreated());
 		uploadEvidence(SECOND, "The 2027 tables, as published.");
 		publish(SECOND, appliesFrom);
+	}
+
+	/**
+	 * The 2025 edition, published after the 2026 one and applying from
+	 * 2025-01-01: diesel at 2.50 and petrol at 2.31, no coal.
+	 */
+	void publishTheEarlierEdition() throws Exception {
+		createDraft(EARLIER, null, 2025, "2025-01-01");
+		addRow(EARLIER, row(DIESEL, "Diesel", "litre", "2.50", 2025)).andExpect(status().isCreated());
+		addRow(EARLIER, row(PETROL, "Petrol", "litre", "2.31", 2025)).andExpect(status().isCreated());
+		uploadEvidence(EARLIER, "The 2025 tables, as published.");
+		publish(EARLIER, "2025-01-01");
 	}
 
 	// --- the tenant fixture -------------------------------------------------
@@ -656,6 +671,110 @@ class FactorPackImportIntegrationTests {
 					{"label": "Two vintages"}""")).andExpect(status().isCreated()));
 		mvc.perform(get("/api/ghg/runs/" + JsonPath.read(run, "$.run.id") + "/report").with(asMember()))
 			.andExpect(jsonPath("$.factors[*].sourceEdition").value(org.hamcrest.Matchers.hasItems(FIRST, SECOND)));
+	}
+
+	/**
+	 * Spec 02.6 rule 8: an earlier vintage arriving late. The organization
+	 * holds the 2026 versions and imports the 2025 edition, so each 2025 row
+	 * is written behind its 2026 version, ends the day before it begins and
+	 * is superseded by it; the 2026 versions keep their dates and stay live.
+	 * The draft for 2025 follows the vintage of its year, the draft for 2026
+	 * keeps the version it had, and a lineage the 2025 edition never had is
+	 * not "discontinued" by it.
+	 */
+	@Test
+	void anEarlierEditionFillsInBehindTheVersionsTheOrganizationHolds() throws Exception {
+		publishTheFirstEdition();
+		var orgId = createOrganization("Asante Gold Resources");
+		importEdition(orgId, FIRST);
+		var facilityId = createFacility(orgId);
+		var held = factorId(orgId, DIESEL);
+		// both drafts are classified on the only diesel version there is
+		var fy2025 = inventoryWithDiesel(orgId, facilityId, "FY2025", "2025-01-01", "2025-12-31");
+		var fy2026 = inventoryWithDiesel(orgId, facilityId, "FY2026", "2026-01-01", "2026-12-31");
+
+		publishTheEarlierEdition();
+		var result = importEdition(orgId, EARLIER);
+		assertThat(JsonPath.<String>read(result, "$.appliesFrom")).isEqualTo("2025-01-01");
+		assertThat(JsonPath.<Integer>read(result, "$.versioned")).isEqualTo(2);
+		assertThat(JsonPath.<Integer>read(result, "$.created")).isEqualTo(0);
+		assertThat(JsonPath.<Integer>read(result, "$.tagged")).isEqualTo(0);
+		// coal came with the 2026 edition, which the 2025 one cannot drop
+		assertThat(JsonPath.<List<String>>read(result, "$.discontinued")).isEmpty();
+		assertThat(JsonPath.<List<String>>read(result, "$.splitPeriods")).isEmpty();
+
+		var versions = versionsOf(orgId, DIESEL);
+		assertThat(versions).hasSize(2);
+		var behind = versions.getFirst();
+		var live = versions.getLast();
+		assertThat(live.getId().toString()).isEqualTo(held);
+		assertThat(live.getValidFrom()).isEqualTo(java.time.LocalDate.of(2026, 1, 1));
+		assertThat(live.getValidTo()).isNull();
+		assertThat(live.isLive()).isTrue();
+		assertThat(live.getSourceEdition()).isEqualTo(FIRST);
+		assertThat(live.getKgCo2ePerUnit()).isEqualByComparingTo("2.66");
+		assertThat(behind.getKgCo2ePerUnit()).isEqualByComparingTo("2.50");
+		assertThat(behind.getValidFrom()).isEqualTo(java.time.LocalDate.of(2025, 1, 1));
+		assertThat(behind.getValidTo()).isEqualTo(java.time.LocalDate.of(2025, 12, 31));
+		assertThat(behind.getSupersededById()).isEqualTo(live.getId());
+		assertThat(behind.getSourceEdition()).isEqualTo(EARLIER);
+		assertThat(behind.isApproved()).isTrue();
+		assertThat(factorId(orgId, DIESEL)).isEqualTo(held);
+
+		// the 2025 draft moved to the 2025 vintage; the 2026 draft did not move
+		assertThat(JsonPath.<List<String>>read(result, "$.moved[*].name")).containsExactly("FY2025");
+		assertThat(JsonPath.<List<Integer>>read(result, "$.moved[*].assignments")).containsExactly(1);
+		var early = body(mvc.perform(get("/api/ghg/inventories/" + fy2025 + "/assignments").with(asMember())));
+		assertThat(JsonPath.<List<String>>read(early, "$[*].emissionFactorId"))
+			.containsExactly(behind.getId().toString());
+		// the 2026 draft also lists the 2025 record, excluded as outside its period and unclassified
+		var later = body(mvc.perform(get("/api/ghg/inventories/" + fy2026 + "/assignments").with(asMember())));
+		assertThat(JsonPath.<List<String>>read(later, "$[?(@.included == true)].emissionFactorId"))
+			.containsExactly(held);
+		// importing the earlier edition again speaks to the versions behind and changes nothing
+		var again = importEdition(orgId, EARLIER);
+		assertThat(JsonPath.<Integer>read(again, "$.unchanged")).isEqualTo(2);
+		assertThat(JsonPath.<Integer>read(again, "$.versioned")).isEqualTo(0);
+		assertThat(versionsOf(orgId, DIESEL)).hasSize(2);
+
+		// and the 2025 run prices the 2025 value and cites the 2025 edition (a locked 2025 period then
+		// refuses a further import of the vintage, rule 1)
+		var runId = freezeAndRun(fy2025);
+		mvc.perform(get("/api/ghg/runs/" + runId).with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2500.0));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.factors[*].sourceEdition").value(org.hamcrest.Matchers.contains(EARLIER)));
+	}
+
+	/**
+	 * The chain stays in order whichever way the vintages arrive: 2026, then
+	 * 2025 behind it, then 2027 ahead of it, and each version is superseded by
+	 * the next. The 2027 edition drops coal, which it can discontinue because
+	 * coal's live version is a 2026 one.
+	 */
+	@Test
+	void vintagesArrivingOutOfOrderStillFormOneChain() throws Exception {
+		publishTheFirstEdition();
+		var orgId = createOrganization("Asante Gold Resources");
+		importEdition(orgId, FIRST);
+		publishTheEarlierEdition();
+		importEdition(orgId, EARLIER);
+		publishTheSecondEdition("2027-01-01");
+		var result = importEdition(orgId, SECOND);
+		assertThat(JsonPath.<List<String>>read(result, "$.discontinued")).containsExactly(COAL);
+
+		var versions = versionsOf(orgId, DIESEL);
+		assertThat(versions).extracting(com.carbonos.ghg.internal.EmissionFactor::getValidFrom).containsExactly(
+				java.time.LocalDate.of(2025, 1, 1), java.time.LocalDate.of(2026, 1, 1), java.time.LocalDate.of(2027, 1, 1));
+		assertThat(versions).extracting(com.carbonos.ghg.internal.EmissionFactor::getValidTo).containsExactly(
+				java.time.LocalDate.of(2025, 12, 31), java.time.LocalDate.of(2026, 12, 31), null);
+		assertThat(versions.get(0).getSupersededById()).isEqualTo(versions.get(1).getId());
+		assertThat(versions.get(1).getSupersededById()).isEqualTo(versions.get(2).getId());
+		assertThat(versions.get(2).isLive()).isTrue();
+		assertThat(versions).extracting(com.carbonos.ghg.internal.EmissionFactor::getSourceEdition)
+			.containsExactly(EARLIER, FIRST, SECOND);
 	}
 
 	/**
