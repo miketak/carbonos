@@ -16,7 +16,10 @@ export function LoginPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from
+  const state = (location.state as { from?: string; signedOut?: boolean } | null) ?? {}
+  // a sign-out clears the deep link: the next account lands where its own
+  // work starts, not on the page the previous account was bounced from
+  const from = state.signedOut ? undefined : state.from
 
   const signIn = useMutation({
     mutationFn: () => login(email, password),

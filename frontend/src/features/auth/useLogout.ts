@@ -12,7 +12,10 @@ export function useLogout() {
     onSuccess: () => {
       queryClient.setQueryData(sessionQueryKey, null)
       queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== 'auth' })
-      void navigate('/login')
+      // RequireAuth has already bounced to /login with a `from` deep link by
+      // the time this runs; replace that entry so the next account does not
+      // inherit the page this one was on (spec 01.6)
+      void navigate('/login', { replace: true, state: { signedOut: true } })
     },
   })
 }
