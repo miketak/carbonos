@@ -302,7 +302,10 @@ public class GhgService {
 		if (members.findByOrganizationIdAndUserId(organizationId, account.id()).isPresent()) {
 			throw new GhgRuleViolationException(account.email() + " is already a member of '" + organization.getName() + "'.");
 		}
-		return members.save(new OrganizationMember(organization, account.id(), account.email(), account.displayName(), role));
+		var member = members.save(new OrganizationMember(organization, account.id(), account.email(),
+				account.displayName(), role));
+		recordMembership(organizationId, GhgAuditEvent.Action.MEMBER_ADDED, account.email() + " added as " + role);
+		return member;
 	}
 
 	public OrganizationMember changeMemberRole(UUID organizationId, UUID memberId, OrgRole role) {
@@ -312,7 +315,12 @@ public class GhgService {
 		if (member.getRole() == OrgRole.OWNER && role != OrgRole.OWNER && isLastOwner(organizationId)) {
 			throw new GhgRuleViolationException("'" + organization.getName() + "' needs at least one owner.");
 		}
+		var before = member.getRole();
 		member.setRole(role);
+		if (before != role) {
+			recordMembership(organizationId, GhgAuditEvent.Action.MEMBER_ROLE_CHANGED,
+					member.getEmail() + ": " + before + " \u2192 " + role);
+		}
 		return member;
 	}
 
@@ -324,6 +332,13 @@ public class GhgService {
 			throw new GhgRuleViolationException("'" + organization.getName() + "' needs at least one owner.");
 		}
 		members.delete(member);
+		recordMembership(organizationId, GhgAuditEvent.Action.MEMBER_REMOVED, member.getEmail() + " removed");
+	}
+
+	/** Spec 01.7: a membership change is written to the organization's own history under the acting owner. */
+	private void recordMembership(UUID organizationId, GhgAuditEvent.Action action, String reason) {
+		auditEvents.save(new GhgAuditEvent(organizationId, action, access.currentUserId(), access.currentUserEmail(),
+				reason));
 	}
 
 	private boolean isLastOwner(UUID organizationId) {
@@ -1007,17 +1022,12 @@ public class GhgService {
 			"periodStart", "facility", "facility.name", "activityType", "activityType", "quantity", "quantity",
 			"createdAt", "createdAt", "recordNo", "recordNo");
 
-	// "ACT-0012", "act12" or "12" in the search box finds the record by number (spec 04.6)
-	private static final java.util.regex.Pattern RECORD_REF = java.util.regex.Pattern
-		.compile("(?i)^(?:act-?)?0*(\\d{1,9})$");
-
 	@Transactional(readOnly = true)
 	public ActivityPage searchActivities(UUID organizationId, ActivityQuery query) {
 		getOrganization(organizationId);
 		var trimmed = query.q() == null ? "" : query.q().trim();
 		var like = trimmed.isEmpty() ? null : "%" + trimmed.toLowerCase(Locale.ROOT) + "%";
-		var refMatch = RECORD_REF.matcher(trimmed);
-		var recordNo = refMatch.matches() ? Integer.valueOf(refMatch.group(1)) : null;
+		var recordNo = ActivityRecord.parseRecordNo(trimmed);
 		org.springframework.data.jpa.domain.Specification<ActivityRecord> base = (root, cq, cb) -> {
 			var facility = root.join("facility");
 			var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();

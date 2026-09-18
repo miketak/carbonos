@@ -239,6 +239,8 @@ const boundary: BoundaryEntity[] = [
 const unclassified: Assignment = {
   id: 'as-1',
   activityId: 'act-1',
+  recordNo: 1,
+  recordRef: 'ACT-0001',
   facilityId: 'fac-1',
   facilityName: 'Tema Plant',
   streamId: null,
@@ -1192,6 +1194,15 @@ test('the register reads as one line a row and opens the record in a drawer (spe
   await user.click(within(row).getByRole('button', { name: 'Diesel consumption' }))
   // the record is named in the URL, so the view a reviewer is in survives a reload
   expect(await screen.findByRole('dialog', { name: 'Diesel consumption' })).toBeInTheDocument()
+})
+
+test('a row carries the record reference beside the activity, and the search names it (spec 04.6)', async () => {
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
+  renderPage()
+
+  const row = (await screen.findByRole('button', { name: 'Diesel consumption' })).closest('tr')!
+  expect(within(row).getByText('ACT-0001')).toBeInTheDocument()
+  expect(screen.getByPlaceholderText(/^Reference, activity/)).toBeInTheDocument()
 })
 
 test('the activity view filters by scope, category, stream and lease (spec 05.5)', async () => {

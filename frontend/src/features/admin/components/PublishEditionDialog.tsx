@@ -46,7 +46,8 @@ export function PublishEditionDialog({
   const [refusal, setRefusal] = useState<string | null>(null)
 
   const rulesPass = findings.length === 0
-  const ready = rulesPass && checksum !== null
+  const dated = appliesFrom !== ''
+  const ready = rulesPass && checksum !== null && dated
 
   return (
     <Modal title={`Publish ${edition.editionId}`} onClose={onClose}>
@@ -66,6 +67,11 @@ export function PublishEditionDialog({
           {checksum === null
             ? 'No source document yet. Upload the publication this edition was transcribed from.'
             : `${evidenceName ?? 'The source document'} is on file.`}
+        </GateItem>
+        <GateItem met={dated}>
+          {dated
+            ? `The edition applies from ${appliesFrom}, the vintage boundary an adoption is run from.`
+            : 'Give the date the edition applies from. It is the vintage boundary an adoption is run from.'}
         </GateItem>
         <GateItem met>
           The approver must not be the curator. {edition.curator ?? 'Somebody else'} built this
@@ -175,7 +181,7 @@ export function PublishEditionDialog({
                 editionId: edition.editionId,
                 input: {
                   sourceDocument: sourceDocument.trim(),
-                  appliesFrom: appliesFrom || null,
+                  appliesFrom,
                   erratum,
                   erratumNote: erratum ? erratumNote.trim() : null,
                 },

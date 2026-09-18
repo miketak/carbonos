@@ -16,7 +16,8 @@ import com.carbonos.ghg.internal.StreamKind;
 import java.util.List;
 
 /** The fact (activity fields) plus this inventory's accounting decision about it. */
-public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, String facilityName,
+public record AssignmentResponse(UUID id, UUID activityId, int recordNo, String recordRef, UUID facilityId,
+		String facilityName,
 		UUID streamId, String streamName, StreamKind streamKind, Boolean contractorOperated, Scope defaultScope,
 		ActivityCategory defaultCategory, List<ActivityCategory> allowedCategories, String activityType, BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd,
 		DataQuality dataQuality, int dataQualityTier, BigDecimal uncertaintyPercent,
@@ -70,7 +71,8 @@ public record AssignmentResponse(UUID id, UUID activityId, UUID facilityId, Stri
 		var factor = assignment.getEmissionFactor();
 		var stream = activity.getStream();
 		var density = assignment.getDensity();
-		return new AssignmentResponse(assignment.getId(), activity.getId(), activity.getFacility().getId(),
+		return new AssignmentResponse(assignment.getId(), activity.getId(), activity.getRecordNo(),
+				activity.getRecordRef(), activity.getFacility().getId(),
 				activity.getFacility().getName(), stream == null ? null : stream.getId(),
 				stream == null ? null : stream.getName(), stream == null ? null : stream.getKind(),
 				stream == null ? null : stream.isContractorOperated(),

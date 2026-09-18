@@ -146,6 +146,25 @@ test('the history names who did what to the organization and why (spec 01.3)', a
   expect(screen.getByText('ticket 4512, preparer cannot open the run')).toBeInTheDocument()
 })
 
+test('the history reads a factor pack adoption as a labelled act (spec 02.7)', async () => {
+  vi.mocked(listOrganizationEvents).mockResolvedValue([
+    {
+      id: 'ev-2',
+      action: 'FACTOR_PACK_ADOPTED',
+      runId: null,
+      runNo: null,
+      actor: 'owner@client.test',
+      reason:
+        "adopted 'defra-2026' from 2026-01-01 as a vintage progression; no base-year candidate raised",
+      at: '2026-09-17T10:00:00Z',
+    },
+  ])
+  renderSettingsPage()
+
+  expect(await screen.findByText('Factor pack adopted')).toBeInTheDocument()
+  expect(screen.getByText(/adopted 'defra-2026' from 2026-01-01/)).toBeInTheDocument()
+})
+
 async function openDeleteDialog(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: /delete organization/i }))
   return screen.findByRole('dialog', { name: /delete organization/i })

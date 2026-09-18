@@ -5,8 +5,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ToastProvider } from '../components/toast'
 
 interface Options {
-  /** Initial URL for the MemoryRouter. */
-  route?: string
+  /** Initial URL for the MemoryRouter, or a location carrying router state. */
+  route?: string | { pathname: string; state?: unknown }
   /** Extra routes to render alongside the tested element (e.g. a /login stub). */
   extraRoutes?: { path: string; element: ReactElement }[]
   /** Path the tested element is mounted at (default: the initial route). */
@@ -14,7 +14,8 @@ interface Options {
 }
 
 export function renderWithProviders(ui: ReactElement, options: Options = {}) {
-  const { route = '/', extraRoutes = [], path = route } = options
+  const { route = '/', extraRoutes = [] } = options
+  const path = options.path ?? (typeof route === 'string' ? route : route.pathname)
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })

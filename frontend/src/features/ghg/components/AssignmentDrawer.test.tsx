@@ -76,6 +76,8 @@ const tonne: Unit = {
 const unclassified: Assignment = {
   id: 'as-1',
   activityId: 'act-1',
+  recordNo: 1,
+  recordRef: 'ACT-0001',
   activityType: 'Diesel consumption',
   facilityId: 'fac-1',
   facilityName: 'Tema Plant',

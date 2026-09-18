@@ -230,7 +230,8 @@ export interface BlastRadius {
 
 export interface PublishInput {
   sourceDocument: string
-  appliesFrom: string | null
+  /** ISO date; the server refuses a publish without one (spec 02.5). */
+  appliesFrom: string
   erratum: boolean
   erratumNote: string | null
 }

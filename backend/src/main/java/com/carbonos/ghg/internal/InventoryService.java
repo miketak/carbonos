@@ -1347,6 +1347,8 @@ public class InventoryService {
 		var unclassified = all.stream().filter(a -> a.isIncluded() && !a.isClassified()).count();
 		var excluded = all.size() - included - unclassified;
 		var like = query.q() == null || query.q().isBlank() ? null : query.q().trim().toLowerCase(Locale.ROOT);
+		// "ACT-0012" names one record, as the register's search does (spec 04.6)
+		var recordNo = like == null ? null : ActivityRecord.parseRecordNo(query.q());
 		var matching = all.stream().filter(a -> {
 			var activity = a.getActivity();
 			if (query.facilityId() != null && !activity.getFacility().getId().equals(query.facilityId())) {
@@ -1373,7 +1375,11 @@ public class InventoryService {
 				}
 			}
 			if (like != null) {
-				var haystack = (activity.getActivityType() + " " + activity.getFacility().getName() + " "
+				if (recordNo != null && activity.getRecordNo() == recordNo) {
+					return true;
+				}
+				var haystack = (activity.getRecordRef() + " " + activity.getActivityType() + " "
+						+ activity.getFacility().getName() + " "
 						+ (activity.getStream() == null ? "" : activity.getStream().getName()) + " "
 						+ (a.getEmissionFactor() == null ? "" : a.getEmissionFactor().getName()) + " "
 						+ activity.getUnit() + " " + (activity.getEvidenceRef() == null ? "" : activity.getEvidenceRef()))

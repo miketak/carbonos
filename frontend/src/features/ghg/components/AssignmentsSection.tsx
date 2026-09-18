@@ -253,7 +253,7 @@ export function AssignmentsSection({
               <InputField
                 ref={searchRef}
                 label="Search the view"
-                placeholder="Activity, facility, stream, factor, unit, evidence"
+                placeholder="Reference, activity, facility, stream, factor, unit, evidence"
                 value={filters.q}
                 onChange={(event) => set({ q: event.target.value })}
               />
@@ -428,6 +428,9 @@ export function AssignmentsSection({
                         >
                           {assignment.activityType}
                         </button>
+                        <span className="ml-2 font-mono text-xs text-ink-muted">
+                          {assignment.recordRef}
+                        </span>
                         {assignment.changedSincePublication &&
                           assignment.changedSincePublication.length > 0 && (
                             <span className="block text-xs text-amber-700">

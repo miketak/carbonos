@@ -160,6 +160,19 @@ public class ActivityRecord {
 		return recordNo == null ? "" : String.format("ACT-%04d", recordNo);
 	}
 
+	// "ACT-0012", "act12" or "12" in a search box names the record by number (spec 04.6)
+	private static final java.util.regex.Pattern RECORD_REF = java.util.regex.Pattern
+		.compile("(?i)^(?:act-?)?0*(\\d{1,9})$");
+
+	/** The record number a search term names, or null when it is not a reference. */
+	public static Integer parseRecordNo(String term) {
+		if (term == null) {
+			return null;
+		}
+		var match = RECORD_REF.matcher(term.trim());
+		return match.matches() ? Integer.valueOf(match.group(1)) : null;
+	}
+
 	public boolean isDraft() {
 		return draft;
 	}

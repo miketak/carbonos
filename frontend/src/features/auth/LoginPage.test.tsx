@@ -49,6 +49,46 @@ test('signing in hands off to the landing resolver', async () => {
   expect(login).toHaveBeenCalledWith('admin@ecoriv.com', 'correct-horse')
 })
 
+test('a deep link returns the account to the page it asked for', async () => {
+  const user = userEvent.setup({ delay: null })
+  vi.mocked(login).mockResolvedValue(admin)
+  renderWithProviders(<LoginPage />, {
+    route: { pathname: '/login', state: { from: '/admin/users' } },
+    extraRoutes: [
+      { path: '/app', element: <p>the landing resolver</p> },
+      { path: '/admin/users', element: <p>the users page</p> },
+    ],
+  })
+
+  await user.type(screen.getByLabelText(/email/i), 'admin@ecoriv.com')
+  await user.type(screen.getByLabelText(/password/i), 'correct-horse')
+  await user.click(screen.getByRole('button', { name: /sign in/i }))
+
+  await waitFor(() => expect(screen.getByText('the users page')).toBeInTheDocument())
+  expect(screen.queryByText('the landing resolver')).not.toBeInTheDocument()
+})
+
+test('a sign-out clears the deep link so the next account lands on its own work', async () => {
+  const user = userEvent.setup({ delay: null })
+  vi.mocked(login).mockResolvedValue(admin)
+  // RequireAuth writes `from` while the session empties; useLogout then
+  // replaces the entry with `signedOut`, and the form must not follow `from`
+  renderWithProviders(<LoginPage />, {
+    route: { pathname: '/login', state: { from: '/admin/users', signedOut: true } },
+    extraRoutes: [
+      { path: '/app', element: <p>the landing resolver</p> },
+      { path: '/admin/users', element: <p>the users page</p> },
+    ],
+  })
+
+  await user.type(screen.getByLabelText(/email/i), 'admin@ecoriv.com')
+  await user.type(screen.getByLabelText(/password/i), 'correct-horse')
+  await user.click(screen.getByRole('button', { name: /sign in/i }))
+
+  await waitFor(() => expect(screen.getByText('the landing resolver')).toBeInTheDocument())
+  expect(screen.queryByText('the users page')).not.toBeInTheDocument()
+})
+
 test('shows an invalid-credentials message on 401', async () => {
   const user = userEvent.setup({ delay: null })
   vi.mocked(login).mockRejectedValue(new ApiError(401))

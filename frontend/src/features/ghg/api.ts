@@ -1017,6 +1017,9 @@ export interface BoundaryVersion {
 export interface Assignment {
   id: string
   activityId: string
+  /** The record's number and the reference the register prints for it (spec 04.6). */
+  recordNo: number
+  recordRef: string
   facilityId: string
   facilityName: string
   /** The record's stream and the classification it defaults to (spec 04.3); null without a stream. */
@@ -1274,6 +1277,12 @@ export interface AuditEvent {
     | 'ADMIN_ACCESS_ENDED'
     | 'ADMIN_ACCESS_EXPIRED'
     | 'ORGANIZATION_DELETED'
+    | 'ORGANIZATION_CREATED'
+    | 'FACTOR_PACK_ADOPTED'
+    | 'FACTOR_PACK_DECLINED'
+    | 'MEMBER_ADDED'
+    | 'MEMBER_ROLE_CHANGED'
+    | 'MEMBER_REMOVED'
   runId: string | null
   runNo: number | null
   actor: string
