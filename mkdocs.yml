@@ -186,6 +186,16 @@ nav:
               - reference/qa/mining/009-base-year.md
               - reference/qa/mining/010-factor-pack-maintenance.md
               - reference/qa/mining/011-platform-administration.md
+          - Governance (Adansi Foods Ltd):
+              - reference/qa/governance/README.md
+              - reference/qa/governance/001-accounts-and-the-platform.md
+              - reference/qa/governance/002-the-organization.md
+              - reference/qa/governance/003-activity-data.md
+              - reference/qa/governance/004-inventory-boundary-and-declaration.md
+              - reference/qa/governance/005-classification-and-the-gates.md
+              - reference/qa/governance/006-runs-final-publication-and-correction.md
+              - reference/qa/governance/007-the-pack-lifecycle-end-to-end.md
+              - reference/qa/governance/008-base-year-and-the-record.md
       - Decision records:
           - adr/README.md
           - adr/0001-use-material-for-mkdocs-with-uv.md
