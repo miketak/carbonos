@@ -359,7 +359,9 @@ class FactorPackAdoptionApiIntegrationTests {
 		assertThat(JsonPath.<List<Integer>>read(result, "$.moved[*].assignments")).containsExactly(1);
 		var listing = body(mvc.perform(get("/api/ghg/inventories/" + holder.draftInventoryId() + "/assignments")
 			.with(asOwner())).andExpect(status().isOk()));
-		assertThat(JsonPath.<List<String>>read(listing, "$[*].emissionFactorId")).containsExactly(after);
+		// the 2024 record sits in the view too, excluded as outside the period and never classified
+		assertThat(JsonPath.<List<String>>read(listing, "$[?(@.included == true)].emissionFactorId"))
+			.containsExactly(after);
 		mvc.perform(get("/api/ghg/inventories/" + holder.draftInventoryId() + "/events").with(asOwner()))
 			.andExpect(jsonPath("$[?(@.action == 'REVIEWED')].reason").value(org.hamcrest.Matchers.hasItem(
 					org.hamcrest.Matchers.containsString("1 classification moved to '" + SECOND + "' from 2026-01-01"))));
@@ -383,7 +385,7 @@ class FactorPackAdoptionApiIntegrationTests {
 					org.hamcrest.Matchers.hasItem("2026-01-01")));
 		// the base year's run is a snapshot and keeps its figure
 		mvc.perform(get("/api/ghg/runs/" + holder.baseRunId()).with(asOwner()))
-			.andExpect(jsonPath("$.totalKgCo2e").value(2660.0));
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2660.0));
 	}
 
 	@Test
@@ -394,11 +396,12 @@ class FactorPackAdoptionApiIntegrationTests {
 		var earlierActivity = createActivity(holder.orgId(), holder.facilityId(), "2025-06-01", "1000");
 		var earlier = createInventory(holder.orgId(), "2025", "2025-01-01", "2025-12-31", holder.facilityId(),
 				earlierActivity);
-		// a frozen 2027 inventory: the edition applies before its period, which is allowed, but a locked
-		// inventory keeps the factors it was frozen with
-		var laterActivity = createActivity(holder.orgId(), holder.facilityId(), "2027-06-01", "1000");
-		var later = createInventory(holder.orgId(), "2027", "2027-01-01", "2027-12-31", holder.facilityId(),
-				laterActivity);
+		// a frozen inventory starting after the date the edition applies: the applies-from date is not inside
+		// its period, so the adoption is allowed, but a locked inventory keeps the factors it was frozen with
+		// (the second half of 2026, so the draft's June record and the earlier years fall outside it)
+		var laterActivity = createActivity(holder.orgId(), holder.facilityId(), "2026-08-15", "1000");
+		var later = createInventory(holder.orgId(), "2026 second half", "2026-07-01", "2026-12-31",
+				holder.facilityId(), laterActivity);
 		mvc.perform(post("/api/ghg/inventories/" + later + "/freeze").with(asOwner()).with(csrf()))
 			.andExpect(status().isOk());
 
@@ -409,7 +412,8 @@ class FactorPackAdoptionApiIntegrationTests {
 		for (var untouched : List.of(earlier, later)) {
 			var listing = body(mvc.perform(get("/api/ghg/inventories/" + untouched + "/assignments").with(asOwner()))
 				.andExpect(status().isOk()));
-			assertThat(JsonPath.<List<String>>read(listing, "$[*].emissionFactorId")).containsExactly(before);
+			assertThat(JsonPath.<List<String>>read(listing, "$[?(@.included == true)].emissionFactorId"))
+				.containsExactly(before);
 		}
 		// the frozen inventory still runs on the value it was frozen with, and the gate says its factor
 		// no longer covers the period
@@ -447,6 +451,7 @@ class FactorPackAdoptionApiIntegrationTests {
 	@Test
 	void theGridSuggestionFollowsTheInventoryPeriod() throws Exception {
 		// a grid family whose 2027 edition moves the 2024 Ghana row from 0.468809 to 0.44 for 2026 onwards
+		createFamily();
 		createDraft(GRID_FIRST, null, 2025, "AR5", "2025-01-01");
 		addRow(GRID_FIRST, gridRow("ADOPT:grid:GHA:2024", "Grid electricity, Ghana (2024)", "0.468809", 2024))
 			.andExpect(status().isCreated());
