@@ -450,7 +450,7 @@ public class FactorPackAdoptionService {
 		auditEvents.save(new GhgAuditEvent(notice.getOrganizationId(), GhgAuditEvent.Action.FACTOR_PACK_ADOPTED,
 				access.currentUserId(), access.currentUserEmail(),
 				access.attributed(organization, "adopted '" + notice.getEditionId() + "' from "
-						+ result.appliesFrom() + " as a " + caseLabel(answer)
+						+ result.appliesFrom() + " as " + caseLabel(answer)
 						+ (recalculation == null ? "; no base-year candidate raised" : "; base-year candidate raised")
 						+ (trimmedNote == null ? "" : ": " + trimmedNote))));
 		return result;
