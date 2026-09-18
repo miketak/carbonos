@@ -30,7 +30,7 @@ ten records it imports.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Activity data** and click **Import CSV**, then **Download CSV template**. | The dialog is headed "Bulk entry". The template's header is `facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note`, the same as the fixture's. | | |
+| 1 | Open **Activity data** and click **Import CSV**, then **Download CSV template**. | The dialog is titled "Import activity data" under the eyebrow "Bulk entry". The template's header is `facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note`, the same as the fixture's. | | |
 | 2 | Choose `adansi-2025.csv`. | The file is checked at once, and nothing is written. **Control totals** groups the rows by facility, stream and unit: Kumasi Plant, Boiler LPG, 2,400 litre; Kumasi Plant, Plant grid supply, 120 MWh; Tema Depot, Delivery fleet, 5,000 litre; and the rows with no stream by unit. "10 records to add" lists each row with its facility and period. | | |
 | 3 | Read **Worth a look before adding**. | Row 7 (the year-end LPG) is named: "the period is longer than one month (2025-12-15 to 2026-01-15); monthly rows make the coverage matrix and cut-off checks precise". | | |
 | 4 | Read the readiness pill on each listed row. | Rows 2 to 4 read **Ready**. Rows 5 to 11 read "No stream"; rows 9 and 10, which carry no document reference, also read "Needs evidence". "Missing source" appears nowhere: every row names its data source. The line under the list counts the eight rows that are "reference only, nothing attached". | | |
@@ -39,7 +39,7 @@ ten records it imports.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Add records**. | "10 records imported." The register lists ten records, ACT-0001 to ACT-0010 in file order. | | |
+| 1 | Click **Add records**. | "10 records imported." The register lists ten records, ACT-0001 to ACT-0010, sorted by period with the newest first: the year-end LPG (ACT-0006) at the top, the March LPG (ACT-0001) at the foot. | | |
 | 2 | Choose `adansi-2025.csv` again. | Every row is rejected: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled. Cancel. | | |
 
 ## B. The rejected file
@@ -68,7 +68,7 @@ ten records it imports.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **New activity**, type the activity type "Generator diesel", the facility Kumasi Plant, nothing else, and click **Save draft**. | The record is saved as a draft with no quantity and no period. The banner names it as a draft with data outstanding. | | |
+| 1 | Click **+ Add activity**, type the activity type "Generator diesel", the facility Kumasi Plant, nothing else, and click **Save draft**. | The record is saved as a draft with no quantity and no period. The banner names it as a draft with data outstanding. | | |
 | 2 | Open the draft, type 150 litre and the period 2025-02-01 to 2025-02-28, and save it as a fact. | The record is a fact. Its history reads "Entered from a draft". | | |
 | 3 | Open it again and look for a way back to a draft. | There is none: "A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft.". | | |
 
@@ -91,7 +91,7 @@ ten records it imports.
 | 1 | On ACT-0001, under **Supporting evidence**, attach `not-evidence.zip`. | Refused: "Attach a PDF, an image (PNG, JPEG, WebP), a spreadsheet (XLSX, XLS, CSV) or a text file.". | | |
 | 2 | Attach `source-document.txt`. | Listed with its name, size and who uploaded it. | | |
 | 3 | Add a link named "Supplier portal" with the URL `www.example.test/delivery/LPG-2025-03`. | Refused: "A link starts with https:// or http://.". | | |
-| 4 | Change it to `https://example.test/delivery/LPG-2025-03`. | Listed as a link. The record now reads "2 attached". | | |
+| 4 | Change it to `https://example.test/delivery/LPG-2025-03`. | Listed as a link. The drawer's evidence tab now reads "Evidence 2". | | |
 
 ## G. Removals
 

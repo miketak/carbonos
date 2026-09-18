@@ -53,7 +53,7 @@ it builds.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | On **Boundary**, untick **Tema Depot in boundary**. | Tema Depot leaves the boundary. Unticking E1's only facility unticks E1, and the reason control appears on the entity's row reading "left out without a reason". | | |
-| 2 | Read the **Reporting boundary** gate on the pre-flight panel. | An error: "'Adansi Logistics Ltd' … is neither in the boundary nor excluded with a reason. Tick it in, or record why it is left out.". | | |
+| 2 | Read the **Reporting boundary** gate on the pre-flight panel. | An error: "'Tema Depot' (Adansi Logistics Ltd) is neither in the boundary nor excluded with a reason. Tick it in, or record why it is left out.". The facility is named first: the reason is recorded on its entity's row. | | |
 | 3 | Choose **Not applicable** with the detail "Scratch: testing the exclusion flow". | The error becomes a warning: the entity is excluded as not applicable while it holds a 100% share under this approach, and the report discloses the exclusion. | | |
 | 4 | Tick Tema Depot back in. | The reason is gone. An operation back in the boundary carries no exclusion. | | |
 
@@ -61,7 +61,7 @@ it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Read the **Reporting boundary** gate for Coldstore Ghana Ltd. | A warning: it has a 0% accounting share under this approach, so the report discloses the exclusion. | | |
+| 1 | Read the **Reporting boundary** gate for Coldstore Ghana Ltd. | A warning: "Coldstore Ghana Ltd has a 0% accounting share under operational control, so its facilities are outside the boundary under this approach and the report discloses the exclusion. Record why it is left out so the report says so.". | | |
 | 2 | On its row, choose **Methodology exclusion** with the detail "Associate: no operational control". | The warning goes. The row reads "left out: Methodology exclusion". | | |
 
 ### B3. A share override is compared with the entity record
@@ -85,7 +85,7 @@ it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Method**, in the operational boundary declaration, tick **15. Investments** and save. | "Operational boundary declaration saved.". The **Classification** gate warns that Investments is declared as covered but no included record is classified into it, and that a reader takes "covered" to mean quantified. | | |
+| 1 | On **Boundary**, in the operational boundary declaration under the entities, tick **15. Investments** and save. | "Operational boundary declaration saved.". The **Classification** gate warns that Investments is declared as covered but no included record is classified into it, and that a reader takes "covered" to mean quantified. | | |
 | 2 | In the reason for not quantifying it this year, type "n/a". | Refused: the reason needs at least 10 characters. | | |
 | 3 | Type "Minority holding; no emissions data available this year" and save. | The warning goes. The report will print the category as "declared, not quantified" with the reason. | | |
 | 4 | Leave **6. Business travel** and **1. Purchased goods and services** unticked. | Procedure 5 classifies records into both and reads the cross-check the other way round. | | |
@@ -106,7 +106,7 @@ it builds.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Click **Edit inventory**. | The form offers the name, the period, the straddle treatment, the purpose, the consolidation approach and the GWP set. | | |
-| 2 | Cancel. | Procedure 5 sets the straddle treatment to **Block the run until the record is split** and back; procedure 6 sets the GWP set to AR6 and back. | | |
+| 2 | Cancel. | Procedure 5 sets the straddle treatment to **Block the run until the record is split** and back; procedure 6 sets the GWP set to AR6 and back. The declaration stays on **Boundary**; **Method** holds the upstream rules, the instruments and the residual mix. | | |
 
 ## Sign-off
 

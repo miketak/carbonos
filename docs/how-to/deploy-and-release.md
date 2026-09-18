@@ -84,6 +84,15 @@ Actions page.
 3. Confirm the production health endpoint reports `UP` and spot-check
    the frontend.
 
+Before approving production, read the candidate's migrations for ones that
+rewrite data rather than add structure, and say so in the release notes.
+`V55__factor_gas_precision.sql` is the precedent: it restored the published
+gas masses on every pack-derived factor an organization holds, so the next
+run of an open draft prices a few parts in a hundred thousand away from the
+run before it, while completed runs keep their snapshots. A change of that
+kind is worth one sentence to the organizations' owners before they see it
+in a run.
+
 A version tag pushed by hand also starts `Release`; the sign-off path is
 the normal one.
 

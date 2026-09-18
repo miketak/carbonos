@@ -77,7 +77,7 @@ row 1.
 | 3 | Tema Depot, Delivery fleet | Delivery fleet diesel, 5,000 litre, August 2025 | a contractor's stream defaults to scope 3; the lease is inherited; the divestment share |
 | 4 | Kumasi Plant | Forklift diesel, 3 tonne, May 2025 | the density prompt; the typical-density warning and final hold; the proxy route |
 | 5 | Kumasi Plant | Chiller refrigerant top-up, 20 kg, 2025-09-10 | the DESNZ R-407C blend; the Montreal Protocol reason on a mass unit; the GWP-basis hold |
-| 6 | Kumasi Plant | Year-end boiler LPG, 800 litre, 2025-12-15 to 2026-01-15 | a straddling record: pro-rated, then blocked |
+| 6 | Kumasi Plant | Year-end boiler LPG, 800 litre, 2025-12-15 to 2026-01-15 | a straddling record: pro-rated, then blocked; reviewed again in FY2026 for its 15 January days |
 | 7 | Tema Depot | Depot grid electricity, 4,000 kWh, May 2025 | before E1's membership window: excluded on review |
 | 8 | Takoradi Cold Store | Cold store diesel, 900 litre, October 2025 | outside the boundary under operational control; inside it under equity share |
 | 9 | Kumasi Plant | Canteen waste, 12 tonne, November 2025, ESTIMATED tier 4 | a methodology exclusion, not estimated; the readiness pill |
@@ -101,7 +101,9 @@ Type `PASS` or `FAIL` in the Pass/Fail cell of every step that has an
 expected result. A step with an empty expected result is setup. A case
 fails when any of its steps fails; a failed case does not stop the
 procedure unless the text says so. Product text is quoted in double quotes
-and UI elements are in bold. Where an expected result quotes a message
+and UI elements are in bold. A refusal the product makes by disabling a
+control (with a tooltip, or until a reason is long enough) is described
+as such; a refusal it makes with a message is quoted. Where an expected result quotes a message
 with a value in it, the value is the one this scenario produces; a
 different value is a failure worth a note.
 
