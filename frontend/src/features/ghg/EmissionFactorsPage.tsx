@@ -129,6 +129,11 @@ function importNote(result: FactorPackImport): string {
     note += ` It applies inside ${result.splitPeriods
       .map((period) => period.name)
       .join(', ')}, so that period would be calculated on two editions.`
+  const movedCount = result.moved.reduce((sum, entry) => sum + entry.assignments, 0)
+  if (movedCount > 0)
+    note += ` ${movedCount} classification${movedCount === 1 ? '' : 's'} in ${result.moved
+      .map((entry) => entry.name)
+      .join(', ')} moved to the new vintage.`
   return note + skippedNote(result.skippedUnits)
 }
 

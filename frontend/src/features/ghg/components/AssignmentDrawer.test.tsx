@@ -218,7 +218,13 @@ beforeEach(() => {
  */
 function renderDrawer(recordId = 'as-1', myRole: 'OWNER' | 'VERIFIER' = 'OWNER') {
   return renderWithProviders(
-    <AssignmentsSection organizationId="org-1" inventoryId="inv-1" editable myRole={myRole} />,
+    <AssignmentsSection
+      organizationId="org-1"
+      inventoryId="inv-1"
+      editable
+      myRole={myRole}
+      period={{ start: '2025-01-01', end: '2025-12-31' }}
+    />,
     {
       route: `/app/ghg/org-1/inventories/inv-1?tab=records&record=${recordId}`,
       path: '/app/ghg/:organizationId/inventories/:inventoryId',
@@ -320,7 +326,14 @@ test('the picker asks the server for its page and tells same-named factors apart
   await waitFor(() =>
     expect(listEmissionFactors).toHaveBeenCalledWith(
       'org-1',
-      expect.objectContaining({ dimension: ['VOLUME'], includeUnapproved: false, size: 50 }),
+      expect.objectContaining({
+        dimension: ['VOLUME'],
+        includeUnapproved: false,
+        size: 50,
+        // spec 02.6: the picker asks for the versions live in the inventory's period
+        periodStart: '2025-01-01',
+        periodEnd: '2025-12-31',
+      }),
     ),
   )
   const options = await within(picker).findAllByRole('button')

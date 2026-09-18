@@ -380,6 +380,9 @@ export interface EmissionFactorQuery {
   dimension?: Dimension[]
   /** Only these factors: how a page of records resolves the ones it already references. */
   ids?: string[]
+  /** Only the versions whose validity overlaps this period (spec 02.6): the vintage live in the year. */
+  periodStart?: string
+  periodEnd?: string
   page?: number
   size?: number
 }
@@ -459,6 +462,14 @@ export interface FactorPackImport {
   discontinued: string[]
   /** Open drafts whose reporting period would be calculated on two editions. */
   splitPeriods: SplitPeriod[]
+  /** Open drafts whose classifications the import moved to the versions it cut (spec 02.6 rule 7). */
+  moved: MovedInventory[]
+}
+
+export interface MovedInventory {
+  inventoryId: string
+  name: string
+  assignments: number
 }
 
 /** How chapter 5 treats an adoption; the question acceptance must answer (spec 02.7). */
@@ -2035,6 +2046,10 @@ export function listEmissionFactors(
   if (query.unit) search.set('unit', query.unit)
   for (const dimension of query.dimension ?? []) search.append('dimension', dimension)
   if (query.ids && query.ids.length > 0) search.set('ids', query.ids.join(','))
+  if (query.periodStart && query.periodEnd) {
+    search.set('periodStart', query.periodStart)
+    search.set('periodEnd', query.periodEnd)
+  }
   if (query.page) search.set('page', String(query.page))
   if (query.size !== undefined) search.set('size', String(query.size))
   const suffix = search.size > 0 ? `?${search.toString()}` : ''

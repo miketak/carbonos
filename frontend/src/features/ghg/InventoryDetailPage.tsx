@@ -312,6 +312,7 @@ function InventoryWorkbench({
             inventoryId={inventoryId}
             editable={editable}
             myRole={myRole}
+            period={{ start: inventory.periodStart, end: inventory.periodEnd }}
           />
           {report && <PreflightPanel report={report} />}
         </div>
