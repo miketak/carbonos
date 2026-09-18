@@ -440,6 +440,16 @@ class FactorPackPublicationApiIntegrationTests {
 				{"sourceDocument": "  ", "appliesFrom": "2026-01-01"}""")
 			.andExpect(status().isUnprocessableEntity())
 			.andExpect(jsonPath("$.errors.sourceDocument").exists());
+
+		// the draft carries a date of its own; publishing with the field cleared
+		// must not fall back to it (walkthrough finding 4)
+		publish(FIRST, asApprover(), """
+				{"sourceDocument": "A test publication, 2026 tables", "appliesFrom": null}""")
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.appliesFrom").value(
+					"Give the date the edition applies from. It is the vintage boundary an adoption is run from."));
+		mvc.perform(get("/api/admin/factor-packs/editions/" + FIRST).with(asCurator()))
+			.andExpect(jsonPath("$.status").value("DRAFT"));
 	}
 
 	// --- what publication freezes -------------------------------------------

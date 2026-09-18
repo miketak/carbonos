@@ -141,6 +141,23 @@ test('publishing needs the source document, and the upload shows the checksum it
   expect(screen.getByRole('button', { name: /^publish$/i })).toBeEnabled()
 })
 
+test('publishing is disabled while the applies-from date is cleared', async () => {
+  const user = userEvent.setup()
+  renderDialog({ edition: { ...draft, evidenceChecksum: 'b'.repeat(64) } })
+
+  expect(screen.getByText(/applies from 2027-01-01/i)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^publish$/i })).toBeEnabled()
+
+  await user.clear(screen.getByLabelText(/applies from/i))
+
+  expect(screen.getByText(/Give the date the edition applies from/i)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^publish$/i })).toBeDisabled()
+  expect(publishFactorPackEdition).not.toHaveBeenCalled()
+
+  await user.type(screen.getByLabelText(/applies from/i), '2027-02-01')
+  expect(screen.getByRole('button', { name: /^publish$/i })).toBeEnabled()
+})
+
 test('the gate says publishing moves no organization numbers, and who may not publish', async () => {
   renderDialog()
 

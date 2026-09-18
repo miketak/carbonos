@@ -140,7 +140,9 @@ public class FactorPackPublication {
 		requireSeparationOfDuties(edition, approverUserId, approverEmail);
 		var sourceDocument = required("sourceDocument", request.sourceDocument(),
 				"Name the source document this edition was checked against, as a verifier would cite it.");
-		var appliesFrom = request.appliesFrom() == null ? edition.getAppliesFrom() : request.appliesFrom();
+		// no fallback to the draft's stored date: the approver states the vintage
+		// boundary, and a cleared field is refused rather than quietly filled
+		var appliesFrom = request.appliesFrom();
 		if (appliesFrom == null) {
 			throw new GhgFieldException("appliesFrom",
 					"Give the date the edition applies from. It is the vintage boundary an adoption is run from.");
