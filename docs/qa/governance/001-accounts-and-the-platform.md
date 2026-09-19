@@ -109,7 +109,7 @@ value back.
 | 1 | On **Settings**, set **Who may create an organization** to **Administrators only** with the reason "Governance pack: creation reserved". Save. | Saved and listed under **Every change**. | | |
 | 2 | As Ama in the private window, reload the **GHG accounting** page. | **New organization** is gone. The empty state reads "You are not a member of any organization yet. Ask an owner to add you, or a platform administrator.". | | |
 | 3 | As Admin A, set it back to **Everyone signed in** with the reason "Governance pack: creation opened again". Set the support window back to 24 with a reason. | Both changes are listed. The log now holds four entries, the newest first. | | |
-| 4 | As Ama, reload. | **New organization** is back and the empty state reads "Create your first reporting organization to start the GHG Protocol workflow.". Leave it: procedure 2 creates the organization. | | |
+| 4 | As Ama, reload. | **New organization** is back and the empty state reads "No organizations yet" over "Set up a reporting organization, draw its boundaries, record activity, then run the inventory.". Leave it: procedure 2 creates the organization. | | |
 
 ## E. An administrator's own account
 

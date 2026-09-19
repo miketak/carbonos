@@ -67,7 +67,7 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 | 1 | On **Runs**, click **Launch calculation run**. | Run 001 appears with its total 120,458.96 kg CO₂e (120.46 t) and "Boundary version 2". | | |
 | 2 | Open it and read the lines. | One line per included record as the table in the preamble lists them, plus two derived well-to-tank lines, each naming the LPG line it derives from. The straddling record's line reads 17 covered days of 32. The forklift line reads "3 tonne = 3,603.6036 litre (density of Diesel (Adansi CoA), 0.8325 kg/litre)". | | |
 | 3 | Read the exclusions. | ACT-0007 (outside boundary, member from 2025-07-01), ACT-0008 (outside boundary), ACT-0009 (methodology exclusion, not estimated), each with its reason and detail. | | |
-| 4 | Read the by-gas table. | The refrigerant line carries 20 kg under HFCs. The flights factor and the Ghana grid factor both publish CO₂e only, so the row "CO₂e from factors without a gas split" carries their 3,900 and 56,257.08 kg together, 60,157.08 kg; the Emission factors gate said so of each. The footing row "Total (scope 2 location-based), ties to section 04" equals the section 04 total. | | |
+| 4 | Read the by-gas table. | The refrigerant line carries 20 kg under HFCs. Four lines are priced from factors that publish CO₂e only, so the row "CO₂e from factors without a gas split" carries them together: the Ghana grid 56,257.08, the flights 3,900.00 and the two well-to-tank LPG lines 445.22 and 78.84, which is 60,681.15 kg (60.681 t). The footing row "Total (scope 2 location-based), ties to section 04" equals the section 04 total. | | |
 
 ### A2. Voiding keeps the number and the figures
 
