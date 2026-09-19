@@ -68,7 +68,7 @@ database needs new ones.
 | --- | --- | --- | --- | --- |
 | 1 | As Admin B in the private window, open `ghana-2027-gov` and click **Blast radius**. | A drawer says publishing changes no organization's data. One row changed, `GHANA:grid:GHA:2024`, from 0.468809 to 0.44, -6.15%, held by Adansi Foods Ltd. Adansi's card names the estimated movement, about -3,486 kg CO₂e from its last completed run (the correction's run, 121,000 kWh), and lists the lineage inside a locked period (FY2025). | | |
 | 2 | Click **Publish** with the applies-from date cleared. | Refused: "Give the date the edition applies from. It is the vintage boundary an adoption is run from.". | | |
-| 3 | Set 2026-01-01 and publish. | "ghana-2027-gov was published.". PUBLISHED; `ghana` reads SUPERSEDED. The **Metadata** tab names Admin A as curator and Admin B as approver with the moment. | | |
+| 3 | Set 2026-01-01 and publish. | "ghana-2027-gov was published.". PUBLISHED; `ghana` reads SUPERSEDED, because the new edition applies after it. The **Metadata** tab names Admin A as curator and Admin B as approver; it prints the provenance review and the evidence checksum, not the publication moment, which the edition's events carry. | | |
 | 4 | As Ama, read `GHANA:grid:GHA:2024` on **Emission factors** and the total of Run 005. | 0.468809 and 120,373.32 kg. Publishing moved nothing. | | |
 
 ## C. The organization decides
@@ -129,8 +129,8 @@ database needs new ones.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin B, clone `ghana-2027-gov` into `ghana-2027-gov.r2`, change `GHANA:grid:GHA:2024` to 0.45, and attach the source document. As Admin A, publish it with applies from 2025-06-01. | PUBLISHED; `ghana-2027-gov` reads SUPERSEDED. Admin A is the approver this time: the roles swap with the curator. | | |
-| 2 | As Kofi, open **Updates**. | The badge reads 1. The drawer's **Blocked** group names the lineage as used by an inventory whose period is frozen, final or published. | | |
+| 1 | As Admin B, clone `ghana-2027-gov` into `ghana-2027-gov.r2`, change `GHANA:grid:GHA:2024` to 0.45, and attach the source document. As Admin A, publish it with applies from 2025-06-01. | PUBLISHED, and `ghana-2027-gov` stays PUBLISHED: an edition that applies from an earlier date than the one standing is not its successor, so it supersedes nothing (spec 02.5). Admin A is the approver this time: the roles swap with the curator. | | |
+| 2 | As Kofi, open **Updates**. | The badge reads 1. The drawer names the block above what moves: "2025-06-01 falls inside FY2025 (2025-01-01 → 2025-12-31), which is published. A reported period keeps the factors it reported with, so this edition cannot be accepted until that inventory is reopened. Declining stays available.". | | |
 | 3 | Answer "Erratum: the edition corrects a wrong value in a year already reported" and accept. | Refused: the message says `ghana-2027-gov.r2` applies from 2025-06-01, which falls inside a named inventory of 2025 with its status (FY2025, PUBLISHED, or its correction, FROZEN), and ends "A reported period keeps the factors it reported with. Reopen that inventory, or import the edition into a later period.". | | |
 | 4 | Read the factors. | `GHANA:grid:GHA:2024` still has two versions. The refusal wrote nothing. | | |
 
@@ -141,7 +141,7 @@ database needs new ones.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Admin A, open `ghana-2027-gov.r2`, click **Withdraw**, type "short" and confirm. | Refused: "Say why the edition is withdrawn, in at least 10 characters.". | | |
-| 2 | Give "Published against the wrong period; retracted" and confirm. | "ghana-2027-gov.r2 was withdrawn.". WITHDRAWN with its reason. | | |
+| 2 | Give "Published against the wrong period; retracted" and confirm. | "ghana-2027-gov.r2 was withdrawn.". The edition reads WITHDRAWN. The reason reaches the organizations, on the Updates row of case F1.4; the edition page itself prints the status, not the reason. | | |
 | 3 | Try to withdraw a draft: clone `ghana` into `ghana-scratch` and look for **Withdraw**. | A draft offers no **Withdraw**: no organization can see it, so there is nothing to retract. **Delete draft** is what it offers; delete it. | | |
 | 4 | As Kofi, reload **Updates**. | The row reads "Withdrawn by the publisher" with the reason; the badge is gone. Opening it says there is nothing to decide. | | |
 | 5 | Read `GHANA:grid:GHA:2024` and Run 005's total once more. | Two versions, 120,373.32 kg. A withdrawal is the publisher's act. | | |
