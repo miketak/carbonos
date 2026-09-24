@@ -53,6 +53,8 @@ vi.mock('../api', () => ({
 vi.mock('../../auth/api', () => ({ login: vi.fn(), logout: vi.fn(), me: vi.fn() }))
 
 import { publishFactorPackEdition, uploadFactorPackEvidence } from '../api'
+import { me } from '../../auth/api'
+import { ApiError } from '../../../lib/api'
 
 const draft: FactorPackEdition = {
   editionId: 'defra-2027',
@@ -73,6 +75,7 @@ const draft: FactorPackEdition = {
   evidenceName: null,
   evidenceSize: null,
   curator: 'Ama Mensah',
+  curatorEmail: 'ama@ecoriv.com',
   approver: null,
   provenanceReview: 'REVIEWED',
   provenanceNote: null,
@@ -91,6 +94,7 @@ const draft: FactorPackEdition = {
 beforeEach(() => {
   vi.mocked(uploadFactorPackEvidence).mockReset()
   vi.mocked(publishFactorPackEdition).mockReset()
+  vi.mocked(me).mockReset().mockRejectedValue(new ApiError(401, undefined))
 })
 
 function renderDialog(props: Partial<Parameters<typeof PublishEditionDialog>[0]> = {}) {
@@ -186,4 +190,43 @@ test('publishing sends the source document, the date, and the erratum answer', a
     }),
   )
   await waitFor(() => expect(onPublished).toHaveBeenCalled())
+})
+
+const curator = {
+  id: 'user-ama',
+  email: 'Ama@ecoriv.com',
+  displayName: 'Ama Mensah',
+  role: 'ADMIN' as const,
+  status: 'ACTIVE' as const,
+  createdAt: '2026-01-01T00:00:00Z',
+}
+
+test('the curator sees the approver condition unmet and cannot publish (spec 02.5)', async () => {
+  vi.mocked(me).mockResolvedValue(curator)
+  renderDialog({ edition: { ...draft, evidenceChecksum: 'b'.repeat(64) } })
+
+  expect(
+    await screen.findByText(/You built this draft, so another administrator checks it/i),
+  ).toBeInTheDocument()
+  expect(screen.getByText('Not met:', { exact: false })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^publish$/i })).toBeDisabled()
+})
+
+test('a refusal on a field the form does not carry is shown, not swallowed', async () => {
+  const user = userEvent.setup()
+  vi.mocked(publishFactorPackEdition).mockRejectedValue(
+    new ApiError(422, {
+      title: 'Invalid request',
+      errors: {
+        approver:
+          'The approver must not be the curator. Ama Mensah built this draft, so somebody else checks it against the source document and publishes it.',
+      },
+    }),
+  )
+  renderDialog({ edition: { ...draft, evidenceChecksum: 'b'.repeat(64) } })
+
+  await user.click(screen.getByRole('button', { name: /^publish$/i }))
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    /The approver must not be the curator\. Ama Mensah built this draft/,
+  )
 })

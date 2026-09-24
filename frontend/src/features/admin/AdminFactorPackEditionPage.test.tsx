@@ -88,6 +88,7 @@ const draft: FactorPackEdition = {
   evidenceName: null,
   evidenceSize: null,
   curator: 'Ama Mensah',
+  curatorEmail: 'ama@ecoriv.com',
   approver: null,
   provenanceReview: 'REVIEWED',
   provenanceNote: null,

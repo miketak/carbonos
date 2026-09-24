@@ -123,6 +123,8 @@ export interface FactorPackEdition {
   evidenceName: string | null
   evidenceSize: number | null
   curator: string | null
+  /** Compared with the signed-in administrator: the curator never publishes (spec 02.5). */
+  curatorEmail: string | null
   approver: string | null
   provenanceReview: string
   provenanceNote: string | null

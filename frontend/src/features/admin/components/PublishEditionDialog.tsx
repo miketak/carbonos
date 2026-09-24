@@ -3,8 +3,12 @@ import { Button } from '../../../components/Button'
 import { InputField, TextAreaField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, refusalMessage } from '../../../lib/api'
+import { useSession } from '../../auth/useSession'
 import { usePublishFactorPackEdition, useUploadFactorPackEvidence } from '../useFactorPacks'
 import type { FactorPackEdition, FactorPackFinding } from '../api'
+
+/** The fields the form renders an error under; any other field's refusal is shown as the refusal. */
+const FORM_FIELDS = new Set(['sourceDocument', 'appliesFrom', 'erratumNote'])
 
 interface PublishEditionDialogProps {
   edition: FactorPackEdition
@@ -45,9 +49,16 @@ export function PublishEditionDialog({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [refusal, setRefusal] = useState<string | null>(null)
 
+  const session = useSession()
+  // spec 02.5: the approver must not be the curator, and the dialog says so before the API does
+  const isCurator =
+    session.data?.email !== undefined &&
+    edition.curatorEmail !== null &&
+    session.data.email.toLowerCase() === edition.curatorEmail.toLowerCase()
+
   const rulesPass = findings.length === 0
   const dated = appliesFrom !== ''
-  const ready = rulesPass && checksum !== null && dated
+  const ready = rulesPass && checksum !== null && dated && !isCurator
 
   return (
     <Modal title={`Publish ${edition.editionId}`} onClose={onClose}>
@@ -73,9 +84,10 @@ export function PublishEditionDialog({
             ? `The edition applies from ${appliesFrom}, the vintage boundary an adoption is run from.`
             : 'Give the date the edition applies from. It is the vintage boundary an adoption is run from.'}
         </GateItem>
-        <GateItem met>
-          The approver must not be the curator. {edition.curator ?? 'Somebody else'} built this
-          draft, so somebody else publishes it.
+        <GateItem met={!isCurator}>
+          {isCurator
+            ? 'The approver must not be the curator. You built this draft, so another administrator checks it against the source document and publishes it.'
+            : `The approver must not be the curator. ${edition.curator ?? 'Somebody else'} built this draft, so somebody else publishes it.`}
         </GateItem>
       </ul>
 
@@ -191,7 +203,11 @@ export function PublishEditionDialog({
                 onError: (failure) => {
                   const fields = fieldErrors(failure)
                   if (fields) setErrors(fields)
-                  else setRefusal(refusalMessage(failure))
+                  // a refusal on a field the form does not carry (the approver) is shown as the refusal
+                  const shown = fields
+                    ? Object.entries(fields).find(([field]) => !FORM_FIELDS.has(field))?.[1]
+                    : undefined
+                  if (!fields || shown) setRefusal(shown ?? refusalMessage(failure))
                 },
               },
             )
