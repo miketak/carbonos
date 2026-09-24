@@ -1,4 +1,4 @@
-# Engineering docs: the strict site build is the check; Vale is advisory.
+# Engineering docs and end-user help: the strict site builds are the check; Vale is advisory.
 # Nothing is published. Runs only when docs, specs, or the docs toolchain change.
 name: Docs
 
@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - "docs/**"
+      - "help/**"
       - "specs/**"
       - "mkdocs.yml"
       - "pyproject.toml"
@@ -19,6 +20,7 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - "help/**"
       - "specs/**"
       - "mkdocs.yml"
       - "pyproject.toml"
@@ -50,8 +52,10 @@ jobs:
           enable-cache: true
       - name: Install the docs toolchain
         run: uv sync --locked
-      - name: Build the site (strict)
+      - name: Build the engineering docs (strict)
         run: uv run mkdocs build --strict
+      - name: Build the help site (strict)
+        run: uv run mkdocs build --strict -f help/mkdocs.yml
       - name: Install Vale
         continue-on-error: true
         run: |

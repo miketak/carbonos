@@ -1,11 +1,11 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-24
 ---
 
 # Contributing to docs
 
-This page is the house style for everything under `docs/` and `specs/`. It
+This page is the house style for everything under `docs/`, `help/` and `specs/`. It
 distills the [Google developer documentation style guide](https://developers.google.com/style)
 and the [Diátaxis](https://diataxis.fr/) framework into the rules this
 project applies, and it tells you how to build and check the site.
@@ -130,6 +130,21 @@ last_reviewed: 2026-09-09
 The owner is who to ask about the page. When you review a page and it still
 holds, update `last_reviewed`, even when nothing else changed. A page older
 than six months is due for review.
+
+## Two sites, one style
+
+The repository builds two sites from the same toolchain: this engineering
+site from `docs/` and `mkdocs.yml`, and the end-user help from
+`help/docs/` and `help/mkdocs.yml`
+(see [ADR 0005](adr/0005-a-separate-mkdocs-site-for-end-user-help.md)).
+Every rule on this page applies to both. The help site has its own
+Diátaxis sections (`concepts/`, `get-started/`, `tasks/`, `reference/`,
+`troubleshooting/`), never links into `specs/` or `docs/`, and cites the
+specs and QA cases that ground a page in an HTML comment under the front
+matter, so a reviewer can check each claim. `make help-serve` serves it on
+port 8001, `make help-site` builds it strictly, and `make help-check` is
+the Definition of Done for a help change. A new help page must be in `nav`
+in `help/mkdocs.yml`, or the strict build fails.
 
 ## Build and check the site
 

@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-24
 ---
 
 # Makefile
@@ -27,6 +27,9 @@ does the same.
 | `docs` | Builds the docs site into `site/` with `--strict`; any warning fails. | uv |
 | `docs-serve` | Serves the docs on http://127.0.0.1:8000 with live reload. | uv |
 | `docs-check` | `docs`, then `vale`. The Definition of Done for a docs change. | uv, Vale (optional) |
+| `help-site` | Builds the end-user help site (`help/mkdocs.yml`) into `help/site/` with `--strict`. | uv |
+| `help-serve` | Serves the help site on http://127.0.0.1:8001 with live reload, so it can run beside `docs-serve`. | uv |
+| `help-check` | `help-site`, then `vale`. The Definition of Done for a help change. | uv, Vale (optional) |
 | `vale [BASE=<ref>]` | Runs Vale on the Markdown changed against `BASE` (default `origin/main`), including untracked files. Skips when Vale is not installed. | Vale |
 | `qa-docs` | Exports the QA procedures as DOCX under `build/qa-docs/`, ready to upload to the QA team's Drive folder. | uv, pandoc |
 

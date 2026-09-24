@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-24
 ---
 
 # CarbonOS engineering docs
@@ -42,6 +42,9 @@ one kind of question, so you can tell from the section which page you need.
   objective-led scripts a tester runs on staging.
 - Wondering why a tool or structure was chosen? Read the
   [decision records](adr/README.md).
+- Looking for help written for the people who use the product? That is the
+  separate help site under `help/`: `make help-serve` opens it on
+  http://127.0.0.1:8001.
 
 ## Build the site
 

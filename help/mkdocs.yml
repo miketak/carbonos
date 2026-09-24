@@ -1,0 +1,86 @@
+# CarbonOS help for the people who use the product. Build with `make help-site`,
+# serve with `make help-serve`. The engineering docs are the sibling project in
+# ../mkdocs.yml; the two sites share the toolchain and the house style
+# (docs/adr/0005-a-separate-mkdocs-site-for-end-user-help.md) and never link
+# into each other's source trees.
+site_name: CarbonOS help
+site_description: How to record, classify, calculate, publish, and administer a greenhouse gas inventory in CarbonOS.
+# Served locally for now, on a second port so both sites can run at once.
+site_url: http://127.0.0.1:8001/
+repo_url: https://github.com/miketak/carbonos
+repo_name: miketak/carbonos
+edit_uri: edit/main/help/docs/
+docs_dir: docs
+site_dir: site
+
+# Every warning fails `mkdocs build --strict`: a page missing from the nav, a
+# broken relative link, or an unknown anchor.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Concepts:
+      - concepts/index.md
+  - Get started:
+      - get-started/index.md
+  - Tasks:
+      - tasks/index.md
+  - Reference:
+      - reference/index.md
+  - Troubleshooting:
+      - troubleshooting/index.md

@@ -27,7 +27,7 @@ flowchart LR
         approve[Required reviewer] -.-> rp
     end
     qs --> release
-    subgraph docs["Docs: docs, specs, toolchain paths"]
+    subgraph docs["Docs: docs, help, specs, toolchain paths"]
         db[Docs / strict build] --> dv[Vale, advisory]
     end
 ```
@@ -80,10 +80,10 @@ release.
 | | |
 | --- | --- |
 | File | `docs.yml` |
-| Triggers | `pull_request` (any base) and `push` to `main`, only for paths under `docs/`, `specs/`, the docs toolchain files (`mkdocs.yml`, `pyproject.toml`, `uv.lock`, `.python-version`, `.vale.ini`, `.vale/`) and the `Makefile` |
+| Triggers | `pull_request` (any base) and `push` to `main`, only for paths under `docs/`, `help/`, `specs/`, the docs toolchain files (`mkdocs.yml`, `pyproject.toml`, `uv.lock`, `.python-version`, `.vale.ini`, `.vale/`) and the `Makefile` |
 | Concurrency | `docs-<ref>`, in-progress runs cancelled |
 | Permissions | `contents: read` |
-| Job | `Docs / strict build`: `uv sync --locked`, `uv run mkdocs build --strict`, then Vale on the changed Markdown with `continue-on-error` |
+| Job | `Docs / strict build`: `uv sync --locked`, `uv run mkdocs build --strict` for the engineering docs and again with `-f help/mkdocs.yml` for the help site, then Vale on the changed Markdown with `continue-on-error` |
 
 Nothing is published. The Vale step reports warnings in the job log and
 never fails the job.

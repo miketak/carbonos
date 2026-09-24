@@ -14,7 +14,7 @@
 # Local scratch
 temp/
 
-# engineering docs site (make docs) and its Python toolchain
+# engineering docs site (make docs), the help site (make help-site) and their Python toolchain
 site/
 .venv/
 __pycache__/

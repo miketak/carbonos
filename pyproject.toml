@@ -1,7 +1,7 @@
 [project]
 name = "carbonos-tooling"
 version = "0.0.0"
-description = "Repository-level Python tooling for CarbonOS: the engineering docs site"
+description = "Repository-level Python tooling for CarbonOS: the documentation sites"
 requires-python = ">=3.12"
 dependencies = []
 
