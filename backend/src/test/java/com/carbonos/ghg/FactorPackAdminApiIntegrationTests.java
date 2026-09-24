@@ -157,7 +157,9 @@ class FactorPackAdminApiIntegrationTests {
 			.andExpect(jsonPath("$.holderCount").value(0))
 			// a draft authored in the console can never carry the seed's exemption
 			.andExpect(jsonPath("$.provenanceReview").value("REVIEWED"))
-			.andExpect(jsonPath("$.curator").value("ama@ecoriv.com"));
+			.andExpect(jsonPath("$.curator").value("ama@ecoriv.com"))
+			// the console compares it with the signed-in administrator: the curator may not publish
+			.andExpect(jsonPath("$.curatorEmail").value("ama@ecoriv.com"));
 
 		mvc.perform(put("/api/admin/factor-packs/editions/" + DRAFT).with(asAdmin()).with(csrf())
 			.contentType("application/json")
