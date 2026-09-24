@@ -18,7 +18,13 @@ export function PreflightBanner({
   report: ValidationReport
   onResolve: () => void
 }) {
-  const blocking = report.gates.filter((gate) => gate.status === 'BLOCKED')
+  // spec 06.1: the base-year gate holds the final designation, never a run
+  const blocking = report.gates.filter(
+    (gate) => gate.status === 'BLOCKED' && gate.gate !== 'BASE_YEAR',
+  )
+  const holdsFinal = report.gates.some(
+    (gate) => gate.status === 'BLOCKED' && gate.gate === 'BASE_YEAR',
+  )
   const warning = report.gates.filter((gate) => gate.status === 'WARNINGS')
   const blockers = report.freezeBlockers.length
 
@@ -40,15 +46,17 @@ export function PreflightBanner({
           <p className="text-xs text-ink-muted">
             {blocking.length > 0
               ? `${blocking.map((gate) => gateLabels[gate.gate]).join(', ')} ${blocking.length === 1 ? 'is' : 'are'} blocking.`
-              : warning.length > 0
-                ? `Every gate passes; ${warning.length} carries a warning.`
-                : 'Every gate passes.'}
+              : holdsFinal
+                ? 'Base year holds the final designation; runs stay available.'
+                : warning.length > 0
+                  ? `Every gate passes; ${warning.length} carries a warning.`
+                  : 'Every gate passes.'}
             {blockers > 0 &&
               ` ${blockers} record${blockers === 1 ? '' : 's'} would also stop a freeze.`}
           </p>
         </div>
       </div>
-      {!report.ready && (
+      {(!report.ready || holdsFinal) && (
         <button
           type="button"
           onClick={onResolve}

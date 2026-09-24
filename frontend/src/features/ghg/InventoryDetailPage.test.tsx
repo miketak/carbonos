@@ -619,6 +619,27 @@ test('launch is enabled when every gate passes', async () => {
   expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeEnabled()
 })
 
+test('a base-year hold keeps the run available and says what it holds (spec 06.1)', async () => {
+  vi.mocked(getValidation).mockResolvedValue({
+    ...passingReport,
+    gates: [
+      ...passingReport.gates.slice(0, 4),
+      {
+        gate: 'BASE_YEAR',
+        status: 'BLOCKED',
+        findings: [{ severity: 'ERROR', message: 'Base year flagged for recalculation.' }],
+      },
+    ],
+  })
+  renderPage('runs')
+
+  expect(await screen.findByText('Ready to launch a run')).toBeInTheDocument()
+  expect(
+    screen.getByText('Base year holds the final designation; runs stay available.'),
+  ).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeEnabled()
+})
+
 // --- inventory lifecycle (spec 05.1) ----------------------------------------
 
 test('a draft inventory is flagged, blocks the run, and freezes after confirming', async () => {
