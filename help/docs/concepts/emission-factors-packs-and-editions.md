@@ -122,10 +122,10 @@ sequenceDiagram
         C-->>R: "Adopted defra-2026: 1483 versions cut, 385 lineages added." History: Factor pack adopted
     else Decline
         R->>C: Decline
-        C-->>R: Notice reads Declined; nothing moves
+        C-->>R: Notice reads Declined. Nothing moves
     else Withdrawn
         P->>C: Withdraw the edition, with a reason
-        C-->>R: Notice reads "Withdrawn by the publisher"; nothing to decide
+        C-->>R: Notice reads "Withdrawn by the publisher". Nothing to decide
     end
 ```
 
