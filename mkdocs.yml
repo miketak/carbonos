@@ -205,6 +205,7 @@ nav:
       - Reviews:
           - reviews/2026-09-08-ghg-officer-ui-audit.md
           - reviews/2026-09-11-ghg-officer-ui-audit.md
+          - reviews/2026-09-24-governance-pack-walkthrough.md
   - Explanation:
       - explanation/architecture.md
       - explanation/spec-workflow.md
