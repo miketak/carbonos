@@ -40,7 +40,7 @@ way. Then the freeze cuts a version.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | On **Records**, read the status filter. | Ten records. ACT-0007 (Tema Depot, May 2025) reads "Excluded · Outside boundary" with the computed detail "member from 2025-07-01": E1 joined on 2025-07-01 and the record is earlier. ACT-0008 (Takoradi Cold Store) reads "Excluded · Outside boundary": the facility is not in the boundary. Eight are unclassified. | | |
-| 2 | Open ACT-0007's drawer and read the **Exclude** tab. | The reason and its detail are the computed ones; no justification was asked. | | |
+| 2 | Open ACT-0007's drawer. | An excluded record's drawer has no tabs: the chip reads the computed reason and its detail, "Excluded · Outside boundary (Adansi Logistics Ltd: member from 2025-07-01)", and no justification was asked. | | |
 
 ## B. Classification, one record per rule
 
@@ -48,7 +48,7 @@ way. Then the freeze cuts a version.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open ACT-0001 (Boiler LPG, 2,400 litre). Search the picker for "LPG" and choose **Gaseous fuels: LPG** per litre. | The picker offers the `defra-2025` version, the one live in the period. The record reads included, scope 1, stationary combustion, at 1.55713 kg CO₂e/litre; there is no arithmetic preview line, because the record's unit is the factor's own (the preview appears only where a unit converts, as cases B2 and B4 show). The stream's default scope is taken without a justification. | | |
+| 1 | Open ACT-0001 (Boiler LPG, 2,400 litre). Search the picker for "LPG" and choose **Gaseous fuels: LPG** per litre. | The picker offers the `defra-2025` version, the one live in the period, at 1.557 kg CO₂e per litre. The record reads included, scope 1, stationary combustion; there is no arithmetic preview line, because the record's unit is the factor's own (the preview appears only where a unit converts, as cases B2 and B4 show). The stream's default scope is taken without a justification. | | |
 
 ### B2. The grid factor is suggested
 
@@ -78,7 +78,7 @@ way. Then the freeze cuts a version.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Open ACT-0005 (chiller refrigerant top-up, 20 kg) and search for "R407C". | **Blends: R407C, Emissions including only Kyoto products** per kg, 1,624 kg CO₂e/kg, is offered. | | |
-| 2 | Choose it. | Scope 1, fugitive emissions, "20 kg × 1,624 kg CO₂e/kg". The factor publishes an HFC mass, so the by-gas table of a run carries 20 kg under HFCs. | | |
+| 2 | Choose it. | Scope 1, fugitive emissions, with no preview line: the record's unit is the factor's own. The factor publishes an HFC mass, so the by-gas table of a run carries 20 kg under HFCs. | | |
 
 ### B6. A departure needs a justification; a proxy needs one too
 
@@ -152,8 +152,8 @@ way. Then the freeze cuts a version.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Under the instruments card, add for Kumasi Plant: instrument certificate, 0 kg CO₂e per kWh, source "I-REC(E) Ghana 2025", covered quantity 150 MWh, reference "IREC-GH-2025-0091", registry "I-TRACK", vintage 2025, and answer criteria 1, 2, 4, 5, 6, 7 and 8 **Met**, leaving 3 at **Not yet answered**. | "Instrument recorded for Kumasi Plant." The row reads "Not applied: 1 unanswered". | | |
-| 2 | Read the **Emission factors** gate. | "The instrument for Kumasi Plant does not meet the Scope 2 Quality Criteria (1 of the eight criteria not yet answered): the market-based figure falls back to location-based.". | | |
-| 3 | Edit the instrument and answer criterion 3 **Met** (the form's button still reads **Add instrument**; it saves the edit). | The row no longer reads "Not applied". The gate warns instead: "The instrument for Kumasi Plant covers 150,000 kWh but the facility's scope 2 electricity in its period is 120,000 kWh: the excess covers nothing.". | | |
+| 2 | Read the **Emission factors** gate. | Two warnings: "The instrument for Kumasi Plant does not meet the Scope 2 Quality Criteria (1 of the eight criteria not yet answered): the market-based figure falls back to location-based." and "The instrument for Kumasi Plant covers 150,000 kWh but the facility's scope 2 electricity in its period is 120,000 kWh: the excess covers nothing.". | | |
+| 3 | Edit the instrument and answer criterion 3 **Met** (the form's button still reads **Add instrument**; it saves the edit). | The row no longer reads "Not applied". The first warning goes; the coverage warning stays. | | |
 | 4 | Edit the covered quantity to 120. | The warning goes. | | |
 
 ### E3. The residual mix is stated either way
@@ -172,9 +172,9 @@ way. Then the freeze cuts a version.
 | --- | --- | --- | --- | --- |
 | 1 | Read the pre-flight. | No error remains. The warnings are the ones this procedure left: the straddling record, and the partial-period membership. | | |
 | 2 | Click **Freeze inventory** and confirm. | The header reads FROZEN and "Boundary version 1". The bar says the boundary and the view are read-only and runs are allowed. | | |
-| 3 | Try to untick a facility on **Boundary**, and to change ACT-0001's factor. | Both are refused: the change is not allowed while the inventory is frozen; reopen it as a draft first. | | |
+| 3 | Try to untick a facility on **Boundary**, and to change ACT-0001's factor. | Neither can be done: the boundary checkboxes are disabled, and the drawer shows the classification without its factor, scope and category controls. The lifecycle bar says the boundary and the view are read-only; reopen the inventory as a draft to change either. | | |
 | 4 | Click **Reopen as draft**, type "short" and read the button. | Disabled until the reason has 10 characters. | | |
-| 5 | Give "Checking that a reopen keeps the version" and confirm. | DRAFT again. The version history keeps version 1 with "Reopened by <the Ama alias> on <time>: Checking that a reopen keeps the version". | | |
+| 5 | Give "Checking that a reopen keeps the version" and confirm. | DRAFT again. On **Boundary**, the version list keeps version 1 with "Reopened by <the Ama alias> on <time>: Checking that a reopen keeps the version"; **Runs** carries the same act in the inventory's history. | | |
 | 6 | Freeze again. | "Boundary version 2". The history reads both versions. | | |
 
 ## Sign-off

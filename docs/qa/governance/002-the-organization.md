@@ -37,9 +37,9 @@ organization it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama, click **New organization**, type the name "Adansi Foods Ltd", leave the rest empty, and create. | The organization opens on its **Overview**. Ama is its owner. | | |
+| 1 | As Ama, click **New organization**, type the name "Adansi Foods Ltd", leave the rest empty, and create. | "Adansi Foods Ltd created." The list shows the organization with **Open** and **Settings**. Open it: the **Overview** opens, and **Settings** reads "Your role: Owner". | | |
 | 2 | Open **Settings**. Under **Members**, add the Kofi alias as **Reviewer**, the Esi alias as **Preparer** and the Yaw alias as **Verifier (read-only)**. | Each appears with the role chosen. The card says reviewers also designate final runs, publish and create corrections, and verifiers read only. | | |
-| 3 | Add `nobody@example.test`. | Refused: there is no account with that address. Membership is granted to an existing account; a newcomer requests access first. | | |
+| 3 | Add `nobody@example.test`. | Refused: "No account with that email." and that a platform administrator adds the account first. Membership is granted to an existing account; a newcomer requests access first. | | |
 | 4 | Add the Kofi alias again. | Refused: "<the Kofi alias> is already a member of 'Adansi Foods Ltd'.". | | |
 | 5 | Change Ama's own role to **Preparer**. | Refused: "'Adansi Foods Ltd' needs at least one owner.". | | |
 | 6 | Click **Remove** on Ama's row. | The same refusal. | | |
@@ -50,7 +50,7 @@ organization it builds.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Yaw in the private window, open Adansi Foods Ltd. | The organization is listed and opens. Every page carries the banner "Your role in this organization is Verifier (read-only).". | | |
-| 2 | Open **Legal entities**, **Facilities** and **Emission factors**. | Every button that would write is disabled, with a tooltip saying the role is read-only. Nothing is hidden: a verifier sees the record, not a blank page. | | |
+| 2 | Open **Legal entities**, **Facilities** and **Emission factors**. | Every button that would write is disabled, with the tooltip "Needs the Preparer, Reviewer or Owner role.". Nothing is hidden: a verifier sees the record, not a blank page. | | |
 | 3 | Sign out of the private window. | | | |
 
 ## B. Legal entities
@@ -66,10 +66,10 @@ organization it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Add an entity: name "Adansi Logistics Ltd", relationship **Group company or subsidiary (financial control)**, economic interest 100, legal ownership 100, **Operated by the company** ticked, **Acquired on** 2025-07-01, **Disposed of on** 2025-01-01, jurisdiction Ghana. Save. | Refused inline: "The disposal date is before the acquisition date.". | | |
+| 1 | Add an entity: name "Adansi Logistics Ltd", relationship **Group company or subsidiary (financial control)**, economic interest 100, legal ownership 100, **Operated by the company** ticked, **Acquired on** 2025-07-01, **Disposed of on** 2025-01-01, jurisdiction `GH` (the field takes the ISO 3166-1 alpha-2 code). Save. | Refused inline: "The disposal date is before the acquisition date.". | | |
 | 2 | Clear the disposal date and save. | E1 is listed with 100% under every approach and "acquired 2025-07-01". | | |
 | 3 | Add a second entity: name "Coldstore Ghana Ltd", relationship **Associate or affiliate (significant influence, no control)**, economic interest 150. Save. | Refused inline under the field: the percentage must be between 0 and 100. | | |
-| 4 | Set economic interest 30, legal ownership 30, leave **Operated by the company** unticked, jurisdiction Ghana. Save. | E2 is listed. Its Table 1 row reads 30% under equity share and 0% under financial and operational control. | | |
+| 4 | Set economic interest 30, legal ownership 30, leave **Operated by the company** unticked, jurisdiction `GH`. Save. | E2 is listed. Its Table 1 row reads 30% under equity share and 0% under financial and operational control. | | |
 | 5 | Add an entity named "adansi logistics ltd". | Refused: "An entity named 'adansi logistics ltd' already exists.". Names are compared without regard to case. | | |
 
 ### B3. A parent chain cannot loop
@@ -86,10 +86,10 @@ organization it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Facilities** and add "Kumasi Plant": location "Kumasi", country Ghana, the Ghana grid region, legal entity Adansi Foods Ltd. | S1 is listed under E0. | | |
-| 2 | Add "Tema Depot": location "Tema", country Ghana, legal entity Adansi Logistics Ltd, lease **operating lease (leased in)**, **Lease from** 2025-07-01, **Lease until** 2025-06-30. Save. | Refused inline: "The lease ends before it starts.". | | |
+| 1 | Open **Facilities** and add "Kumasi Plant": location "Kumasi", country `GH`, grid region `GHA` (the code the Ghana pack's rows carry; a blank grid region follows the country), legal entity Adansi Foods Ltd. | S1 is listed under E0 with "grid GHA". | | |
+| 2 | Add "Tema Depot": location "Tema", country `GH`, legal entity Adansi Logistics Ltd, lease **operating lease (leased in)**, **Lease from** 2025-07-01, **Lease until** 2025-06-30. Save. | Refused inline: "The lease ends before it starts.". | | |
 | 3 | Clear **Lease until** and save. | S2 is listed under E1 with its lease. | | |
-| 4 | Add "Takoradi Cold Store": location "Takoradi", country Ghana, legal entity Coldstore Ghana Ltd. | S3 is listed under E2. | | |
+| 4 | Add "Takoradi Cold Store": location "Takoradi", country `GH`, legal entity Coldstore Ghana Ltd. | S3 is listed under E2. | | |
 
 ### C2. An entity with facilities is not deleted
 

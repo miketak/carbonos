@@ -34,7 +34,7 @@ it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Inventories** and click **New inventory**. Name "FY2025", period 2025-01-01 to 2025-12-31, consolidation approach operational control, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Start with every operation the approach includes in the boundary** ticked. Create. | The workbench opens on **Records** with five tabs: **Records**, **Boundary**, **Method**, **Runs** and **Report**. The header reads DRAFT. | | |
+| 1 | Open **Inventories** and click **New inventory**. Name "FY2025", period 2025-01-01 to 2025-12-31, consolidation approach operational control, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Start with every operation the approach includes in the boundary** ticked. Create. | "FY2025 created." The list shows the inventory as DRAFT with **Open**. Open it: the workbench opens on **Records** with five tabs: **Records**, **Boundary**, **Method**, **Runs** and **Report**. The header reads DRAFT. | | |
 | 2 | Open **Boundary**. | Adansi Foods Ltd and Adansi Logistics Ltd are in the boundary with their facilities. Coldstore Ghana Ltd reads "outside the boundary under operational control" at 0% from its Table 1 row; its checkbox is disabled and its row asks why it is left out. | | |
 | 3 | Read Adansi Logistics Ltd's row. | **Member from** already reads 2025-07-01, taken from the acquisition date. | | |
 
@@ -52,7 +52,7 @@ it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Boundary**, untick **Tema Depot in boundary**. | Tema Depot leaves the boundary. Unticking E1's only facility unticks E1, and the reason control appears on the entity's row reading "left out without a reason". | | |
+| 1 | On **Boundary**, untick **Tema Depot in boundary**. | Tema Depot leaves the boundary. Unticking E1's only facility unticks E1, and the reason control appears on the entity's row, reading "Why is it left out?". | | |
 | 2 | Read the **Reporting boundary** gate on the pre-flight panel. | An error: "'Tema Depot' (Adansi Logistics Ltd) is neither in the boundary nor excluded with a reason. Tick it in, or record why it is left out.". The facility is named first: the reason is recorded on its entity's row. | | |
 | 3 | Choose **Not applicable** with the detail "Scratch: testing the exclusion flow". | The error becomes a warning: the entity is excluded as not applicable while it holds a 100% share under this approach, and the report discloses the exclusion. | | |
 | 4 | Tick Tema Depot back in. | The reason is gone. An operation back in the boundary carries no exclusion. | | |

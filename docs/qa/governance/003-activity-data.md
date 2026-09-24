@@ -33,7 +33,7 @@ ten records it imports.
 | 1 | Open **Activity data** and click **Import CSV**, then **Download CSV template**. | The dialog is titled "Import activity data" under the eyebrow "BULK ENTRY". The template's header is `facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note`, the same as the fixture's. | | |
 | 2 | Choose `adansi-2025.csv`. | The file is checked at once, and nothing is written. **Control totals** groups the rows by facility, stream and unit: Kumasi Plant, Boiler LPG, 2,400 litre; Kumasi Plant, Plant grid supply, 120 MWh; Tema Depot, Delivery fleet, 5,000 litre; and the rows with no stream by unit. "10 records to add" lists each row with its facility and period. | | |
 | 3 | Read **Worth a look before adding**. | Row 7 (the year-end LPG) is named: "the period is longer than one month (2025-12-15 to 2026-01-15); monthly rows make the coverage matrix and cut-off checks precise". | | |
-| 4 | Read the readiness pill on each listed row. | Rows 2 to 4 read **Ready**. Rows 5 to 11 read "No stream"; rows 9 and 10, which carry no document reference, also read "Needs evidence". "Missing source" appears nowhere: every row names its data source. The line under the list counts the eight rows that are "reference only, nothing attached". | | |
+| 4 | Read the readiness pill on each listed row. | Rows 2 to 4 read **Ready**. Rows 5 to 11 read "No stream"; rows 9 and 10, which carry no document reference, read "No stream +1", the second item being "Needs evidence", and the summary lines above the list count "7 rows: no stream" and "2 rows: needs evidence". "Missing source" appears nowhere: every row names its data source. The line under the totals counts the eight rows that are "reference only, nothing attached". | | |
 
 ### A2. The import, and the same file again
 
@@ -70,7 +70,7 @@ ten records it imports.
 | --- | --- | --- | --- | --- |
 | 1 | Click **+ Add activity**, type the activity type "Generator diesel", the facility Kumasi Plant, nothing else, and click **Save draft**. | The record is saved as a draft with no quantity and no period. The banner names it as a draft with data outstanding. | | |
 | 2 | Open the draft, type 150 litre and the period 2025-02-01 to 2025-02-28, and save it as a fact. | The record is a fact. Its history reads "Entered from a draft". | | |
-| 3 | Open it again and look for a way back to a draft. | There is none: "A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft.". | | |
+| 3 | Open it again and look for a way back to a draft. | There is none: the drawer offers **Save** but no **Save draft**. A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft. | | |
 
 ## E. Corrections
 
