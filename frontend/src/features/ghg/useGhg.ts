@@ -878,7 +878,11 @@ export function useSetOperationalBoundary(inventoryId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: OperationalBoundaryInput) => setOperationalBoundary(inventoryId, input),
-    onSuccess: (inventory) => queryClient.setQueryData(inventoryKey(inventoryId), inventory),
+    onSuccess: (inventory) => {
+      queryClient.setQueryData(inventoryKey(inventoryId), inventory)
+      // spec 07.6: the declaration is cross-checked against the classification, so the gates re-run
+      void queryClient.invalidateQueries({ queryKey: validationKey(inventoryId) })
+    },
   })
 }
 

@@ -985,6 +985,7 @@ test('a declared category can say why it is not quantified this year (spec 07.6)
     screen.getByLabelText('15. Investments: why not quantified this year'),
     'the associate reports its own inventory',
   )
+  const gateReads = vi.mocked(getValidation).mock.calls.length
   await user.click(screen.getByRole('button', { name: /save declaration/i }))
 
   await waitFor(() =>
@@ -996,6 +997,8 @@ test('a declared category can say why it is not quantified this year (spec 07.6)
       ],
     }),
   )
+  // the declaration is cross-checked by the Classification gate, so the pre-flight re-runs
+  await waitFor(() => expect(vi.mocked(getValidation).mock.calls.length).toBeGreaterThan(gateReads))
 })
 
 test('a draft can be edited: the straddle treatment is saved through the API (spec 04.2)', async () => {
