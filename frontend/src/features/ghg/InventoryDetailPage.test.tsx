@@ -1205,6 +1205,25 @@ test('a row carries the record reference beside the activity, and the search nam
   expect(screen.getByPlaceholderText(/^Reference, activity/)).toBeInTheDocument()
 })
 
+test('the view search keeps every keystroke and asks the server once the typing pauses (spec 05.6)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
+  renderPage()
+
+  await screen.findByRole('button', { name: 'Diesel consumption' })
+  await user.type(screen.getByLabelText('Search the view'), 'lpg')
+  expect(screen.getByLabelText('Search the view')).toHaveValue('lpg')
+  await waitFor(() =>
+    expect(searchAssignments).toHaveBeenLastCalledWith(
+      'inv-1',
+      expect.objectContaining({ q: 'lpg', page: 0, size: 50 }),
+    ),
+  )
+  const queries = vi.mocked(searchAssignments).mock.calls.map(([, query]) => query.q)
+  expect(queries).not.toContain('l')
+  expect(queries).not.toContain('lp')
+})
+
 test('the activity view filters by scope, category, stream and lease (spec 05.5)', async () => {
   const user = userEvent.setup()
   vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))

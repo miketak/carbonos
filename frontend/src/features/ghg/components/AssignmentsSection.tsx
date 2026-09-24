@@ -19,6 +19,7 @@ import {
   scopeLabels,
 } from '../format'
 import { mayWrite, WRITE_TOOLTIP } from '../roles'
+import { useSearchField } from '../useSearchField'
 import type { MyRole } from '../roles'
 import {
   useAssignmentPageQuery,
@@ -135,6 +136,7 @@ export function AssignmentsSection({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [excluding, setExcluding] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+  const search = useSearchField(filters.q, (q) => set({ q }))
 
   const assignments = assignmentsQuery.data?.items
   const counts = assignmentsQuery.data
@@ -257,8 +259,8 @@ export function AssignmentsSection({
                 ref={searchRef}
                 label="Search the view"
                 placeholder="Reference, activity, facility, stream, factor, unit, evidence"
-                value={filters.q}
-                onChange={(event) => set({ q: event.target.value })}
+                value={search.value}
+                onChange={(event) => search.onChange(event.target.value)}
               />
             </div>
             <SelectField
