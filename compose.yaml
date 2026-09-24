@@ -19,20 +19,20 @@ services:
 
   minio:
     # S3-compatible object storage mirroring Cloudflare R2's S3 API.
-    # Pinned pre-May-2025: later community tags removed the web console (:9001).
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
-    command: server /data --console-address ":9001"
+    # MinIO withdrew its public images in September 2026 (Docker Hub, then quay.io); Bitnami's
+    # frozen legacy repository still serves the April 2025 build, the last with the web console.
+    image: bitnamilegacy/minio:2025.4.22-debian-12-r2
     environment:
       MINIO_ROOT_USER: carbonos
       MINIO_ROOT_PASSWORD: carbonos-secret
+      MINIO_BROWSER: "on"
     ports:
       - "9000:9000" # S3 API
       - "9001:9001" # web console
     volumes:
-      - minio-data:/data
+      - minio-data:/bitnami/minio/data
     healthcheck:
-      # mc is bundled in the image; curl is not
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 5s
       retries: 10
