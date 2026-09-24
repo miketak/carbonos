@@ -18,6 +18,7 @@ import { Breadcrumb } from './components/Breadcrumb'
 import { CompletenessBanner } from './components/CompletenessBanner'
 import { ImportActivitiesModal } from './components/ImportActivitiesModal'
 import { RemoveDialog } from './components/RemoveDialog'
+import { useSearchField } from './useSearchField'
 import { RoleButton } from './components/RoleButton'
 import { ViewSwitch } from './components/ViewSwitch'
 import { mayWrite, WRITE_TOOLTIP } from './roles'
@@ -75,6 +76,7 @@ export function ActivityPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [removing, setRemoving] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+  const search = useSearchField(filters.q, (q) => set({ q }))
 
   const activities = activitiesQuery.data?.items
   const counts = activitiesQuery.data?.counts
@@ -188,8 +190,8 @@ export function ActivityPage() {
               ref={searchRef}
               label="Search"
               placeholder="Find an activity, facility, stream, reference or ACT-0001"
-              value={filters.q}
-              onChange={(event) => set({ q: event.target.value })}
+              value={search.value}
+              onChange={(event) => search.onChange(event.target.value)}
             />
           </div>
           <SelectField

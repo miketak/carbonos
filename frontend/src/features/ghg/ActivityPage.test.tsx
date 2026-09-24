@@ -252,12 +252,17 @@ test('searching the register asks the server with the query and sort (spec 04.5)
 
   await screen.findByText('Diesel consumption')
   await user.type(screen.getByLabelText('Search'), 'lpg')
+  // the box keeps every keystroke; the URL and the query follow after a pause
+  expect(screen.getByLabelText('Search')).toHaveValue('lpg')
   await waitFor(() =>
     expect(searchActivities).toHaveBeenLastCalledWith(
       'org-1',
       expect.objectContaining({ q: 'lpg', sort: 'periodEnd', dir: 'desc', page: 0, size: 50 }),
     ),
   )
+  const queries = vi.mocked(searchActivities).mock.calls.map(([, query]) => query.q)
+  expect(queries).not.toContain('l')
+  expect(queries).not.toContain('lp')
 })
 
 test('a row opens the drawer, and a correction needs a reason before it is sent', async () => {
