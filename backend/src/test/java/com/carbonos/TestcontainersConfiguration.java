@@ -5,7 +5,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.MinIOContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -18,11 +18,20 @@ public class TestcontainersConfiguration {
 		return new PostgreSQLContainer(DockerImageName.parse("postgres:17-alpine"));
 	}
 
+	static final String MINIO_USER = "minioadmin";
+
+	static final String MINIO_PASSWORD = "minioadmin";
+
 	@Bean
-	MinIOContainer minioContainer() {
-		// MinIO publishes its images on quay.io; Docker Hub refuses pulls of minio/minio since 2026-09
-		return new MinIOContainer(DockerImageName.parse("quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z")
-			.asCompatibleSubstituteFor("minio/minio"));
+	GenericContainer<?> minioContainer() {
+		// MinIO withdrew its public images in September 2026: Docker Hub and then quay.io refuse the
+		// pulls. Bitnami's frozen legacy repository still serves the April 2025 build, started through
+		// its own entrypoint, so this is a plain container rather than Testcontainers' MinIOContainer.
+		return new GenericContainer<>(DockerImageName.parse("bitnamilegacy/minio:2025.4.22-debian-12-r2"))
+			.withEnv("MINIO_ROOT_USER", MINIO_USER)
+			.withEnv("MINIO_ROOT_PASSWORD", MINIO_PASSWORD)
+			.withExposedPorts(9000)
+			.waitingFor(Wait.forHttp("/minio/health/live").forPort(9000));
 	}
 
 	@Bean
@@ -41,12 +50,13 @@ public class TestcontainersConfiguration {
 
 	// No @ServiceConnection support for MinIO — map the storage properties by hand.
 	@Bean
-	DynamicPropertyRegistrar storageProperties(MinIOContainer minio) {
+	DynamicPropertyRegistrar storageProperties(GenericContainer<?> minioContainer) {
 		return registry -> {
-			registry.add("carbonos.storage.endpoint", minio::getS3URL);
+			registry.add("carbonos.storage.endpoint",
+					() -> "http://" + minioContainer.getHost() + ":" + minioContainer.getMappedPort(9000));
 			registry.add("carbonos.storage.region", () -> "us-east-1");
-			registry.add("carbonos.storage.access-key", minio::getUserName);
-			registry.add("carbonos.storage.secret-key", minio::getPassword);
+			registry.add("carbonos.storage.access-key", () -> MINIO_USER);
+			registry.add("carbonos.storage.secret-key", () -> MINIO_PASSWORD);
 			registry.add("carbonos.storage.bucket", () -> "carbonos-media-test");
 			registry.add("carbonos.storage.path-style", () -> "true");
 			registry.add("carbonos.storage.create-bucket", () -> "true");
