@@ -16,7 +16,7 @@ one step apart.
 ## The seven steps
 
 ```mermaid
-flowchart LR
+flowchart TD
     accTitle: The seven steps from an account to a report, with where each happens in CarbonOS
     accDescr: An account is created by an administrator or through an approved access request. The organization is described under Legal entities, Facilities and Units. Activity data is recorded under Activity data. An inventory is created under Inventories, its boundary drawn on the Boundary tab and its records classified on the Records tab. Freezing the inventory allows a calculation run on the Runs tab, and a run can be designated final and published. Over time, the base year is designated and recalculation candidates are decided under Base year, and factor pack updates are decided under Updates.
     A["1. Get in<br/>Request access, or an administrator adds you"] --> B["2. Describe the organization<br/>Legal entities, Facilities, Units"]
