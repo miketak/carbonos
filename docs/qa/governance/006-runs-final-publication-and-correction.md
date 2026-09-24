@@ -87,7 +87,7 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 | 1 | Click **Reopen as draft** with the reason "Reading the final-run holds". On **Records**, open ACT-0004 and switch its density to "Diesel (typical value)". | The **Emission factors** gate warns that the typical density is a planning value that a run may use and a final run may not. | | |
 | 2 | Click **Edit inventory**, set the GWP set to AR6, and save. | The gate warns that 'Chiller refrigerant top-up' uses a blend whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded). | | |
 | 3 | Freeze (version 3) and launch Run 003. | The run completes: a run may use both. | | |
-| 4 | Click **Mark as final** on Run 003 and confirm. | Refused. The message names the run by its number ("Run 3 cannot be designated final.") and then both holds: "'Forklift diesel' converts through the typical density of Diesel (0.84 kg/litre), a planning value: record the supplier's density under Units, or flag the classification as a proxy with a justification that says why the typical value stands (spec 02.2)." and "'Chiller refrigerant top-up' uses 'Blends: R407C, Emissions including only Kyoto products', whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded): record the blend's composition, choose a factor on AR6, or run the inventory on AR5 (one GWP set across the inventory).". | | |
+| 4 | Click **Mark as final** on Run 003 and confirm. | Refused. The message names the run by its number ("Run 3 cannot be designated final.") and then both holds, the blend first: "'Chiller refrigerant top-up' uses 'Blends: R407C, Emissions including only Kyoto products', whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded): record the blend's composition, choose a factor on AR6, or run the inventory on AR5 (one GWP set across the inventory)." and "'Forklift diesel' converts through the typical density of Diesel (0.84 kg/litre), a planning value: record the supplier's density under Units, or flag the classification as a proxy with a justification that says why the typical value stands (spec 02.2).". | | |
 
 ### B2. The proxy route, and one GWP set
 
@@ -95,7 +95,7 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 | --- | --- | --- | --- | --- |
 | 1 | Reopen with the reason "Proxy flag and AR5 restored". On ACT-0004 tick **proxy factor** with the justification "No certificate of analysis for this delivery; typical mid-range density". | The gate's typical-density warning goes: a documented proxy is an answer. | | |
 | 2 | **Edit inventory**, GWP set back to AR5. | The blend warning goes. | | |
-| 3 | Freeze (version 4) and launch Run 004. | The forklift line reads "(density of Diesel, typical value)" with the justification. Total 120,373.32 kg CO₂e. | | |
+| 3 | Freeze (version 4) and launch Run 004. | The forklift line reads "(density of Diesel, typical value)". Total 120,373.32 kg CO₂e. The proxy justification is not printed on the line; the lines CSV of case D1 carries it in `proxy_justification`. | | |
 
 ## C. The report header and the intensity
 
@@ -103,9 +103,9 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Report**, fill in **Approved by** "Kofi Mensah, Reviewer", the uncertainty statement "Metered fuel and electricity; the flights figure is the travel agent's estimate", and add the denominator "Product output", value 1500, unit `t`. Click **Save report header**. | "Report header saved.". | | |
+| 1 | On **Report**, fill in **Approved by** "Kofi Mensah, Reviewer", the uncertainty statement "Metered fuel and electricity; the flights figure is the travel agent's estimate", and type the denominator "Product output", value 1500, unit `t`, then click **Add denominator** (the row reads "Product output: 1,500 t"; a row left in the fields is not saved). Click **Save report header**. | "Report header saved.". | | |
 | 2 | Reload the page. | Every field reads what you typed. The denominator is on the inventory, not in the browser. | | |
-| 3 | Launch Run 005 and open its report. | The header names the approver. **Intensity** reads "0.080249 t CO₂e per t of product output (1,500 t)", 120.373 t divided by 1,500. The methodology section prints the uncertainty statement and ends "3 of 9 lines record a quantitative uncertainty; weighted by emissions it is ±2.": the run has nine lines, seven records and the two derived ones. | | |
+| 3 | Launch Run 005 and open its report. | The header names the approver. **Intensity** reads "0.080249 t CO₂e per t of product output (1,500 t)", 120.373 t divided by 1,500. The methodology section prints the uncertainty statement and ends "3 of 9 lines record a quantitative uncertainty; weighted by emissions it is ±2.8% for those lines.": the run has nine lines, seven records and the two derived ones. | | |
 
 ## D. Exports, and the self-approval sentence
 
@@ -114,7 +114,7 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | On Run 005's report, click **PDF report**. | The PDF carries the numbered sections of the page, the factor table with each factor's source and vintage, and the row "CO₂e from factors without a gas split". | | |
-| 2 | Click **Lines (CSV)**. | One row per line with `line_id`, `derived_from_line_id`, `record_ref`, `evidence_ref`, `density_material`, `density_kg_per_litre`, `period_share` (0.53125 on the straddling line) and `co2e_unsplit_kg` (3,900 on the flights line). | | |
+| 2 | Click **Lines (CSV)**. | One row per line with `line_id`, `derived_from_line_id`, `record_ref`, `evidence_ref`, `density_material`, `density_kg_per_litre`, `proxy_justification` (the forklift line's), `period_share` (0.53125 on the straddling line) and `co2e_unsplit_kg` (3,900 on the flights line). | | |
 | 3 | Click **Exclusions (CSV)**. | Three rows; ACT-0009 carries `estimate_state` `NOT_ESTIMATED` with an empty `estimated_kg_co2e`. | | |
 | 4 | Click **Frozen inputs (JSON)**. | The JSON carries `boundaryVersion` 4, the factors as applied, the one instrument and the residual mix (not available). | | |
 
@@ -137,7 +137,7 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 | 3 | Click **Withdraw final designation** and confirm with no reason. | The button stays disabled until a reason is typed. | | |
 | 4 | Give "Checking the withdrawal" and confirm. | FROZEN again; the history records the withdrawal with Kofi's email. Mark Run 005 final again with no note. | | |
 | 5 | As Esi, find **Publish**. | Disabled, with the same tooltip as step 1. | | |
-| 6 | As Kofi, click **Publish** and confirm. | PUBLISHED. The report header reads "Published <time> by <the Kofi alias>", "Final designated by <the Kofi alias>" and "Report version 1". The bar says nothing on this inventory can change and that a correction is a new inventory that supersedes it. | | |
+| 6 | As Kofi, click **Publish** and confirm. | PUBLISHED. The lifecycle bar reads "Final designated by <the Kofi alias>" and "Published <time>." and says nothing on this inventory can change and that a correction is a new inventory that supersedes it. The **Report** tab reads "Published by <the Kofi alias>", and the run's header "Report version 1". | | |
 
 ## F. The published record and its correction
 
@@ -164,7 +164,7 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Create the inventory "FY2025 equity view": the same period, consolidation approach equity share, and **Copy the view from** FY2025. | The boundary lists Coldstore Ghana Ltd at 30%, its facility in the boundary, and its methodology exclusion dropped, listed under "Dropped exclusions". | | |
+| 1 | Create the inventory "FY2025 equity view": the same period, consolidation approach equity share, and **Copy the view from** FY2025. | The boundary lists Coldstore Ghana Ltd at 30% with its facility in the boundary. Its methodology exclusion is dropped: open **Where this inventory came from** at the top of the workbench, which lists "Coldstore Ghana Ltd: Methodology exclusion dropped, 30% equity share under this approach". | | |
 | 2 | Click **Review activity data** and read ACT-0008. | Included, unclassified: Takoradi Cold Store is in the boundary under this approach. The classifications of the other records are inherited and marked. | | |
 | 3 | Leave the equity view a draft. | Procedure 8 reads its base-year gate. | | |
 

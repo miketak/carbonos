@@ -39,7 +39,7 @@ database needs new ones.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin A, open **Administration**, then **Factor packs**. | Two families, `defra` with two PUBLISHED editions (2025 and 2026) and `ghana` with one, each edition with its applies-from date, its row count and how many organizations hold it: all three read 1, Adansi Foods Ltd. | | |
+| 1 | As Admin A, open **Administration**, then **Factor packs**. | Two families, `defra` with two PUBLISHED editions (2025 and 2026) and `ghana` with one, each edition with its applies-from date, its row count and how many organizations hold it: all three read "1 organization". | | |
 | 2 | Click **Clone** on the `ghana` edition. | The dialog "Clone ghana" says the draft starts with the 7 rows of `ghana`, copied, with the name, source, URL, year and GWP basis filled in. | | |
 | 3 | Type the identifier `ghana`. | Refused: "An edition named 'ghana' already exists. An edition identifier is the citation a report prints, so it is never reused.". | | |
 | 4 | Type `ghana-2027-gov`, applies from 2026-01-01, and create. | A toast reads "ghana-2027-gov was created from ghana with its 7 rows.". The draft is listed under the family reading DRAFT, 7 rows, "No organization". | | |
@@ -60,14 +60,14 @@ database needs new ones.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Still as Admin A, click **Publish** on `ghana-2027-gov`. | The dialog "Publish ghana-2027-gov" lists the conditions; the rules line passes. **Publish** is disabled: no source document yet. | | |
-| 2 | Attach `source-document.txt`, type "Gas supplier delivery note, March 2025 (test source)" as the source document as cited, keep applies from 2026-01-01, and click **Publish**. | The dialog shows the document's SHA-256 "computed over the bytes stored", then refuses: "The approver must not be the curator. Admin A built this draft, so somebody else publishes it.". The edition is still a draft. | | |
+| 2 | Attach `source-document.txt` and type "Gas supplier delivery note, March 2025 (test source)" as the source document as cited, keeping applies from 2026-01-01. | The dialog shows the document's SHA-256 "computed over the bytes stored". The last condition reads not met, "The approver must not be the curator. You built this draft, so another administrator checks it against the source document and publishes it.", and **Publish** stays disabled. The edition is still a draft. | | |
 
 ### B2. The second administrator reads the blast radius and publishes
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin B in the private window, open `ghana-2027-gov` and click **Blast radius**. | A drawer says publishing changes no organization's data. One row changed, `GHANA:grid:GHA:2024`, from 0.468809 to 0.44, -6.15%, held by Adansi Foods Ltd. Adansi's card names the estimated movement, about -3,486 kg CO₂e from its last completed run (the correction's run, 121,000 kWh), and lists the lineage inside a locked period (FY2025). | | |
-| 2 | Click **Publish** with the applies-from date cleared. | Refused: "Give the date the edition applies from. It is the vintage boundary an adoption is run from.". | | |
+| 1 | As Admin B in the private window, open `ghana-2027-gov` and click **Blast radius**. | A drawer says publishing changes no organization's data. One row changed, `GHANA:grid:GHA:2024`, from 0.468809 to 0.44, -6.15%, held by Adansi Foods Ltd. Adansi's card names the estimated movement, about -3,486 kg CO₂e from its last completed run (the correction's Run 001, 121,000 kWh), and lists the lineage inside a locked period (FY2025). | | |
+| 2 | Clear the applies-from date. | The date condition reads not met, "Give the date the edition applies from. It is the vintage boundary an adoption is run from.", and **Publish** is disabled. | | |
 | 3 | Set 2026-01-01 and publish. | "ghana-2027-gov was published.". PUBLISHED; `ghana` reads SUPERSEDED, because the new edition applies after it. The **Metadata** tab names Admin A as curator and Admin B as approver; it prints the provenance review and the evidence checksum, not the publication moment, which the edition's events carry. | | |
 | 4 | As Ama, read `GHANA:grid:GHA:2024` on **Emission factors** and the total of Run 005. | 0.468809 and 120,373.32 kg. Publishing moved nothing. | | |
 
@@ -79,7 +79,7 @@ database needs new ones.
 | --- | --- | --- | --- | --- |
 | 1 | As Ama, look at the left navigation. | **Updates** carries the badge 1, titled "1 factor pack update waiting". | | |
 | 2 | Open **Updates**. | One row: `ghana-2027-gov` in place of `ghana`, raised now, 1 row affected, 1 moving more than five percent, the estimated movement, status "Waiting on you". | | |
-| 3 | Click **Review**. | The drawer names the edition, the predecessor and the date it applies from. **What moves (7)** lists every lineage the edition carries: six at 0% and `GHANA:grid:GHA:2024` held 0.468809, edition 0.44, -6.15%, with its estimated movement. **Earlier periods** lists the reported 2025 periods: the coverage warnings that follow are what a vintage means. The last line prints the diff hash. | | |
+| 3 | Click **Review**. | The drawer names the edition, the predecessor and the date it applies from. **What moves (7)** lists every lineage the edition carries: six at 0% and `GHANA:grid:GHA:2024` held 0.468809, edition 0.44, -6.15%, with its estimated movement. The movement is estimated over the open FY2025 equity view. **Earlier periods** lists the reported 2025 periods: the coverage warnings that follow are what a vintage means. The last line prints the diff hash. | | |
 | 4 | Read the note above the buttons. | "The organization has no base year, so no recalculation candidate can be raised.". Once a base year is designated (procedure 8), the note says instead that accepting raises a recalculation candidate and, above the significance threshold, holds final designation and publication until it is completed or declined. | | |
 
 ### C2. A preparer reads and cannot decide
@@ -107,7 +107,7 @@ database needs new ones.
 | 1 | As Kofi, open the drawer and click **Accept** without answering. | **Accept** is disabled until **How does chapter 5 treat this adoption?** is answered. The three answers are a vintage progression, a retrospective adoption and an erratum. | | |
 | 2 | Answer "Vintage progression: the edition applies to the next reporting year forward" and accept. | "Adopted ghana-2027-gov: 1 version cut, 0 lineages added.". The row reads Accepted with Kofi's email and the badge is gone. | | |
 | 3 | On **Emission factors**, find `GHANA:grid:GHA:2024`. | It offers "2 versions of this factor": the old version until 2025-12-31 at 0.468809, the live one from 2026-01-01 at 0.44. Nothing rewrote a past value. | | |
-| 4 | Open **Settings** and read **History**. | The adoption is listed as "Factor pack adopted", with Kofi's email, the edition and the answer "as a vintage progression". **Overview** carries no event list; History is the organization's record. | | |
+| 4 | As Ama (Settings is the owner's), open **Settings** and read **History**. | The adoption is listed as "Factor pack adopted", with Kofi's email, the edition and the answer "as a vintage progression". **Overview** carries no event list; History is the organization's record. | | |
 | 5 | Open **Base year**. | No base year is designated yet, so no candidate was raised. The answer lives on the notice. | | |
 
 ## D. The next run cites the new vintage
@@ -131,7 +131,7 @@ database needs new ones.
 | --- | --- | --- | --- | --- |
 | 1 | As Admin B, clone `ghana-2027-gov` into `ghana-2027-gov.r2`, change `GHANA:grid:GHA:2024` to 0.45, and attach the source document. As Admin A, publish it with applies from 2025-06-01. | PUBLISHED, and `ghana-2027-gov` stays PUBLISHED: an edition that applies from an earlier date than the one standing is not its successor, so it supersedes nothing (spec 02.5). Admin A is the approver this time: the roles swap with the curator. | | |
 | 2 | As Kofi, open **Updates**. | The badge reads 1. The drawer names the block above what moves: "2025-06-01 falls inside FY2025 (2025-01-01 → 2025-12-31), which is published. A reported period keeps the factors it reported with, so this edition cannot be accepted until that inventory is reopened. Declining stays available.". | | |
-| 3 | Answer "Erratum: the edition corrects a wrong value in a year already reported" and accept. | Refused: the message says `ghana-2027-gov.r2` applies from 2025-06-01, which falls inside a named inventory of 2025 with its status (FY2025, PUBLISHED, or its correction, FROZEN), and ends "A reported period keeps the factors it reported with. Reopen that inventory, or import the edition into a later period.". | | |
+| 3 | Answer "Erratum: the edition corrects a wrong value in a year already reported" and accept. | Refused with the sentence of step 2 again: "2025-06-01 falls inside FY2025 (2025-01-01 → 2025-12-31), which is published. A reported period keeps the factors it reported with, so this edition cannot be accepted until that inventory is reopened. Declining stays available.". | | |
 | 4 | Read the factors. | `GHANA:grid:GHA:2024` still has two versions. The refusal wrote nothing. | | |
 
 ## F. Withdrawal
