@@ -40,8 +40,10 @@ flowchart LR
 
 Postgres listens on 5433, not 5432, because many machines already run a
 Postgres on the default port. MinIO is the local stand-in for the S3-style
-bucket that holds evidence files. Mailpit catches every outbound email so
-nothing leaves your machine.
+bucket that holds evidence files; the image comes from Bitnami's legacy
+repository on Docker Hub, because MinIO withdrew its own public images in
+September 2026. Mailpit catches every outbound email so nothing leaves your
+machine.
 
 ## Start everything with one command
 
