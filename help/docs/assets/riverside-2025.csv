@@ -1,0 +1,6 @@
+facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note
+Riverside Plant,Boiler LPG,Boiler LPG,2400,litre,2025-03-01,2025-03-31,Gas supplier delivery note,LPG-2025-03,MEASURED,1,2,
+Riverside Plant,Plant grid supply,Plant grid electricity,6000,kWh,2025-06-01,2025-06-30,ECG invoice,ECG-TAK-2025-06,MEASURED,1,,
+Riverside Plant,Standby genset,Genset diesel,1200,litre,2025-08-01,2025-08-31,Fuel log,FL-2025-08,MEASURED,1,,
+Harbour Depot,Delivery fleet,Delivery fleet diesel,5000,litre,2025-09-01,2025-09-30,Contractor invoice,CT-2025-09,MEASURED,1,3,
+Riverside Plant,Boiler LPG,Year-end boiler LPG,800,litre,2025-12-15,2026-01-15,Gas supplier delivery note,LPG-2025-12,MEASURED,1,,Straddles the year end

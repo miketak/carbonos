@@ -76,11 +76,25 @@ nav:
   - Home: index.md
   - Concepts:
       - concepts/index.md
+      - concepts/the-workflow.md
+      - concepts/the-running-example.md
+      - concepts/roles-and-who-does-what.md
+      - concepts/facts-views-and-runs.md
+      - concepts/the-inventory-lifecycle.md
+      - concepts/boundaries-and-consolidation-approaches.md
+      - concepts/classification-is-an-accounting-decision.md
+      - concepts/pre-flight-gates.md
+      - concepts/emission-factors-packs-and-editions.md
+      - concepts/base-year-and-recalculation.md
+      - concepts/support-access-and-confidentiality.md
   - Get started:
       - get-started/index.md
   - Tasks:
       - tasks/index.md
   - Reference:
       - reference/index.md
+      - reference/roles-and-permissions.md
+      - reference/statuses-and-transitions.md
   - Troubleshooting:
       - troubleshooting/index.md
+  - Glossary: glossary.md
