@@ -73,6 +73,14 @@ with `accTitle` and `accDescr`, front matter `owner` and `last_reviewed`).
   update the affected how-to or reference page in the same PR.
 - Tooling and cross-cutting structure decisions get an ADR
   (`docs/adr/TEMPLATE.md`).
+- End-user help is a second MkDocs site under `help/` (`help/mkdocs.yml`,
+  `help/docs/` with `concepts/`, `get-started/`, `tasks/`, `reference/`,
+  `troubleshooting/`; ADR 0005). Same house style; it never links into
+  `specs/` or `docs/`, and each page cites its specs and QA cases in an
+  HTML comment under the front matter. `make help-serve` (port 8001),
+  `make help-site` (strict), `make help-check` (Definition of Done). A new
+  help page must be in `nav` in `help/mkdocs.yml`. When a product string or
+  flow the help describes changes, update the help page in the same PR.
 
 ## Commands
 

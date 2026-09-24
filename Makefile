@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check vale qa-docs
+.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check help-site help-serve help-check vale qa-docs
 
 # git ref the docs checks diff against
 BASE ?= origin/main
@@ -57,6 +57,16 @@ docs-serve:       ## serve the docs with live reload on http://127.0.0.1:8000
 
 docs-check:       ## docs Definition of Done: strict build, then Vale on markdown changed against $(BASE)
 	$(MAKE) docs
+	$(MAKE) vale
+
+help-site:        ## build the end-user help site into help/site/ (strict: any warning fails)
+	uv run --locked mkdocs build --strict -f help/mkdocs.yml
+
+help-serve:       ## serve the help site with live reload on http://127.0.0.1:8001
+	uv run --locked mkdocs serve -f help/mkdocs.yml -a 127.0.0.1:8001
+
+help-check:       ## help site Definition of Done: strict build, then Vale on markdown changed against $(BASE)
+	$(MAKE) help-site
 	$(MAKE) vale
 
 vale:             ## Vale (advisory) on markdown changed against $(BASE); skips when vale is absent

@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-24
 ---
 
 # Decision records
@@ -46,3 +46,5 @@ form.
 | [0001](0001-use-material-for-mkdocs-with-uv.md) | Use Material for MkDocs, managed by uv, for the engineering docs | accepted | 2026-09-09 |
 | [0002](0002-publish-qa-procedures-to-google-docs-with-pandoc.md) | Publish the QA procedures to Google Docs with pandoc and the Drive API | proposed | 2026-09-10 |
 | [0003](0003-promote-releases-through-qa-staging-and-production.md) | Promote one tagged commit through qa, staging and production | accepted | 2026-09-11 |
+| [0004](0004-a-platform-module-for-deployment-policy.md) | A platform module for deployment policy | accepted | 2026-09-14 |
+| [0005](0005-a-separate-mkdocs-site-for-end-user-help.md) | Publish end-user help as a second MkDocs site under help/, sharing the uv toolchain | proposed | 2026-09-24 |
