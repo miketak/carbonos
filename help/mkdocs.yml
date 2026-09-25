@@ -92,6 +92,41 @@ nav:
       - Your first inventory: get-started/your-first-inventory.md
   - Tasks:
       - tasks/index.md
+      - Account:
+          - Request access and set your password: tasks/account/request-access-and-set-your-password.md
+      - Organization:
+          - Create an organization: tasks/organization/create-an-organization.md
+          - Add members and assign roles: tasks/organization/add-members-and-assign-roles.md
+          - Record legal entities: tasks/organization/record-legal-entities.md
+          - Record facilities and source streams: tasks/organization/record-facilities-and-source-streams.md
+          - Define units and densities: tasks/organization/define-units-and-densities.md
+      - Activity data:
+          - Import records from a CSV file: tasks/activity-data/import-records-from-csv.md
+          - Enter, correct, evidence and remove a record: tasks/activity-data/enter-correct-and-evidence-a-record.md
+      - Emission factors:
+          - Import a factor pack: tasks/emission-factors/import-a-factor-pack.md
+          - Add and approve a factor: tasks/emission-factors/add-and-approve-a-factor.md
+      - Inventories and runs:
+          - Create an inventory, set the boundary and declare scope 3: tasks/inventories/create-an-inventory-set-the-boundary-and-declare-scope-3.md
+          - Review and classify records: tasks/inventories/review-and-classify-records.md
+          - Record instruments and upstream rules: tasks/inventories/record-instruments-and-upstream-rules.md
+          - Freeze the inventory and launch a run: tasks/inventories/freeze-and-launch-a-run.md
+          - Designate a final run and publish: tasks/inventories/designate-a-final-run-and-publish.md
+          - Correct a published inventory: tasks/inventories/correct-a-published-inventory.md
+      - Reporting:
+          - Read the report and fill the header: tasks/reporting/read-the-report-and-fill-the-header.md
+          - Export the report: tasks/reporting/export-the-report.md
+      - Base year:
+          - Designate the base year: tasks/base-year/designate-the-base-year.md
+          - Decide a recalculation candidate: tasks/base-year/decide-a-recalculation-candidate.md
+      - Factor updates:
+          - Accept or decline an edition notice: tasks/factor-updates/accept-or-decline-an-edition-notice.md
+      - Administration:
+          - tasks/administration/index.md
+          - Approve access requests and manage users: tasks/administration/approve-access-requests-and-manage-users.md
+          - Set platform settings: tasks/administration/set-platform-settings.md
+          - Assume support access: tasks/administration/assume-support-access.md
+          - Author and publish a factor pack edition: tasks/administration/author-and-publish-a-factor-pack-edition.md
   - Reference:
       - reference/index.md
       - reference/roles-and-permissions.md

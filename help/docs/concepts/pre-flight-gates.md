@@ -87,7 +87,7 @@ boundary gate holds the run until it is.
 Every finding is one sentence that names the record, entity or factor and
 what to do. Some examples, as the panel prints them:
 
-- "'Tema Depot' (Adansi Logistics Ltd) is neither in the boundary nor
+- "'Harbour Depot' (Riverside Distribution Ltd) is neither in the boundary nor
   excluded with a reason. Tick it in, or record why it is left out." Tick
   the facility in on the **Boundary** tab, or choose a reason on its
   entity's row.

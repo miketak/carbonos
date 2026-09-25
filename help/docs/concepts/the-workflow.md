@@ -30,7 +30,7 @@ flowchart TD
 ### 1. Get in
 
 A platform administrator creates your account, or you ask for one with
-**Request access** on the sign-in page and an administrator approves it.
+**Request access** on the landing page and an administrator approves it.
 Either way you sign in with an email address and a password of at least 12
 characters with a letter and a digit. What you can then do depends on the
 role an owner gives you in an organization, not on how your account was
