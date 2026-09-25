@@ -89,6 +89,7 @@ nav:
       - concepts/support-access-and-confidentiality.md
   - Get started:
       - get-started/index.md
+      - Your first inventory: get-started/your-first-inventory.md
   - Tasks:
       - tasks/index.md
   - Reference:
