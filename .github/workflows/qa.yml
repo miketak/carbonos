@@ -82,6 +82,11 @@ jobs:
           uv sync --locked
           uv run mkdocs build --strict -f help/mkdocs.yml
           rm -rf frontend/help-site && cp -r help/site frontend/help-site
+          # railway up honours .gitignore, which lists frontend/help-site/ so a
+          # local make help-bundle is never committed; drop that one line in
+          # this throwaway checkout so the build reaches the frontend image
+          sed -i '\#^frontend/help-site/$#d' .gitignore
+          git check-ignore -q frontend/help-site/index.html && { echo "frontend/help-site is still ignored" >&2; exit 1; } || true
       - name: Deploy backend
         run: railway up --service backend --ci
       - name: Deploy frontend

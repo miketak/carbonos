@@ -69,7 +69,7 @@ be cancelled. The fix lands on `main` and is tagged `rc.2`.
 | Concurrency | `release`, never cancelled |
 | Jobs | `Release / the ref is a version tag` (refuses any other ref); the two check jobs; `Deploy to Railway (staging)`; `Deploy to Railway (production)` |
 | Environments | `staging` (secret `RAILWAY_STAGING_TOKEN`), deployed without a gate; `production` (secret `RAILWAY_PRODUCTION_TOKEN`) with a required reviewer |
-| Deploy steps | `npm install -g @railway/cli`; `uv run mkdocs build --strict -f help/mkdocs.yml` with `HELP_SITE_URL` set to the environment's `/help/` address, copied to `frontend/help-site/`; then `railway up --service backend --ci` and `railway up --service frontend --ci` from the repository root |
+| Deploy steps | `npm install -g @railway/cli`; `uv run mkdocs build --strict -f help/mkdocs.yml` with `HELP_SITE_URL` set to the environment's `/help/` address, copied to `frontend/help-site/`, whose line in `.gitignore` is removed in the CI checkout because `railway up` skips ignored files; then `railway up --service backend --ci` and `railway up --service frontend --ci` from the repository root |
 
 Staging is the production rehearsal: the same commit the testers approved,
 deployed the same way production is. Approving the production job is the
