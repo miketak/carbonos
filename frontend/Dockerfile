@@ -14,12 +14,25 @@ ENV VITE_API_URL=$VITE_API_URL
 COPY . .
 RUN npm run build
 
+# ---- Help site stage ----
+# The end-user help (help/ at the repo root) is built by MkDocs outside this
+# image, because the Railway service builds from frontend/ alone: CI and
+# `make help-bundle` put the strict build in frontend/help-site/. The glob
+# matches nothing when the folder is absent, so a plain `docker build` of the
+# SPA still works; it just serves no /help/.
+FROM alpine:3 AS help
+WORKDIR /help
+COPY package.json help-site* ./
+RUN rm -f package.json
+
 # ---- Runtime stage ----
 FROM nginx:alpine
 
 # nginx's entrypoint renders *.template with envsubst, so ${PORT} is honored at startup
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
+# The help site at /help/ on the same origin as the app (ADR 0005)
+COPY --from=help /help /usr/share/nginx/html/help
 
 ENV PORT=8080
 # Where nginx proxies /api to — Railway private networking; the hostname

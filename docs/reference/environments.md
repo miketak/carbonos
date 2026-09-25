@@ -14,8 +14,8 @@ Nothing deploys from a merge to `main`.
 ```mermaid
 flowchart LR
     accTitle: The deployed topology on Railway
-    accDescr: The frontend service serves the SPA and proxies the API to the backend service, which uses the Postgres service and an S3-compatible bucket.
-    browser[Browser] --> fe["frontend service\nnginx, static SPA"]
+    accDescr: The frontend service serves the SPA and the end-user help site at /help/, and proxies the API to the backend service, which uses the Postgres service and an S3-compatible bucket.
+    browser[Browser] --> fe["frontend service\nnginx, static SPA, /help/"]
     fe -- "/api" --> be["backend service\nSpring Boot"]
     be --> pg[("Postgres service")]
     be --> bucket["S3-compatible bucket"]
@@ -26,7 +26,8 @@ flowchart LR
 
 | | Local | QA | Staging | Production |
 | --- | --- | --- | --- | --- |
-| Frontend | http://localhost:5173 | see the Railway dashboard until the domain is recorded here | https://frontend-staging-2e61.up.railway.app | https://frontend-production-3228.up.railway.app |
+| Frontend | http://localhost:5173 | https://frontend-qa-adbf.up.railway.app | https://frontend-staging-2e61.up.railway.app | https://frontend-production-3228.up.railway.app |
+| End-user help | http://localhost:5173/help/ (proxied to `make help-serve`) | `/help/` on the frontend address | `/help/` on the frontend address | `/help/` on the frontend address |
 | Backend | http://localhost:8080 | see the Railway dashboard | https://backend-staging-641b.up.railway.app | https://backend-production-14df8.up.railway.app |
 | Deployed by | you | tag `vX.Y.Z-rc.N` | the QA sign-off, which tags `vX.Y.Z` | approval of the production job on that run |
 | Who uses it | you | the testers | a rehearsal of the release | nobody yet |

@@ -53,5 +53,12 @@ reader being handed a spec.
   and must be re-verified against `frontend/src` and `backend/src/main/java`
   when the product changes; the Makefile target is `help-site`, not
   `help`, because `make help` lists the targets.
-- Open: neither site has a published address yet (`site_url` is the local
-  port on both). Hosting is decided when the first site is published.
+- Hosting (decided 2026-09-25): the help site is served at `/help/` on the
+  app's own origin. The release workflows build it strictly with MkDocs and
+  copy the output into `frontend/help-site/` before `railway up`, the
+  frontend image copies that folder next to the SPA, and nginx serves
+  `/help/` as files ahead of the SPA fallback. One origin per environment
+  (qa, staging, production) means one help build per deployment, no
+  second service or domain, and the same-origin cookies if `/help/` is
+  ever put behind a session. The app's account menu links to it; the
+  engineering docs site still has no published address.
