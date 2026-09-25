@@ -23,7 +23,7 @@ kept with the records it creates.
   checks precise".
 - The file is a CSV of up to 5 MB. The columns, the accepted values and
   the rejection reasons are in
-  [Reference](../../reference/index.md).
+  [CSV import template](../../reference/csv-import-template.md).
 
 ## Steps
 

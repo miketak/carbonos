@@ -28,7 +28,7 @@ snapshot, so they never change after the run.
 ## What you see
 
 The browser downloads the file. The column list of the lines file and
-the keys of the inputs file are in [Reference](../../reference/index.md).
+the keys of the inputs file are in [Report exports](../../reference/report-exports.md).
 
 ## What the files are for
 

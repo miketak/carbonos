@@ -131,6 +131,10 @@ nav:
       - reference/index.md
       - reference/roles-and-permissions.md
       - reference/statuses-and-transitions.md
+      - Pre-flight gates and findings: reference/pre-flight-gates-and-findings.md
+      - CSV import template: reference/csv-import-template.md
+      - Report exports: reference/report-exports.md
+      - Validation rules and limits: reference/validation-rules-and-limits.md
   - Troubleshooting:
       - troubleshooting/index.md
   - Glossary: glossary.md

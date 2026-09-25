@@ -48,7 +48,7 @@ available." When every gate passes the panel reads **READY TO
 LAUNCH**, with "Every gate passes; *N* carries a warning."
 
 The findings are listed with what clears each in
-[Reference](../../reference/index.md).
+[Pre-flight gates and findings](../../reference/pre-flight-gates-and-findings.md).
 
 ## Launch
 
