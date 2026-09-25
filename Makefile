@@ -8,7 +8,7 @@ BASE ?= origin/main
 help:             ## list the targets in this Makefile
 	@grep -hE '^[a-zA-Z0-9_-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':[^#]*## ' '{printf "  %-12s %s\n", $$1, $$2}'
 
-dev-up:           ## start db + backend + frontend in tmux (a "dev-console" window if inside tmux, else a "carbonos" session)
+dev-up:           ## start db + backend + frontend + help in tmux (a "dev-console" window if inside tmux, else a "carbonos" session)
 	./scripts/dev-up.sh
 
 dev-down:         ## tear down the dev panes/session and stop Postgres

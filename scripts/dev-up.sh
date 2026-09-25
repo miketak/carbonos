@@ -5,8 +5,14 @@
 #   ┌─────────────────────────────┐
 #   │        backend (top)        │   Spring Boot, local profile
 #   ├──────────────┬──────────────┤
-#   │   database   │   frontend   │   Postgres logs | Vite dev server
+#   │              │   frontend   │   Vite dev server
+#   │   database   ├──────────────┤
+#   │              │     help     │   end-user help (MkDocs on :8001)
 #   └──────────────┴──────────────┘
+#
+# The help pane serves the site Vite proxies at /help/, so the app's Help
+# link works locally. It needs uv; without it the pane says so and the rest
+# of the environment runs as before.
 #
 # Inside tmux this creates a dedicated "dev-console" window in the
 # current session with that layout and switches to it, so the dev
@@ -28,9 +34,9 @@ command -v tmux >/dev/null || {
 }
 
 start_in_panes() {
-  local backend db frontend
-  backend=$1 db=$2 frontend=$3
-  for p in "$backend" "$db" "$frontend"; do
+  local backend db frontend help
+  backend=$1 db=$2 frontend=$3 help=$4
+  for p in "$backend" "$db" "$frontend" "$help"; do
     tmux set-option -p -t "$p" @carbonos_dev 1
   done
   # database: Postgres in the foreground so its logs live here
@@ -40,6 +46,9 @@ start_in_panes() {
     'echo "waiting for Postgres on :5433..."; until (echo > /dev/tcp/localhost/5433) 2>/dev/null; do sleep 1; done; make backend' C-m
   # frontend: Vite dev server (proxies /api to the backend once it is up)
   tmux send-keys -t "$frontend" 'make frontend' C-m
+  # help: the end-user help site, proxied by Vite at /help/
+  tmux send-keys -t "$help" \
+    'if command -v uv >/dev/null; then make help-serve; else echo "uv is not installed: the help at /help/ is off (see docs/how-to/set-up-the-dev-environment.md)"; fi' C-m
   tmux select-pane -t "$backend"
 }
 
@@ -57,7 +66,8 @@ if [ -n "${TMUX:-}" ]; then
   backend=$(tmux new-window -n "$WINDOW" -c "$PWD" -P -F '#{pane_id}')
   db=$(tmux split-window -v -l 50% -t "$backend" -c "$PWD" -P -F '#{pane_id}')
   frontend=$(tmux split-window -h -t "$db" -c "$PWD" -P -F '#{pane_id}')
-  start_in_panes "$backend" "$db" "$frontend"
+  help=$(tmux split-window -v -t "$frontend" -c "$PWD" -P -F '#{pane_id}')
+  start_in_panes "$backend" "$db" "$frontend" "$help"
   exit 0
 fi
 
@@ -65,7 +75,8 @@ if ! tmux has-session -t "$SESSION" 2>/dev/null; then
   tmux new-session -d -s "$SESSION" -n "$WINDOW" -c "$PWD"
   tmux split-window -v -l 50% -t "$SESSION:$WINDOW" -c "$PWD"
   tmux split-window -h -t "$SESSION:$WINDOW.1" -c "$PWD"
-  start_in_panes "$SESSION:$WINDOW.0" "$SESSION:$WINDOW.1" "$SESSION:$WINDOW.2"
+  tmux split-window -v -t "$SESSION:$WINDOW.2" -c "$PWD"
+  start_in_panes "$SESSION:$WINDOW.0" "$SESSION:$WINDOW.1" "$SESSION:$WINDOW.2" "$SESSION:$WINDOW.3"
 fi
 
 if [ ! -t 0 ]; then
