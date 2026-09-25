@@ -106,7 +106,8 @@ Java 25 (Temurin) is installed via SDKMAN; non-login shells may need
 
 Makefile shortcuts (repo root): `make dev-up` / `make dev-down` (whole dev
 environment in a tmux "dev-console" window, or a "carbonos" session when
-outside tmux: backend on top, Postgres logs bottom-left, Vite bottom-right),
+outside tmux: backend on top, Postgres logs bottom-left, Vite and the help server
+stacked bottom-right),
 `make db-up`, `make db-reset` (drop the local volumes and start again),
 `make backend`, `make frontend`, `make verify` (full DoD),
 `make admin EMAIL=.. PASSWORD=.. [NAME=..]` to create or password-reset a

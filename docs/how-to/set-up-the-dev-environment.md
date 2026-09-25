@@ -49,8 +49,10 @@ machine.
 
 1. From the repository root, run `make dev-up`.
 
-    tmux opens a window with the backend on top, Postgres logs bottom left
-    and the Vite dev server bottom right. Inside an existing tmux session the
+    tmux opens a window with the backend on top, Postgres logs bottom left,
+    and on the right the Vite dev server above the end-user help server
+    (`make help-serve`, which Vite proxies at `/help/`; it needs uv). Inside
+    an existing tmux session the
     window is named `dev-console`; outside tmux, a session named
     `carbonos` is created.
 
@@ -65,7 +67,8 @@ machine.
     make admin EMAIL=you@example.com PASSWORD=change-me-now
     ```
 
-5. Open http://localhost:5173 and sign in.
+5. Open http://localhost:5173 and sign in. The account menu's **Help**
+   item opens the help at http://localhost:5173/help/.
 
 To stop everything, run `make dev-down`. It closes the panes it opened
 and stops the containers.

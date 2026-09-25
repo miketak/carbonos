@@ -12,7 +12,7 @@ does the same.
 | Target | Does | Needs |
 | --- | --- | --- |
 | `help` | Lists every target with its description. | |
-| `dev-up` | Starts Postgres, the backend and the frontend in tmux: a `dev-console` window inside an existing session, or a `carbonos` session outside one. | Docker, tmux, Java 25, Node 22 |
+| `dev-up` | Starts Postgres, the backend, the frontend and the help server (`help-serve`, proxied at `/help/`) in tmux: a `dev-console` window inside an existing session, or a `carbonos` session outside one. | Docker, tmux, Java 25, Node 22, uv (for the help pane) |
 | `dev-down` | Closes the panes `dev-up` opened and stops the containers. | tmux |
 | `db-up` | Starts the compose services: Postgres on 5433, MinIO on 9000 and 9001, Mailpit on 1025 and 8025. | Docker |
 | `db-down` | Stops the compose services and keeps their data. | Docker |
