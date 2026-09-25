@@ -29,6 +29,7 @@ does the same.
 | `docs-check` | `docs`, then `vale`. The Definition of Done for a docs change. | uv, Vale (optional) |
 | `help-site` | Builds the end-user help site (`help/mkdocs.yml`) into `help/site/` with `--strict`. | uv |
 | `help-serve` | Serves the help site on http://127.0.0.1:8001 with live reload, so it can run beside `docs-serve`. | uv |
+| `help-bundle` | `help-site`, then copies `help/site/` to `frontend/help-site/`, the folder the frontend image serves at `/help/`. The release workflows do the same before `railway up`. | uv |
 | `help-check` | `help-site`, then `vale`. The Definition of Done for a help change. | uv, Vale (optional) |
 | `vale [BASE=<ref>]` | Runs Vale on the Markdown changed against `BASE` (default `origin/main`), including untracked files. Skips when Vale is not installed. | Vale |
 | `qa-docs` | Exports the QA procedures as DOCX under `build/qa-docs/`, ready to upload to the QA team's Drive folder. | uv, pandoc |

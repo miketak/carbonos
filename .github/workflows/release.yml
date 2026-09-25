@@ -84,6 +84,16 @@ jobs:
         run: npm install -g @railway/cli
       # Run from the repo root: the CLI uploads the current directory, and each
       # Railway service selects its subdirectory via its rootDirectory setting.
+      - uses: astral-sh/setup-uv@v6
+      - name: Build the help site for the frontend image
+        # served at /help/ on the app's origin (ADR 0005); HELP_SITE_URL is
+        # only the canonical address MkDocs prints in the sitemap
+        env:
+          HELP_SITE_URL: https://frontend-staging-2e61.up.railway.app/help/
+        run: |
+          uv sync --locked
+          uv run mkdocs build --strict -f help/mkdocs.yml
+          rm -rf frontend/help-site && cp -r help/site frontend/help-site
       - name: Deploy backend
         run: railway up --service backend --ci
       - name: Deploy frontend
@@ -105,6 +115,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Railway CLI
         run: npm install -g @railway/cli
+      - uses: astral-sh/setup-uv@v6
+      - name: Build the help site for the frontend image
+        # served at /help/ on the app's origin (ADR 0005); HELP_SITE_URL is
+        # only the canonical address MkDocs prints in the sitemap
+        env:
+          HELP_SITE_URL: https://frontend-production-3228.up.railway.app/help/
+        run: |
+          uv sync --locked
+          uv run mkdocs build --strict -f help/mkdocs.yml
+          rm -rf frontend/help-site && cp -r help/site frontend/help-site
       - name: Deploy backend
         run: railway up --service backend --ci
       - name: Deploy frontend

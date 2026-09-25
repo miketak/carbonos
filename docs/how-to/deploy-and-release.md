@@ -47,7 +47,9 @@ sequenceDiagram
     ```
 
     The `QA` workflow runs the backend and frontend checks on the tagged
-    commit, then runs `railway up` for the backend and the frontend in the
+    commit, builds the end-user help site into `frontend/help-site/` so the
+    frontend image serves it at `/help/`, then runs `railway up` for the
+    backend and the frontend in the
     qa environment. The backend starts, Flyway applies any new migration,
     and Railway waits for `/actuator/health` before it switches traffic.
 

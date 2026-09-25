@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check help-site help-serve help-check vale qa-docs
+.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check help-site help-serve help-bundle help-check vale qa-docs
 
 # git ref the docs checks diff against
 BASE ?= origin/main
@@ -64,6 +64,9 @@ help-site:        ## build the end-user help site into help/site/ (strict: any w
 
 help-serve:       ## serve the help site with live reload on http://127.0.0.1:8001
 	uv run --locked mkdocs serve -f help/mkdocs.yml -a 127.0.0.1:8001
+
+help-bundle: help-site ## copy the strict help build into frontend/help-site/ for the frontend image (/help/)
+	rm -rf frontend/help-site && cp -r help/site frontend/help-site
 
 help-check:       ## help site Definition of Done: strict build, then Vale on markdown changed against $(BASE)
 	$(MAKE) help-site

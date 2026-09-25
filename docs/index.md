@@ -44,7 +44,8 @@ one kind of question, so you can tell from the section which page you need.
   [decision records](adr/README.md).
 - Looking for help written for the people who use the product? That is the
   separate help site under `help/`: `make help-serve` opens it on
-  http://127.0.0.1:8001.
+  http://127.0.0.1:8001, and every deployed environment serves it at
+  `/help/` on the app's address (ADR 0005).
 
 ## Build the site
 

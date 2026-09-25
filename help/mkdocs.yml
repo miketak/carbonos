@@ -6,7 +6,9 @@
 site_name: CarbonOS help
 site_description: How to record, classify, calculate, publish, and administer a greenhouse gas inventory in CarbonOS.
 # Served locally for now, on a second port so both sites can run at once.
-site_url: http://127.0.0.1:8001/
+# The address the site is served at: /help/ on the app's origin in a deployed
+# environment (the release workflows set HELP_SITE_URL), the local port otherwise.
+site_url: !ENV [HELP_SITE_URL, 'http://127.0.0.1:8001/']
 repo_url: https://github.com/miketak/carbonos
 repo_name: miketak/carbonos
 edit_uri: edit/main/help/docs/

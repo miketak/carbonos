@@ -16,6 +16,7 @@ temp/
 
 # engineering docs site (make docs), the help site (make help-site) and their Python toolchain
 site/
+frontend/help-site/
 .venv/
 __pycache__/
 .vale/styles/*
