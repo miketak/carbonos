@@ -109,7 +109,7 @@ density that converts between them". A shipped **typical value** (Diesel,
 not, and the gate says so until you record the supplier's density under
 **Units** or flag the classification as a proxy with a justification.
 The drawer previews the arithmetic where a unit converts ("3 tonne →
-3,603.6036 litre (density of Diesel (Adansi CoA), 0.8325 kg/litre) ×
+3,603.6036 litre (density of Diesel (supplier CoA), 0.8325 kg/litre) ×
 2.66155 kg CO₂e/litre"); where the record's unit is the factor's own,
 there is no preview line.
 

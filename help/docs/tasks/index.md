@@ -25,4 +25,6 @@ The tasks are grouped by where they happen in the product:
 
 <!-- sources: OrganizationLayout.tsx sidebar labels; InventoryDetailPage.tsx tabs; AdminLayout.tsx -->
 
-The task pages arrive area by area over the coming releases of the help.
+Every page names the role it needs on its first line, then the steps,
+then what you see when it worked and what changed elsewhere. Use the
+navigation on the left to open an area.

@@ -24,7 +24,7 @@ do not need to read that page first.
 You need:
 
 - An account. A platform administrator creates it, or approves the
-  request you make with **Request access** on the sign-in page. Either
+  request you make with **Request access** on the landing page. Either
   way you sign in with your email address and a password.
 - Nothing else. Creating an organization makes you its owner, and the
   owner can do everything in this tutorial alone.
