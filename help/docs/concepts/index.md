@@ -31,5 +31,4 @@ Read them in this order:
     decide it.
 11. Support access and confidentiality: what the platform team can see.
 
-The pages arrive in this order over the coming releases of the help; the
-list is the map.
+Read them in this order the first time; afterwards the list is the map.
