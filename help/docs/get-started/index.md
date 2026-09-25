@@ -14,4 +14,4 @@ Plan about two hours. You need an account (an administrator creates it, or
 approves your access request), and the role of owner in a new
 organization, which you get by creating it.
 
-The tutorial is the next page to arrive on this site.
+Start with [Your first inventory](your-first-inventory.md).
