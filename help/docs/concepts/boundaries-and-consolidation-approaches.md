@@ -21,7 +21,7 @@ The GHG Protocol lets a company consolidate its emissions in one of
 three ways, and asks it to say which. You choose the approach when you
 create an inventory, and it cannot change afterwards; a second inventory
 over the same period can use another approach, and
-[copying a view](../tasks/index.md) carries the decisions across.
+[copying a view](../tasks/inventories/copy-a-view-to-another-approach.md) carries the decisions across.
 
 | Approach | An operation counts | Its share is |
 | --- | --- | --- |

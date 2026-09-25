@@ -87,6 +87,7 @@ nav:
       - concepts/emission-factors-packs-and-editions.md
       - concepts/base-year-and-recalculation.md
       - concepts/support-access-and-confidentiality.md
+      - concepts/scope-2-two-ways.md
   - Get started:
       - get-started/index.md
       - Your first inventory: get-started/your-first-inventory.md
@@ -100,6 +101,7 @@ nav:
           - Record legal entities: tasks/organization/record-legal-entities.md
           - Record facilities and source streams: tasks/organization/record-facilities-and-source-streams.md
           - Define units and densities: tasks/organization/define-units-and-densities.md
+          - Edit the organization's details and read its history: tasks/organization/edit-details-and-read-the-history.md
       - Activity data:
           - Import records from a CSV file: tasks/activity-data/import-records-from-csv.md
           - Enter, correct, evidence and remove a record: tasks/activity-data/enter-correct-and-evidence-a-record.md
@@ -113,6 +115,7 @@ nav:
           - Freeze the inventory and launch a run: tasks/inventories/freeze-and-launch-a-run.md
           - Designate a final run and publish: tasks/inventories/designate-a-final-run-and-publish.md
           - Correct a published inventory: tasks/inventories/correct-a-published-inventory.md
+          - Copy a view to another approach or the next year: tasks/inventories/copy-a-view-to-another-approach.md
       - Reporting:
           - Read the report and fill the header: tasks/reporting/read-the-report-and-fill-the-header.md
           - Export the report: tasks/reporting/export-the-report.md

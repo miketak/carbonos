@@ -30,5 +30,7 @@ Read them in this order:
 10. The base year and recalculation: when a candidate is raised and how you
     decide it.
 11. Support access and confidentiality: what the platform team can see.
+12. Why scope 2 has two figures: location-based, market-based, instruments
+    and the residual mix.
 
 Read them in this order the first time; afterwards the list is the map.
