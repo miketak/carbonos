@@ -17,8 +17,12 @@ public interface OrganizationRepository extends JpaRepository<Organization, UUID
 	@Query("select o from Organization o where o.id = :id")
 	Optional<Organization> lockById(UUID id);
 
-	/** Whether a live organization carries the name; a removed one has released it (spec 01.3). */
-	boolean existsByNameIgnoreCaseAndDeletedAtIsNull(String name);
+	/** The live organizations carrying the name, oldest first (spec 01.8); a removed one never counts. */
+	List<Organization> findAllByNameIgnoreCaseAndDeletedAtIsNullOrderByAccountNoAsc(String name);
+
+	/** The next account number (spec 01.8): taken once per creation, after every check, never reused. */
+	@Query(value = "select nextval('ghg_organizations_account_no_seq')", nativeQuery = true)
+	long nextAccountNo();
 
 	/** Every live organization, for the administrators' support list (spec 01.3). */
 	List<Organization> findAllByDeletedAtIsNullOrderByCreatedAtAsc();

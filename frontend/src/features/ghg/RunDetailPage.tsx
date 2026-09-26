@@ -2,6 +2,8 @@ import { Link, useParams } from 'react-router-dom'
 import type { CSSProperties, ReactNode } from 'react'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
+import { OrganizationName } from '../../components/OrganizationName'
+import { accountLabel } from '../../lib/organizationLabel'
 import { AnimatedCo2e } from './components/AnimatedCo2e'
 import { ApproachBadge, InventoryStatusBadge, ScopeBadge } from './components/badges'
 import { BoundaryVersionPanel } from './components/BoundaryVersionPanel'
@@ -135,7 +137,8 @@ export function RunDetailPage() {
               )}
             </div>
             <p className="mt-1 text-sm text-ink-muted">
-              {report.company.organizationName} · {report.period.periodStart} →{' '}
+              {report.company.organizationName} (
+              {accountLabel(report.company.organizationAccountNo)}) · {report.period.periodStart} →{' '}
               {report.period.periodEnd} · {report.run.activityCount} line
               {report.run.activityCount === 1 ? '' : 's'}
             </p>
@@ -258,7 +261,11 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
 
       <Section number={1} title="Company and organizational boundary" stagger={1}>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-lg font-semibold">{company.organizationName}</span>
+          <OrganizationName
+            name={company.organizationName}
+            accountNo={company.organizationAccountNo}
+            className="text-lg font-semibold"
+          />
           <ApproachBadge approach={company.consolidationApproach} />
         </div>
         {company.boundaryVersion ? (
@@ -1039,7 +1046,12 @@ function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
 /** The header block (spec 07.4): the reporting entity, who prepared and approved the report, its version and assurance. */
 function ReportHeaderBlock({ header }: { header: Report['header'] }) {
   const rows: [string, string][] = [
-    ['Reporting entity', [header.organizationName, header.address].filter(Boolean).join(', ')],
+    [
+      'Reporting entity',
+      [`${header.organizationName} (${accountLabel(header.organizationAccountNo)})`, header.address]
+        .filter(Boolean)
+        .join(', '),
+    ],
     ['Contact', header.contact ?? 'not recorded'],
     ['Reporting period', `${header.periodLabel} (${header.periodStart} → ${header.periodEnd})`],
     [

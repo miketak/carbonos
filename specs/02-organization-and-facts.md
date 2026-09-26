@@ -22,8 +22,10 @@ scope, no factor, no boundary decision lives here.
 
 ### Organizations
 
-An organization is a reporting company: a unique name (case-insensitive) and
-an owner (spec 01). It is the tenant boundary for everything below. An
+An organization is a reporting company: a name, a platform-wide account
+number (spec 01.8) and an owner (spec 01). Two live organizations may share
+a name after an explicit confirmation; the account number tells them apart.
+It is the tenant boundary for everything below. An
 organization is removed with a typed name and a reason, leaves a tombstone,
 and cannot be removed while it holds a published or final inventory (spec
 01.3).
@@ -110,7 +112,8 @@ a test enforces it.
 All under `/api/ghg`, session-authenticated, tenant-scoped (spec 01).
 
 - Organizations: `GET|POST /organizations`, `GET|PUT|DELETE /organizations/{id}`.
-  `{name}`; 409 `Duplicate organization`.
+  `{name, address?, contact?, ownerEmail?, allowDuplicateName?}`; 409
+  `Duplicate organization name` unless `allowDuplicateName` (spec 01.8).
 - Entities: `GET|POST /organizations/{orgId}/entities`,
   `PUT|DELETE /entities/{id}`. `{name, relationshipType,
   economicInterestPercent, legalOwnershipPercent?, operatedByCompany}`;
@@ -148,7 +151,8 @@ None published from the facts side.
 ## Verification
 
 `GhgApiIntegrationTests`: facts carry no accounting treatment; duplicate
-organization names; the reporting-company entity and facility default;
+organization names refused once and allowed on confirmation (spec 01.8); the
+reporting-company entity and facility default;
 entity delete guards; future-dated facts refused; corrections leave runs
 untouched; delete guards. `UnitConverterTest`: dimensional conversions, alias
 normalization, cross-dimension refusal, seeded-unit coverage. Manual:

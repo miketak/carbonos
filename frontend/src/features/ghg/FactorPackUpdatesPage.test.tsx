@@ -14,6 +14,7 @@ function organization(myRole: Organization['myRole']): Organization {
   return {
     id: 'org-1',
     name: 'Asante Gold Resources',
+    accountNo: 1,
     myRole,
     address: null,
     contact: null,

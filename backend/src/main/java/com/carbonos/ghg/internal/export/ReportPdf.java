@@ -1,5 +1,6 @@
 package com.carbonos.ghg.internal.export;
 
+import com.carbonos.ghg.internal.AccountNumbers;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -79,11 +80,12 @@ public final class ReportPdf {
 		try {
 			var writer = PdfWriter.getInstance(document, out);
 			var banner = report.run().voided() ? "VOIDED: this run must not be relied on" : null;
-			writer.setPageEvent(new Footer(report.header().organizationName() + ", " + report.header().periodLabel()
-					+ ", run " + report.run().runNo(), banner));
-			document.open();
 			var h = report.header();
-			document.add(new Paragraph("GHG inventory report: " + h.organizationName() + ", " + h.periodLabel(), TITLE));
+			// spec 01.8: the account number beside the name, so two organizations of one name print apart
+			var entity = h.organizationName() + " (" + AccountNumbers.label(h.organizationAccountNo()) + ")";
+			writer.setPageEvent(new Footer(entity + ", " + h.periodLabel() + ", run " + report.run().runNo(), banner));
+			document.open();
+			document.add(new Paragraph("GHG inventory report: " + entity + ", " + h.periodLabel(), TITLE));
 			document.add(new Paragraph("Run " + report.run().runNo() + " (" + report.run().label() + ")", BODY));
 			if (banner != null) {
 				document.add(new Paragraph(banner + ". " + nvl(report.run().voidReason(), ""), H2));
@@ -91,7 +93,7 @@ public final class ReportPdf {
 			document.add(new Paragraph(" "));
 
 			var header = titled("Report", H2, 30, 70);
-			row(header, "Reporting entity", join(h.organizationName(), h.address()));
+			row(header, "Reporting entity", join(entity, h.address()));
 			row(header, "Contact", nvl(h.contact(), "not recorded"));
 			row(header, "Reporting period", h.periodLabel() + " (" + ReportLabels.period(h.periodStart(), h.periodEnd()) + ")");
 			row(header, "Prepared by", nvl(h.preparedBy(), "not recorded") + ", " + ReportLabels.instant(h.preparedAt()));
@@ -109,7 +111,8 @@ public final class ReportPdf {
 					+ (h.assuranceStatement() == null ? "" : " (" + h.assuranceStatement() + ")"));
 			document.add(header);
 
-			paragraph(document, "1. Company and organizational boundary", report.company().organizationName() + ", "
+			paragraph(document, "1. Company and organizational boundary", report.company().organizationName() + " ("
+					+ AccountNumbers.label(report.company().organizationAccountNo()) + "), "
 					+ ReportLabels.lower(report.company().consolidationApproach()) + " approach (Corporate Standard, chapter 3)."
 					+ (report.company().boundaryVersion() == null ? ""
 							: " Boundary version " + report.company().boundaryVersion().version().versionNo()

@@ -75,6 +75,7 @@ const version: BoundaryVersion = {
 const report: Report = {
   company: {
     organizationName: 'Sankofa Gold plc',
+    organizationAccountNo: 1,
     consolidationApproach: 'EQUITY_SHARE',
     boundaryVersion: version,
   },
@@ -286,6 +287,7 @@ const report: Report = {
   ],
   header: {
     organizationName: 'Sankofa Gold plc',
+    organizationAccountNo: 1,
     address: '12 Liberation Road, Accra',
     contact: 'sustainability@sankofa.test',
     periodLabel: '2025',
@@ -752,7 +754,7 @@ test('opens with the header block and prints the breakdown and factor tables', a
 
   const header = await screen.findByRole('table', { name: 'Report header' })
   expect(
-    within(header).getByText(/Sankofa Gold plc, 12 Liberation Road, Accra/),
+    within(header).getByText(/Sankofa Gold plc \(ORG-0001\), 12 Liberation Road, Accra/),
   ).toBeInTheDocument()
   expect(within(header).getByText(/kojo@ecoriv.test/)).toBeInTheDocument()
   expect(within(header).getByText('Ama Mensah, Sustainability Lead')).toBeInTheDocument()

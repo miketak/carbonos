@@ -20,8 +20,8 @@ public record PlatformSummaryResponse(long organizations, long packFamilies, lon
 			boolean mayApprove) {
 	}
 
-	public record Grant(UUID organizationId, String organizationName, String adminEmail, String reason,
-			Instant grantedAt, Instant expiresAt, Instant endedAt, boolean mine) {
+	public record Grant(UUID organizationId, String organizationName, Long organizationAccountNo, String adminEmail,
+			String reason, Instant grantedAt, Instant expiresAt, Instant endedAt, boolean mine) {
 	}
 
 	public record Activity(Instant at, String action, String actor, String subject) {
@@ -37,8 +37,9 @@ public record PlatformSummaryResponse(long organizations, long packFamilies, lon
 					.toList(),
 				summary.grants()
 					.stream()
-					.map(grant -> new Grant(grant.organizationId(), grant.organizationName(), grant.adminEmail(),
-							grant.reason(), grant.grantedAt(), grant.expiresAt(), grant.endedAt(), grant.mine()))
+					.map(grant -> new Grant(grant.organizationId(), grant.organizationName(),
+							grant.organizationAccountNo(), grant.adminEmail(), grant.reason(), grant.grantedAt(),
+							grant.expiresAt(), grant.endedAt(), grant.mine()))
 					.toList(),
 				summary.recentActivity()
 					.stream()

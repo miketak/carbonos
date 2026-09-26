@@ -22,6 +22,7 @@ import {
 const organization: Organization = {
   id: 'org-1',
   name: 'Sankofa Gold plc',
+  accountNo: 1,
   myRole: 'OWNER',
   address: null,
   contact: null,

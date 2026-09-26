@@ -16,6 +16,7 @@ const organization = (myRole: Organization['myRole']) =>
   ({
     id: 'org-1',
     name: 'Asante Gold Resources',
+    accountNo: 1,
     myRole,
     facilityCount: 2,
     supportAccess: [
@@ -43,7 +44,8 @@ test('an administrator under support access is told so, with the expiry', async 
   renderWithProviders(<SupportAccessBanner organization={organization('ADMIN')} />)
 
   const banner = await screen.findByRole('status')
-  expect(banner).toHaveTextContent(/Asante Gold Resources under support access until/i)
+  // spec 01.8: the account number beside the name, so two organizations of one name read apart
+  expect(banner).toHaveTextContent(/Asante Gold Resources \(ORG-0001\) under support access until/i)
   expect(banner).toHaveTextContent(/recorded in this organization\u2019s history/i)
 })
 

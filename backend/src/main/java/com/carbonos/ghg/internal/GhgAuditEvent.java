@@ -33,7 +33,9 @@ public class GhgAuditEvent {
 		// spec 02.7: adopting or declining a new edition of a factor pack is an act on an organization
 		FACTOR_PACK_ADOPTED, FACTOR_PACK_DECLINED,
 		// spec 01.7: who was added, given another role or removed is part of the organization's history
-		MEMBER_ADDED, MEMBER_ROLE_CHANGED, MEMBER_REMOVED
+		MEMBER_ADDED, MEMBER_ROLE_CHANGED, MEMBER_REMOVED,
+		// spec 01.8: with shared names, which organization was renamed into which is a fact the history holds
+		ORGANIZATION_RENAMED
 	}
 
 	@Id

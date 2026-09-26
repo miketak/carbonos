@@ -2,6 +2,7 @@ import { Button } from '../../../components/Button'
 import { Drawer } from '../../../components/Drawer'
 import { GlassCard } from '../../../components/GlassCard'
 import { Skeleton } from '../../../components/Skeleton'
+import { OrganizationName } from '../../../components/OrganizationName'
 import { useFactorPackBlastRadiusQuery } from '../useFactorPacks'
 import type { BlastRadius, BlastRadiusOrganization } from '../api'
 
@@ -194,7 +195,12 @@ function Figure({ label, value }: { label: string; value: number }) {
 function WithdrawalCard({ organization }: { organization: BlastRadiusOrganization }) {
   return (
     <GlassCard className="mt-4 p-4">
-      <h3 className="text-base">{organization.organizationName}</h3>
+      <h3 className="text-base">
+        <OrganizationName
+          name={organization.organizationName}
+          accountNo={organization.organizationAccountNo}
+        />
+      </h3>
       <p className="mt-0.5 text-xs text-ink-muted">
         {organization.lineagesHeld === 0
           ? 'Holds no row of this edition; its notice for it is open, and withdrawing closes it.'
@@ -208,7 +214,12 @@ function WithdrawalCard({ organization }: { organization: BlastRadiusOrganizatio
 function PublicationCard({ organization }: { organization: BlastRadiusOrganization }) {
   return (
     <GlassCard className="mt-4 p-4">
-      <h3 className="text-base">{organization.organizationName}</h3>
+      <h3 className="text-base">
+        <OrganizationName
+          name={organization.organizationName}
+          accountNo={organization.organizationAccountNo}
+        />
+      </h3>
       <p className="mt-0.5 text-xs text-ink-muted">
         Holds {organization.lineagesHeld} {organization.lineagesHeld === 1 ? 'lineage' : 'lineages'}{' '}
         of this pack; {organization.rowsMoving} would move, {organization.rowsOverThreshold} by more

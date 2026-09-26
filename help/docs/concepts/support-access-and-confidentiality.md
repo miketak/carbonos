@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-26
 ---
 
 # Can the platform team see my data?
@@ -13,7 +13,7 @@ recorded in the organization's own history. This page explains what an
 outsider can and cannot see, how a support grant works, and what it can
 never do.
 
-<!-- sources: specs 01.3, 01.5; AdminOrganizationsPage.tsx intro; SupportAccessBanner.tsx; SupportAccessCard.tsx; OrganizationSettingsPage.tsx history; format.ts actionLabels; governance QA 007 C3 and mining QA 001 verified 2026-09-24 -->
+<!-- sources: specs 01.3, 01.5; AdminOrganizationsPage.tsx intro; SupportAccessBanner.tsx; SupportAccessCard.tsx; OrganizationSettingsPage.tsx history; format.ts actionLabels; governance QA 007 C3 and mining QA 001 verified 2026-09-24; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 ## What an outsider sees
 
@@ -57,7 +57,7 @@ The steps, as the product presents them:
    later never moves a grant that is already live.
 3. The organization now appears under the administrator's **GHG
    accounting**, and every page inside it carries the banner "You are in
-   *organization* under support access until *time*. Every act is
+   *organization* (ORG-*NNNN*) under support access until *time*. Every act is
    recorded in this organization's history."
 4. The administrator works with an owner's rights, and every act they
    record carries their email and the mark that it was taken under

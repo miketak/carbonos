@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-26
 ---
 
 # Report exports
@@ -8,12 +8,13 @@ last_reviewed: 2026-09-24
 Every run offers four files from its page. They are generated from the
 run's snapshot and never change afterwards.
 
-<!-- sources: run-1-lines.csv, run-1-exclusions.csv, run-1-inputs.json and riverside-bottling-ltd-2025-run-1.pdf downloaded from Run 001 of FY2025 on 2026-09-24; RunDetailPage.tsx; specs 07.1, 07.2, 07.4 -->
+<!-- sources: run-1-lines.csv, run-1-exclusions.csv, run-1-inputs.json and riverside-bottling-ltd-2025-run-1.pdf downloaded from Run 001 of FY2025 on 2026-09-24; RunDetailPage.tsx; specs 07.1, 07.2, 07.4; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 ## PDF report
 
-`<organization>-<year>-run-<N>.pdf`, for example
-`riverside-bottling-ltd-2025-run-1.pdf`. The sections are those of the
+`<organization>-org-<account number>-<year>-run-<N>.pdf`, for example
+`riverside-bottling-ltd-org-0003-2025-run-1.pdf`; the account number keeps
+two organizations of one name apart on disk. The sections are those of the
 run page: 00 Report, 01 Company and organizational boundary, 02
 Operational boundary, 03 Reporting period, 04 Emissions by scope, 05
 Emissions by gas, 06 Biogenic CO₂, 6A Gases outside the scopes, 07 Base

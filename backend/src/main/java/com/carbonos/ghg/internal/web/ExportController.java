@@ -1,5 +1,6 @@
 package com.carbonos.ghg.internal.web;
 
+import com.carbonos.ghg.internal.AccountNumbers;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
@@ -36,8 +37,10 @@ class ExportController {
 	@GetMapping(value = "/runs/{id}/report.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
 	ResponseEntity<byte[]> pdf(@PathVariable UUID id) {
 		var report = reports.assemble(id);
-		var name = slug(report.header().organizationName()) + "-" + slug(report.header().periodLabel()) + "-run-"
-				+ report.run().runNo() + ".pdf";
+		// spec 01.8: the account number in the name, so two organizations' reports never collide on disk
+		var name = slug(report.header().organizationName()) + "-"
+				+ slug(AccountNumbers.label(report.header().organizationAccountNo())) + "-"
+				+ slug(report.header().periodLabel()) + "-run-" + report.run().runNo() + ".pdf";
 		return ResponseEntity.ok()
 			.contentType(MediaType.APPLICATION_PDF)
 			.header(HttpHeaders.CONTENT_DISPOSITION, attachment(name))

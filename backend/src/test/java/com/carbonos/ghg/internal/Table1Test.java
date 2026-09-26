@@ -53,7 +53,7 @@ class Table1Test {
 	/** The Standard's Holland Industries example: BGB is a 50% venture held by Holland America, an 83% subsidiary. */
 	@Test
 	void theConsolidationPolicyAppliesAtEveryLevelOfTheGroup() {
-		var organization = new Organization("Holland Industries", UUID.randomUUID());
+		var organization = new Organization("Holland Industries", UUID.randomUUID(), 1);
 		var hollandAmerica = new LegalEntity(organization, "Holland America", RelationshipType.SUBSIDIARY,
 				new BigDecimal("83.00"), new BigDecimal("83.00"), true, true, null, false);
 		var bgb = new LegalEntity(organization, "BGB", RelationshipType.JOINT_VENTURE, new BigDecimal("50.00"),

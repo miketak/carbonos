@@ -36,6 +36,7 @@ import { getFactorPackBlastRadius } from '../api'
 const adansi: BlastRadiusOrganization = {
   organizationId: 'org-adansi',
   organizationName: 'Adansi Foods Ltd',
+  organizationAccountNo: 1,
   lineagesHeld: 3,
   rowsMoving: 0,
   rowsOverThreshold: 0,
@@ -77,6 +78,7 @@ const withdrawal: BlastRadius = {
       ...adansi,
       organizationId: 'org-keta',
       organizationName: 'Keta Salt Works',
+      organizationAccountNo: 1,
       lineagesHeld: 0,
     },
   ],

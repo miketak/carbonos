@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-26
 ---
 
 # Validation rules and limits
@@ -8,7 +8,7 @@ last_reviewed: 2026-09-24
 The lengths, sizes and ranges CarbonOS enforces, and the message it
 answers with where one is printed.
 
-<!-- sources: backend request records under com.carbonos.ghg.internal.web.dto and com.carbonos.user (Size, Min, Max annotations); PasswordPolicy.java; PlatformSettingsService.java; ActivityImportService.java; EvidencePanel.tsx; verified 2026-09-24 -->
+<!-- sources: backend request records under com.carbonos.ghg.internal.web.dto and com.carbonos.user (Size, Min, Max annotations); PasswordPolicy.java; PlatformSettingsService.java; ActivityImportService.java; EvidencePanel.tsx; verified 2026-09-24; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 ## Accounts and access
 
@@ -24,7 +24,8 @@ answers with where one is printed.
 
 | Rule | Value |
 | --- | --- |
-| Name | Required, up to 120 characters. |
+| Name | Required, up to 120 characters. Need not be unique: when another organization carries it, the form says so once and proceeds on **Create anyway** or **Save anyway**. |
+| Account number | Assigned when the organization is created, shown as ORG-*NNNN*, never edited, never reused. |
 | Address | Up to 255 characters. Contact: up to 160. |
 | Deleting the organization | Type the name exactly ("Type the organization's name exactly to confirm.") and give a reason of at least 10 characters, up to 500. An organization with a published inventory cannot be deleted. |
 | Custom unit | Code up to 30 characters, label up to 120, base unit a registered code. |

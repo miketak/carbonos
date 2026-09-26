@@ -6,6 +6,7 @@ import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { AppHeader } from '../../components/AppHeader'
+import { OrganizationName } from '../../components/OrganizationName'
 import { OrganizationFormModal } from './components/OrganizationFormModal'
 import { useOrganizationCapabilitiesQuery, useOrganizationsQuery } from './useGhg'
 
@@ -81,7 +82,7 @@ export function OrganizationsPage() {
                   to={`/app/ghg/${organization.id}`}
                   className="text-lg font-semibold text-dark-teal hover:text-link"
                 >
-                  {organization.name}
+                  <OrganizationName name={organization.name} accountNo={organization.accountNo} />
                 </Link>
               </div>
               <p className="mt-2 text-sm text-ink-muted">

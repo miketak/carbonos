@@ -189,6 +189,7 @@ beforeEach(() => {
   vi.mocked(getOrganization).mockReset().mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
+    accountNo: 1,
     myRole: 'OWNER',
     address: null,
     contact: null,
@@ -396,6 +397,7 @@ test('a verifier sees Import CSV and + Add activity disabled with the role it ne
   vi.mocked(getOrganization).mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
+    accountNo: 2,
     myRole: 'VERIFIER',
     address: null,
     contact: null,
@@ -422,6 +424,7 @@ test('a preparer sees Import CSV and + Add activity enabled', async () => {
   vi.mocked(getOrganization).mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
+    accountNo: 3,
     myRole: 'PREPARER',
     address: null,
     contact: null,
@@ -441,6 +444,7 @@ test('a verifier opens a record in a read-only drawer, with no fields and no Sav
   vi.mocked(getOrganization).mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
+    accountNo: 4,
     myRole: 'VERIFIER',
     address: null,
     contact: null,

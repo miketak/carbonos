@@ -574,6 +574,8 @@ class FactorPackPublicationApiIntegrationTests {
 		assertThat(JsonPath.<Integer>read(report, "$.holderCount")).isEqualTo(1);
 		assertThat(JsonPath.<List<String>>read(report, "$.organizations[*].organizationName"))
 			.containsExactly("Asante Gold Resources");
+		assertThat(JsonPath.<List<Integer>>read(report, "$.organizations[*].organizationAccountNo")).hasSize(1)
+			.allSatisfy(accountNo -> assertThat(accountNo).isPositive());
 		assertThat(JsonPath.<List<String>>read(report, "$.organizations[*].organizationId")).containsExactly(orgId);
 		// 1,000 litres at 2.66 is 2,660 kg CO2e; at 2.80 it is 2,800, so the estimate is 140
 		assertThat(JsonPath.<List<Double>>read(report, "$.organizations[*].estimatedKgCo2eDelta").getFirst())

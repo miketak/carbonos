@@ -65,7 +65,8 @@ public class FactorPackBlastRadius {
 	}
 
 	/** What one organization would see, keyed on the lineages it actually holds. */
-	public record OrganizationImpact(UUID organizationId, String organizationName, int lineagesHeld, int rowsMoving,
+	public record OrganizationImpact(UUID organizationId, String organizationName, Long organizationAccountNo,
+			int lineagesHeld, int rowsMoving,
 			int rowsOverThreshold, BigDecimal estimatedKgCo2eDelta, String lastRunLabel, List<InventoryRef> openDrafts,
 			List<InventoryRef> lockedPeriods, List<String> conflicts, List<String> blocked, List<String> unapproved,
 			List<String> discontinued, String diffHash) {
@@ -174,8 +175,11 @@ public class FactorPackBlastRadius {
 		var impacts = new ArrayList<OrganizationImpact>();
 		for (var organizationId : affected) {
 			var theirs = byOrganization.getOrDefault(organizationId, List.of());
-			impacts.add(new OrganizationImpact(organizationId, names.getOrDefault(organizationId, "an organization"),
-					liveByCode(theirs).size(), 0, 0, BigDecimal.ZERO, null, openDrafts(organizationId), List.of(),
+			var organization = names.get(organizationId);
+			impacts.add(new OrganizationImpact(organizationId,
+					organization == null ? "an organization" : organization.getName(),
+					organization == null ? null : organization.getAccountNo(), liveByCode(theirs).size(), 0, 0,
+					BigDecimal.ZERO, null, openDrafts(organizationId), List.of(),
 					List.of(), List.of(), List.of(), List.of(), null));
 		}
 		return new Report(edition.getEditionId(), edition.getPackKey(), Act.WITHDRAW, edition.getSupersedesId(), 0, 0,
@@ -301,11 +305,14 @@ public class FactorPackBlastRadius {
 		var impacts = new ArrayList<OrganizationImpact>();
 		var names = organizationNames(byOrganization.keySet());
 		for (var entry : byOrganization.entrySet()) {
-			impacts.add(impactOf(entry.getKey(), names.getOrDefault(entry.getKey(), "an organization"),
-					entry.getValue(), log, rowsByCode, moving));
+			impacts.add(impactOf(entry.getKey(), names.get(entry.getKey()), entry.getValue(), log, rowsByCode,
+					moving));
 		}
+		// spec 01.8: two holders of one name sort apart by account number
 		impacts.sort(Comparator.comparing(OrganizationImpact::organizationName,
-				Comparator.nullsLast(String::compareToIgnoreCase)));
+				Comparator.nullsLast(String::compareToIgnoreCase))
+			.thenComparing(OrganizationImpact::organizationAccountNo,
+					Comparator.nullsLast(Comparator.naturalOrder())));
 
 		var discontinued = log.stream()
 			.filter(change -> change.getKind() == FactorPackChange.Kind.DISCONTINUED)
@@ -331,7 +338,7 @@ public class FactorPackBlastRadius {
 	 * not the predecessor's, because a locally edited row has already moved away
 	 * from the published table and is what the estimate must weigh.
 	 */
-	private OrganizationImpact impactOf(UUID organizationId, String organizationName, List<EmissionFactor> theirs,
+	private OrganizationImpact impactOf(UUID organizationId, Organization organization, List<EmissionFactor> theirs,
 			List<FactorPackChange> log, Map<String, FactorPackRow> rowsByCode, Set<String> moving) {
 		var byCode = liveByCode(theirs);
 		var lockedFactorIds = assignments.factorIdsInInventoriesWithStatus(organizationId, LOCKED);
@@ -378,7 +385,8 @@ public class FactorPackBlastRadius {
 
 		var lastRun = runs.completedRuns(organizationId, PageRequest.of(0, 1)).stream().findFirst().orElse(null);
 		var delta = estimatedDeltaOf(organizationId, theirs, rowsByCode);
-		return new OrganizationImpact(organizationId, organizationName, byCode.size(), rowsMoving, rowsOverThreshold,
+		return new OrganizationImpact(organizationId, organization == null ? "an organization" : organization.getName(),
+				organization == null ? null : organization.getAccountNo(), byCode.size(), rowsMoving, rowsOverThreshold,
 				delta, lastRun == null ? null : lastRun.getLabel(), openDrafts(organizationId),
 				lockedInventories(organizationId), List.copyOf(conflicts), List.copyOf(blocked),
 				List.copyOf(unapproved), List.copyOf(discontinued), diffHash(comparison));
@@ -469,12 +477,12 @@ public class FactorPackBlastRadius {
 				inventory.getPeriodEnd().toString(), inventory.getStatus());
 	}
 
-	private Map<UUID, String> organizationNames(java.util.Collection<UUID> ids) {
-		var names = new LinkedHashMap<UUID, String>();
+	private Map<UUID, Organization> organizationNames(java.util.Collection<UUID> ids) {
+		var names = new LinkedHashMap<UUID, Organization>();
 		if (ids.isEmpty()) {
 			return names;
 		}
-		organizations.findAllById(ids).forEach(organization -> names.put(organization.getId(), organization.getName()));
+		organizations.findAllById(ids).forEach(organization -> names.put(organization.getId(), organization));
 		return names;
 	}
 

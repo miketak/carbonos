@@ -27,6 +27,7 @@ import { getProfile } from '../profile/api'
 const organization = {
   id: 'org-1',
   name: 'Ecoriv Holdings',
+  accountNo: 1,
   myRole: 'OWNER' as MyRole,
   address: null,
   contact: null,
@@ -151,4 +152,18 @@ test('Settings is the active entry when it is open', async () => {
     'aria-current',
     'page',
   )
+})
+
+test('two organizations of one name are told apart in the switcher (spec 01.8)', async () => {
+  const twin = { ...organization, id: 'org-2', accountNo: 2 }
+  vi.mocked(listOrganizations).mockResolvedValue([organization, twin])
+  renderAt('/app/ghg/org-1')
+
+  const switcher = await screen.findByRole('combobox', { name: 'Organization' })
+  await waitFor(() => expect(within(switcher).getAllByRole('option')).toHaveLength(2))
+  expect(
+    within(switcher)
+      .getAllByRole('option')
+      .map((option) => option.textContent),
+  ).toEqual(['Ecoriv Holdings (ORG-0001)', 'Ecoriv Holdings (ORG-0002)'])
 })

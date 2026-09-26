@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { ApiError } from '../../lib/api'
 import { renderWithProviders } from '../../test/utils'
 import { OrganizationsPage } from './OrganizationsPage'
 import type { Organization } from './api'
@@ -24,6 +25,7 @@ const organizations: Organization[] = [
   {
     id: 'org-1',
     name: 'Ecoriv Holdings',
+    accountNo: 1,
     myRole: 'OWNER',
     address: null,
     contact: null,
@@ -34,6 +36,7 @@ const organizations: Organization[] = [
   {
     id: 'org-2',
     name: 'Tema Manufacturing',
+    accountNo: 2,
     myRole: 'OWNER',
     address: null,
     contact: null,
@@ -101,7 +104,66 @@ test('creates an organization through the modal', async () => {
   await user.click(screen.getByRole('button', { name: /create organization/i }))
 
   await waitFor(() => expect(createOrganization).toHaveBeenCalledWith({ name: 'Ecoriv Holdings' }))
-  expect(await screen.findByText(/ecoriv holdings created/i)).toBeInTheDocument()
+  expect(await screen.findByText(/ecoriv holdings \(ORG-0001\) created/i)).toBeInTheDocument()
+})
+
+test('every card names the organization with its account number (spec 01.8)', async () => {
+  vi.mocked(listOrganizations).mockResolvedValue(organizations)
+  renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
+
+  const card = (await screen.findByText('Ecoriv Holdings')).closest('a') as HTMLElement
+  expect(card).toHaveTextContent('ORG-0001')
+  expect(screen.getByText('ORG-0002')).toBeInTheDocument()
+})
+
+test('a taken name is refused once, then created on confirmation (spec 01.8)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listOrganizations).mockResolvedValue([organizations[0]])
+  vi.mocked(createOrganization)
+    .mockRejectedValueOnce(
+      new ApiError(409, {
+        title: 'Duplicate organization name',
+        detail:
+          "An organization named 'ecoriv holdings' already exists: Ecoriv Holdings (ORG-0001). Confirm to use the name anyway.",
+        duplicates: [{ id: 'org-1', name: 'Ecoriv Holdings', accountNo: 1 }],
+      }),
+    )
+    .mockResolvedValueOnce({
+      ...organizations[0],
+      id: 'org-3',
+      name: 'ecoriv holdings',
+      accountNo: 3,
+    })
+  renderWithProviders(<OrganizationsPage />, { route: '/app/ghg' })
+
+  await user.click(await screen.findByRole('button', { name: /new organization/i }))
+  const name = screen.getByLabelText(/^name/i)
+  await user.type(name, 'ecoriv holdings')
+  await user.click(screen.getByRole('button', { name: /create organization/i }))
+
+  // the refusal names the organization that carries the name, and the button turns into the confirmation
+  const notice = await screen.findByRole('alert')
+  expect(notice).toHaveTextContent(/already exists: Ecoriv Holdings \(ORG-0001\)/)
+  expect(notice).toHaveTextContent('Ecoriv Holdings (ORG-0001)')
+  const anyway = screen.getByRole('button', { name: /create anyway/i })
+  expect(createOrganization).toHaveBeenCalledTimes(1)
+  expect(createOrganization).toHaveBeenCalledWith({ name: 'ecoriv holdings' })
+
+  // changing the name withdraws the confirmation; restoring it brings it back
+  await user.type(name, '2')
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /create organization/i })).toBeInTheDocument()
+  await user.type(name, '{backspace}')
+  expect(screen.getByRole('alert')).toBeInTheDocument()
+
+  await user.click(anyway)
+  await waitFor(() =>
+    expect(createOrganization).toHaveBeenLastCalledWith({
+      name: 'ecoriv holdings',
+      allowDuplicateName: true,
+    }),
+  )
+  expect(await screen.findByText(/ecoriv holdings \(ORG-0003\) created/i)).toBeInTheDocument()
 })
 
 test('an owner is offered the way into Settings, a verifier is not (spec 01.7)', async () => {

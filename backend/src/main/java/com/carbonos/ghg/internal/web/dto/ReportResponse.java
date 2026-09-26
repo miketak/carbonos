@@ -92,7 +92,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 					lines, run, header, byScope3Category, byFacility, byEntity, byCountry, factors, intensity,
 					exclusionSummary, dataQuality, outsideScopes, sincePublication, correction);
 		}
-		var h = new Header(header.organizationName(), header.address(), header.contact(), header.periodLabel(),
+		var h = new Header(header.organizationName(), header.organizationAccountNo(), header.address(),
+				header.contact(), header.periodLabel(),
 				header.periodStart(), header.periodEnd(), header.preparedBy(), header.preparedAt(), header.approvedBy(),
 				header.publishedBy(), header.publishedAt(), header.version(), header.supersedes(), supersededBy,
 				header.assuranceLevel(), header.assuranceProvider(), header.assuranceStatement(),
@@ -129,7 +130,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 	 * more per correction); the boundary version is named apart (spec 05.5),
 	 * with who designated the final run and the review note.
 	 */
-	public record Header(String organizationName, String address, String contact, String periodLabel,
+	public record Header(String organizationName, long organizationAccountNo, String address, String contact,
+			String periodLabel,
 			LocalDate periodStart, LocalDate periodEnd, String preparedBy, Instant preparedAt, String approvedBy,
 			String publishedBy, Instant publishedAt, int version, List<String> supersedes, String supersededBy,
 			AssuranceLevel assuranceLevel, String assuranceProvider, String assuranceStatement,
@@ -201,8 +203,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		return kg == null ? null : kg.movePointLeft(3).setScale(3, java.math.RoundingMode.HALF_UP);
 	}
 
-	public record Company(String organizationName, ConsolidationApproach consolidationApproach,
-			BoundaryVersionResponse boundaryVersion) {
+	public record Company(String organizationName, long organizationAccountNo,
+			ConsolidationApproach consolidationApproach, BoundaryVersionResponse boundaryVersion) {
 	}
 
 	public record OperationalBoundary(List<Scope> scopesCovered, List<ActivityCategory> scope3Categories,
@@ -327,7 +329,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			List<Inventory> predecessors, Inventory successor, List<IntensityMetric> metrics,
 			int boundaryVersionCount, UnitConverter.Scoped units) {
 		var lines = run.getLines().stream().map(RunLineResponse::from).toList();
-		var header = new Header(organization.getName(), organization.getAddress(), organization.getContact(),
+		var header = new Header(organization.getName(), organization.getAccountNo(), organization.getAddress(),
+				organization.getContact(),
 				inventory.periodLabel(), run.getPeriodStart(), run.getPeriodEnd(), run.getCreatedBy(),
 				run.getCreatedAt(), inventory.getApprovedBy() != null ? inventory.getApprovedBy()
 						: inventory.getPublishedBy(),
@@ -491,7 +494,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		var dataQuality = dataQuality(run, inventory.getUncertaintyStatement());
 		var outsideScopes = outsideScopes(run, units);
 		return new ReportResponse(
-				new Company(organization.getName(), run.getConsolidationApproach(),
+				new Company(organization.getName(), organization.getAccountNo(), run.getConsolidationApproach(),
 						version == null ? null : BoundaryVersionResponse.from(version)),
 				new OperationalBoundary(List.copyOf(scopesCovered), inventory.getScope3Categories(),
 						List.copyOf(scope3Reported), inventory.getScope3ExclusionsRationale(),

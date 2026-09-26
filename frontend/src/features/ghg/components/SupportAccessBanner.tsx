@@ -1,6 +1,7 @@
 import { useSession } from '../../auth/useSession'
 import { formatDateTime } from '../format'
 import type { Organization } from '../api'
+import { organizationLabel } from '../../../lib/organizationLabel'
 
 /**
  * Spec 01.6: an administrator working under support access is told so on every
@@ -22,7 +23,7 @@ export function SupportAccessBanner({ organization }: { organization: Organizati
       role="status"
       className="mb-6 rounded-lg border border-amber-300/60 bg-amber-50/80 px-4 py-2.5 text-sm font-medium text-dark-teal"
     >
-      You are in {organization.name} under support access
+      You are in {organizationLabel(organization)} under support access
       {grant ? ` until ${formatDateTime(grant.expiresAt)}` : ''}. Every act is recorded in this
       organization&rsquo;s history.
     </p>
