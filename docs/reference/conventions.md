@@ -42,6 +42,12 @@ enforced version of this page; when they differ, `CLAUDE.md` wins.
   in the root package, internals under `internal/`. Controllers speak
   DTOs. Errors are RFC 9457 problem details. Every schema change is a
   Flyway migration and `ddl-auto` stays `validate`.
+- Warn-then-allow refusals (the first is the duplicate organization name
+  of spec 01.8) are 409 problem details that carry the facts the reader
+  needs to decide (for example `duplicates`), and the request is re-sent
+  with an explicit boolean confirmation (`allowDuplicateName`). The client
+  detects the case by that property and never infers permission from the
+  status alone.
 - Frontend: feature-sliced, TanStack Query for server state, the `api()`
   wrapper for every call, TypeScript strict with no `any`. oxlint and
   Prettier are the arbiters of style; do not argue with them.

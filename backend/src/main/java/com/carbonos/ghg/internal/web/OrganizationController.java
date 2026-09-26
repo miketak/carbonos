@@ -61,7 +61,7 @@ class OrganizationController {
 	@PostMapping
 	ResponseEntity<OrganizationResponse> create(@Valid @RequestBody OrganizationRequest body) {
 		var organization = ghgService.createOrganization(body.name(), body.address(), body.contact(),
-				body.ownerEmail());
+				body.ownerEmail(), body.allowsDuplicateName());
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
 			.buildAndExpand(organization.getId()).toUri();
 		return ResponseEntity.created(location).body(toResponse(organization));
@@ -69,7 +69,8 @@ class OrganizationController {
 
 	@PutMapping("/{id}")
 	OrganizationResponse update(@PathVariable UUID id, @Valid @RequestBody OrganizationRequest body) {
-		return toResponse(ghgService.updateOrganization(id, body.name(), body.address(), body.contact()));
+		return toResponse(ghgService.updateOrganization(id, body.name(), body.address(), body.contact(),
+				body.allowsDuplicateName()));
 	}
 
 	/** Removes the organization with a tombstone (spec 01.3): the owner types the name and a reason. */

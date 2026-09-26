@@ -6,8 +6,11 @@ import { InputField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
-import { fieldErrors, refusalMessage } from '../../lib/api'
+import { fieldErrors, problemDetail, refusalMessage } from '../../lib/api'
+import { accountLabel, organizationLabel } from '../../lib/organizationLabel'
+import { duplicateOrganizations } from './duplicateName'
 import { DeleteOrganizationDialog } from './components/DeleteOrganizationDialog'
+import { DuplicateNameNotice } from './components/DuplicateNameNotice'
 import { MembersCard } from './components/MembersCard'
 import { actionLabels, formatDateTime } from './format'
 import { mayManageMembership } from './roles'
@@ -54,8 +57,8 @@ export function OrganizationSettingsPage() {
       <GlassCard className="mx-auto max-w-3xl p-10 text-center">
         <h1 className="text-lg">Settings are the owner's</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Administering {organization.name}, its members and its details needs the Owner role in the
-          organization. Support access does not carry it.
+          Administering {organizationLabel(organization)}, its members and its details needs the
+          Owner role in the organization. Support access does not carry it.
         </p>
       </GlassCard>
     )
@@ -80,21 +83,38 @@ function Settings({ organization }: { organization: Organization }) {
   const [contact, setContact] = useState(organization.contact ?? '')
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  // spec 01.8: the name the last refusal was about; the notice and "Save anyway"
+  // stand only while the field still holds it
+  const [refusedName, setRefusedName] = useState<string | null>(null)
 
   const errors = fieldErrors(save.error)
+  const duplicates = duplicateOrganizations(save.error)
+  const confirming = duplicates !== undefined && refusedName === name.trim()
   const events = eventsQuery.data ?? []
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setError(null)
+    setRefusedName(name.trim())
     save.mutate(
       {
         id: organization.id,
-        input: { name: name.trim(), address: address.trim(), contact: contact.trim() },
+        input: {
+          name: name.trim(),
+          address: address.trim(),
+          contact: contact.trim(),
+          ...(confirming ? { allowDuplicateName: true } : {}),
+        },
       },
       {
-        onSuccess: () => toast(`${name.trim()} saved.`),
-        onError: (cause) => setError(refusalMessage(cause)),
+        onSuccess: () =>
+          toast(
+            `${organizationLabel({ name: name.trim(), accountNo: organization.accountNo })} saved.`,
+          ),
+        onError: (cause) => {
+          // the duplicate-name refusal has its own notice; every other one reads as usual
+          if (!duplicateOrganizations(cause)) setError(refusalMessage(cause))
+        },
       },
     )
   }
@@ -104,16 +124,17 @@ function Settings({ organization }: { organization: Organization }) {
       <div className="mb-6">
         <h1 className="text-2xl">Settings</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          {organization.name}: its details, who works on it, and what has been done to it. Only an
-          owner sees this page.
+          {organizationLabel(organization)}: its details, who works on it, and what has been done to
+          it. Only an owner sees this page.
         </p>
       </div>
 
       <GlassCard className="p-6">
         <h2 className="text-xl">Details</h2>
         <p className="text-sm text-ink-muted">
-          The name identifies the organization across the product; the address and contact print on
-          the report header (spec 07.4).
+          The name and the account number {accountLabel(organization.accountNo)} identify the
+          organization across the product; the address and contact print on the report header (spec
+          07.4). Two organizations may share a name; the account number never changes.
         </p>
         {/* noValidate as everywhere else: the server is the authority and its
             refusal is what the reader sees, rather than a silent browser block */}
@@ -138,6 +159,13 @@ function Settings({ organization }: { organization: Organization }) {
             error={errors?.contact}
             hint="Optional. Who a reader of the report should write to."
           />
+          {confirming && (
+            <DuplicateNameNotice
+              detail={problemDetail(save.error)}
+              duplicates={duplicates}
+              proceed="Save anyway"
+            />
+          )}
           {error && (
             <p role="alert" className="text-sm text-red-600">
               {error}
@@ -145,7 +173,7 @@ function Settings({ organization }: { organization: Organization }) {
           )}
           <div>
             <Button type="submit" busy={save.isPending}>
-              Save details
+              {confirming ? 'Save anyway' : 'Save details'}
             </Button>
           </div>
         </form>

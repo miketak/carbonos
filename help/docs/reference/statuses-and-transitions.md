@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-26
 ---
 
 # Statuses and transitions
@@ -10,7 +10,7 @@ on. Each table names who may perform the act and what CarbonOS asks for.
 The concept pages explain why the rules are as they are; this page states
 them.
 
-<!-- sources: format.ts (statusLabels, exclusionLabels, activityIssueLabels, estimateStateLabels, actionLabels, tierLabels, categories, streamKindLabels, leaseLabels, relationshipLabels, approachLabels, conventionLabels); LifecycleBar.tsx stateCopy; badges.tsx; api.ts RecalculationStatus; admin/api.ts FactorPackStatus; AdminFactorPacksPage.tsx statusHints; FactorPackUpdatesPage.tsx statusLabels; AdminAccessRequestsPage.tsx; specs 04.4, 04.6, 04.8, 05.1, 05.2, 05.3, 05.5, 06, 02.5, 02.7, 01.1; governance QA verified 2026-09-24 -->
+<!-- sources: format.ts (statusLabels, exclusionLabels, activityIssueLabels, estimateStateLabels, actionLabels, tierLabels, categories, streamKindLabels, leaseLabels, relationshipLabels, approachLabels, conventionLabels); LifecycleBar.tsx stateCopy; badges.tsx; api.ts RecalculationStatus; admin/api.ts FactorPackStatus; AdminFactorPacksPage.tsx statusHints; FactorPackUpdatesPage.tsx statusLabels; AdminAccessRequestsPage.tsx; specs 04.4, 04.6, 04.8, 05.1, 05.2, 05.3, 05.5, 06, 02.5, 02.7, 01.1; governance QA verified 2026-09-24; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 ## Inventories
 
@@ -180,6 +180,7 @@ from secondary or proxy data; 5 Rough estimate or assumption.
 data reviewed, Record classified, Inventory frozen, Inventory reopened, Run
 launched, Run voided, Final run designated, Final designation withdrawn,
 Published, Correction created, Report header saved, Organization created,
-Organization removed, Member added, Member role changed, Member removed,
+Organization renamed, Organization removed, Member added, Member role
+changed, Member removed,
 Support access assumed, Support access ended, Support access expired,
 Factor pack adopted, Factor pack declined.

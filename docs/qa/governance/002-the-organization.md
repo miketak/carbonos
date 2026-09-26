@@ -10,6 +10,7 @@ it, or, where nobody else could, records that it was self-approved.
 **Covers** [spec 01.2](../../../specs/01.2-organization-membership-and-roles.md),
 [spec 01.4](../../../specs/01.4-role-aware-ui-and-visible-refusals.md),
 [spec 01.7](../../../specs/01.7-the-organization-settings-area.md),
+[spec 01.8](../../../specs/01.8-account-numbers-and-shared-organization-names.md),
 [spec 03.1](../../../specs/03.1-legal-entities-and-table-1.md),
 [spec 03.3](../../../specs/03.3-table-1-completeness.md),
 [spec 03.4](../../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md),
@@ -37,7 +38,7 @@ organization it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama, click **New organization**, type the name "Adansi Foods Ltd", leave the rest empty, and create. | "Adansi Foods Ltd created." The list shows the organization with **Open** and **Settings**. Open it: the **Overview** opens, and **Settings** reads "Your role: Owner". | | |
+| 1 | As Ama, click **New organization**, type the name "Adansi Foods Ltd", leave the rest empty, and create. | "Adansi Foods Ltd (ORG-*NNNN*) created." The list shows the organization with its account number, **Open** and **Settings**. Note the number; case A3 uses it. Open it: the **Overview** opens, and **Settings** reads "Your role: Owner". | | |
 | 2 | Open **Settings**. Under **Members**, add the Kofi alias as **Reviewer**, the Esi alias as **Preparer** and the Yaw alias as **Verifier (read-only)**. | Each appears with the role chosen. The card says reviewers also designate final runs, publish and create corrections, and verifiers read only. | | |
 | 3 | Add `nobody@example.test`. | Refused: "No account with that email." and that a platform administrator adds the account first. Membership is granted to an existing account; a newcomer requests access first. | | |
 | 4 | Add the Kofi alias again. | Refused: "<the Kofi alias> is already a member of 'Adansi Foods Ltd'.". | | |
@@ -54,6 +55,22 @@ organization it builds.
 | 3 | Sign out of the private window. | | | |
 
 ## B. Legal entities
+
+### A3. Two organizations may share a name
+
+Spec 01.8: a name is refused once when another organization carries it,
+and accepted on confirmation; the account number is what tells the two
+apart, and it never changes.
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | As Ama, on the GHG home click **New organization**, type "adansi foods ltd" (lower case), and click **Create organization**. | Refused once, in the form: "An organization named 'adansi foods ltd' already exists: Adansi Foods Ltd (ORG-*NNNN*). Confirm to use the name anyway.", listing Adansi Foods Ltd with the number noted in A1. The button now reads **Create anyway**. Names are compared without regard to case. | | |
+| 2 | Add a character to the name, then remove it again. | The notice disappears while the name differs and returns when it is restored; the button follows it. | | |
+| 3 | Click **Create anyway**. | "adansi foods ltd (ORG-*NNNN+1*) created." A second card, with the next account number. | | |
+| 4 | Open the new organization and read the switcher in the header. | Both organizations are listed, each with its number: "Adansi Foods Ltd (ORG-*NNNN*)" and "adansi foods ltd (ORG-*NNNN+1*)". Switching follows the URL. | | |
+| 5 | In the new organization open **Settings**, change **Name** to "Adansi Foods Ltd" (matching case), and click **Save details**. | Refused once with the same sentence naming ORG-*NNNN*; the button reads **Save anyway**. Click it: "Adansi Foods Ltd (ORG-*NNNN+1*) saved." **History** shows **Organization renamed** with "renamed from 'adansi foods ltd' to 'Adansi Foods Ltd'; shares the name with ORG-*NNNN*". | | |
+| 6 | Under **Danger zone** click **Delete organization**. | The dialog states "(ORG-*NNNN+1*) is removed" and that two organizations may share a name. Type the name and the reason `duplicate created for the walkthrough, no client data`; delete. | | |
+| 7 | Click **New organization** and type "Adansi Foods Ltd" again. | Still refused once, naming only ORG-*NNNN*: the removed organization does not count, the live one does. Cancel. | | |
 
 ### B1. The reporting company is there by definition
 

@@ -54,6 +54,7 @@ import { assumeSupportAccess, endSupportAccess, listAdminOrganizations } from '.
 const organization: AdminOrganization = {
   id: 'org-1',
   name: 'Sankofa Gold plc',
+  accountNo: 1,
   ownerEmails: ['kojo@sankofa.test'],
   memberCount: 3,
   supportAccess: null,
@@ -73,6 +74,8 @@ test('the support list names the owners and the member count, and no inventory d
   renderPage()
 
   const row = (await screen.findByText('Sankofa Gold plc')).closest('tr') as HTMLElement
+  // spec 01.8: the account number beside the name, so two organizations of one name read apart
+  expect(within(row).getByText('ORG-0001')).toBeInTheDocument()
   expect(within(row).getByText('kojo@sankofa.test')).toBeInTheDocument()
   expect(within(row).getByText('3')).toBeInTheDocument()
   expect(within(row).getByText('None')).toBeInTheDocument()
@@ -105,7 +108,9 @@ test('access is assumed with a reason of at least ten characters (spec 01.3)', a
       'ticket 4512, preparer cannot open the run',
     ),
   )
-  expect(await screen.findByText(/support access to sankofa gold plc assumed/i)).toBeInTheDocument()
+  expect(
+    await screen.findByText(/support access to sankofa gold plc \(ORG-0001\) assumed/i),
+  ).toBeInTheDocument()
 })
 
 test('an active grant shows its expiry and can be ended', async () => {
@@ -127,5 +132,7 @@ test('an active grant shows its expiry and can be ended', async () => {
   expect(await screen.findByText(/ticket 4512, preparer cannot open the run/)).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: /end support access to sankofa gold plc/i }))
   await waitFor(() => expect(endSupportAccess).toHaveBeenCalledWith('org-1'))
-  expect(await screen.findByText(/support access to sankofa gold plc ended/i)).toBeInTheDocument()
+  expect(
+    await screen.findByText(/support access to sankofa gold plc \(ORG-0001\) ended/i),
+  ).toBeInTheDocument()
 })

@@ -82,6 +82,7 @@ beforeEach(() => {
   vi.mocked(getOrganization).mockReset().mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
+    accountNo: 1,
     myRole: 'OWNER',
     address: null,
     contact: null,
@@ -202,6 +203,7 @@ test('a verifier has no usable New inventory (spec 01.4)', async () => {
   vi.mocked(getOrganization).mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
+    accountNo: 2,
     myRole: 'VERIFIER',
     address: null,
     contact: null,

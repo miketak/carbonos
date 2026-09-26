@@ -7,6 +7,8 @@ import { Modal } from '../../components/Modal'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
+import { OrganizationName } from '../../components/OrganizationName'
+import { organizationLabel } from '../../lib/organizationLabel'
 import {
   useAdminOrganizationsQuery,
   useAssumeSupportAccess,
@@ -83,7 +85,9 @@ export function AdminOrganizationsPage() {
             <tbody>
               {organizations.map((organization) => (
                 <tr key={organization.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-3 py-2 font-medium">{organization.name}</td>
+                  <td className="px-3 py-2 font-medium">
+                    <OrganizationName name={organization.name} accountNo={organization.accountNo} />
+                  </td>
                   <td className="px-3 py-2 text-ink-muted">
                     {organization.ownerEmails.join(', ')}
                   </td>
@@ -105,11 +109,13 @@ export function AdminOrganizationsPage() {
                         <Button
                           variant="ghost"
                           className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                          aria-label={`End support access to ${organization.name}`}
+                          aria-label={`End support access to ${organizationLabel(organization)}`}
                           onClick={() =>
                             endAccess.mutate(organization.id, {
                               onSuccess: () =>
-                                toast(`Support access to ${organization.name} ended.`),
+                                toast(
+                                  `Support access to ${organizationLabel(organization)} ended.`,
+                                ),
                               onError: (error) => toast(refusalMessage(error), 'error'),
                             })
                           }
@@ -166,7 +172,7 @@ function AssumeAccessDialog({
   const [fieldError, setFieldError] = useState<string | undefined>(undefined)
 
   return (
-    <Modal title={`Assume access to ${organization.name}`} onClose={onClose}>
+    <Modal title={`Assume access to ${organizationLabel(organization)}`} onClose={onClose}>
       <form
         noValidate
         onSubmit={(event) => {
@@ -176,7 +182,8 @@ function AssumeAccessDialog({
           assume.mutate(
             { organizationId: organization.id, reason: reason.trim() },
             {
-              onSuccess: () => onAssumed(`Support access to ${organization.name} assumed.`),
+              onSuccess: () =>
+                onAssumed(`Support access to ${organizationLabel(organization)} assumed.`),
               onError: (failure) => {
                 const field = fieldErrors(failure)?.reason
                 if (field) setFieldError(field)
@@ -187,9 +194,9 @@ function AssumeAccessDialog({
         }}
       >
         <p className="text-sm text-ink-muted">
-          You get an owner's rights in {organization.name} for {windowHours}, or until you end the
-          access. The owners see who took it and why, and every act you record is attributed to you
-          and marked as taken under support access.
+          You get an owner's rights in {organizationLabel(organization)} for {windowHours}, or until
+          you end the access. The owners see who took it and why, and every act you record is
+          attributed to you and marked as taken under support access.
         </p>
         <div className="mt-4">
           <TextAreaField

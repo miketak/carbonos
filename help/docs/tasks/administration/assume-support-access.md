@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-26
 ---
 
 # Assume support access
@@ -13,7 +13,7 @@ you an owner's rights for 24 hours, and the organization's owners see
 who took it and why. It never carries deleting the organization,
 changing its membership, or adopting a factor pack edition."
 
-<!-- sources: AdminOrganizationsPage.tsx; SupportAccessBanner.tsx; OrganizationSettingsPage.tsx history; specs 01.3, 01.5; verified 2026-09-24 -->
+<!-- sources: AdminOrganizationsPage.tsx; SupportAccessBanner.tsx; OrganizationSettingsPage.tsx history; specs 01.3, 01.5; verified 2026-09-24; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 ## Steps
 
@@ -35,7 +35,7 @@ changing its membership, or adopting a factor pack edition."
 "Support access to *organization* assumed." The row now reads "Until
 *moment*: *reason*" with **Open** and **End access**. The organization
 appears under your **GHG accounting**, and every page inside it carries
-the banner "You are in *organization* under support access until
+the banner "You are in *organization* (ORG-*NNNN*) under support access until
 *moment*. Every act is recorded in this organization's history."
 
 Under support access the sidebar has no **Settings** entry; the page it

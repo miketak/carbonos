@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-26
 ---
 
 # Export the report
@@ -10,7 +10,7 @@ last_reviewed: 2026-09-24
 Every run offers four files. They are generated from the run's
 snapshot, so they never change after the run.
 
-<!-- sources: RunDetailPage.tsx export links; report.pdf, lines.csv, exclusions.csv, inputs.json endpoints; verified 2026-09-24 -->
+<!-- sources: RunDetailPage.tsx export links; report.pdf, lines.csv, exclusions.csv, inputs.json endpoints; verified 2026-09-24; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 ## Steps
 
@@ -20,7 +20,7 @@ snapshot, so they never change after the run.
 
 | Link | File | Contents |
 | --- | --- | --- |
-| **PDF report** | `<organization>-<year>-run-<N>.pdf` | The report as the page shows it, section by section. |
+| **PDF report** | `<organization>-org-<account number>-<year>-run-<N>.pdf` | The report as the page shows it, section by section. The title, the **Reporting entity** row and the footer name the organization with its account number. |
 | **Lines (CSV)** | `run-<N>-lines.csv` | One row per line, with the record and its reference, the facility and legal entity, the period, scope and category, the quantity and unit, the factor, the conversion, the accounting share, the period share, the kilograms of CO₂e and of each gas, the market-based columns, the stream, the justifications, the data-quality fields, the evidence files, the density and the derivation notes. |
 | **Exclusions (CSV)** | `run-<N>-exclusions.csv` | One row per excluded record: reason, detail, justification, estimate and its state, gas. Only the header row when nothing was excluded. |
 | **Frozen inputs (JSON)** | `run-<N>-inputs.json` | The run's period, consolidation approach, GWP set, market-based basis, boundary version, the factors it applied with their values and versions, the instruments, and the residual-mix answer. |

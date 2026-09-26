@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'reac
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { AppHeader } from '../../components/AppHeader'
+import { organizationLabel } from '../../lib/organizationLabel'
 import { useSession } from '../auth/useSession'
 import { ReadOnlyBanner } from './components/ReadOnlyBanner'
 import { SupportAccessBanner } from './components/SupportAccessBanner'
@@ -123,7 +124,8 @@ export function OrganizationLayout() {
   })
 
   const organizations = organizationsQuery.data
-  const organizationName = organizationQuery.data?.name ?? ''
+  // spec 01.8: the name and the account number together, so two of one name read apart
+  const organizationName = organizationQuery.data ? organizationLabel(organizationQuery.data) : ''
   // spec 02.7: the navigation entry carries a count of the notices still waiting on a decision
   const openNotices = (noticesQuery.data ?? []).filter((notice) => notice.status === 'OPEN').length
 
@@ -324,7 +326,7 @@ function OrgSwitcher({
         {organizations ? (
           organizations.map((organization) => (
             <option key={organization.id} value={organization.id}>
-              {organization.name}
+              {organizationLabel(organization)}
             </option>
           ))
         ) : (

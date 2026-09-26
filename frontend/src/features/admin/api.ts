@@ -69,6 +69,8 @@ export interface SupportAccessGrant {
 export interface AdminOrganization {
   id: string
   name: string
+  /** The account number that tells two organizations of one name apart (spec 01.8). */
+  accountNo: number
   ownerEmails: string[]
   memberCount: number
   /** The caller's own grant, when they hold one. */
@@ -197,6 +199,7 @@ export interface BlastRadiusInventory {
 export interface BlastRadiusOrganization {
   organizationId: string
   organizationName: string
+  organizationAccountNo: number | null
   lineagesHeld: number
   rowsMoving: number
   rowsOverThreshold: number
@@ -482,6 +485,8 @@ export interface SummaryDraftEdition {
 export interface SummaryGrant {
   organizationId: string
   organizationName: string
+  /** Null when the organization has since been removed. */
+  organizationAccountNo: number | null
   adminEmail: string
   reason: string
   grantedAt: string

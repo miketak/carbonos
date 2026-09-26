@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.carbonos.TestcontainersConfiguration;
+import com.carbonos.ghg.internal.AccountNumbers;
 import com.carbonos.ghg.internal.ActivityRecord;
 import com.carbonos.ghg.internal.ActivityRecordRepository;
 import com.carbonos.ghg.internal.BaseYearRepository;
@@ -478,13 +479,133 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[0].scope").doesNotExist());
 	}
 
+	// --- account numbers and shared names (spec 01.8) ------------------------
+
 	@Test
-	void duplicateOrganizationNamesAreRejected() throws Exception {
-		createOrganization("Ecoriv Holdings");
+	void aDuplicateNameIsRefusedOnceAndAllowedOnConfirmation() throws Exception {
+		var firstId = createOrganization("Ecoriv Holdings");
+		int first = JsonPath.read(body(mvc.perform(get("/api/ghg/organizations/" + firstId).with(asMember()))),
+				"$.accountNo");
+		assertThat(first).isPositive();
+
+		// refused once, naming the organization that carries the name and its account number
 		mvc.perform(post("/api/ghg/organizations").with(asMember()).with(csrf()).contentType("application/json")
 			.content("""
 					{"name": "ecoriv holdings"}"""))
-			.andExpect(status().isConflict());
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.title").value("Duplicate organization name"))
+			.andExpect(jsonPath("$.detail").value("An organization named 'ecoriv holdings' already exists: Ecoriv Holdings ("
+					+ AccountNumbers.label(first) + "). Confirm to use the name anyway."))
+			.andExpect(jsonPath("$.duplicates.length()").value(1))
+			.andExpect(jsonPath("$.duplicates[0].id").value(firstId))
+			.andExpect(jsonPath("$.duplicates[0].name").value("Ecoriv Holdings"))
+			.andExpect(jsonPath("$.duplicates[0].accountNo").value(first));
+
+		// a refusal takes no number: the confirmed creation is the very next one
+		var second = mvc
+			.perform(post("/api/ghg/organizations").with(asMember()).with(csrf()).contentType("application/json")
+				.content("""
+						{"name": "ecoriv holdings", "allowDuplicateName": true}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.name").value("ecoriv holdings"))
+			.andExpect(jsonPath("$.accountNo").value(first + 1))
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		String secondId = JsonPath.read(second, "$.id");
+		assertThat(secondId).isNotEqualTo(firstId);
+
+		var listed = body(mvc.perform(get("/api/ghg/organizations").with(asMember())));
+		assertThat(JsonPath.<List<String>>read(listed, "$[?(@.name =~ /ecoriv holdings/i)].id"))
+			.containsExactly(firstId, secondId);
+	}
+
+	@Test
+	void aRenameToATakenNameIsRefusedOnceAndRecorded() throws Exception {
+		var asanteId = createOrganization("Asante Gold Resources");
+		var sankofaId = createOrganization("Sankofa Gold plc");
+		int asante = JsonPath.read(body(mvc.perform(get("/api/ghg/organizations/" + asanteId).with(asMember()))),
+				"$.accountNo");
+
+		mvc.perform(put("/api/ghg/organizations/" + sankofaId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Asante Gold Resources"}"""))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.duplicates[0].id").value(asanteId));
+
+		mvc.perform(put("/api/ghg/organizations/" + sankofaId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Asante Gold Resources", "allowDuplicateName": true}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("Asante Gold Resources"));
+
+		// the rename is in the organization's history, naming the organization it now shares the name with
+		mvc.perform(get("/api/ghg/organizations/" + sankofaId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("ORGANIZATION_RENAMED"))
+			.andExpect(jsonPath("$[0].reason").value("renamed from 'Sankofa Gold plc' to 'Asante Gold Resources'; shares the name with "
+					+ AccountNumbers.label(asante)));
+
+		// an organization that already shares its name saves its other details without any confirmation
+		mvc.perform(put("/api/ghg/organizations/" + sankofaId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Asante Gold Resources", "address": "Tarkwa"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.address").value("Tarkwa"));
+		mvc.perform(get("/api/ghg/organizations/" + sankofaId + "/events").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(1));
+
+		// now that two organizations carry the name, even a change of case is a rename into a taken name
+		mvc.perform(put("/api/ghg/organizations/" + asanteId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "ASANTE Gold Resources"}"""))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.duplicates[0].id").value(sankofaId));
+
+		// an organization is never a duplicate of itself: alone with its name, a case change passes and is recorded
+		var obuasiId = createOrganization("Obuasi Mining Ltd");
+		mvc.perform(put("/api/ghg/organizations/" + obuasiId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "OBUASI Mining Ltd"}"""))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/organizations/" + obuasiId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("ORGANIZATION_RENAMED"))
+			.andExpect(jsonPath("$[0].reason").value("renamed from 'Obuasi Mining Ltd' to 'OBUASI Mining Ltd'"));
+
+		// saving the details unchanged records nothing
+		mvc.perform(put("/api/ghg/organizations/" + obuasiId).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "OBUASI Mining Ltd", "address": "Accra"}"""))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/organizations/" + obuasiId + "/events").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(1));
+	}
+
+	@Test
+	void accountNumbersAreUniqueMonotonicAndNeverReused() throws Exception {
+		var ids = new java.util.ArrayList<String>();
+		var numbers = new java.util.ArrayList<Integer>();
+		for (var name : List.of("First Ltd", "Second Ltd", "Third Ltd")) {
+			var id = createOrganization(name);
+			ids.add(id);
+			numbers.add(JsonPath.read(body(mvc.perform(get("/api/ghg/organizations/" + id).with(asMember()))),
+					"$.accountNo"));
+		}
+		assertThat(numbers.get(1)).isGreaterThan(numbers.get(0));
+		assertThat(numbers.get(2)).isGreaterThan(numbers.get(1));
+
+		mvc.perform(delete("/api/ghg/organizations/" + ids.get(1)).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Second Ltd", "reason": "test tenant created for the walkthrough, no client data"}"""))
+			.andExpect(status().isNoContent());
+
+		// the tombstone keeps its number, and the next organization takes a fresh one
+		assertThat(jdbc.queryForObject("select account_no from ghg_organizations where id = ?", Integer.class,
+				UUID.fromString(ids.get(1))))
+			.isEqualTo(numbers.get(1));
+		var fourth = createOrganization("Second Ltd");
+		int fourthNo = JsonPath.read(body(mvc.perform(get("/api/ghg/organizations/" + fourth).with(asMember()))),
+				"$.accountNo");
+		assertThat(fourthNo).isGreaterThan(numbers.get(2));
 	}
 
 	// --- legal entities (spec 03.1) -------------------------------------------
@@ -2910,6 +3031,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.company.organizationName").value("Sankofa Gold plc"))
+			.andExpect(jsonPath("$.company.organizationAccountNo").isNumber())
 			.andExpect(jsonPath("$.company.consolidationApproach").value("OPERATIONAL_CONTROL"))
 			.andExpect(jsonPath("$.company.boundaryVersion.version.versionNo").value(1))
 			.andExpect(jsonPath("$.operationalBoundary.scopesCovered[0]").value("SCOPE_1"))
@@ -3080,6 +3202,7 @@ class GhgApiIntegrationTests {
 		// scope 1 diesel 2,660; scope 2 electricity 441; scope 3 flights 10,000 x 0.195 = 1,950; total 5,051 kg
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
 			.andExpect(jsonPath("$.header.organizationName").value("Asante Gold Resources"))
+			.andExpect(jsonPath("$.header.organizationAccountNo").isNumber())
 			.andExpect(jsonPath("$.header.address").value("12 Liberation Road, Accra"))
 			.andExpect(jsonPath("$.header.contact").value("sustainability@asante.example"))
 			.andExpect(jsonPath("$.header.periodLabel").value("2025"))
@@ -3169,8 +3292,9 @@ class GhgApiIntegrationTests {
 		var pdf = mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember()))
 			.andExpect(status().isOk())
 			.andExpect(header().string("Content-Type", "application/pdf"))
+			// spec 01.8: the account number is in the file name, so two organizations of one name never collide
 			.andExpect(header().string("Content-Disposition",
-					org.hamcrest.Matchers.containsString("asante-gold-resources-2025-run-1.pdf")))
+					org.hamcrest.Matchers.matchesRegex(".*asante-gold-resources-org-\\d{4,}-2025-run-1\\.pdf.*")))
 			.andReturn()
 			.getResponse()
 			.getContentAsByteArray();
@@ -4061,8 +4185,11 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/organizations/" + tenantId + "/inventories").with(asMember()))
 			.andExpect(status().isNotFound());
 
-		// the tombstone stays, nothing under it was cascaded, and the name is free again
+		// the tombstone stays with its account number, nothing under it was cascaded, and the removed
+		// organization no longer counts when another takes the name (spec 01.8)
 		var tenant = UUID.fromString(tenantId);
+		assertThat(jdbc.queryForObject("select account_no from ghg_organizations where id = ?", Integer.class, tenant))
+			.isPositive();
 		assertThat(jdbc.queryForObject("select deleted_by from ghg_organizations where id = ?", String.class, tenant))
 			.isEqualTo("kojo@ecoriv.com");
 		assertThat(jdbc.queryForObject("select delete_reason from ghg_organizations where id = ?", String.class,

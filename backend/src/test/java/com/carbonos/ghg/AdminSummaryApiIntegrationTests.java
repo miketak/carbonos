@@ -123,6 +123,7 @@ class AdminSummaryApiIntegrationTests {
 			.andExpect(jsonPath("$.organizations").value(1))
 			.andExpect(jsonPath("$.grants.length()").value(1))
 			.andExpect(jsonPath("$.grants[0].organizationName").value("Sankofa Gold plc"))
+			.andExpect(jsonPath("$.grants[0].organizationAccountNo").isNumber())
 			.andExpect(jsonPath("$.grants[0].adminEmail").value("summary-admin@ecoriv.com"))
 			.andExpect(jsonPath("$.grants[0].mine").value(true))
 			.andExpect(jsonPath("$.grants[0].reason").value("ticket 4512, preparer cannot open the run"));

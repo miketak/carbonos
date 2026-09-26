@@ -12,7 +12,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -143,20 +142,28 @@ public class GhgService {
 	 * outsider, and enters it only by assuming logged support access.
 	 */
 	public Organization createOrganization(String name, String address, String contact, String ownerEmail) {
+		return createOrganization(name, address, contact, ownerEmail, false);
+	}
+
+	/**
+	 * Spec 01.8: a name another live organization carries is refused once,
+	 * naming that organization with its account number, and accepted when the
+	 * request confirms it with {@code allowDuplicateName}. The account number
+	 * is taken after every check, so a refusal burns none.
+	 */
+	public Organization createOrganization(String name, String address, String contact, String ownerEmail,
+			boolean allowDuplicateName) {
 		access.checkMayCreateOrganization();
 		var owner = firstOwner(ownerEmail);
 		var trimmed = name.trim();
-		if (organizations.existsByNameIgnoreCaseAndDeletedAtIsNull(trimmed)) {
-			throw new DuplicateOrganizationException(trimmed);
+		if (!allowDuplicateName) {
+			var same = organizations.findAllByNameIgnoreCaseAndDeletedAtIsNullOrderByAccountNoAsc(trimmed);
+			if (!same.isEmpty()) {
+				throw new DuplicateOrganizationNameException(trimmed, same);
+			}
 		}
-		Organization organization;
-		try {
-			organization = organizations.saveAndFlush(new Organization(trimmed, owner.id()));
-		}
-		catch (DataIntegrityViolationException ex) {
-			// unique-constraint race between the existence check and the insert
-			throw new DuplicateOrganizationException(trimmed);
-		}
+		var organization = organizations
+			.saveAndFlush(new Organization(trimmed, owner.id(), organizations.nextAccountNo()));
 		organization.setHeader(trimToNull(address), trimToNull(contact));
 		// spec 01.2: an organization always starts with exactly one owner
 		members.save(new OrganizationMember(organization, owner.id(), owner.email(), owner.displayName(),
@@ -211,19 +218,50 @@ public class GhgService {
 	}
 
 	public Organization updateOrganization(UUID id, String name, String address, String contact) {
+		return updateOrganization(id, name, address, contact, false);
+	}
+
+	/**
+	 * Spec 01.8: renaming into a name another live organization carries is
+	 * refused once and accepted with {@code allowDuplicateName}. The
+	 * organization is never a duplicate of itself, so a change of case alone
+	 * passes when nobody else carries the name; when somebody does, it is
+	 * refused like any other rename into that name. A rename is recorded in
+	 * the organization's history, naming the organization it now shares the
+	 * name with when the confirmation was needed.
+	 */
+	public Organization updateOrganization(UUID id, String name, String address, String contact,
+			boolean allowDuplicateName) {
 		var organization = getOrganization(id);
 		access.checkOwner(organization);
 		var trimmed = name.trim();
-		if (!trimmed.equalsIgnoreCase(organization.getName())
-				&& organizations.existsByNameIgnoreCaseAndDeletedAtIsNull(trimmed)) {
-			throw new DuplicateOrganizationException(trimmed);
+		var previous = organization.getName();
+		// only a change of name, in any case, is checked: saving the address of an organization that
+		// already shares its name is not a rename into a taken name
+		var same = trimmed.equals(previous) ? List.<Organization>of()
+				: organizations.findAllByNameIgnoreCaseAndDeletedAtIsNullOrderByAccountNoAsc(trimmed)
+					.stream()
+					.filter(other -> !other.getId().equals(id))
+					.toList();
+		if (!same.isEmpty() && !allowDuplicateName) {
+			throw new DuplicateOrganizationNameException(trimmed, same);
 		}
 		// the reporting company's entity follows the organization's name unless it was renamed by hand
 		entities.findByOrganizationIdAndReportingCompanyTrue(id)
-			.filter(own -> own.getName().equals(organization.getName()))
+			.filter(own -> own.getName().equals(previous))
 			.ifPresent(own -> own.setName(trimmed));
 		organization.setName(trimmed);
 		organization.setHeader(trimToNull(address), trimToNull(contact));
+		if (!trimmed.equals(previous)) {
+			var reason = "renamed from '" + previous + "' to '" + trimmed + "'";
+			if (!same.isEmpty()) {
+				reason += "; shares the name with " + same.stream()
+					.map(other -> AccountNumbers.label(other.getAccountNo()))
+					.collect(Collectors.joining(", "));
+			}
+			auditEvents.save(new GhgAuditEvent(id, GhgAuditEvent.Action.ORGANIZATION_RENAMED, access.currentUserId(),
+					access.currentUserEmail(), reason));
+		}
 		return organization;
 	}
 

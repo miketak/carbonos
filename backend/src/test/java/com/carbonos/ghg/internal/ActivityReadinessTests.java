@@ -13,7 +13,7 @@ import com.carbonos.ghg.internal.ActivityReadiness.Issue;
 /** The Java side of the readiness rule (spec 04.6); the integration test checks the Criteria side agrees. */
 class ActivityReadinessTests {
 
-	private final Organization organization = new Organization("Asante Gold Resources", UUID.randomUUID());
+	private final Organization organization = new Organization("Asante Gold Resources", UUID.randomUUID(), 1);
 	private final LegalEntity entity = new LegalEntity(organization, "Asante Gold Resources",
 			RelationshipType.SUBSIDIARY, new BigDecimal("100.00"), new BigDecimal("100.00"), true, true, null, true);
 	private final Facility mine = new Facility(organization, entity, "Nkran Mine", "Obuasi, Ghana", "GH");

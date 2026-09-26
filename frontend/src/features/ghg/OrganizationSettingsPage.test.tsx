@@ -26,6 +26,7 @@ import {
 const organization: Organization = {
   id: 'org-1',
   name: 'Ecoriv Holdings',
+  accountNo: 1,
   myRole: 'OWNER',
   address: 'Accra, Ghana',
   contact: 'ama@ecoriv.test',
@@ -85,6 +86,50 @@ test('an owner reads the details and saves a change', async () => {
       contact: 'ama@ecoriv.test',
     }),
   )
+})
+
+test('the page names the organization with its account number (spec 01.8)', async () => {
+  renderSettingsPage()
+
+  expect(await screen.findByText(/Ecoriv Holdings \(ORG-0001\): its details/)).toBeInTheDocument()
+  expect(screen.getByText(/the account number ORG-0001 identify/)).toBeInTheDocument()
+})
+
+test('renaming into a taken name is refused once, then saved on confirmation (spec 01.8)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(updateOrganization)
+    .mockRejectedValueOnce(
+      new ApiError(409, {
+        title: 'Duplicate organization name',
+        detail:
+          "An organization named 'Tema Manufacturing' already exists: Tema Manufacturing (ORG-0002). Confirm to use the name anyway.",
+        duplicates: [{ id: 'org-2', name: 'Tema Manufacturing', accountNo: 2 }],
+      }),
+    )
+    .mockResolvedValueOnce({ ...organization, name: 'Tema Manufacturing' })
+  renderSettingsPage()
+
+  const name = await screen.findByLabelText('Name')
+  await user.clear(name)
+  await user.type(name, 'Tema Manufacturing')
+  await user.click(screen.getByRole('button', { name: /save details/i }))
+
+  const notice = await screen.findByRole('alert')
+  expect(notice).toHaveTextContent('Tema Manufacturing (ORG-0002)')
+  expect(notice).toHaveTextContent(/Save anyway/)
+  // the generic refusal line is not shown a second time
+  expect(screen.getAllByRole('alert')).toHaveLength(1)
+
+  await user.click(screen.getByRole('button', { name: /save anyway/i }))
+  await waitFor(() =>
+    expect(updateOrganization).toHaveBeenLastCalledWith('org-1', {
+      name: 'Tema Manufacturing',
+      address: 'Accra, Ghana',
+      contact: 'ama@ecoriv.test',
+      allowDuplicateName: true,
+    }),
+  )
+  expect(await screen.findByText(/Tema Manufacturing \(ORG-0001\) saved/)).toBeInTheDocument()
 })
 
 test('an owner sees the members and adds one by email with a role (spec 01.2)', async () => {
@@ -176,6 +221,8 @@ test('the deletion is behind a danger zone that asks for the name (spec 01.3)', 
 
   const dialog = await openDeleteDialog(user)
   expect(within(dialog).getByText('Ecoriv Holdings')).toBeInTheDocument()
+  // spec 01.8: two organizations may share a name, so the dialog says which one this is
+  expect(within(dialog).getByText(/\(ORG-0001\) is removed/)).toBeInTheDocument()
 })
 
 test('the delete dialog lists the inventories that keep the organization on file (spec 01.3)', async () => {

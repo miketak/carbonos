@@ -442,4 +442,5 @@ export const actionLabels: Record<AuditEvent['action'], string> = {
   MEMBER_ADDED: 'Member added',
   MEMBER_ROLE_CHANGED: 'Member role changed',
   MEMBER_REMOVED: 'Member removed',
+  ORGANIZATION_RENAMED: 'Organization renamed',
 }

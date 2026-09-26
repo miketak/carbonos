@@ -4,8 +4,11 @@ import { Button } from '../../../components/Button'
 import { InputField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, problemDetail } from '../../../lib/api'
+import { organizationLabel } from '../../../lib/organizationLabel'
 import { useSession } from '../../auth/useSession'
+import { duplicateOrganizations } from '../duplicateName'
 import { useCreateOrganization, useUpdateOrganization } from '../useGhg'
+import { DuplicateNameNotice } from './DuplicateNameNotice'
 import type { Organization } from '../api'
 
 interface OrganizationFormModalProps {
@@ -41,9 +44,16 @@ export function OrganizationFormModal({
   // only an administrator ever sees this field: while creation is open, the
   // creator is the owner and there is nothing to ask
   const namesTheOwner = !organization && session.data?.role === 'ADMIN'
+  // spec 01.8: the name the last refusal was about; the notice and the "anyway"
+  // button stand only while the field still holds it
+  const [refusedName, setRefusedName] = useState<string | null>(null)
 
   const errors = fieldErrors(mutation.error)
-  const generalError = mutation.isError && !errors ? problemDetail(mutation.error) : undefined
+  const duplicates = duplicateOrganizations(mutation.error)
+  const confirming = duplicates !== undefined && refusedName === name.trim()
+  const generalError =
+    mutation.isError && !errors && !duplicates ? problemDetail(mutation.error) : undefined
+  const proceed = organization ? 'Save anyway' : 'Create anyway'
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -52,12 +62,24 @@ export function OrganizationFormModal({
       ...(address.trim() !== '' ? { address } : {}),
       ...(contact.trim() !== '' ? { contact } : {}),
       ...(namesTheOwner && ownerEmail.trim() !== '' ? { ownerEmail: ownerEmail.trim() } : {}),
+      ...(confirming ? { allowDuplicateName: true } : {}),
     }
-    const handlers = {
-      onSuccess: () => onSaved(`${name.trim()} ${organization ? 'updated' : 'created'}.`),
+    setRefusedName(name.trim())
+    if (organization) {
+      update.mutate(
+        { id: organization.id, input },
+        {
+          onSuccess: () =>
+            onSaved(
+              `${organizationLabel({ name: name.trim(), accountNo: organization.accountNo })} updated.`,
+            ),
+        },
+      )
+    } else {
+      create.mutate(input, {
+        onSuccess: (created) => onSaved(`${organizationLabel(created)} created.`),
+      })
     }
-    if (organization) update.mutate({ id: organization.id, input }, handlers)
-    else create.mutate(input, handlers)
   }
 
   return (
@@ -97,6 +119,13 @@ export function OrganizationFormModal({
             hint="An existing account, which becomes the organization's owner. Leave it empty to own it yourself. Naming somebody else means you are not a member, so you will need support access to open it."
           />
         )}
+        {confirming && (
+          <DuplicateNameNotice
+            detail={problemDetail(mutation.error)}
+            duplicates={duplicates}
+            proceed={proceed}
+          />
+        )}
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">
             {generalError}
@@ -107,7 +136,7 @@ export function OrganizationFormModal({
             Cancel
           </Button>
           <Button type="submit" busy={mutation.isPending}>
-            {organization ? 'Save changes' : 'Create organization'}
+            {confirming ? proceed : organization ? 'Save changes' : 'Create organization'}
           </Button>
         </div>
       </form>

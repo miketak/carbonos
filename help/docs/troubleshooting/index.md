@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-26
 ---
 
 # Troubleshooting
@@ -8,7 +8,7 @@ last_reviewed: 2026-09-24
 What CarbonOS says, what it means, and what to do. Every message is
 quoted as the product prints it.
 
-<!-- sources: messages verified on screen on 2026-09-24; InventoryService.java refusals; GhgService.java; PublishEditionDialog.tsx; AdoptionDiffDrawer.tsx -->
+<!-- sources: messages verified on screen on 2026-09-24; InventoryService.java refusals; GhgService.java; PublishEditionDialog.tsx; AdoptionDiffDrawer.tsx; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 ## Signing in and access
 
@@ -56,5 +56,6 @@ quoted as the product prints it.
 | You see | It means | Do this |
 | --- | --- | --- |
 | **History** on **Settings** does not show the member you just added | The card does not refresh on its own after **Add member**. | Reload the page. |
+| "An organization named '…' already exists: … (ORG-*NNNN*). Confirm to use the name anyway." | Another organization carries the name you typed. | Check its account number. If yours is a different organization, click **Create anyway** or **Save anyway**; otherwise change the name. |
 | "still has facilities. Move them to another entity before deleting it." | **Remove** on an entity with facilities. | Edit each facility's **Legal entity** first. |
 | "a parent chain cannot loop." | **Held through** would make an entity its own ancestor. | Choose another parent. |

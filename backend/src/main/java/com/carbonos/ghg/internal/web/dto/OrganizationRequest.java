@@ -13,5 +13,14 @@ public record OrganizationRequest( //
 		 * administrator must not become the owner of a client's organization.
 		 * Ignored while creation is open, where the creator is the owner.
 		 */
-		@Size(max = 320) String ownerEmail) {
+		@Size(max = 320) String ownerEmail, //
+		/**
+		 * Spec 01.8: the caller has read the 409 naming the organization(s) that
+		 * already carry the name and wants this name anyway. Absent means no.
+		 */
+		Boolean allowDuplicateName) {
+
+	public boolean allowsDuplicateName() {
+		return Boolean.TRUE.equals(allowDuplicateName);
+	}
 }

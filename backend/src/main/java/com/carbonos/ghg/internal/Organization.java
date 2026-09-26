@@ -18,9 +18,13 @@ public class Organization {
 	@Id
 	private UUID id;
 
-	// unique among live rows only (spec 01.3): a removed name is released for reuse
+	// shared between organizations after a confirmation (spec 01.8); the account number tells them apart
 	@Column(nullable = false, length = 120)
 	private String name;
+
+	// the platform-wide account number (spec 01.8): assigned once at creation, never changed, never reused
+	@Column(name = "account_no", nullable = false, updatable = false)
+	private long accountNo;
 
 	@Column(name = "owner_user_id")
 	private UUID ownerUserId;
@@ -57,14 +61,19 @@ public class Organization {
 	protected Organization() {
 	}
 
-	Organization(String name, UUID ownerUserId) {
+	Organization(String name, UUID ownerUserId, long accountNo) {
 		this.id = UUID.randomUUID();
 		this.name = name;
 		this.ownerUserId = ownerUserId;
+		this.accountNo = accountNo;
 	}
 
 	public UUID getId() {
 		return id;
+	}
+
+	public long getAccountNo() {
+		return accountNo;
 	}
 
 	public String getName() {

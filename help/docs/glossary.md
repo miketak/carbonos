@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-26
 ---
 
 # Glossary
@@ -9,10 +9,11 @@ One stable name for each thing in CarbonOS, with the GHG Protocol term it
 stands for where there is one. The concept pages explain how these things
 relate; this page only says what each word means.
 
-<!-- sources: spec 00 (glossary table and invariants); format.ts label maps; roles.ts; verified in the browser on 2026-09-24. The spec's "seeded emission-factor library" row is retired (spec 02.10): factors now come from packs an organization imports or enters by hand. -->
+<!-- sources: spec 00 (glossary table and invariants); format.ts label maps; roles.ts; verified in the browser on 2026-09-24. The spec's "seeded emission-factor library" row is retired (spec 02.10): factors now come from packs an organization imports or enters by hand.; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 | Term | Meaning in CarbonOS | GHG Protocol term |
 | --- | --- | --- |
+| Account number | The number CarbonOS assigns to an organization when it is created, shown beside the name as ORG-0042. Two organizations may share a name; the account number never changes and is never reused. | |
 | Activity record | One fact about what an organization did: an activity type, a quantity in a unit, a period, a facility, a source, and the evidence behind it. A record carries no scope, category or factor; each inventory decides those separately. | Activity data |
 | Assignment | An inventory's decision about one record: included and classified with a factor, scope and category, or excluded with a reason. Assignments belong to the inventory, never to the record. | Operational boundary applied to one activity |
 | Base year | The year an organization compares later years against, with a significance threshold and a policy for mid-year structural changes. Designated on **Base year** from a published inventory's final run. | Base year |

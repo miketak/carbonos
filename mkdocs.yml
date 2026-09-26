@@ -118,6 +118,7 @@ nav:
               - specs/01.5-the-platform-administration-panel.md
               - specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md
               - specs/01.7-the-organization-settings-area.md
+              - specs/01.8-account-numbers-and-shared-organization-names.md
           - "02 Organization and facts":
               - specs/02-organization-and-facts.md
               - specs/02.1-emission-factor-library.md

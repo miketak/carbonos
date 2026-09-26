@@ -38,8 +38,8 @@ public class PlatformSummaryService {
 	}
 
 	/** One support grant, live or recently closed: the operator's privileged-access register. */
-	public record Grant(UUID organizationId, String organizationName, String adminEmail, String reason,
-			Instant grantedAt, Instant expiresAt, Instant endedAt, boolean mine) {
+	public record Grant(UUID organizationId, String organizationName, Long organizationAccountNo, String adminEmail,
+			String reason, Instant grantedAt, Instant expiresAt, Instant endedAt, boolean mine) {
 	}
 
 	/** One platform act, newest first. */
@@ -108,17 +108,21 @@ public class PlatformSummaryService {
 	}
 
 	/** Live grants first, then those closed in the last 30 days, so the register is a record. */
-	private List<Grant> grants(Instant now, UUID callerId, Map<UUID, String> names) {
+	private List<Grant> grants(Instant now, UUID callerId, Map<UUID, Organization> names) {
 		var live = grants.findAllByEndedAtIsNullAndExpiresAtAfterOrderByExpiresAtAsc(now);
 		var recent = grants.findAllByGrantedAtAfterOrderByGrantedAtDesc(now.minus(GRANT_HISTORY_DAYS, ChronoUnit.DAYS))
 			.stream()
 			.filter(grant -> live.stream().noneMatch(open -> open.getId().equals(grant.getId())))
 			.toList();
 		return java.util.stream.Stream.concat(live.stream(), recent.stream())
-			.map(grant -> new Grant(grant.getOrganizationId(),
-					names.getOrDefault(grant.getOrganizationId(), "a removed organization"), grant.getAdminEmail(),
-					grant.getReason(), grant.getGrantedAt(), grant.getExpiresAt(), grant.getEndedAt(),
-					grant.getAdminUserId().equals(callerId)))
+			.map(grant -> {
+				var organization = names.get(grant.getOrganizationId());
+				return new Grant(grant.getOrganizationId(),
+						organization == null ? "a removed organization" : organization.getName(),
+						organization == null ? null : organization.getAccountNo(), grant.getAdminEmail(),
+						grant.getReason(), grant.getGrantedAt(), grant.getExpiresAt(), grant.getEndedAt(),
+						grant.getAdminUserId().equals(callerId));
+			})
 			.toList();
 	}
 
@@ -131,9 +135,9 @@ public class PlatformSummaryService {
 			.toList();
 	}
 
-	private Map<UUID, String> organizationNames() {
+	private Map<UUID, Organization> organizationNames() {
 		return organizations.findAllByDeletedAtIsNullOrderByCreatedAtAsc()
 			.stream()
-			.collect(Collectors.toMap(Organization::getId, Organization::getName, (a, b) -> a));
+			.collect(Collectors.toMap(Organization::getId, organization -> organization, (a, b) -> a));
 	}
 }

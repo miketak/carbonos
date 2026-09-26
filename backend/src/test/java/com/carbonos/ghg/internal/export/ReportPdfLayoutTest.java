@@ -54,6 +54,9 @@ class ReportPdfLayoutTest {
 	private static final List<String> TABLE_HEADINGS = List.of("Report", "4. Emissions by scope (tonnes CO2e)",
 			"5. Emissions by gas", "9. Exclusions", "10. Snapshot lines (kg CO2e)");
 	private static final String ORGANIZATION = "Asante Gold Resources Ltd";
+	private static final long ACCOUNT_NO = 7;
+	/** How the report names the entity (spec 01.8): the name and the account number together. */
+	private static final String ENTITY = ORGANIZATION + " (ORG-0007)";
 	private static final String FIRST_FACILITY = "Obuom Processing Plant";
 
 	@Test
@@ -83,7 +86,9 @@ class ReportPdfLayoutTest {
 	void theTextReadsInWordsAndReaderDates() throws Exception {
 		// the extractor wraps lines where the page does, so whitespace is normalised before reading
 		var text = String.join("\n", pages(ReportPdf.render(report(3)))).replaceAll("\\s+", " ");
-		assertThat(text).contains("Asante Gold Resources Ltd, operational control approach (Corporate Standard, chapter 3). Boundary version 3 of 3.")
+		assertThat(text).contains("GHG inventory report: Asante Gold Resources Ltd (ORG-0007), FY2025")
+			.contains("Asante Gold Resources Ltd (ORG-0007), Accra, Ghana")
+			.contains("Asante Gold Resources Ltd (ORG-0007), operational control approach (Corporate Standard, chapter 3). Boundary version 3 of 3.")
 			.contains("Scopes covered: Scope 1, Scope 2, Scope 3. Scope 3 categories declared: 1. Purchased goods and services, "
 					+ "3. Fuel- and energy-related activities, 5. Waste generated in operations, 6. Business travel, "
 					+ "7. Employee commuting.")
@@ -105,7 +110,7 @@ class ReportPdfLayoutTest {
 		var after = page.substring(page.indexOf(heading) + heading.length());
 		var content = Arrays.stream(after.split("\n"))
 			.map(String::strip)
-			.filter(line -> !line.isEmpty() && !line.startsWith(ORGANIZATION + ", FY2025, run") && !line.matches("Page \\d+"))
+			.filter(line -> !line.isEmpty() && !line.startsWith(ENTITY + ", FY2025, run") && !line.matches("Page \\d+"))
 			.toList();
 		assertThat(content).as("'%s' is the last thing on its page in a report of %d lines", heading, lines)
 			.hasSizeGreaterThanOrEqualTo(rowsAfter);
@@ -163,7 +168,7 @@ class ReportPdfLayoutTest {
 				GwpSet.AR5, lineCount, total, total, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
 				Scope2MarketBasis.INSTRUMENTS, byGas, new BigDecimal("18000"), false, false, null, null, null,
 				UUID.randomUUID(), 3, "officer@review.test", PREPARED_AT);
-		var header = new ReportResponse.Header(ORGANIZATION, "Accra, Ghana", "sustainability@asante.test", "FY2025", START,
+		var header = new ReportResponse.Header(ORGANIZATION, ACCOUNT_NO, "Accra, Ghana", "sustainability@asante.test", "FY2025", START,
 				END, "officer@review.test", PREPARED_AT, null, null, null, 1, List.of(), null, AssuranceLevel.UNVERIFIED,
 				null, null, null, null, null, 3, 3);
 		var version = new BoundaryVersionResponse(
@@ -259,7 +264,7 @@ class ReportPdfLayoutTest {
 				null, 0, lineCount, "Data quality follows the Scope 3 Standard's tiers: 100% of the total rests on tier 1 data.",
 				"Uncertainty is judged low: metered fuel and invoiced electricity.");
 		return new ReportResponse(
-				new ReportResponse.Company(ORGANIZATION, ConsolidationApproach.OPERATIONAL_CONTROL, version),
+				new ReportResponse.Company(ORGANIZATION, ACCOUNT_NO, ConsolidationApproach.OPERATIONAL_CONTROL, version),
 				new ReportResponse.OperationalBoundary(List.of(Scope.SCOPE_1, Scope.SCOPE_2, Scope.SCOPE_3),
 						List.of(ActivityCategory.PURCHASED_GOODS_SERVICES, ActivityCategory.FUEL_ENERGY_RELATED,
 								ActivityCategory.WASTE_GENERATED, ActivityCategory.BUSINESS_TRAVEL,

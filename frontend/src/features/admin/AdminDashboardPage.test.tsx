@@ -114,6 +114,7 @@ test('the support access register lists live and recently closed grants with the
       {
         organizationId: 'org-1',
         organizationName: 'Sankofa Gold plc',
+        organizationAccountNo: 1,
         adminEmail: 'ama@ecoriv.com',
         reason: 'ticket 4512, preparer cannot open the run',
         grantedAt: '2026-09-14T09:00:00Z',

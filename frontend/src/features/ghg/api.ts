@@ -146,6 +146,12 @@ export interface Organization {
   id: string
   name: string
   /**
+   * The platform-wide account number (spec 01.8): assigned once at creation,
+   * never changed, never reused. Two organizations may share a name; this is
+   * what tells them apart. Shown as ORG-0042 (lib/organizationLabel.ts).
+   */
+  accountNo: number
+  /**
    * The caller's role (spec 01.2); ADMIN is a platform administrator holding
    * active support access (spec 01.3), never a bare platform role.
    */
@@ -163,6 +169,8 @@ export interface OrganizationInput {
   name: string
   address?: string
   contact?: string
+  /** Spec 01.8: the caller has read which organization already carries the name and wants it anyway. */
+  allowDuplicateName?: boolean
 }
 
 /** Spec 01.3: the organization's name typed exactly, and why it is being removed. */
@@ -1294,6 +1302,7 @@ export interface AuditEvent {
     | 'MEMBER_ADDED'
     | 'MEMBER_ROLE_CHANGED'
     | 'MEMBER_REMOVED'
+    | 'ORGANIZATION_RENAMED'
   runId: string | null
   runNo: number | null
   actor: string
@@ -1612,6 +1621,7 @@ export interface ProfileEntry {
 export interface Report {
   company: {
     organizationName: string
+    organizationAccountNo: number
     consolidationApproach: ConsolidationApproach
     boundaryVersion: BoundaryVersion | null
   }
@@ -1784,6 +1794,7 @@ export interface Report {
 
 export interface ReportHeader {
   organizationName: string
+  organizationAccountNo: number
   address: string | null
   contact: string | null
   periodLabel: string

@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-26
 ---
 
 # Roles and permissions
@@ -11,7 +11,7 @@ membership. The platform role decides whether you may run the platform;
 the organization role decides what you may do inside one organization.
 Nobody holds an organization role by right of their platform role.
 
-<!-- sources: specs 01.2, 01.3, 01.4, 01.5, 02.11; roles.ts (WRITE_ROLES, APPROVE_ROLES, OWNER_ROLES, mayManageMembership); MembersCard.tsx labels; BaseYearPage.tsx, EmissionFactorsPage.tsx, AdoptionDiffDrawer.tsx, OrganizationSettingsPage.tsx role checks; governance QA 001 to 008 verified 2026-09-24 -->
+<!-- sources: specs 01.2, 01.3, 01.4, 01.5, 02.11; roles.ts (WRITE_ROLES, APPROVE_ROLES, OWNER_ROLES, mayManageMembership); MembersCard.tsx labels; BaseYearPage.tsx, EmissionFactorsPage.tsx, AdoptionDiffDrawer.tsx, OrganizationSettingsPage.tsx role checks; governance QA 001 to 008 verified 2026-09-24; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 ## The roles
 
@@ -21,7 +21,7 @@ Nobody holds an organization role by right of their platform role.
 | Reviewer | Same | Reviewer (approves and publishes) |
 | Preparer | Same | Preparer (records, classifies, runs) |
 | Verifier | Same | Verifier (read-only) |
-| Support access | The administration console, **Organizations**, **Assume access** | The banner "You are in *organization* under support access until *time*" |
+| Support access | The administration console, **Organizations**, **Assume access** | The banner "You are in *organization* (ORG-*NNNN*) under support access until *time*" |
 | Platform administrator | The administration console, **Users**, role Admin | Admin |
 
 The person who creates an organization is its first owner. An owner adds

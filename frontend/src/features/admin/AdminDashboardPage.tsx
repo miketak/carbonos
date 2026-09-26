@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
+import { OrganizationName } from '../../components/OrganizationName'
 import { StatTile } from './components/StatTile'
 import { usePlatformSettingsQuery } from './useSettings'
 import { useAdminSummaryQuery } from './useSummary'
@@ -89,7 +90,9 @@ function GrantLine({ grant }: { grant: SummaryGrant }) {
         <span className="text-ink-muted">
           {closed ? 'held support access to' : 'holds support access to'}
         </span>
-        <span className="font-medium">{grant.organizationName}</span>
+        <span className="font-medium">
+          <OrganizationName name={grant.organizationName} accountNo={grant.organizationAccountNo} />
+        </span>
         <span className="text-ink-muted">
           {when(grant.grantedAt)}, {closed ? 'until' : 'expiring'}{' '}
           {when(grant.endedAt ?? grant.expiresAt)} ({ranFor(grant)})

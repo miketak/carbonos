@@ -11,7 +11,8 @@ the client as owner rather than the administrator.
 whole, the administration half of
 [spec 01.6](../../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md),
 and the parts of
-[spec 01.3](../../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md)
+[spec 01.3](../../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md),
+[spec 01.8](../../../specs/01.8-account-numbers-and-shared-organization-names.md)
 and [spec 02.7](../../../specs/02.7-adopting-a-new-edition.md) that the settings
 change.
 
@@ -54,7 +55,7 @@ leaving the window at 1 hour affects everybody who tests after you.
 | --- | --- | --- | --- | --- |
 | 1 | As the administrator, read the whole dashboard. | Counts of users, organizations, editions and open adoption notices. No facility count, no inventory name, no run, and no figure in tCO2e anywhere. | | |
 | 2 | Read the **Open adoption notices** tile. | A single number. It does not name which organization has an undecided notice, and it is not a link. | | |
-| 3 | Open **Organizations**. | Each row shows the name, owner emails and member count only, as procedure 1 case B8 also checks. | | |
+| 3 | Open **Organizations**. | Each row shows the name with its account number (ORG-*NNNN*), owner emails and member count only, as procedure 1 case B8 also checks. | | |
 
 ## B. The work queue
 
@@ -91,7 +92,7 @@ leaving the window at 1 hour affects everybody who tests after you.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Organizations**, assume access to Sankofa Gold plc with the reason `ticket 4512, preparer cannot open the run`. | Granted. Note the expiry shown; it is 24 hours out. | | |
+| 1 | On **Organizations**, assume access to Sankofa Gold plc with the reason `ticket 4512, preparer cannot open the run`. | Granted: "Support access to Sankofa Gold plc (ORG-*NNNN*) assumed." Note the expiry shown; it is 24 hours out. Open the organization: the banner reads "You are in Sankofa Gold plc (ORG-*NNNN*) under support access until …". | | |
 | 2 | Open **Platform settings**, set the window to `1`, give the reason `tightening for the QA walkthrough`, and save. | A toast confirms. **Every change** lists the change from 24 to 1, with your email, the time and the reason. | | |
 | 3 | Open the dashboard. | The strip at the foot says support access lasts 1 hour. | | |
 | 4 | Open **Organizations** and read the grant you took in step 1. | Its expiry has **not** moved. A grant keeps the window it was taken under. | | |
@@ -127,7 +128,7 @@ leaving the window at 1 hour affects everybody who tests after you.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As the administrator, open the GHG home and click **New organization**. | The form asks for the **owner's email**, explaining that naming somebody else means you are not a member. | | |
-| 2 | Create **QA Onboarding Ltd** naming the member's email as owner. | Created. | | |
+| 2 | Create **QA Onboarding Ltd** naming the member's email as owner. | "QA Onboarding Ltd (ORG-*NNNN*) created." The dashboard's privileged-access register and the **Organizations** table carry the number beside the name. | | |
 | 3 | Stay as the administrator and open the GHG home. | QA Onboarding Ltd is **not** listed. Paste its URL: not found. An administrator does not own a client's organization. | | |
 | 4 | In the private window as the member, open the GHG home. | QA Onboarding Ltd is listed, and the members card shows the member as **OWNER** and nobody else. | | |
 | 5 | As the member, read the organization history. | It records that a platform administrator created it, naming them and the owner they seated. | | |
