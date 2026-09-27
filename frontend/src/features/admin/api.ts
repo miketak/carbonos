@@ -34,11 +34,16 @@ export function deleteUser(id: string): Promise<void> {
 
 export type AccessRequestStatus = 'PENDING' | 'APPROVED' | 'DENIED' | 'COMPLETED'
 
+export type AccessRequestIntent = 'ACCESS' | 'PILOT' | 'LICENCE' | 'TALK'
+
 export interface AccessRequest {
   id: string
   email: string
   displayName: string
   company: string | null
+  /** What the visitor pressed on the landing page; null for requests made before it was recorded. */
+  intent: AccessRequestIntent | null
+  message: string | null
   status: AccessRequestStatus
   createdAt: string
   decidedAt: string | null

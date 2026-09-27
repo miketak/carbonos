@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-27
 ---
 
 # Approve access requests and manage users
@@ -19,7 +19,10 @@ separately by that organization's owner.
    at once in the pending state and sends a link to set a password.
    Nobody signs in until they have set it."
 2. Under **Waiting for a decision**, read the name, company, email and
-   date, and click **Approve** or **Deny**.
+   date. When the person pressed one of the landing page's other buttons
+   the row also says so ("Asked about the pilot", "Asked for a licence",
+   "Wants to talk to ECORIV"), with their message when they left one.
+   Click **Approve** or **Deny**.
 
 What you see: "*Name* approved; setup email sent." The request moves to
 **Already decided** with the outcome "Approved, waiting for the

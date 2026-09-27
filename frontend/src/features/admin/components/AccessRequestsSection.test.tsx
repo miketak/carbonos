@@ -48,6 +48,8 @@ const pendingRequest: AccessRequest = {
   email: 'kofi.mensah@ecoghana.com',
   displayName: 'Kofi Mensah',
   company: 'EcoGhana Industries',
+  intent: null,
+  message: null,
   status: 'PENDING',
   createdAt: '2026-08-29T10:00:00Z',
   decidedAt: null,

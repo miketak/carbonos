@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Wordmark } from '../../components/Wordmark'
 
 const WORDMARK = 'CarbonOS'
 const TAGLINE = 'Measure. Certify. Sustain.'
@@ -87,12 +88,10 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
       >
         <CoreEmblem />
 
-        <p
-          className="bg-gradient-to-r from-teal via-bright-teal to-accent-green bg-clip-text text-6xl font-bold tracking-tight text-transparent"
-          style={{ animation: `splash-wipe 500ms ${EXPO_OUT} 1050ms both` }}
-        >
-          {WORDMARK}
-        </p>
+        {/* the emblem above is the mark of this moment, so the lockup goes without its symbol */}
+        <div style={{ animation: `splash-wipe 500ms ${EXPO_OUT} 1050ms both` }}>
+          <Wordmark size="splash" surface="dark" symbol={false} />
+        </div>
 
         <div
           className="h-px w-72 bg-gradient-to-r from-transparent via-bright-teal/70 to-transparent"
@@ -100,7 +99,7 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
         />
 
         <p
-          className="text-sm tracking-widest text-white/70 uppercase"
+          className="text-sm tracking-[0.18em] text-white/70 uppercase"
           style={{ animation: 'splash-rise 400ms ease-out 1500ms both' }}
         >
           {TAGLINE}

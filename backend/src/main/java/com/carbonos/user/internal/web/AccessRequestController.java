@@ -43,7 +43,7 @@ class AccessRequestController {
 	@PostMapping
 	@ResponseStatus(HttpStatus.ACCEPTED)
 	void submit(@Valid @RequestBody SubmitAccessRequest body) {
-		accessRequests.submit(body.email(), body.displayName(), body.company());
+		accessRequests.submit(body.email(), body.displayName(), body.company(), body.intent(), body.message());
 	}
 
 	@GetMapping("/setup/{token}")

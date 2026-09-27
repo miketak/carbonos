@@ -2,16 +2,30 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Button } from '../../components/Button'
-import { InputField } from '../../components/Field'
+import { InputField, TextAreaField } from '../../components/Field'
 import { Modal } from '../../components/Modal'
 import { fieldErrors, problemDetail } from '../../lib/api'
 import { submitAccessRequest } from './api'
+import { INTENT_COPY } from '../home/landing/intent'
+import type { AccessIntent } from '../home/landing/intent'
 
-/** The landing-page "Request access" form: name, email, optional company. */
-export function RequestAccessModal({ onClose }: { onClose: () => void }) {
+/**
+ * The landing-page access form: name, email, optional company. The `intent`
+ * names the button the visitor pressed (the pilot, a licence, a conversation)
+ * so the form titles itself accordingly; the request itself is the same.
+ */
+export function RequestAccessModal({
+  onClose,
+  intent = 'access',
+}: {
+  onClose: () => void
+  intent?: AccessIntent
+}) {
+  const copy = INTENT_COPY[intent]
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('')
+  const [message, setMessage] = useState('')
 
   const submit = useMutation({
     mutationFn: () =>
@@ -19,6 +33,8 @@ export function RequestAccessModal({ onClose }: { onClose: () => void }) {
         displayName,
         email,
         company: company.trim() === '' ? undefined : company,
+        intent: copy.code,
+        message: message.trim() === '' ? undefined : message.trim(),
       }),
   })
 
@@ -32,10 +48,9 @@ export function RequestAccessModal({ onClose }: { onClose: () => void }) {
 
   if (submit.isSuccess) {
     return (
-      <Modal title="Request received" onClose={onClose}>
+      <Modal title={copy.doneTitle} onClose={onClose}>
         <p className="text-sm text-ink-muted">
-          Thanks, {displayName.trim() || 'there'}. Your request is with our team. Once it's approved
-          you'll get an email at <strong>{email}</strong> with a link to set your password.
+          Thanks, {displayName.trim() || 'there'}. {copy.done} <strong>{email}</strong>.
         </p>
         <div className="mt-6 flex justify-end">
           <Button onClick={onClose}>Done</Button>
@@ -45,8 +60,9 @@ export function RequestAccessModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Request access" onClose={onClose}>
+    <Modal title={copy.title} onClose={onClose}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+        <p className="text-sm text-ink-muted">{copy.note}</p>
         <InputField
           label="Full name"
           value={displayName}
@@ -68,6 +84,14 @@ export function RequestAccessModal({ onClose }: { onClose: () => void }) {
           onChange={(event) => setCompany(event.target.value)}
           error={errors?.company}
         />
+        <TextAreaField
+          label="Anything we should know? (optional)"
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          error={errors?.message}
+          rows={3}
+          maxLength={1000}
+        />
         {generalError && (
           <p role="alert" className="text-sm font-medium text-red-600">
             {generalError}
@@ -78,7 +102,7 @@ export function RequestAccessModal({ onClose }: { onClose: () => void }) {
             Cancel
           </Button>
           <Button type="submit" busy={submit.isPending}>
-            Request access
+            {copy.action}
           </Button>
         </div>
       </form>

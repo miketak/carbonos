@@ -34,6 +34,13 @@ public class AccessRequest {
 	private String company;
 
 	@Enumerated(EnumType.STRING)
+	@Column(length = 20)
+	private AccessRequestIntent intent;
+
+	@Column(length = 1000)
+	private String message;
+
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private AccessRequestStatus status;
 
@@ -60,11 +67,13 @@ public class AccessRequest {
 	protected AccessRequest() {
 	}
 
-	AccessRequest(String email, String displayName, String company) {
+	AccessRequest(String email, String displayName, String company, AccessRequestIntent intent, String message) {
 		this.id = UUID.randomUUID();
 		this.email = email;
 		this.displayName = displayName;
 		this.company = company;
+		this.intent = intent;
+		this.message = message;
 		this.status = AccessRequestStatus.PENDING;
 	}
 
@@ -102,6 +111,14 @@ public class AccessRequest {
 
 	public String getCompany() {
 		return company;
+	}
+
+	public AccessRequestIntent getIntent() {
+		return intent;
+	}
+
+	public String getMessage() {
+		return message;
 	}
 
 	public AccessRequestStatus getStatus() {

@@ -26,6 +26,8 @@ const pending: AccessRequest = {
   email: 'newcomer@example.com',
   displayName: 'Abena Owusu',
   company: 'Asante Gold',
+  intent: 'PILOT',
+  message: 'One site, FY2025.',
   status: 'PENDING',
   createdAt: '2026-09-14T09:00:00Z',
   decidedAt: null,
@@ -36,6 +38,8 @@ const denied: AccessRequest = {
   email: 'spam@example.com',
   displayName: 'Nobody',
   company: null,
+  intent: null,
+  message: null,
   status: 'DENIED',
   createdAt: '2026-09-10T09:00:00Z',
   decidedAt: '2026-09-11T09:00:00Z',
@@ -57,6 +61,9 @@ test('the queue holds what is waiting and the record holds what was decided', as
 
   const waiting = (await screen.findByText('Abena Owusu')).closest('tr') as HTMLElement
   expect(within(waiting).getByRole('button', { name: /approve/i })).toBeInTheDocument()
+  // the queue says what the visitor asked for, in their words (spec 01.1)
+  expect(waiting).toHaveTextContent('Asked about the pilot')
+  expect(waiting).toHaveTextContent('One site, FY2025.')
 
   // the decided requests were already in the response and thrown away before;
   // the page is a record of who was let in and who was not (spec 01.5)

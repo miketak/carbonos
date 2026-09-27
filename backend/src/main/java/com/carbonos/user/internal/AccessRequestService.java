@@ -40,17 +40,22 @@ public class AccessRequestService {
 		this.events = events;
 	}
 
-	public AccessRequest submit(String email, String displayName, String company) {
+	public AccessRequest submit(String email, String displayName, String company, AccessRequestIntent intent,
+			String message) {
 		var normalized = UserService.normalize(email);
 		if (users.existsByEmail(normalized) || requests.existsByEmailAndStatus(normalized, AccessRequestStatus.PENDING)) {
 			throw new DuplicateAccessRequestException(normalized);
 		}
 		try {
-			return requests.saveAndFlush(new AccessRequest(normalized, displayName, company));
+			return requests.saveAndFlush(new AccessRequest(normalized, displayName, company, intent, blankToNull(message)));
 		}
 		catch (DataIntegrityViolationException ex) {
 			throw new DuplicateAccessRequestException(normalized);
 		}
+	}
+
+	private static String blankToNull(String value) {
+		return value == null || value.isBlank() ? null : value.strip();
 	}
 
 	@Transactional(readOnly = true)

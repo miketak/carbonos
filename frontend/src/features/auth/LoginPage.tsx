@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
+import { Wordmark } from '../../components/Wordmark'
 import { ApiError } from '../../lib/api'
 import { login } from './api'
 import { endSignOut } from './signOut'
@@ -51,13 +52,8 @@ export function LoginPage() {
     <main className="flex min-h-screen items-center justify-center p-6">
       <GlassCard className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
-          <p className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-2xl font-bold text-transparent">
-            CarbonOS
-          </p>
-          <p className="mt-0.5 text-[10px] font-semibold tracking-[0.2em] text-ink-muted uppercase">
-            by ECORIV
-          </p>
-          <h1 className="mt-2 text-xl">Sign in</h1>
+          <Wordmark size="page" />
+          <h1 className="mt-4 text-xl">Sign in</h1>
           <p className="mt-1 text-sm text-ink-muted">Measure. Certify. Sustain.</p>
         </div>
         <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
