@@ -15,6 +15,13 @@ import type { AccessRequest } from '../api'
  * page it sits on carries the heading and the sidebar carries the count
  * (spec 01.5), so it renders neither.
  */
+/** How the landing page's buttons read in the queue (spec 01.1). */
+const INTENT_LABEL: Record<string, string> = {
+  PILOT: 'Asked about the pilot',
+  LICENCE: 'Asked for a licence',
+  TALK: 'Wants to talk to ECORIV',
+}
+
 export function AccessRequestsSection() {
   const requestsQuery = useAccessRequestsQuery()
   const approve = useApproveAccessRequest()
@@ -67,6 +74,16 @@ export function AccessRequestsSection() {
                     <span className="font-medium">{request.displayName}</span>
                     {request.company && (
                       <span className="block text-xs text-ink-muted">{request.company}</span>
+                    )}
+                    {request.intent && request.intent !== 'ACCESS' && (
+                      <span className="mt-1 block text-xs font-semibold text-link">
+                        {INTENT_LABEL[request.intent]}
+                      </span>
+                    )}
+                    {request.message && (
+                      <span className="mt-1 block max-w-md text-xs whitespace-pre-line text-ink-muted">
+                        “{request.message}”
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-ink-muted">{request.email}</td>

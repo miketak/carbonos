@@ -1,10 +1,15 @@
 import { api } from '../../lib/api'
 import type { SessionUser } from '../auth/api'
 
+export type AccessRequestIntentCode = 'ACCESS' | 'PILOT' | 'LICENCE' | 'TALK'
+
 export interface AccessRequestInput {
   email: string
   displayName: string
   company?: string
+  /** What the visitor pressed on the landing page (spec 01.1). */
+  intent?: AccessRequestIntentCode
+  message?: string
 }
 
 export interface SetupInfo {

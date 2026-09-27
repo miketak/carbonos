@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-27
 ---
 
 # Request access and set your password
@@ -11,16 +11,16 @@ An account is created either by a platform administrator under
 **Users**, who gives you a temporary password out of band, or by an
 access request you make yourself, which an administrator approves.
 
-<!-- sources: HomePage.tsx; RequestAccessModal.tsx; SetPasswordPage.tsx; AdminAccessRequestsPage.tsx; approval email; specs 01.1, 01.2; verified 2026-09-24 -->
+<!-- sources: HomePage.tsx; landing/intent.ts; RequestAccessModal.tsx; SetPasswordPage.tsx; AdminAccessRequestsPage.tsx; approval email; specs 01.1, 01.2; verified 2026-09-27 -->
 
 ```mermaid
 sequenceDiagram
     accTitle: From an access request to a working account
-    accDescr: You request access on the landing page with your name, work email and company. An administrator approves or denies the request. On approval CarbonOS creates the account in the pending state and emails a link that is valid for seven days and can be used once. You open the link, choose a password of at least 12 characters with a letter and a digit, and are signed in.
+    accDescr: You request access on the landing page with your name, work email, company and an optional message. An administrator approves or denies the request. On approval CarbonOS creates the account in the pending state and emails a link that is valid for seven days and can be used once. You open the link, choose a password of at least 12 characters with a letter and a digit, and are signed in.
     participant Y as You
     participant C as CarbonOS
     participant A as Platform administrator
-    Y->>C: Request access (full name, work email, company)
+    Y->>C: Request access (full name, work email, company, optional message)
     C-->>Y: "Request received … you'll get an email … with a link to set your password."
     A->>C: Approve (or Deny) under Access requests
     C-->>Y: Email "Your CarbonOS access is approved" with a link valid for 7 days
@@ -30,14 +30,23 @@ sequenceDiagram
 
 ## Request access
 
-1. Open CarbonOS. The landing page reads "Measure. Certify. Sustain."
-   with **Sign in** and **Request access**. Click **Request access**.
-2. Fill **Full name**, **Work email** and **Company (optional)**.
+1. Open CarbonOS. The landing page reads "The GHG inventory that
+   survives verification." with **Sign in** and **Request access** in
+   the top bar. Click **Request access**.
+2. Fill **Full name**, **Work email**, **Company (optional)** and, if
+   you like, **Anything we should know? (optional)**.
 3. Click **Request access**.
 
 What you see: "Request received. Thanks, *name*. Your request is with
-our team. Once it's approved you'll get an email at *email* with a link
-to set your password."
+our team. Once it is approved you will get an email with a link to set
+your password at *email*."
+
+The landing page's other buttons open the same form under a different
+title: **Ask about the pilot**, **Request a licence** and **Talk to
+ECORIV**. Those send the same request, marked with what you asked for,
+and their confirmation says that ECORIV usually replies by email
+within 48 hours rather than promising a password link. An administrator sees what
+you asked for, and your message, next to your name.
 
 ## Set your password
 

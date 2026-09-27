@@ -97,7 +97,7 @@ class AdminSummaryApiIntegrationTests {
 
 	@Test
 	void theAccountsSummaryCountsUsersAndTheRequestsStillWaiting() throws Exception {
-		accessRequests.submit("newcomer@example.com", "Abena Owusu", "Asante Gold");
+		accessRequests.submit("newcomer@example.com", "Abena Owusu", "Asante Gold", null, null);
 
 		mvc.perform(get("/api/admin/summary/accounts").with(as(admin)))
 			.andExpect(status().isOk())

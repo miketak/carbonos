@@ -30,7 +30,7 @@ flowchart TB
 | --- | --- | --- |
 | `src/app` | `App.tsx` (routes), `providers.tsx` (TanStack Query client, router, toasts) | Wiring only. |
 | `src/features/<name>` | Pages, feature components under `components/`, `api.ts` (typed calls), `use<Name>.ts` (TanStack Query hooks), tests beside the code | A feature never imports another feature's internals. |
-| `src/components` | Shared UI: `AppHeader` (the CarbonOS top bar both workspaces wear) and the `AccountMenu` it carries in the top right, `LoadingCard`, `Button`, `InputField`, `SelectField` and `TextAreaField`, `Modal`, `Drawer` (a panel beside the page), `Tabs`, `StatusPill`, `MonthField`, `ProgressBar`, `GlassCard`, `Skeleton`, the toast host | No business logic. |
+| `src/components` | Shared UI: `AppHeader` (the CarbonOS top bar both workspaces wear) and the `AccountMenu` it carries in the top right, `Wordmark` (the CarbonOS lockup every surface shows: the `CarbonOsMark` symbol, the capitalised name and the ECORIV byline; `public/favicon.svg` is drawn from the same numbers in `carbonOsMarkGeometry.ts`), `LoadingCard`, `Button`, `InputField`, `SelectField` and `TextAreaField`, `Modal`, `Drawer` (a panel beside the page), `Tabs`, `StatusPill`, `MonthField`, `ProgressBar`, `GlassCard`, `Skeleton`, the toast host | No business logic. |
 | `src/lib` | `api.ts` (the fetch wrapper), `validate.ts` (numeric checks), `useCountUp.ts`, `useShortcuts.ts` (single-key page shortcuts that stay quiet while typing) | Shared infrastructure only. |
 | `src/test` | Render helpers with providers, the API mock | |
 
@@ -87,7 +87,7 @@ link a reviewer can no longer send.
 | `admin` | `user`, `ghg`, `platform` | The administration shell and its dashboard, which opens on what needs a decision (spec 01.5); the access-request queue and the record of what was decided (spec 01.1); the users list; the organizations list where a platform administrator assumes support access (spec 01.3); the factor pack catalogue and the edition workbench, where a pack family, a draft edition and its rows are authored and the validation report is read (spec 02.5); the platform settings and the history of every change to them (spec 01.5) |
 | `profile` | `user`, `media` | Profile and avatar (the resume upload was retired by spec 01.6) |
 | `ghg` | `ghg` | Organizations, overview, entities, facilities, activity data and its source documents, units, emission factors, inventories, the inventory workbench (records, boundary, method, runs, report; spec 05.6), run detail, base year, and the organization settings page where an owner administers members, details, history and deletion (spec 01.7) |
-| `home` | none | The public landing page, and the post-sign-in resolver at `/app` (spec 01.6) |
+| `home` | none | The public landing page (`landing/`: sections, copy, pricing tiers, and the lazily loaded three.js hero behind a WebGL probe), and the post-sign-in resolver at `/app` (spec 01.6) |
 
 ## The API wrapper
 

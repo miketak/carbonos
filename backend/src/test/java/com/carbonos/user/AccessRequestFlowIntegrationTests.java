@@ -74,9 +74,16 @@ class AccessRequestFlowIntegrationTests {
 		mvc.perform(post("/api/access-requests").with(csrf())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("""
-					{"email": "Kofi.Mensah@ecoriv.com", "displayName": "Kofi Mensah", "company": "EcoGhana"}
+					{"email": "Kofi.Mensah@ecoriv.com", "displayName": "Kofi Mensah", "company": "EcoGhana",
+					 "intent": "PILOT", "message": "  One site, FY2025.  "}
 					"""))
 			.andExpect(status().isAccepted());
+
+		// the queue can tell an enquiry from a sign-up: intent and the trimmed message travel with the request
+		mvc.perform(get("/api/admin/access-requests").with(asUser(admin)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].intent").value("PILOT"))
+			.andExpect(jsonPath("$[0].message").value("One site, FY2025."));
 
 		// one open request per address
 		mvc.perform(post("/api/access-requests").with(csrf())

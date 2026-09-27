@@ -1,41 +1,55 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { GlassCard } from '../../components/GlassCard'
+import { useEffect, useState } from 'react'
+import type { AccessIntent } from './landing/intent'
 import { RequestAccessModal } from '../access/RequestAccessModal'
+import { ClosingSection } from './landing/ClosingSection'
+import { FaqSection } from './landing/FaqSection'
+import { Hero } from './landing/Hero'
+import { InventorySection } from './landing/InventorySection'
+import { LandingNav } from './landing/LandingNav'
+import { LifecycleSection } from './landing/LifecycleSection'
+import { PricingSection } from './landing/PricingSection'
+import { ProblemSection } from './landing/ProblemSection'
+import { TrustSection } from './landing/TrustSection'
 
+const TITLE = 'CarbonOS · The GHG inventory that survives verification'
+
+/**
+ * The public landing page at `/`. Signed-in readers use `/app`, which
+ * resolves to where their work is (spec 01.6); this page is for everybody
+ * else: the sustainability lead, the finance director and the verifier
+ * deciding whether to ask for access.
+ */
 export function HomePage() {
-  const [requesting, setRequesting] = useState(false)
+  const [intent, setIntent] = useState<AccessIntent | null>(null)
+
+  useEffect(() => {
+    const previous = document.title
+    document.title = TITLE
+    // the landing's own scroll rules: anchors glide, and a section lands flush under its 64px bar
+    document.documentElement.classList.add('landing-open')
+    return () => {
+      document.title = previous
+      document.documentElement.classList.remove('landing-open')
+    }
+  }, [])
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <GlassCard className="max-w-md p-10 text-center">
-        <h1 className="bg-gradient-to-r from-teal to-accent-green bg-clip-text text-3xl font-bold text-transparent">
-          CarbonOS
-        </h1>
-        <p className="mt-1 text-xs font-semibold tracking-[0.2em] text-ink-muted uppercase">
-          by ECORIV
-        </p>
-        <p className="mt-3 text-ink-muted">
-          Measure. Certify. Sustain. Verified carbon data for forward-thinking companies.
-        </p>
-        <div className="mt-8 flex justify-center gap-3">
-          <Link
-            to="/app"
-            className="inline-block rounded-lg bg-teal-deep px-6 py-2.5 font-semibold text-white transition-colors duration-150 hover:bg-dark-teal"
-          >
-            Sign in
-          </Link>
-          <button
-            type="button"
-            onClick={() => setRequesting(true)}
-            className="inline-block rounded-lg border-2 border-teal px-6 py-2.5 font-semibold text-link transition-colors duration-150 hover:bg-teal/10"
-          >
-            Request access
-          </button>
-        </div>
-      </GlassCard>
-
-      {requesting && <RequestAccessModal onClose={() => setRequesting(false)} />}
-    </main>
+    <div className="landing">
+      <a href="#main" className="landing-skip">
+        Skip to content
+      </a>
+      <LandingNav onRequest={setIntent} />
+      <main id="main">
+        <Hero onRequest={setIntent} />
+        <ProblemSection />
+        <LifecycleSection />
+        <InventorySection />
+        <PricingSection onRequest={setIntent} />
+        <TrustSection />
+        <FaqSection />
+        <ClosingSection onRequest={setIntent} />
+      </main>
+      {intent && <RequestAccessModal intent={intent} onClose={() => setIntent(null)} />}
+    </div>
   )
 }
