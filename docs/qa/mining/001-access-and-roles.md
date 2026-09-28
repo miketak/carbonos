@@ -18,13 +18,14 @@ or `mail` module, the members card, or the role checks in `ghg`.
 
 ## Prerequisites
 
-- The ADMIN account and its password.
+- The administrator account the engineering team created for you, and its
+  password.
 - Three fresh email aliases you can read: call them **Newcomer**,
   **Analyst** and **Auditor**.
 - The normal window for the admin, the private window for the others.
 
 Token expiry (the seven-day limit on set-password links) cannot be tested
-on staging. The development team covers it.
+on qa. The development team covers it.
 
 ## A. Request access
 
@@ -54,7 +55,7 @@ on staging. The development team covers it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open the link from the approval email in the private window. | The page states the rule before you type: at least 12 characters, with a letter and a digit. The link is `https://frontend-staging-2e61.up.railway.app/set-password?token=…`, never localhost or production. | | |
+| 1 | Open the link from the approval email in the private window. | The page states the rule before you type: at least 12 characters, with a letter and a digit. The link is `/set-password?token=…` on the qa address, never localhost or production. | | |
 | 2 | Try `shortpass1`, then `twelveletterslong`, then `123456789012`. | Each attempt is refused with an inline message. | | |
 
 ### A5. Setting the password activates the account

@@ -18,6 +18,6 @@ own platform cases in its procedures 001 and 007. A further persona starts
 by copying a README, then writes its own scenario and procedures against
 the same specs.
 
-Each persona's README says what to prepare, how to read a procedure, and
-where to record verdicts. `make qa-docs` exports a persona's procedures as
-Google Docs (see the how-to "Publish the QA procedures").
+Each persona's README says what to prepare and how to read a procedure.
+`make qa-docs` exports a persona's procedures as Google Docs, with its
+fixture files beside them (see the how-to "Publish the QA procedures").

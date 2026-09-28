@@ -201,7 +201,7 @@ Two consequences are correct and worth seeing.
 A published edition is thousands of rows, so the table and the picker ask
 the server for a page with the filters applied. Check that in an
 organization created for the purpose: importing this edition into the
-seeded organization would leave the factor tables of the later procedures
+Sankofa Gold plc would leave the factor tables of the later procedures
 unrecognizable.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
@@ -213,7 +213,7 @@ unrecognizable.
 | 5 | Choose **Fuels** in **Published category**. | The table returns to page 1, the heading says how many match, and **Published activity** now offers only the activities inside Fuels. | | |
 | 6 | Type `butane` in **Search factors**, clear the category filter first. | The rows narrow to butane. Three carry the name "Gaseous fuels: Butane" and differ only by unit: 3,033.38067 kg CO₂e/tonne, 1.74533 kg CO₂e/litre and 0.22241 kg CO₂e/kWh. | | |
 | 7 | Untick **Show unapproved**, then tick it again. | The count changes and the checkbox names how many rows it is hiding while it is unticked. | | |
-| 8 | Open **Scale Test Co**'s settings and delete it, giving a reason. | The organization and its factors are gone, and the later procedures still see the seeded organization only. | | |
+| 8 | Open **Scale Test Co**'s settings and delete it, giving a reason. | The organization and its factors are gone, and the later procedures still see Sankofa Gold plc only. | | |
 
 Then remove nothing: the rest of procedure 2 and procedure 5 expect both
 packs, which since spec 02.9 are the only two the catalogue holds.

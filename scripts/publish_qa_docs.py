@@ -4,8 +4,9 @@
 Converts docs/qa/<persona>/README.md and docs/qa/<persona>/NNN-*.md with pandoc: the H1 becomes the
 title, a subtitle carries the git ref and build date, relative links point at
 GitHub, the pages are landscape so the step tables have room, and every table
-gets an outline. Upload the files to the shared Drive folder by hand; Drive
-converts them to Google Docs. See docs/how-to/publish-qa-procedures.md.
+gets an outline. The persona's fixtures/ folder, when it has one, is copied next to the
+documents. Upload both to the shared Drive folder by hand; Drive converts the DOCX files to
+Google Docs. See docs/how-to/publish-qa-procedures.md.
 """
 
 from __future__ import annotations
@@ -145,8 +146,27 @@ def build(out_dir: Path, persona: str = DEFAULT_PERSONA) -> list[tuple[str, Path
         add_table_borders(target)
         built.append((doc_name(source), target))
         print(f"built {_display(target)}  ->  {doc_name(source)}")
+    copied = copy_fixtures(out_dir, persona)
+    if copied:
+        print(f"copied {copied} fixture files to {_display(out_dir / 'fixtures')}")
     print(f"{len(built)} documents, {info.subtitle}")
     return built
+
+
+def copy_fixtures(out_dir: Path, persona: str = DEFAULT_PERSONA) -> int:
+    """Copies docs/qa/<persona>/fixtures to <out_dir>/fixtures, replacing an earlier copy.
+
+    The procedures name the files as `fixtures/<file>`, so the folder travels with the
+    documents. Returns the number of files copied; 0 when the persona has no fixtures.
+    """
+    source = QA_ROOT / persona / "fixtures"
+    target = out_dir / "fixtures"
+    if target.exists():
+        shutil.rmtree(target)
+    if not source.is_dir():
+        return 0
+    shutil.copytree(source, target)
+    return sum(1 for path in target.rglob("*") if path.is_file())
 
 
 def _rewrite_document(docx: Path, transform) -> None:

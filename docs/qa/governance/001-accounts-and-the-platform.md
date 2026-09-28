@@ -16,25 +16,24 @@ case D3, where it meets a decision it cannot make.
 
 **Estimated time:** 30 minutes.
 
-**Run this procedure** first on a fresh qa database. Every later procedure
-signs in with the accounts it creates.
+**Run this procedure** first. Every later procedure signs in with the
+accounts it creates.
 
 ## Prerequisites
 
-- `make db-wipe ENV=qa` has run, so the seeded administrator (Admin A) is
-  the only account.
-- Admin A's password, and the mailbox the aliases in the
-  [README](README.md) point at.
+- Admin A: the administrator account the engineering team created for
+  you, and its password.
+- The mailbox the aliases in the [README](README.md) point at.
 - A normal window for Admin A and a private window for everyone else.
 
-## A. The seeded administrator
+## A. Your administrator account
 
-### A1. After the wipe, one account exists
+### A1. At the start, no organization exists
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Sign in as Admin A. | An administrator lands on the platform dashboard (spec 01.6). **Users** reads 1 with "1 active, 0 pending"; **Organizations** reads 0; **Factor pack editions** counts the three shipped editions; **Open adoption notices** reads 0. No tile carries a client's emissions figure. | | |
-| 2 | Open **Users**. | One row: your email, role Admin, status Active. | | |
+| 1 | Sign in as Admin A. | An administrator lands on the platform dashboard (spec 01.6). Note the number on **Users**: the engineering team's accounts and yours, with "0 pending". **Organizations** reads 0; **Factor pack editions** counts the three shipped editions; **Open adoption notices** reads 0. No tile carries a client's emissions figure. | | |
+| 2 | Open **Users**. | Your row: your email, role Admin, status Active. | | |
 
 ## B. Accounts created by an administrator
 
@@ -49,9 +48,9 @@ signs in with the accounts it creates.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Add Kofi Mensah (the Kofi alias, role **Member**, `Kofi-pass-2026`), Esi Boateng (`Esi-pass-2026`) and Yaw Darko (`Yaw-pass-2026`) the same way. | Each appears as Member, Active. The list holds five accounts. | | |
-| 2 | Click **Add user** once more with the Kofi alias and any valid password. | Refused: "A user with email '<the Kofi alias>' already exists.". The list still holds five. The public request path of case C1 says less on purpose: an administrator may learn that an account exists, a visitor may not. | | |
-| 3 | Open the dashboard. | **Users** reads 5 with "5 active, 0 pending". | | |
+| 1 | Add Kofi Mensah (the Kofi alias, role **Member**, `Kofi-pass-2026`), Esi Boateng (`Esi-pass-2026`) and Yaw Darko (`Yaw-pass-2026`) the same way. | Each appears as Member, Active. The list holds four accounts more than in case A1. | | |
+| 2 | Click **Add user** once more with the Kofi alias and any valid password. | Refused: "A user with email '<the Kofi alias>' already exists.". The count is unchanged. The public request path of case C1 says less on purpose: an administrator may learn that an account exists, a visitor may not. | | |
+| 3 | Open the dashboard. | **Users** reads four more than in case A1, all active, with "0 pending". | | |
 
 ## C. An account requested by email
 
@@ -83,7 +82,7 @@ signs in with the accounts it creates.
 | 3 | Enter `Ama-pass-2026` twice and submit. | Ama lands on the **GHG accounting** page, signed in, with no organizations. The empty state offers **New organization**. | | |
 | 4 | Open the emailed link again in a new tab. | "This link is invalid or has expired.", with a way back to the landing page. | | |
 | 5 | Open `/set-password?token=` followed by 64 zeros. | The same state as step 4. A forged token is not told apart from a used one. | | |
-| 6 | As Admin A, refresh **Users**. | Ama reads Active. Six accounts. | | |
+| 6 | As Admin A, refresh **Users**. | Ama reads Active. Five accounts more than in case A1. | | |
 
 ## D. Platform settings
 

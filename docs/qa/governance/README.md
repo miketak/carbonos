@@ -20,28 +20,20 @@ activity data arrives from two fixture files uploaded once each.
 - **App:** the qa frontend address in
   [Environments](../../environments.md). The line under a page's title
   names the candidate you are testing.
-- **A clean slate.** From the repo root, `make db-wipe ENV=qa` rebuilds
-  the qa database from the migrations and leaves only the seeded
-  administrator. Procedure 1 assumes that state: it counts users and
-  organizations, and procedure 7 publishes edition identifiers that can
-  never be reused. Run the wipe before a full pass.
-- **Accounts:** the seeded administrator's password, and one mailbox you
-  can read. Every other account is created by the procedures. Plus-aliases
+- **Accounts:** an administrator account on qa, and one mailbox you can
+  read. Ask the engineering team to create the administrator account for
+  your email address; they send you its password. You create every other
+  account yourself in procedure 1. Plus-aliases
   of one Gmail address (`you+ama@gmail.com`) arrive in the base inbox.
 - **Browsers:** a normal window and a private window, so an administrator
   and a member never share a session. Several cases ask you to switch
   between the two.
-- **The fixture files** from `docs/qa/governance/fixtures/` in the
-  repository. Download the folder from GitHub
-  (https://github.com/miketak/carbonos/tree/main/docs/qa/governance/fixtures)
-  or check out the repository. Do not edit the files: the procedures name
-  their row numbers and totals.
 
 ## The accounts
 
 | Account | Made by | Password used in the pack | What it proves |
 | --- | --- | --- | --- |
-| Admin A | the wipe (seeded) | yours | curates the pack edition; platform settings; support access |
+| Admin A | the engineering team, at your request | the one they send you | curates the pack edition; platform settings; support access |
 | Admin B, `you+adminb@…` | procedure 1, **Add user**, role ADMIN | `AdminB-pass-2026` | publishes the edition (the approver is not the curator); the last-administrator refusals |
 | Ama Owusu, `you+ama@…` | procedure 1, **Request access** and the approval email | `Ama-pass-2026` | the email path; owns Adansi Foods Ltd; enters the records and the factors |
 | Kofi Mensah, `you+kofi@…` | procedure 1, **Add user** | `Kofi-pass-2026` | Reviewer: approves factors, designates the final run, publishes, decides adoptions |
@@ -85,6 +77,9 @@ row 1.
 
 ## The fixture files
 
+The files are in the `fixtures` folder that comes with these documents. Do
+not edit them: the procedures name their row numbers and totals.
+
 | File | Rows | Used in |
 | --- | --- | --- |
 | `fixtures/adansi-2025.csv` | the ten records of the scenario table | procedure 3 |
@@ -105,23 +100,17 @@ and UI elements are in bold. A refusal the product makes by disabling a
 control (with a tooltip, or until a reason is long enough) is described
 as such; a refusal it makes with a message is quoted. Where an expected result quotes a message
 with a value in it, the value is the one this scenario produces; a
-different value is a failure worth a note.
+different value is a failure worth a note. At the end, fill in the
+sign-off table and file one issue per failed case with the **QA failure**
+template at https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml. The line under the document's title
+("Version v0.6.0 (5b27661), built ...") is the value for "Procedure and
+version tested".
 
 The procedures name specs under `specs/`. When a case and a spec disagree,
 the spec is the reference; report the difference. The pre-flight gates
 are named as the panel prints them: **Reporting boundary**, **Activity
 data completeness**, **Classification**, **Emission factors** and **Base
 year**.
-
-## Where to fill in your verdicts
-
-The maintainer exports the procedures as Google Docs into the **CarbonOS
-QA** Drive folder before a test round (`make qa-docs PERSONA=governance`,
-then an upload). Make a copy of each document into your own Drive, named
-`<document> - <your name> - <date>`, type your verdicts in the copy, file
-one issue per failed case with the **QA failure** template at
-https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml,
-and share the copy with the maintainer when the run is complete.
 
 ## The procedures
 
@@ -179,7 +168,7 @@ non-goals** at the foot of each procedure.
 
 ## Sign-off
 
-Each procedure ends with this table. Copy it into your run notes.
+Each procedure ends with this table. Fill it in when you finish.
 
 | Field | Value |
 | --- | --- |

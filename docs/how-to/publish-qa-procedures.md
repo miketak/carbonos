@@ -1,12 +1,12 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-28
 ---
 
 # Publish the QA procedures
 
 The QA team works in Google Workspace and types the verdicts of a procedure
-into its own copy of a Google Doc. `make qa-docs` produces the documents from
+straight into its Google Doc. `make qa-docs` produces the documents from
 `docs/qa/<persona>` (mining by default): pandoc converts the persona's README and each procedure to DOCX with the
 title, the version, working links and landscape pages, and you upload the
 files to the shared Drive folder, where Drive turns them into Google Docs. There is no
@@ -59,19 +59,23 @@ flowchart LR
     make qa-docs
     ```
 
-    The ten files land in `build/qa-docs/`, which git ignores.
+    The ten files land in `build/qa-docs/`, which git ignores. A persona
+    with a `fixtures/` folder (governance has one) gets a copy of it in
+    `build/qa-docs/fixtures/`; the procedures name those files and assume
+    the tester has them.
 
 3. In Google Drive, open the **CarbonOS QA** folder, create a subfolder named
-   after the version (`v0.6.0`), and upload the ten files into it. Drive
+   after the version (`v0.6.0`), and upload the ten files into it, plus
+   the `fixtures` folder when the export made one. Drive
    converts DOCX to Google Docs on upload when **Convert uploads to Google
    Docs editor format** is on in Drive's settings; otherwise right-click a
    file and choose **Open with > Google Docs**, which saves a converted copy.
-4. Share the folder with the testers as viewers and send them the link. The
-   README's "Where to fill in your verdicts" section tells them to make a
-   copy and how to report failures.
+4. Share the folder with the testers as editors and send them the link.
+   They fill in the verdicts and notes in the documents in place.
 
-Do not edit the uploaded documents: the Markdown is the source, and the next
-export replaces them.
+The Markdown stays the source: a correction goes into `docs/qa` and the next
+export, never only into a Drive document. Each round gets its own version
+folder, so a new export does not overwrite a filled-in one.
 
 ## Troubleshooting
 
