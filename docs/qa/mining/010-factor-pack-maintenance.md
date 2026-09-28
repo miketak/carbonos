@@ -23,7 +23,8 @@ pack console, the publication rules or the catalogue.
 
 ## Prerequisites
 
-- **Two** separate **ADMIN** accounts whose passwords you hold. Publication
+- **Two** separate **ADMIN** accounts: the one the engineering team
+  created for you, and a second one you create. Publication
   needs an approver who is not the curator, so one account cannot walk section
   D on its own. Procedure 1 creates an account; make the second an
   administrator the same way.

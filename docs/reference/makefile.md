@@ -32,7 +32,7 @@ does the same.
 | `help-bundle` | `help-site`, then copies `help/site/` to `frontend/help-site/`, the folder the frontend image serves at `/help/`. The release workflows do the same before `railway up`. | uv |
 | `help-check` | `help-site`, then `vale`. The Definition of Done for a help change. | uv, Vale (optional) |
 | `vale [BASE=<ref>]` | Runs Vale on the Markdown changed against `BASE` (default `origin/main`), including untracked files. Skips when Vale is not installed. | Vale |
-| `qa-docs` | Exports the QA procedures as DOCX under `build/qa-docs/`, ready to upload to the QA team's Drive folder. | uv, pandoc |
+| `qa-docs` | Exports the QA procedures as DOCX under `build/qa-docs/`, with the persona's `fixtures/` folder beside them, ready to upload to the QA team's Drive folder. | uv, pandoc |
 
 Targets that need an argument refuse to run without it and print their
 usage. The Python environment for the docs targets is created under

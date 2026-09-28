@@ -15,18 +15,16 @@ covers.
 - **App:** the qa frontend address in
   [Environments](../../environments.md); the line under a page's
   title names the candidate you are testing.
-- **Accounts:** an ADMIN account whose password you hold, and two or three
-  email addresses you can read (a Gmail address with plus-aliases such as
-  `you+qa1@gmail.com` works; mail arrives in the base inbox).
+- **Accounts:** an administrator account on qa, and two or three email
+  addresses you can read (a Gmail address with plus-aliases such as
+  `you+qa1@gmail.com` works; mail arrives in the base inbox). Ask the
+  engineering team to create the administrator account for your email
+  address; they send you its password. You create every other account
+  yourself in the procedures.
 - **Browsers:** a normal window and a private window, so two sessions never
   collide.
 - **A calculator.** Several procedures check arithmetic against figures you
   compute by hand.
-- **A clean slate, if you want one.** From the repo root,
-  `make db-wipe ENV=qa` rebuilds the qa database from the
-  migrations and leaves only the seeded admin. Without it, the procedures
-  still work: every organization is tenant-scoped and invisible to other
-  users, so old test data does not get in the way.
 
 ## How to read a procedure
 
@@ -37,32 +35,15 @@ expected result (a step with an empty expected result is setup: do it and
 move on). Write a note on any step where you saw something odd, even a
 passing one. A case fails when any of its steps fails; a failed case does
 not stop the procedure unless the text says so. At the end, fill in the
-sign-off table and file one issue per failed case.
+sign-off table and file one issue per failed case with the **QA failure**
+template at https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml. The line under the document's title
+("Version v0.6.0 (5b27661), built ...") is the value for "Procedure and
+version tested".
 
 The procedures name specs under `specs/`. When a case and a spec disagree,
 the spec is the reference; report the difference. Pre-flight gates are
 named as the panel prints them: **Reporting boundary**, **Activity data
 completeness**, **Classification**, **Emission factors** and **Base year**.
-
-## Where to fill in your verdicts
-
-The maintainer exports the procedures as Google Docs into the **CarbonOS
-QA** Drive folder before a test round (`make qa-docs`, then an upload; see
-the how-to "Publish the QA procedures" in the engineering docs). Ask for the
-link.
-
-1. Open the procedure and choose **File > Make a copy** into your own Drive,
-   named `<document> - <your name> - <date>`.
-2. Type `PASS` or `FAIL` and your notes in the table cells of the copy. The
-   pages are landscape so the cells have room. The line under the title
-   ("Version v0.6.0 (5b27661), built ...") is the value for "Procedure and
-   version tested" in the sign-off table.
-3. File one issue per failed case with the **QA failure** template at
-   https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml.
-4. Share the filled copy with the maintainer when the run is complete.
-
-Keep the published documents as they are; make your copy rather than
-editing them.
 
 ## The procedures
 
@@ -91,9 +72,9 @@ Procedure 10 is a platform procedure rather than a client one: it works on the
 shared factor pack catalogue, and only reads Sankofa Gold plc to check a holder
 count and that a draft stays invisible to an organization.
 
-## Sign-off template
+## Sign-off
 
-Copy this table to the end of your notes for each procedure.
+Each procedure ends with this table. Fill it in when you finish.
 
 | Field | Value |
 | --- | --- |

@@ -24,8 +24,8 @@ organization-creation rule.
 
 ## Prerequisites
 
-- An **ADMIN** account whose password you hold, and a second **ADMIN**
-  account (procedure 1 creates an account; make it an administrator the same
+- The **ADMIN** account the engineering team created for you, and a
+  second **ADMIN** account (procedure 1 creates an account; make it an administrator the same
   way). The dashboard's draft-edition row and the lone-administrator warning
   both depend on how many administrators exist.
 - A **member** account that owns at least one organization, as procedure 2
@@ -143,3 +143,12 @@ leaving the window at 1 hour affects everybody who tests after you.
 | 1 | On **Platform settings**, set the window back to `24` and creation back to **Everyone signed in**, with the reason `restoring defaults after QA`. | Saved. | | |
 | 2 | Read **Every change**. | Every change you made during this procedure is listed, newest first, each with its reason and your email. This is the record a verifier asks for. | | |
 | 3 | Delete QA Onboarding Ltd as its owner, and end any support access you still hold. | Removed. | | |
+
+## Sign-off
+
+| Field | Value |
+| --- | --- |
+| Procedure and version tested | |
+| Tester and date | |
+| Cases failed | |
+| Issues filed | |
