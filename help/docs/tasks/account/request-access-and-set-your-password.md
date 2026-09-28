@@ -32,7 +32,8 @@ sequenceDiagram
 
 1. Open CarbonOS. The landing page reads "The GHG inventory that
    survives verification." with **Sign in** and **Request access** in
-   the top bar. Click **Request access**.
+   the top bar. On a phone, **Sign in** sits in the top bar's menu
+   instead. Click **Request access**.
 2. Fill **Full name**, **Work email**, **Company (optional)** and, if
    you like, **Anything we should know? (optional)**.
 3. Click **Request access**.

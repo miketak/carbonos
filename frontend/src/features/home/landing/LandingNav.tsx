@@ -58,16 +58,18 @@ export function LandingNav({ onRequest }: { onRequest: (intent: AccessIntent) =>
           ))}
         </nav>
         <div className="flex items-center gap-1 sm:gap-2">
+          {/* a phone row holds the wordmark, the button and the menu; Sign in lives in the menu there,
+              and on the narrowest phones (under 375px) Request access does too, since the hero repeats it */}
           <Link
             to="/app"
-            className="rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap text-dark-teal transition-colors hover:bg-teal/10"
+            className="hidden rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap text-dark-teal transition-colors hover:bg-teal/10 sm:inline-flex"
           >
             Sign in
           </Link>
           <button
             type="button"
             onClick={() => onRequest('access')}
-            className="rounded-lg bg-teal-deep px-3 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-[0_4px_16px_rgba(9,168,149,0.35)] transition-all hover:bg-dark-teal hover:shadow-[0_6px_20px_rgba(9,168,149,0.45)] focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none sm:px-4"
+            className="hidden rounded-lg bg-teal-deep px-2.5 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-[0_4px_16px_rgba(9,168,149,0.35)] transition-all hover:bg-dark-teal hover:shadow-[0_6px_20px_rgba(9,168,149,0.45)] focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none min-[375px]:inline-flex sm:px-4"
           >
             Request access
           </button>
@@ -87,6 +89,20 @@ export function LandingNav({ onRequest }: { onRequest: (intent: AccessIntent) =>
               </svg>
             </summary>
             <nav aria-label="Page sections" className="landing-menu-panel">
+              <Link to="/app" onClick={closeMenu} className="landing-menu-link sm:hidden">
+                Sign in
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenu()
+                  onRequest('access')
+                }}
+                className="landing-menu-link text-left min-[375px]:hidden"
+              >
+                Request access
+              </button>
+              <span className="landing-menu-rule sm:hidden" aria-hidden />
               {LINKS.map((link) => (
                 <a
                   key={link.href}

@@ -14,12 +14,17 @@ export type WordmarkSurface = 'light' | 'dark'
 // caps need more air when small, so the tracking eases as the size grows; the
 // `/none` line-height keeps the byline tight under the word (a bare text-lg
 // brings its own 28px line-height and pushes the byline 12px down)
-const sizes: Record<WordmarkSize, { gap: string; mark: number; word: string; byline: string }> = {
+const sizes: Record<
+  WordmarkSize,
+  { gap: string; mark: number; markClass?: string; word: string; byline: string }
+> = {
+  // nav steps down one size on phones so the row keeps room for the button and the menu
   nav: {
     gap: 'gap-2',
     mark: 28,
-    word: 'text-lg/none tracking-[0.08em]',
-    byline: 'mt-[3px] text-[11px] tracking-[0.18em]',
+    markClass: 'size-6 sm:size-7',
+    word: 'text-base/none tracking-[0.08em] sm:text-lg/none',
+    byline: 'mt-[3px] text-[10px] tracking-[0.18em] sm:text-[11px]',
   },
   page: {
     gap: 'gap-2.5',
@@ -62,7 +67,7 @@ export function Wordmark({
   const tone = surfaces[surface]
   return (
     <span className={`inline-flex items-center ${s.gap} ${className}`}>
-      {symbol && <CarbonOsMark size={s.mark} />}
+      {symbol && <CarbonOsMark size={s.mark} className={s.markClass} />}
       <span className="flex flex-col items-start leading-none">
         <span className={`font-extrabold uppercase ${s.word} ${tone.word}`}>CarbonOS</span>
         {byline && (
