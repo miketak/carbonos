@@ -348,6 +348,9 @@
   .landing-menu-link {
     @apply rounded-lg px-3 py-2 text-sm font-medium text-dark-teal hover:bg-teal/10;
   }
+  .landing-menu-rule {
+    @apply my-1 block h-px bg-dark-teal/10;
+  }
 
   /* nav: 64px tall, and the landing's scroll padding matches it exactly so an anchored
      section lands flush under the bar with none of the previous section showing */

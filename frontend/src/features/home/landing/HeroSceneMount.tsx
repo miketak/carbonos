@@ -22,10 +22,9 @@ function canRenderWebGL(): boolean {
   }
 }
 
-/** The scene sits below the fold on a phone, so the 3D bundle is not worth the download there. */
+/** The 3D bundle is skipped only for readers who asked their browser to save data. */
 function worthTheBundle(): boolean {
   if (typeof window === 'undefined') return false
-  if (window.innerWidth < 768) return false
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
   return !connection?.saveData
 }
@@ -72,7 +71,7 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
 
 /**
  * Lazily mounts the WebGL hero. The three.js bundle is fetched only on this
- * page, only in browsers that can run it and on screens where it is visible,
+ * page, only in browsers that can run it and not under data saver,
  * and the scene stops rendering while it is scrolled out of view or when the
  * reader prefers reduced motion.
  */
