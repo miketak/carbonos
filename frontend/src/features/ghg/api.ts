@@ -575,7 +575,8 @@ export interface FactorPackDiff {
   thresholdPercent: number | null
   affectedPercent: number | null
   /** The warning the decision screen shows before accepting, in the words spec 02.7 fixes. */
-  recalculationWarning: string
+  /** Null when the organization has no base year: no candidate can be raised. */
+  recalculationWarning: string | null
 }
 
 /** A shipped, importable factor pack (spec 02.1). */

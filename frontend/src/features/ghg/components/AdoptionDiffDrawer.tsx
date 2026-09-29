@@ -364,9 +364,11 @@ export function AdoptionDiffDrawer({
                 error={errors?.note}
                 hint="Required when a vintage progression is at or above your significance threshold, because that is the case a verifier questions."
               />
-              <p role="note" className="rounded-lg bg-teal/10 p-3 text-sm text-dark-teal">
-                {diff.recalculationWarning}
-              </p>
+              {diff.recalculationWarning && (
+                <p role="note" className="rounded-lg bg-teal/10 p-3 text-sm text-dark-teal">
+                  {diff.recalculationWarning}
+                </p>
+              )}
               {refusal && (
                 <p role="alert" className="text-sm text-red-700">
                   {refusal}

@@ -102,7 +102,8 @@ class FactorPackNoticeController {
 					diff.estimatedKgCo2eDelta(), diff.diffHash(), diff.gwpBasisChanged(), diff.currentGwpBasis(),
 					diff.newGwpBasis(), diff.estimatedOver(), InventoryRefResponse.of(diff.lockedPeriod()),
 					diff.hasBaseYear(), diff.thresholdPercent(), diff.affectedPercent(),
-					FactorPackAdoptionService.RECALCULATION_WARNING);
+					// with no base year no candidate can be raised, and the screen says so instead
+					diff.hasBaseYear() ? FactorPackAdoptionService.RECALCULATION_WARNING : null);
 		}
 	}
 

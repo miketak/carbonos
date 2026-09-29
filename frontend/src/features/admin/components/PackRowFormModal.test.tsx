@@ -154,10 +154,10 @@ test('the category list follows the scope, because each category belongs to one 
   const user = userEvent.setup()
   renderModal(null)
 
-  expect(screen.getByRole('option', { name: 'STATIONARY_COMBUSTION' })).toBeInTheDocument()
+  expect(screen.getByRole('option', { name: 'Stationary combustion' })).toBeInTheDocument()
   await user.selectOptions(screen.getByLabelText(/default scope/i), 'SCOPE_2')
-  expect(screen.queryByRole('option', { name: 'STATIONARY_COMBUSTION' })).not.toBeInTheDocument()
-  expect(screen.getByRole('option', { name: 'PURCHASED_ELECTRICITY' })).toBeInTheDocument()
+  expect(screen.queryByRole('option', { name: 'Stationary combustion' })).not.toBeInTheDocument()
+  expect(screen.getByRole('option', { name: 'Purchased electricity' })).toBeInTheDocument()
 })
 
 test('an existing row opens with its values and is saved back', async () => {
