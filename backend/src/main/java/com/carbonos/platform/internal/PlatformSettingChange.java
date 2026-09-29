@@ -24,6 +24,9 @@ public class PlatformSettingChange {
 	/** Who may create a reporting organization. */
 	public static final String KEY_ORGANIZATION_CREATION = "organizationCreation";
 
+	/** Whether a published period blocks an edition that applies inside it (spec 02.6 rule 1). */
+	public static final String KEY_EDITIONS_IN_PUBLISHED_PERIODS = "editionsInPublishedPeriods";
+
 	@Id
 	private UUID id;
 

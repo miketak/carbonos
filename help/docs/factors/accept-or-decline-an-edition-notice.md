@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Read the notice a new factor pack edition raises under Updates, weigh the estimated movement, and accept it as a vintage progression or decline it with a note.
 role: Reviewer
 minutes: 8
@@ -10,7 +10,7 @@ minutes: 8
 
 When the platform publishes a new edition of a pack you hold, CarbonOS raises one notice under **Updates** and changes none of your figures. A Reviewer or Owner decides it once.
 
-<!-- sources: specs 02.6, 02.7, 02.9; the old page tasks/factor-updates/accept-or-decline-an-edition-notice.md (verified 2026-09-24); frontend/src/features/ghg/FactorPackUpdatesPage.tsx; frontend/src/features/ghg/components/AdoptionDiffDrawer.tsx; frontend/src/features/ghg/OrganizationLayout.tsx (the badge); frontend/src/features/ghg/format.ts (history labels); backend/src/main/java/com/carbonos/ghg/internal/FactorPackAdoptionService.java, FactorPackImportService.java and GhgAccess.java (refusals, history) -->
+<!-- sources: specs 02.6, 02.7, 02.9; the old page tasks/factor-updates/accept-or-decline-an-edition-notice.md (verified 2026-09-24); frontend/src/features/ghg/FactorPackUpdatesPage.tsx; frontend/src/features/ghg/components/AdoptionDiffDrawer.tsx; frontend/src/features/ghg/OrganizationLayout.tsx (the badge); frontend/src/features/ghg/format.ts (history labels); backend/src/main/java/com/carbonos/ghg/internal/FactorPackAdoptionService.java, FactorPackImportService.java and GhgAccess.java (refusals, history); EditionLock.java (the published-period setting, spec 02.6 amendment 2026-09-29) -->
 
 ## Before you start
 
@@ -23,7 +23,7 @@ When the platform publishes a new edition of a pack you hold, CarbonOS raises on
 2. On a row that reads **Waiting on you**, click **Review**.
 3. Read **Rows moving**, **Over five percent** and **Estimated movement**.
 4. Read **What moves**: each lineage with **Now**, **New**, **Change** and **Estimated movement**, flagged "Provenance changed" or "Gases changed" where those moved.
-5. Read **Conflicts** (rows you edited locally), **Blocked** (rows a frozen, final or published period uses) and **Discontinued** (lineages the edition drops), when present.
+5. Read **Conflicts** (rows you edited locally), **Blocked** (rows a locked period uses) and **Discontinued** (lineages the edition drops), when present.
 6. Read **Earlier periods**: "These end before *date*, so they will raise coverage warnings once the edition is accepted."
 
 What you see: the drawer's estimate, "over *inventory*, using the activity data already recorded", is the one to weigh; the table's comes from your last completed run.
@@ -48,6 +48,7 @@ What you see: "Declined *edition*. Nothing changed." The row reads **Declined** 
 
 ## When acceptance is refused
 
-- The date falls inside a frozen, final or published period: "A reported period keeps the factors it reported with, so this edition cannot be accepted until that inventory is reopened. Declining stays available."
+- The date falls inside a frozen or final period: "A reported period keeps the factors it reported with, so this edition cannot be accepted until that inventory is reopened. Declining stays available."
+- The date falls inside a published period while the platform setting **Editions inside a published period** is "Blocked (default)": the drawer says the edition "cannot be accepted while the platform blocks editions inside a published period." Under "Allowed: published runs keep their factors" a published period does not block, and its report keeps its figures.
 - Support access: "Support access cannot adopt an edition for an organization."
 - The publisher withdrew it: the row reads **Withdrawn by the publisher**, and "there is nothing to decide."

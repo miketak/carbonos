@@ -2,6 +2,7 @@ package com.carbonos.platform.internal;
 
 import java.time.Instant;
 
+import com.carbonos.platform.PlatformSettings.EditionsInPublishedPeriods;
 import com.carbonos.platform.PlatformSettings.OrganizationCreation;
 
 import jakarta.persistence.Column;
@@ -32,6 +33,10 @@ public class PlatformSettingsRow {
 	@Column(name = "organization_creation", nullable = false, length = 20)
 	private OrganizationCreation organizationCreation;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "editions_in_published_periods", nullable = false, length = 20)
+	private EditionsInPublishedPeriods editionsInPublishedPeriods;
+
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
@@ -49,6 +54,10 @@ public class PlatformSettingsRow {
 		return organizationCreation;
 	}
 
+	public EditionsInPublishedPeriods getEditionsInPublishedPeriods() {
+		return editionsInPublishedPeriods;
+	}
+
 	public Instant getUpdatedAt() {
 		return updatedAt;
 	}
@@ -57,9 +66,11 @@ public class PlatformSettingsRow {
 		return updatedBy;
 	}
 
-	void apply(int windowHours, OrganizationCreation creation, String actorEmail, Instant now) {
+	void apply(int windowHours, OrganizationCreation creation, EditionsInPublishedPeriods editions, String actorEmail,
+			Instant now) {
 		this.supportAccessWindowHours = windowHours;
 		this.organizationCreation = creation;
+		this.editionsInPublishedPeriods = editions;
 		this.updatedBy = actorEmail;
 		this.updatedAt = now;
 	}

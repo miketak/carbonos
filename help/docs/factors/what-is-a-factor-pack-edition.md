@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: What a factor pack and its editions are, what the applies-from date does to a period already reported, and how lineage and approval keep every figure traceable.
 ---
 
@@ -12,7 +12,7 @@ A factor pack is the family of editions of one published table of emission facto
 
 ## What does the applies-from date do?
 
-Importing an edition adds its factors with their citations. The date matters once you hold an earlier edition: "A later edition never overwrites a figure: it closes the version you hold and cuts a new one from the edition's applies-from date, so a period you have already reported keeps the factors it reported with." That is what a vintage means, and an edition whose date falls inside a frozen, final or published period cannot be imported until that inventory is reopened.
+Importing an edition adds its factors with their citations. The date matters once you hold an earlier edition: "A later edition never overwrites a figure: it closes the version you hold and cuts a new one from the edition's applies-from date, so a period you have already reported keeps the factors it reported with." That is what a vintage means, and an edition whose date falls inside a frozen or final period cannot be imported until that inventory is reopened. A published period blocks it too unless the platform allows editions there; its report keeps its figures either way.
 
 ## What is a lineage?
 

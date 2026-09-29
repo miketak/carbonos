@@ -21,6 +21,7 @@ import { getPlatformSettings, listPlatformSettingChanges, updatePlatformSettings
 const settings = {
   supportAccessWindowHours: 24,
   organizationCreation: 'EVERYONE' as const,
+  editionsInPublishedPeriods: 'BLOCKED' as const,
   updatedAt: '2026-09-14T09:00:00Z',
   updatedBy: null,
 }
@@ -60,9 +61,60 @@ test('saving sends the typed policy with its reason', async () => {
     expect(updatePlatformSettings).toHaveBeenCalledWith({
       supportAccessWindowHours: 2,
       organizationCreation: 'ADMINISTRATORS',
+      editionsInPublishedPeriods: 'BLOCKED',
       reason: 'tightening after the review',
     }),
   )
+})
+
+test('editions inside a published period are blocked by default and can be allowed', async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  const control = await screen.findByLabelText(/editions inside a published period/i)
+  expect(control).toHaveValue('BLOCKED')
+  expect(screen.getByRole('option', { name: 'Blocked (default)' })).toBeInTheDocument()
+  expect(
+    screen.getByText(/published runs keep the factors they reported with either way/i),
+  ).toBeInTheDocument()
+  expect(screen.getByText(/frozen and final periods always block/i)).toBeInTheDocument()
+
+  await user.selectOptions(control, 'ALLOWED')
+  expect(
+    screen.getByRole('option', { name: 'Allowed: published runs keep their factors' }),
+  ).toHaveProperty('selected', true)
+  await user.type(screen.getByLabelText(/reason for this change/i), 'owner decision of 2026-09-29')
+  await user.click(screen.getByRole('button', { name: /save settings/i }))
+
+  await waitFor(() =>
+    expect(updatePlatformSettings).toHaveBeenCalledWith({
+      supportAccessWindowHours: 24,
+      organizationCreation: 'EVERYONE',
+      editionsInPublishedPeriods: 'ALLOWED',
+      reason: 'owner decision of 2026-09-29',
+    }),
+  )
+})
+
+test('a change to the edition setting is listed under its own name', async () => {
+  vi.mocked(listPlatformSettingChanges).mockResolvedValue([
+    {
+      setting: 'editionsInPublishedPeriods',
+      oldValue: 'BLOCKED',
+      newValue: 'ALLOWED',
+      reason: 'owner decision of 2026-09-29',
+      actorEmail: 'ama@ecoriv.com',
+      changedAt: '2026-09-29T10:00:00Z',
+    },
+  ])
+  renderPage()
+
+  const row = (
+    await screen.findByRole('cell', { name: 'Editions inside a published period' })
+  ).closest('tr') as HTMLElement
+  expect(row).toHaveTextContent('BLOCKED')
+  expect(row).toHaveTextContent('ALLOWED')
+  expect(row).toHaveTextContent(/owner decision of 2026-09-29/i)
 })
 
 test('a refused window shows under its own field', async () => {

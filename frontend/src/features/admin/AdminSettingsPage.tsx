@@ -11,11 +11,12 @@ import {
   usePlatformSettingsQuery,
   useUpdatePlatformSettings,
 } from './useSettings'
-import type { OrganizationCreation, PlatformSettings } from './api'
+import type { EditionsInPublishedPeriods, OrganizationCreation, PlatformSettings } from './api'
 
 const settingNames: Record<string, string> = {
   supportAccessWindowHours: 'Support access window',
   organizationCreation: 'Who may create an organization',
+  editionsInPublishedPeriods: 'Editions inside a published period',
 }
 
 function when(iso: string): string {
@@ -23,10 +24,11 @@ function when(iso: string): string {
 }
 
 /**
- * The deployment's own policy (spec 01.5).
+ * The deployment's own policy (specs 01.5 and 02.6).
  *
- * Both settings govern access to clients' pre-publication inventories, so a
- * change needs a reason and is kept. Without that record an administrator
+ * Two settings govern access to clients' pre-publication inventories and the
+ * third decides whether a published period blocks a factor pack edition, so
+ * a change needs a reason and is kept. Without that record an administrator
  * could widen the support-access window, assume access, and narrow it again,
  * leaving no evidence of a self-serving change to a privileged-access
  * control.
@@ -67,6 +69,9 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
 
   const [windowHours, setWindowHours] = useState(String(settings.supportAccessWindowHours))
   const [creation, setCreation] = useState<OrganizationCreation>(settings.organizationCreation)
+  const [editions, setEditions] = useState<EditionsInPublishedPeriods>(
+    settings.editionsInPublishedPeriods,
+  )
   const [reason, setReason] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [refusal, setRefusal] = useState<string | undefined>()
@@ -79,6 +84,7 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
       {
         supportAccessWindowHours: Number(windowHours),
         organizationCreation: creation,
+        editionsInPublishedPeriods: editions,
         reason,
       },
       {
@@ -101,8 +107,8 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
       <div className="mb-6">
         <h1 className="text-2xl">Platform settings</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Policy for the whole deployment. Both settings govern access to clients' inventories, so
-          every change is kept with its reason.
+          Policy for the whole deployment. These settings govern clients' inventories, so every
+          change is kept with its reason.
         </p>
       </div>
 
@@ -130,6 +136,17 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
           >
             <option value="EVERYONE">Everyone signed in</option>
             <option value="ADMINISTRATORS">Administrators only</option>
+          </SelectField>
+
+          <SelectField
+            label="Editions inside a published period"
+            value={editions}
+            onChange={(event) => setEditions(event.target.value as EditionsInPublishedPeriods)}
+            error={errors.editionsInPublishedPeriods}
+            hint="Whether an organization may import or accept a factor pack edition that applies from a date inside a published period. Published runs keep the factors they reported with either way. Frozen and final periods always block."
+          >
+            <option value="BLOCKED">Blocked (default)</option>
+            <option value="ALLOWED">Allowed: published runs keep their factors</option>
           </SelectField>
 
           <TextAreaField

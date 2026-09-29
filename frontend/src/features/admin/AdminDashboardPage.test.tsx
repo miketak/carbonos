@@ -52,6 +52,7 @@ beforeEach(() => {
   vi.mocked(getPlatformSettings).mockReset().mockResolvedValue({
     supportAccessWindowHours: 24,
     organizationCreation: 'EVERYONE',
+    editionsInPublishedPeriods: 'BLOCKED',
     updatedAt: '2026-09-14T00:00:00Z',
     updatedBy: null,
   })
@@ -157,6 +158,7 @@ test('the policy in force is printed with a way to change it', async () => {
   vi.mocked(getPlatformSettings).mockResolvedValue({
     supportAccessWindowHours: 2,
     organizationCreation: 'ADMINISTRATORS',
+    editionsInPublishedPeriods: 'BLOCKED',
     updatedAt: '2026-09-14T00:00:00Z',
     updatedBy: 'ama@ecoriv.com',
   })

@@ -42,10 +42,6 @@ import jakarta.persistence.EntityManager;
 @Transactional
 public class FactorPackImportService {
 
-	/** The inventories whose period is no longer the organization's to change (spec 05.1). */
-	private static final List<InventoryStatus> LOCKED = List.of(InventoryStatus.FROZEN, InventoryStatus.FINAL,
-			InventoryStatus.PUBLISHED);
-
 	/**
 	 * Rows applied between flushes. Importing defra-2026 into an organization
 	 * that already holds it walks 1,868 lineages in one request, so the work is
@@ -113,13 +109,15 @@ public class FactorPackImportService {
 
 	private final GhgAccess access;
 
+	private final EditionLock editionLock;
+
 	private final EntityManager entityManager;
 
 	FactorPackImportService(OrganizationRepository organizations, EmissionFactorRepository emissionFactors,
 			InventoryRepository inventories, InventoryAssignmentRepository assignments,
 			UpstreamRuleRepository upstreamRules, GhgAuditEventRepository auditEvents,
 			FactorPackEditionRepository editions, FactorPacks factorPacks, UnitConverter units, GhgAccess access,
-			EntityManager entityManager) {
+			EditionLock editionLock, EntityManager entityManager) {
 		this.organizations = organizations;
 		this.emissionFactors = emissionFactors;
 		this.inventories = inventories;
@@ -130,6 +128,7 @@ public class FactorPackImportService {
 		this.factorPacks = factorPacks;
 		this.units = units;
 		this.access = access;
+		this.editionLock = editionLock;
 		this.entityManager = entityManager;
 	}
 
@@ -437,18 +436,21 @@ public class FactorPackImportService {
 
 	/**
 	 * Spec 02.6 rule 1. A reported period keeps the factors it reported with, so
-	 * an applies-from date inside a FROZEN, FINAL or PUBLISHED period refuses the
-	 * whole import and writes nothing. A frozen or final inventory can be
+	 * an applies-from date inside a FROZEN or FINAL period refuses the whole
+	 * import and writes nothing, and so does one inside a PUBLISHED period
+	 * while the platform setting Editions inside a published period is
+	 * BLOCKED (amended 2026-09-29). A frozen or final inventory can be
 	 * reopened; a published one is on record and cannot, so the refusal names
-	 * only the exit that exists.
+	 * only the exits that exist.
 	 */
 	private void refuseWhileAPeriodIsLocked(UUID organizationId, String editionId, LocalDate appliesFrom) {
 		for (var inventory : inventories.findAllByOrganizationIdAndStatusInOrderByPeriodStartAsc(organizationId,
-				LOCKED)) {
+				editionLock.lockedStatuses())) {
 			if (!appliesFrom.isBefore(inventory.getPeriodStart()) && !appliesFrom.isAfter(inventory.getPeriodEnd())) {
 				var exit = inventory.getStatus() == InventoryStatus.PUBLISHED
-						? "The edition cannot be imported while that period is on record; choose an edition that "
-								+ "applies from a later date."
+						? "The edition cannot be imported while that period is on record and the platform setting "
+								+ "Editions inside a published period is Blocked; choose an edition that applies from a "
+								+ "later date, or ask a platform administrator about the setting."
 						: "Reopen that inventory, or import the edition into a later period.";
 				throw new GhgRuleViolationException("'" + editionId + "' applies from " + appliesFrom
 						+ ", which falls inside '" + inventory.getName() + "' (" + inventory.getPeriodStart() + " to "

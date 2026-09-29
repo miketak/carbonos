@@ -39,6 +39,7 @@ vi.mock('./api', () => ({
   getPlatformSettings: vi.fn().mockResolvedValue({
     supportAccessWindowHours: 24,
     organizationCreation: 'EVERYONE',
+    editionsInPublishedPeriods: 'BLOCKED',
     updatedAt: '2026-09-14T00:00:00Z',
     updatedBy: null,
   }),

@@ -38,7 +38,7 @@ class PlatformSettingsController {
 	PlatformSettingsResponse update(@RequestBody PlatformSettingsRequest body,
 			@AuthenticationPrincipal AuthenticatedUser actor) {
 		var update = new PlatformSettingsService.Update(body.supportAccessWindowHours(), body.organizationCreation(),
-				body.reason());
+				body.editionsInPublishedPeriods(), body.reason());
 		return PlatformSettingsResponse.from(settings.update(update, actor.getId(), actor.getUsername()));
 	}
 

@@ -230,6 +230,26 @@ test('a locked period is named in place, and the refusal is rendered where the d
   expect(await screen.findByRole('alert')).toHaveTextContent('which falls inside')
 })
 
+test('a published period names the platform setting rather than a reopen that cannot happen', async () => {
+  vi.mocked(getFactorPackDiff).mockResolvedValue({
+    ...diff,
+    lockedPeriod: {
+      inventoryId: 'inv-2027',
+      name: '2027',
+      periodStart: '2027-01-01',
+      periodEnd: '2027-12-31',
+      status: 'PUBLISHED',
+    },
+  })
+  renderDrawer()
+
+  const banner = (await screen.findByText(/falls inside 2027/)).closest('p') as HTMLElement
+  expect(banner).toHaveTextContent(
+    'cannot be accepted while the platform blocks editions inside a published period. Declining stays available.',
+  )
+  expect(banner).not.toHaveTextContent(/reopened/)
+})
+
 test('a GWP basis change is shown as a banner, because chapter 1 allows one basis', async () => {
   vi.mocked(getFactorPackDiff).mockResolvedValue({
     ...diff,

@@ -28,7 +28,8 @@ public class PlatformSettingsService implements PlatformSettings {
 	static final int MIN_REASON_LENGTH = 10;
 
 	/** What an administrator changes in one request. */
-	public record Update(Integer supportAccessWindowHours, OrganizationCreation organizationCreation, String reason) {
+	public record Update(Integer supportAccessWindowHours, OrganizationCreation organizationCreation,
+			EditionsInPublishedPeriods editionsInPublishedPeriods, String reason) {
 	}
 
 	private final PlatformSettingsRepository settings;
@@ -48,6 +49,11 @@ public class PlatformSettingsService implements PlatformSettings {
 	@Override
 	public OrganizationCreation organizationCreation() {
 		return row().getOrganizationCreation();
+	}
+
+	@Override
+	public EditionsInPublishedPeriods editionsInPublishedPeriods() {
+		return row().getEditionsInPublishedPeriods();
 	}
 
 	public PlatformSettingsRow current() {
@@ -70,13 +76,16 @@ public class PlatformSettingsService implements PlatformSettings {
 				: update.supportAccessWindowHours();
 		var creation = update.organizationCreation() == null ? row.getOrganizationCreation()
 				: update.organizationCreation();
+		var editions = update.editionsInPublishedPeriods() == null ? row.getEditionsInPublishedPeriods()
+				: update.editionsInPublishedPeriods();
 		if (window < MIN_WINDOW_HOURS || window > MAX_WINDOW_HOURS) {
 			throw new PlatformFieldException("supportAccessWindowHours", "Support access lasts between "
 					+ MIN_WINDOW_HOURS + " and " + MAX_WINDOW_HOURS + " hours.");
 		}
 		var windowMoved = window != row.getSupportAccessWindowHours();
 		var creationMoved = creation != row.getOrganizationCreation();
-		if (!windowMoved && !creationMoved) {
+		var editionsMoved = editions != row.getEditionsInPublishedPeriods();
+		if (!windowMoved && !creationMoved && !editionsMoved) {
 			throw new PlatformFieldException("reason", "Nothing changed, so there is nothing to record.");
 		}
 		var reason = update.reason() == null ? "" : update.reason().trim();
@@ -94,7 +103,11 @@ public class PlatformSettingsService implements PlatformSettings {
 			changes.save(new PlatformSettingChange(PlatformSettingChange.KEY_ORGANIZATION_CREATION,
 					row.getOrganizationCreation().name(), creation.name(), reason, actorId, actorEmail, now));
 		}
-		row.apply(window, creation, actorEmail, now);
+		if (editionsMoved) {
+			changes.save(new PlatformSettingChange(PlatformSettingChange.KEY_EDITIONS_IN_PUBLISHED_PERIODS,
+					row.getEditionsInPublishedPeriods().name(), editions.name(), reason, actorId, actorEmail, now));
+		}
+		row.apply(window, creation, editions, actorEmail, now);
 		return settings.save(row);
 	}
 

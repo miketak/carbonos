@@ -207,8 +207,11 @@ export function AdoptionDiffDrawer({
               {diff.appliesFrom} falls inside {diff.lockedPeriod.name} (
               {formatPeriod(diff.lockedPeriod.periodStart, diff.lockedPeriod.periodEnd)}), which is{' '}
               {diff.lockedPeriod.status.toLowerCase()}. A reported period keeps the factors it
-              reported with, so this edition cannot be accepted until that inventory is reopened.
-              Declining stays available.
+              reported with, so this edition cannot be accepted{' '}
+              {diff.lockedPeriod.status === 'PUBLISHED'
+                ? 'while the platform blocks editions inside a published period'
+                : 'until that inventory is reopened'}
+              . Declining stays available.
             </p>
           )}
 
@@ -306,7 +309,7 @@ export function AdoptionDiffDrawer({
           <ApartGroup
             heading="Blocked"
             rows={diff.blocked}
-            note="Used by a period that is frozen, final or published, which keeps the factors it reported with."
+            note="Used by a locked period, which keeps the factors it reported with. Frozen and final periods always lock; a published one does unless the platform allows editions inside it."
           />
           <ApartGroup
             heading="Discontinued"

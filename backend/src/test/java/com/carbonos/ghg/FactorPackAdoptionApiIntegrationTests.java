@@ -84,6 +84,9 @@ class FactorPackAdoptionApiIntegrationTests {
 	FactorPackFamilyRepository families;
 
 	@Autowired
+	org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+	@Autowired
 	FactorPackEditionRepository editions;
 
 	@Autowired
@@ -154,6 +157,8 @@ class FactorPackAdoptionApiIntegrationTests {
 	@BeforeEach
 	@AfterEach
 	void reset() {
+		// spec 02.6 rule 1: the platform setting is one row for the deployment, so every test starts on the default
+		jdbc.update("UPDATE platform_settings SET editions_in_published_periods = 'BLOCKED' WHERE id = 1");
 		runs.deleteAll();
 		assignments.deleteAll();
 		baseYears.deleteAll();
@@ -819,6 +824,69 @@ class FactorPackAdoptionApiIntegrationTests {
 		// declining stays available, because declining writes no factor
 		mvc.perform(post("/api/ghg/factor-pack-notices/" + noticeId + "/decline").with(asOwner()).with(csrf())
 			.contentType("application/json").content("{}")).andExpect(status().isOk());
+	}
+
+	@Test
+	void acceptingIntoAPublishedPeriodFollowsThePlatformSetting() throws Exception {
+		var holder = holder();
+		// 2026-01-01 falls inside the 2026 period, which is reported and then published
+		var runId = reportOn(holder.draftInventoryId());
+		mvc.perform(post("/api/ghg/inventories/" + holder.draftInventoryId() + "/publish").with(asOwner())
+			.with(csrf())).andExpect(status().isOk());
+		var noticeId = noticeId(holder.orgId());
+
+		// Blocked, the default: the published period is in the way, as it always was
+		var blockedDiff = diff(noticeId);
+		assertThat(JsonPath.<List<String>>read(blockedDiff, "$.blocked[*].code")).containsExactly("ADOPT:diesel");
+		assertThat(JsonPath.<String>read(blockedDiff, "$.blocked[0].reason")).contains("frozen, final or published");
+		assertThat(JsonPath.<String>read(blockedDiff, "$.lockedPeriod.status")).isEqualTo("PUBLISHED");
+		accept(noticeId, "VINTAGE_PROGRESSION", "The 2027 tables.", asOwner()).andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers
+				.containsString("the platform setting Editions inside a published period is Blocked")));
+		assertThat(factorValues(holder.orgId())).containsEntry("ADOPT:diesel", new BigDecimal("2.660000"));
+
+		// Allowed: the published period no longer blocks, and nothing it reported moves
+		jdbc.update("UPDATE platform_settings SET editions_in_published_periods = 'ALLOWED' WHERE id = 1");
+		var allowedDiff = diff(noticeId);
+		assertThat(JsonPath.<List<String>>read(allowedDiff, "$.blocked[*].code")).isEmpty();
+		assertThat(JsonPath.<Object>read(allowedDiff, "$.lockedPeriod")).isNull();
+		accept(noticeId, "VINTAGE_PROGRESSION", "The 2027 tables.", asOwner()).andExpect(status().isOk());
+		assertThat(notices.findById(UUID.fromString(noticeId)).orElseThrow().getStatus())
+			.isEqualTo(com.carbonos.ghg.internal.FactorPackNotice.Status.ACCEPTED);
+		assertThat(factorValues(holder.orgId())).containsEntry("ADOPT:diesel", new BigDecimal("2.800000"));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asOwner()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.factors[0].kgCo2ePerUnit").value(2.66));
+	}
+
+	@Test
+	void frozenAndFinalPeriodsStillBlockAcceptanceUnderAllowed() throws Exception {
+		var holder = holder();
+		jdbc.update("UPDATE platform_settings SET editions_in_published_periods = 'ALLOWED' WHERE id = 1");
+		var noticeId = noticeId(holder.orgId());
+
+		// FROZEN: it can be reopened, so it still blocks
+		mvc.perform(post("/api/ghg/inventories/" + holder.draftInventoryId() + "/freeze").with(asOwner())
+			.with(csrf())).andExpect(status().isOk());
+		assertThat(JsonPath.<List<String>>read(diff(noticeId), "$.blocked[*].code")).containsExactly("ADOPT:diesel");
+		assertThat(JsonPath.<String>read(diff(noticeId), "$.blocked[0].reason")).contains("frozen or final")
+			.doesNotContain("published");
+		accept(noticeId, "VINTAGE_PROGRESSION", "The 2027 tables.", asOwner()).andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("FROZEN")));
+
+		// FINAL: a final run's factors must not shift under it
+		var runId = JsonPath.<String>read(body(mvc
+			.perform(post("/api/ghg/inventories/" + holder.draftInventoryId() + "/runs").with(asOwner()).with(csrf())
+				.contentType("application/json").content("""
+						{"label": "Run"}"""))
+			.andExpect(status().isCreated())), "$.run.id");
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asOwner()).with(csrf())
+			.contentType("application/json").content("{}")).andExpect(status().isOk());
+		accept(noticeId, "VINTAGE_PROGRESSION", "The 2027 tables.", asOwner()).andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("FINAL")));
+		assertThat(notices.findById(UUID.fromString(noticeId)).orElseThrow().getStatus())
+			.isEqualTo(com.carbonos.ghg.internal.FactorPackNotice.Status.OPEN);
 	}
 
 	@Test
