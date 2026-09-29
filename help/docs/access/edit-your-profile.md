@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Open the account menu, change the display name CarbonOS shows for you, add a profile picture, and see what the menu offers and what the profile page does not change.
 role: Anyone
 minutes: 2
@@ -10,7 +10,7 @@ minutes: 2
 
 Your profile is the display name and picture CarbonOS shows for your account. Edit it when your name changes, or when you want a picture where your initial is now.
 
-<!-- sources: tasks/account/request-access-and-set-your-password.md (verified 2026-09-27); spec 01.6; AccountMenu.tsx (the menu's items); ProfilePage.tsx (labels, hint, toasts); useProfile.ts; OrganizationMember.java (the name recorded on a membership); ProfileController.java and UserAdminController.java (no password change endpoint) -->
+<!-- sources: tasks/account/request-access-and-set-your-password.md (verified 2026-09-27); spec 01.6; AccountMenu.tsx (the menu's items); ProfilePage.tsx (labels, hint, toasts); useProfile.ts; GhgService.java (the member list reads the account's current name; OrganizationMember.java keeps the name recorded on a membership); ProfileController.java and UserAdminController.java (no password change endpoint) -->
 
 ## Before you start
 
@@ -29,7 +29,7 @@ What you see: the page **Edit profile** with your picture or initial, your **Ema
 1. Fill **Display name** with the name you want colleagues to read.
 2. Click **Save changes**.
 
-What you see: the toast "Profile updated". The new name appears in the account menu at once. An organization's history keeps recording your acts under your email, which never changes, and the **Members** card of an organization shows the name recorded when you were added to it.
+What you see: the toast "Profile updated". The new name appears in the account menu at once. An organization's history keeps recording your acts under your email, which never changes, and the **Members** card of each organization shows the new name.
 
 ## Add or change your picture
 

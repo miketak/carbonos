@@ -39,8 +39,9 @@ class MemberController {
 	}
 
 	record MemberResponse(UUID id, UUID userId, String email, String displayName, OrgRole role, Instant createdAt) {
-		static MemberResponse from(OrganizationMember member) {
-			return new MemberResponse(member.getId(), member.getUserId(), member.getEmail(), member.getDisplayName(),
+		/** With the account's current display name (spec 01.2), not the one recorded when the member was added. */
+		static MemberResponse from(OrganizationMember member, String displayName) {
+			return new MemberResponse(member.getId(), member.getUserId(), member.getEmail(), displayName,
 					member.getRole(), member.getCreatedAt());
 		}
 	}
@@ -53,7 +54,9 @@ class MemberController {
 
 	@GetMapping
 	List<MemberResponse> list(@PathVariable UUID organizationId) {
-		return ghgService.listMembers(organizationId).stream().map(MemberResponse::from).toList();
+		var members = ghgService.listMembers(organizationId);
+		var names = ghgService.currentDisplayNames(members);
+		return members.stream().map(member -> MemberResponse.from(member, names.get(member.getUserId()))).toList();
 	}
 
 	@PostMapping
@@ -63,13 +66,17 @@ class MemberController {
 			.path("/api/ghg/organizations/{organizationId}/members/{id}")
 			.buildAndExpand(organizationId, member.getId())
 			.toUri();
-		return ResponseEntity.created(location).body(MemberResponse.from(member));
+		return ResponseEntity.created(location).body(current(member));
 	}
 
 	@PutMapping("/{memberId}")
 	MemberResponse changeRole(@PathVariable UUID organizationId, @PathVariable UUID memberId,
 			@Valid @RequestBody RoleRequest body) {
-		return MemberResponse.from(ghgService.changeMemberRole(organizationId, memberId, body.role()));
+		return current(ghgService.changeMemberRole(organizationId, memberId, body.role()));
+	}
+
+	private MemberResponse current(OrganizationMember member) {
+		return MemberResponse.from(member, ghgService.currentDisplayNames(List.of(member)).get(member.getUserId()));
 	}
 
 	@DeleteMapping("/{memberId}")

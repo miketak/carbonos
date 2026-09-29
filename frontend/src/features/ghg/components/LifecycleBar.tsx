@@ -50,6 +50,16 @@ export function describeFreezeBlockers(blockers: FreezeBlocker[]): string | null
   return `${n} record${plural} block${n === 1 ? 's' : ''} the freeze; classify, justify or exclude ${n === 1 ? 'it' : 'them'} first`
 }
 
+/**
+ * The boundary finding the freeze itself clears (spec 05.1). The dialog that
+ * asks to freeze leaves it out, or every draft would read as one error.
+ */
+const DRAFT_FINDING = 'The inventory is a draft. Freeze it to enable a run.'
+
+function clearedByFreeze(gate: GateResult): GateResult {
+  return { ...gate, findings: gate.findings.filter((finding) => finding.message !== DRAFT_FINDING) }
+}
+
 /** "2 errors, 1 warning" for a gate, or "passes". */
 function summarizeGate(gate: GateResult): string {
   const errors = gate.findings.filter((finding) => finding.severity === 'ERROR').length
@@ -215,14 +225,14 @@ export function LifecycleBar({
           {/* spec 05.5: the gate summary first, then the sentence that says what the freeze does */}
           {report && (
             <ul aria-label="Gate summary" className="mb-3 flex flex-col gap-0.5 text-sm">
-              {report.gates.map((gate) => (
+              {report.gates.map(clearedByFreeze).map((gate) => (
                 <li key={gate.gate} className="flex justify-between gap-3">
                   <span>{gateLabels[gate.gate]}</span>
                   <span
                     className={
-                      gate.status === 'BLOCKED'
+                      gate.findings.some((finding) => finding.severity === 'ERROR')
                         ? 'text-red-600'
-                        : gate.status === 'WARNINGS'
+                        : gate.findings.some((finding) => finding.severity === 'WARNING')
                           ? 'text-amber-600'
                           : 'text-ink-muted'
                     }

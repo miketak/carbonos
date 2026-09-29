@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Take an owner's rights in an organization for a support case, with your reason on its record, work under the banner, and end the grant when the case is done.
 role: Administrator
 minutes: 5
@@ -31,7 +31,7 @@ What you see: "Support access to *organization* assumed." The row reads "Until *
 
 Click **Open**. The organization appears under your **GHG accounting**, and every page in it carries the banner "You are in *organization* (ORG-*NNNN*) under support access until *moment*. Every act is recorded in this organization's history."
 
-A grant is an owner's rights with three things held back: "It never carries deleting the organization, changing its membership, or adopting a factor pack edition." The sidebar has no **Settings** entry, and **Accept** on an update notice answers "Support access cannot adopt an edition for an organization."
+A grant is an owner's rights with three things held back: "It never carries deleting the organization, changing its membership, or adopting a factor pack edition." The sidebar has no **Settings** entry, the organization's details cannot be edited, and **Accept** on an update notice answers "Support access cannot adopt an edition for an organization."
 
 ## End the grant
 

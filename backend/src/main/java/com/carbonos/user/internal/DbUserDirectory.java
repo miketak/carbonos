@@ -1,5 +1,7 @@
 package com.carbonos.user.internal;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,6 +30,12 @@ class DbUserDirectory implements UserDirectory {
 	@Transactional(readOnly = true)
 	public Optional<UserSummary> findById(UUID id) {
 		return users.findById(id).map(DbUserDirectory::summary);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<UserSummary> findAllByIds(Collection<UUID> ids) {
+		return ids.isEmpty() ? List.of() : users.findAllById(ids).stream().map(DbUserDirectory::summary).toList();
 	}
 
 	private static UserSummary summary(User user) {

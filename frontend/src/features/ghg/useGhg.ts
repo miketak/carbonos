@@ -323,6 +323,8 @@ function useMemberMutation<TArgs, TResult>(
     mutationFn,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: membersKey(orgId) })
+      // spec 01.3: every membership change is a history row, so the card refreshes with the list
+      void queryClient.invalidateQueries({ queryKey: organizationEventsKey(orgId) })
     },
   })
 }
@@ -676,6 +678,8 @@ export function useUpdateOrganization() {
       void queryClient.invalidateQueries({ queryKey: organizationsKey })
       void queryClient.invalidateQueries({ queryKey: organizationKey(id) })
       void queryClient.invalidateQueries({ queryKey: entitiesKey(id) })
+      // spec 01.3: a rename is a history row too
+      void queryClient.invalidateQueries({ queryKey: organizationEventsKey(id) })
     },
   })
 }

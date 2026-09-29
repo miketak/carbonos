@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Change the organization's name, address or contact on Settings, read the history of what has been done to the organization itself, and delete an organization with a reason.
 role: Owner
 minutes: 4
@@ -40,7 +40,7 @@ The **History** card at the foot of the page lists every act that touched the or
 | Support access assumed | The administrator's reason |
 | Support access ended, Support access expired | How the grant ended |
 
-The card does not refresh after **Add member**; reload the page to see the row. An inventory's own acts are in the **History** card on its **Runs** tab, and a record's in that record's **History**.
+An inventory's own acts are in the **History** card on its **Runs** tab, and a record's in that record's **History**.
 
 ## Delete the organization
 

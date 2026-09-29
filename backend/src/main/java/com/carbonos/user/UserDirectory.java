@@ -1,5 +1,7 @@
 package com.carbonos.user;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,4 +18,7 @@ public interface UserDirectory {
 	Optional<UserSummary> findByEmail(String email);
 
 	Optional<UserSummary> findById(UUID id);
+
+	/** The accounts among the ids that still exist, in no particular order; ids with no account are left out. */
+	List<UserSummary> findAllByIds(Collection<UUID> ids);
 }

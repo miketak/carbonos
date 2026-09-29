@@ -4,6 +4,18 @@ import { Skeleton } from '../../../components/Skeleton'
 import { useToast } from '../../../components/toast'
 import { refusalMessage } from '../../../lib/api'
 import { approachLabels, describeFreeze, exclusionLabels, relationshipShortLabels } from '../format'
+
+/**
+ * The reasons the system sets on its own (a record outside the period or the
+ * boundary, a removed record, a Montreal Protocol gas), never a choice for an
+ * entity or a facility left out by hand (spec 07.2).
+ */
+const AUTOMATIC_REASONS: ReadonlySet<string> = new Set([
+  'OUTSIDE_PERIOD',
+  'OUTSIDE_BOUNDARY',
+  'RECORD_REMOVED',
+  'OUTSIDE_SCOPES_NON_KYOTO',
+])
 import { mayWrite, WRITE_TOOLTIP } from '../roles'
 import type { MyRole } from '../roles'
 import {
@@ -394,7 +406,7 @@ function ExclusionControl({
       >
         <option value="">{exclusion ? 'Clear the reason' : 'Why is it left out?'}</option>
         {Object.entries(exclusionLabels)
-          .filter(([value]) => value !== 'OUTSIDE_PERIOD' && value !== 'OUTSIDE_BOUNDARY')
+          .filter(([value]) => !AUTOMATIC_REASONS.has(value))
           .map(([value, text]) => (
             <option key={value} value={value}>
               {text}

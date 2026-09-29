@@ -59,16 +59,30 @@ test('submits the create payload', async () => {
 
   await user.type(screen.getByLabelText(/email/i), 'kofi@ecoriv.com')
   await user.type(screen.getByLabelText(/display name/i), 'Kofi Mensah')
-  await user.type(screen.getByLabelText(/temporary password/i), 'temporary-1')
+  await user.type(screen.getByLabelText(/temporary password/i), 'temporary-12')
   await user.click(screen.getByRole('button', { name: /add user/i }))
 
   expect(createUser).toHaveBeenCalledWith({
     email: 'kofi@ecoriv.com',
     displayName: 'Kofi Mensah',
     role: 'MEMBER',
-    temporaryPassword: 'temporary-1',
+    temporaryPassword: 'temporary-12',
   })
   expect(onSaved).toHaveBeenCalledWith('Kofi Mensah added.')
+})
+
+test('the temporary password states the platform rule and asks for 12 characters', () => {
+  renderWithProviders(<UserFormModal onClose={vi.fn()} onSaved={vi.fn()} />)
+
+  const password = screen.getByLabelText(/temporary password/i)
+  expect(password).toHaveAttribute('minlength', '12')
+  expect(
+    screen.getByText(
+      'At least 12 characters, with a letter and a digit. Share it with the user out of band.',
+    ),
+  ).toBeInTheDocument()
+  // there is no password change, so the hint no longer promises one
+  expect(screen.queryByText(/change it later/)).toBeNull()
 })
 
 test('surfaces 422 field errors inline', async () => {
@@ -84,7 +98,7 @@ test('surfaces 422 field errors inline', async () => {
 
   await user.type(screen.getByLabelText(/email/i), 'not-an-email')
   await user.type(screen.getByLabelText(/display name/i), 'X')
-  await user.type(screen.getByLabelText(/temporary password/i), 'temporary-1')
+  await user.type(screen.getByLabelText(/temporary password/i), 'temporary-12')
   await user.click(screen.getByRole('button', { name: /add user/i }))
 
   expect(await screen.findByText(/well-formed email address/i)).toBeInTheDocument()

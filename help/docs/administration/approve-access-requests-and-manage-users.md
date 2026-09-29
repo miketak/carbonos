@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Decide the access requests waiting in the console, add an account directly with a temporary password, and deactivate or reactivate a user without losing their history.
 role: Administrator
 minutes: 6
@@ -28,7 +28,7 @@ What you see: "*Name* approved; setup email sent." or "*Name* denied." The reque
 
 1. Open **Users** and click **Add user**.
 2. Fill **Email** and **Display name**, and choose **Role**: "Member" or "Admin".
-3. Fill **Temporary password**: "Share it with the user out of band; they should change it later."
+3. Fill **Temporary password**: "At least 12 characters, with a letter and a digit. Share it with the user out of band."
 4. Click **Add user**.
 
 What you see: "*Name* added." The row reads the role, **Active** and the date under **Added**. No email is sent; the person signs in with the temporary password.

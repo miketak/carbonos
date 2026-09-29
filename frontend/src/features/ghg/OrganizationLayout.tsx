@@ -4,6 +4,7 @@ import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { AppHeader } from '../../components/AppHeader'
 import { organizationLabel } from '../../lib/organizationLabel'
+import { roleShortLabels } from './format'
 import { useSession } from '../auth/useSession'
 import { ReadOnlyBanner } from './components/ReadOnlyBanner'
 import { SupportAccessBanner } from './components/SupportAccessBanner'
@@ -149,6 +150,14 @@ export function OrganizationLayout() {
   // Support access never grants it, so the membership role is what decides, not `mayOwn`.
   const isOwner = organizationQuery.data?.myRole === 'OWNER'
   const visibleSections = sections.filter((section) => !section.ownerOnly || isOwner)
+  // spec 01.4: the reader's own role, said on every page; a support grant is named as one
+  const myRole = organizationQuery.data?.myRole ?? null
+  const roleLine =
+    myRole === null
+      ? null
+      : myRole === 'ADMIN'
+        ? 'Support access'
+        : `Your role: ${roleShortLabels[myRole]}`
 
   const sectionSlug = location.pathname.split('/')[4] ?? ''
   const activeIndex = visibleSections.findIndex(
@@ -241,7 +250,16 @@ export function OrganizationLayout() {
               ))}
             </nav>
 
-            <div className="hidden md:mt-auto md:block md:border-t md:border-teal/10 md:pt-3">
+            {roleLine && (
+              <p
+                className={`shrink-0 px-3 py-2 text-xs font-medium whitespace-nowrap text-ink-muted md:mt-auto ${
+                  collapsed ? 'md:hidden' : ''
+                }`}
+              >
+                {roleLine}
+              </p>
+            )}
+            <div className="hidden md:block md:border-t md:border-teal/10 md:pt-3">
               <Link
                 to="/app/ghg"
                 title={collapsed ? 'All organizations' : undefined}

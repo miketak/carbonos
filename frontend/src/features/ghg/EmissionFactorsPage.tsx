@@ -28,11 +28,13 @@ import {
   useImportFactorPack,
   useOrganizationQuery,
   useSetFactorApproval,
+  useUpdateEmissionFactor,
 } from './useGhg'
 import type {
   ActivityCategory,
   FactorPack,
   EmissionFactor,
+  EmissionFactorInput,
   FactorPackImport,
   FactorVersion,
   GhgScope,
@@ -137,6 +139,41 @@ function importNote(result: FactorPackImport): string {
   return note + skippedNote(result.skippedUnits)
 }
 
+/**
+ * A factor's facts as the update endpoint wants them, so an edit of one field
+ * (the validity end, for a retirement) sends the rest back unchanged.
+ */
+function factorInput(factor: EmissionFactor): EmissionFactorInput {
+  return {
+    name: factor.name,
+    defaultScope: factor.defaultScope,
+    defaultCategory: factor.defaultCategory,
+    scopeAgnostic: factor.scopeAgnostic,
+    unit: factor.unit,
+    kgCo2ePerUnit: factor.kgCo2ePerUnit,
+    co2KgPerUnit: factor.gases.co2,
+    ch4KgPerUnit: factor.gases.ch4,
+    ch4Fossil: factor.ch4Fossil,
+    n2oKgPerUnit: factor.gases.n2o,
+    hfcsKgPerUnit: factor.gases.hfcsKg,
+    pfcsKgPerUnit: factor.gases.pfcsKg,
+    sf6KgPerUnit: factor.gases.sf6,
+    nf3KgPerUnit: factor.gases.nf3,
+    biogenicCo2KgPerUnit: factor.biogenicCo2KgPerUnit,
+    blendComposition: factor.blendComposition ?? undefined,
+    blendGwpSource: factor.blendGwpSource ?? undefined,
+    source: factor.source,
+    sourceUrl: factor.sourceUrl ?? undefined,
+    publicationYear: factor.publicationYear ?? undefined,
+    dataYear: factor.dataYear ?? undefined,
+    validFrom: factor.validFrom ?? undefined,
+    validTo: factor.validTo ?? undefined,
+    note: factor.note ?? undefined,
+    approved: factor.approved,
+    reportingBasis: factor.reportingBasis,
+  }
+}
+
 /** "defra-2026, from 2026-01-01 to 2026-12-31": one version of a lineage (spec 02.6). */
 function versionLabel(version: FactorVersion): string {
   const window =
@@ -151,12 +188,14 @@ function FactorTable({
   editable,
   myRole,
   onApprove,
+  onRetire,
   onDelete,
 }: {
   factors: EmissionFactor[]
   editable: boolean
   myRole?: Organization['myRole']
   onApprove?: (factor: EmissionFactor, approved: boolean) => void
+  onRetire?: (factor: EmissionFactor) => void
   onDelete?: (factor: EmissionFactor) => void
 }) {
   return (
@@ -291,8 +330,24 @@ function FactorTable({
                 >
                   {factor.approved ? 'Unapprove' : 'Approve'}
                 </RoleButton>
-                {/* spec 02.6: a pack-derived factor is never deleted; its versions are the record */}
-                {factor.packCode === null ? (
+                {/* spec 02.6: a factor leaves service by its validity end; a pack-derived one is
+                    never deleted, its versions being the record of what was calculated with */}
+                <RoleButton
+                  allowed={mayWrite(myRole)}
+                  tooltip={WRITE_TOOLTIP}
+                  variant="ghost"
+                  className="px-2 py-1 text-xs"
+                  aria-label={`Retire factor ${factor.name}`}
+                  title={
+                    factor.packCode === null
+                      ? undefined
+                      : 'From a factor pack. Its versions are the record of what was calculated with, so it retires by its validity end instead of being deleted.'
+                  }
+                  onClick={() => onRetire?.(factor)}
+                >
+                  Retire…
+                </RoleButton>
+                {factor.packCode === null && (
                   <RoleButton
                     allowed={mayWrite(myRole)}
                     tooltip={WRITE_TOOLTIP}
@@ -303,13 +358,6 @@ function FactorTable({
                   >
                     Delete
                   </RoleButton>
-                ) : (
-                  <span
-                    className="px-2 py-1 text-xs text-ink-muted"
-                    title="From a factor pack. Its versions are the record of what was calculated with, so it retires by its validity end instead of being deleted."
-                  >
-                    Retire, not delete
-                  </span>
                 )}
               </td>
             )}
@@ -335,6 +383,8 @@ export function EmissionFactorsPage() {
   const remove = useDeleteEmissionFactor(organizationId)
   const toast = useToast()
   const [adding, setAdding] = useState(false)
+  // spec 02.6: the factor whose validity end is being set, if any
+  const [retiring, setRetiring] = useState<EmissionFactor | null>(null)
   // spec 02.8: the pack whose factors are open for reading, if any
   const [viewing, setViewing] = useState<FactorPack | null>(null)
   // FU-03: an imported edition can be thousands of rows, so the search and the filters are
@@ -541,6 +591,7 @@ export function EmissionFactorsPage() {
             editable
             myRole={myRole}
             onApprove={onApprove}
+            onRetire={setRetiring}
             onDelete={onDelete}
           />
         )}
@@ -581,6 +632,19 @@ export function EmissionFactorsPage() {
         />
       )}
 
+      {retiring && (
+        <RetireFactorModal
+          organizationId={organizationId}
+          factor={retiring}
+          myRole={myRole}
+          onClose={() => setRetiring(null)}
+          onSaved={(validTo) => {
+            setRetiring(null)
+            toast(`${retiring.name} retired: valid to ${validTo}.`)
+          }}
+        />
+      )}
+
       {viewing && (
         <PackRowsDrawer
           organizationId={organizationId}
@@ -589,6 +653,79 @@ export function EmissionFactorsPage() {
         />
       )}
     </section>
+  )
+}
+
+/**
+ * Sets a factor's validity end (spec 02.6): how a factor leaves service, whether
+ * entered by hand or delivered by a pack, since the runs that used it keep it as
+ * their record. The rest of the factor goes back to the endpoint unchanged.
+ */
+function RetireFactorModal({
+  organizationId,
+  factor,
+  myRole,
+  onClose,
+  onSaved,
+}: {
+  organizationId: string
+  factor: EmissionFactor
+  myRole: Organization['myRole']
+  onClose: () => void
+  onSaved: (validTo: string) => void
+}) {
+  const update = useUpdateEmissionFactor(organizationId)
+  const [validTo, setValidTo] = useState(factor.validTo ?? '')
+  const [missing, setMissing] = useState(false)
+  const errors = fieldErrors(update.error)
+  const generalError = update.isError && !errors ? refusalMessage(update.error, myRole) : undefined
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    if (validTo === '') {
+      setMissing(true)
+      return
+    }
+    update.mutate(
+      { id: factor.id, input: { ...factorInput(factor), validTo } },
+      { onSuccess: (saved) => onSaved(saved.validTo ?? validTo) },
+    )
+  }
+
+  return (
+    <Modal title={`Retire ${factor.name}`} onClose={onClose}>
+      <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
+        <p className="text-sm text-ink-muted">
+          Set the last day the factor applies. Runs that used it keep it as their record
+          {factor.validFrom ? `; it has applied since ${factor.validFrom}` : ''}.
+        </p>
+        <InputField
+          label="Valid to"
+          type="date"
+          value={validTo}
+          min={factor.validFrom ?? undefined}
+          onChange={(event) => {
+            setMissing(false)
+            setValidTo(event.target.value)
+          }}
+          error={missing ? 'Choose the last day the factor applies.' : errors?.validTo}
+          required
+        />
+        {generalError && (
+          <p role="alert" className="text-sm font-medium text-red-600">
+            {generalError}
+          </p>
+        )}
+        <div className="mt-2 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" busy={update.isPending}>
+            Retire factor
+          </Button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 

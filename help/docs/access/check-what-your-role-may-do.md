@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: The permissions matrix, act by act, for the Owner, Reviewer, Preparer and Verifier roles and for support access, with the tooltip or refusal each blocked act shows.
 role: Anyone
 ---
@@ -24,7 +24,7 @@ Who may do what, act by act. A control your role may not use is disabled with a 
 
 ## What each role may do
 
-"Yes" means the control is offered and the server accepts the act. The last column is the tooltip on the disabled control.
+The foot of the organization's sidebar shows your own role: "Your role: Preparer", or "Support access" under a grant. "Yes" means the control is offered and the server accepts the act. The last column is the tooltip on the disabled control.
 
 | Act | Owner | Reviewer | Preparer | Verifier | Support access | Tooltip when refused |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -41,7 +41,7 @@ Who may do what, act by act. A control your role may not use is disabled with a 
 | Publish; create a correction | Yes | Yes | No | No | Yes | Needs the Reviewer or Owner role. |
 | Accept or decline a factor pack update | Yes | Yes | No | No | No: refused with "Support access cannot adopt an edition for an organization." | Needs the Reviewer or Owner role. |
 | Add, change and remove members | Yes | No | No | No | No | Needs the Owner role. |
-| Edit the organization's details; read its history on **Settings** | Yes | No | No | No | No: **Settings** is not offered | Settings are the owner's |
+| Edit the organization's details; read its history on **Settings** | Yes | No | No | No | No: **Settings** is not offered, and the server refuses the edit | Settings are the owner's |
 | Delete the organization | Yes | No | No | No | No | Needs the Owner role. |
 
 A factor is checked by someone other than the person who entered it. Your own **Approve** is refused with "You entered '*factor*'. A factor is checked by someone other than the person who typed it (Corporate Standard chapter 7): ask *name* to approve it."

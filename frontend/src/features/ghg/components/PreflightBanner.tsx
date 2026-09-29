@@ -1,6 +1,6 @@
 import { GlassCard } from '../../../components/GlassCard'
 import { gateLabels } from '../format'
-import type { ValidationReport } from '../api'
+import type { InventoryStatus, ValidationReport } from '../api'
 
 /**
  * Whether this inventory can be run, stated wherever the reader is standing
@@ -13,11 +13,15 @@ import type { ValidationReport } from '../api'
  */
 export function PreflightBanner({
   report,
+  status,
   onResolve,
 }: {
   report: ValidationReport
+  status: InventoryStatus
   onResolve: () => void
 }) {
+  // spec 05.1: a published inventory's gates still pass, but nothing launches from it
+  const published = status === 'PUBLISHED'
   // spec 06.1: the base-year gate holds the final designation, never a run
   const blocking = report.gates.filter(
     (gate) => gate.status === 'BLOCKED' && gate.gate !== 'BASE_YEAR',
@@ -41,7 +45,11 @@ export function PreflightBanner({
         </span>
         <div>
           <p className="text-sm font-semibold">
-            {report.ready ? 'Ready to launch a run' : 'Launch on hold'}
+            {published
+              ? 'Published. The runs are a record; a correction restates the year.'
+              : report.ready
+                ? 'Ready to launch a run'
+                : 'Launch on hold'}
           </p>
           <p className="text-xs text-ink-muted">
             {blocking.length > 0

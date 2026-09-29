@@ -168,11 +168,39 @@ test('a clean classification freezes after the gate summary is shown', async () 
   await user.click(screen.getByRole('button', { name: /freeze inventory/i }))
   const dialog = await screen.findByRole('dialog', { name: /freeze the inventory/i })
   const summary = await within(dialog).findByRole('list', { name: /gate summary/i })
-  expect(within(summary).getByText('Reporting boundary').closest('li')).toHaveTextContent('1 error')
+  // the draft finding is what the freeze clears, so the dialog does not count it
+  expect(within(summary).getByText('Reporting boundary').closest('li')).toHaveTextContent('passes')
+  expect(within(summary).getByText('Reporting boundary').closest('li')).not.toHaveTextContent(
+    'error',
+  )
   expect(within(dialog).getByText(/cuts boundary version 2/)).toBeInTheDocument()
   await user.click(within(dialog).getByRole('button', { name: /freeze inventory/i }))
   await waitFor(() => expect(freezeInventory).toHaveBeenCalledWith('inv-1'))
   expect(await screen.findByText(/frozen as boundary version 2/i)).toBeInTheDocument()
+})
+
+test('the freeze dialog still counts a boundary error the freeze would not clear', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getValidation).mockResolvedValue({
+    ...clean,
+    gates: [
+      {
+        gate: 'BOUNDARY',
+        status: 'BLOCKED',
+        findings: [
+          { severity: 'ERROR', message: 'The inventory is a draft. Freeze it to enable a run.' },
+          { severity: 'ERROR', message: 'Tema JV has no economic interest recorded.' },
+        ],
+      },
+      ...clean.gates.slice(1),
+    ],
+  })
+  renderWithProviders(<LifecycleBar inventory={inventory} inBoundaryCount={2} />)
+
+  await user.click(await screen.findByRole('button', { name: /freeze inventory/i }))
+  const dialog = await screen.findByRole('dialog', { name: /freeze the inventory/i })
+  const summary = await within(dialog).findByRole('list', { name: /gate summary/i })
+  expect(within(summary).getByText('Reporting boundary').closest('li')).toHaveTextContent('1 error')
 })
 
 test('reopening asks for a reason of at least 10 characters and names the version it supersedes', async () => {

@@ -154,6 +154,31 @@ test('Settings is the active entry when it is open', async () => {
   )
 })
 
+test('an owner reads their own role in the sidebar (spec 01.4)', async () => {
+  renderAt('/app/ghg/org-1')
+
+  expect(await screen.findByText('Your role: Owner')).toBeInTheDocument()
+})
+
+test.each([
+  ['PREPARER', 'Your role: Preparer'],
+  ['REVIEWER', 'Your role: Reviewer'],
+  ['VERIFIER', 'Your role: Verifier'],
+])('a %s reads their own role in the sidebar (spec 01.4)', async (role, line) => {
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: role as MyRole })
+  renderAt('/app/ghg/org-1')
+
+  expect(await screen.findByText(line)).toBeInTheDocument()
+})
+
+test('a support grant is named as one in the sidebar, not as a role (spec 01.3)', async () => {
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'ADMIN' })
+  renderAt('/app/ghg/org-1')
+
+  expect(await screen.findByText('Support access')).toBeInTheDocument()
+  expect(screen.queryByText(/Your role:/)).toBeNull()
+})
+
 test('two organizations of one name are told apart in the switcher (spec 01.8)', async () => {
   const twin = { ...organization, id: 'org-2', accountNo: 2 }
   vi.mocked(listOrganizations).mockResolvedValue([organization, twin])

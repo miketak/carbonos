@@ -5,8 +5,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -233,7 +235,8 @@ public class GhgService {
 	public Organization updateOrganization(UUID id, String name, String address, String contact,
 			boolean allowDuplicateName) {
 		var organization = getOrganization(id);
-		access.checkOwner(organization);
+		// spec 01.3, 01.7: the details are Settings, which support access never carries
+		access.checkMemberOwner(organization);
 		var trimmed = name.trim();
 		var previous = organization.getName();
 		// only a change of name, in any case, is checked: saving the address of an organization that
@@ -327,6 +330,25 @@ public class GhgService {
 	public List<OrganizationMember> listMembers(UUID organizationId) {
 		getOrganization(organizationId);
 		return members.findAllByOrganizationIdOrderByCreatedAtAsc(organizationId);
+	}
+
+	/**
+	 * The name each member is shown under: the account's current display name,
+	 * looked up when the list is read, so a profile change shows at once. The
+	 * name recorded when the member was added stands for an account that no
+	 * longer exists.
+	 */
+	@Transactional(readOnly = true)
+	public Map<UUID, String> currentDisplayNames(List<OrganizationMember> listed) {
+		var ids = listed.stream().map(OrganizationMember::getUserId).distinct().toList();
+		var current = userDirectory.findAllByIds(ids)
+			.stream()
+			.collect(Collectors.toMap(UserDirectory.UserSummary::id, UserDirectory.UserSummary::displayName));
+		var names = new HashMap<UUID, String>();
+		for (var member : listed) {
+			names.put(member.getUserId(), current.getOrDefault(member.getUserId(), member.getDisplayName()));
+		}
+		return names;
 	}
 
 	/**

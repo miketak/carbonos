@@ -290,7 +290,9 @@ function InventoryWorkbench({
 
   return (
     <div className="flex flex-col gap-4">
-      {report && <PreflightBanner report={report} onResolve={onResolve} />}
+      {report && (
+        <PreflightBanner report={report} status={inventory.status} onResolve={onResolve} />
+      )}
 
       <Tabs<InventoryTab>
         label="The inventory"
@@ -387,6 +389,9 @@ function LaunchSection({
   const report = validationQuery.data
   const canDesignate = inventory.status === 'FROZEN' || inventory.status === 'FINAL'
   const canVoid = inventory.status !== 'PUBLISHED'
+  // spec 05.1: the runs of a published inventory are its record; the button says so in the
+  // backend's own words instead of sitting disabled without a reason
+  const published = inventory.status === 'PUBLISHED'
 
   return (
     <div className="grid items-start gap-6 xl:grid-cols-2">
@@ -403,9 +408,15 @@ function LaunchSection({
           <RoleButton
             allowed={mayWrite(myRole)}
             tooltip={WRITE_TOOLTIP}
-            disabled={!report?.ready || inventory.status === 'PUBLISHED'}
+            disabled={!report?.ready || published}
             busy={execute.isPending}
-            title={report?.ready ? undefined : 'Resolve the blocking findings first'}
+            title={
+              published
+                ? 'A published inventory cannot be recalculated. Create a correction that supersedes it.'
+                : report?.ready
+                  ? undefined
+                  : 'Resolve the blocking findings first'
+            }
             onClick={() =>
               execute.mutate(label, {
                 onSuccess: (detail) => {

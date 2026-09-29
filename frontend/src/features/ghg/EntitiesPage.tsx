@@ -85,7 +85,10 @@ export function EntitiesPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-ink-muted">
-                    {relationshipShortLabels[entity.relationshipType]}
+                    {/* spec 03.1: the company itself holds no Table 1 relationship to itself */}
+                    {entity.reportingCompany
+                      ? 'Reporting company'
+                      : relationshipShortLabels[entity.relationshipType]}
                     {entity.jurisdiction && (
                       <span className="ml-1 text-xs">({entity.jurisdiction})</span>
                     )}
