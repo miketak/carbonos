@@ -16,7 +16,7 @@ This fourth step of the Get started series brings in the year's activity data fo
 ## Before you start
 
 - The two facilities and five source streams exist, from [Record the facilities and source streams](record-the-facilities-and-source-streams.md). The import matches each row to a facility and a stream by name.
-- Download the year's records: [gye-nyame-2025.csv](../assets/gye-nyame-2025.csv). It has seven rows, and the second-half electricity row carries 3,600,000 kWh on purpose: a lost zero that you correct at the end of this step. The columns are described in [Prepare the CSV file](../reference/csv-import-template.md).
+- Download the year's records: [gye-nyame-2025.csv](../assets/gye-nyame-2025.csv). It has seven rows, and the second-half electricity row carries 3,600,000 kWh on purpose: a lost zero that you correct at the end of this step. The columns are described in [Prepare the CSV file](../activity-data/prepare-the-csv-file.md).
 
 ## Import the file
 

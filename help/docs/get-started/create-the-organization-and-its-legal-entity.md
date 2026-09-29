@@ -15,7 +15,7 @@ This first step of the Get started series produces the reporting organization, G
 
 ## Before you start
 
-- You need an account. A platform administrator creates it, or approves the request you make from the landing page ([Request access](../tasks/account/request-access-and-set-your-password.md)). You sign in with your email address and a password.
+- You need an account. A platform administrator creates it, or approves the request you make from the landing page ([Request access](../access/request-access.md)). You sign in with your email address and a password.
 - Nothing else. Creating an organization makes you its owner, and the owner can do every step of this series alone.
 
 ## Create the organization

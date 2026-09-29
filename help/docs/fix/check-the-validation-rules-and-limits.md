@@ -35,7 +35,7 @@ answers with where one is printed.
 
 | Rule | Value |
 | --- | --- |
-| CSV import | 5 MB and 10,000 rows per file; column limits in [CSV import template](../reference/csv-import-template.md). |
+| CSV import | 5 MB and 10,000 rows per file; column limits in [CSV import template](../activity-data/prepare-the-csv-file.md). |
 | Evidence file | "PDF, image, spreadsheet or text, up to 20 MB." (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.csv`, `.xlsx`, `.xls`, `.txt`, `.docx`). |
 | Evidence link | URL required, up to 1,000 characters; name up to 255. |
 | Removal reason | Required. |

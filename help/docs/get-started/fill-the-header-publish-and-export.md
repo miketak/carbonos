@@ -69,6 +69,6 @@ A verifier can rebuild every figure from the lines file and check every factor a
 
 ## Where next
 
-- [Correct a published inventory](../tasks/inventories/correct-a-published-inventory.md): what a correction after publication does.
-- [Designate the base year](../tasks/base-year/designate-the-base-year.md): section 07 of the report is waiting for one.
-- [Understand the export files](../reference/report-exports.md): every column and field of the four files.
+- [Correct a published inventory](../reporting/correct-a-published-inventory.md): what a correction after publication does.
+- [Designate the base year](../reporting/designate-the-base-year.md): section 07 of the report is waiting for one.
+- [Understand the export files](../reporting/understand-the-export-files.md): every column and field of the four files.

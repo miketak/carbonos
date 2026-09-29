@@ -15,7 +15,7 @@ product prints it.
 
 | You see | It means | Do this |
 | --- | --- | --- |
-| LAUNCH ON HOLD, "Reporting boundary is blocking." | An error in one of the first four gates. | Click **Resolve the findings** and read the gate; each finding says what clears it. See [Pre-flight gates and findings](../reference/pre-flight-gates-and-findings.md). |
+| LAUNCH ON HOLD, "Reporting boundary is blocking." | An error in one of the first four gates. | Click **Resolve the findings** and read the gate; each finding says what clears it. See [Pre-flight gates and findings](../inventories/freeze-and-launch-a-run.md). |
 | "The inventory is a draft. Freeze it to enable a run." | Runs need a boundary version. | **Freeze inventory**. |
 | "The organizational boundary is empty. Add at least one facility before freezing it." | **Freeze inventory** on an inventory whose boundary holds no facility. | Add a facility under **Facilities**, or tick one in on the **Boundary** tab. |
 | "The inventory is frozen. Reopen it as a draft to change it." | An edit to the boundary, the classification or the method while the inventory is frozen. | **Reopen as draft** with a reason, change it, and freeze again; the earlier boundary version is kept. |

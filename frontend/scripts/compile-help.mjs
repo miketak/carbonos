@@ -231,6 +231,14 @@ function remarkMermaid(page) {
   }
 }
 
+/** The pixel size of a PNG from its IHDR chunk, or undefined for anything else. */
+function pngSize(path) {
+  if (!existsSync(path) || !path.endsWith('.png')) return undefined
+  const head = readFileSync(path).subarray(0, 24)
+  if (head.toString('latin1', 1, 4) !== 'PNG') return undefined
+  return { width: head.readUInt32BE(16), height: head.readUInt32BE(20) }
+}
+
 /**
  * A paragraph that is one Markdown image of a screenshot becomes a figure:
  * the file is served from /help-assets, loads lazily, and the alt text is
@@ -246,6 +254,7 @@ function remarkScreenshots(page) {
       if (!rel.startsWith('assets/')) return
       if (!existsSync(join(DOCS, rel))) fail(page.sourceRel, `image ${image.url} not found`)
       const isScreen = rel.startsWith('assets/screens/')
+      const size = pngSize(join(DOCS, rel))
       parent.children[index] = {
         type: 'figure',
         data: {
@@ -259,7 +268,9 @@ function remarkScreenshots(page) {
             type: 'image',
             url: `/help-assets/${rel.slice('assets/'.length)}`,
             alt: image.alt ?? '',
-            data: { hProperties: { loading: 'lazy' } },
+            // width and height reserve the box before the lazy load, so a hash
+            // scroll to a heading below the picture lands where it should
+            data: { hProperties: { loading: 'lazy', ...(size ?? {}) } },
           },
           ...(image.alt
             ? [
