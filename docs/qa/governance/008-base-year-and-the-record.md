@@ -16,6 +16,8 @@ never applied is deleted).
 
 **Estimated time:** 30 minutes.
 
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+
 **Run this procedure** last.
 
 ## Prerequisites
@@ -92,7 +94,7 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 | --- | --- | --- | --- | --- |
 | 1 | On **Emission factors**, delete "R-410A (composition)". | Deleted: no classification and no run ever applied it. Try the same on "Long-haul flights (supplier)": refused, it was applied by a calculation run; set its validity end to retire it instead. | | |
 | 2 | Open **Settings**, and under **Danger zone** click **Delete organization**. | The dialog lists "FY2025: Published" and refuses: "Publish records are kept: withdraw the final designation or supersede the published inventory first.". | | |
-| 3 | Read **History**. | Members added, support access assumed and ended, and every act since, each with an email and a moment. | | |
+| 3 | Read **History**. | The members added, the entities, facilities and streams of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label. | | |
 
 ### F2. A scratch organization is deleted with its name typed
 
@@ -115,3 +117,8 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 policy per organization; the pack keeps the transaction date); an
 error-correction candidate weighed against a comparison run (the mining
 pack); a second structural change accumulated with the first.
+
+## Change notes
+
+- **Version 2, 2026-09-29.** F1 step 3 expects the structure rows the
+  organization history now records beside the member rows (PR #121).

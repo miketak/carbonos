@@ -38,7 +38,12 @@ not stop the procedure unless the text says so. At the end, fill in the
 sign-off table and file one issue per failed case with the **QA failure**
 template at https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml. The line under the document's title
 ("Version v0.6.0 (5b27661), built ...") is the value for "Procedure and
-version tested".
+version tested"; add the procedure version beside it.
+
+A procedure changed after it was first written carries a **Procedure
+version** line under its estimated time and dated **Change notes** at its
+foot, saying what changed and which pull request changed the product. A
+procedure without them is at version 1.
 
 The procedures name specs under `specs/`. When a case and a spec disagree,
 the spec is the reference; report the difference. Pre-flight gates are
@@ -49,17 +54,17 @@ completeness**, **Classification**, **Emission factors** and **Base year**.
 
 | # | Procedure | Objective | Time |
 | --- | --- | --- | --- |
-| 1 | [Access and roles](001-access-and-roles.md) | A newcomer gets an account, joins an organization with a role, and can do only what the role allows; a platform administrator is an outsider until they assume a logged support access, and an organization is not deleted while a record stands. | 75 min |
-| 2 | [Organization setup](002-organization-setup.md) | The organization's structure, sites, source streams, units and emission factors are recorded with the provenance a verifier expects. | 75 min |
+| 1 | [Access and roles](001-access-and-roles.md) | A newcomer gets an account, changes or resets their password, joins an organization with a role, and can do only what the role allows; a platform administrator is an outsider until they assume a logged support access, and an organization is not deleted while a record stands. | 95 min |
+| 2 | [Organization setup](002-organization-setup.md) | The organization's structure, sites, source streams, units and emission factors are recorded with the provenance a verifier expects, and every structure change is in the organization's history. | 85 min |
 | 3 | [Activity data](003-activity-data.md) | Facts are recorded one by one and in bulk, corrected with a reason, removed with a reason, and backed by evidence. | 60 min |
 | 4 | [Boundary and inventory lifecycle](004-boundary-and-lifecycle.md) | An inventory starts from the approach, its boundary and exclusions are frozen as a version, and the lifecycle refuses what it must. | 60 min |
 | 5 | [Classification and pre-flight](005-classification-and-preflight.md) | Every record is classified as an accounting decision, every departure is justified, and the gates block a run that would misstate. | 90 min |
 | 6 | [Scope 2 instruments](006-scope2-instruments.md) | Market-based scope 2 rests on instruments that pass the Quality Criteria, and the report says so either way. | 45 min |
 | 7 | [Runs, reports and exports](007-runs-reports-and-exports.md) | A run is a reproducible snapshot, the report carries every Chapter 9 element, and the exports match the page. | 75 min |
-| 8 | [Publication and corrections](008-publication-and-corrections.md) | A published report never changes, what came after is shown apart, and a correction inherits the view with a reason. | 45 min |
+| 8 | [Publication and corrections](008-publication-and-corrections.md) | A published report never changes, what came after is shown apart, and a correction inherits the view with a reason. | 50 min |
 | 9 | [Base year and recalculation](009-base-year.md) | The base year is designated with its policy, structural changes are detected, and manual candidates are weighed. | 60 min |
-| 10 | [Factor pack maintenance](010-factor-pack-maintenance.md) | A platform administrator authors a factor pack edition: a family, a draft, a clone of a predecessor, its rows, and the validation report; a published edition is frozen and a draft is invisible to every organization; and the organization, not the platform, decides whether to adopt a published edition. | 100 min |
-| 11 | [Platform administration](011-platform-administration.md) | An administrator lands in a panel that says what is waiting and carries no client inventory data; the support-access window governs new grants without moving live ones; and reserving organization creation to administrators seats the client as owner, not the administrator. | 50 min |
+| 10 | [Factor pack maintenance](010-factor-pack-maintenance.md) | A platform administrator authors a factor pack edition: a family, a draft, a clone of a predecessor, its rows, and the validation report; a published edition is frozen and a draft is invisible to every organization; and the organization, not the platform, decides whether to adopt a published edition, within the platform's rule for published periods. | 120 min |
+| 11 | [Platform administration](011-platform-administration.md) | An administrator lands in a panel that says what is waiting and carries no client inventory data; the support-access window governs new grants without moving live ones; reserving organization creation to administrators seats the client as owner, not the administrator; every setting change is kept with its reason; and an administrator resets a password by sending a link. | 65 min |
 
 ## Shared scenario
 

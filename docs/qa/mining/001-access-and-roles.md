@@ -7,11 +7,15 @@ and that each role can do exactly what it allows and nothing more.
 **Covers** [spec 01](../../../specs/01-identity-and-access.md),
 [spec 01.1](../../../specs/01.1-access-requests.md),
 [spec 01.2](../../../specs/01.2-organization-membership-and-roles.md),
-[spec 01.3](../../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md)
+[spec 01.3](../../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md),
 [spec 01.4](../../../specs/01.4-role-aware-ui-and-visible-refusals.md)
-and [spec 01.6](../../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md).
+[spec 01.6](../../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md)
+and the member's side of [spec 01.9](../../../specs/01.9-password-change-and-reset.md)
+(procedure 11 covers the administrator's side).
 
-**Estimated time:** 75 minutes.
+**Estimated time:** 95 minutes.
+
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** before a release, and after any change to the `user`
 or `mail` module, the members card, or the role checks in `ghg`.
@@ -22,10 +26,14 @@ or `mail` module, the members card, or the role checks in `ghg`.
   password.
 - Three fresh email aliases you can read: call them **Newcomer**,
   **Analyst** and **Auditor**.
-- The normal window for the admin, the private window for the others.
+- The normal window for the admin, the private window for the others,
+  and a second browser for case A9 (any browser other than the one that
+  holds your two windows).
 
 Token expiry (the seven-day limit on set-password links) cannot be tested
-on qa. The development team covers it.
+on qa. The development team covers it. A password reset link lasts one
+hour: for case A11 step 4, ask the development team to age the link, or
+wait the hour.
 
 ## A. Request access
 
@@ -93,6 +101,47 @@ on qa. The development team covers it.
 | 6 | Open the menu on an organization page and on the GHG accounting list. | It is in the same place on both. | | |
 | 7 | As the admin, open the menu from any GHG page. | It also lists **Administration**, which opens the platform dashboard. Inside `/admin` that entry is absent, because the sidebar is the navigation there. | | |
 
+### A9. You change your own password on the profile
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | As the Newcomer in the private window, open **Edit profile** and find **Change password**. | The section reads "You stay signed in here; every other session of your account is signed out." over **Current password**, **New password** and **Confirm new password**. | | |
+| 2 | In the second browser, sign in as the Newcomer and open the GHG accounting page. Leave it open. | Signed in. | | |
+| 3 | Back in the private window, type a wrong current password and `Newcomer-pass-2027` twice, then click **Change password**. | Refused: "The current password is not correct.". The page stays signed in. | | |
+| 4 | Type the right current password, `Newcomer-pass-2026`, and the same `Newcomer-pass-2026` as the new password, twice. Submit. | Refused: "Choose a password different from your current one.". | | |
+| 5 | Type `Newcomer-pass-2027` as the new password and `Newcomer-pass-2028` to confirm. Submit. | "Passwords do not match." under the confirmation. Nothing is sent. | | |
+| 6 | Confirm with `Newcomer-pass-2027` and submit. | The toast reads "Password changed. Your other sessions are signed out.". The private window stays signed in. The mailbox receives "Your CarbonOS password was changed". | | |
+| 7 | In the second browser, reload the page. | You are sent to the sign-in page: that session ended with the change. Sign in there with `Newcomer-pass-2026`: refused. Sign in with `Newcomer-pass-2027`: accepted. Close the second browser. | | |
+
+### A10. A forgotten password is reset by email
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Sign out of the private window. On the sign-in page, click **Forgot your password?**. | A page headed "Reset your password" reads "Enter the email you sign in with. We will send a link to choose a new password.", with an **Email** field, **Send reset link** and "Back to sign in". | | |
+| 2 | Click **Send reset link** with the field empty. | "Enter your email." under the field. | | |
+| 3 | Type `nobody@example.test` and send. | "If nobody@example.test belongs to an active CarbonOS account, a reset link is on its way. The link is valid for 1 hour and works once." | | |
+| 4 | Go back, type the Newcomer alias and send. | The same sentence with the Newcomer's address. An address that holds an account reads exactly like one that does not. | | |
+| 5 | Read the mailbox. | An email with the subject "Reset your CarbonOS password" starts "Somebody, probably you, asked to reset your password" and holds a link to `/reset-password?token=…` on the qa address, never localhost or production. | | |
+| 6 | Ask for a second link for the Newcomer alias the same way. Keep both emails. | A second email with a different link. | | |
+| 7 | Open the second link. | A page headed "Choose a new password" reads "Choose a new password for <the Newcomer alias>. Every session of the account is signed out when you save it.", with **New password** (hint "At least 12 characters, with a letter and a digit."), **Confirm password** and **Set new password**. | | |
+| 8 | Type `Newcomer-reset-2026` and confirm with `Newcomer-reset-2027`. Submit. | "Passwords do not match." Nothing is sent. | | |
+| 9 | Type `Newcomer-reset-2026` in both fields and submit. | The sign-in page reads "Your password is reset. Sign in with your new password.", and the mailbox receives "Your CarbonOS password was changed". `Newcomer-pass-2027` is refused; `Newcomer-reset-2026` signs in. From here on the Newcomer signs in with `Newcomer-reset-2026`. | | |
+
+### A11. A used, expired or forged link opens nothing
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Open the second link of case A10 again. | "This reset link has already been used." followed by "Ask for a new link and use the latest email." and the button **Ask for a new link**. | | |
+| 2 | Open the first link of case A10. | The same "This reset link has already been used.": completing a reset spends every other open link of the account. | | |
+| 3 | Open `/reset-password?token=` followed by 64 zeros. | "This reset link is not valid.", with the same sentence and button. | | |
+| 4 | Click **Ask for a new link**, ask for a link for the Newcomer alias, and have the development team age it past its hour (or wait the hour). Then open it. | "This reset link has expired. Reset links are valid for 1 hour.", with the same sentence and button. `Newcomer-reset-2026` still signs in. | | |
+
+### A12. Reset requests are limited
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On **Forgot your password?**, send four requests in a row for `ratelimit@example.test`, an address with no account. | The first three read the confirmation sentence; the fourth reads "Too many password reset requests. Try again in 15 minutes.". The limit counts an address whether or not it holds an account, so it reveals nothing either. Ten requests from one network address within 15 minutes are the other limit: if testers share an address and the first request is already refused, wait 15 minutes and repeat. | | |
+
 ## B. Organizations and members
 
 ### B1. The creator is the owner and sees only their own organizations
@@ -113,7 +162,7 @@ on qa. The development team covers it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As the Newcomer, on **Settings**, add the Analyst's email with the role **PREPARER** and the Auditor's email with the role **VERIFIER**. | The two members appear with their roles. | | |
+| 1 | As the Newcomer, on **Settings**, add the Analyst's email with the role **PREPARER** and the Auditor's email with the role **VERIFIER**. | The two members appear with their roles, and **History** at the foot of the page lists two "Member added" entries at once, without a reload. | | |
 | 2 | Add `nobody@example.test`. | Refused under the field with "No account with that email. Add the user under Manage users first. Ask a platform administrator to add them." The typed address stays in the field. | | |
 | 3 | Add the Analyst a second time. | Refused as already a member. | | |
 
@@ -121,7 +170,7 @@ on qa. The development team covers it.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | In the normal window, sign in as the Analyst. Open Sankofa Gold plc. | The organization opens. | | |
+| 1 | In the normal window, sign in as the Analyst. Open Sankofa Gold plc. | The organization opens. The foot of the sidebar reads "Your role: Preparer". | | |
 | 2 | Add the facility **QA scratch site**, record one activity on it ("QA scratch diesel", 100 litre, any date in 2025), create the inventory **QA scratch** (2025, operational control) and freeze it. | Every write succeeds. | | |
 | 3 | Launch a run (allowed for a preparer). | The run launches. | | |
 | 4 | Look at **Mark as final** on the run. | The button is disabled with the tooltip "Needs the Reviewer or Owner role." (spec 05.5; a direct request is refused with "This action needs the REVIEWER or OWNER role in the organization."). **Publish** stays disabled ("Designate a final run first") until a run is final, so a preparer never reaches it. | | |
@@ -134,7 +183,7 @@ scenario, so keep the names.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Sign in as the Auditor in another context and open the organization. | The organization opens. | | |
+| 1 | Sign in as the Auditor in another context and open the organization. | The organization opens. The foot of the sidebar reads "Your role: Verifier". | | |
 | 2 | Open the facility, the activity data and the inventory, including the run page of B4. | Every page opens, and each carries the banner "Your role in this organization is Verifier (read-only)." | | |
 | 3 | Look at the activity register. | There is no **+ Add activity** and no **Import CSV**. Opening a record opens the drawer in read mode: facts, evidence and history, no fields and no **Save**. | | |
 | 4 | Look at the legal entities, facilities, emission factors and units pages. | The add, edit and remove controls are either absent or disabled with the tooltip "Needs the Preparer, Reviewer or Owner role." | | |
@@ -147,7 +196,7 @@ Exports are checked in procedure 7.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As the Newcomer, change the Analyst's role to **REVIEWER**. | The role change applies at once and silently (no toast; the Analyst can now designate a final run). | | |
+| 1 | As the Newcomer, change the Analyst's role to **REVIEWER**. | The role change applies at once and silently (no toast; the Analyst can now designate a final run). The Newcomer's sidebar reads "Your role: Owner"; the Analyst's reads "Your role: Reviewer" once their page reloads. | | |
 | 2 | Try to remove yourself. | Refused with "'Sankofa Gold plc' needs at least one owner.". | | |
 | 3 | Try to change your own role to PREPARER. | Refused with the same message. | | |
 
@@ -169,11 +218,13 @@ Exports are checked in procedure 7.
 | 6 | Open the GHG home. | Sankofa Gold plc is now listed with a **Support access** badge and opens. | | |
 | 7 | Open the activity register, then legal entities, then inventories. | Every page carries a banner naming Sankofa Gold plc, saying you are inside under support access, giving the moment it expires, and saying every act is recorded in the organization's history. It is not only on the overview. | | |
 | 8 | On the organization, classify one record or change the header. | The act succeeds. | | |
+| 8a | Open **Legal entities**, edit Sankofa Gold plc, type `GH` as its jurisdiction, and save. | Saved. The relationship column reads "Reporting company". | | |
 | 9 | Open the organization overview and read the **Support access** card. | It names the admin's email, the time the access was taken, the reason, and the expiry. The history of grants is on the owner's **Settings** page, which support access does not open. | | |
-| 10 | Look at the sidebar, and at the organization's card on the GHG home. | There is no **Settings** entry and no **Settings** link on the card, and typing `/settings` answers that support access does not carry it: support access never grants membership changes or deletion. | | |
+| 10 | Look at the sidebar, and at the organization's card on the GHG home. | There is no **Settings** entry and no **Settings** link on the card, and typing `/settings` answers that support access does not carry it: support access never grants membership changes or deletion. The foot of the sidebar reads "Support access" where a member's reads their role. | | |
+| 10a | If you can alter requests, send a new name for the organization (`PUT /api/ghg/organizations/{id}`). | Refused with 403: "This action needs the OWNER role in the organization.". The organization's details are Settings, which support access never carries. | | |
 | 11 | Back on `/admin/organizations`, click **End access**. | The GHG home no longer lists Sankofa Gold plc. | | |
 | 12 | Paste the organization's URL again. | Not found, and the page says support access ends on its own when its window expires and that an administrator holds no standing access without a grant. It does not say the organization may have been deleted. | | |
-| 13 | As the Newcomer, open **Settings** and read **History**. | It lists "Support access assumed" and "Support access ended", each with the admin's email, the moment and the reason. | | |
+| 13 | As the Newcomer, open **Settings** and read **History**. | It lists "Support access assumed" and "Support access ended", each with the admin's email, the moment and the reason, and between them "Legal entity edited" with the admin's email and "Sankofa Gold plc: jurisdiction none → GH (under support access)". | | |
 
 ### B9. An organization is not deleted while it has a published record
 
@@ -195,8 +246,19 @@ Exports are checked in procedure 7.
 | Cases failed | |
 | Issues filed | |
 
-**Known non-goals** (do not report as bugs): single sign-on, password reset
-for existing users, email invitations to people without an account, rate
-limiting on the public form, restoring a deleted organization, an email to
-the owners when support access is assumed, a support window other than 24
-hours, and an owner revoking an administrator's active grant.
+**Known non-goals** (do not report as bugs): single sign-on, email
+invitations to people without an account, rate limiting on the
+access-request form, restoring a deleted organization, an email to the
+owners when support access is assumed, a support window other than 24
+hours, an owner revoking an administrator's active grant, and the limit of
+five password changes per 15 minutes (the development team covers it).
+
+## Change notes
+
+- **Version 2, 2026-09-29.** Password reset is no longer a non-goal:
+  cases A9 to A12 change a password on the profile and reset a forgotten
+  one (spec 01.9, PR #123), and the Newcomer signs in with
+  `Newcomer-reset-2026` after A10. The sidebar's "Your role" line (B4 to
+  B6, B8), the History card refreshing after **Add member** (B3), a
+  structure change recorded under support access and the refused edit of
+  the organization's details (B8, PRs #119 and #121).

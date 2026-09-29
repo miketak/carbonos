@@ -17,6 +17,8 @@ write it must.
 
 **Estimated time:** 60 minutes.
 
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+
 **Run this procedure** before a release, and after any change to
 inventories, boundaries, versions or the lifecycle.
 
@@ -70,7 +72,7 @@ above the tabs, and the pre-flight findings are under the register on
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On S5, choose **Not applicable** with the detail "Exploration camp; LPG only, screened at under 0.2% of the total". (S5 carries the two April LPG records of procedure 3, so the detail must not claim the camp used no fuel.) | The row shows its reason. | | |
+| 1 | On S5, choose **Not applicable** with the detail "Exploration camp; LPG only, screened at under 0.2% of the total". (S5 carries the two April LPG records of procedure 3, so the detail must not claim the camp used no fuel.) | The reason list offers only Non-GHG activity, Duplicate, Not applicable, Methodology exclusion and Other documented reason; the reasons the review records itself, such as "Record removed", are not offered. The row shows its reason. | | |
 | 2 | On E2, choose **Methodology exclusion** with the detail "Associate: no operational control". | Both rows show their reason. The **Reporting boundary** gate no longer lists them. | | |
 
 ### B3. Ticking an operation back in retires its exclusion
@@ -97,7 +99,7 @@ in this inventory's arithmetic and only matters in the equity view of D1.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Record the S5 exclusion again (B3 removed it), then click **Freeze inventory**. | The dialog lists the five gates first, each with "passes" or its counts (**Reporting boundary** carries the draft hold as 1 error and its warnings, among them the S5 exclusion, disclosed because Sankofa Gold plc holds 100%), then says the freeze "cuts boundary version 1". Nothing has been reviewed yet, so no record blocks the freeze and the button is enabled. | | |
+| 1 | Record the S5 exclusion again (B3 removed it), then click **Freeze inventory**. | The dialog lists the five gates first, each with "passes" or its counts. The draft hold is not counted, because the freeze clears it: **Reporting boundary** shows only its real warnings (among them the S5 exclusion, disclosed because Sankofa Gold plc holds 100%) and no error, and a gate with nothing else wrong reads "passes". Then the dialog says the freeze "cuts boundary version 1". Nothing has been reviewed yet, so no record blocks the freeze and the button is enabled. | | |
 | 2 | Confirm. | The inventory is frozen; the toast reads "Inventory frozen as boundary version 1." and the lifecycle bar shows the badge "Boundary version 1". | | |
 | 3 | Open **Boundary version history** and expand the version. | The row reads "Boundary version 1 · frozen <time> by <you> · 2 entities, 4 facilities" (S5 is out). Boundary version 1 lists E0 and E1 with their facilities, shares and the 45% override, and records the S5 and E2 exclusions with their reasons. | | |
 
@@ -169,3 +171,10 @@ frozen.
 approach changes (its leased assignments are re-derived under Appendix F,
 spec 05.4, but the accountant adds or removes operations by hand);
 per-facility Table 1 facts (they live on the entity).
+
+## Change notes
+
+- **Version 2, 2026-09-29.** The freeze dialog no longer counts the draft
+  hold: C1 step 1 expects **Reporting boundary** to show only its real
+  warnings or "passes" (PR #119). B2 step 1 checks that the exclusion
+  reasons offer only the documented ones (PR #119).

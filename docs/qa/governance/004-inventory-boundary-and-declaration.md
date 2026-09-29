@@ -19,6 +19,8 @@ declaration half of
 
 **Estimated time:** 35 minutes.
 
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+
 **Run this procedure** after procedure 3. Procedure 5 classifies the view
 it builds.
 
@@ -85,7 +87,7 @@ it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Boundary**, in the operational boundary declaration under the entities, tick **15. Investments** and save. | "Operational boundary declaration saved.". The **Classification** gate warns that Investments is declared as covered but no included record is classified into it, and that a reader takes "covered" to mean quantified. | | |
+| 1 | On **Boundary**, in the operational boundary declaration under the entities, tick **15. Investments** and save. | "Operational boundary declaration saved.". The **Classification** gate warns: "Scope 3 '15. Investments' is declared as covered but no included record is classified into it: a reader takes 'covered' to mean quantified. Classify records into it, or say in the declaration why it is not quantified this year.". | | |
 | 2 | In the reason for not quantifying it this year, type "n/a". | Refused: the reason needs at least 10 characters. | | |
 | 3 | Type "Minority holding; no emissions data available this year" and save. | The warning goes. The report will print the category as "declared, not quantified" with the reason. | | |
 | 4 | Leave **6. Business travel** and **1. Purchased goods and services** unticked. | Procedure 5 classifies records into both and reads the cross-check the other way round. | | |
@@ -121,3 +123,9 @@ it builds.
 mining pack); an empty boundary; a financial-control inventory, which
 would consolidate the associate by decision; deleting a facility inside a
 frozen boundary.
+
+## Change notes
+
+- **Version 2, 2026-09-29.** C1 step 1 quotes the declaration warning
+  with the category's report label, "Scope 3 '15. Investments' ..." (PR
+  #119).

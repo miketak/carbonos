@@ -11,7 +11,7 @@ the least that makes a feature, a configuration point or a governance rule
 fire. The mining persona under [`docs/qa`](../README.md) proves the
 arithmetic of a full year; this one proves the rules.
 
-The pack takes about four and a half hours end to end. Most of that is
+The pack takes about five hours end to end. Most of that is
 reading what the product refuses, warns or records, not typing. The
 activity data arrives from two fixture files uploaded once each.
 
@@ -104,7 +104,12 @@ different value is a failure worth a note. At the end, fill in the
 sign-off table and file one issue per failed case with the **QA failure**
 template at https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml. The line under the document's title
 ("Version v0.6.0 (5b27661), built ...") is the value for "Procedure and
-version tested".
+version tested"; add the procedure version beside it.
+
+A procedure changed after it was first written carries a **Procedure
+version** line under its estimated time and dated **Change notes** at its
+foot, saying what changed and which pull request changed the product. A
+procedure without them is at version 1.
 
 The procedures name specs under `specs/`. When a case and a spec disagree,
 the spec is the reference; report the difference. The pre-flight gates
@@ -119,13 +124,13 @@ environment, and its prerequisites say what it needs.
 
 | # | Procedure | Objective | Time |
 | --- | --- | --- | --- |
-| 1 | [Accounts and the platform](001-accounts-and-the-platform.md) | Accounts are created by an administrator or through an approved request, the password rule holds on both paths, the platform settings are recorded with a reason, and no act removes the last administrator. | 30 min |
-| 2 | [The organization](002-the-organization.md) | An owner records the organization's members, entities, sites, streams, units, densities and factors, and every refusal of a wrong structure is read; a factor is checked by someone other than its author. | 45 min |
+| 1 | [Accounts and the platform](001-accounts-and-the-platform.md) | Accounts are created by an administrator or through an approved request, the password rule holds on both paths, the platform settings are recorded with a reason, no act removes the last administrator, and a password is changed on the profile or reset by a link. | 45 min |
+| 2 | [The organization](002-the-organization.md) | An owner records the organization's members, entities, sites, streams, units, densities and factors, every refusal of a wrong structure is read, and the history keeps every real structure change; a factor is checked by someone other than its author and retires by its validity end. | 50 min |
 | 3 | [Activity data](003-activity-data.md) | A rejected file imports nothing, a clean file imports with control totals, and a record is drafted, corrected, evidenced and removed with the reasons the record keeps. | 30 min |
 | 4 | [Inventory, boundary and declaration](004-inventory-boundary-and-declaration.md) | An inventory starts from the approach, every operation is in the boundary or excluded with a reason, the declaration cross-checks the classification, and the freeze waits for a clean view. | 35 min |
 | 5 | [Classification and the gates](005-classification-and-the-gates.md) | One record per rule: the stream's default, the density prompt, the grid suggestion, the blend, the departure, the proxy, the three exclusion answers, the straddle, the upstream rule, the instrument and the residual mix; then the freeze cuts a version. | 45 min |
-| 6 | [Runs, final, publication and correction](006-runs-final-publication-and-correction.md) | A run is a numbered snapshot, a final run refuses a planning value and a blend on another GWP basis, only a reviewer or owner designates and publishes, a published report never changes, and a correction supersedes it. | 45 min |
-| 7 | [The pack lifecycle end to end](007-the-pack-lifecycle-end-to-end.md) | An administrator clones a pack edition, changes one value and has a second administrator publish it; the organization sees the notice, reads the diff, refuses the preparer and the support-access administrator, accepts as a reviewer, and the next run cites the new vintage; an edition inside a reported period is refused; a withdrawal closes the notice. | 40 min |
+| 6 | [Runs, final, publication and correction](006-runs-final-publication-and-correction.md) | A run is a numbered snapshot, a final run refuses a planning value, a blend on another GWP basis and an unapproved factor, only a reviewer or owner designates and publishes, a published report never changes, and a correction supersedes it. | 50 min |
+| 7 | [The pack lifecycle end to end](007-the-pack-lifecycle-end-to-end.md) | An administrator clones a pack edition, changes one value and has a second administrator publish it; the organization sees the notice, reads the diff, refuses the preparer and the support-access administrator, accepts as a reviewer, and the next run cites the new vintage; an edition inside a published period is refused while the platform setting blocks it; a withdrawal closes the notice. | 40 min |
 | 8 | [Base year and the organization's record](008-base-year-and-the-record.md) | The base year is designated with its policy, the designation weighs the years already frozen, a divestment undone is superseded rather than raised twice, candidates are decided, and the organization is not deleted while its published record stands. | 30 min |
 
 ## Coverage
@@ -137,11 +142,12 @@ Every spec in [`specs/README.md`](../../../specs/README.md) is named in a
 | --- | --- |
 | 00 Principles and domain model | every procedure; 6 C reads the report's Chapter 9 elements |
 | 01 Identity and access; 01.1 Access requests; 01.6 Landing and the account menu | 1 A to C, F |
-| 01.2 Membership, roles and attribution; 01.4 Role-aware UI; 01.7 Organization settings | 2 A; 5 B6; 6 B4, E1; 7 D2; 8 F |
+| 01.9 Password change and reset | 1 G |
+| 01.2 Membership, roles and attribution; 01.4 Role-aware UI; 01.7 Organization settings | 2 A, D3; 5 B6; 6 B4, E1; 7 D2; 8 F |
 | 01.3 Confidentiality and deletion safeguards; 01.5 The platform administration panel | 1 D to F; 7 D3; 8 F |
 | 02 Organization and facts; 02.1 Factor library; 02.9 DEFRA and Ghana; 02.10 One tier | 2 F; 5 B |
 | 02.2 Units, densities and custom units | 2 E; 5 B4 |
-| 02.3 Factor identity; 02.6 Versioned import; 02.8 Viewing a pack | 2 F; 7 D5, E |
+| 02.3 Factor identity; 02.6 Versioned import; 02.8 Viewing a pack | 2 F; 1 D3; 7 D5, E |
 | 02.4 Sector pack completeness (blends, Montreal Protocol gases) | 2 F3; 5 B5, C2 |
 | 02.5 Factor pack editions; 02.7 Adopting a new edition | 7 A to G |
 | 02.11 Approval as a control | 2 F4, G; 5 B7; 6 D |
@@ -156,7 +162,7 @@ Every spec in [`specs/README.md`](../../../specs/README.md) is named in a
 | 05, 05.1, 05.2 Inventories, lifecycle and run numbering | 4 D, E; 6 A, B |
 | 05.3 Inheritance and the published record; 05.4 Copying a view | 6 E to G |
 | 05.5 Review at scale; 05.6 The workbench | 4 D; 5 A, C3, F; 3 I |
-| 05.7 What a final run refuses | 6 B |
+| 05.7 What a final run refuses | 6 B, E1 |
 | 06 Tracking over time; 06.1 Recalculation policy | 8 A to E; 7 D4 |
 | 07, 07.1, 07.2, 07.4, 07.7, 07.8 Reporting, disclosures, tables, by-gas and the PDF | 6 A, C, D |
 | 07.3, 07.6 Scope 2 instruments and the declaration cross-check | 4 C; 5 E4, E5 |

@@ -10,9 +10,12 @@ provenance a verifier expects, and that the rules on each are enforced.
 [spec 03.1](../../../specs/03.1-legal-entities-and-table-1.md),
 [spec 03.3](../../../specs/03.3-table-1-completeness.md),
 [spec 03.4](../../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md)
-and [spec 04.3](../../../specs/04.3-source-streams-and-scope-choice.md).
+[spec 04.3](../../../specs/04.3-source-streams-and-scope-choice.md)
+and the structure history of [spec 01.7](../../../specs/01.7-the-organization-settings-area.md).
 
-**Estimated time:** 75 minutes.
+**Estimated time:** 85 minutes.
+
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** before a release, and after any change to entities,
 facilities, streams, units, densities or the factor library.
@@ -37,7 +40,7 @@ camp and a leased warehouse.
 
 | Ref | Legal entity | Relationship | Economic interest | Operated by Sankofa | Notes |
 | --- | --- | --- | --- | --- | --- |
-| E0 | Sankofa Gold plc | Subsidiary (created with the organization) | 100% | yes | the reporting company |
+| E0 | Sankofa Gold plc | Reporting company (created with the organization) | 100% | yes | the reporting company |
 | E1 | Tarkwa Gold JV Ltd | Joint venture | 40% | yes | jurisdiction GH |
 | E2 | Takoradi Port Co | Associate | 30% | no | acquired 2025-07-01; financially controlled by decision |
 
@@ -56,7 +59,7 @@ camp and a leased warehouse.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Legal entities**. | Sankofa Gold plc is listed as the reporting company: subsidiary, 100%, operated, 100% under every approach. Its edit form takes only a name, the acquisition and disposal dates and a jurisdiction (no relationship or percentages); the row has no Remove button. | | |
+| 1 | Open **Legal entities**. | Sankofa Gold plc is listed as the reporting company: a "Reporting company" badge beside the name, "Reporting company" in the relationship column, 100%, operated, 100% under every approach. Its edit form takes only a name, the acquisition and disposal dates and a jurisdiction (no relationship or percentages); the row has no Remove button. | | |
 
 ### B2. A joint venture with its jurisdiction
 
@@ -91,7 +94,7 @@ Skip this case if you cannot alter the request.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Add a fourth entity **Dormant Holdings Ltd** (subsidiary, 100%), then remove it. | The removal dialog asks for a reason and keeps its Remove button disabled until one is typed; after a reason the entity disappears from the list. | | |
+| 1 | Add a fourth entity **Dormant Holdings Ltd** (subsidiary, economic interest 100, legal ownership 100). Edit it: economic interest 60, legal ownership 60; save. Open its edit form again and save without changing anything. Then remove it. | The removal dialog asks for a reason and keeps its Remove button disabled until one is typed; after a reason the entity disappears from the list. Case D3 reads what the history kept of the three acts. | | |
 | 2 | Try to remove E1. | E1 cannot be removed once S2 exists under it: "'Tarkwa Gold JV Ltd' still has facilities. Move them to another entity before deleting it." | | |
 
 Run the second step after C1.
@@ -102,7 +105,7 @@ Run the second step after C1.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Facilities** and add S1 to S6 with the attributes in the table. | Each row shows its entity and relationship, its type, and "grid GHA" (typed for S2, derived from the country for the others). S6 shows its lease and start date. | | |
+| 1 | Open **Facilities** and add S1 to S6 with the attributes in the table. | The **Legal entity** list of the form reads "Sankofa Gold plc (Reporting company)" for E0. Each row shows its entity and relationship, its type, and "grid GHA" (typed for S2, derived from the country for the others). S6 shows its lease and start date. | | |
 
 ### C2. A lease that ends before it starts is refused
 
@@ -134,6 +137,13 @@ its boundary, refuses removal; procedure 3 checks the first.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | On S1, add another stream named **Haul fleet**. | Refused with "'Obuasi Ridge Open Pit' already has a stream named 'Haul fleet'.". | | |
+
+### D3. The organization's history records the structure
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | As the owner, open **Settings** and read **History** (newest first). | Beside the member and support-access rows of procedure 1 are the structure rows, each with the email of whoever acted: "Source stream added" rows such as "Haul fleet added at Obuasi Ridge Open Pit: mobile combustion"; "Facility removed" with "Temporary Yard removed: " and your reason; "Facility added" rows such as "Obuasi Ridge Open Pit added under Sankofa Gold plc, location Obuasi, Ghana"; "Legal entity removed" with "Dormant Holdings Ltd removed: " and your reason; one "Legal entity edited" reading "Dormant Holdings Ltd: economic interest 100% → 60%, legal ownership 100% → 60%"; and "Legal entity added" rows for E1, E2 and Dormant Holdings Ltd. | | |
+| 2 | Look for a second "Legal entity edited" row for Dormant Holdings Ltd, and for any row from a refused act (B2a, C2, D2). | There is none. A save that changes nothing writes no row, and a refused act is not an act. | | |
 
 ## E. Units and densities
 
@@ -168,16 +178,16 @@ its boundary, refuses removal; procedure 3 checks the first.
 
 ### F2. Importing a pack
 
-The catalogue offers two packs and only two (spec 02.9): the DESNZ
-conversion factors and the Ghana pack.
+The catalogue offers the DESNZ conversion factors, in two editions, and the
+Ghana pack (spec 02.9).
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Read the **Factor packs** card. | Exactly two cards: **UK Government (DESNZ) GHG conversion factors 2026** and **Ghana: grid electricity and transmission losses**. Each names its source, publication year, GWP basis, licence and retrieval date. | | |
+| 1 | Read the **Factor packs** card. | Exactly three cards: **UK Government (DESNZ) GHG conversion factors 2025**, **UK Government (DESNZ) GHG conversion factors 2026** and **Ghana: grid electricity and transmission losses**. Each names its source, publication year, GWP basis, licence and retrieval date. | | |
 | 2 | Import the **Ghana: grid electricity and transmission losses** pack (the Import pack button on its card; the button's accessible name carries the pack's name). | The import reports "ghana, applying from 2025-01-01: 7 added, 0 versioned, 0 tagged, 0 unchanged." and says nothing more: every row of a shipped pack is in a unit the registry converts, nothing was held before, and nothing was dropped. A pack carrying a unit the registry does not hold adds a sentence to the same message, "1 row skipped, in a unit the registry cannot convert:" and then each row it left out with the unit that stopped it. The organization's factors now include the Ghana grid by data year, each citing the publication it comes from (not the pack) with its URL. One row arrives **Not approved** with an Approve button: the derived Ghana T&D loss factor. Leave it. | | |
 | 3 | Import it again. | The second import reports "ghana, applying from 2025-01-01: 0 added, 0 versioned, 0 tagged, 7 unchanged.", again with no skipped rows. Re-importing the same edition is a no-op: it cuts no version and rewrites no value. | | |
 | 4 | Read the **Source and vintage** column of the imported **Grid electricity, Ghana (2024)** row. | It says "valid 2025-01-01 to ...": every version an import writes starts on the edition's applies-from date. The row shows no version chain yet, because the lineage holds one version. | | |
-| 5 | Read the action column of any imported row. | Where a hand-entered factor offers **Delete**, a pack-derived row reads "Retire, not delete". Hover it: a pack-derived factor is never deleted, because its versions are the record of what was calculated with. | | |
+| 5 | Read the action column of any imported row. | Every row offers **Approve** or **Unapprove**, then **Retire…**; only a hand-entered factor also offers **Delete**. Hover **Retire…** on a pack-derived row: "From a factor pack. Its versions are the record of what was calculated with, so it retires by its validity end instead of being deleted." | | |
 | 6 | Read the **Packs** column of that row, and its **Source and vintage** column. | The pack tag `ghana` sits in the Packs column on its own; the Source column names the publication, "Ember Yearly Electricity Data, Total generation emissions intensity (gCO2e/kWh): Electricity (national grid, generation-based) / Ghana (GHA) / data year 2024 ...", published 2025, not the Ghana pack. A pack selects a row; it does not become its publisher. | | |
 | 7 | Import the **UK Government (DESNZ) GHG conversion factors 2026** pack, then search the factor table for **HCFC-22 (R-22)**. | The import reports 1,868 added. Under the name of the HCFC-22 row it says "Outside the scopes (Montreal Protocol, not a Kyoto gas)". DESNZ is the only route to a Montreal Protocol gas now that the refrigerants pack has gone, and it must not land in a scope 1 total. | | |
 
@@ -194,7 +204,7 @@ Two consequences are correct and worth seeing.
 | 2 | As a platform administrator, publish a later edition of the Ghana pack under **Factor packs** in the admin console, applying from a date after every locked period (procedure 9 covers authoring and publication). Then, as the preparer, import it. | The import reports counts under four headings: added, versioned, tagged, unchanged. A row whose value moved is **versioned**: the row you held is closed the day before the new edition applies and a new version carries the new value from that day. A row the new edition drops is listed as discontinued and nothing retires it. A row you edited here is listed as a conflict and is left exactly as you left it. | | |
 | 3 | Read the **Source and vintage** column of a versioned row. | It offers "2 versions of this factor". Open it: the older version reads the old edition with its window ending the day before the new one applies, and the live version reads the new edition from its applies-from date, marked "(live)". | | |
 | 4 | Open a run made before the import and read its **Emission factors applied** table (procedure 7 has one). | Every figure is exactly what it was. The table names the edition and the vintage behind each factor; a run made before this release names none, which is honest rather than a guess. | | |
-| 5 | Import an edition whose applies-from date falls inside a **Frozen**, **Final** or **Published** inventory's period. | The import is refused with 409 naming that inventory and its status, and nothing is written. A reported period keeps the factors it reported with. | | |
+| 5 | Import an edition whose applies-from date falls inside a **Frozen**, **Final** or **Published** inventory's period. | The import is refused with 409 naming that inventory and its status, and nothing is written. A reported period keeps the factors it reported with. A frozen or final period always refuses ("... Reopen that inventory, or import the edition into a later period."); a published one refuses while the platform setting **Editions inside a published period** reads "Blocked (default)", and the message says so. Procedure 10 case E5 covers both values of the setting. | | |
 
 ### F3. The factor table and the picker at scale (a scratch organization)
 
@@ -213,6 +223,9 @@ unrecognizable.
 | 5 | Choose **Fuels** in **Published category**. | The table returns to page 1, the heading says how many match, and **Published activity** now offers only the activities inside Fuels. | | |
 | 6 | Type `butane` in **Search factors**, clear the category filter first. | The rows narrow to butane. Three carry the name "Gaseous fuels: Butane" and differ only by unit: 3,033.38067 kg CO₂e/tonne, 1.74533 kg CO₂e/litre and 0.22241 kg CO₂e/kWh. | | |
 | 7 | Untick **Show unapproved**, then tick it again. | The count changes and the checkbox names how many rows it is hiding while it is unticked. | | |
+| 7a | On the **Gaseous fuels: Butane** row per tonne, click **Retire…**. | A dialog "Retire Gaseous fuels: Butane" reads "Set the last day the factor applies. Runs that used it keep it as their record; it has applied since 2026-01-01.", with **Valid to** (empty: the factor has no end yet), **Cancel** and **Retire factor**. | | |
+| 7b | Click **Retire factor** with **Valid to** empty. | "Choose the last day the factor applies." under the field. Nothing is saved. | | |
+| 7c | Enter 2026-06-30 in **Valid to** and click **Retire factor**. | The toast reads "Gaseous fuels: Butane retired: valid to 2026-06-30.". The row's **Source and vintage** column now ends its validity on 2026-06-30. A retired pack factor stays listed: its versions are the record. | | |
 | 8 | Open **Scale Test Co**'s settings and delete it, giving a reason. | The organization and its factors are gone, and the later procedures still see Sankofa Gold plc only. | | |
 
 Then remove nothing: the rest of procedure 2 and procedure 5 expect both
@@ -256,4 +269,17 @@ AR6 (procedure 7 A2 checks the line).
 
 **Known non-goals:** a country picker with names (codes are typed);
 calorific values; published density tables; automatic updates when a new
-edition of a pack is published.
+edition of a pack is published; a history row for editing a source stream
+(only adding and removing one is recorded).
+
+## Change notes
+
+- **Version 2, 2026-09-29.** The reporting company reads "Reporting
+  company" on **Legal entities** and in the facility form (B1, C1; PR
+  #119). "Retire, not delete" is gone: F2 step 5 reads **Retire…**, and F3
+  steps 7a to 7c retire a factor by setting **Valid to** (PR #119). F2b
+  step 5 names the platform setting for a published period (PR #122). New
+  case D3 reads the structure rows of the organization history, with B5
+  step 1 now editing the entity it removes (PR #121). F2 lists three
+  catalogue cards, DESNZ 2025 among them (shipped in PR #91; seen on the
+  factors page on 2026-09-29).

@@ -2,21 +2,28 @@
 
 **Objective.** Confirm that a platform administrator lands in an
 administration area that tells them what is waiting, that the panel carries
-no client inventory data, and that the two deployment settings do what they
-say: the support-access window governs new grants without moving grants
-already in force, and reserving organization creation to administrators seats
-the client as owner rather than the administrator.
+no client inventory data, that the deployment settings do what they say
+and keep every change with its reason: the support-access window governs new
+grants without moving grants already in force, reserving organization
+creation to administrators seats the client as owner rather than the
+administrator, and the setting for editions inside a published period is
+recorded like the others; and that an administrator resets a member's
+password by sending a link, never by handling the password.
 
 **Covers** [spec 01.5](../../../specs/01.5-the-platform-administration-panel.md)
 whole, the administration half of
 [spec 01.6](../../../specs/01.6-landing-the-account-menu-and-retiring-the-resume-upload.md),
 and the parts of
 [spec 01.3](../../../specs/01.3-organization-confidentiality-and-deletion-safeguards.md),
-[spec 01.8](../../../specs/01.8-account-numbers-and-shared-organization-names.md)
+[spec 01.8](../../../specs/01.8-account-numbers-and-shared-organization-names.md),
+[spec 02.6](../../../specs/02.6-versioned-pack-import.md)
 and [spec 02.7](../../../specs/02.7-adopting-a-new-edition.md) that the settings
-change.
+change, and the administrator's side of
+[spec 01.9](../../../specs/01.9-password-change-and-reset.md).
 
-**Estimated time:** 50 minutes.
+**Estimated time:** 65 minutes.
+
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** before a release, and after any change to the
 administration shell, the platform settings, support access or the
@@ -32,8 +39,8 @@ organization-creation rule.
   leaves **Sankofa Gold plc**.
 - The normal window for the administrator, a private window for the member.
 
-Restore both settings at the end (case E1). They are deployment-wide, so
-leaving the window at 1 hour affects everybody who tests after you.
+Restore all three settings at the end (case F1). They are deployment-wide,
+so leaving the window at 1 hour affects everybody who tests after you.
 
 ## A. The administration area
 
@@ -42,7 +49,7 @@ leaving the window at 1 hour affects everybody who tests after you.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Sign in as the administrator. | You land on **Platform overview** directly, with no welcome card in between. | | |
-| 2 | Read the sidebar. | Six entries in order: Dashboard, Access requests, Users, Organizations, Factor packs, Platform settings, and **GHG accounting** at the foot. | | |
+| 2 | Read the sidebar. | Seven entries in order: Dashboard, Access requests, Users, Organizations, Factor packs, Help metrics, Platform settings; and at the foot **GHG accounting** and **Help**. | | |
 | 3 | Check that **GHG accounting** is there while the administrator is a member of nothing and holds no grant, then follow it. | It is always present, never appearing and disappearing with memberships or grants, and it opens the GHG accounting list. With organization creation reserved to administrators this is the only route to **New organization**. | | |
 | 4 | Click the CarbonOS wordmark in the top bar. | You come back to the platform dashboard: for an administrator the wordmark means their own home. | | |
 | 5 | Collapse the sidebar with the chevron, then reload the page. | It is still collapsed. Expand it again. | | |
@@ -93,7 +100,7 @@ leaving the window at 1 hour affects everybody who tests after you.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | On **Organizations**, assume access to Sankofa Gold plc with the reason `ticket 4512, preparer cannot open the run`. | Granted: "Support access to Sankofa Gold plc (ORG-*NNNN*) assumed." Note the expiry shown; it is 24 hours out. Open the organization: the banner reads "You are in Sankofa Gold plc (ORG-*NNNN*) under support access until …". | | |
-| 2 | Open **Platform settings**, set the window to `1`, give the reason `tightening for the QA walkthrough`, and save. | A toast confirms. **Every change** lists the change from 24 to 1, with your email, the time and the reason. | | |
+| 2 | Open **Platform settings**, set the window to `1`, give the reason `tightening for the QA walkthrough`, and save. | The toast reads "Platform settings saved.". **Every change** lists "Support access window" from "24 hours" to "1 hour", with the reason, your email and the time. | | |
 | 3 | Open the dashboard. | The strip at the foot says support access lasts 1 hour. | | |
 | 4 | Open **Organizations** and read the grant you took in step 1. | Its expiry has **not** moved. A grant keeps the window it was taken under. | | |
 | 5 | End that access, then assume it again with the reason `ticket 4512, second look at the run`. | The new grant expires one hour from now, not 24. | | |
@@ -119,7 +126,7 @@ leaving the window at 1 hour affects everybody who tests after you.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Platform settings**, set **Who may create an organization** to **Administrators only** with the reason `hosted deployment, we onboard clients`, and save. | Saved, and listed in **Every change**. | | |
+| 1 | On **Platform settings**, set **Who may create an organization** to **Administrators only** with the reason `hosted deployment, we onboard clients`, and save. | Saved, and listed in **Every change** from "Everyone signed in" to "Administrators only". | | |
 | 2 | In the private window as the member, open the GHG home. | **New organization** is gone. | | |
 | 3 | Ask the development team to `POST /api/ghg/organizations` as that member. | Refused with 403, "This action needs a platform administrator." The screen is not the only guard. | | |
 
@@ -134,13 +141,37 @@ leaving the window at 1 hour affects everybody who tests after you.
 | 5 | As the member, read the organization history. | It records that a platform administrator created it, naming them and the owner they seated. | | |
 | 6 | Try creating one naming an email with no account. | Refused: no account with that email. | | |
 
-## E. Leave the environment as you found it
+### D3. Editions inside a published period is a recorded setting
 
-### E1. Restore the defaults
+Procedure 10 case E5 shows what the setting does to an import. Here it is
+read and changed like the other two.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Platform settings**, set the window back to `24` and creation back to **Everyone signed in**, with the reason `restoring defaults after QA`. | Saved. | | |
+| 1 | On **Platform settings**, read the page. | The intro reads "Policy for the whole deployment. These settings govern clients' inventories, so every change is kept with its reason.". The third field, **Editions inside a published period**, reads "Blocked (default)"; its other option is "Allowed: published runs keep their factors", and its hint says published runs keep the factors they reported with either way and that frozen and final periods always block. | | |
+| 2 | Set it to **Allowed: published runs keep their factors** with the reason `QA walkthrough: reading the third setting`, and save. | Saved. **Every change** lists "Editions inside a published period" from "Blocked (default)" to "Allowed: published runs keep their factors", with the reason, your email and the time. Case F1 sets it back. | | |
+
+## E. A password reset sent by an administrator
+
+### E1. The administrator sends a link, not a password
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On **Users**, read the rows. | An Active account's row offers **Reset password**; a Pending activation or Disabled row does not. | | |
+| 2 | Click **Reset password** on the member's row. | A dialog "Reset the password of <display name>?" reads "CarbonOS emails <email> a link to choose a new password. The link is valid for 1 hour and works once. The current password keeps working until the link is used.", with **Cancel** and **Send reset link**. | | |
+| 3 | Click **Send reset link**. | The toast reads "Reset link sent to <email>.". | | |
+| 4 | Read the member's mailbox. | An email with the subject "Reset your CarbonOS password" says "A CarbonOS administrator sent you this link". | | |
+| 5 | In the private window, sign the member out and in again with their current password. | Accepted: the current password keeps working until the link is used. | | |
+| 6 | Open the link and set the member's current password again, in both fields. | The sign-in page reads "Your password is reset. Sign in with your new password." and the password signs in. Reusing the password keeps the later procedures' sign-ins unchanged. | | |
+| 7 | If you can send requests, send `POST /api/admin/users/{id}/password-reset` for a disabled account, then for an account still pending activation (approve a request and leave its email unopened). | Refused with "Enable the account before sending a password reset link." and "This account has not set its first password yet; the link in its approval email still works.". The screen offers neither, so only a direct request reaches them. | | |
+
+## F. Leave the environment as you found it
+
+### F1. Restore the defaults
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On **Platform settings**, set the window back to `24`, creation back to **Everyone signed in** and **Editions inside a published period** back to **Blocked (default)**, with the reason `restoring defaults after QA`. | Saved. **Every change** lists three rows for this save, "1 hour" to "24 hours", "Administrators only" to "Everyone signed in" and "Allowed: published runs keep their factors" to "Blocked (default)", each with the same reason. | | |
 | 2 | Read **Every change**. | Every change you made during this procedure is listed, newest first, each with its reason and your email. This is the record a verifier asks for. | | |
 | 3 | Delete QA Onboarding Ltd as its owner, and end any support access you still hold. | Removed. | | |
 
@@ -152,3 +183,12 @@ leaving the window at 1 hour affects everybody who tests after you.
 | Tester and date | |
 | Cases failed | |
 | Issues filed | |
+
+## Change notes
+
+- **Version 2, 2026-09-29.** The sidebar has seven entries, with **Help
+  metrics** (PR #117). **Every change** prints the form's labels ("24
+  hours", "Everyone signed in"; PR #124). New case D3 reads and changes the
+  third setting, **Editions inside a published period** (PR #122), and
+  case F1 (was E1) restores it to "Blocked (default)". New section E: an
+  administrator sends a password reset link (spec 01.9, PR #123).
