@@ -1349,6 +1349,12 @@ test('a page of records is excluded under one reason (spec 05.6)', async () => {
   await user.click(await screen.findByLabelText('Select all on this page'))
   await user.click(screen.getByRole('button', { name: 'Exclude 2 selected' }))
   const dialog = screen.getByRole('dialog', { name: /Exclude 2 records\?/ })
+  // a gas outside the scopes is named and weighed per record, so the bulk form does not offer it
+  expect(
+    within(within(dialog).getByLabelText('Reason')).queryByRole('option', {
+      name: 'Outside the scopes: Montreal Protocol gas',
+    }),
+  ).not.toBeInTheDocument()
   await user.selectOptions(within(dialog).getByLabelText('Reason'), 'NOT_APPLICABLE')
   await user.type(
     within(dialog).getByLabelText('Justification'),

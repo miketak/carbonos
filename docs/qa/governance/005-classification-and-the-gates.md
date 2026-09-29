@@ -155,7 +155,7 @@ way. Then the freeze cuts a version.
 | --- | --- | --- | --- | --- |
 | 1 | Under the instruments card, add for Kumasi Plant: instrument certificate, 0 kg CO₂e per kWh, source "I-REC(E) Ghana 2025", covered quantity 150 MWh, reference "IREC-GH-2025-0091", registry "I-TRACK", vintage 2025, and answer criteria 1, 2, 4, 5, 6, 7 and 8 **Met**, leaving 3 at **Not yet answered**. | "Instrument recorded for Kumasi Plant." The row reads "Not applied: 1 unanswered". | | |
 | 2 | Read the **Emission factors** gate. | Two warnings: "The instrument for Kumasi Plant does not meet the Scope 2 Quality Criteria (1 of the eight criteria not yet answered): the market-based figure falls back to location-based." and "The instrument for Kumasi Plant covers 150,000 kWh but the facility's scope 2 electricity in its period is 120,000 kWh: the excess covers nothing.". | | |
-| 3 | Edit the instrument and answer criterion 3 **Met** (the form's button still reads **Add instrument**; it saves the edit). | The row no longer reads "Not applied". The first warning goes; the coverage warning stays. | | |
+| 3 | Click **Edit** on the instrument's row, answer criterion 3 **Met** and click **Save instrument**. | The row no longer reads "Not applied". The first warning goes; the coverage warning stays. | | |
 | 4 | Edit the covered quantity to 120. | The warning goes. | | |
 
 ### E3. The residual mix is stated either way

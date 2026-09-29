@@ -38,7 +38,9 @@ public class GhgAuditEvent {
 		ORGANIZATION_RENAMED,
 		// spec 01.7, 03.1: who changed the structure, when, and from what to what
 		ENTITY_ADDED, ENTITY_UPDATED, ENTITY_REMOVED, FACILITY_ADDED, FACILITY_UPDATED, FACILITY_REMOVED,
-		STREAM_ADDED, STREAM_REMOVED
+		STREAM_ADDED, STREAM_REMOVED,
+		// spec 04.7: a rule that derives category 3 lines is a method decision, not a review
+		UPSTREAM_RULE_ADDED, UPSTREAM_RULE_REMOVED
 	}
 
 	@Id

@@ -14,6 +14,7 @@ import {
   exclusionLabels,
   formatPeriod,
   isAutomaticReason,
+  isOutsideScopesReason,
   leaseLabels,
   manualExclusionReasons,
   scopeLabels,
@@ -550,6 +551,7 @@ export function AssignmentsSection({
           units={units}
           densities={densities}
           editable={writable}
+          locked={!editable}
           period={period}
           onNavigate={(id) => set({ record: id })}
           onClose={() => set({ record: null })}
@@ -611,8 +613,11 @@ function BulkExcludeDialog({
   onClose: () => void
   onConfirm: (input: ExcludeInput) => void
 }) {
-  // the automatic reasons are the review's own, never a preparer's
-  const reasons = manualExclusionReasons.filter((reason) => !isAutomaticReason(reason))
+  // the automatic reasons are the review's own, never a preparer's; a gas outside the scopes
+  // is named and weighed record by record (spec 04.8), so it has no place in a bulk form
+  const reasons = manualExclusionReasons.filter(
+    (reason) => !isAutomaticReason(reason) && !isOutsideScopesReason(reason),
+  )
   const [reason, setReason] = useState<ExclusionReason>(reasons[0])
   const [justification, setJustification] = useState('')
   const [emitsNothing, setEmitsNothing] = useState(false)

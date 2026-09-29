@@ -1313,6 +1313,8 @@ export interface AuditEvent {
     | 'FACILITY_REMOVED'
     | 'STREAM_ADDED'
     | 'STREAM_REMOVED'
+    | 'UPSTREAM_RULE_ADDED'
+    | 'UPSTREAM_RULE_REMOVED'
   runId: string | null
   runNo: number | null
   actor: string

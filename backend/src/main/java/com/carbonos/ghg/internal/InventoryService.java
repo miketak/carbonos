@@ -1310,7 +1310,7 @@ public class InventoryService {
 		}
 		var rule = upstreamRules
 			.save(new UpstreamRule(inventory, primary, upstream, kind, access.currentUserEmail()));
-		record(inventory, null, GhgAuditEvent.Action.REVIEWED,
+		record(inventory, null, GhgAuditEvent.Action.UPSTREAM_RULE_ADDED,
 				"upstream rule added: " + rule.describe() + " (" + kind.phrase() + ")");
 		return rule;
 	}
@@ -1324,7 +1324,7 @@ public class InventoryService {
 			throw GhgNotFoundException.upstreamRule(ruleId);
 		}
 		upstreamRules.delete(rule);
-		record(inventory, null, GhgAuditEvent.Action.REVIEWED, "upstream rule removed: " + rule.describe());
+		record(inventory, null, GhgAuditEvent.Action.UPSTREAM_RULE_REMOVED, "upstream rule removed: " + rule.describe());
 	}
 
 	private EmissionFactor requireFactor(UUID factorId, UUID organizationId) {

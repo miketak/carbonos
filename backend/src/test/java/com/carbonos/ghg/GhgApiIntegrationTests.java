@@ -6094,6 +6094,9 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.primaryFactorName").value("Diesel (100% mineral diesel)"))
 			.andExpect(jsonPath("$.upstreamFactorName").value("Well-to-tank diesel"));
+		// the history files the rule as a method act, not as a review of the activity data
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.reason =~ /upstream rule added.*/)].action").value("UPSTREAM_RULE_ADDED"));
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "WELL_TO_TANK"}"""

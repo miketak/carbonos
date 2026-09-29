@@ -197,7 +197,7 @@ test('editing a recorded instrument loads it into the form and saving replaces i
 
   await user.clear(screen.getByLabelText('Covered quantity (MWh)'))
   await user.type(screen.getByLabelText('Covered quantity (MWh)'), '60000')
-  await user.click(screen.getByRole('button', { name: 'Add instrument' }))
+  await user.click(screen.getByRole('button', { name: 'Save instrument' }))
   await waitFor(() => expect(setMarketFactor).toHaveBeenCalledTimes(1))
   expect(vi.mocked(setMarketFactor).mock.calls[0][1]).toBe('fac-1')
   expect(vi.mocked(setMarketFactor).mock.calls[0][2]).toMatchObject({
@@ -234,5 +234,20 @@ test('a verifier has no add-instrument form; the row actions and the residual mi
   expect(remove).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
 
   // the new-instrument form has nothing to read: it is hidden outright, not merely disabled
+  expect(screen.queryByRole('button', { name: 'Add instrument' })).not.toBeInTheDocument()
+})
+
+test('editing a facility that already has an instrument saves it, and the button says so', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listMarketFactors).mockResolvedValue([ppa])
+  renderWithProviders(
+    <MarketFactorsCard organizationId="org-1" inventory={inventory} myRole="PREPARER" />,
+  )
+
+  await user.click(
+    await screen.findByRole('button', { name: 'Edit instrument for Obuom Processing Plant' }),
+  )
+
+  expect(screen.getByRole('button', { name: 'Save instrument' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Add instrument' })).not.toBeInTheDocument()
 })

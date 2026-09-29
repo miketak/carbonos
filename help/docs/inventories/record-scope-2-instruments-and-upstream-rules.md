@@ -35,7 +35,7 @@ What you see: "Residual mix recorded." Until it is answered the **Emission facto
 5. Under **Scope 2 Quality Criteria, one at a time**, answer each as **Met** or **Not met**.
 6. Click **Add instrument**.
 
-What you see: "Instrument recorded for *facility*." The card states the rule: "The instrument is applied only when all eight are met; an unanswered criterion counts as not met until it is answered."
+What you see: "Instrument recorded for *facility*." A facility has one instrument per inventory: **Edit** on its row loads it into the form, and the button then reads **Save instrument**. The card states the rule: "The instrument is applied only when all eight are met; an unanswered criterion counts as not met until it is answered."
 
 ## Add an upstream rule
 

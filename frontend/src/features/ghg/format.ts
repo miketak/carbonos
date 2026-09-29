@@ -460,4 +460,6 @@ export const actionLabels: Record<AuditEvent['action'], string> = {
   FACILITY_REMOVED: 'Facility removed',
   STREAM_ADDED: 'Source stream added',
   STREAM_REMOVED: 'Source stream removed',
+  UPSTREAM_RULE_ADDED: 'Upstream rule added',
+  UPSTREAM_RULE_REMOVED: 'Upstream rule removed',
 }
