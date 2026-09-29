@@ -4851,6 +4851,13 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"scope3Categories": ["BUSINESS_TRAVEL"], "exclusionsRationale": "Other categories immaterial"}"""))
 			.andExpect(status().isOk());
+		// an instrument with its certificate and one criterion not met, which the copy must carry as it is
+		mvc.perform(put("/api/ghg/inventories/" + source + "/market-factors/" + pit).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0, "source": "I-REC(E) Ghana 2025",
+					 "criteria": [true, true, true, false, true, true, true, true], "certificateId": "IREC-GH-2025-0091",
+					 "registry": "I-TRACK", "vintage": 2025, "coveredKwh": 10000}"""))
+			.andExpect(status().isOk());
 
 		// a second inventory copies the view: boundary, declaration, every decision, marked inherited
 		var laterRecord = createActivity(orgId, pit, "Haul fleet diesel, July", "800", "litre", "2025-07-31");
@@ -4872,6 +4879,13 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[?(@.activityId == '" + diesel + "')].inherited").value(true))
 			.andExpect(jsonPath("$[?(@.activityId == '" + lpg + "')].exclusionReason").value("METHODOLOGY"))
 			.andExpect(jsonPath("$[?(@.activityId == '" + lpg + "')].estimatedKgCo2e").value(750.0));
+		// the instrument keeps its certificate and its answers, a "not met" included (spec 07.6)
+		mvc.perform(get("/api/ghg/inventories/" + copyId + "/market-factors").with(asMember()))
+			.andExpect(jsonPath("$[0].certificateId").value("IREC-GH-2025-0091"))
+			.andExpect(jsonPath("$[0].registry").value("I-TRACK"))
+			.andExpect(jsonPath("$[0].vintage").value(2025))
+			.andExpect(jsonPath("$[0].notMetCount").value(1))
+			.andExpect(jsonPath("$[0].unansweredCount").value(0));
 		mvc.perform(get("/api/ghg/inventories/" + copyId + "/inheritance").with(asMember()))
 			.andExpect(jsonPath("$.sourceName").value("2025 Corporate"))
 			.andExpect(jsonPath("$.inherited").value(2))

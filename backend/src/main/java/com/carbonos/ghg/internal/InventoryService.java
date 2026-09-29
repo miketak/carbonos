@@ -1015,9 +1015,11 @@ public class InventoryService {
 			}
 		}
 		for (var factor : marketFactors.findAllByInventoryId(sourceId)) {
+			// the certificate, registry, vintage and each of the eight answers travel with the instrument
+			// (spec 07.6); the legacy met-or-not flag would lose them
 			marketFactors.save(new MarketFactor(target, factor.getFacility(), factor.getInstrumentType(),
-					factor.getKgCo2ePerKwh(), factor.getSource(), factor.isMeetsQualityCriteria(),
-					factor.getQualityNotes(), factor.coverage()));
+					factor.getKgCo2ePerKwh(), factor.getSource(), factor.getQualityNotes(), factor.coverage(),
+					factor.quality()));
 		}
 		target.setResidualMix(source.getResidualMixAvailable(), source.getResidualMixKgCo2ePerKwh());
 		var dropped = new ArrayList<DroppedExclusion>();
