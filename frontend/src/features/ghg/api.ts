@@ -1303,6 +1303,14 @@ export interface AuditEvent {
     | 'MEMBER_ROLE_CHANGED'
     | 'MEMBER_REMOVED'
     | 'ORGANIZATION_RENAMED'
+    | 'ENTITY_ADDED'
+    | 'ENTITY_UPDATED'
+    | 'ENTITY_REMOVED'
+    | 'FACILITY_ADDED'
+    | 'FACILITY_UPDATED'
+    | 'FACILITY_REMOVED'
+    | 'STREAM_ADDED'
+    | 'STREAM_REMOVED'
   runId: string | null
   runNo: number | null
   actor: string
@@ -1927,7 +1935,7 @@ export function deleteOrganization(id: string, input: DeleteOrganizationInput): 
   })
 }
 
-/** The organization's own history (spec 01.3): support access assumed, ended and expired. */
+/** The organization's own history (specs 01.3, 01.7): access, membership, structure and deletion. */
 export function listOrganizationEvents(organizationId: string): Promise<AuditEvent[]> {
   return api<AuditEvent[]>(`/api/ghg/organizations/${organizationId}/events`)
 }

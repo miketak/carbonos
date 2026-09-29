@@ -317,7 +317,10 @@ public class GhgService {
 		return name.charAt(0) + name.substring(1).toLowerCase(Locale.ROOT);
 	}
 
-	/** The organization-level history (spec 01.3): support access assumed, ended, expired; the deletion. */
+	/**
+	 * The organization-level history (spec 01.3, 01.7): support access, creation, renames, membership,
+	 * factor pack decisions, the structure (entities, facilities, streams) and the deletion.
+	 */
 	@Transactional(readOnly = true)
 	public List<GhgAuditEvent> organizationEvents(UUID organizationId) {
 		getOrganization(organizationId);
@@ -464,7 +467,9 @@ public class GhgService {
 				controlFlag(facts), parent, false);
 		entity.setStructure(facts.effectiveFrom(), facts.effectiveTo(), country(facts.jurisdiction()),
 				facts.financialControlOverride(), trimToNull(facts.controlNote()));
-		return entities.save(entity);
+		var saved = entities.save(entity);
+		recordStructure(organization, GhgAuditEvent.Action.ENTITY_ADDED, StructureChanges.entityAdded(saved));
+		return saved;
 	}
 
 	/** Financial control is a fact only for franchises (spec 03.3); every other row implies it or rules it out. */
@@ -517,10 +522,16 @@ public class GhgService {
 		}
 		var parent = requireParent(facts.parentEntityId(), entity.getOrganization().getId(), entity);
 		requireStructure(facts);
+		var before = StructureChanges.of(entity);
 		entity.update(trimmed, facts.relationshipType(), facts.economicInterestPercent(),
 				facts.legalOwnershipPercent(), facts.operatedByCompany(), controlFlag(facts), parent);
 		entity.setStructure(facts.effectiveFrom(), facts.effectiveTo(), country(facts.jurisdiction()),
 				entity.isReportingCompany() ? null : facts.financialControlOverride(), trimToNull(facts.controlNote()));
+		// spec 01.7, 03.1: an edit that changes nothing is not an act and leaves no row
+		var reason = StructureChanges.changed(entity.getName(), before, StructureChanges.of(entity));
+		if (reason != null) {
+			recordStructure(entity.getOrganization(), GhgAuditEvent.Action.ENTITY_UPDATED, reason);
+		}
 		return entity;
 	}
 
@@ -541,6 +552,8 @@ public class GhgService {
 		}
 		requireReason(reason, "Removing a legal entity");
 		entity.markRemoved(access.currentUserEmail(), reason.trim());
+		recordStructure(entity.getOrganization(), GhgAuditEvent.Action.ENTITY_REMOVED,
+				StructureChanges.removed(entity.getName(), reason.trim()));
 	}
 
 	// --- facilities ---------------------------------------------------------
@@ -577,7 +590,9 @@ public class GhgService {
 		facility.setAttributes(trimToNull(attributes.gridRegion()) == null ? null
 				: attributes.gridRegion().trim().toUpperCase(Locale.ROOT), attributes.facilityType(),
 				attributes.leaseType(), attributes.leaseFrom(), attributes.leaseTo());
-		return facilities.save(facility);
+		var saved = facilities.save(facility);
+		recordStructure(organization, GhgAuditEvent.Action.FACILITY_ADDED, StructureChanges.facilityAdded(saved));
+		return saved;
 	}
 
 	public Facility updateFacility(UUID id, UUID entityId, String name, String location, String country,
@@ -586,10 +601,15 @@ public class GhgService {
 		access.checkWrite(facility.getOrganization());
 		var entity = requireEntityInOrganization(entityId, facility.getOrganization().getId());
 		requireLease(attributes);
+		var before = StructureChanges.of(facility);
 		facility.update(entity, name.trim(), location.trim(), country(country));
 		facility.setAttributes(trimToNull(attributes.gridRegion()) == null ? null
 				: attributes.gridRegion().trim().toUpperCase(Locale.ROOT), attributes.facilityType(),
 				attributes.leaseType(), attributes.leaseFrom(), attributes.leaseTo());
+		var reason = StructureChanges.changed(facility.getName(), before, StructureChanges.of(facility));
+		if (reason != null) {
+			recordStructure(facility.getOrganization(), GhgAuditEvent.Action.FACILITY_UPDATED, reason);
+		}
 		return facility;
 	}
 
@@ -619,6 +639,18 @@ public class GhgService {
 		}
 		requireReason(reason, "Removing a facility");
 		facility.markRemoved(access.currentUserEmail(), reason.trim());
+		recordStructure(facility.getOrganization(), GhgAuditEvent.Action.FACILITY_REMOVED,
+				StructureChanges.removed(facility.getName(), reason.trim()));
+	}
+
+	/**
+	 * Spec 01.7, 03.1: a change to the organization's structure is written to its
+	 * own history under the person who made it, marked when they act under
+	 * support access (spec 01.3).
+	 */
+	private void recordStructure(Organization organization, GhgAuditEvent.Action action, String detail) {
+		auditEvents.save(new GhgAuditEvent(organization.getId(), action, access.currentUserId(),
+				access.currentUserEmail(), access.attributed(organization, detail)));
 	}
 
 	private static void requireReason(String reason, String what) {
@@ -653,8 +685,11 @@ public class GhgService {
 		if (streams.existsByFacilityIdAndNameIgnoreCase(facilityId, trimmed)) {
 			throw new GhgRuleViolationException("'" + facility.getName() + "' already has a stream named '" + trimmed + "'.");
 		}
-		return streams.save(new SourceStream(facility, trimmed, facts.kind(), trimToNull(facts.fuel()),
+		var stream = streams.save(new SourceStream(facility, trimmed, facts.kind(), trimToNull(facts.fuel()),
 				trimToNull(facts.meterOrSupplier()), facts.contractorOperated(), trimToNull(facts.note())));
+		recordStructure(facility.getOrganization(), GhgAuditEvent.Action.STREAM_ADDED,
+				StructureChanges.streamAdded(stream));
+		return stream;
 	}
 
 	public SourceStream updateStream(UUID id, StreamFacts facts) {
@@ -679,7 +714,9 @@ public class GhgService {
 			throw new GhgRuleViolationException("'" + stream.getName()
 					+ "' has activity records. Move them to another stream before deleting it.");
 		}
+		var reason = StructureChanges.streamRemoved(stream);
 		streams.delete(stream);
+		recordStructure(stream.getFacility().getOrganization(), GhgAuditEvent.Action.STREAM_REMOVED, reason);
 	}
 
 	private SourceStream getStream(UUID id) {

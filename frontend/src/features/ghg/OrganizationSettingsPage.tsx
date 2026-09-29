@@ -192,8 +192,9 @@ function Settings({ organization }: { organization: Organization }) {
         )}
         {eventsQuery.data && events.length === 0 && (
           <p className="p-6 text-sm text-ink-muted">
-            Nothing has happened to the organization itself yet. Support access and deletion are
-            recorded here; what happens inside an inventory is in its own history.
+            Nothing has happened to the organization itself yet. Membership, support access, changes
+            to legal entities, facilities and source streams, and deletion are recorded here; what
+            happens inside an inventory is in its own history.
           </p>
         )}
         {events.length > 0 && (

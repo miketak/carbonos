@@ -4,7 +4,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { ApiError } from '../../lib/api'
 import { renderWithProviders } from '../../test/utils'
 import { OrganizationSettingsPage } from './OrganizationSettingsPage'
-import type { Inventory, Organization } from './api'
+import type { AuditEvent, Inventory, Organization } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 vi.mock('../auth/api', () => ({
@@ -243,6 +243,63 @@ test('the history reads a factor pack adoption as a labelled act (spec 02.7)', a
 
   expect(await screen.findByText('Factor pack adopted')).toBeInTheDocument()
   expect(screen.getByText(/adopted 'defra-2026' from 2026-01-01/)).toBeInTheDocument()
+})
+
+test('the history reads changes to the structure as labelled acts (specs 01.7, 03.1)', async () => {
+  const event = (id: string, action: AuditEvent['action'], reason: string) => ({
+    id,
+    action,
+    runId: null,
+    runNo: null,
+    actor: 'owner@client.test',
+    reason,
+    at: '2026-09-29T10:00:00Z',
+  })
+  vi.mocked(listOrganizationEvents).mockResolvedValue([
+    event(
+      'ev-3',
+      'ENTITY_UPDATED',
+      'Gye Nyame Camp Services Ltd: economic interest 100% \u2192 60%, legal ownership 100% \u2192 60%',
+    ),
+    event(
+      'ev-4',
+      'ENTITY_ADDED',
+      'Gye Nyame Camp Services Ltd added: subsidiary, economic interest 100%',
+    ),
+    event('ev-5', 'ENTITY_REMOVED', 'Tarkwa JV removed: sold to the partner'),
+    event(
+      'ev-6',
+      'FACILITY_ADDED',
+      'Nkran camp added under Gye Nyame Camp Services Ltd, location Nkran',
+    ),
+    event('ev-7', 'FACILITY_UPDATED', 'Nkran camp: location Nkran \u2192 Nkran, Ashanti'),
+    event('ev-8', 'FACILITY_REMOVED', 'Nkran camp removed: camp closed'),
+    event(
+      'ev-9',
+      'STREAM_ADDED',
+      'Camp generator diesel added at Nkran camp: stationary combustion',
+    ),
+    event('ev-10', 'STREAM_REMOVED', 'Camp generator diesel removed from Nkran camp'),
+  ])
+  renderSettingsPage()
+
+  for (const label of [
+    'Legal entity edited',
+    'Legal entity added',
+    'Legal entity removed',
+    'Facility added',
+    'Facility edited',
+    'Facility removed',
+    'Source stream added',
+    'Source stream removed',
+  ]) {
+    expect(await screen.findByText(label)).toBeInTheDocument()
+  }
+  expect(
+    screen.getByText(
+      'Gye Nyame Camp Services Ltd: economic interest 100% \u2192 60%, legal ownership 100% \u2192 60%',
+    ),
+  ).toBeInTheDocument()
 })
 
 async function openDeleteDialog(user: ReturnType<typeof userEvent.setup>) {
