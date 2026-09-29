@@ -913,3 +913,438 @@
     transform: scaleX(1);
   }
 }
+
+/* ===================== Help centre (features/help) ===================== */
+
+@layer components {
+  .help {
+    --help-ink: #143d43;
+    @apply min-h-screen;
+    overflow-x: clip;
+  }
+  .help :is(a, button, summary):focus-visible {
+    @apply rounded-md ring-2 ring-bright-teal ring-offset-2 ring-offset-soft-mint outline-none;
+  }
+  .help-header {
+    @apply sticky top-0 z-40 border-b border-teal/15 bg-soft-mint/85 backdrop-blur-xl backdrop-saturate-150;
+  }
+  .help-header-row {
+    @apply mx-auto flex min-h-16 max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-5 py-2 sm:h-16 sm:flex-nowrap sm:px-8 sm:py-0;
+  }
+  .help-header-search {
+    @apply order-last basis-full sm:order-none sm:mx-auto sm:basis-auto sm:max-w-xl sm:flex-1;
+  }
+  .help-searchbox {
+    @apply relative flex items-center;
+  }
+  .help-searchbox svg {
+    @apply pointer-events-none absolute left-3 text-ink-muted;
+  }
+  .help-searchbox input {
+    @apply w-full rounded-xl border border-teal/20 bg-white/80 py-2 pr-3 pl-10 text-sm text-dark-teal placeholder:text-ink-muted focus:border-teal focus:ring-2 focus:ring-bright-teal/40 focus:outline-none;
+  }
+  .help-browse,
+  .help-signin {
+    @apply rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap text-dark-teal transition-colors hover:bg-teal/10;
+  }
+  .help-frame {
+    @apply mx-auto grid w-full max-w-7xl gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[260px_minmax(0,1fr)] lg:py-10;
+  }
+  .help-tree-column {
+    @apply hidden lg:block;
+  }
+  .help-main {
+    @apply min-w-0;
+  }
+
+  /* tree */
+  .help-tree {
+    @apply flex flex-col gap-1 text-sm lg:sticky lg:top-24;
+  }
+  .help-tree-group + .help-tree-group {
+    @apply mt-1;
+  }
+  .help-tree-title {
+    @apply flex w-full items-center gap-1 rounded-lg font-semibold text-dark-teal;
+  }
+  .help-tree-toggle {
+    @apply flex size-7 shrink-0 items-center justify-center rounded-md text-dark-teal hover:bg-teal/10;
+  }
+  .help-tree-title-link {
+    @apply flex-1 rounded-md px-1.5 py-1.5 hover:bg-teal/10;
+  }
+  .help-tree-glossary {
+    @apply ml-8 rounded-md px-1.5 py-1.5 font-semibold text-dark-teal hover:bg-teal/10;
+  }
+  .help-tree-glossary[aria-current='page'] {
+    @apply bg-teal/10;
+  }
+  .help-tree-chevron {
+    @apply inline-block size-1.5 rotate-[-45deg] border-r border-b border-current transition-transform;
+  }
+  .help-tree-title.is-open .help-tree-chevron {
+    @apply rotate-45;
+  }
+  .help-tree-list {
+    @apply mt-1 ml-3 flex flex-col gap-0.5 border-l border-teal/15 pl-3;
+  }
+  .help-tree-link {
+    @apply grid grid-cols-[auto_1fr] items-baseline rounded-md px-2 py-1 text-ink-muted hover:bg-teal/10 hover:text-dark-teal;
+  }
+  .help-tree-link:not(:has(.help-tree-step)) {
+    @apply block;
+  }
+  .help-tree-link[aria-current='page'] {
+    @apply bg-teal/10 font-semibold text-dark-teal;
+  }
+  .help-tree-step {
+    @apply mr-2 inline-block w-4 text-xs font-bold text-link tabular-nums;
+  }
+  .help-tree-more,
+  .help-more {
+    @apply mt-1 rounded-md px-2 py-1 text-sm font-medium text-link hover:bg-teal/10;
+  }
+
+  /* pages */
+  .help-page {
+    @apply max-w-4xl;
+  }
+  .help-h1 {
+    @apply text-3xl font-bold tracking-[-0.02em] sm:text-4xl;
+    color: var(--help-ink);
+  }
+  .help-h2 {
+    @apply text-xl font-bold text-dark-teal;
+  }
+  .help-tagline {
+    @apply mt-3 max-w-2xl text-base text-ink-muted sm:text-lg;
+  }
+  .help-breadcrumb ol {
+    @apply mb-4 flex flex-wrap items-center gap-1 text-sm text-ink-muted;
+  }
+  .help-breadcrumb li + li::before {
+    content: '›' / '';
+    @apply mx-1 text-ink-muted;
+  }
+  .help-breadcrumb a {
+    @apply hover:text-link hover:underline;
+  }
+  .help-breadcrumb [aria-current] {
+    @apply text-dark-teal;
+  }
+  .help-hub {
+    @apply mt-10 grid gap-x-10 gap-y-10 sm:grid-cols-2;
+  }
+  .help-hub-title {
+    @apply text-xl font-bold text-dark-teal;
+  }
+  .help-hub-title a:hover {
+    @apply text-link underline;
+  }
+  .help-hub-tagline {
+    @apply mt-1 mb-3 text-sm text-ink-muted;
+  }
+  .help-list {
+    @apply flex flex-col gap-1.5 text-[15px];
+  }
+  .help-list a,
+  .help-empty-list a,
+  .help-explore a,
+  .help-empty a {
+    @apply text-dark-teal underline-offset-2 hover:text-link hover:underline;
+  }
+  .help-cards {
+    @apply mt-8 grid gap-4 sm:grid-cols-2;
+  }
+  .help-card {
+    @apply flex h-full flex-col p-5 transition-all duration-200 hover:bg-white/75;
+  }
+  .help-card-title {
+    @apply text-base font-bold text-dark-teal;
+  }
+  .help-card-title a:hover {
+    @apply text-link;
+  }
+  .help-card-text {
+    @apply mt-1 line-clamp-3 flex-1 text-sm text-ink-muted;
+  }
+  .help-card-link {
+    @apply mt-3 text-sm font-semibold text-link;
+  }
+  .help-explore {
+    @apply mt-12 border-t border-teal/15 pt-6;
+  }
+  .help-explore ul {
+    @apply mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm;
+  }
+  .help-empty-list,
+  .help-empty ul {
+    @apply mt-4 flex flex-col gap-1.5 text-sm;
+  }
+
+  /* article */
+  .help-article.has-rail {
+    @apply grid gap-10 xl:max-w-none xl:grid-cols-[minmax(0,1fr)_220px];
+  }
+  .help-article-main {
+    @apply min-w-0 max-w-3xl;
+  }
+  .help-step-number {
+    @apply mb-1 block text-xs font-semibold tracking-[0.18em] text-link uppercase;
+  }
+  .help-meta {
+    @apply mt-3 flex flex-wrap items-center gap-3 text-sm text-ink-muted;
+  }
+  .help-role {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-teal/25 bg-white/60 px-2.5 py-0.5 text-xs font-medium text-dark-teal;
+  }
+  .help-role-label {
+    @apply font-bold tracking-wide uppercase;
+  }
+  .help-reviewed {
+    @apply mt-8 text-xs text-ink-muted;
+  }
+  .help-rail {
+    @apply hidden xl:block;
+  }
+  .help-onthispage {
+    @apply sticky top-24 text-sm;
+  }
+  .help-rail .help-onthispage {
+    @apply max-h-[calc(100vh-7rem)] overflow-y-auto pr-2;
+  }
+  .help-onthispage-title {
+    @apply mb-2 text-xs font-bold tracking-[0.16em] text-ink-muted uppercase;
+  }
+  .help-onthispage-inline {
+    @apply mt-6 rounded-xl border border-teal/15 bg-white/50 px-4 py-3 text-sm;
+  }
+  .help-onthispage-inline summary {
+    @apply cursor-pointer list-none font-semibold text-dark-teal;
+  }
+  .help-onthispage-inline[open] summary {
+    @apply mb-2;
+  }
+  .help-onthispage-inline .help-onthispage {
+    @apply static;
+  }
+  .help-onthispage ul {
+    @apply flex flex-col gap-0.5 border-l border-teal/15;
+  }
+  .help-onthispage a {
+    @apply -ml-px block border-l-2 border-transparent py-1 pl-3 text-ink-muted hover:text-dark-teal;
+  }
+  .help-onthispage li.is-sub a {
+    @apply pl-6 text-[13px];
+  }
+  .help-onthispage a[aria-current] {
+    @apply border-teal font-semibold text-dark-teal;
+  }
+  .help-skeleton {
+    @apply mt-6 flex flex-col gap-3;
+  }
+  .help-error {
+    @apply mt-3 text-sm font-medium text-red-600;
+  }
+
+  /* prose: the compiled article body */
+  .help-prose {
+    @apply mt-6 max-w-[68ch] text-[17px] leading-[1.65] text-dark-teal;
+  }
+  .help-prose > * + * {
+    @apply mt-4;
+  }
+  .help-prose h2 {
+    @apply mt-12 mb-3 scroll-mt-24 text-2xl leading-tight font-bold tracking-tight;
+    color: var(--help-ink);
+  }
+  .help-prose h3 {
+    @apply mt-8 mb-1 scroll-mt-24 text-[19px] font-semibold;
+    color: var(--help-ink);
+  }
+  .help-prose h4 {
+    @apply mt-5 text-base font-semibold;
+  }
+  .help-prose a {
+    @apply text-link underline decoration-teal/40 underline-offset-2 hover:decoration-teal;
+  }
+  .help-prose strong {
+    @apply font-semibold text-dark-teal;
+  }
+  .help-prose code {
+    @apply rounded bg-dark-teal/[0.06] px-1 py-0.5 font-mono text-[0.9em];
+  }
+  .help-prose pre {
+    @apply overflow-x-auto rounded-xl bg-dark-teal p-4 text-sm text-white;
+  }
+  .help-prose pre code {
+    @apply bg-transparent p-0 text-inherit;
+  }
+  .help-prose ul {
+    @apply list-disc pl-6;
+  }
+  .help-prose ol {
+    @apply list-none pl-0;
+    counter-reset: step;
+  }
+  .help-prose ol > li {
+    @apply relative pl-10;
+    counter-increment: step;
+  }
+  .help-prose ol > li::before {
+    content: counter(step);
+    @apply absolute top-0.5 left-0 flex size-7 items-center justify-center rounded-full bg-teal-deep text-sm font-bold text-white;
+  }
+  .help-prose li + li {
+    @apply mt-2;
+  }
+  .help-prose li > p + p,
+  .help-prose li > ul,
+  .help-prose li > ol {
+    @apply mt-2;
+  }
+  .help-prose blockquote {
+    @apply border-l-2 border-teal/40 pl-4 text-ink-muted;
+  }
+  .help-table {
+    @apply my-4 overflow-x-auto rounded-xl border border-teal/15 bg-white/60;
+  }
+  .help-table table {
+    @apply w-full border-collapse text-[15px];
+  }
+  .help-table th,
+  .help-table td {
+    @apply border-b border-teal/10 px-3 py-2 text-left align-top;
+  }
+  .help-table th {
+    @apply bg-soft-mint/80 text-xs font-semibold tracking-wide text-ink-muted uppercase;
+  }
+  .help-table tr:last-child td {
+    @apply border-b-0;
+  }
+  .help-callout {
+    @apply my-5 rounded-r-xl border-l-[3px] border-teal bg-white/60 px-4 py-3 text-[15px];
+  }
+  .help-callout--warning {
+    @apply border-amber-500 bg-amber-50/70;
+  }
+  .help-callout__title {
+    @apply mb-1 text-sm font-bold text-dark-teal;
+  }
+  .help-callout > * + * {
+    @apply mt-2;
+  }
+  .help-figure {
+    @apply my-6;
+  }
+  .help-figure img {
+    @apply mx-auto max-w-full rounded-xl border border-teal/10 bg-white p-3;
+  }
+  .help-figure figcaption {
+    @apply mt-2 text-center text-sm text-ink-muted;
+  }
+  .help-screenshot img {
+    @apply rounded-xl border border-teal/15 p-0 shadow-[0_8px_32px_rgba(36,97,105,0.12)];
+  }
+  .help-prose hr {
+    @apply my-8 border-teal/15;
+  }
+  .help-letters {
+    @apply mt-4 flex flex-wrap gap-1;
+  }
+  .help-letters a {
+    @apply rounded-md px-2 py-1 text-sm font-semibold text-link hover:bg-teal/10;
+  }
+
+  /* series, feedback, still need help */
+  .help-series {
+    @apply mt-10 grid gap-3 border-t border-teal/15 pt-6 sm:grid-cols-2;
+  }
+  .help-series-link {
+    @apply flex flex-col rounded-xl border border-teal/20 bg-white/60 px-4 py-3 text-sm font-semibold text-dark-teal hover:border-teal hover:bg-white/80;
+  }
+  .help-series-link.is-next {
+    @apply text-right sm:col-start-2;
+  }
+  .help-series-label {
+    @apply text-xs font-semibold tracking-[0.16em] text-link uppercase;
+  }
+  .help-feedback {
+    @apply mt-10 border-t border-teal/15 pt-6;
+  }
+  .help-feedback-question,
+  .help-feedback-thanks {
+    @apply text-base font-semibold text-dark-teal;
+  }
+  .help-feedback-buttons {
+    @apply mt-3 flex gap-2;
+  }
+  .help-feedback-form {
+    @apply mt-3 flex flex-col gap-4;
+  }
+  .help-feedback-form legend {
+    @apply mb-2 text-sm font-semibold text-dark-teal;
+  }
+  .help-feedback-reason {
+    @apply flex items-center gap-2 py-1 text-sm text-dark-teal;
+  }
+  .help-still {
+    @apply mt-6 text-sm text-ink-muted;
+  }
+  .help-drawer-scrim {
+    @apply fixed inset-0 z-50 bg-dark-teal/20;
+  }
+  .help-drawer {
+    @apply absolute inset-y-0 left-0 flex w-[min(20rem,88vw)] flex-col border-r border-white/70 bg-white/95 shadow-[8px_0_32px_rgba(9,168,149,0.16)] backdrop-blur-xl;
+    animation: fade-up 0.18s ease-out both;
+  }
+  .help-drawer-head {
+    @apply flex items-center justify-between border-b border-teal/10 px-4 py-3;
+  }
+  .help-drawer-title {
+    @apply text-sm font-bold text-dark-teal;
+  }
+  .help-drawer-close {
+    @apply rounded-md px-2 py-1 text-sm font-semibold text-link hover:bg-teal/10;
+  }
+  .help-drawer-body {
+    @apply overflow-y-auto px-3 py-3;
+  }
+  .help-drawer .help-tree-link,
+  .help-drawer .help-tree-title-link,
+  .help-drawer .help-tree-glossary {
+    @apply py-2;
+  }
+  .help-still-title {
+    @apply text-base font-bold text-dark-teal;
+  }
+  .help-still-link {
+    @apply font-semibold text-link hover:underline;
+  }
+
+  /* search */
+  .help-search-form {
+    @apply mt-6 max-w-xl;
+  }
+  .help-search-count {
+    @apply mt-6 text-sm text-ink-muted;
+  }
+  .help-results {
+    @apply mt-4 flex flex-col gap-5;
+  }
+  .help-result-title {
+    @apply text-base font-semibold text-dark-teal hover:text-link hover:underline;
+  }
+  .help-result-heading {
+    @apply font-medium text-ink-muted;
+  }
+  .help-result-snippet {
+    @apply mt-1 text-sm text-ink-muted;
+  }
+  .help-result-group {
+    @apply mt-1 text-xs font-semibold tracking-wide text-link uppercase;
+  }
+  .help-empty {
+    @apply mt-6 text-sm text-dark-teal;
+  }
+}

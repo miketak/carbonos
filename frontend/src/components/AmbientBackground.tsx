@@ -11,7 +11,8 @@ const grain = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'
  */
 export function AmbientBackground() {
   const { pathname } = useLocation()
-  const dimmed = pathname.startsWith('/app') || pathname.startsWith('/admin')
+  const dimmed =
+    pathname.startsWith('/app') || pathname.startsWith('/admin') || pathname.startsWith('/help')
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">

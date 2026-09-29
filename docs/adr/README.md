@@ -47,4 +47,5 @@ form.
 | [0002](0002-publish-qa-procedures-to-google-docs-with-pandoc.md) | Publish the QA procedures to Google Docs with pandoc and the Drive API | proposed | 2026-09-10 |
 | [0003](0003-promote-releases-through-qa-staging-and-production.md) | Promote one tagged commit through qa, staging and production | accepted | 2026-09-11 |
 | [0004](0004-a-platform-module-for-deployment-policy.md) | A platform module for deployment policy | accepted | 2026-09-14 |
-| [0005](0005-a-separate-mkdocs-site-for-end-user-help.md) | Publish end-user help as a second MkDocs site under help/, sharing the uv toolchain | proposed | 2026-09-24 |
+| [0005](0005-a-separate-mkdocs-site-for-end-user-help.md) | Publish end-user help as a second MkDocs site under help/, sharing the uv toolchain | superseded by ADR-0006 | 2026-09-24 |
+| [0006](0006-serve-end-user-help-as-routes-of-the-app.md) | Serve end-user help as routes of the React app, compiled from help/docs at build time | accepted | 2026-09-28 |

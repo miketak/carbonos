@@ -1,4 +1,5 @@
 import { GlassCard } from '../../../components/GlassCard'
+import { HelpLink } from '../../../components/HelpLink'
 import { gateLabels } from '../format'
 import type { GateStatus, ValidationReport } from '../api'
 
@@ -26,7 +27,10 @@ export function PreflightPanel({ report }: { report: ValidationReport }) {
   return (
     <GlassCard className="p-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg">Pre-flight checks</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg">Pre-flight checks</h2>
+          <HelpLink topic="preflight" />
+        </div>
         <span
           className={`rounded-full border px-3 py-0.5 font-mono text-xs font-bold tracking-widest ${
             report.ready

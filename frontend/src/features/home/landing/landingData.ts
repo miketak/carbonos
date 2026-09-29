@@ -133,7 +133,11 @@ export const FAQ = [
   },
 ]
 
-/* Gye Nyame Gold is a fictional company for the landing page; every figure below is made up. */
+/*
+ * Gye Nyame Gold is a fictional company. Every figure below is read from Run 001
+ * of its FY2025 inventory in CarbonOS, built from the help centre's fixture
+ * help/docs/assets/gye-nyame-2025.csv on 2026-09-28 (the Get started series).
+ */
 export const PERSONA = {
   name: 'Gye Nyame Gold',
   period: 'FY2025 · 1 Jan to 31 Dec 2025',
@@ -141,18 +145,19 @@ export const PERSONA = {
   run: 'Run 4 · final',
   total: 86412,
   scopes: [
-    { name: 'Scope 1', value: 39180, note: 'Fleet diesel 14.2 ML, ANFO 6,000 t, LPG' },
-    { name: 'Scope 2', value: 38520, note: 'Grid electricity 95 GWh, location-based' },
-    { name: 'Scope 3', value: 8712, note: 'Category 3: well-to-tank, T&D losses' },
+    { name: 'Scope 1', value: 34194, note: 'Haul fleet diesel 11.9 ML, camp gensets, kitchen LPG' },
+    { name: 'Scope 2', value: 32817, note: 'Grid electricity 70 GWh, location-based' },
+    { name: 'Scope 3', value: 19401, note: 'Contract haulage; well-to-tank and T&D losses' },
   ],
   gases: [
-    { gas: 'CO₂', mass: '85,120 t', gwp: 1, co2e: 85120, color: '#0b9a8a' },
-    { gas: 'CH₄', mass: '8.43 t', gwp: 28, co2e: 236, color: '#1f5fa8' },
-    { gas: 'N₂O', mass: '3.985 t', gwp: 265, co2e: 1056, color: '#56a11e' },
+    { gas: 'CO₂', mass: '45,124 t', gwp: 1, co2e: 45124, color: '#0b9a8a' },
+    { gas: 'CH₄', mass: '147 kg', gwp: 28, co2e: 4, color: '#1f5fa8' },
+    { gas: 'N₂O', mass: '1.751 t', gwp: 265, co2e: 464, color: '#56a11e' },
+    { gas: 'No gas split', mass: 'Not separable', gwp: null, co2e: 40820, color: '#7a8c8a' },
   ],
   scope2: {
-    location: 38520,
-    market: 38520,
-    note: 'No contractual instruments meet the Scope 2 Quality Criteria, so the market-based figure uses the same grid factor and says so.',
+    location: 32817,
+    market: 32817,
+    note: 'No contractual instruments and no residual mix, so the market-based figure uses the same grid factor and says so.',
   },
 }

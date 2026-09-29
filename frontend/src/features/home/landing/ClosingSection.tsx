@@ -3,7 +3,7 @@ import type { AccessIntent } from './intent'
 import { Reveal } from './Reveal'
 import { Wordmark } from '../../../components/Wordmark'
 
-export const CONTACT_EMAIL = 'info@ecoriv.land'
+import { CONTACT_EMAIL } from '../../../lib/contact'
 
 export function ClosingSection({ onRequest }: { onRequest: (intent: AccessIntent) => void }) {
   return (

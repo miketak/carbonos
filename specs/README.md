@@ -68,6 +68,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 07.7 | [Emissions by gas that tie to the total](07.7-emissions-by-gas-that-ties-to-the-total.md) | Ch. 5, 7, 9 | Implemented |
 | 07.8 | [PDF readability](07.8-pdf-readability.md) | Ch. 9, 10 | Implemented |
 | 08 | [Form validation and UI polish](08-form-validation-and-ui-polish.md) | Ch. 1 (credibility, transparency) | Implemented |
+| 09 | [The help centre](09-the-help-centre.md) | Ch. 7 (information management), ISO 14064-1 8.2 | Approved |
 
 A chapter spec (`NN`) describes one stage of the workflow as it is today. A
 sub-spec (`NN.M`) is a branch of that stage that deserves its own document.

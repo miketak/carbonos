@@ -52,6 +52,8 @@ class SecurityConfig {
 				.requestMatchers(HttpMethod.POST, "/api/access-requests").permitAll()
 				.requestMatchers("/api/access-requests/setup/*").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/access-requests/complete").permitAll()
+				// spec 09: a visitor may vote on a help article and report a search; CSRF still applies
+				.requestMatchers(HttpMethod.POST, "/api/help/**").permitAll()
 				.requestMatchers("/api/admin/**").hasRole("ADMIN")
 				.anyRequest().authenticated())
 			.csrf(csrf -> csrf

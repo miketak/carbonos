@@ -138,7 +138,7 @@ export function AdminDashboardPage() {
     )
   }
 
-  const { accounts, platform } = summaryQuery.data
+  const { accounts, platform, help } = summaryQuery.data
   const approvable = platform.draftEditions.filter((draft) => draft.mayApprove).length
   const myGrants = platform.grants.filter((grant) => grant.mine && grant.endedAt === null)
   const liveGrants = platform.grants.filter((grant) => grant.endedAt === null)
@@ -171,6 +171,14 @@ export function AdminDashboardPage() {
         to="/admin/organizations"
         headline={`You hold support access to ${myGrants.length} organization${myGrants.length === 1 ? '' : 's'}`}
         detail={`The next expires ${when(myGrants[0].expiresAt)}. End it when the case is closed.`}
+      />
+    ),
+    help.pagesBelowTarget.length > 0 && (
+      <QueueRow
+        key="help-pages"
+        to="/admin/help"
+        headline={`${help.pagesBelowTarget.length} help page${help.pagesBelowTarget.length === 1 ? '' : 's'} under the 80% helpful target`}
+        detail="Each has at least five votes. The comments say what readers were missing."
       />
     ),
     accounts.administrators === 1 && (
@@ -229,6 +237,37 @@ export function AdminDashboardPage() {
             label="Open adoption notices"
             value={platform.openNotices}
             detail="each organization decides its own"
+          />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-lg">The help</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatTile
+            label="Helpful votes, 30 days"
+            value={
+              help.feedback.helpfulRate30d === null
+                ? 0
+                : Math.round(help.feedback.helpfulRate30d * 100)
+            }
+            suffix="%"
+            detail={
+              help.feedback.helpfulRate30d === null
+                ? 'no votes yet; target 80%'
+                : `${help.feedback.votes30d} vote${help.feedback.votes30d === 1 ? '' : 's'}; target 80%`
+            }
+            to="/admin/help"
+          />
+          <StatTile
+            label="Searches with no result, 30 days"
+            value={help.search.misses30d}
+            detail={
+              help.search.missRate30d === null
+                ? 'no searches yet; target under 5%'
+                : `${Math.round(help.search.missRate30d * 100)}% of ${help.search.searches30d} search${help.search.searches30d === 1 ? '' : 'es'}; target under 5%`
+            }
+            to="/admin/help"
           />
         </div>
       </section>

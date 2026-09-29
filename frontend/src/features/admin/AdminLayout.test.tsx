@@ -9,6 +9,7 @@ import { AdminLayout } from './AdminLayout'
 vi.mock('./api', () => ({
   getAccountsSummary: vi.fn(),
   getPlatformSummary: vi.fn(),
+  getHelpSummary: vi.fn(),
 }))
 vi.mock('../auth/api', () => ({
   login: vi.fn(),
@@ -27,7 +28,7 @@ vi.mock('../ghg/api', () => ({
   listOrganizations: vi.fn(),
 }))
 
-import { getAccountsSummary, getPlatformSummary } from './api'
+import { getAccountsSummary, getHelpSummary, getPlatformSummary } from './api'
 import { me } from '../auth/api'
 import { listOrganizations } from '../ghg/api'
 import { getProfile } from '../profile/api'
@@ -52,6 +53,13 @@ const platform = {
   recentActivity: [],
 }
 
+const help = {
+  feedback: { votes30d: 0, helpful30d: 0, helpfulRate30d: null },
+  search: { searches30d: 0, misses30d: 0, missRate30d: null },
+  pagesBelowTarget: [],
+  topMisses: [],
+}
+
 beforeEach(() => {
   localStorage.clear()
   vi.mocked(me).mockResolvedValue({
@@ -64,6 +72,7 @@ beforeEach(() => {
   })
   vi.mocked(getAccountsSummary).mockReset().mockResolvedValue(accounts)
   vi.mocked(getPlatformSummary).mockReset().mockResolvedValue(platform)
+  vi.mocked(getHelpSummary).mockReset().mockResolvedValue(help)
   vi.mocked(listOrganizations).mockReset().mockResolvedValue([])
   vi.mocked(getProfile).mockReset().mockResolvedValue({
     id: 'u1',
@@ -112,6 +121,7 @@ test('the sidebar lists every administration section in order', async () => {
     'Users',
     'Organizations',
     'Factor packs',
+    'Help metrics',
     'Platform settings',
   ])
 })

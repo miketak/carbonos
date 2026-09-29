@@ -90,7 +90,7 @@ export function InventorySection() {
                       <tr key={g.gas}>
                         <th scope="row">{g.gas}</th>
                         <td>{g.mass}</td>
-                        <td>{g.gwp}</td>
+                        <td>{g.gwp ?? ''}</td>
                         <td>{fmt.format(g.co2e)}</td>
                       </tr>
                     ))}
@@ -133,7 +133,8 @@ export function InventorySection() {
                         />
                         <span className="gas-name">{g.gas}</span>
                         <span className="gas-detail">
-                          {g.mass} × {g.gwp} = <strong>{fmt.format(g.co2e)}</strong>
+                          {g.gwp === null ? `${g.mass} = ` : `${g.mass} × ${g.gwp} = `}
+                          <strong>{fmt.format(g.co2e)}</strong>
                         </span>
                       </li>
                     ))}

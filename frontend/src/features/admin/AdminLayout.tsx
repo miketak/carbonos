@@ -4,8 +4,8 @@ import { AppHeader } from '../../components/AppHeader'
 import { useAdminSummaryQuery } from './useSummary'
 
 /**
- * The administration area's sections (spec 01.5). The landing stands alone;
- * the four registers an administrator acts on group together; the
+ * The administration area's sections (specs 01.5, 09). The landing stands
+ * alone; the registers an administrator acts on group together; the
  * deployment's own policy sits apart at the end.
  */
 const sections = [
@@ -35,6 +35,12 @@ const sections = [
     icon: 'M2 5h7a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H2zM22 5h-7a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h7z',
   },
   {
+    to: 'help',
+    label: 'Help metrics',
+    end: false,
+    icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01',
+  },
+  {
     to: 'settings',
     label: 'Platform settings',
     end: false,
@@ -45,7 +51,7 @@ const sections = [
 const collapseKey = 'admin.sidebar'
 
 /* dividers group the nav: Dashboard | the registers | the deployment's own policy */
-const dividerAfter = new Set([0, 4])
+const dividerAfter = new Set([0, 5])
 
 /* the navigation entry that carries the count of requests still waiting (spec 01.5) */
 const badgedSection = 'access-requests'
@@ -204,6 +210,18 @@ export function AdminLayout() {
               >
                 <Icon d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10M2 21c0-3 1.85-5.36 4.71-6.5" />
                 <span className={collapsed ? 'md:hidden' : ''}>GHG accounting</span>
+              </Link>
+              <Link
+                to="/help"
+                target="_blank"
+                rel="noopener"
+                title={collapsed ? 'Help' : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap text-link transition-colors duration-150 hover:bg-teal/10 hover:text-link ${
+                  collapsed ? 'md:justify-center md:px-2' : ''
+                }`}
+              >
+                <Icon d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01" />
+                <span className={collapsed ? 'md:hidden' : ''}>Help</span>
               </Link>
             </div>
           </div>

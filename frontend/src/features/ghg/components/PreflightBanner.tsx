@@ -49,7 +49,7 @@ export function PreflightBanner({
               : holdsFinal
                 ? 'Base year holds the final designation; runs stay available.'
                 : warning.length > 0
-                  ? `Every gate passes; ${warning.length} carries a warning.`
+                  ? `Every gate passes; ${warning.length} ${warning.length === 1 ? 'carries' : 'carry'} a warning.`
                   : 'Every gate passes.'}
             {blockers > 0 &&
               ` ${blockers} record${blockers === 1 ? '' : 's'} would also stop a freeze.`}

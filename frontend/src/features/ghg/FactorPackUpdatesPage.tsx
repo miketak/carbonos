@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { HelpLink } from '../../components/HelpLink'
 import { useParams } from 'react-router-dom'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
@@ -48,7 +49,10 @@ export function FactorPackUpdatesPage() {
   return (
     <section className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl">Updates</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl">Updates</h1>
+          <HelpLink topic="editionNotice" />
+        </div>
         <p className="text-sm text-ink-muted">
           New editions of the emission factor packs you hold. Publishing one changes none of your
           numbers: moving to a new factor vintage is your decision, and it is recorded here.

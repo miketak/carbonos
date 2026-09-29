@@ -1,12 +1,19 @@
 ---
-status: proposed
+status: superseded by ADR-0006
 date: 2026-09-24
 decision-makers: miketak
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-09-28
 ---
 
 # 0005: Publish end-user help as a second MkDocs site under help/, sharing the uv toolchain
+
+Superseded on 2026-09-28 by
+[ADR 0006](0006-serve-end-user-help-as-routes-of-the-app.md): the help is
+now compiled from `help/docs` into routes of the React app, and the MkDocs
+project, the `/help/` file serving and the release steps below are gone.
+The record stays as the history of the authoring rules it set, which
+ADR 0006 keeps.
 
 ## Context and problem statement
 

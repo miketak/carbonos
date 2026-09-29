@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { HelpLink } from '../../../components/HelpLink'
 import type { DragEvent, ReactNode } from 'react'
 import { Button } from '../../../components/Button'
 import { Modal } from '../../../components/Modal'
@@ -108,6 +109,11 @@ export function ImportActivitiesModal({
           >
             Download CSV template
           </a>
+          <HelpLink
+            topic="csvTemplate"
+            label="What each column must contain"
+            className="mt-1 ml-3"
+          />
         </Step>
         <Step number={2} title="Select your completed CSV">
           <label

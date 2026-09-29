@@ -72,21 +72,22 @@ jobs:
         run: npm install -g @railway/cli
       # Run from the repo root: the CLI uploads the current directory, and each
       # Railway service selects its subdirectory via its rootDirectory setting.
-      - uses: astral-sh/setup-uv@v6
-      - name: Build the help site for the frontend image
-        # served at /help/ on the app's origin (ADR 0005); HELP_SITE_URL is
-        # only the canonical address MkDocs prints in the sitemap
-        env:
-          HELP_SITE_URL: https://frontend-qa-adbf.up.railway.app/help/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Compile the help for the frontend image
+        # qa serves the React help centre compiled from help/docs (ADR 0006);
+        # the Railway frontend service builds from frontend/ alone, so the
+        # compiled output travels with the upload the way the MkDocs build did
         run: |
-          uv sync --locked
-          uv run mkdocs build --strict -f help/mkdocs.yml
-          rm -rf frontend/help-site && cp -r help/site frontend/help-site
-          # railway up honours .gitignore, which lists frontend/help-site/ so a
-          # local make help-bundle is never committed; drop that one line in
-          # this throwaway checkout so the build reaches the frontend image
-          sed -i '\#^frontend/help-site/$#d' .gitignore
-          git check-ignore -q frontend/help-site/index.html && { echo "frontend/help-site is still ignored" >&2; exit 1; } || true
+          cd frontend && npm ci && npm run help:compile && cd ..
+          # railway up honours .gitignore, which lists the compiled paths so a
+          # local compile is never committed; drop those lines in this throwaway
+          # checkout so the output reaches the frontend image
+          sed -i '\#^frontend/src/features/help/generated/$#d; \#^frontend/public/help-assets/$#d' .gitignore
+          git check-ignore -q frontend/src/features/help/generated/manifest.json && { echo "the compiled help is still ignored" >&2; exit 1; } || true
       - name: Deploy backend
         run: railway up --service backend --ci
       - name: Deploy frontend
