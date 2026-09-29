@@ -422,7 +422,10 @@ test('a blend retires with its composition in the stored form, not the one shown
   await waitFor(() =>
     expect(updateEmissionFactor).toHaveBeenCalledWith(
       'f-blend',
-      expect.objectContaining({ blendComposition: 'HFC-32:0.5,HFC-125:0.5', validTo: '2025-12-31' }),
+      expect.objectContaining({
+        blendComposition: 'HFC-32:0.5,HFC-125:0.5',
+        validTo: '2025-12-31',
+      }),
     ),
   )
 })
@@ -434,7 +437,9 @@ test('a refusal about a field the retire dialog does not show is still shown', a
   vi.mocked(updateEmissionFactor).mockRejectedValue(
     new ApiError(422, {
       detail: "The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.",
-      errors: { blendComposition: "The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'." },
+      errors: {
+        blendComposition: "The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.",
+      },
     }),
   )
   renderPage()
@@ -449,7 +454,9 @@ test('a refusal about a field the retire dialog does not show is still shown', a
   await user.click(within(dialog).getByRole('button', { name: /^retire factor$/i }))
 
   expect(
-    await within(dialog).findByText("The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'."),
+    await within(dialog).findByText(
+      "The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.",
+    ),
   ).toBeInTheDocument()
 })
 

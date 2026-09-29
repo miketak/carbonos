@@ -49,7 +49,9 @@ export function FacilitiesPage() {
   const entityCount = entitiesQuery.data?.length ?? 0
   // The reporting company is stored as a subsidiary; the entity carries the flag (spec 03.1).
   const reportingCompanyIds = new Set(
-    (entitiesQuery.data ?? []).filter((entity) => entity.reportingCompany).map((entity) => entity.id),
+    (entitiesQuery.data ?? [])
+      .filter((entity) => entity.reportingCompany)
+      .map((entity) => entity.id),
   )
   const myRole = organizationQuery.data?.myRole ?? null
 

@@ -217,11 +217,7 @@ beforeEach(() => {
  * addressed by `?record=`, so the suite opens straight onto it, exactly as a
  * pasted link does.
  */
-function renderDrawer(
-  recordId = 'as-1',
-  myRole: 'OWNER' | 'VERIFIER' = 'OWNER',
-  editable = true,
-) {
+function renderDrawer(recordId = 'as-1', myRole: 'OWNER' | 'VERIFIER' = 'OWNER', editable = true) {
   return renderWithProviders(
     <AssignmentsSection
       organizationId="org-1"

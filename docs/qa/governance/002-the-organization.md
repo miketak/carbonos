@@ -24,7 +24,7 @@ it, or, where nobody else could, records that it was self-approved.
 
 **Estimated time:** 50 minutes.
 
-**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+**Procedure version:** 3 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** after procedure 1. Procedures 3 to 8 rest on the
 organization it builds.
@@ -56,8 +56,6 @@ organization it builds.
 | 2 | Open **Legal entities**, **Facilities** and **Emission factors**. | Every button that would write is disabled, with the tooltip "Needs the Preparer, Reviewer or Owner role.". Nothing is hidden: a verifier sees the record, not a blank page. | | |
 | 3 | Sign out of the private window. | | | |
 
-## B. Legal entities
-
 ### A3. Two organizations may share a name
 
 Spec 01.8: a name is refused once when another organization carries it,
@@ -74,19 +72,21 @@ apart, and it never changes.
 | 6 | Under **Danger zone** click **Delete organization**. | The dialog states "(ORG-*NNNN+1*) is removed" and that two organizations may share a name. Type the name and the reason `duplicate created for the walkthrough, no client data`; delete. | | |
 | 7 | Click **New organization** and type "Adansi Foods Ltd" again. | Still refused once, naming only ORG-*NNNN*: the removed organization does not count, the live one does. Cancel. | | |
 
+## B. Legal entities
+
 ### B1. The reporting company is there by definition
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Ama, open **Legal entities**. | Adansi Foods Ltd is listed as the reporting company: the relationship column reads "Reporting company", 100% under every approach, operated. Its row has no **Remove**. | | |
-| 2 | Open its edit form. | The form takes a name, the dates and a jurisdiction. It offers no relationship and no percentages: the reporting company is the group's own wholly owned operation by definition. Close it. | | |
+| 2 | Open its edit form. | The name, the dates and the jurisdiction are editable. The relationship, the percentages, **Operated by the company**, **Financial control** and **Held through** show their fixed values and are disabled: the reporting company is the group's own wholly owned operation by definition. The form also shows the share under each approach, 100%. Close it. | | |
 
 ### B2. A subsidiary with dates, and an associate
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Add an entity: name "Adansi Logistics Ltd", relationship **Group company or subsidiary (financial control)**, economic interest 100, legal ownership 100, **Operated by the company** ticked, **Acquired on** 2025-07-01, **Disposed of on** 2025-01-01, jurisdiction `GH` (the field takes the ISO 3166-1 alpha-2 code). Save. | Refused inline: "The disposal date is before the acquisition date.". | | |
-| 2 | Clear the disposal date and save. | E1 is listed with 100% under every approach and "acquired 2025-07-01". | | |
+| 2 | Clear the disposal date and save. | E1 is listed with 100% under every approach and "from 2025-07-01" under its relationship. | | |
 | 3 | Add a second entity: name "Coldstore Ghana Ltd", relationship **Associate or affiliate (significant influence, no control)**, economic interest 150. Save. | Refused inline under the field: the percentage must be between 0 and 100. | | |
 | 4 | Set economic interest 30, legal ownership 30, leave **Operated by the company** unticked, jurisdiction `GH`. Save. | E2 is listed. Its Table 1 row reads 30% under equity share and 0% under financial and operational control. | | |
 | 5 | Add an entity named "adansi logistics ltd". | Refused: "An entity named 'adansi logistics ltd' already exists.". Names are compared without regard to case. | | |
@@ -105,7 +105,7 @@ apart, and it never changes.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Facilities** and add "Kumasi Plant": location "Kumasi", country `GH`, grid region `GHA` (the code the Ghana pack's rows carry; a blank grid region follows the country), legal entity Adansi Foods Ltd. | The **Legal entity** list reads "Adansi Foods Ltd (Reporting company)". S1 is listed under E0 with "grid GHA". | | |
+| 1 | Open **Facilities** and add "Kumasi Plant": location "Kumasi", country `GH`, grid region `GHA` (the code the Ghana pack's rows carry; a blank grid region follows the country), legal entity Adansi Foods Ltd. | The **Legal entity** list reads "Adansi Foods Ltd (Reporting company)". S1 is listed under E0, whose row reads "Reporting company", with "grid GHA". | | |
 | 2 | Add "Tema Depot": location "Tema", country `GH`, legal entity Adansi Logistics Ltd, lease **operating lease (leased in)**, **Lease from** 2025-07-01, **Lease until** 2025-06-30. Save. | Refused inline: "The lease ends before it starts.". | | |
 | 3 | Clear **Lease until** and save. | S2 is listed under E1 with its lease. | | |
 | 4 | Add "Takoradi Cold Store": location "Takoradi", country `GH`, legal entity Coldstore Ghana Ltd. | S3 is listed under E2. | | |
@@ -230,3 +230,4 @@ recorded).
   checks that a save with no change writes none (PR #121). "Retire, not
   delete" is gone: F1 step 5 reads **Retire…**, and new case F2b retires a
   factor by setting **Valid to** (PR #119).
+- **Version 3, 2026-09-29.** Case A3 sat under the heading of section B; the heading now opens B1. B1 step 2 reads the reporting company's structure fields as disabled rather than absent (PR #126). B2 step 2 quotes the list as it reads ("from 2025-07-01"). C1 step 1: the **Facilities** list names the reporting company as such, and its counter reads "Under the company or a subsidiary" (the walkthrough fix of 2026-09-29).

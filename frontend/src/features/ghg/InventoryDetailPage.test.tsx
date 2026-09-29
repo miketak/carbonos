@@ -985,7 +985,9 @@ test('once the 0% entity has a reason, its row stops asking for one (spec 07.2)'
   ])
   renderPage('boundary')
 
-  expect(await screen.findByText(/The report discloses it with the reason below/)).toBeInTheDocument()
+  expect(
+    await screen.findByText(/The report discloses it with the reason below/),
+  ).toBeInTheDocument()
   expect(screen.queryByText(/Record why it is left out/)).not.toBeInTheDocument()
 })
 

@@ -13,6 +13,8 @@ inline rules of [spec 08](../../../specs/08-form-validation-and-ui-polish.md).
 
 **Estimated time:** 30 minutes.
 
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+
 **Run this procedure** after procedure 2. Procedure 4 onwards works on the
 ten records it imports.
 
@@ -60,7 +62,7 @@ ten records it imports.
 | --- | --- | --- | --- | --- |
 | 1 | Read the banner above the register. | It counts 7 records that need attention (ACT-0004 to ACT-0010) and offers **Resolve 7 items**. The wording is about completeness, not assurance. | | |
 | 2 | Click **Resolve 7 items**. | The register narrows to the seven. ACT-0009 (canteen waste) reads "No stream" and "Needs evidence". Its tier is not missing: a blank tier follows the method, ESTIMATED to tier 4. | | |
-| 3 | Open ACT-0009, type the document reference "WB-2025-11", and give the reason "Weighbridge ticket found". Save. | "Needs evidence" goes; the drawer notes the reference as "Reference only, nothing attached". The banner still counts 7: the stream is still missing, and a record leaves the count only when every item on it is resolved. | | |
+| 3 | Open ACT-0009, type the document reference "WB-2025-11", and give the reason "Weighbridge ticket found". Save. | "Needs evidence" goes; the drawer's **Supporting evidence** reads "Reference WB-2025-11, nothing attached". The banner still counts 7: the stream is still missing, and a record leaves the count only when every item on it is resolved. | | |
 
 ## D. Drafts
 
@@ -141,3 +143,7 @@ ten records it imports.
 **Known non-goals:** the 20 MB evidence limit and the 10,000-row import
 limit (no fixture of that size); a record in a custom unit (the mining
 pack); the register's sorting and paging beyond ten records.
+
+## Change notes
+
+- **Version 2, 2026-09-29.** C1 step 3 quotes the drawer's evidence line, which now names the reference (the walkthrough fix of 2026-09-29).
