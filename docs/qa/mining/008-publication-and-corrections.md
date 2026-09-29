@@ -7,10 +7,13 @@ reports what it changed.
 
 **Covers** [spec 05.1](../../../specs/05.1-inventory-lifecycle-and-run-snapshots.md),
 [spec 05.2](../../../specs/05.2-run-numbering-and-voiding.md),
-[spec 05.3](../../../specs/05.3-inheritance-and-the-published-record.md) and
+[spec 05.3](../../../specs/05.3-inheritance-and-the-published-record.md),
+[spec 05.7](../../../specs/05.7-what-a-final-run-refuses.md) and
 [spec 01.2](../../../specs/01.2-organization-membership-and-roles.md) (roles).
 
-**Estimated time:** 45 minutes.
+**Estimated time:** 50 minutes.
+
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** before a release, and after any change to
 publication, corrections, the report snapshot or the audit events.
@@ -30,6 +33,17 @@ publication, corrections, the report snapshot or the audit events.
 | 2 | Freeze, launch a run, and click **Mark as final** on it. | Refused: "Run 00n cannot be designated final. 'Diesel by tanker' converts through the typical density of Diesel (0.84 kg/litre), a planning value: record the supplier's density under Units, or flag the classification as a proxy with a justification that says why the typical value stands (spec 02.2)." The report and the base year attach to the final run, so a planning value stops here and not before. | | |
 | 3 | Reopen, tick **Proxy factor** on R17 with the justification "No certificate of analysis for this delivery; typical mid-range density", freeze, run, and mark it final. | The designation goes through: the typical value stands as a documented proxy, and the run line prints "(density of Diesel, typical value)" with the justification. | | |
 | 4 | Withdraw the designation with a reason, reopen, restore the **Diesel (GOIL, 2025 CoA)** density and untick the proxy flag, freeze, and void the two scratch runs with a reason. | The inventory is back where procedure 7 left it for A1 below. | | |
+
+### A0b. A final run refuses an unapproved factor (spec 05.7)
+
+Approval is checked again when a run is designated final, so a factor
+unapproved after the run holds the designation.
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | As the Analyst, open **Emission factors** and click **Unapprove** on **Emulsion explosive (supplier)** (procedure 5 case B7 approved it; R11 applies it). | The row loses its **Approved** badge. | | |
+| 2 | On 2025 Operational, click **Mark as final** on run 005 and confirm. | Refused: "Run 5 cannot be designated final. 'ANFO explosives consumed' uses 'Emulsion explosive (supplier)', which is not approved. Approve it under Emission factors, or choose another.". Run 005 stays as it was. | | |
+| 3 | Click **Approve** on the factor again. | Approved by the Analyst, who did not enter it. Case A1 designates run 005. | | |
 
 ### A1. Designating and withdrawing
 
@@ -58,6 +72,7 @@ publication, corrections, the report snapshot or the audit events.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Look for a way to reopen, to change the declaration, to void run 006, and to delete the inventory. | The page offers only **Create correction**; every control is disabled and the inventories list has no Delete for it. | | |
+| 1a | Read the pre-flight banner, then hover **Launch calculation run**. | The banner reads "Published. The runs are a record; a correction restates the year.", not "Ready to launch a run". The button is disabled with the title "A published inventory cannot be recalculated. Create a correction that supersedes it.". | | |
 | 2 | If you can alter requests, send each to the API. | The requests are refused (409): "A published inventory cannot change. Create a correction that supersedes it.", "The inventory is published. Reopen it as a draft to change it.", "A published inventory's runs are a record and cannot be voided." and "A published inventory is a record and cannot be deleted.". | | |
 
 ### B2. The published report is frozen
@@ -116,3 +131,10 @@ instrument still covers 20,000 MWh and the balance grows.
 
 **Known non-goals:** re-syncing inherited decisions when the source changes
 later; a diff of two PDFs.
+
+## Change notes
+
+- **Version 2, 2026-09-29.** New case A0b: **Mark as final** is refused
+  while a factor the run applies is unapproved (PR #119). B1 step 1a reads
+  the published inventory's banner and the disabled launch button's title
+  (PR #119).

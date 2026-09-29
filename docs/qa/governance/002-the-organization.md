@@ -22,7 +22,9 @@ it, or, where nobody else could, records that it was self-approved.
 [spec 02.10](../../../specs/02.10-retiring-the-shared-factor-library.md) and
 [spec 02.11](../../../specs/02.11-approval-as-a-control.md).
 
-**Estimated time:** 45 minutes.
+**Estimated time:** 50 minutes.
+
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** after procedure 1. Procedures 3 to 8 rest on the
 organization it builds.
@@ -38,19 +40,19 @@ organization it builds.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama, click **New organization**, type the name "Adansi Foods Ltd", leave the rest empty, and create. | "Adansi Foods Ltd (ORG-*NNNN*) created." The list shows the organization with its account number, **Open** and **Settings**. Note the number; case A3 uses it. Open it: the **Overview** opens, and **Settings** reads "Your role: Owner". | | |
+| 1 | As Ama, click **New organization**, type the name "Adansi Foods Ltd", leave the rest empty, and create. | "Adansi Foods Ltd (ORG-*NNNN*) created." The list shows the organization with its account number, **Open** and **Settings**. Note the number; case A3 uses it. Open it: the **Overview** opens, and the foot of the sidebar reads "Your role: Owner". | | |
 | 2 | Open **Settings**. Under **Members**, add the Kofi alias as **Reviewer**, the Esi alias as **Preparer** and the Yaw alias as **Verifier (read-only)**. | Each appears with the role chosen. The card says reviewers also designate final runs, publish and create corrections, and verifiers read only. | | |
 | 3 | Add `nobody@example.test`. | Refused: "No account with that email." and that a platform administrator adds the account first. Membership is granted to an existing account; a newcomer requests access first. | | |
 | 4 | Add the Kofi alias again. | Refused: "<the Kofi alias> is already a member of 'Adansi Foods Ltd'.". | | |
 | 5 | Change Ama's own role to **Preparer**. | Refused: "'Adansi Foods Ltd' needs at least one owner.". | | |
 | 6 | Click **Remove** on Ama's row. | The same refusal. | | |
-| 7 | Read **History** at the foot of the page. | Three entries record the members added, each with Ama's email and the moment. | | |
+| 7 | Read **History** at the foot of the page. | It updated as you added them, without a reload: three "Member added" entries, one per member, each with Ama's email and the moment. Structure changes join the same card from section B on. | | |
 
 ### A2. A verifier reads everything and changes nothing
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Yaw in the private window, open Adansi Foods Ltd. | The organization is listed and opens. Every page carries the banner "Your role in this organization is Verifier (read-only).". | | |
+| 1 | As Yaw in the private window, open Adansi Foods Ltd. | The organization is listed and opens. Every page carries the banner "Your role in this organization is Verifier (read-only).", and the foot of the sidebar reads "Your role: Verifier". | | |
 | 2 | Open **Legal entities**, **Facilities** and **Emission factors**. | Every button that would write is disabled, with the tooltip "Needs the Preparer, Reviewer or Owner role.". Nothing is hidden: a verifier sees the record, not a blank page. | | |
 | 3 | Sign out of the private window. | | | |
 
@@ -76,7 +78,7 @@ apart, and it never changes.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama, open **Legal entities**. | Adansi Foods Ltd is listed as the reporting company: 100% under every approach, operated. Its row has no **Remove**. | | |
+| 1 | As Ama, open **Legal entities**. | Adansi Foods Ltd is listed as the reporting company: the relationship column reads "Reporting company", 100% under every approach, operated. Its row has no **Remove**. | | |
 | 2 | Open its edit form. | The form takes a name, the dates and a jurisdiction. It offers no relationship and no percentages: the reporting company is the group's own wholly owned operation by definition. Close it. | | |
 
 ### B2. A subsidiary with dates, and an associate
@@ -103,7 +105,7 @@ apart, and it never changes.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Facilities** and add "Kumasi Plant": location "Kumasi", country `GH`, grid region `GHA` (the code the Ghana pack's rows carry; a blank grid region follows the country), legal entity Adansi Foods Ltd. | S1 is listed under E0 with "grid GHA". | | |
+| 1 | Open **Facilities** and add "Kumasi Plant": location "Kumasi", country `GH`, grid region `GHA` (the code the Ghana pack's rows carry; a blank grid region follows the country), legal entity Adansi Foods Ltd. | The **Legal entity** list reads "Adansi Foods Ltd (Reporting company)". S1 is listed under E0 with "grid GHA". | | |
 | 2 | Add "Tema Depot": location "Tema", country `GH`, legal entity Adansi Logistics Ltd, lease **operating lease (leased in)**, **Lease from** 2025-07-01, **Lease until** 2025-06-30. Save. | Refused inline: "The lease ends before it starts.". | | |
 | 3 | Clear **Lease until** and save. | S2 is listed under E1 with its lease. | | |
 | 4 | Add "Takoradi Cold Store": location "Takoradi", country `GH`, legal entity Coldstore Ghana Ltd. | S3 is listed under E2. | | |
@@ -129,6 +131,14 @@ apart, and it never changes.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | On Kumasi Plant, add another stream named "Boiler LPG". | Refused: "'Kumasi Plant' already has a stream named 'Boiler LPG'.". | | |
+
+### D3. The history records the structure, and only real changes
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On **Legal entities**, open Adansi Logistics Ltd's edit form and save without changing anything. | Saved. | | |
+| 2 | Open **Settings** and read **History** (newest first). | Above the three "Member added" entries: "Legal entity added" with "Adansi Logistics Ltd added: subsidiary, economic interest 100%, legal ownership 100%" and "Coldstore Ghana Ltd added: associate, economic interest 30%, legal ownership 30%"; two "Legal entity edited" rows from case B3, "Coldstore Ghana Ltd: held through directly → Adansi Logistics Ltd" and its way back; "Facility added" rows such as "Kumasi Plant added under Adansi Foods Ltd, location Kumasi"; and "Source stream added" rows such as "Boiler LPG added at Kumasi Plant: stationary combustion". Each carries Ama's email. | | |
+| 3 | Look for a row from step 1, and from the refused acts of B2, B3 step 2, C1 step 2, C2 and D2. | There is none. A save that changes nothing writes no row, and a refused act is not an act. | | |
 
 ## E. Units and densities
 
@@ -158,7 +168,7 @@ apart, and it never changes.
 | 2 | Click **Import pack** on the Ghana pack. | The import reports "ghana, applying from 2025-01-01: 7 added, 0 versioned, 0 tagged, 0 unchanged.". Seven rows arrive; "Grid electricity T&D losses, Ghana (derived)" reads **Not approved** with an **Approve** button. Leave it. | | |
 | 3 | Click **Import pack** on the DESNZ 2025 pack. | After a few seconds the import reports "defra-2025, applying from 2025-01-01: 1928 added, 0 versioned, 0 tagged, 0 unchanged.". The table pages at 50 and the search narrows it. | | |
 | 4 | Click **Import pack** on the DESNZ 2026 pack. | The import reports "defra-2026, applying from 2026-01-01: 385 added, 1483 versioned, 0 tagged, 0 unchanged." and that 445 lineages this edition drops were retired by nobody, naming three of them. A row both years carry, such as **Gaseous fuels: LPG** per litre, now shows two versions: `defra-2025` from 2025-01-01 to 2025-12-31 and `defra-2026` from 2026-01-01. | | |
-| 5 | Read the action column of any imported row. | Where a hand-entered factor would offer **Delete**, a pack-derived row reads "Retire, not delete": its versions are the record of what was calculated with. | | |
+| 5 | Read the action column of any imported row, and hover **Retire…**. | Each row offers **Approve** or **Unapprove** and **Retire…**; only a hand-entered factor also offers **Delete**. The title of **Retire…** on a pack-derived row reads "From a factor pack. Its versions are the record of what was calculated with, so it retires by its validity end instead of being deleted.". | | |
 
 ### F2. A blend's fractions add up to 1
 
@@ -167,6 +177,14 @@ apart, and it never changes.
 | 1 | Click **Add factor** (the dialog is titled "Add an emission factor"): name "R-410A (composition)", suggested scope 1, category fugitive emissions, unit `kg`, kg CO₂e per unit 1923.5, HFCs kg per unit 1, **Blend composition** `HFC-32:0.5,HFC-125:0.6`, **GWP basis of the published figure** AR5, source "Supplier safety data sheet, 2025", publication year 2025, data year 2025. Add. | Refused: "The mass fractions of a blend must add up to 1 (for example HFC-32:0.5,HFC-125:0.5).". | | |
 | 2 | Change the composition to `HFC-32:0.5,HFC-125:0.5` and add. | The row is listed as **Not approved**. An approval is a separate act by a separate person; the form does not tick it for you. | | |
 | 3 | Add "Long-haul flights (supplier)": suggested scope 3, category business travel, unit `passenger-km`, kg CO₂e per unit 0.195, source "Travel agent's emissions statement, 2025", publication year 2025, data year 2025. | Listed as **Not approved**. | | |
+
+### F2b. A factor retires by its validity end
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Click **Retire…** on "R-410A (composition)". | A dialog "Retire R-410A (composition)" says "Set the last day the factor applies. Runs that used it keep it as their record", with **Valid to**, **Cancel** and **Retire factor**. | | |
+| 2 | Click **Retire factor** with **Valid to** empty. | "Choose the last day the factor applies." Nothing is saved. | | |
+| 3 | Enter 2025-12-31 in **Valid to** and click **Retire factor**. | The toast reads "R-410A (composition) retired: valid to 2025-12-31.". The row stays listed with its validity ending 2025-12-31: it still covers FY2025, where procedure 5 uses it, and nothing after. | | |
 
 ### F3. The author cannot approve; the reviewer does
 
@@ -199,4 +217,16 @@ apart, and it never changes.
 **Known non-goals:** a joint venture and a franchise (the mining pack
 records them); a facility deleted with records, which procedure 3 covers;
 a facility inside a frozen boundary, which procedure 4 covers; reading a
-pack without importing it, which the mining pack covers in detail.
+pack without importing it, which the mining pack covers in detail; a
+history row for editing a source stream (only adding and removing one is
+recorded).
+
+## Change notes
+
+- **Version 2, 2026-09-29.** The sidebar's "Your role" line (A1, A2) and
+  "Reporting company" on **Legal entities** and in the facility form (B1,
+  C1; PR #119). A1 step 7 no longer assumes the History card holds only
+  member rows. New case D3 reads the structure rows of the history and
+  checks that a save with no change writes none (PR #121). "Retire, not
+  delete" is gone: F1 step 5 reads **Retire…**, and new case F2b retires a
+  factor by setting **Valid to** (PR #119).

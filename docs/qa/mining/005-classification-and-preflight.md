@@ -20,6 +20,8 @@ gates block a run that would misstate the inventory.
 
 **Estimated time:** 90 minutes.
 
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+
 **Run this procedure** before a release, and after any change to
 classification, streams, densities, the gates or the coverage matrix.
 
@@ -280,7 +282,7 @@ estimate is of the right order.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | In the declaration card, declare **15. Investments** and save. | | | |
-| 2 | Read the **Classification** gate. | A warning "Scope 3 investments is declared as covered but no included record is classified into it ..." and another "Records are classified into scope 3 purchased goods services but the declaration does not list it as covered ...". | | |
+| 2 | Read the **Classification** gate. | A warning "Scope 3 '15. Investments' is declared as covered but no included record is classified into it: a reader takes 'covered' to mean quantified. Classify records into it, or say in the declaration why it is not quantified this year." and another "Records are classified into scope 3 '1. Purchased goods and services' but the declaration does not list it as covered. Declare it, or reclassify the records.". The categories are named as the report labels them, not by an internal code. | | |
 
 ### E2. A reason silences the warning
 
@@ -339,3 +341,9 @@ estimate is of the right order.
 
 **Known non-goals:** inferring the stream from the activity text; a
 materiality threshold that excuses a category automatically.
+
+## Change notes
+
+- **Version 2, 2026-09-29.** The declaration cross-check of case E1 quotes
+  the categories by their report labels ("Scope 3 '15. Investments' ...",
+  "... scope 3 '1. Purchased goods and services' ..."; PR #119).

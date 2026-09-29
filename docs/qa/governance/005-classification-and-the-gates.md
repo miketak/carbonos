@@ -24,6 +24,8 @@ way. Then the freeze cuts a version.
 
 **Estimated time:** 45 minutes.
 
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+
 **Run this procedure** after procedure 4.
 
 ## Prerequisites
@@ -62,7 +64,7 @@ way. Then the freeze cuts a version.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Open ACT-0003 (delivery fleet diesel) and choose **Liquid fuels: Diesel (100% mineral diesel)** per litre. | Scope 3, **1. Purchased goods and services**, with no justification field: the stream is operated by a contractor. The drawer says the lease "operating lease (leased in)" is inherited from Tema Depot. | | |
-| 2 | Read the **Classification** gate. | A warning that begins "Records are classified into scope 3 purchased goods services but the declaration does not list it as covered." and asks to declare it or reclassify the records. | | |
+| 2 | Read the **Classification** gate. | A warning: "Records are classified into scope 3 '1. Purchased goods and services' but the declaration does not list it as covered. Declare it, or reclassify the records.". | | |
 | 3 | On **Boundary**, in the declaration, tick **1. Purchased goods and services** and save. | The warning goes. | | |
 
 ### B4. Mass meets volume through a density
@@ -87,7 +89,7 @@ way. Then the freeze cuts a version.
 | 1 | On ACT-0001, change the scope to scope 3 and the category to **1. Purchased goods and services**. | The drawer says "The stream suggests Scope 1." and shows a **scope justification** field. The **Classification** gate blocks: the record is classified in scope 3 without a justification. | | |
 | 2 | Set the scope back to 1. | The gate is silent again. | | |
 | 3 | On ACT-0010 (staff flights), choose **Long-haul flights (supplier)** and tick **proxy factor**. | A justification field opens and nothing is sent until it is filled: the drawer never records a proxy without its justification, so the rule "A proxy factor needs a justification: say what the factor stands in for." is met before the API is reached. | | |
-| 4 | Type "Travel agent's average; no per-flight data" and let the field lose focus. | Saved. Scope 3, **6. Business travel**. The gate warns that records are classified into scope 3 business travel but the declaration does not list it as covered. | | |
+| 4 | Type "Travel agent's average; no per-flight data" and let the field lose focus. | Saved. Scope 3, **6. Business travel**. The gate warns: "Records are classified into scope 3 '6. Business travel' but the declaration does not list it as covered. Declare it, or reclassify the records.". | | |
 | 5 | On **Boundary**, in the declaration, tick **6. Business travel** and save. | The warning goes. | | |
 
 ### B7. An unapproved factor blocks until the reviewer approves it
@@ -190,3 +192,10 @@ way. Then the freeze cuts a version.
 Appendix F for a leased asset in scope 1 or 2; the coverage matrix over
 twelve months, which needs monthly records; a legacy magnitude entered
 before the three exclusion states existed, which the UI cannot produce.
+
+## Change notes
+
+- **Version 2, 2026-09-29.** B3 step 2 and B6 step 4 quote the
+  declaration warnings with the categories' report labels ("scope 3 '1.
+  Purchased goods and services'", "scope 3 '6. Business travel'"; PR
+  #119).

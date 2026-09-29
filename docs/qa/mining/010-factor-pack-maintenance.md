@@ -7,16 +7,21 @@ its rules and an approver who is not the curator; that publishing moves no
 organization's numbers; that a published edition is frozen; and that a draft is
 invisible to every organization until it is published; and that the
 organization, not the platform, decides whether to adopt a published
-edition.
+edition; and that an edition applying inside a published period follows
+the platform setting while the published report keeps its figures.
 
 **Covers** [spec 02.5](../../../specs/02.5-factor-pack-editions.md) whole:
 authoring in sections A to C, publication in section D. Section E covers
 [spec 02.7](../../../specs/02.7-adopting-a-new-edition.md): the notice reaching
 the organization's own workspace, the diff behind it, and the decision a
-reviewer or an owner records on it. Section F covers the withdrawal and leaves
-the environment tidy.
+reviewer or an owner records on it; case E5 covers the platform setting for
+editions inside a published period
+([spec 02.6](../../../specs/02.6-versioned-pack-import.md) rule 1). Section F
+covers the withdrawal and leaves the environment tidy.
 
-**Estimated time:** 100 minutes.
+**Estimated time:** 120 minutes.
+
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** before a release, and after any change to the factor
 pack console, the publication rules or the catalogue.
@@ -233,6 +238,26 @@ in to a client organization that holds the `ghana` lineages.
 | 10 | Freeze that inventory if it is not frozen, then try **Mark as final**. | Where a candidate above the threshold stands, the act is refused, naming the base year and the candidate, and saying runs stay available. **Publish** is refused for the same reason on an inventory that is already final. | | |
 | 11 | Open the report of a published or final run and read section 7, Base year. | An "Emission factor edition decisions" table lists `qa-ghana-2028` with the answer you gave, the affected percent and the threshold it was measured against. The answer reaches a reader, not only the database. | | |
 
+### E5. An edition inside a published period follows the platform setting
+
+A frozen or final period always refuses an edition that applies inside it;
+a published one refuses only while the platform setting **Editions inside a
+published period** reads "Blocked (default)". Sankofa Gold plc cannot show
+the difference, because its 2025 correction is frozen and blocks under
+either value, so this case builds a scratch organization with one
+published year. Its published record keeps the organization, so it stays
+on the environment.
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | In the member's window, create **QA Published Period Ltd**. Add the facility **QA Yard** (country `GH`) and one record, "QA yard diesel", 100 litre, 2025-03-01 to 2025-03-31. Under **Emission factors**, add by hand "Diesel (QA)": scope 1, stationary combustion, unit `litre`, 2.66 kg CO₂e per unit, source "Own transcription of DESNZ 2025"; then approve it. | The factor reads approved, "(self-approved: nobody else could check it)": you are the only member. | | |
+| 2 | Create the inventory **QA Published 2025** (2025-01-01 to 2025-12-31, operational control), click **Review activity data**, classify the record with **Diesel (QA)**, clear any gate the pre-flight raises (state that no residual mix is available if it asks), freeze, launch a run, mark it final and publish. | PUBLISHED. The run reads 266 kg CO₂e. | | |
+| 3 | With the setting at "Blocked (default)", click **Import pack** on **UK Government (DESNZ) GHG conversion factors 2025** under **Factor packs**. | Refused: "'defra-2025' applies from 2025-01-01, which falls inside 'QA Published 2025' (2025-01-01 to 2025-12-31), which is PUBLISHED. A reported period keeps the factors it reported with. The edition cannot be imported while that period is on record and the platform setting Editions inside a published period is Blocked; choose an edition that applies from a later date, or ask a platform administrator about the setting.". Nothing is imported. | | |
+| 4 | As an administrator, on **Platform settings**, set **Editions inside a published period** to **Allowed: published runs keep their factors** with the reason `QA: an edition inside a published period`, and save. | Saved. **Every change** lists it from "Blocked (default)" to "Allowed: published runs keep their factors". | | |
+| 5 | As the member, click **Import pack** on the DESNZ 2025 pack again. | After a few seconds: "defra-2025, applying from 2025-01-01: 1928 added, 0 versioned, 0 tagged, 0 unchanged.". | | |
+| 6 | Open QA Published 2025's run and its report. | Still 266 kg CO₂e, and the factor table still cites **Diesel (QA)**. A published run keeps the factors it reported with under either value of the setting. | | |
+| 7 | As the administrator, set the setting back to **Blocked (default)** with the reason `QA: restoring the default`. | Saved and listed in **Every change**. | | |
+
 ## F. Withdrawal, and leaving the environment
 
 ### F1. A published edition is withdrawn with a reason
@@ -278,6 +303,7 @@ Run this as a member of Sankofa Gold plc, not as the administrator.
 | 2 | Try to delete `qa-ghana-2027`, the edition case D3 published. | There is no **Delete draft** button, and the API refuses with 409. A published edition is never deleted: clause 8.2 requires the records behind a reported figure to be retained. | | |
 | 3 | Note in the sign-off that `qa-ghana-2027`, `qa-ghana-2028` and `qa-ghana-2029` stay in the catalogue, and that `ghana` stays SUPERSEDED. | The environment carries them for good, which is the point: a citation names one thing forever. The next tester needs new identifiers rather than these. | | |
 | 4 | Note in the sign-off that case E4 moved the client organization's `GHANA:td-losses` to 0.25 from 2028-01-01. | An adoption is a recorded accounting decision, so it is not undone. The next tester reads the earlier version beside it in the lineage. | | |
+| 5 | Note in the sign-off that **QA Published Period Ltd** of case E5 stays, and check that **Editions inside a published period** reads "Blocked (default)". | A published record keeps its organization. The setting is deployment-wide, so it goes back to the default. | | |
 
 ## Sign-off
 
@@ -292,3 +318,17 @@ Run this as a member of Sankofa Gold plc, not as the administrator.
 draft, which spec 02.6 governs; re-opening a declined notice, which spec 02.7
 leaves open; and adopting part of an edition, which a partial vintage would
 make of it.
+
+## Change notes
+
+- **Version 2, 2026-09-29.** New case E5: an edition inside a published
+  period is refused under "Blocked (default)", with a message that names
+  the platform setting, and imported under "Allowed: published runs keep
+  their factors" while the published report keeps its total (PR #122). The
+  case imports rather than accepts a notice: accepting runs the same import
+  and the same check, and an import needs no successor edition. It
+  lives here rather than in governance procedure 7 because every reported
+  year of both personas has a frozen correction beside it, and a frozen
+  period blocks under either value; a scratch organization with one
+  published year is the smallest place the setting shows. F3 step 5 notes
+  that organization and checks the setting is back to the default.

@@ -20,7 +20,9 @@ changes, and that a correction supersedes it with a reason.
 [spec 07.7](../../../specs/07.7-emissions-by-gas-that-ties-to-the-total.md)
 and [spec 07.8](../../../specs/07.8-pdf-readability.md).
 
-**Estimated time:** 45 minutes.
+**Estimated time:** 50 minutes.
+
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** after procedure 5. Procedure 7 raises a notice
 against the organization it leaves published.
@@ -133,6 +135,8 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Esi in the private window, open FY2025 and find **Mark as final** on Run 005. | The button is disabled, with the tooltip "Needs the Reviewer or Owner role.". A preparer's refusals are disabled controls with that tooltip, not dialogs. | | |
+| 1a | As Kofi in the private window, open **Emission factors** and click **Unapprove** on "Long-haul flights (supplier)". Then, on FY2025, click **Mark as final** on Run 005 and confirm. | Refused: "Run 5 cannot be designated final. 'Staff flights' uses 'Long-haul flights (supplier)', which is not approved. Approve it under Emission factors, or choose another.". Approval is checked again at the designation, not only at the run. | | |
+| 1b | Click **Approve** on the factor again. | Approved by Kofi, who did not enter it. | | |
 | 2 | As Kofi, click **Mark as final** on Run 005, type the review note "Reconciled against the March and June invoices", and confirm. | Run 005 is FINAL. The lifecycle bar reads "Final designated by <the Kofi alias> on <date>: Reconciled against the March and June invoices". **Reopen as draft** is gone. | | |
 | 3 | Click **Withdraw final designation** and confirm with no reason. | The button stays disabled until a reason is typed. | | |
 | 4 | Give "Checking the withdrawal" and confirm. | FROZEN again; the history records the withdrawal with Kofi's email. Mark Run 005 final again with no note. | | |
@@ -146,7 +150,7 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Ama, look at the FY2025 header. | Only **Create correction** is offered: no reopen, no freeze, no edit. | | |
-| 2 | Open **Runs**. | No **Void…** on any run: a published inventory's runs are a record. | | |
+| 2 | Open **Runs**. | No **Void…** on any run: a published inventory's runs are a record. The pre-flight banner reads "Published. The runs are a record; a correction restates the year.", and **Launch calculation run** is disabled with the title "A published inventory cannot be recalculated. Create a correction that supersedes it.". | | |
 | 3 | On **Activity data**, correct ACT-0002 to 121 MWh with the reason "June invoice re-read after publication". Then read FY2025's **Records** tab. | The row is marked "Changed since publication: quantity". The published report still reads 120 MWh and 56,257.08 kg: the report is frozen; the view marks what moved after it. | | |
 
 ### F2. A correction needs a reason and inherits the view
@@ -180,3 +184,10 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 **Known non-goals:** a market-based figure priced at a residual mix (the
 mining pack); the chain of two corrections; an XLSX export; Monte Carlo
 uncertainty; a run label.
+
+## Change notes
+
+- **Version 2, 2026-09-29.** E1 steps 1a and 1b: **Mark as final** is
+  refused while a factor the inventory applies is unapproved (PR #119). F1
+  step 2 reads the published inventory's banner and the disabled launch
+  button's title (PR #119).

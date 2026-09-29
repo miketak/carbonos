@@ -8,8 +8,9 @@ organization sees the notice in its own workspace, reads what a decision
 would move, refuses the preparer and the administrator under support
 access, and accepts as a reviewer with the chapter 5 answer; that the next
 run cites the new vintage while the reported year keeps its figures; that
-an edition applying inside a reported period cannot be adopted; and that a
-withdrawal closes the notice it raised without touching a factor.
+an edition applying inside a published period cannot be adopted while
+the platform blocks it, and the refusal says so; and that a withdrawal
+closes the notice it raised without touching a factor.
 
 **Covers** [spec 02.5](../../../specs/02.5-factor-pack-editions.md),
 [spec 02.6](../../../specs/02.6-versioned-pack-import.md),
@@ -20,6 +21,8 @@ withdrawal closes the notice it raised without touching a factor.
 (support access) and [spec 01.5](../../../specs/01.5-the-platform-administration-panel.md).
 
 **Estimated time:** 40 minutes.
+
+**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** after procedure 6. The edition identifiers it
 publishes are citations and can never be reused: a second pass on the same
@@ -95,7 +98,7 @@ database needs new ones.
 | 1 | As Admin B, open **GHG accounting**. | Adansi Foods Ltd is not listed: an administrator is an outsider. | | |
 | 2 | Open **Administration**, **Organizations**, and click **Assume access** on Adansi Foods Ltd with the reason `short`. | The button stays disabled until the reason has 10 characters. | | |
 | 3 | Type "Ticket 118: the owner asked what the notice means" and confirm. | "Support access to Adansi Foods Ltd assumed.". The row shows the expiry and **End access**. | | |
-| 4 | Open **GHG accounting**, then Adansi Foods Ltd, then **Updates**. | Every page carries the banner "You are in Adansi Foods Ltd under support access until <time>. Every act is recorded in this organization's history.". There is no **Settings** entry. | | |
+| 4 | Open **GHG accounting**, then Adansi Foods Ltd, then **Updates**. | Every page carries the banner "You are in Adansi Foods Ltd under support access until <time>. Every act is recorded in this organization's history.". There is no **Settings** entry, and the foot of the sidebar reads "Support access" where a member's reads their role. | | |
 | 5 | Click **Review**, answer the chapter 5 question, and click **Accept**. | Refused: "Support access cannot adopt an edition for an organization. That is the organization's own decision, so a reviewer or an owner of the organization has to make it.". **Decline** is refused with "Support access cannot decline an edition for an organization." and the same second sentence. | | |
 | 6 | Back on **Organizations**, click **End access**. | The organization leaves the administrator's list. | | |
 | 7 | As Ama, open **Settings** and read **History**. | "Support access assumed" and "Support access ended", each with Admin B's email, the moment and the reason. | | |
@@ -130,8 +133,8 @@ database needs new ones.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Admin B, clone `ghana-2027-gov` into `ghana-2027-gov.r2`, change `GHANA:grid:GHA:2024` to 0.45, and attach the source document. As Admin A, publish it with applies from 2025-06-01. | PUBLISHED, and `ghana-2027-gov` stays PUBLISHED: an edition that applies from an earlier date than the one standing is not its successor, so it supersedes nothing (spec 02.5). Admin A is the approver this time: the roles swap with the curator. | | |
-| 2 | As Kofi, open **Updates**. | The badge reads 1. The drawer names the block above what moves: "2025-06-01 falls inside FY2025 (2025-01-01 → 2025-12-31), which is published. A reported period keeps the factors it reported with, so this edition cannot be accepted until that inventory is reopened. Declining stays available.". | | |
-| 3 | Answer "Erratum: the edition corrects a wrong value in a year already reported" and accept. | Refused with the sentence of step 2 again: "2025-06-01 falls inside FY2025 (2025-01-01 → 2025-12-31), which is published. A reported period keeps the factors it reported with, so this edition cannot be accepted until that inventory is reopened. Declining stays available.". | | |
+| 2 | As Kofi, open **Updates**. | The badge reads 1. The drawer names the block above what moves: "2025-06-01 falls inside FY2025 (2025-01-01 → 2025-12-31), which is published. A reported period keeps the factors it reported with, so this edition cannot be accepted while the platform blocks editions inside a published period. Declining stays available.". | | |
+| 3 | Answer "Erratum: the edition corrects a wrong value in a year already reported" and accept. | Refused, and the refusal names the platform setting: "'ghana-2027-gov.r2' applies from 2025-06-01, which falls inside 'FY2025' (2025-01-01 to 2025-12-31), which is PUBLISHED. A reported period keeps the factors it reported with. The edition cannot be imported while that period is on record and the platform setting Editions inside a published period is Blocked; choose an edition that applies from a later date, or ask a platform administrator about the setting.". | | |
 | 4 | Read the factors. | `GHANA:grid:GHA:2024` still has two versions. The refusal wrote nothing. | | |
 
 ## F. Withdrawal
@@ -159,4 +162,17 @@ database needs new ones.
 the gas-split reconciliation (the mining pack, procedure 10); an accepted
 edition that raises a base-year candidate above the threshold (the
 movement here is 2.87% against a 5% threshold, and procedure 8 raises its
-candidate by hand); support access expiring by time.
+candidate by hand); support access expiring by time; accepting under the
+setting "Allowed: published runs keep their factors", which the FY2025
+correction's frozen period would still block here (the mining pack,
+procedure 10 case E5, covers the setting).
+
+## Change notes
+
+- **Version 2, 2026-09-29.** E1 steps 2 and 3: the drawer and the refusal
+  name the platform setting **Editions inside a published period** (PR
+  #122). The case that
+  switches the setting to Allowed and back is in the mining pack,
+  procedure 10 case E5, not here: the FY2025 correction is frozen over the
+  same period, and a frozen period blocks under either value. C3 step 4
+  reads "Support access" at the foot of the sidebar (PR #119).
