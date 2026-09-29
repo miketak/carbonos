@@ -272,16 +272,17 @@ public class InventoryService {
 		requireEditable(inventory);
 		for (var category : scope3Categories) {
 			if (category.scope() != Scope.SCOPE_3) {
-				throw new GhgRuleViolationException(category + " is not a scope 3 category.");
+				throw new GhgRuleViolationException(categoryName(category) + " is not a scope 3 category.");
 			}
 		}
 		for (var entry : notQuantified) {
 			if (!scope3Categories.contains(entry.category())) {
-				throw new GhgRuleViolationException(entry.category() + " is not declared as covered; only a declared "
+				throw new GhgRuleViolationException(
+						"'" + categoryName(entry.category()) + "' is not declared as covered; only a declared "
 						+ "category can be marked as not quantified.");
 			}
 			if (trimToNull(entry.reason()) == null || entry.reason().trim().length() < 10) {
-				throw new GhgFieldException("notQuantified", "Say why " + entry.category() + " is not quantified "
+				throw new GhgFieldException("notQuantified", "Say why '" + categoryName(entry.category()) + "' is not quantified "
 						+ "(at least 10 characters).");
 			}
 		}

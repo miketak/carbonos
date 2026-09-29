@@ -308,6 +308,8 @@ export interface EmissionFactor {
   blendGwpSource: string | null
   /** "50% HFC-32, 50% HFC-125": a blend with a composition converts with the inventory's GWP set (spec 07.2). */
   blendComposition: string | null
+  /** The same composition as stored ("HFC-32:0.5,HFC-125:0.5"): what the update endpoint takes back. */
+  blendCompositionEntered: string | null
   /** Fossil-origin methane (fuel combustion) or biogenic (landfill, biomass); AR6 rates them differently. */
   ch4Fossil: boolean
   /** The source publishes CO2e only, so the by-gas table cannot split it (spec 02.1). */

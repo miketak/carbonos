@@ -272,7 +272,10 @@ export function BoundarySection({
               <p className="mt-2 pl-12 text-xs text-ink-muted">
                 Outside the boundary under{' '}
                 {approachLabels[inventory.consolidationApproach].toLowerCase()}: 0% share from its
-                Table 1 row. Record why it is left out so the report says so.
+                Table 1 row.
+                {entity.exclusion
+                  ? ' The report discloses it with the reason below.'
+                  : ' Record why it is left out so the report says so.'}
               </p>
             )}
 

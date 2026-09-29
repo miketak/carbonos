@@ -107,3 +107,16 @@ test('the tab travels with the filters, so a reload keeps the reviewer where the
 
   expect(search).toContain('tab=method')
 })
+
+test('two writes before a re-render keep each other (a debounced search and a facility pick)', () => {
+  renderAt('/i/inv-1')
+
+  act(() => {
+    set({ facility: 'fac-1' })
+    set({ q: 'diesel' })
+  })
+
+  expect(filters.facility).toBe('fac-1')
+  expect(filters.q).toBe('diesel')
+  expect(search).toBe('?facility=fac-1&q=diesel')
+})

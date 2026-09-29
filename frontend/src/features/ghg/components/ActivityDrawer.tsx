@@ -575,9 +575,11 @@ function ActivityForm({
               <Section title="Supporting evidence">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-ink-muted">
-                    {activity.evidenceCount === 0
-                      ? 'Nothing attached'
-                      : `${activity.evidenceCount} attached`}
+                    {activity.evidenceCount > 0
+                      ? `${activity.evidenceCount} attached`
+                      : activity.evidenceRef
+                        ? `Reference ${activity.evidenceRef}, nothing attached`
+                        : 'Nothing attached'}
                   </span>
                   <button
                     type="button"

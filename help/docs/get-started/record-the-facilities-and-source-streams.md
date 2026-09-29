@@ -28,7 +28,7 @@ This second step of the Get started series records the two sites of Gye Nyame Go
 
 ![The Facilities page with Nyame Pit and Plant and Obuasi Camp, both on grid GHA, and the counters Facilities 2 and Legal entities represented 2 of 2](../assets/screens/step-2-facilities.png)
 
-What you see: "Nyame Pit and Plant added." then "Obuasi Camp added." The counters read "Facilities 2", "Legal entities represented 2 of 2" and "Under subsidiaries 2 of 2". Both rows show "grid GHA": you left the camp's grid region blank, and, as the field says, "Blank follows the country." The camp's row also shows "Operating lease (leased in)". Records at a leased site inherit the lease, and Appendix F of the Corporate Standard sets their scope under each approach, so the lease is recorded once, here.
+What you see: "Nyame Pit and Plant added." then "Obuasi Camp added." The counters read "Facilities 2", "Legal entities represented 2 of 2" and "Under the company or a subsidiary 2 of 2". Both rows show "grid GHA": you left the camp's grid region blank, and, as the field says, "Blank follows the country." The camp's row also shows "Operating lease (leased in)". Records at a leased site inherit the lease, and Appendix F of the Corporate Standard sets their scope under each approach, so the lease is recorded once, here.
 
 ## Register the source streams
 

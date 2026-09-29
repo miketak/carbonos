@@ -160,7 +160,8 @@ function factorInput(factor: EmissionFactor): EmissionFactorInput {
     sf6KgPerUnit: factor.gases.sf6,
     nf3KgPerUnit: factor.gases.nf3,
     biogenicCo2KgPerUnit: factor.biogenicCo2KgPerUnit,
-    blendComposition: factor.blendComposition ?? undefined,
+    // the stored form: the display form ("50% HFC-32, …") does not parse on the way back
+    blendComposition: factor.blendCompositionEntered ?? undefined,
     blendGwpSource: factor.blendGwpSource ?? undefined,
     source: factor.source,
     sourceUrl: factor.sourceUrl ?? undefined,
@@ -678,7 +679,9 @@ function RetireFactorModal({
   const [validTo, setValidTo] = useState(factor.validTo ?? '')
   const [missing, setMissing] = useState(false)
   const errors = fieldErrors(update.error)
-  const generalError = update.isError && !errors ? refusalMessage(update.error, myRole) : undefined
+  // the dialog shows one field: a refusal about any other must not vanish
+  const generalError =
+    update.isError && !errors?.validTo ? refusalMessage(update.error, myRole) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()

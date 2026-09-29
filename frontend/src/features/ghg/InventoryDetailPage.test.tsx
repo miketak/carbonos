@@ -415,6 +415,7 @@ const dieselFactor: EmissionFactor = {
   gwpSet: 'AR5',
   blendGwpSource: null,
   blendComposition: null,
+  blendCompositionEntered: null,
   ch4Fossil: true,
   co2eOnly: false,
   source: 'DEFRA 2025',
@@ -970,6 +971,22 @@ test('an entity at 0% under the approach cannot be ticked in and says why (spec 
 
   expect(await screen.findByText(/Outside the boundary under equity share/)).toBeInTheDocument()
   expect(screen.getByLabelText('Takoradi Port Co in boundary')).toBeDisabled()
+})
+
+test('once the 0% entity has a reason, its row stops asking for one (spec 07.2)', async () => {
+  vi.mocked(getBoundary).mockResolvedValue([
+    {
+      ...boundary[1],
+      entityName: 'Takoradi Port Co',
+      reportingCompany: false,
+      shareUnderApproach: 0,
+      exclusion: { reason: 'METHODOLOGY', detail: 'Associate: no operational control' },
+    },
+  ])
+  renderPage('boundary')
+
+  expect(await screen.findByText(/The report discloses it with the reason below/)).toBeInTheDocument()
+  expect(screen.queryByText(/Record why it is left out/)).not.toBeInTheDocument()
 })
 
 test('a correction asks for its reason and the page names what an inventory inherited (spec 05.3)', async () => {

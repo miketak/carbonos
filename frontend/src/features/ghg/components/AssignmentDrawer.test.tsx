@@ -156,6 +156,7 @@ const dieselFactor: EmissionFactor = {
   gwpSet: 'AR5',
   blendGwpSource: null,
   blendComposition: null,
+  blendCompositionEntered: null,
   ch4Fossil: true,
   co2eOnly: false,
   source: 'DEFRA 2025',

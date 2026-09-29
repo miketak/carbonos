@@ -145,6 +145,15 @@ test('lists each facility under its legal entity', async () => {
   // two entities represented out of two; one of two facilities wholly owned
   expect(await screen.findByText('2 of 2')).toBeInTheDocument()
   expect(screen.getByText('1 of 2')).toBeInTheDocument()
+  expect(screen.getByText('Under the company or a subsidiary')).toBeInTheDocument()
+})
+
+test('names the reporting company as such, not as a subsidiary', async () => {
+  renderPage()
+
+  const pitRow = (await screen.findByText('Obuasi Ridge Open Pit')).closest('tr')
+  expect(pitRow).toHaveTextContent(/Sankofa Gold plc.*Reporting company/)
+  expect(pitRow).not.toHaveTextContent('Subsidiary')
 })
 
 test('the add form submits the chosen legal entity', async () => {

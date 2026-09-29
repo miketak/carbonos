@@ -2840,6 +2840,9 @@ class GhgApiIntegrationTests {
 			.param("ids", r410a(orgId) + "," + diesel(orgId) + "," + landfill(orgId)))
 			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].kgCo2ePerUnit").value(1923.5))
 			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].blendComposition").value("50% HFC-32, 50% HFC-125"))
+			// the stored form beside it, which an edit sends back (a retirement resends every field)
+			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].blendCompositionEntered")
+				.value("HFC-32:0.5,HFC-125:0.5"))
 			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].ch4Fossil").value(true))
 			.andExpect(jsonPath("$.items[?(@.id == '" + diesel(orgId) + "')].ch4Fossil").value(true))
 			.andExpect(jsonPath("$.items[?(@.id == '" + landfill(orgId) + "')].ch4Fossil").value(false));
@@ -5032,7 +5035,9 @@ class GhgApiIntegrationTests {
 					{"scope3Categories": ["INVESTMENTS", "BUSINESS_TRAVEL"],
 					 "notQuantified": [{"category": "INVESTMENTS", "reason": "short"}]}"""))
 			.andExpect(status().is(422))
-			.andExpect(jsonPath("$.errors.notQuantified").exists());
+			// the refusal names the category as the report prints it, not as the enum constant
+			.andExpect(jsonPath("$.errors.notQuantified")
+				.value("Say why '15. Investments' is not quantified (at least 10 characters)."));
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/operational-boundary").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"scope3Categories": ["INVESTMENTS", "BUSINESS_TRAVEL"],

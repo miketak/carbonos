@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useLatestSearchParams } from './latestSearchParams'
 import type {
   ActivityCategory,
   AssignmentQuery,
@@ -53,7 +53,7 @@ function pick<T extends string>(value: string | null, allowed: readonly T[], fal
  * than showing the wrong rows.
  */
 export function useInventoryFilters() {
-  const [params, setParams] = useSearchParams()
+  const [params, setParams] = useLatestSearchParams()
   const filters = useMemo<InventoryFilters>(
     () => ({
       tab: pick(params.get('tab'), tabs, 'records'),
@@ -72,30 +72,27 @@ export function useInventoryFilters() {
 
   const set = useCallback(
     (patch: Partial<InventoryFilters>) => {
-      setParams(
-        (previous) => {
-          const next = new URLSearchParams(previous)
-          const write = (key: string, value: string | number | null, blank: string) => {
-            if (value === null || value === '' || String(value) === blank) next.delete(key)
-            else next.set(key, String(value))
-          }
-          if (patch.tab !== undefined) write('tab', patch.tab, 'records')
-          if (patch.q !== undefined) write('q', patch.q, '')
-          if (patch.facility !== undefined) write('facility', patch.facility, '')
-          if (patch.status !== undefined) write('status', patch.status, '')
-          if (patch.scope !== undefined) write('scope', patch.scope, '')
-          if (patch.category !== undefined) write('category', patch.category, '')
-          if (patch.stream !== undefined) write('stream', patch.stream, '')
-          if (patch.lease !== undefined) write('lease', patch.lease, '')
-          if (patch.page !== undefined) write('page', patch.page, '0')
-          if (patch.record !== undefined) write('record', patch.record, '')
-          // a change of what is listed starts again from the first page
-          const listChanged = Object.keys(patch).some((key) => key !== 'page' && key !== 'record')
-          if (listChanged && patch.page === undefined) next.delete('page')
-          return next
-        },
-        { replace: true },
-      )
+      setParams((previous) => {
+        const next = new URLSearchParams(previous)
+        const write = (key: string, value: string | number | null, blank: string) => {
+          if (value === null || value === '' || String(value) === blank) next.delete(key)
+          else next.set(key, String(value))
+        }
+        if (patch.tab !== undefined) write('tab', patch.tab, 'records')
+        if (patch.q !== undefined) write('q', patch.q, '')
+        if (patch.facility !== undefined) write('facility', patch.facility, '')
+        if (patch.status !== undefined) write('status', patch.status, '')
+        if (patch.scope !== undefined) write('scope', patch.scope, '')
+        if (patch.category !== undefined) write('category', patch.category, '')
+        if (patch.stream !== undefined) write('stream', patch.stream, '')
+        if (patch.lease !== undefined) write('lease', patch.lease, '')
+        if (patch.page !== undefined) write('page', patch.page, '0')
+        if (patch.record !== undefined) write('record', patch.record, '')
+        // a change of what is listed starts again from the first page
+        const listChanged = Object.keys(patch).some((key) => key !== 'page' && key !== 'record')
+        if (listChanged && patch.page === undefined) next.delete('page')
+        return next
+      })
     },
     [setParams],
   )

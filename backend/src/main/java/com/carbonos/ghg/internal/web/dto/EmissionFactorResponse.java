@@ -13,10 +13,15 @@ import com.carbonos.ghg.internal.GwpSet;
 import com.carbonos.ghg.internal.ReportingBasis;
 import com.carbonos.ghg.internal.Scope;
 
+/**
+ * A factor as the library shows it. {@code blendComposition} is for reading ("50% HFC-32, 50%
+ * HFC-125"); {@code blendCompositionEntered} is the stored form ("HFC-32:0.5,HFC-125:0.5") that the
+ * update endpoint takes back, so an edit of one field (a retirement) does not resend the display text.
+ */
 public record EmissionFactorResponse(UUID id, UUID organizationId, String name, Scope defaultScope,
 		ActivityCategory defaultCategory, boolean scopeAgnostic, String unit, Dimension dimension,
 		BigDecimal kgCo2ePerUnit, Gases gases, BigDecimal biogenicCo2KgPerUnit, GwpSet gwpSet, String blendGwpSource,
-		String blendComposition, boolean ch4Fossil, boolean co2eOnly, String source, String sourceUrl,
+		String blendComposition, String blendCompositionEntered, boolean ch4Fossil, boolean co2eOnly, String source, String sourceUrl,
 		Integer publicationYear, Integer dataYear, LocalDate validFrom, LocalDate validTo, String note,
 		boolean approved, String createdBy, String approvedBy, Instant approvedAt, boolean selfApproved,
 		String pack, List<String> packs, String packCode, String gridRegion,
@@ -57,6 +62,7 @@ public record EmissionFactorResponse(UUID id, UUID organizationId, String name, 
 						factor.getHfcsKgCo2ePerUnit(), factor.getPfcsKgCo2ePerUnit(), factor.getSf6KgPerUnit(),
 						factor.getNf3KgPerUnit(), factor.getHfcsKgPerUnit(), factor.getPfcsKgPerUnit()),
 				factor.getBiogenicCo2KgPerUnit(), GwpSet.AR5, factor.getBlendGwpSource(), factor.describeBlend(),
+				factor.getBlendComposition(),
 				factor.isCh4Fossil(), factor.isCo2eOnly(), factor.getSource(), factor.getSourceUrl(),
 				factor.getPublicationYear(), factor.getDataYear(), factor.getValidFrom(), factor.getValidTo(),
 				factor.getNote(), factor.isApproved(), factor.getCreatedBy(), factor.getApprovedBy(),
