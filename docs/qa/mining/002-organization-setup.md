@@ -178,12 +178,12 @@ its boundary, refuses removal; procedure 3 checks the first.
 
 ### F2. Importing a pack
 
-The catalogue offers two packs and only two (spec 02.9): the DESNZ
-conversion factors and the Ghana pack.
+The catalogue offers the DESNZ conversion factors, in two editions, and the
+Ghana pack (spec 02.9).
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Read the **Factor packs** card. | Exactly two cards: **UK Government (DESNZ) GHG conversion factors 2026** and **Ghana: grid electricity and transmission losses**. Each names its source, publication year, GWP basis, licence and retrieval date. | | |
+| 1 | Read the **Factor packs** card. | Exactly three cards: **UK Government (DESNZ) GHG conversion factors 2025**, **UK Government (DESNZ) GHG conversion factors 2026** and **Ghana: grid electricity and transmission losses**. Each names its source, publication year, GWP basis, licence and retrieval date. | | |
 | 2 | Import the **Ghana: grid electricity and transmission losses** pack (the Import pack button on its card; the button's accessible name carries the pack's name). | The import reports "ghana, applying from 2025-01-01: 7 added, 0 versioned, 0 tagged, 0 unchanged." and says nothing more: every row of a shipped pack is in a unit the registry converts, nothing was held before, and nothing was dropped. A pack carrying a unit the registry does not hold adds a sentence to the same message, "1 row skipped, in a unit the registry cannot convert:" and then each row it left out with the unit that stopped it. The organization's factors now include the Ghana grid by data year, each citing the publication it comes from (not the pack) with its URL. One row arrives **Not approved** with an Approve button: the derived Ghana T&D loss factor. Leave it. | | |
 | 3 | Import it again. | The second import reports "ghana, applying from 2025-01-01: 0 added, 0 versioned, 0 tagged, 7 unchanged.", again with no skipped rows. Re-importing the same edition is a no-op: it cuts no version and rewrites no value. | | |
 | 4 | Read the **Source and vintage** column of the imported **Grid electricity, Ghana (2024)** row. | It says "valid 2025-01-01 to ...": every version an import writes starts on the edition's applies-from date. The row shows no version chain yet, because the lineage holds one version. | | |
@@ -280,4 +280,6 @@ edition of a pack is published; a history row for editing a source stream
   steps 7a to 7c retire a factor by setting **Valid to** (PR #119). F2b
   step 5 names the platform setting for a published period (PR #122). New
   case D3 reads the structure rows of the organization history, with B5
-  step 1 now editing the entity it removes (PR #121).
+  step 1 now editing the entity it removes (PR #121). F2 lists three
+  catalogue cards, DESNZ 2025 among them (shipped in PR #91; seen on the
+  factors page on 2026-09-29).
