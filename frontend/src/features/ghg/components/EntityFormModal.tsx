@@ -19,8 +19,11 @@ interface EntityFormModalProps {
 /**
  * Create or edit a legal entity: its Table 1 relationship type, economic
  * interest, the control fact for a franchise, and the parent the company
- * holds it through (spec 03.1, 03.3). The reporting company is the group's
- * own wholly owned operation by definition, so its form only renames.
+ * holds it through (spec 03.1, 03.3). Every field renders for every entity.
+ * The reporting company is the group's own wholly owned operation by
+ * definition, so its structure fields show their fixed values read-only and
+ * the server refuses any other. The shares under each approach are Table 1's
+ * result, shown read-only: a reader changes a share by changing its facts.
  */
 export function EntityFormModal({
   organizationId,
@@ -127,121 +130,152 @@ export function EntityFormModal({
           placeholder="Tarkwa Gold JV Ltd"
           required
         />
-        {reportingCompany ? (
+        {reportingCompany && (
           <p className="text-xs text-ink-muted">
-            The reporting company is the group's own wholly owned operation by definition: 100%
-            economic interest, operated by the company. Record other structures as separate
-            entities.
+            The reporting company is the group&apos;s own wholly owned operation by definition: 100%
+            economic interest, operated by the company, held by nobody. Its structure fields are
+            fixed; record other structures as separate entities.
           </p>
-        ) : (
-          <>
-            <SelectField
-              label="Relationship"
-              value={relationshipType}
-              onChange={(event) => setRelationshipType(event.target.value as RelationshipType)}
-              error={errors?.relationshipType}
-              hint="Table 1 of the GHG Protocol: the relationship and the approach together set the accounting share."
-            >
-              {Object.entries(relationshipLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </SelectField>
-            <InputField
-              label="Economic interest (%)"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={economicInterest}
-              onChange={(event) => {
-                setEconomicInterest(event.target.value)
-                setClientErrors((current) => withoutError(current, 'economicInterestPercent'))
-              }}
-              error={errors?.economicInterestPercent}
-              hint="The share of risks and rewards; what equity share accounts for."
-              required
+        )}
+        <>
+          <SelectField
+            label="Relationship"
+            value={relationshipType}
+            disabled={reportingCompany}
+            onChange={(event) => setRelationshipType(event.target.value as RelationshipType)}
+            error={errors?.relationshipType}
+            hint="Table 1 of the GHG Protocol: the relationship and the approach together set the accounting share."
+          >
+            {Object.entries(relationshipLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </SelectField>
+          <InputField
+            label="Economic interest (%)"
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={economicInterest}
+            disabled={reportingCompany}
+            onChange={(event) => {
+              setEconomicInterest(event.target.value)
+              setClientErrors((current) => withoutError(current, 'economicInterestPercent'))
+            }}
+            error={errors?.economicInterestPercent}
+            hint="The share of risks and rewards; what equity share accounts for."
+            required
+          />
+          <InputField
+            label="Legal ownership (%)"
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={legalOwnership}
+            disabled={reportingCompany}
+            onChange={(event) => {
+              setLegalOwnership(event.target.value)
+              setClientErrors((current) => withoutError(current, 'legalOwnershipPercent'))
+            }}
+            error={errors?.legalOwnershipPercent}
+            hint="For disclosure; equity share follows economic interest, where substance overrides form."
+          />
+          {interestGap >= 10 && (
+            <p role="status" className="col-span-2 text-xs font-medium text-amber-700">
+              Economic interest and legal ownership differ by {formatGap(interestGap)} points.
+              Equity share follows economic interest; a verifier will ask why they differ, so keep
+              the agreement that explains it with the entity&apos;s evidence.
+            </p>
+          )}
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={operatedByCompany}
+              disabled={reportingCompany}
+              onChange={(event) => setOperatedByCompany(event.target.checked)}
+              className="size-4 accent-teal"
             />
-            <InputField
-              label="Legal ownership (%)"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={legalOwnership}
-              onChange={(event) => {
-                setLegalOwnership(event.target.value)
-                setClientErrors((current) => withoutError(current, 'legalOwnershipPercent'))
-              }}
-              error={errors?.legalOwnershipPercent}
-              hint="For disclosure; equity share follows economic interest, where substance overrides form."
-            />
-            {interestGap >= 10 && (
-              <p role="status" className="col-span-2 text-xs font-medium text-amber-700">
-                Economic interest and legal ownership differ by {formatGap(interestGap)} points.
-                Equity share follows economic interest; a verifier will ask why they differ, so keep
-                the agreement that explains it with the entity&apos;s evidence.
-              </p>
-            )}
+            Operated by the company
+          </label>
+          {relationshipType === 'FRANCHISE' && (
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
-                checked={operatedByCompany}
-                onChange={(event) => setOperatedByCompany(event.target.checked)}
+                checked={controlledByCompany}
+                onChange={(event) => setControlledByCompany(event.target.checked)}
                 className="size-4 accent-teal"
               />
-              Operated by the company
+              Financially controlled by the company
             </label>
-            {relationshipType === 'FRANCHISE' && (
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={controlledByCompany}
-                  onChange={(event) => setControlledByCompany(event.target.checked)}
-                  className="size-4 accent-teal"
-                />
-                Financially controlled by the company
-              </label>
-            )}
-            <SelectField
-              label="Financial control"
-              value={controlDecision}
-              onChange={(event) => setControlDecision(event.target.value as '' | 'true' | 'false')}
-              error={errors?.financialControlOverride}
-              hint="Chapter 3: control is the ability to direct policies, not a percentage. A decision here overrides the Table 1 row under the financial-control approach."
-            >
-              <option value="">Follows the Table 1 row</option>
-              <option value="true">
-                Consolidated under financial control (IFRS 10), whatever the holding
+          )}
+          <SelectField
+            label="Financial control"
+            value={controlDecision}
+            disabled={reportingCompany}
+            onChange={(event) => setControlDecision(event.target.value as '' | 'true' | 'false')}
+            error={errors?.financialControlOverride}
+            hint="Chapter 3: control is the ability to direct policies, not a percentage. A decision here overrides the Table 1 row under the financial-control approach."
+          >
+            <option value="">Follows the Table 1 row</option>
+            <option value="true">
+              Consolidated under financial control (IFRS 10), whatever the holding
+            </option>
+            <option value="false">Not financially controlled, whatever the holding</option>
+          </SelectField>
+          {controlDecision !== '' && (
+            <InputField
+              label="Basis of the decision"
+              placeholder="Board control under the shareholders' agreement of 2023"
+              value={controlNote}
+              onChange={(event) => setControlNote(event.target.value)}
+              error={errors?.controlNote}
+              maxLength={500}
+            />
+          )}
+          <SelectField
+            label="Held through"
+            value={parentEntityId}
+            disabled={reportingCompany}
+            onChange={(event) => setParentEntityId(event.target.value)}
+            error={errors?.parentEntityId}
+            hint="The parent the company holds this entity through. Chapter 3 applies the consolidation policy at every level: the share is this row times the parent's."
+          >
+            <option value="">Held directly by the reporting company</option>
+            {parents.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.name}
               </option>
-              <option value="false">Not financially controlled, whatever the holding</option>
-            </SelectField>
-            {controlDecision !== '' && (
-              <InputField
-                label="Basis of the decision"
-                placeholder="Board control under the shareholders' agreement of 2023"
-                value={controlNote}
-                onChange={(event) => setControlNote(event.target.value)}
-                error={errors?.controlNote}
-                maxLength={500}
-              />
-            )}
-            <SelectField
-              label="Held through"
-              value={parentEntityId}
-              onChange={(event) => setParentEntityId(event.target.value)}
-              error={errors?.parentEntityId}
-              hint="The parent the company holds this entity through. Chapter 3 applies the consolidation policy at every level: the share is this row times the parent's."
-            >
-              <option value="">Held directly by the reporting company</option>
-              {parents.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.name}
-                </option>
-              ))}
-            </SelectField>
-          </>
+            ))}
+          </SelectField>
+        </>
+        {entity && (
+          <div
+            aria-label="Share under each approach"
+            className="rounded-lg border border-teal/15 px-3 py-2 text-sm"
+          >
+            <p className="font-semibold text-dark-teal">Share under each approach</p>
+            <dl className="mt-1 grid grid-cols-3 gap-2">
+              <div>
+                <dt className="text-xs text-ink-muted">Equity share</dt>
+                <dd className="font-mono">{sharePercent(entity.equityShare)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-ink-muted">Financial control</dt>
+                <dd className="font-mono">{sharePercent(entity.financialControlShare)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-ink-muted">Operational control</dt>
+                <dd className="font-mono">{sharePercent(entity.operationalControlShare)}</dd>
+              </div>
+            </dl>
+            <p className="mt-1 text-xs text-ink-muted">
+              Calculated by Table 1 from the relationship, economic interest, operation, financial
+              control and parent above, as last saved. Change those facts to change a share.
+            </p>
+          </div>
         )}
         <div className="grid grid-cols-2 gap-3">
           <InputField
@@ -286,6 +320,10 @@ export function EntityFormModal({
       </form>
     </Modal>
   )
+}
+
+function sharePercent(share: number): string {
+  return `${Math.round(share * 100)}%`
 }
 
 function formatGap(points: number): string {
