@@ -39,7 +39,7 @@ flowchart TB
 | `ghg` | Everything the GHG Protocol specs describe: organizations, entities, facilities, activity data, factors, boundaries, inventories, runs, base years, reports (specs 02 to 08), plus membership, support access and the organization tombstone (specs 01.2, 01.3). | Events `GhgRunCompleted`, `InventoryPublished` | Every `ghg_*` table, including the factor pack catalogue below |
 | `mail` | Turns other modules' events into SMTP messages. Owns no tables and exposes no API. Delivery is at-least-once through the Modulith event registry; unsent mail is retried on restart. | none | none (the event publication log is Modulith's) |
 | `media` | Object storage for evidence and profile files on any S3-compatible store: MinIO locally, a Railway bucket in production. | `MediaStorage` | `media_files` |
-| `platform` | The deployment's own policy an administrator sets in the administration panel (spec 01.5): how long support access lasts, and who may create a reporting organization. Never depends on `ghg`, which reads it; `ModularityTests` pins that. | `PlatformSettings` | `platform_settings`, `platform_setting_changes` |
+| `platform` | The deployment's own policy an administrator sets in the administration panel (spec 01.5): how long support access lasts, who may create a reporting organization, and whether a published period blocks a factor pack edition (spec 02.6 rule 1). Never depends on `ghg`, which reads it; `ModularityTests` pins that. | `PlatformSettings` | `platform_settings`, `platform_setting_changes` |
 | `shared` | Cross-cutting infrastructure: web configuration, RFC 9457 problem details, the global exception handler. Business logic never lives here. | n/a | none |
 
 ### Where a factor pack lives

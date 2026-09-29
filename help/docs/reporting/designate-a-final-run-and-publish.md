@@ -11,7 +11,7 @@ screens: [step-8-mark-final.png]
 
 Marking a run as final names the run that stands as the inventory's result, and publishing issues its report. You do this once the review is complete and the figures are agreed.
 
-<!-- sources: specs 05.1, 05.5 and 07.4; old page tasks/inventories/designate-a-final-run-and-publish.md (verified 2026-09-24); frontend/src/features/ghg/components/LifecycleBar.tsx (state copy, the withdraw and publish dialogs, the disabled Publish button); backend/src/main/java/com/carbonos/ghg/internal/InventoryService.java (refuseWhileARecalculationHolds); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "8 final dialog", "8 after final", "8 publish dialog", "8 after publish", "8 run after publish" -->
+<!-- sources: specs 05.1, 05.5 and 07.4, and 02.6 (the published-period setting, amended 2026-09-29); old page tasks/inventories/designate-a-final-run-and-publish.md (verified 2026-09-24); frontend/src/features/ghg/components/LifecycleBar.tsx (state copy, the withdraw and publish dialogs, the disabled Publish button); backend/src/main/java/com/carbonos/ghg/internal/InventoryService.java (refuseWhileARecalculationHolds); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "8 final dialog", "8 after final", "8 publish dialog", "8 after publish", "8 run after publish" -->
 
 ## Before you start
 
@@ -50,4 +50,4 @@ What you see: "Inventory published." The header reads "PUBLISHED · BOUNDARY v1"
 
 ## What happens next
 
-Section 00 of the final run reads "Published 9/28/2026, 4:32:34 PM by owner@gyenyame.example" and gains the block **Since publication**. A factor pack edition that applies inside the published period can no longer be imported or accepted. To restate the year, see [Correct a published inventory](correct-a-published-inventory.md); to name the base year, see [Designate the base year](designate-the-base-year.md).
+Section 00 of the final run reads "Published 9/28/2026, 4:32:34 PM by owner@gyenyame.example" and gains the block **Since publication**. A factor pack edition that applies inside the published period can no longer be imported or accepted, unless the platform setting **Editions inside a published period** allows it; the published report keeps its figures either way. To restate the year, see [Correct a published inventory](correct-a-published-inventory.md); to name the base year, see [Designate the base year](designate-the-base-year.md).

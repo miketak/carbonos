@@ -46,10 +46,6 @@ public class FactorPackBlastRadius {
 
 	private static final MathContext MC = MathContext.DECIMAL64;
 
-	/** The inventories whose period is no longer the organization's to change (specs 05.1 and 02.7). */
-	private static final List<InventoryStatus> LOCKED = List.of(InventoryStatus.FROZEN, InventoryStatus.FINAL,
-			InventoryStatus.PUBLISHED);
-
 	/**
 	 * One lineage as the edition would move it: the predecessor's value, this
 	 * edition's, and how many organizations hold it.
@@ -92,10 +88,12 @@ public class FactorPackBlastRadius {
 	private final GhgRunRepository runs;
 	private final FactorPackNoticeRepository notices;
 
+	private final EditionLock editionLock;
+
 	FactorPackBlastRadius(FactorPackEditionRepository editions, FactorPackRowRepository rows,
 			EmissionFactorRepository emissionFactors, OrganizationRepository organizations,
 			InventoryRepository inventories, InventoryAssignmentRepository assignments, GhgRunRepository runs,
-			FactorPackNoticeRepository notices) {
+			FactorPackNoticeRepository notices, EditionLock editionLock) {
 		this.editions = editions;
 		this.rows = rows;
 		this.emissionFactors = emissionFactors;
@@ -104,6 +102,7 @@ public class FactorPackBlastRadius {
 		this.assignments = assignments;
 		this.runs = runs;
 		this.notices = notices;
+		this.editionLock = editionLock;
 	}
 
 	/**
@@ -341,7 +340,7 @@ public class FactorPackBlastRadius {
 	private OrganizationImpact impactOf(UUID organizationId, Organization organization, List<EmissionFactor> theirs,
 			List<FactorPackChange> log, Map<String, FactorPackRow> rowsByCode, Set<String> moving) {
 		var byCode = liveByCode(theirs);
-		var lockedFactorIds = assignments.factorIdsInInventoriesWithStatus(organizationId, LOCKED);
+		var lockedFactorIds = assignments.factorIdsInInventoriesWithStatus(organizationId, editionLock.lockedStatuses());
 
 		var conflicts = new ArrayList<String>();
 		var blocked = new ArrayList<String>();
@@ -465,7 +464,8 @@ public class FactorPackBlastRadius {
 
 	private List<InventoryRef> lockedInventories(UUID organizationId) {
 		var found = new ArrayList<InventoryRef>();
-		for (var status : LOCKED) {
+		// the same statuses the import refuses on (spec 02.6 rule 1), under the platform setting in force
+		for (var status : editionLock.lockedStatuses()) {
 			inventories.findAllByOrganizationIdAndStatusOrderByPeriodStartAsc(organizationId, status)
 				.forEach(inventory -> found.add(ref(inventory)));
 		}

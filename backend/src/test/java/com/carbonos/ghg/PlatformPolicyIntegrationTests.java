@@ -80,7 +80,8 @@ class PlatformPolicyIntegrationTests {
 		organizations.deleteAll();
 		jdbc.update("DELETE FROM platform_setting_changes");
 		jdbc.update("UPDATE platform_settings SET support_access_window_hours = 24, "
-				+ "organization_creation = 'EVERYONE', updated_by = NULL WHERE id = 1");
+				+ "organization_creation = 'EVERYONE', editions_in_published_periods = 'BLOCKED', "
+				+ "updated_by = NULL WHERE id = 1");
 		users.deleteAll();
 		admin = userService.create("policy-admin@ecoriv.com", "Ama Support", UserRole.ADMIN, "support-passw0rd");
 		client = userService.create("policy-owner@sankofa.test", "Kojo Owner", UserRole.MEMBER, "client-passw0rd1");
@@ -96,7 +97,8 @@ class PlatformPolicyIntegrationTests {
 	void restoreTheDefaults() {
 		jdbc.update("DELETE FROM platform_setting_changes");
 		jdbc.update("UPDATE platform_settings SET support_access_window_hours = 24, "
-				+ "organization_creation = 'EVERYONE', updated_by = NULL WHERE id = 1");
+				+ "organization_creation = 'EVERYONE', editions_in_published_periods = 'BLOCKED', "
+				+ "updated_by = NULL WHERE id = 1");
 	}
 
 	RequestPostProcessor as(User account) {

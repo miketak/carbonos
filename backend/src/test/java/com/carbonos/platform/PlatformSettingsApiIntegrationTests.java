@@ -66,7 +66,8 @@ class PlatformSettingsApiIntegrationTests {
 		// way to rewrite the policy without recording why
 		changes.deleteAll();
 		jdbc.update("UPDATE platform_settings SET support_access_window_hours = 24, "
-				+ "organization_creation = 'EVERYONE', updated_by = NULL WHERE id = 1");
+				+ "organization_creation = 'EVERYONE', editions_in_published_periods = 'BLOCKED', "
+				+ "updated_by = NULL WHERE id = 1");
 		users.deleteAll();
 		admin = userService.create("admin@ecoriv.com", "Ama Admin", UserRole.ADMIN, "correct-horse-1");
 		member = userService.create("member@ecoriv.com", "Kofi Member", UserRole.MEMBER, "correct-horse-1");
@@ -82,7 +83,8 @@ class PlatformSettingsApiIntegrationTests {
 	void restoreTheDefaults() {
 		jdbc.update("DELETE FROM platform_setting_changes");
 		jdbc.update("UPDATE platform_settings SET support_access_window_hours = 24, "
-				+ "organization_creation = 'EVERYONE', updated_by = NULL WHERE id = 1");
+				+ "organization_creation = 'EVERYONE', editions_in_published_periods = 'BLOCKED', "
+				+ "updated_by = NULL WHERE id = 1");
 	}
 
 	RequestPostProcessor as(User u) {
@@ -94,7 +96,45 @@ class PlatformSettingsApiIntegrationTests {
 		mvc.perform(get("/api/admin/settings").with(as(admin)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.supportAccessWindowHours").value(24))
+			.andExpect(jsonPath("$.organizationCreation").value("EVERYONE"))
+			// spec 02.6 rule 1: a published period blocks an edition until an administrator says otherwise
+			.andExpect(jsonPath("$.editionsInPublishedPeriods").value("BLOCKED"));
+		assertThat(settings.editionsInPublishedPeriods())
+			.isEqualTo(PlatformSettings.EditionsInPublishedPeriods.BLOCKED);
+	}
+
+	@Test
+	void allowingEditionsInsidePublishedPeriodsIsRecordedWithItsReason() throws Exception {
+		// only the setting that moves is sent; the others are left as they are
+		mvc.perform(put("/api/admin/settings").with(as(admin)).with(csrf()).contentType("application/json")
+			.content("""
+					{"editionsInPublishedPeriods":"ALLOWED",
+					 "reason":"published runs keep their factors; owner decision 2026-09-29"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.editionsInPublishedPeriods").value("ALLOWED"))
+			.andExpect(jsonPath("$.supportAccessWindowHours").value(24))
 			.andExpect(jsonPath("$.organizationCreation").value("EVERYONE"));
+
+		assertThat(settings.editionsInPublishedPeriods())
+			.isEqualTo(PlatformSettings.EditionsInPublishedPeriods.ALLOWED);
+		mvc.perform(get("/api/admin/settings/history").with(as(admin)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].setting").value("editionsInPublishedPeriods"))
+			.andExpect(jsonPath("$[0].oldValue").value("BLOCKED"))
+			.andExpect(jsonPath("$[0].newValue").value("ALLOWED"))
+			.andExpect(jsonPath("$[0].reason").value("published runs keep their factors; owner decision 2026-09-29"))
+			.andExpect(jsonPath("$[0].actorEmail").value("admin@ecoriv.com"));
+
+		// and like every other setting, it does not move without a reason
+		mvc.perform(put("/api/admin/settings").with(as(admin)).with(csrf()).contentType("application/json")
+			.content("""
+					{"editionsInPublishedPeriods":"BLOCKED","reason":"undo"}"""))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.reason").exists());
+		assertThat(settings.editionsInPublishedPeriods())
+			.isEqualTo(PlatformSettings.EditionsInPublishedPeriods.ALLOWED);
+		assertThat(changes.count()).isEqualTo(1);
 	}
 
 	@Test

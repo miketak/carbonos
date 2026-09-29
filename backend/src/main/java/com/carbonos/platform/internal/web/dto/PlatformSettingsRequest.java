@@ -1,5 +1,6 @@
 package com.carbonos.platform.internal.web.dto;
 
+import com.carbonos.platform.PlatformSettings.EditionsInPublishedPeriods;
 import com.carbonos.platform.PlatformSettings.OrganizationCreation;
 
 /**
@@ -8,5 +9,5 @@ import com.carbonos.platform.PlatformSettings.OrganizationCreation;
  * no evidence worth keeping.
  */
 public record PlatformSettingsRequest(Integer supportAccessWindowHours, OrganizationCreation organizationCreation,
-		String reason) {
+		EditionsInPublishedPeriods editionsInPublishedPeriods, String reason) {
 }

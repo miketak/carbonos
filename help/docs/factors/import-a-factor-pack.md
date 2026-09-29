@@ -11,7 +11,7 @@ screens: [step-3-factor-packs.png]
 
 Importing an edition adds its factors to the organization, with their citations, ready to be chosen in a classification. Do it when an organization starts, and again to hold a later edition.
 
-<!-- sources: specs 02.5, 02.6, 02.9; the old page tasks/emission-factors/import-a-factor-pack.md (verified 2026-09-24); frontend/src/features/ghg/EmissionFactorsPage.tsx (packs card, importNote); backend/src/main/java/com/carbonos/ghg/internal/FactorPackImportService.java (locked-period refusal); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "3 factors page", "3 toasts", "3 after imports" -->
+<!-- sources: specs 02.5, 02.6, 02.9; the old page tasks/emission-factors/import-a-factor-pack.md (verified 2026-09-24); frontend/src/features/ghg/EmissionFactorsPage.tsx (packs card, importNote); backend/src/main/java/com/carbonos/ghg/internal/FactorPackImportService.java (locked-period refusal) and EditionLock.java (the published-period setting, spec 02.6 amendment 2026-09-29); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "3 factors page", "3 toasts", "3 after imports" -->
 
 ## Before you start
 
@@ -48,4 +48,4 @@ The message adds a sentence for lineages the edition drops ("this edition drops,
 
 ## What happens next
 
-When the platform publishes a later edition of a pack you hold, a notice appears under **Updates**; see [Accept or decline an edition notice](accept-or-decline-an-edition-notice.md). An edition whose applies-from date falls inside a frozen, final or published period cannot be imported: "A reported period keeps the factors it reported with." A frozen or final period can be reopened first; a published one cannot, so choose an edition that applies from a later date.
+When the platform publishes a later edition of a pack you hold, a notice appears under **Updates**; see [Accept or decline an edition notice](accept-or-decline-an-edition-notice.md). An edition whose applies-from date falls inside a frozen or final period cannot be imported: "A reported period keeps the factors it reported with." Reopen that period first. A published period blocks the import too while the platform setting **Editions inside a published period** is "Blocked (default)"; choose an edition that applies from a later date, or ask a platform administrator. Under "Allowed: published runs keep their factors" the import goes ahead, and the published report keeps the figures it was published with.

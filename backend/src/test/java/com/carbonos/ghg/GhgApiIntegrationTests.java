@@ -6431,15 +6431,17 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("PUBLISHED"));
-		// published: the period is on record, and no exit through it exists
+		// published: the period is on record, and no exit through it exists; under the default setting
+		// (spec 02.6 rule 1, amended 2026-09-29) the refusal names the setting instead of a reopen
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import").with(asMember())
 			.with(csrf()))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.allOf(
 					org.hamcrest.Matchers.containsString("'2025 Corporate' (2025-01-01 to 2025-12-31), which is PUBLISHED"),
 					org.hamcrest.Matchers.endsWith("A reported period keeps the factors it reported with. The edition "
-							+ "cannot be imported while that period is on record; choose an edition that applies from "
-							+ "a later date."),
+							+ "cannot be imported while that period is on record and the platform setting Editions "
+							+ "inside a published period is Blocked; choose an edition that applies from a later "
+							+ "date, or ask a platform administrator about the setting."),
 					org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Reopen")))));
 	}
 }

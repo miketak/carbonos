@@ -39,10 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class FactorPackAdoptionService {
 
-	/** The inventories whose period is no longer the organization's to change (specs 05.1, 02.6, 02.7). */
-	private static final List<InventoryStatus> LOCKED = List.of(InventoryStatus.FROZEN, InventoryStatus.FINAL,
-			InventoryStatus.PUBLISHED);
-
 	private static final MathContext MC = MathContext.DECIMAL64;
 
 	/** The warning the decision screen shows before accepting, in the officer's words (spec 02.7). */
@@ -103,13 +99,14 @@ public class FactorPackAdoptionService {
 	private final GhgRunRepository runs;
 	private final OrganizationUnits organizationUnits;
 	private final GhgAccess access;
+	private final EditionLock editionLock;
 
 	FactorPackAdoptionService(FactorPackNoticeRepository notices, FactorPackEditionRepository editions,
 			FactorPackRowRepository packRows, EmissionFactorRepository emissionFactors,
 			OrganizationRepository organizations, InventoryRepository inventories,
 			InventoryAssignmentRepository assignments, GhgAuditEventRepository auditEvents,
 			FactorPackImportService imports, BaseYearService baseYears, GhgRunRepository runs,
-			OrganizationUnits organizationUnits, GhgAccess access) {
+			OrganizationUnits organizationUnits, GhgAccess access, EditionLock editionLock) {
 		this.notices = notices;
 		this.editions = editions;
 		this.packRows = packRows;
@@ -123,6 +120,7 @@ public class FactorPackAdoptionService {
 		this.runs = runs;
 		this.organizationUnits = organizationUnits;
 		this.access = access;
+		this.editionLock = editionLock;
 	}
 
 	// --- the inbox ----------------------------------------------------------
@@ -198,11 +196,17 @@ public class FactorPackAdoptionService {
 		var basisChanged = currentBasis != null && newBasis != null && !currentBasis.equalsIgnoreCase(newBasis);
 
 		// a lineage is blocked when the change would fall inside a locked period, which is the rule the
-		// import refuses the whole edition on: a reported period keeps the factors it reported with
+		// import refuses the whole edition on: a reported period keeps the factors it reported with. A
+		// published period is locked only while the platform setting blocks it (spec 02.6 rule 1)
 		var lockedCovering = coveringLockedInventories(organizationId, appliesFrom);
 		var lockedFactorIds = lockedCovering.isEmpty() ? java.util.Set.<UUID>of()
 				: assignments.factorIdsInInventories(lockedCovering.stream().map(Inventory::getId).toList());
 		var movement = estimatedMovement(organizationId, held, proposed);
+		var blockedReason = editionLock.publishedPeriodsBlock()
+				? "Used by an inventory whose period is frozen, final or published. A reported period keeps the "
+						+ "factors it reported with."
+				: "Used by an inventory whose period is frozen or final. A reported period keeps the factors it "
+						+ "reported with.";
 
 		var rows = new ArrayList<DiffRow>();
 		var conflicts = new ArrayList<ApartRow>();
@@ -224,9 +228,7 @@ public class FactorPackAdoptionService {
 						"Edited here, so the import never touches it, whatever the decision."));
 			}
 			if (lockedFactorIds.contains(factor.getId())) {
-				blocked.add(new ApartRow(code, factor.getName(),
-						"Used by an inventory whose period is frozen, final or published. A reported period keeps the "
-								+ "factors it reported with."));
+				blocked.add(new ApartRow(code, factor.getName(), blockedReason));
 			}
 			var current = factor.getKgCo2ePerUnit();
 			var proposedValue = row.getKgCo2ePerUnit();
@@ -392,12 +394,17 @@ public class FactorPackAdoptionService {
 			.toList();
 	}
 
-	/** The locked inventories whose period covers the applies-from date, which refuse an acceptance. */
+	/**
+	 * The locked inventories whose period covers the applies-from date, which
+	 * refuse an acceptance: FROZEN and FINAL always, PUBLISHED while the
+	 * platform setting Editions inside a published period is BLOCKED.
+	 */
 	private List<Inventory> coveringLockedInventories(UUID organizationId, LocalDate appliesFrom) {
 		if (appliesFrom == null) {
 			return List.of();
 		}
-		return inventories.findAllByOrganizationIdAndStatusInOrderByPeriodStartAsc(organizationId, LOCKED)
+		return inventories
+			.findAllByOrganizationIdAndStatusInOrderByPeriodStartAsc(organizationId, editionLock.lockedStatuses())
 			.stream()
 			.filter(inventory -> !appliesFrom.isBefore(inventory.getPeriodStart())
 					&& !appliesFrom.isAfter(inventory.getPeriodEnd()))

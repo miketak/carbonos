@@ -527,9 +527,13 @@ export interface PlatformSummary {
 
 export type OrganizationCreation = 'EVERYONE' | 'ADMINISTRATORS'
 
+/** Whether a published period blocks an edition that applies inside it (spec 02.6 rule 1). */
+export type EditionsInPublishedPeriods = 'BLOCKED' | 'ALLOWED'
+
 export interface PlatformSettings {
   supportAccessWindowHours: number
   organizationCreation: OrganizationCreation
+  editionsInPublishedPeriods: EditionsInPublishedPeriods
   updatedAt: string
   updatedBy: string | null
 }
@@ -537,6 +541,7 @@ export interface PlatformSettings {
 export interface PlatformSettingsInput {
   supportAccessWindowHours: number
   organizationCreation: OrganizationCreation
+  editionsInPublishedPeriods: EditionsInPublishedPeriods
   reason: string
 }
 

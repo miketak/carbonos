@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: The statuses of a factor pack edition in the platform catalogue and of an update notice under Updates, with what each means and what moves it.
 role: Anyone
 ---
@@ -9,7 +9,7 @@ role: Anyone
 
 An edition's status says whether an organization can import it. A notice's status says whether the organization has decided on the edition it announces. You read the first on the **Factor packs** card and in the administration console, and the second under **Updates**.
 
-<!-- sources: specs 02.5, 02.7; the old page reference/statuses-and-transitions.md (verified 2026-09-24); backend/src/main/java/com/carbonos/ghg/internal/FactorPackStatus.java; backend/src/main/java/com/carbonos/ghg/internal/FactorPackNotice.java (Status); backend/src/main/java/com/carbonos/ghg/internal/FactorPackAdoptionService.java and GhgAccess.java (refusals); frontend/src/features/admin/AdminFactorPacksPage.tsx (status hints); frontend/src/features/ghg/FactorPackUpdatesPage.tsx and components/AdoptionDiffDrawer.tsx (status labels); frontend/src/features/ghg/format.ts (history labels) -->
+<!-- sources: specs 02.5, 02.7; the old page reference/statuses-and-transitions.md (verified 2026-09-24); backend/src/main/java/com/carbonos/ghg/internal/FactorPackStatus.java; backend/src/main/java/com/carbonos/ghg/internal/FactorPackNotice.java (Status); backend/src/main/java/com/carbonos/ghg/internal/FactorPackAdoptionService.java and GhgAccess.java (refusals); EditionLock.java (the published-period setting, spec 02.6 amendment 2026-09-29); frontend/src/features/admin/AdminFactorPacksPage.tsx (status hints); frontend/src/features/ghg/FactorPackUpdatesPage.tsx and components/AdoptionDiffDrawer.tsx (status labels); frontend/src/features/ghg/format.ts (history labels) -->
 
 ## Factor pack editions
 
@@ -41,7 +41,8 @@ A decision is made once. A second attempt on a decided notice answers "This noti
 
 | Attempt | What CarbonOS answers |
 | --- | --- |
-| Accept while the applies-from date falls inside a frozen, final or published period | "A reported period keeps the factors it reported with, so this edition cannot be accepted until that inventory is reopened. Declining stays available." |
+| Accept while the applies-from date falls inside a frozen or final period | "A reported period keeps the factors it reported with, so this edition cannot be accepted until that inventory is reopened. Declining stays available." |
+| Accept while it falls inside a published period, with the platform setting **Editions inside a published period** at "Blocked (default)" | "… cannot be accepted while the platform blocks editions inside a published period. Declining stays available." Under "Allowed: published runs keep their factors" nothing blocks. |
 | Accept under support access | "Support access cannot adopt an edition for an organization. That is the organization's own decision, so a reviewer or an owner of the organization has to make it." Declining answers the same, for "decline an edition". |
 | Accept an edition that moves the GWP basis as a vintage progression | A message on the answer field naming the two bases: "chapter 1 requires one basis across the inventory and across years. Answer it as a retrospective adoption or an erratum." |
 | Accept a vintage progression at or above the significance threshold without a note | A message on the note field naming the percentages: "so this is a methodology change under chapter 5. Say why it is still recorded as a vintage progression." |

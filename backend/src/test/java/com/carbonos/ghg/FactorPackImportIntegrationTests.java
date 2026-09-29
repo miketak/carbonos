@@ -145,6 +145,8 @@ class FactorPackImportIntegrationTests {
 	@BeforeEach
 	@AfterEach
 	void reset() {
+		// spec 02.6 rule 1: the platform setting is one row for the deployment, so every test starts on the default
+		jdbc.update("UPDATE platform_settings SET editions_in_published_periods = 'BLOCKED' WHERE id = 1");
 		runs.deleteAll();
 		assignments.deleteAll();
 		boundaryTreatments.deleteAll();
@@ -341,6 +343,23 @@ class FactorPackImportIntegrationTests {
 					{"label": "First run"}""")).andExpect(status().isCreated())), "$.run.id");
 	}
 
+	/** Designates the run final and publishes the inventory: the period is on record from here on. */
+	void finalizeAndPublish(String inventoryId, String runId) throws Exception {
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf())
+			.contentType("application/json").content("{}")).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+	}
+
+	/**
+	 * The platform setting Editions inside a published period set to Allowed.
+	 * Written straight to the row: recording the change with its reason is
+	 * {@code PlatformSettingsApiIntegrationTests}' business.
+	 */
+	void allowEditionsInPublishedPeriods() {
+		jdbc.update("UPDATE platform_settings SET editions_in_published_periods = 'ALLOWED' WHERE id = 1");
+	}
+
 	/** The live version of a lineage: the one nothing has replaced. */
 	com.carbonos.ghg.internal.EmissionFactor live(String organizationId, String code) {
 		return versionsOf(organizationId, code).stream()
@@ -474,6 +493,127 @@ class FactorPackImportIntegrationTests {
 		assertThat(versionsOf(orgId, DIESEL)).hasSize(1);
 		assertThat(live(orgId, DIESEL).getSourceEdition()).isEqualTo(FIRST);
 		assertThat(emissionFactors.findAllByOrganizationIdAndPackCodeIsNotNull(UUID.fromString(orgId))).hasSize(3);
+	}
+
+	@Test
+	void aPublishedPeriodRefusesTheImportWhileTheSettingIsBlocked() throws Exception {
+		publishTheFirstEdition();
+		var orgId = createOrganization("Asante Gold Resources");
+		importEdition(orgId, FIRST);
+		var facilityId = createFacility(orgId);
+		var inventoryId = inventoryWithDiesel(orgId, facilityId, "2026 Corporate", "2026-01-01", "2026-06-30");
+		finalizeAndPublish(inventoryId, freezeAndRun(inventoryId));
+
+		publishTheSecondEdition("2026-03-01");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/" + SECOND + "/import").with(asMember())
+			.with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("PUBLISHED")))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers
+				.containsString("the platform setting Editions inside a published period is Blocked")));
+		assertThat(versionsOf(orgId, DIESEL)).hasSize(1);
+		assertThat(live(orgId, DIESEL).getSourceEdition()).isEqualTo(FIRST);
+	}
+
+	@Test
+	void aPublishedPeriodNoLongerBlocksUnderAllowedAndItsReportKeepsItsFigures() throws Exception {
+		publishTheFirstEdition();
+		var orgId = createOrganization("Asante Gold Resources");
+		importEdition(orgId, FIRST);
+		var facilityId = createFacility(orgId);
+		var inventoryId = inventoryWithDiesel(orgId, facilityId, "2026 Corporate", "2026-01-01", "2026-06-30");
+		var runId = freezeAndRun(inventoryId);
+		finalizeAndPublish(inventoryId, runId);
+		var pinned = factorId(orgId, DIESEL);
+		allowEditionsInPublishedPeriods();
+
+		publishTheSecondEdition("2026-03-01");
+		var result = importEdition(orgId, SECOND);
+		assertThat(JsonPath.<Integer>read(result, "$.versioned")).isEqualTo(1);
+		assertThat(versionsOf(orgId, DIESEL)).hasSize(2);
+		// a published inventory is not a draft, so nothing moves its classifications
+		assertThat(JsonPath.<List<String>>read(result, "$.moved[*].inventoryId")).isEmpty();
+		var listing = body(mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/assignments").with(asMember()))
+			.andExpect(status().isOk()));
+		assertThat(JsonPath.<List<String>>read(listing, "$[?(@.included == true)].emissionFactorId"))
+			.containsExactly(pinned);
+
+		// the published report is the one stored at publication, and the run behind it is a snapshot
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.lines[0].kgCo2ePerUnit").value(2.66))
+			.andExpect(jsonPath("$.factors[0].kgCo2ePerUnit").value(2.66))
+			.andExpect(jsonPath("$.factors[0].sourceEdition").value(FIRST));
+		assertThat(runs.findById(UUID.fromString(runId)).orElseThrow().getTotalKgCo2e())
+			.isEqualByComparingTo("2660.000");
+
+		// a correction inherits the published view, so it starts on the factors the published run used
+		var correction = JsonPath.<String>read(body(mvc
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
+				.contentType("application/json")
+				.content("""
+						{"name": "2026 Corporate (restated)", "reason": "Restated after a metering error"}"""))
+			.andExpect(status().isCreated())), "$.id");
+		var inherited = body(mvc.perform(get("/api/ghg/inventories/" + correction + "/assignments").with(asMember()))
+			.andExpect(status().isOk()));
+		assertThat(JsonPath.<List<String>>read(inherited, "$[?(@.included == true)].emissionFactorId"))
+			.containsExactly(pinned);
+	}
+
+	@Test
+	void aSupersededPeriodNoLongerBlocksUnderAllowedAndItsCorrectionIsAnOpenDraft() throws Exception {
+		publishTheFirstEdition();
+		var orgId = createOrganization("Asante Gold Resources");
+		importEdition(orgId, FIRST);
+		var facilityId = createFacility(orgId);
+		var inventoryId = inventoryWithDiesel(orgId, facilityId, "2026 Corporate", "2026-01-01", "2026-06-30");
+		var runId = freezeAndRun(inventoryId);
+		finalizeAndPublish(inventoryId, runId);
+		var correction = JsonPath.<String>read(body(mvc
+			.perform(post("/api/ghg/inventories/" + inventoryId + "/supersede").with(asMember()).with(csrf())
+				.contentType("application/json")
+				.content("""
+						{"name": "2026 Corporate (restated)", "reason": "Restated after a metering error"}"""))
+			.andExpect(status().isCreated())), "$.id");
+		allowEditionsInPublishedPeriods();
+
+		publishTheSecondEdition("2026-03-01");
+		var result = importEdition(orgId, SECOND);
+		// the superseded inventory is still PUBLISHED and no longer blocks; the correction is a draft the
+		// date splits, so the decider is told, exactly as for any open draft (rule 7)
+		assertThat(JsonPath.<List<String>>read(result, "$.splitPeriods[*].inventoryId")).containsExactly(correction);
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.run.totalKgCo2e").value(2660.0))
+			.andExpect(jsonPath("$.factors[0].kgCo2ePerUnit").value(2.66));
+	}
+
+	@Test
+	void frozenAndFinalPeriodsStillRefuseTheImportUnderAllowed() throws Exception {
+		publishTheFirstEdition();
+		var orgId = createOrganization("Asante Gold Resources");
+		importEdition(orgId, FIRST);
+		var facilityId = createFacility(orgId);
+		var inventoryId = inventoryWithDiesel(orgId, facilityId, "2026 Corporate", "2026-01-01", "2026-06-30");
+		var runId = freezeAndRun(inventoryId);
+		allowEditionsInPublishedPeriods();
+		publishTheSecondEdition("2026-03-01");
+
+		// FROZEN: it can be reopened, so it still blocks
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/" + SECOND + "/import").with(asMember())
+			.with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("FROZEN")))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Reopen that inventory")));
+
+		// FINAL: a final run's factors must not shift under it
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf())
+			.contentType("application/json").content("{}")).andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/" + SECOND + "/import").with(asMember())
+			.with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("FINAL")));
+		assertThat(versionsOf(orgId, DIESEL)).hasSize(1);
 	}
 
 	@Test
