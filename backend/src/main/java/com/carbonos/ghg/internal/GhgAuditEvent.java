@@ -35,7 +35,10 @@ public class GhgAuditEvent {
 		// spec 01.7: who was added, given another role or removed is part of the organization's history
 		MEMBER_ADDED, MEMBER_ROLE_CHANGED, MEMBER_REMOVED,
 		// spec 01.8: with shared names, which organization was renamed into which is a fact the history holds
-		ORGANIZATION_RENAMED
+		ORGANIZATION_RENAMED,
+		// spec 01.7, 03.1: who changed the structure, when, and from what to what
+		ENTITY_ADDED, ENTITY_UPDATED, ENTITY_REMOVED, FACILITY_ADDED, FACILITY_UPDATED, FACILITY_REMOVED,
+		STREAM_ADDED, STREAM_REMOVED
 	}
 
 	@Id

@@ -1,7 +1,7 @@
 ---
 owner: miketak
 last_reviewed: 2026-09-29
-description: Change the organization's name, address or contact on Settings, read the history of what has been done to the organization itself, and delete an organization with a reason.
+description: Change the organization's name, address or contact on Settings, read the history of what has been done to the organization and its structure, and delete an organization with a reason.
 role: Owner
 minutes: 4
 ---
@@ -10,7 +10,7 @@ minutes: 4
 
 **Settings** holds the organization's details, members, history and deletion. Come here to change what the report header prints, to read who did what to the organization, or to delete it.
 
-<!-- sources: specs 01.3, 01.8, 07.4; QA governance 002 A3; old page tasks/organization/edit-details-and-read-the-history.md (verified 2026-09-26); OrganizationSettingsPage.tsx, DeleteOrganizationDialog.tsx, format.ts (actionLabels), GhgAuditEvent.java (Action), GhgService.java (updateOrganization, deleteOrganization); the History entry format from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt), "7 runs tab" -->
+<!-- sources: specs 01.3, 01.7 and 03.1 (amended 2026-09-29), 01.8, 07.4; QA governance 002 A3; old page tasks/organization/edit-details-and-read-the-history.md (verified 2026-09-26); OrganizationSettingsPage.tsx, DeleteOrganizationDialog.tsx, format.ts (actionLabels), GhgAuditEvent.java (Action), GhgService.java (updateOrganization, deleteOrganization, the entity, facility and stream acts), StructureChanges.java (the reasons), StructureHistoryIntegrationTests.java; the History entry format from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt), "7 runs tab" -->
 
 ## Before you start
 
@@ -27,7 +27,7 @@ What you see: "*Name* (ORG-*NNNN*) saved." A run launched afterwards prints the 
 
 ## Read the history
 
-The **History** card at the foot of the page lists every act that touched the organization itself, newest first: **Action**, **Who**, **When** and **Reason**. Before anything has happened it reads "Nothing has happened to the organization itself yet."
+The **History** card at the foot of the page lists every act that touched the organization or its structure, newest first: **Action**, **Who**, **When** and **Reason**. Before anything has happened it reads "Nothing has happened to the organization itself yet."
 
 | Action | Reason column |
 | --- | --- |
@@ -36,9 +36,14 @@ The **History** card at the foot of the page lists every act that touched the or
 | Member added | "*email* added as REVIEWER" |
 | Member role changed | "*email*: PREPARER → REVIEWER" |
 | Member removed | "*email* removed" |
+| Legal entity added, Facility added, Source stream added | The name and its main facts |
+| Legal entity edited, Facility edited | Each changed field, old → new: "*name*: economic interest 100% → 60%, legal ownership 100% → 60%" |
+| Legal entity removed, Facility removed, Source stream removed | "*name* removed: *reason*", or "*stream* removed from *facility*" |
 | Factor pack adopted, Factor pack declined | The edition and the note you gave |
 | Support access assumed | The administrator's reason |
 | Support access ended, Support access expired | How the grant ended |
+
+Who changed an entity's ownership share, and when, is a **Legal entity edited** row. Saving without a change adds no row; editing a stream is not recorded. An act under support access ends with "(under support access)".
 
 An inventory's own acts are in the **History** card on its **Runs** tab, and a record's in that record's **History**.
 

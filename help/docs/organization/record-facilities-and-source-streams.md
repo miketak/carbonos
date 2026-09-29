@@ -11,7 +11,7 @@ screens: [step-2-source-streams.png]
 
 A facility is a site, and a source stream is one source of emissions at it. Every activity record names both, so record them before the first record.
 
-<!-- sources: specs 03, 04.1, 04.3, 04.7; old page tasks/organization/record-facilities-and-source-streams.md (verified 2026-09-24); FacilitiesPage.tsx, FacilityFormModal.tsx, StreamsModal.tsx, RemoveDialog.tsx, StreamKind.java, GhgService.java (deleteFacility, deleteStream); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "2 facility dialog", "2 facilities", "2 streams dialog empty", "2 streams Nyame Pit and Plant", "2 streams Obuasi Camp", "3 toasts" -->
+<!-- sources: specs 03, 04.1, 04.3, 04.7; old page tasks/organization/record-facilities-and-source-streams.md (verified 2026-09-24); FacilitiesPage.tsx, FacilityFormModal.tsx, StreamsModal.tsx, RemoveDialog.tsx, StreamKind.java, GhgService.java (deleteFacility, deleteStream), StructureChanges.java (the history reasons, spec 01.7 as amended 2026-09-29); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "2 facility dialog", "2 facilities", "2 streams dialog empty", "2 streams Nyame Pit and Plant", "2 streams Obuasi Camp", "3 toasts" -->
 
 ## Before you start
 
@@ -51,6 +51,8 @@ The twelve kinds are Stationary combustion, Mobile combustion, Process, Fugitive
 ## Remove a facility or a stream
 
 **Remove** on a facility asks for a **Reason** of at least 5 characters and keeps it on file as removed; it is refused while the facility has activity records or sits in an unpublished inventory's boundary. A stream needs no reason and is refused while records name it.
+
+The organization's history records adding, editing and removing a facility, with the old and new values of an edit and the reason for a removal, and adding and removing a stream; see [Read the history](edit-the-details-and-read-the-history.md#read-the-history).
 
 ## What happens next
 
