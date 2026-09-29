@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-29
 ---
 
 # Reference
@@ -17,6 +17,7 @@ the code disagree, the code wins and the page needs a pull request.
 | [Frontend structure](frontend-structure.md) | The folders under `frontend/src`, the feature-to-module mapping and the npm scripts. |
 | [Environments](environments.md) | Local, staging and production: addresses, services and variables. |
 | [Conventions](conventions.md) | Branching, commits, versions, code style and writing style. |
+| [Known issues](known-issues.md) | Product behaviour we have decided not to change yet, why, and what closing it takes. |
 | [Specs](../specs/README.md) | What the product must do, chapter by chapter of the GHG Protocol. |
 | [QA procedures](qa/README.md) | Objective-led manual test scripts, one pack per persona (mining first). |
 | [Decision records](../adr/README.md) | Why the tooling and the structure are the way they are. |
