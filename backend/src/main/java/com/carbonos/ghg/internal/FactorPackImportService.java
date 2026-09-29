@@ -438,17 +438,22 @@ public class FactorPackImportService {
 	/**
 	 * Spec 02.6 rule 1. A reported period keeps the factors it reported with, so
 	 * an applies-from date inside a FROZEN, FINAL or PUBLISHED period refuses the
-	 * whole import and writes nothing.
+	 * whole import and writes nothing. A frozen or final inventory can be
+	 * reopened; a published one is on record and cannot, so the refusal names
+	 * only the exit that exists.
 	 */
 	private void refuseWhileAPeriodIsLocked(UUID organizationId, String editionId, LocalDate appliesFrom) {
 		for (var inventory : inventories.findAllByOrganizationIdAndStatusInOrderByPeriodStartAsc(organizationId,
 				LOCKED)) {
 			if (!appliesFrom.isBefore(inventory.getPeriodStart()) && !appliesFrom.isAfter(inventory.getPeriodEnd())) {
+				var exit = inventory.getStatus() == InventoryStatus.PUBLISHED
+						? "The edition cannot be imported while that period is on record; choose an edition that "
+								+ "applies from a later date."
+						: "Reopen that inventory, or import the edition into a later period.";
 				throw new GhgRuleViolationException("'" + editionId + "' applies from " + appliesFrom
 						+ ", which falls inside '" + inventory.getName() + "' (" + inventory.getPeriodStart() + " to "
 						+ inventory.getPeriodEnd() + "), which is " + inventory.getStatus()
-						+ ". A reported period keeps the factors it reported with. Reopen that inventory, or import "
-						+ "the edition into a later period.");
+						+ ". A reported period keeps the factors it reported with. " + exit);
 			}
 		}
 	}

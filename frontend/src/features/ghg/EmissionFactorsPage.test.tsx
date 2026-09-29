@@ -16,6 +16,7 @@ import {
   listPackRows,
   setFactorApproval,
   createEmissionFactor,
+  updateEmissionFactor,
 } from './api'
 
 const organization: Organization = {
@@ -189,6 +190,7 @@ beforeEach(() => {
   vi.mocked(setFactorApproval)
     .mockReset()
     .mockResolvedValue({ ...hfo, approved: true })
+  vi.mocked(updateEmissionFactor).mockReset()
 })
 
 function renderPage() {
@@ -299,8 +301,10 @@ test('a verifier sees Add factor, Import pack, Approve and Delete disabled with 
   const ownRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
   expect(within(ownRow).getByRole('button', { name: /approve/i })).toBeDisabled()
   // spec 02.6: a pack-derived factor is never deleted, so the row offers retirement instead
-  expect(within(ownRow).getByText('Retire, not delete')).toBeInTheDocument()
+  expect(within(ownRow).getByRole('button', { name: /retire factor/i })).toBeDisabled()
+  expect(within(ownRow).queryByRole('button', { name: /delete factor/i })).toBeNull()
   const handRow = screen.getByText('Quicklime (supplier declaration 2026)').closest('tr')!
+  expect(within(handRow).getByRole('button', { name: /retire factor/i })).toBeDisabled()
   expect(within(handRow).getByRole('button', { name: /delete factor/i })).toBeDisabled()
 })
 
@@ -317,8 +321,76 @@ test('a preparer can add, import, approve and delete factors (spec 01.4)', async
 
   const ownRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
   expect(within(ownRow).getByRole('button', { name: /approve/i })).toBeEnabled()
+  expect(within(ownRow).getByRole('button', { name: /retire factor/i })).toBeEnabled()
   const handRow = screen.getByText('Quicklime (supplier declaration 2026)').closest('tr')!
+  expect(within(handRow).getByRole('button', { name: /retire factor/i })).toBeEnabled()
   expect(within(handRow).getByRole('button', { name: /delete factor/i })).toBeEnabled()
+})
+
+test('a factor retires by its validity end, the rest of it sent back unchanged (spec 02.6)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
+  vi.mocked(updateEmissionFactor).mockResolvedValue({ ...hfo, validTo: '2026-06-30' })
+  renderPage()
+
+  const ownRow = (await screen.findByText('Heavy fuel oil (GOIL analysis 2025)')).closest('tr')!
+  const retire = within(ownRow).getByRole('button', { name: /retire factor/i })
+  await waitFor(() => expect(retire).toBeEnabled())
+  // the pack-derived row explains why it retires instead of being deleted
+  expect(retire).toHaveAttribute('title', expect.stringMatching(/^From a factor pack\./))
+  await user.click(retire)
+
+  const dialog = await screen.findByRole('dialog', { name: /retire heavy fuel oil/i })
+  expect(within(dialog).getByText(/it has applied since 2025-01-01/)).toBeInTheDocument()
+  const validTo = within(dialog).getByLabelText('Valid to')
+  expect(validTo).toHaveValue('2025-12-31')
+  await user.clear(validTo)
+  await user.click(validTo)
+  await user.paste('2026-06-30')
+  await user.click(within(dialog).getByRole('button', { name: /^retire factor$/i }))
+
+  await waitFor(() =>
+    expect(updateEmissionFactor).toHaveBeenCalledWith(
+      'f-2',
+      expect.objectContaining({
+        name: 'Heavy fuel oil (GOIL analysis 2025)',
+        defaultScope: 'SCOPE_1',
+        defaultCategory: 'MOBILE_COMBUSTION',
+        unit: 'tonne',
+        kgCo2ePerUnit: 3230,
+        co2KgPerUnit: 2.6307,
+        ch4KgPerUnit: 0.0001,
+        source: 'GOIL fuel analysis certificate 2025-03',
+        publicationYear: 2025,
+        validFrom: '2025-01-01',
+        validTo: '2026-06-30',
+        approved: false,
+        reportingBasis: 'SCOPES',
+      }),
+    ),
+  )
+  expect(
+    await screen.findByText('Heavy fuel oil (GOIL analysis 2025) retired: valid to 2026-06-30.'),
+  ).toBeInTheDocument()
+})
+
+test('retiring asks for a date before it sends anything', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
+  mockEmissionFactors([diesel])
+  renderPage()
+
+  const row = (await screen.findByText('Diesel (100% mineral diesel)')).closest('tr')!
+  const retire = within(row).getByRole('button', { name: /retire factor/i })
+  await waitFor(() => expect(retire).toBeEnabled())
+  await user.click(retire)
+  const dialog = await screen.findByRole('dialog', { name: /retire diesel/i })
+  await user.click(within(dialog).getByRole('button', { name: /^retire factor$/i }))
+
+  expect(
+    await within(dialog).findByText('Choose the last day the factor applies.'),
+  ).toBeInTheDocument()
+  expect(updateEmissionFactor).not.toHaveBeenCalled()
 })
 
 test('a hand-entered blend carries its gas mass and composition, and arrives unapproved (spec 02.1, chapter 4)', async () => {

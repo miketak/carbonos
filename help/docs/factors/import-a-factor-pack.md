@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Import a published factor pack edition so its factors join the organization with their citations, and read what the four numbers of the import message mean.
 role: Preparer
 minutes: 3
@@ -48,4 +48,4 @@ The message adds a sentence for lineages the edition drops ("this edition drops,
 
 ## What happens next
 
-When the platform publishes a later edition of a pack you hold, a notice appears under **Updates**; see [Accept or decline an edition notice](accept-or-decline-an-edition-notice.md). An edition whose applies-from date falls inside a frozen, final or published period cannot be imported: "A reported period keeps the factors it reported with. Reopen that inventory, or import the edition into a later period."
+When the platform publishes a later edition of a pack you hold, a notice appears under **Updates**; see [Accept or decline an edition notice](accept-or-decline-an-edition-notice.md). An edition whose applies-from date falls inside a frozen, final or published period cannot be imported: "A reported period keeps the factors it reported with." A frozen or final period can be reopened first; a published one cannot, so choose an edition that applies from a later date.

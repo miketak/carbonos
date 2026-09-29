@@ -156,6 +156,41 @@ test('an owner sees the members and adds one by email with a role (spec 01.2)', 
   )
 })
 
+test('the history refreshes after Add member, since the act is a history row (spec 01.3)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(addMember).mockResolvedValue({
+    id: 'm-2',
+    userId: 'user-2',
+    email: 'abena@client.test',
+    displayName: 'Abena Owusu',
+    role: 'PREPARER',
+    createdAt: '2026-09-02T10:00:00Z',
+  })
+  renderSettingsPage()
+
+  await screen.findByText('Ama Mensah')
+  await waitFor(() => expect(listOrganizationEvents).toHaveBeenCalledTimes(1))
+  await user.type(screen.getByLabelText(/email of an existing account/i), 'abena@client.test')
+  await user.click(screen.getByRole('button', { name: /add member/i }))
+
+  await waitFor(() => expect(addMember).toHaveBeenCalled())
+  await waitFor(() => expect(listOrganizationEvents).toHaveBeenCalledTimes(2))
+})
+
+test('the history refreshes after a rename too (spec 01.3)', async () => {
+  const user = userEvent.setup()
+  renderSettingsPage()
+
+  const name = await screen.findByLabelText('Name')
+  await waitFor(() => expect(listOrganizationEvents).toHaveBeenCalledTimes(1))
+  await user.clear(name)
+  await user.type(name, 'Ecoriv Group')
+  await user.click(screen.getByRole('button', { name: /save details/i }))
+
+  await waitFor(() => expect(updateOrganization).toHaveBeenCalled())
+  await waitFor(() => expect(listOrganizationEvents).toHaveBeenCalledTimes(2))
+})
+
 test('an unknown email under Add member says what to do about it (spec 01.4)', async () => {
   const user = userEvent.setup()
   vi.mocked(addMember).mockRejectedValue(new ApiError(404, { detail: 'Account not found.' }))

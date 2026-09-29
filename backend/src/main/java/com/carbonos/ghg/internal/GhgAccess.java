@@ -167,8 +167,9 @@ public class GhgAccess {
 	}
 
 	/**
-	 * An owner by membership: deletion and membership changes are never granted
-	 * by support access (spec 01.3), so an administrator under it gets 403 here.
+	 * An owner by membership: deletion, membership changes and the organization's
+	 * details are never granted by support access (spec 01.3, 01.7), so an
+	 * administrator under it gets 403 here.
 	 */
 	void checkMemberOwner(Organization organization) {
 		checkOwner(organization);

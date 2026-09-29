@@ -98,11 +98,11 @@ export function UserFormModal({ user, onClose, onSaved }: UserFormModalProps) {
               type={showPassword ? 'text' : 'password'}
               name="temporaryPassword"
               required
-              minLength={8}
+              minLength={12}
               value={temporaryPassword}
               onChange={(event) => setTemporaryPassword(event.target.value)}
               error={serverErrors.temporaryPassword}
-              hint="Share it with the user out of band; they should change it later."
+              hint="At least 12 characters, with a letter and a digit. Share it with the user out of band."
             />
             <button
               type="button"

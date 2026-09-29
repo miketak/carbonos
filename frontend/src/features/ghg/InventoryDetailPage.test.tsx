@@ -554,10 +554,20 @@ test('a facility left out of the boundary records why (Chapter 9, spec 07.2)', a
   vi.mocked(excludeFacility).mockResolvedValue(boundary[0])
   renderPage('boundary')
 
-  await user.selectOptions(
-    await screen.findByLabelText('Tema Depot left out because'),
-    'NOT_APPLICABLE',
-  )
+  const picker = await screen.findByLabelText('Tema Depot left out because')
+  // the reasons the system sets on its own are not on offer for a facility left out by hand
+  const offered = within(picker)
+    .getAllByRole('option')
+    .map((option) => option.textContent)
+  expect(offered).toEqual([
+    'Why is it left out?',
+    'Non-GHG activity',
+    'Duplicate',
+    'Not applicable',
+    'Methodology exclusion',
+    'Other documented reason',
+  ])
+  await user.selectOptions(picker, 'NOT_APPLICABLE')
   await waitFor(() =>
     expect(excludeFacility).toHaveBeenCalledWith('inv-1', 'fac-2', { reason: 'NOT_APPLICABLE' }),
   )
@@ -793,9 +803,20 @@ test('a published inventory cannot launch another run (spec 05.1)', async () => 
     status: 'PUBLISHED',
     finalRunId: 'run-1',
   })
+  vi.mocked(getValidation).mockResolvedValue(passingReport)
   renderPage('runs')
 
-  expect(await screen.findByRole('button', { name: /launch calculation run/i })).toBeDisabled()
+  const launch = await screen.findByRole('button', { name: /launch calculation run/i })
+  expect(launch).toBeDisabled()
+  // the gates pass, yet the button says in the backend's words why it is held
+  expect(launch).toHaveAttribute(
+    'title',
+    'A published inventory cannot be recalculated. Create a correction that supersedes it.',
+  )
+  expect(
+    await screen.findByText('Published. The runs are a record; a correction restates the year.'),
+  ).toBeInTheDocument()
+  expect(screen.queryByText('Ready to launch a run')).toBeNull()
 })
 
 test('a published inventory is a record that offers a correction', async () => {

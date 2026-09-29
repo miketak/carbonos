@@ -11,6 +11,7 @@ import type {
   InventoryStatus,
   LeaseType,
   MarketInstrument,
+  OrgRole,
   OutsideScopesRow,
   ReadinessIssue,
   ReportingBasis,
@@ -90,6 +91,14 @@ export const relationshipLabels: Record<RelationshipType, string> = {
   ASSOCIATE: 'Associate or affiliate (significant influence, no control)',
   FIXED_ASSET_INVESTMENT: 'Fixed-asset investment (no significant influence)',
   FRANCHISE: 'Franchise (consolidated only with equity rights or control)',
+}
+
+/** The four membership roles of spec 01.4, short enough for a sidebar or a badge. */
+export const roleShortLabels: Record<OrgRole, string> = {
+  OWNER: 'Owner',
+  REVIEWER: 'Reviewer',
+  PREPARER: 'Preparer',
+  VERIFIER: 'Verifier',
 }
 
 export const relationshipShortLabels: Record<RelationshipType, string> = {

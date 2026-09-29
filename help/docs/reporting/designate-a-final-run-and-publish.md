@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Mark a run as the inventory's final result with a review note, withdraw that designation if needed, and publish the report so nothing on the inventory changes afterwards.
 role: Reviewer
 minutes: 5
@@ -29,8 +29,8 @@ Marking a run as final names the run that stands as the inventory's result, and 
 
 What you see: "Run 001 designated final." The header reads "FINAL · BOUNDARY v1", the run's row carries the tag FINAL, and the lifecycle card reads "Final. A run is designated the final result. Withdraw the designation to reopen the inventory, or publish it to issue the report."
 
-!!! note "A base-year candidate holds the designation"
-    While the base year has an undecided recalculation candidate above its significance threshold, **Mark as final** is refused on every inventory that reports against the base year; see [Decide a recalculation candidate](decide-a-recalculation-candidate.md).
+!!! note "What holds the designation"
+    **Mark as final** is refused while a record the run used has an unapproved factor ("'*record*' uses '*factor*', which is not approved."), and while the base year has an undecided recalculation candidate above its significance threshold; see [Decide a recalculation candidate](decide-a-recalculation-candidate.md).
 
 ## Withdraw the designation
 

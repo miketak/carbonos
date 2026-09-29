@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Add the mine's two sites, Nyame Pit and Plant and Obuasi Camp, and register the five source streams whose kind and operator fix each record's default scope.
 role: Preparer
 minutes: 10
@@ -22,7 +22,7 @@ This second step of the Get started series records the two sites of Gye Nyame Go
 
 1. Open **Facilities**. The page reads "No facilities yet". Click **Add facility**.
 2. Fill **Name** `Nyame Pit and Plant`, **Location** `Obuasi, Ghana`, **Country (optional)** `GH` and **Grid region (optional)** `GHA`.
-3. Choose **Facility type (optional)** "Mine" and leave **Lease (optional)** as "Owned, not leased" and **Legal entity** as "Gye Nyame Gold Ltd (Subsidiary)". Click **Add facility**.
+3. Choose **Facility type (optional)** "Mine" and leave **Lease (optional)** as "Owned, not leased" and **Legal entity** as "Gye Nyame Gold Ltd (Reporting company)". Click **Add facility**.
 4. Click **Add facility** again. Fill **Name** `Obuasi Camp`, **Location** `Obuasi, Ghana`, **Country (optional)** `GH`, and leave **Grid region (optional)** empty.
 5. Choose **Facility type (optional)** "Camp", **Lease (optional)** "Operating lease (leased in)", and **Legal entity** "Gye Nyame Camp Services Ltd (Subsidiary)". Click **Add facility**.
 

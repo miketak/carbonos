@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Add an existing CarbonOS account to the organization as an owner, reviewer, preparer or verifier, change a member's role, remove a member, and read what each role allows.
 role: Owner
 minutes: 3
@@ -24,7 +24,7 @@ A member is an existing CarbonOS account with one role in the organization, and 
 3. Choose **Role**: "Owner", "Reviewer (approves and publishes)", "Preparer (records, classifies, runs)" or "Verifier (read-only)".
 4. Click **Add member**.
 
-What you see: "*Name* added as reviewer." and a row for the member. An email with no account is refused with "No account with that email. Add the user under Manage users first." The **History** card at the foot of the page records "Member added" with the reason "*email* added as REVIEWER"; reload the page to see the row.
+What you see: "*Name* added as reviewer." and a row for the member. An email with no account is refused with "No account with that email. Add the user under Manage users first." The **History** card at the foot of the page records "Member added" with the reason "*email* added as REVIEWER".
 
 ## Change a role or remove a member
 

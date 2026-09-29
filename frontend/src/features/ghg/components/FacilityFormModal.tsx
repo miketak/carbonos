@@ -160,7 +160,11 @@ export function FacilityFormModal({
         >
           {entities.map((entity) => (
             <option key={entity.id} value={entity.id}>
-              {entity.name} ({relationshipShortLabels[entity.relationshipType]})
+              {entity.name} (
+              {entity.reportingCompany
+                ? 'Reporting company'
+                : relationshipShortLabels[entity.relationshipType]}
+              )
             </option>
           ))}
         </SelectField>

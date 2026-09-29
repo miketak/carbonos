@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Why the launch is on hold, how the Pre-flight checks panel reads, and every finding of the five gates as CarbonOS prints it, with what clears each one.
 role: Preparer
 ---
@@ -58,8 +58,8 @@ The launch is on hold because a gate other than Base year holds an error, marked
 | '*Record*' is classified in *scope*; its stream '*stream*' defaults to *scope*. … | Error | A justification of at least 10 characters, or the default. |
 | '*Record*' (…) is a leased asset (…) stored in *scope*, but Appendix F under *approach* puts it in *scope* (…). … | Error | Choose the factor again. |
 | Fuel- and energy-related activities is declared, but no upstream rule matches a scope 1 or scope 2 factor in this view; … | Warning | Add a rule, or a reason in the declaration. |
-| Scope 3 *category* is declared as covered but no included record is classified into it: … | Warning | Classify a record into it, or give the reason. |
-| Records are classified into scope 3 *category* but the declaration does not list it as covered. … | Warning | Declare it, or reclassify. |
+| Scope 3 '*category*' is declared as covered but no included record is classified into it: … | Warning | Classify a record into it, or give the reason. |
+| Records are classified into scope 3 '*category*' but the declaration does not list it as covered. … | Warning | Declare it, or reclassify. |
 | *N* upstream rules: … | Info | None. |
 
 ## Emission factors

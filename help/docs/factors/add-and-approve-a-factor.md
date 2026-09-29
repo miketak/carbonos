@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Enter a supplier's or a national factor by hand, have a second person approve it, approve a derived pack row, and retire a factor a run has applied.
 role: Preparer
 minutes: 6
@@ -11,7 +11,7 @@ screens: [step-3-unapproved-factor.png]
 
 A hand-entered factor carries a supplier's figure, a national publication the packs lack, or a proxy; it arrives unapproved, and a second person approves it.
 
-<!-- sources: spec 02.11; the old page tasks/emission-factors/add-and-approve-a-factor.md (verified 2026-09-24); frontend/src/features/ghg/EmissionFactorsPage.tsx (the Add an emission factor dialog, the Status column, Delete and Retire, not delete); backend/src/main/java/com/carbonos/ghg/internal/GhgService.java (setFactorApproval, deleteEmissionFactor); screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "3 losses row", "6 approved row" -->
+<!-- sources: spec 02.11; the old page tasks/emission-factors/add-and-approve-a-factor.md (verified 2026-09-24); frontend/src/features/ghg/EmissionFactorsPage.tsx (the Add an emission factor dialog, the Status column, Delete, Retire… and the Retire dialog); backend/src/main/java/com/carbonos/ghg/internal/GhgService.java (setFactorApproval, deleteEmissionFactor); screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "3 losses row", "6 approved row" -->
 
 ## Before you start
 
@@ -54,7 +54,7 @@ What you see: the row reads **Approved** "by owner@gyenyame.example on 2026-09-2
 
 ## Retire or delete a factor
 
-**Delete** removes a hand-entered factor at once. A pack row shows **Retire, not delete**, and a factor a run has applied is refused: "Set its validity end to retire it instead of deleting it." A retired factor stays in every run that used it; a saved factor cannot be edited, so set **Valid to (optional)** on entry.
+**Delete** removes a hand-entered factor at once; a pack row has no **Delete**, and a factor a run has applied is refused: "Set its validity end to retire it instead of deleting it." To retire a factor, click **Retire…**, set **Valid to** and click **Retire factor**: "*Factor* retired: valid to *date*." A retired factor stays in every run that used it.
 
 ## What happens next
 

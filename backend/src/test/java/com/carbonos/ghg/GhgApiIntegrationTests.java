@@ -4070,7 +4070,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[?(@.action == 'CLASSIFIED')].reason")
 				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("under support access"))));
 
-		// support access never grants deletion or membership changes
+		// support access never grants deletion, membership changes or the organization's details (spec 01.7)
 		mvc.perform(delete("/api/ghg/organizations/" + orgId).with(asAdmin(admin)).with(csrf())
 			.contentType("application/json").content("""
 					{"name": "Sankofa Gold plc", "reason": "tidying the tenant up after the case"}"""))
@@ -4079,6 +4079,12 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"email": "support@ecoriv.com", "role": "PREPARER"}"""))
 			.andExpect(status().isForbidden());
+		mvc.perform(put("/api/ghg/organizations/" + orgId).with(asAdmin(admin)).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Sankofa Gold plc", "address": "Plot 7, Obuasi", "contact": "support@ecoriv.com"}"""))
+			.andExpect(status().isForbidden());
+		mvc.perform(get("/api/ghg/organizations/" + orgId).with(asMember()))
+			.andExpect(jsonPath("$.address").doesNotExist());
 
 		// the organization's own history carries the grant
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember()))
@@ -5019,8 +5025,8 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[2].findings[?(@.severity == 'WARNING')].message")
 				.value(org.hamcrest.Matchers.hasItems(
-						org.hamcrest.Matchers.containsString("investments is declared as covered but no included record"),
-						org.hamcrest.Matchers.containsString("business travel but the declaration does not list it"))));
+						org.hamcrest.Matchers.containsString("Scope 3 '15. Investments' is declared as covered but no included record"),
+						org.hamcrest.Matchers.containsString("scope 3 '6. Business travel' but the declaration does not list it"))));
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/operational-boundary").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"scope3Categories": ["INVESTMENTS", "BUSINESS_TRAVEL"],
@@ -6302,5 +6308,138 @@ class GhgApiIntegrationTests {
 			.contains(",,NOT_ESTIMATED,");
 		// the PDF renders with the three states present
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember())).andExpect(status().isOk());
+	}
+
+	/** Help finding 6: the launch gate saw the factor approved; unapproving it afterwards holds the final run. */
+	@Test
+	void aFactorUnapprovedAfterTheRunHoldsTheFinalDesignation() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var fuel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		classify(syncAndGetAssignmentId(inventoryId, fuel), diesel(orgId));
+		freeze(inventoryId);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		var factorName = JsonPath.<String>read(
+				body(mvc.perform(post("/api/ghg/emission-factors/" + diesel(orgId) + "/unapprove").with(asMember())
+					.with(csrf())).andExpect(status().isOk()).andExpect(jsonPath("$.approved").value(false))),
+				"$.name");
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.allOf(
+					org.hamcrest.Matchers.containsString("Run 1 cannot be designated final."),
+					org.hamcrest.Matchers.containsString("'Genset diesel' uses '" + factorName
+							+ "', which is not approved. Approve it under Emission factors, or choose another."))));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
+			.andExpect(jsonPath("$.status").value("FROZEN"));
+		// approving it again clears the hold
+		mvc.perform(post("/api/ghg/emission-factors/" + diesel(orgId) + "/approve").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("FINAL"));
+	}
+
+	/** Help finding 8: the reasons the review computes for a record are no reason to leave an operation out. */
+	@Test
+	void aBoundaryExclusionTakesADocumentedReasonOnly() throws Exception {
+		var orgId = createOrganization("Sankofa Gold plc");
+		var pit = createFacility(orgId, "Obuasi Ridge Open Pit");
+		var camp = createFacility(orgId, "Nkran Exploration Camp");
+		var port = createEntity(orgId, "Takoradi Port Co", "ASSOCIATE", "30", false);
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		for (var reason : List.of("RECORD_REMOVED", "OUTSIDE_PERIOD", "OUTSIDE_BOUNDARY")) {
+			mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/entities/" + port + "/exclude")
+				.with(asMember()).with(csrf()).contentType("application/json").content("""
+						{"reason": "%s", "detail": "not a reason"}""".formatted(reason)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.allOf(
+						org.hamcrest.Matchers.containsString("is a reason the review records itself"),
+						org.hamcrest.Matchers.containsString("for leaving 'Takoradi Port Co' out"))));
+			mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/" + camp + "/exclude").with(asMember())
+				.with(csrf()).contentType("application/json").content("""
+						{"reason": "%s", "detail": "not a reason"}""".formatted(reason)))
+				.andExpect(status().isConflict());
+		}
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/boundary/entities/" + port + "/exclude")
+			.with(asMember()).with(csrf()).contentType("application/json").content("""
+					{"reason": "RECORD_REMOVED"}"""))
+			.andExpect(jsonPath("$.detail").value("'Record removed' is a reason the review records itself; choose a "
+					+ "documented reason for leaving 'Takoradi Port Co' out, for example 'Not applicable' or "
+					+ "'Other documented reason'."));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary/exclusions").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(0));
+		excludeFacility(inventoryId, camp, "NOT_APPLICABLE", "Exploration only; no fuel or power in 2025");
+		excludeEntity(inventoryId, port, "METHODOLOGY", "Associate: no operational control");
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/boundary/exclusions").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2));
+	}
+
+	/** Help finding 11: the list shows the account's current name; the snapshot stands once the account is gone. */
+	@Test
+	void aMemberIsListedUnderTheAccountsCurrentName() throws Exception {
+		var abena = userService.create("abena.renamed@members.test", "Abena Owusu", com.carbonos.user.internal.UserRole.MEMBER,
+				"analyst-passw0rd");
+		var kofi = userService.create("kofi.departed@members.test", "Kofi Verifier", com.carbonos.user.internal.UserRole.MEMBER,
+				"verifier-passw0rd");
+		var orgId = createOrganization("Asante Gold Resources");
+		var abenaMember = JsonPath.<String>read(body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/members")
+			.with(asMember()).with(csrf()).contentType("application/json").content("""
+					{"email": "abena.renamed@members.test", "role": "PREPARER"}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.displayName").value("Abena Owusu"))), "$.id");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "kofi.departed@members.test", "role": "VERIFIER"}"""))
+			.andExpect(status().isCreated());
+		// she changes her name; he leaves the platform
+		userService.update(abena.getId(), "Abena Owusu-Ansah", com.carbonos.user.internal.UserRole.MEMBER,
+				com.carbonos.user.internal.UserStatus.ACTIVE, abena.getId());
+		userService.delete(kofi.getId(), abena.getId());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/members").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(3))
+			.andExpect(jsonPath("$[?(@.email == 'abena.renamed@members.test')].displayName").value("Abena Owusu-Ansah"))
+			.andExpect(jsonPath("$[?(@.email == 'kofi.departed@members.test')].displayName").value("Kofi Verifier"));
+		mvc.perform(put("/api/ghg/organizations/" + orgId + "/members/" + abenaMember).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"role": "REVIEWER"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.displayName").value("Abena Owusu-Ansah"));
+	}
+
+	/** Help finding 13: a published period cannot be reopened, so the refusal does not say to. */
+	@Test
+	void anEditionInsideAPublishedPeriodIsRefusedWithoutSuggestingAReopen() throws Exception {
+		var orgId = createOrganization("Ecoriv Holdings");
+		var facilityId = createFacility(orgId, "Tema Plant");
+		var activityId = createActivity(orgId, facilityId, "Diesel consumption", "1000", "litre", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, facilityId);
+		prepare(inventoryId, activityId, diesel(orgId));
+		var runId = runAndGetId(inventoryId, "Run 001");
+		// frozen: the reader may reopen
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import").with(asMember())
+			.with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.endsWith("which is FROZEN. A reported period "
+					+ "keeps the factors it reported with. Reopen that inventory, or import the edition into a later "
+					+ "period.")));
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("PUBLISHED"));
+		// published: the period is on record, and no exit through it exists
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import").with(asMember())
+			.with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.allOf(
+					org.hamcrest.Matchers.containsString("'2025 Corporate' (2025-01-01 to 2025-12-31), which is PUBLISHED"),
+					org.hamcrest.Matchers.endsWith("A reported period keeps the factors it reported with. The edition "
+							+ "cannot be imported while that period is on record; choose an edition that applies from "
+							+ "a later date."),
+					org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Reopen")))));
 	}
 }

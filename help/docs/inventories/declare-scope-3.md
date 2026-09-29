@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Declare on the Boundary tab which scope 3 categories the inventory covers and why the others are excluded, and read the warnings raised when the declaration and the records disagree.
 role: Preparer
 minutes: 5
@@ -36,9 +36,9 @@ The **Classification** gate compares the declaration with the records and the up
 
 | The gate warns | What to do |
 | --- | --- |
-| "Scope 3 *category* is declared as covered but no included record is classified into it: a reader takes 'covered' to mean quantified. Classify records into it, or say in the declaration why it is not quantified this year." | Classify a record into the category, or fill "Not quantified this year because…" under it. |
+| "Scope 3 '*category*' is declared as covered but no included record is classified into it: a reader takes 'covered' to mean quantified. Classify records into it, or say in the declaration why it is not quantified this year." | Classify a record into the category, or fill "Not quantified this year because…" under it. |
 | "Fuel- and energy-related activities is declared, but no upstream rule matches a scope 1 or scope 2 factor in this view; add a rule or say why category 3 is not quantified." | Add an upstream rule on the **Method** tab, or give the reason under category 3. |
-| "Records are classified into scope 3 *category* but the declaration does not list it as covered. Declare it, or reclassify the records." | Tick the category, or reclassify the records. |
+| "Records are classified into scope 3 '*category*' but the declaration does not list it as covered. Declare it, or reclassify the records." | Tick the category, or reclassify the records. |
 
 ## What happens next
 

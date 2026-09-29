@@ -163,7 +163,14 @@ test('the add form submits the chosen legal entity', async () => {
   await user.paste('Takoradi Port Loadout')
   await user.click(screen.getByLabelText('Location'))
   await user.paste('Takoradi, Ghana')
-  await user.selectOptions(await screen.findByLabelText('Legal entity'), 'ent-2')
+  const legalEntity = await screen.findByLabelText('Legal entity')
+  // the company itself is named as such, not by the Table 1 row it is stored under
+  expect(
+    within(legalEntity)
+      .getAllByRole('option')
+      .map((option) => option.textContent),
+  ).toEqual(['Sankofa Gold plc (Reporting company)', 'Tarkwa Gold JV Ltd (Joint venture)'])
+  await user.selectOptions(legalEntity, 'ent-2')
   await user.click(within(dialog).getByRole('button', { name: /^add facility$/i }))
 
   await waitFor(() =>

@@ -92,6 +92,8 @@ test('lists entities with the share Table 1 gives under each approach', async ()
   expect(jvRow).toHaveTextContent(/Joint venture.*40%.*same.*Yes.*40%.*40%.*100%/)
   const ownRow = screen.getByText('Sankofa Gold plc').closest('tr')
   expect(ownRow).toHaveTextContent('Reporting company')
+  // the company holds no Table 1 relationship to itself, so the column says what it is instead
+  expect(ownRow).not.toHaveTextContent('Subsidiary')
   // the reporting company cannot be removed; other entities can
   expect(within(ownRow as HTMLElement).queryByRole('button', { name: /remove/i })).toBeNull()
   expect(within(jvRow as HTMLElement).getByRole('button', { name: /remove/i })).toBeInTheDocument()

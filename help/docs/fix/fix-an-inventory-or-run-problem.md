@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: What CarbonOS says when a freeze, a classification, a run, a final designation or a publication is refused, what each message means, and what clears it.
 ---
 
@@ -23,6 +23,7 @@ product prints it.
 | "'*Record*' is classified in scope 3; its stream '*stream*' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1." | A departure from the stream's default without a justification. | Fill the scope justification (10 characters or more), or take the default. |
 | "'*Record*' uses '*factor*', which is not approved. Approve it under Emission factors, or choose another." | A factor entered by hand, or a derived pack row, has not been approved. | A reviewer or owner other than its author approves it under **Emission factors**. |
 | "You entered '*factor*'. A factor is checked by someone other than the person who typed it (Corporate Standard chapter 7): ask *name* to approve it." | You tried to approve your own factor while another member could. | Ask the named member. |
+| "Run *N* cannot be designated final. '*Record*' uses '*factor*', which is not approved. Approve it under Emission factors, or choose another." | **Mark as final** after the factor was unapproved. | Approve the factor, or reopen, reclassify and launch a new run. |
 | "Base year holds the final designation; runs stay available." | An undecided recalculation candidate above the threshold. | Decide it under **Base year**; runs can still be launched. |
 | "The 2025 base year has a recalculation candidate above the significance threshold (…). An inventory that reports against the base year cannot be marked final until the recalculation is completed or declined." | **Mark as final** while a candidate is undecided. | Record a recalculated base or decline the candidate. |
 | "Designate a final run before publishing the inventory." | **Publish** on a frozen inventory with no final run. | Open the run on the **Runs** tab and **Mark as final** first. |

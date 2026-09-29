@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Record each site with its country, grid region, lease and legal entity, then register its source streams, whose kind and operator set the scope a record defaults to.
 role: Preparer
 minutes: 6
@@ -26,7 +26,7 @@ A facility is a site, and a source stream is one source of emissions at it. Ever
 4. Fill **Grid region (optional)** only for a grid the country does not imply.
 5. Choose **Facility type (optional)**, from Office to Other.
 6. Choose **Lease (optional)**, with **Lease from (optional)** and **Lease until (optional)**, if the site is leased in or out.
-7. Choose **Legal entity**, for example "Gye Nyame Gold Ltd (Subsidiary)".
+7. Choose **Legal entity**, for example "Gye Nyame Gold Ltd (Reporting company)".
 8. Click **Add facility**.
 
 What you see: "Nyame Pit and Plant added." and a row with the location, the type and grid ("Mine · grid GHA"), the lease, the entity, and **Source streams**, **Edit** and **Remove**.

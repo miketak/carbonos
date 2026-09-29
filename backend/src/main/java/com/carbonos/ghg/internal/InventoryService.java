@@ -30,6 +30,7 @@ import com.carbonos.ghg.internal.Validation.Gate;
 import com.carbonos.ghg.internal.Validation.GateResult;
 import com.carbonos.ghg.internal.Validation.Report;
 import com.carbonos.ghg.internal.Validation.Severity;
+import com.carbonos.ghg.internal.export.ReportLabels;
 
 /**
  * The accounting-view side of spec 05: inventories and their lifecycle (spec
@@ -361,6 +362,7 @@ public class InventoryService {
 		var inventory = get(inventoryId);
 		requireEditable(inventory);
 		var entity = requireEntity(entityId, inventory);
+		refuseAutomaticBoundaryReason(reason, entity.getName());
 		if (boundaryTreatments.findByInventoryIdAndEntityId(inventoryId, entityId).isPresent()) {
 			throw new GhgRuleViolationException("'" + entity.getName()
 					+ "' is in the boundary. Remove it from the boundary before excluding it.");
@@ -378,6 +380,7 @@ public class InventoryService {
 		var inventory = get(inventoryId);
 		requireEditable(inventory);
 		var facility = requireFacility(facilityId, inventory);
+		refuseAutomaticBoundaryReason(reason, facility.getName());
 		var inBoundary = boundaryTreatments.findAllByInventoryId(inventoryId)
 			.stream()
 			.anyMatch(treatment -> treatment.includes(facilityId));
@@ -390,6 +393,19 @@ public class InventoryService {
 			return existing;
 		}).orElseGet(() -> boundaryExclusions
 			.save(new BoundaryExclusion(inventory, null, facility, reason, trimToNull(detail))));
+	}
+
+	/**
+	 * The reasons the review computes for a record (spec 04.4) say nothing about
+	 * why an operation is left out, so a boundary exclusion takes a documented
+	 * reason only.
+	 */
+	private static void refuseAutomaticBoundaryReason(ExclusionReason reason, String name) {
+		if (reason.isAutomatic()) {
+			throw new GhgRuleViolationException("'" + ReportLabels.label(reason)
+					+ "' is a reason the review records itself; choose a documented reason for leaving '" + name
+					+ "' out, for example 'Not applicable' or 'Other documented reason'.");
+		}
 	}
 
 	public void clearEntityExclusion(UUID inventoryId, UUID entityId) {
@@ -775,7 +791,9 @@ public class InventoryService {
 	 * may not. A typical density stands only as a documented proxy, and a blend
 	 * whose CO2e is published under another GWP set and cannot be re-derived
 	 * from a composition would put two sets in one inventory (2013 required
-	 * gases amendment: one set across the inventory).
+	 * gases amendment: one set across the inventory). Approval is checked again
+	 * here (spec 02.1): the launch gate saw it approved, but a factor unapproved
+	 * after the run may not carry the final figure.
 	 */
 	List<String> finalHolds(Inventory inventory) {
 		var holds = new ArrayList<String>();
@@ -786,6 +804,10 @@ public class InventoryService {
 				continue;
 			}
 			var record = assignment.getActivity().getActivityType();
+			if (!factor.isApproved()) {
+				holds.add("'" + record + "' uses '" + factor.getName()
+						+ "', which is not approved. Approve it under Emission factors, or choose another.");
+			}
 			var density = assignment.getDensity();
 			if (density != null && density.isTypical()
 					&& !(assignment.isProxy() && assignment.getProxyJustification() != null)) {
@@ -1581,13 +1603,11 @@ public class InventoryService {
 						+ " category for '" + factor.getName() + "'.");
 			}
 			if (chosenCategory.scope() != chosenScope) {
-				throw new GhgRuleViolationException(chosenCategory + " is a " + chosenCategory.scope()
-					.name()
-					.toLowerCase()
-					.replace('_', ' ') + " category, not " + chosenScope.name().toLowerCase().replace('_', ' ') + ".");
+				throw new GhgRuleViolationException("'" + categoryName(chosenCategory) + "' is a "
+						+ scopeName(chosenCategory.scope()) + " category, not " + scopeName(chosenScope) + ".");
 			}
 			if (stream != null && !stream.getKind().categories().contains(chosenCategory)) {
-				throw new GhgRuleViolationException(chosenCategory + " is not a category a "
+				throw new GhgRuleViolationException("'" + categoryName(chosenCategory) + "' is not a category a "
 						+ stream.getKind().name().toLowerCase().replace('_', ' ') + " stream ('" + stream.getName()
 						+ "') can be classified into.");
 			}
@@ -1605,9 +1625,9 @@ public class InventoryService {
 		}
 		assignment.classify(factor, chosenScope, chosenCategory, leaseType, departs ? justification : null, proxy,
 				proxy ? trimToNull(proxyJustification) : null, density);
-		record(assignment.getInventory(), null, GhgAuditEvent.Action.CLASSIFIED, "'" + assignment.getActivity().getActivityType()
-				+ "' classified as " + scopeName(chosenScope) + ", " + chosenCategory.name().toLowerCase().replace('_', ' ')
-				+ ", with '" + factor.getName() + "'" + (proxy ? " (proxy)" : ""));
+		record(assignment.getInventory(), null, GhgAuditEvent.Action.CLASSIFIED,
+				"'" + assignment.getActivity().getActivityType() + "' classified as " + scopeName(chosenScope) + ", "
+						+ categoryName(chosenCategory) + ", with '" + factor.getName() + "'" + (proxy ? " (proxy)" : ""));
 		return assignment;
 	}
 
@@ -2192,16 +2212,16 @@ public class InventoryService {
 		}
 		for (var category : declared) {
 			if (!quantified.contains(category) && !notQuantified.contains(category)) {
-				classificationFindings.add(new Finding(Severity.WARNING, "Scope 3 " + categoryName(category)
-						+ " is declared as covered but no included record is classified into it: a reader takes "
+				classificationFindings.add(new Finding(Severity.WARNING, "Scope 3 '" + categoryName(category)
+						+ "' is declared as covered but no included record is classified into it: a reader takes "
 						+ "'covered' to mean quantified. Classify records into it, or say in the declaration why it is "
 						+ "not quantified this year."));
 			}
 		}
 		for (var category : quantified) {
 			if (!declared.contains(category)) {
-				classificationFindings.add(new Finding(Severity.WARNING, "Records are classified into scope 3 "
-						+ categoryName(category) + " but the declaration does not list it as covered. Declare it, or "
+				classificationFindings.add(new Finding(Severity.WARNING, "Records are classified into scope 3 '"
+						+ categoryName(category) + "' but the declaration does not list it as covered. Declare it, or "
 						+ "reclassify the records."));
 			}
 		}
@@ -2709,9 +2729,9 @@ public class InventoryService {
 			BigDecimal locationKgCo2e) {
 		var activity = assignment.getActivity();
 		if (assignment.getCategory() != ActivityCategory.PURCHASED_ELECTRICITY) {
-			return new GhgRunLine.Market(locationKgCo2e, null, null, "no contractual instrument applies to "
-					+ assignment.getCategory().name().toLowerCase().replace('_', ' ')
-					+ "; the location-based figure stands", BigDecimal.ZERO, BigDecimal.ZERO, null, null);
+			return new GhgRunLine.Market(locationKgCo2e, null, null, "no contractual instrument applies to '"
+					+ categoryName(assignment.getCategory()) + "'; the location-based figure stands", BigDecimal.ZERO,
+					BigDecimal.ZERO, null, null);
 		}
 		if (!units.canConvert(activity.getUnit(), KWH)) {
 			return new GhgRunLine.Market(locationKgCo2e, null, null, "recorded in " + activity.getUnit()
@@ -2850,8 +2870,9 @@ public class InventoryService {
 		return scope.name().toLowerCase().replace('_', ' ');
 	}
 
+	/** The category as the report and the pages name it ("1. Purchased goods and services"), never the constant. */
 	private static String categoryName(ActivityCategory category) {
-		return category.name().toLowerCase().replace('_', ' ');
+		return ReportLabels.label(category);
 	}
 
 	/** A unit with its dimension for error messages, e.g. "kg (mass)" or "widgets (unrecognized)". */
