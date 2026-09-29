@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
+import { HelpLink } from '../../../components/HelpLink'
 import { useToast } from '../../../components/toast'
 import { ApiError, refusalMessage } from '../../../lib/api'
 import { useSession } from '../../auth/useSession'
@@ -65,7 +66,10 @@ export function MembersCard({ organization }: { organization: Organization }) {
 
   return (
     <GlassCard className="p-6">
-      <h2 className="text-xl">Members</h2>
+      <div className="flex items-center gap-2">
+        <h2 className="text-xl">Members</h2>
+        <HelpLink topic="roles" />
+      </div>
       <p className="text-sm text-ink-muted">
         Who works on this organization and in which role. Preparers record, classify and run;
         reviewers also designate final runs, publish and create corrections; verifiers read only.

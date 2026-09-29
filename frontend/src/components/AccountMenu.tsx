@@ -123,18 +123,17 @@ export function AccountMenu() {
           <Link role="menuitem" to="/app/profile" className={itemClass}>
             Edit profile
           </Link>
-          {/* the help site is served beside the app at /help/ (ADR 0005); a
-              plain anchor, because it is not a route of the SPA */}
-          <a
+          {/* the help centre is a route of the app (ADR 0006), opened beside the work */}
+          <Link
             role="menuitem"
-            href="/help/"
+            to="/help"
             target="_blank"
             rel="noopener"
             className={itemClass}
             onClick={close}
           >
             Help
-          </a>
+          </Link>
           {isAdmin && !inAdminArea && (
             <Link role="menuitem" to="/admin" className={itemClass}>
               Administration

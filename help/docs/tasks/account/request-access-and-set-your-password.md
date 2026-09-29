@@ -25,7 +25,7 @@ sequenceDiagram
     A->>C: Approve (or Deny) under Access requests
     C-->>Y: Email "Your CarbonOS access is approved" with a link valid for 7 days
     Y->>C: Open the link, set a password (12 characters or more, a letter and a digit)
-    C-->>Y: Signed in; the link is now spent
+    C-->>Y: Signed in, and the link is now spent
 ```
 
 ## Request access

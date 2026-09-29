@@ -1,0 +1,490 @@
+# The navigation source for the CarbonOS help centre: the groups the hub
+# shows, the articles under each, and the order they appear in. The help
+# compiler (frontend/scripts/compile-help.mjs) reads this file; the React
+# help renders the hub, the topic pages and the left tree from it.
+#
+# Keys:
+#   slug            route segment; lowercase kebab-case, at most 60 characters
+#   kind            task | what-is | step | fix | reference | glossary
+#   from            the existing help/docs page(s) the article is made from,
+#                   relative to help/docs, or "new"
+#   title           the article title as the hub, the tree and the H1 show it
+#   disposition     keep | split | merge | what-is | new (how the source page
+#                   reaches the article; see docs/reviews/2026-09-28-help-ia.md)
+#   showMoreAfter   how many article links the hub shows before "Show more"
+#   series          groups whose articles are numbered steps with Previous/Next
+#   legacy          old MkDocs URL path -> new route; filled at the takeover PR
+#   dropped         existing pages with no article, and why
+#
+# Article titles are sentence case with no em-dashes: tasks start with a bare
+# verb, concepts are "What is X?", troubleshooting is "Fix a ... problem",
+# statuses are "Check a ... status".
+
+groups:
+  - slug: get-started
+    title: Get started
+    tagline: Build the Gye Nyame Gold inventory from an empty account to a published report in eight short steps.
+    showMoreAfter: 10
+    articles:
+      - slug: meet-gye-nyame-gold
+        kind: what-is
+        from: concepts/the-running-example.md
+        title: Meet Gye Nyame Gold
+        disposition: what-is
+      - slug: how-an-inventory-becomes-a-report
+        kind: what-is
+        from: concepts/the-workflow.md
+        title: How an inventory becomes a report
+        disposition: what-is
+      - slug: create-the-organization-and-its-legal-entity
+        kind: step
+        from: get-started/your-first-inventory.md
+        title: Create the organization and its legal entity
+        disposition: split
+      - slug: record-the-facilities-and-source-streams
+        kind: step
+        from: get-started/your-first-inventory.md
+        title: Record the facilities and source streams
+        disposition: split
+      - slug: import-the-factor-packs
+        kind: step
+        from: get-started/your-first-inventory.md
+        title: Import the factor packs
+        disposition: split
+      - slug: import-the-records-and-correct-one
+        kind: step
+        from: get-started/your-first-inventory.md
+        title: Import the records and correct one
+        disposition: split
+      - slug: create-the-inventory-and-draw-its-boundary
+        kind: step
+        from: get-started/your-first-inventory.md
+        title: Create the inventory and draw its boundary
+        disposition: split
+      - slug: classify-the-records-and-add-the-upstream-rule
+        kind: step
+        from: get-started/your-first-inventory.md
+        title: Classify the records and add the upstream rule
+        disposition: split
+      - slug: freeze-and-launch-the-run
+        kind: step
+        from: get-started/your-first-inventory.md
+        title: Freeze the inventory and launch the run
+        disposition: split
+      - slug: fill-the-header-publish-and-export
+        kind: step
+        from: get-started/your-first-inventory.md
+        title: Fill the header, publish and export
+        disposition: split
+
+  - slug: access
+    title: Get access and manage your account
+    tagline: Get into CarbonOS, find out what your role lets you do, and keep your details current.
+    showMoreAfter: 8
+    articles:
+      - slug: request-access
+        kind: task
+        from: tasks/account/request-access-and-set-your-password.md
+        title: Request access
+        disposition: split
+      - slug: set-your-password-and-sign-in
+        kind: task
+        from: tasks/account/request-access-and-set-your-password.md
+        title: Set your password and sign in
+        disposition: split
+      - slug: what-is-a-role
+        kind: what-is
+        from: concepts/roles-and-who-does-what.md
+        title: What is a role?
+        disposition: what-is
+      - slug: check-what-your-role-may-do
+        kind: reference
+        from: reference/roles-and-permissions.md
+        title: Check what your role may do
+        disposition: keep
+      - slug: what-is-support-access
+        kind: what-is
+        from: concepts/support-access-and-confidentiality.md
+        title: What is support access?
+        disposition: what-is
+      - slug: edit-your-profile
+        kind: task
+        from: tasks/account/request-access-and-set-your-password.md
+        title: Edit your profile
+        disposition: split
+
+  - slug: organization
+    title: Set up your organization
+    tagline: Describe the company, its entities, sites and streams, and the people who work on its inventory.
+    showMoreAfter: 8
+    articles:
+      - slug: create-an-organization
+        kind: task
+        from: tasks/organization/create-an-organization.md
+        title: Create an organization
+        disposition: keep
+      - slug: add-members-and-assign-roles
+        kind: task
+        from: tasks/organization/add-members-and-assign-roles.md
+        title: Add members and assign roles
+        disposition: keep
+      - slug: record-legal-entities
+        kind: task
+        from: tasks/organization/record-legal-entities.md
+        title: Record legal entities
+        disposition: keep
+      - slug: record-facilities-and-source-streams
+        kind: task
+        from: tasks/organization/record-facilities-and-source-streams.md
+        title: Record facilities and source streams
+        disposition: keep
+      - slug: define-units-and-densities
+        kind: task
+        from: tasks/organization/define-units-and-densities.md
+        title: Define units and densities
+        disposition: keep
+      - slug: edit-the-details-and-read-the-history
+        kind: task
+        from: tasks/organization/edit-details-and-read-the-history.md
+        title: Edit the organization's details and read its history
+        disposition: keep
+      - slug: what-is-a-consolidation-approach
+        kind: what-is
+        from: concepts/boundaries-and-consolidation-approaches.md
+        title: What is a consolidation approach?
+        disposition: what-is
+
+  - slug: activity-data
+    title: Record activity data
+    tagline: Enter what each site consumed, load it from a file, keep the evidence, and correct a figure.
+    showMoreAfter: 8
+    articles:
+      - slug: enter-a-record
+        kind: task
+        from: tasks/activity-data/enter-correct-and-evidence-a-record.md
+        title: Enter a record
+        disposition: split
+      - slug: correct-or-remove-a-record-and-attach-evidence
+        kind: task
+        from: tasks/activity-data/enter-correct-and-evidence-a-record.md
+        title: Correct or remove a record and attach evidence
+        disposition: split
+      - slug: import-records-from-a-csv-file
+        kind: task
+        from: tasks/activity-data/import-records-from-csv.md
+        title: Import records from a CSV file
+        disposition: keep
+      - slug: prepare-the-csv-file
+        kind: reference
+        from: reference/csv-import-template.md
+        title: Prepare the CSV file
+        disposition: keep
+      - slug: what-is-an-activity-record
+        kind: what-is
+        from:
+          - concepts/facts-views-and-runs.md
+          - reference/statuses-and-transitions.md
+        title: What is an activity record?
+        disposition: what-is
+
+  - slug: factors
+    title: Manage emission factors and updates
+    tagline: Bring in the published factor packs, add your own factors, and decide what a new edition changes.
+    showMoreAfter: 8
+    articles:
+      - slug: import-a-factor-pack
+        kind: task
+        from: tasks/emission-factors/import-a-factor-pack.md
+        title: Import a factor pack
+        disposition: keep
+      - slug: add-and-approve-a-factor
+        kind: task
+        from: tasks/emission-factors/add-and-approve-a-factor.md
+        title: Add and approve a factor
+        disposition: keep
+      - slug: accept-or-decline-an-edition-notice
+        kind: task
+        from: tasks/factor-updates/accept-or-decline-an-edition-notice.md
+        title: Accept or decline an edition notice
+        disposition: keep
+      - slug: what-is-a-factor-pack-edition
+        kind: what-is
+        from: concepts/emission-factors-packs-and-editions.md
+        title: What is a factor pack edition?
+        disposition: what-is
+      - slug: check-an-edition-or-notice-status
+        kind: reference
+        from: reference/statuses-and-transitions.md
+        title: Check an edition or notice status
+        disposition: split
+
+  - slug: inventories
+    title: Build, check and run an inventory
+    tagline: Draw the boundary, classify the records, clear the gates, and launch the run that produces the figures.
+    showMoreAfter: 8
+    articles:
+      - slug: create-an-inventory-and-draw-the-boundary
+        kind: task
+        from: tasks/inventories/create-an-inventory-set-the-boundary-and-declare-scope-3.md
+        title: Create an inventory and draw the boundary
+        disposition: split
+      - slug: declare-scope-3
+        kind: task
+        from: tasks/inventories/create-an-inventory-set-the-boundary-and-declare-scope-3.md
+        title: Declare scope 3
+        disposition: split
+      - slug: review-and-classify-records
+        kind: task
+        from: tasks/inventories/review-and-classify-records.md
+        title: Review and classify records
+        disposition: keep
+      - slug: record-scope-2-instruments-and-upstream-rules
+        kind: task
+        from: tasks/inventories/record-instruments-and-upstream-rules.md
+        title: Record scope 2 instruments and upstream rules
+        disposition: keep
+      - slug: freeze-and-launch-a-run
+        kind: task
+        from:
+          - tasks/inventories/freeze-and-launch-a-run.md
+          - reference/pre-flight-gates-and-findings.md
+        title: Freeze the inventory and launch a run
+        disposition: merge
+      - slug: copy-a-view
+        kind: task
+        from: tasks/inventories/copy-a-view-to-another-approach.md
+        title: Copy a view to another approach or the next year
+        disposition: keep
+      - slug: clear-the-pre-flight-findings
+        kind: reference
+        from: reference/pre-flight-gates-and-findings.md
+        title: Clear the pre-flight findings
+        disposition: split
+      - slug: check-an-inventory-or-run-status
+        kind: reference
+        from: reference/statuses-and-transitions.md
+        title: Check an inventory or run status
+        disposition: split
+      - slug: what-is-the-inventory-lifecycle
+        kind: what-is
+        from: concepts/the-inventory-lifecycle.md
+        title: What is the inventory lifecycle?
+        disposition: what-is
+      - slug: what-is-scope-classification
+        kind: what-is
+        from: concepts/classification-is-an-accounting-decision.md
+        title: What is scope classification?
+        disposition: what-is
+      - slug: what-is-a-pre-flight-gate
+        kind: what-is
+        from: concepts/pre-flight-gates.md
+        title: What is a pre-flight gate?
+        disposition: what-is
+      - slug: what-is-dual-reporting
+        kind: what-is
+        from: concepts/scope-2-two-ways.md
+        title: What is dual reporting?
+        disposition: what-is
+      - slug: what-is-a-calculation-run
+        kind: what-is
+        from: concepts/facts-views-and-runs.md
+        title: What is a calculation run?
+        disposition: what-is
+
+  - slug: reporting
+    title: Publish the report and track it over time
+    tagline: Sign off the run, publish and export the report, restate a year, and compare later years against the base year.
+    showMoreAfter: 8
+    articles:
+      - slug: designate-a-final-run-and-publish
+        kind: task
+        from: tasks/inventories/designate-a-final-run-and-publish.md
+        title: Designate a final run and publish
+        disposition: keep
+      - slug: fill-the-report-header-and-read-the-report
+        kind: task
+        from: tasks/reporting/read-the-report-and-fill-the-header.md
+        title: Fill the report header and read the report
+        disposition: keep
+      - slug: export-the-report
+        kind: task
+        from: tasks/reporting/export-the-report.md
+        title: Export the report
+        disposition: keep
+      - slug: understand-the-export-files
+        kind: reference
+        from: reference/report-exports.md
+        title: Understand the export files
+        disposition: keep
+      - slug: correct-a-published-inventory
+        kind: task
+        from: tasks/inventories/correct-a-published-inventory.md
+        title: Correct a published inventory
+        disposition: keep
+      - slug: designate-the-base-year
+        kind: task
+        from: tasks/base-year/designate-the-base-year.md
+        title: Designate the base year
+        disposition: keep
+      - slug: decide-a-recalculation-candidate
+        kind: task
+        from:
+          - tasks/base-year/decide-a-recalculation-candidate.md
+          - reference/statuses-and-transitions.md
+        title: Decide a recalculation candidate
+        disposition: merge
+      - slug: what-is-the-base-year
+        kind: what-is
+        from: concepts/base-year-and-recalculation.md
+        title: What is the base year?
+        disposition: what-is
+
+  - slug: administration
+    title: Administer the platform
+    tagline: Approve access, set the platform's rules, publish factor pack editions, and help an organization when asked.
+    showMoreAfter: 8
+    articles:
+      - slug: approve-access-requests-and-manage-users
+        kind: task
+        from: tasks/administration/approve-access-requests-and-manage-users.md
+        title: Approve access requests and manage users
+        disposition: keep
+      - slug: set-platform-settings
+        kind: task
+        from: tasks/administration/set-platform-settings.md
+        title: Set platform settings
+        disposition: keep
+      - slug: assume-support-access
+        kind: task
+        from: tasks/administration/assume-support-access.md
+        title: Assume support access
+        disposition: keep
+      - slug: author-and-publish-a-factor-pack-edition
+        kind: task
+        from: tasks/administration/author-and-publish-a-factor-pack-edition.md
+        title: Author and publish a factor pack edition
+        disposition: keep
+      - slug: what-is-the-administration-console
+        kind: what-is
+        from: tasks/administration/index.md
+        title: What is the administration console?
+        disposition: what-is
+      - slug: check-an-account-or-request-status
+        kind: reference
+        from: reference/statuses-and-transitions.md
+        title: Check an account or request status
+        disposition: split
+
+  - slug: fix
+    title: Fix a problem
+    tagline: What a message means and what to do about it, area by area, plus the rules and limits CarbonOS applies.
+    showMoreAfter: 8
+    articles:
+      - slug: fix-a-sign-in-or-access-problem
+        kind: fix
+        from: troubleshooting/index.md
+        title: Fix a sign-in or access problem
+        disposition: split
+      - slug: fix-an-inventory-or-run-problem
+        kind: fix
+        from: troubleshooting/index.md
+        title: Fix an inventory or run problem
+        disposition: split
+      - slug: fix-a-factor-or-update-problem
+        kind: fix
+        from: troubleshooting/index.md
+        title: Fix a factor or update problem
+        disposition: split
+      - slug: fix-an-organization-settings-problem
+        kind: fix
+        from: troubleshooting/index.md
+        title: Fix an organization settings problem
+        disposition: split
+      - slug: check-the-validation-rules-and-limits
+        kind: reference
+        from: reference/validation-rules-and-limits.md
+        title: Check the validation rules and limits
+        disposition: keep
+
+# The glossary is a top-level page, not a group: budget-exempt, A to Z jump links.
+glossary:
+  slug: glossary
+  kind: glossary
+  from: glossary.md
+  title: Glossary
+  disposition: keep
+
+series: [get-started]
+
+# Old MkDocs URL path -> new route (the takeover, 2026-09-28): every page the
+# MkDocs site served, so a bookmark or a support reply still lands. An empty
+# value is the hub; a group slug is its topic page.
+legacy:
+  /help/concepts/: ''
+  /help/concepts/base-year-and-recalculation/: reporting/what-is-the-base-year
+  /help/concepts/boundaries-and-consolidation-approaches/: organization/what-is-a-consolidation-approach
+  /help/concepts/classification-is-an-accounting-decision/: inventories/what-is-scope-classification
+  /help/concepts/emission-factors-packs-and-editions/: factors/what-is-a-factor-pack-edition
+  /help/concepts/facts-views-and-runs/: activity-data/what-is-an-activity-record
+  /help/concepts/pre-flight-gates/: inventories/what-is-a-pre-flight-gate
+  /help/concepts/roles-and-who-does-what/: access/what-is-a-role
+  /help/concepts/scope-2-two-ways/: inventories/what-is-dual-reporting
+  /help/concepts/support-access-and-confidentiality/: access/what-is-support-access
+  /help/concepts/the-inventory-lifecycle/: inventories/what-is-the-inventory-lifecycle
+  /help/concepts/the-running-example/: get-started/meet-gye-nyame-gold
+  /help/concepts/the-workflow/: get-started/how-an-inventory-becomes-a-report
+  /help/get-started/: get-started
+  /help/get-started/your-first-inventory/: get-started/create-the-organization-and-its-legal-entity
+  /help/glossary/: glossary
+  /help/index/: ''
+  /help/reference/: ''
+  /help/reference/csv-import-template/: activity-data/prepare-the-csv-file
+  /help/reference/pre-flight-gates-and-findings/: inventories/clear-the-pre-flight-findings
+  /help/reference/report-exports/: reporting/understand-the-export-files
+  /help/reference/roles-and-permissions/: access/check-what-your-role-may-do
+  /help/reference/statuses-and-transitions/: inventories/check-an-inventory-or-run-status
+  /help/reference/validation-rules-and-limits/: fix/check-the-validation-rules-and-limits
+  /help/tasks/: ''
+  /help/tasks/account/request-access-and-set-your-password/: access/request-access
+  /help/tasks/activity-data/enter-correct-and-evidence-a-record/: activity-data/enter-a-record
+  /help/tasks/activity-data/import-records-from-csv/: activity-data/import-records-from-a-csv-file
+  /help/tasks/administration/: administration/what-is-the-administration-console
+  /help/tasks/administration/approve-access-requests-and-manage-users/: administration/approve-access-requests-and-manage-users
+  /help/tasks/administration/assume-support-access/: administration/assume-support-access
+  /help/tasks/administration/author-and-publish-a-factor-pack-edition/: administration/author-and-publish-a-factor-pack-edition
+  /help/tasks/administration/set-platform-settings/: administration/set-platform-settings
+  /help/tasks/base-year/decide-a-recalculation-candidate/: reporting/decide-a-recalculation-candidate
+  /help/tasks/base-year/designate-the-base-year/: reporting/designate-the-base-year
+  /help/tasks/emission-factors/add-and-approve-a-factor/: factors/add-and-approve-a-factor
+  /help/tasks/emission-factors/import-a-factor-pack/: factors/import-a-factor-pack
+  /help/tasks/factor-updates/accept-or-decline-an-edition-notice/: factors/accept-or-decline-an-edition-notice
+  /help/tasks/inventories/copy-a-view-to-another-approach/: inventories/copy-a-view
+  /help/tasks/inventories/correct-a-published-inventory/: reporting/correct-a-published-inventory
+  /help/tasks/inventories/create-an-inventory-set-the-boundary-and-declare-scope-3/: inventories/create-an-inventory-and-draw-the-boundary
+  /help/tasks/inventories/designate-a-final-run-and-publish/: reporting/designate-a-final-run-and-publish
+  /help/tasks/inventories/freeze-and-launch-a-run/: inventories/freeze-and-launch-a-run
+  /help/tasks/inventories/record-instruments-and-upstream-rules/: inventories/record-scope-2-instruments-and-upstream-rules
+  /help/tasks/inventories/review-and-classify-records/: inventories/review-and-classify-records
+  /help/tasks/organization/add-members-and-assign-roles/: organization/add-members-and-assign-roles
+  /help/tasks/organization/create-an-organization/: organization/create-an-organization
+  /help/tasks/organization/define-units-and-densities/: organization/define-units-and-densities
+  /help/tasks/organization/edit-details-and-read-the-history/: organization/edit-the-details-and-read-the-history
+  /help/tasks/organization/record-facilities-and-source-streams/: organization/record-facilities-and-source-streams
+  /help/tasks/organization/record-legal-entities/: organization/record-legal-entities
+  /help/tasks/reporting/export-the-report/: reporting/export-the-report
+  /help/tasks/reporting/read-the-report-and-fill-the-header/: reporting/fill-the-report-header-and-read-the-report
+  /help/troubleshooting/: fix
+
+# Existing pages with no article. The hub and the topic pages are generated
+# from the groups, so the section index pages have nothing left to say.
+dropped:
+  - path: index.md
+    reason: The hub replaces the home page; its "start here" routes become the hub tagline and the Get started group.
+  - path: concepts/index.md
+    reason: Section index; the what-is articles sit inside the group they serve.
+  - path: get-started/index.md
+    reason: Section index; the Get started topic page is generated from the series.
+  - path: tasks/index.md
+    reason: Section index; topic pages are generated from the tree.
+  - path: reference/index.md
+    reason: Section index; reference articles sit inside the group they serve.

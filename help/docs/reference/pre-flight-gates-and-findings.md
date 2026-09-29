@@ -21,7 +21,7 @@ facility, entity or factor concerned.
 | Panel | Meaning |
 | --- | --- |
 | LAUNCH ON HOLD | At least one error in Reporting boundary, Activity data completeness, Classification or Emission factors. The banner names the first blocking gate: "Reporting boundary is blocking." |
-| READY TO LAUNCH | No such error. "Every gate passes; *N* carries a warning." |
+| READY TO LAUNCH | No such error. "Every gate passes; *N* carry a warning." (or "1 carries a warning") |
 | Base year holds the final designation; runs stay available. | An error in the Base year gate only. |
 
 Each gate reads PASS, WARN or HOLD.

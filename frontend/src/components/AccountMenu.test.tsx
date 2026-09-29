@@ -104,10 +104,10 @@ test('signing out calls the server', async () => {
   expect(logout).toHaveBeenCalled()
 })
 
-test('links to the help site served beside the app, in a new tab', async () => {
+test('links to the help centre, in a new tab', async () => {
   vi.mocked(me).mockResolvedValue(member)
   await open()
   const help = screen.getByRole('menuitem', { name: /^help$/i })
-  expect(help).toHaveAttribute('href', '/help/')
+  expect(help).toHaveAttribute('href', '/help')
   expect(help).toHaveAttribute('target', '_blank')
 })

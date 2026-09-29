@@ -24,6 +24,12 @@ vi.mock('./api', () => ({
     grants: [],
     recentActivity: [],
   }),
+  getHelpSummary: vi.fn().mockResolvedValue({
+    feedback: { votes30d: 0, helpful30d: 0, helpfulRate30d: null },
+    search: { searches30d: 0, misses30d: 0, missRate30d: null },
+    pagesBelowTarget: [],
+    topMisses: [],
+  }),
   getPlatformSettings: vi.fn().mockResolvedValue({
     supportAccessWindowHours: 24,
     organizationCreation: 'EVERYONE',

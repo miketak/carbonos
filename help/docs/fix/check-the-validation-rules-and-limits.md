@@ -1,9 +1,10 @@
 ---
 owner: miketak
 last_reviewed: 2026-09-26
+description: The lengths, sizes, ranges and windows CarbonOS enforces on accounts, organizations, records, factors, inventories, base years and editions, with the message each one prints.
 ---
 
-# Validation rules and limits
+# Check the validation rules and limits
 
 The lengths, sizes and ranges CarbonOS enforces, and the message it
 answers with where one is printed.
@@ -34,7 +35,7 @@ answers with where one is printed.
 
 | Rule | Value |
 | --- | --- |
-| CSV import | 5 MB and 10,000 rows per file; column limits in [CSV import template](csv-import-template.md). |
+| CSV import | 5 MB and 10,000 rows per file; column limits in [CSV import template](../reference/csv-import-template.md). |
 | Evidence file | "PDF, image, spreadsheet or text, up to 20 MB." (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.csv`, `.xlsx`, `.xls`, `.txt`, `.docx`). |
 | Evidence link | URL required, up to 1,000 characters; name up to 255. |
 | Removal reason | Required. |

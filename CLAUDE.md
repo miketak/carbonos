@@ -73,14 +73,19 @@ with `accTitle` and `accDescr`, front matter `owner` and `last_reviewed`).
   update the affected how-to or reference page in the same PR.
 - Tooling and cross-cutting structure decisions get an ADR
   (`docs/adr/TEMPLATE.md`).
-- End-user help is a second MkDocs site under `help/` (`help/mkdocs.yml`,
-  `help/docs/` with `concepts/`, `get-started/`, `tasks/`, `reference/`,
-  `troubleshooting/`; ADR 0005). Same house style; it never links into
+- End-user help is Markdown under `help/docs/`, compiled by
+  `frontend/scripts/compile-help.mjs` into routes of the React app at
+  `/help` (ADR 0006, spec 09). `help/tree.yaml` is the navigation: nine job
+  groups, each article with its `slug`, `kind` and word budget, plus the
+  `legacy` map of old URLs. Same house style; the help never links into
   `specs/` or `docs/`, and each page cites its specs and QA cases in an
-  HTML comment under the front matter. `make help-serve` (port 8001),
-  `make help-site` (strict), `make help-check` (Definition of Done). A new
-  help page must be in `nav` in `help/mkdocs.yml`. When a product string or
-  flow the help describes changes, update the help page in the same PR.
+  HTML comment under the front matter. The Vite dev server compiles it on
+  change (`make help-serve`); `make help-check` is the Definition of Done
+  (`npm run help:check`: every page in the tree, links and anchors, word
+  budgets, em-dashes, screenshots, diagrams; then Vale). A new help page
+  must be in `help/tree.yaml`, and its figures and quoted product strings
+  come from the product, not from memory. When a product string or flow
+  the help describes changes, update the help page in the same PR.
 
 ## Commands
 
@@ -106,8 +111,7 @@ Java 25 (Temurin) is installed via SDKMAN; non-login shells may need
 
 Makefile shortcuts (repo root): `make dev-up` / `make dev-down` (whole dev
 environment in a tmux "dev-console" window, or a "carbonos" session when
-outside tmux: backend on top, Postgres logs bottom-left, Vite and the help server
-stacked bottom-right),
+outside tmux: backend on top, Postgres logs bottom-left, Vite bottom-right),
 `make db-up`, `make db-reset` (drop the local volumes and start again),
 `make backend`, `make frontend`, `make verify` (full DoD),
 `make admin EMAIL=.. PASSWORD=.. [NAME=..]` to create or password-reset a

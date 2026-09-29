@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AmbientBackground } from '../components/AmbientBackground'
 import { SetPasswordPage } from '../features/access/SetPasswordPage'
@@ -29,7 +30,18 @@ import { OrganizationsPage } from '../features/ghg/OrganizationsPage'
 import { OverviewPage } from '../features/ghg/OverviewPage'
 import { RunDetailPage } from '../features/ghg/RunDetailPage'
 import { LandingRedirect } from '../features/home/LandingRedirect'
+import { HelpFrameSkeleton } from '../components/HelpFrameSkeleton'
+import { LoadingCard } from '../components/LoadingCard'
 import { ProfilePage } from '../features/profile/ProfilePage'
+
+// the help centre is its own lazy chunk: public, and never in the way of the app (spec 09)
+const HelpRoutes = lazy(() => import('../features/help/HelpRoutes'))
+// the help metrics page reads the help manifest, which belongs in the help chunk, not the main one
+const AdminHelpMetricsPage = lazy(() =>
+  import('../features/admin/AdminHelpMetricsPage').then((m) => ({
+    default: m.AdminHelpMetricsPage,
+  })),
+)
 
 export function App() {
   return (
@@ -40,6 +52,14 @@ export function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/set-password" element={<SetPasswordPage />} />
+        <Route
+          path="/help/*"
+          element={
+            <Suspense fallback={<HelpFrameSkeleton />}>
+              <HelpRoutes />
+            </Suspense>
+          }
+        />
         <Route
           path="/app"
           element={
@@ -100,6 +120,14 @@ export function App() {
           <Route path="organizations" element={<AdminOrganizationsPage />} />
           <Route path="factor-packs" element={<AdminFactorPacksPage />} />
           <Route path="factor-packs/:editionId" element={<AdminFactorPackEditionPage />} />
+          <Route
+            path="help"
+            element={
+              <Suspense fallback={<LoadingCard />}>
+                <AdminHelpMetricsPage />
+              </Suspense>
+            }
+          />
           <Route path="settings" element={<AdminSettingsPage />} />
           {/* a stale bookmark lands on the dashboard rather than a blank page */}
           <Route path="*" element={<Navigate to="/admin" replace />} />

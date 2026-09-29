@@ -69,7 +69,7 @@ be cancelled. The fix lands on `main` and is tagged `rc.2`.
 | Concurrency | `release`, never cancelled |
 | Jobs | `Release / the ref is a version tag` (refuses any other ref); the two check jobs; `Deploy to Railway (staging)`; `Deploy to Railway (production)` |
 | Environments | `staging` (secret `RAILWAY_STAGING_TOKEN`), deployed without a gate; `production` (secret `RAILWAY_PRODUCTION_TOKEN`) with a required reviewer |
-| Deploy steps | `npm install -g @railway/cli`; `uv run mkdocs build --strict -f help/mkdocs.yml` with `HELP_SITE_URL` set to the environment's `/help/` address, copied to `frontend/help-site/`, whose line in `.gitignore` is removed in the CI checkout because `railway up` skips ignored files; then `railway up --service backend --ci` and `railway up --service frontend --ci` from the repository root |
+| Deploy steps | `npm install -g @railway/cli`; on every environment, `cd frontend && npm ci && npm run help:compile` writes the React help's compiled pages and assets, whose `.gitignore` lines are removed in the CI checkout because `railway up` skips ignored files (ADR 0006); then `railway up --service backend --ci` and `railway up --service frontend --ci` from the repository root |
 
 Staging is the production rehearsal: the same commit the testers approved,
 deployed the same way production is. Approving the production job is the
@@ -83,7 +83,7 @@ release.
 | Triggers | `pull_request` (any base) and `push` to `main`, only for paths under `docs/`, `help/`, `specs/`, the docs toolchain files (`mkdocs.yml`, `pyproject.toml`, `uv.lock`, `.python-version`, `.vale.ini`, `.vale/`) and the `Makefile` |
 | Concurrency | `docs-<ref>`, in-progress runs cancelled |
 | Permissions | `contents: read` |
-| Job | `Docs / strict build`: `uv sync --locked`, `uv run mkdocs build --strict` for the engineering docs and again with `-f help/mkdocs.yml` for the help site, then Vale on the changed Markdown with `continue-on-error` |
+| Job | `Docs / strict build`: `uv sync --locked`, `uv run mkdocs build --strict` for the engineering docs, `npm run help:check` for the help centre (ADR 0006), then Vale on the changed Markdown with `continue-on-error` |
 
 Nothing is published. The Vale step reports warnings in the job log and
 never fails the job.

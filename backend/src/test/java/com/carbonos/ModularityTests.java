@@ -1,5 +1,7 @@
 package com.carbonos;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,6 +31,20 @@ class ModularityTests {
 	void platformNeverDependsOnGhg() {
 		var platform = modules.getModuleByName("platform").orElseThrow();
 		assertThat(platform.getAllDependencies(modules).containsModuleNamed("ghg")).isFalse();
+	}
+
+	/**
+	 * The {@code help} module measures the help and nothing else (spec 09): it
+	 * takes {@code shared} for the web plumbing and no business module, so a
+	 * dependency on one is a design slip rather than a need.
+	 */
+	@Test
+	void helpDependsOnNoBusinessModule() {
+		var help = modules.getModuleByName("help").orElseThrow();
+		var dependencies = help.getAllDependencies(modules);
+		for (var name : List.of("ghg", "user", "platform", "mail", "media")) {
+			assertThat(dependencies.containsModuleNamed(name)).as("help depends on %s", name).isFalse();
+		}
 	}
 
 	@Test

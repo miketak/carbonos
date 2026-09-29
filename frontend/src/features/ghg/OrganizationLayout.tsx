@@ -252,6 +252,18 @@ export function OrganizationLayout() {
                 <Icon d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" />
                 <span className={collapsed ? 'md:hidden' : ''}>All organizations</span>
               </Link>
+              <Link
+                to="/help"
+                target="_blank"
+                rel="noopener"
+                title={collapsed ? 'Help' : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap text-link transition-colors duration-150 hover:bg-teal/10 hover:text-link ${
+                  collapsed ? 'md:justify-center md:px-2' : ''
+                }`}
+              >
+                <Icon d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01" />
+                <span className={collapsed ? 'md:hidden' : ''}>Help</span>
+              </Link>
             </div>
           </div>
         </aside>

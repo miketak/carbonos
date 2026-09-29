@@ -45,7 +45,7 @@ HOLD** and each finding says what to do. A warning is a disclosure and
 does not hold. An error in **Base year** holds only the final
 designation: "Base year holds the final designation; runs stay
 available." When every gate passes the panel reads **READY TO
-LAUNCH**, with "Every gate passes; *N* carries a warning."
+LAUNCH**, with "Every gate passes; *N* carry a warning." (or "1 carries a warning")
 
 The findings are listed with what clears each in
 [Pre-flight gates and findings](../../reference/pre-flight-gates-and-findings.md).

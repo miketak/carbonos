@@ -49,6 +49,10 @@ carbonos:
   app:
     # Where emailed links point (the SPA's public URL)
     base-url: ${APP_BASE_URL:http://localhost:5173}
+  help:
+    # Salts the voter hash on help feedback (spec 09). Unset, the backend draws a
+    # random salt per boot, so one vote per voter per article holds only until a restart.
+    voter-salt: ${HELP_VOTER_SALT:}
   storage:
     # Any S3-compatible endpoint (Cloudflare R2, Railway bucket, MinIO).
     endpoint: ${STORAGE_ENDPOINT}

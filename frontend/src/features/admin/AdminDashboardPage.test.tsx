@@ -2,11 +2,12 @@ import { screen, within } from '@testing-library/react'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { AdminDashboardPage } from './AdminDashboardPage'
-import type { AccountsSummary, PlatformSummary } from './api'
+import type { AccountsSummary, HelpSummary, PlatformSummary } from './api'
 
 vi.mock('./api', () => ({
   getAccountsSummary: vi.fn(),
   getPlatformSummary: vi.fn(),
+  getHelpSummary: vi.fn(),
   getPlatformSettings: vi.fn(),
 }))
 vi.mock('../auth/api', () => ({
@@ -15,7 +16,7 @@ vi.mock('../auth/api', () => ({
   me: vi.fn(),
 }))
 
-import { getAccountsSummary, getPlatformSettings, getPlatformSummary } from './api'
+import { getAccountsSummary, getHelpSummary, getPlatformSettings, getPlatformSummary } from './api'
 
 const accounts: AccountsSummary = {
   usersTotal: 12,
@@ -37,9 +38,17 @@ const platform: PlatformSummary = {
   recentActivity: [],
 }
 
+const help: HelpSummary = {
+  feedback: { votes30d: 0, helpful30d: 0, helpfulRate30d: null },
+  search: { searches30d: 0, misses30d: 0, missRate30d: null },
+  pagesBelowTarget: [],
+  topMisses: [],
+}
+
 beforeEach(() => {
   vi.mocked(getAccountsSummary).mockReset().mockResolvedValue(accounts)
   vi.mocked(getPlatformSummary).mockReset().mockResolvedValue(platform)
+  vi.mocked(getHelpSummary).mockReset().mockResolvedValue(help)
   vi.mocked(getPlatformSettings).mockReset().mockResolvedValue({
     supportAccessWindowHours: 24,
     organizationCreation: 'EVERYONE',
@@ -159,4 +168,49 @@ test('the policy in force is printed with a way to change it', async () => {
     'href',
     '/admin/settings',
   )
+})
+
+test('the help tiles show the helpful rate and the missed searches against their targets', async () => {
+  vi.mocked(getHelpSummary).mockResolvedValue({
+    feedback: { votes30d: 25, helpful30d: 18, helpfulRate30d: 0.72 },
+    search: { searches30d: 40, misses30d: 3, missRate30d: 0.075 },
+    pagesBelowTarget: [],
+    topMisses: [],
+  })
+  renderPage()
+
+  const helpful = (await screen.findByText(/helpful votes, 30 days/i)).closest('a') as HTMLElement
+  expect(within(helpful).getByText('72%')).toBeInTheDocument()
+  expect(within(helpful).getByText(/25 votes; target 80%/i)).toBeInTheDocument()
+  expect(helpful).toHaveAttribute('href', '/admin/help')
+
+  const misses = screen.getByText(/searches with no result, 30 days/i).closest('a') as HTMLElement
+  expect(within(misses).getByText('3')).toBeInTheDocument()
+  expect(within(misses).getByText(/8% of 40 searches; target under 5%/i)).toBeInTheDocument()
+  expect(misses).toHaveAttribute('href', '/admin/help')
+})
+
+test('with no votes or searches yet the help tiles say so rather than print a rate', async () => {
+  renderPage()
+
+  const helpful = (await screen.findByText(/helpful votes, 30 days/i)).closest('a') as HTMLElement
+  expect(within(helpful).getByText(/no votes yet/i)).toBeInTheDocument()
+  const misses = screen.getByText(/searches with no result, 30 days/i).closest('a') as HTMLElement
+  expect(within(misses).getByText(/no searches yet/i)).toBeInTheDocument()
+})
+
+test('help pages under the target join the queue', async () => {
+  vi.mocked(getHelpSummary).mockResolvedValue({
+    ...help,
+    pagesBelowTarget: [
+      { pageSlug: 'get-started/import-the-factor-packs', votes: 9, helpfulRate: 0.44 },
+      { pageSlug: 'get-started/meet-gye-nyame-gold', votes: 6, helpfulRate: 0.5 },
+    ],
+  })
+  renderPage()
+
+  const row = await screen.findByRole('link', {
+    name: /2 help pages under the 80% helpful target/i,
+  })
+  expect(row).toHaveAttribute('href', '/admin/help')
 })

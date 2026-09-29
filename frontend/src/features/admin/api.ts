@@ -571,3 +571,88 @@ export function updatePlatformSettings(input: PlatformSettingsInput): Promise<Pl
 export function listPlatformSettingChanges(): Promise<PlatformSettingChange[]> {
   return api<PlatformSettingChange[]>('/api/admin/settings/history')
 }
+
+// --- the help centre: whether the help works (spec 09) ----------------------
+
+/**
+ * The dashboard's two help tiles and the queue row behind them. A rate is
+ * null when nothing was counted, so the tile can say "no votes yet" rather
+ * than print a zero that reads as a verdict.
+ */
+export interface HelpSummary {
+  feedback: {
+    votes30d: number
+    helpful30d: number
+    helpfulRate30d: number | null
+  }
+  search: {
+    searches30d: number
+    misses30d: number
+    missRate30d: number | null
+  }
+  /** At most five articles with at least five votes and a rate under 0.8, worst first. */
+  pagesBelowTarget: { pageSlug: string; votes: number; helpfulRate: number }[]
+  topMisses: { query: string; count: number; lastSeen: string }[]
+}
+
+/** One article's votes over its whole life; only articles with a vote are listed. */
+export interface HelpPageStat {
+  pageSlug: string
+  votes: number
+  helpful: number
+  helpfulRate: number
+  lastVoteAt: string
+}
+
+export type HelpFeedbackReason = 'NOT_ACCURATE' | 'NOT_CLEAR' | 'NOT_RELEVANT'
+
+/** One vote as stored: the reason is present exactly when the vote was No. */
+export interface HelpFeedbackItem {
+  id: string
+  pageSlug: string
+  helpful: boolean
+  reason: HelpFeedbackReason | null
+  comment: string | null
+  createdAt: string
+}
+
+export interface HelpFeedbackPage {
+  items: HelpFeedbackItem[]
+  total: number
+}
+
+export interface HelpFeedbackFilter {
+  slug?: string
+  helpful?: boolean
+  page?: number
+  size?: number
+}
+
+/** A search that found nothing, counted across every reader who typed it. */
+export interface HelpSearchMiss {
+  query: string
+  count: number
+  firstSeen: string
+  lastSeen: string
+}
+
+export function getHelpSummary(): Promise<HelpSummary> {
+  return api<HelpSummary>('/api/admin/summary/help')
+}
+
+export function listHelpPages(): Promise<HelpPageStat[]> {
+  return api<HelpPageStat[]>('/api/admin/help/pages')
+}
+
+export function listHelpFeedback(filter: HelpFeedbackFilter = {}): Promise<HelpFeedbackPage> {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(filter)) {
+    if (value !== undefined && value !== '') query.set(key, String(value))
+  }
+  const suffix = query.toString() ? `?${query}` : ''
+  return api<HelpFeedbackPage>(`/api/admin/help/feedback${suffix}`)
+}
+
+export function listHelpSearchMisses(size = 100): Promise<HelpSearchMiss[]> {
+  return api<HelpSearchMiss[]>(`/api/admin/help/search-misses?size=${size}`)
+}

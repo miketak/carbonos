@@ -1,0 +1,181 @@
+questions:
+- id: q01
+  persona: site-data-provider
+  scenario: The gas supplier's bill for the plant runs from 15 December to 15 January. You want to know
+    what happens to the part that falls in next year.
+  answer: activity-data/enter-a-record#a-period-that-straddles-the-year-end
+  also:
+  - inventories/what-is-scope-classification
+  - inventories/create-an-inventory-and-draw-the-boundary
+- id: q02
+  persona: sustainability-lead
+  scenario: The button that produces the numbers is greyed out, and the panel above it has turned red.
+    You need to get it going again.
+  answer: inventories/clear-the-pre-flight-findings
+  also:
+  - fix/fix-an-inventory-or-run-problem
+  - inventories/what-is-a-pre-flight-gate
+- id: q03
+  persona: sustainability-lead
+  scenario: The mine bought a certificate that says its grid electricity came from a solar farm. You want
+    the certificate to count in this year's figures.
+  answer: inventories/record-scope-2-instruments-and-upstream-rules#record-an-instrument
+  also:
+  - inventories/what-is-dual-reporting
+- id: q04
+  persona: finance-gm
+  scenario: Last year's signed-off figure was built on a wrong meter reading. You need to know whether
+    that figure can still be changed, and what the auditors would see.
+  answer: reporting/correct-a-published-inventory
+  also:
+  - inventories/what-is-a-calculation-run
+  - activity-data/correct-or-remove-a-record-and-attach-evidence
+- id: q05
+  persona: sustainability-lead
+  scenario: The board wants every later year measured against one reference year. You want to choose which
+    year that is.
+  answer: reporting/designate-the-base-year
+  also:
+  - reporting/what-is-the-base-year
+- id: q06
+  persona: finance-gm
+  scenario: The electricity line shows two different totals. The bank has asked for one number, and you
+    do not know which of the two to quote.
+  answer: inventories/what-is-dual-reporting
+  also:
+  - reporting/fill-the-report-header-and-read-the-report
+  - inventories/record-scope-2-instruments-and-upstream-rules
+- id: q07
+  persona: finance-gm
+  scenario: You want to know whether the vendor's own staff can read the mine's numbers, and how you would
+    know if they had.
+  answer: access/what-is-support-access
+  also:
+  - administration/assume-support-access
+- id: q08
+  persona: finance-gm
+  scenario: The group bought a 60% stake in another company in March. You want to know whether that company's
+    emissions are in this year's total.
+  answer: organization/what-is-a-consolidation-approach
+  also:
+  - organization/record-legal-entities
+  - inventories/create-an-inventory-and-draw-the-boundary
+- id: q09
+  persona: sustainability-lead
+  scenario: You want to give the external auditor a login that can read everything and change nothing.
+  answer: organization/add-members-and-assign-roles#what-the-roles-allow
+  also:
+  - access/what-is-a-role
+  - access/check-what-your-role-may-do
+- id: q10
+  persona: finance-gm
+  scenario: You need the numbers in a file you can drop into the board pack.
+  answer: reporting/export-the-report
+  also:
+  - reporting/understand-the-export-files
+- id: q11
+  persona: site-data-provider
+  scenario: You have a spreadsheet of this year's diesel deliveries to the pit. You want to load it without
+    typing each line by hand.
+  answer: activity-data/import-records-from-a-csv-file
+  also:
+  - activity-data/prepare-the-csv-file
+- id: q12
+  persona: site-data-provider
+  scenario: The preview says one row of your spreadsheet would be skipped. You want to know what each
+    column must contain.
+  answer: activity-data/prepare-the-csv-file#columns
+  also:
+  - activity-data/import-records-from-a-csv-file
+- id: q13
+  persona: site-data-provider
+  scenario: You typed 6,000 litres instead of 60,000 and saved. You need to put the right figure in.
+  answer: activity-data/correct-or-remove-a-record-and-attach-evidence#correct-a-figure
+  also:
+  - inventories/what-is-a-calculation-run
+- id: q14
+  persona: site-data-provider
+  scenario: You want the supplier's invoice PDF kept with the figure it supports, so a checker can open
+    it later.
+  answer: activity-data/correct-or-remove-a-record-and-attach-evidence#attach-evidence
+  also:
+  - activity-data/enter-a-record
+- id: q15
+  persona: sustainability-lead
+  scenario: A screen tells you the action needs a permission you do not have. You want to know what you
+    are allowed to do and who can change that.
+  answer: access/check-what-your-role-may-do
+  also:
+  - fix/fix-a-sign-in-or-access-problem
+  - access/what-is-a-role
+- id: q16
+  persona: verifier
+  scenario: You are checking the signed-off year. You want to confirm that the figures cannot have changed
+    since the sign-off.
+  answer: inventories/what-is-the-inventory-lifecycle
+  also:
+  - inventories/what-is-a-calculation-run
+  - reporting/designate-a-final-run-and-publish
+- id: q17
+  persona: verifier
+  scenario: You want the list of every site left out of the year's total, and the reason given for each.
+  answer: reporting/understand-the-export-files#exclusions-csv
+  also:
+  - reporting/export-the-report
+  - inventories/review-and-classify-records
+  - inventories/create-an-inventory-and-draw-the-boundary
+- id: q18
+  persona: verifier
+  scenario: You need to know which release of the government's published conversion figures this year's
+    numbers were built with.
+  answer: factors/what-is-a-factor-pack-edition
+  also:
+  - reporting/fill-the-report-header-and-read-the-report
+  - reporting/understand-the-export-files
+- id: q19
+  persona: verifier
+  scenario: You want the exact inputs the year's numbers were built from, in a form a script can read.
+  answer: reporting/understand-the-export-files#frozen-inputs-json
+  also:
+  - reporting/export-the-report
+- id: q20
+  persona: verifier
+  scenario: Someone changed a subsidiary's ownership share. You want to know who did it and when.
+  answer: organization/edit-the-details-and-read-the-history#read-the-history
+  also:
+  - organization/record-legal-entities
+- id: q21
+  persona: analyst
+  scenario: The PDF has a row called "CO2e from factors without a gas split". You want to know whether
+    the gas table still adds up.
+  answer: reporting/fill-the-report-header-and-read-the-report#emissions-by-gas
+  also:
+  - fix/fix-a-factor-or-update-problem
+  - glossary
+- id: q22
+  persona: analyst
+  scenario: The cover says "operational control". You want to know what that means for which sites count.
+  answer: organization/what-is-a-consolidation-approach
+  also:
+  - inventories/create-an-inventory-and-draw-the-boundary
+- id: q23
+  persona: analyst
+  scenario: The cover says "boundary version 2". You want to know what a version is and why there is more
+    than one.
+  answer: inventories/what-is-the-inventory-lifecycle#why-a-freeze-cuts-a-version
+  also:
+  - inventories/freeze-and-launch-a-run
+  - glossary
+- id: q24
+  persona: analyst
+  scenario: A number marked "Final" turned out to be wrong. You want to know whether it can be changed
+    later and how the change would show.
+  answer: reporting/correct-a-published-inventory
+  also:
+  - inventories/what-is-the-inventory-lifecycle
+- id: q25
+  persona: analyst
+  scenario: A category is shown as "declared but not quantified". You want to know what that means.
+  answer: inventories/declare-scope-3
+  also:
+  - inventories/review-and-classify-records

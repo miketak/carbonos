@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../../../components/Button'
 import { InputField } from '../../../components/Field'
 import { GlassCard } from '../../../components/GlassCard'
+import { HelpLink } from '../../../components/HelpLink'
 import { Modal } from '../../../components/Modal'
 import { useToast } from '../../../components/toast'
 import { refusalMessage } from '../../../lib/api'
@@ -111,6 +112,7 @@ export function LifecycleBar({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl">Inventory lifecycle</h2>
+            <HelpLink topic="lifecycle" />
             {/* spec 05.5: two numberings, two names; this is the boundary version, the report version prints on the report */}
             {inventory.status !== 'DRAFT' && inventory.currentBoundaryVersionNo !== null && (
               <span className="rounded-full border border-teal/20 px-2.5 py-0.5 font-mono text-xs font-bold tracking-wider text-ink-muted">

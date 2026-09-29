@@ -12,6 +12,7 @@ vi.mock('./api', () => ({
   listUsers: vi.fn(),
   getAccountsSummary: vi.fn(),
   getPlatformSummary: vi.fn(),
+  getHelpSummary: vi.fn(),
 }))
 vi.mock('../auth/api', () => ({
   login: vi.fn(),

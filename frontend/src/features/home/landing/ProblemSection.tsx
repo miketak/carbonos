@@ -109,7 +109,7 @@ export function ProblemSection() {
               <div className="sheet-row">
                 <span>Fleet diesel</span>
                 <span>2.68</span>
-                <span className="sheet-cell--overwritten">39,180</span>
+                <span className="sheet-cell--overwritten">34,194</span>
               </div>
               <div className="sheet-row sheet-row--ghost">
                 <span>Contractor haulage</span>

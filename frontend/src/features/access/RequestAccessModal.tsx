@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Button } from '../../components/Button'
+import { HelpLink } from '../../components/HelpLink'
 import { InputField, TextAreaField } from '../../components/Field'
 import { Modal } from '../../components/Modal'
 import { fieldErrors, problemDetail } from '../../lib/api'
@@ -62,7 +63,9 @@ export function RequestAccessModal({
   return (
     <Modal title={copy.title} onClose={onClose}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-        <p className="text-sm text-ink-muted">{copy.note}</p>
+        <p className="text-sm text-ink-muted">
+          {copy.note} <HelpLink topic="requestAccess" label="How access works" />
+        </p>
         <InputField
           label="Full name"
           value={displayName}
