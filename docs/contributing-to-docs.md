@@ -133,18 +133,20 @@ than six months is due for review.
 
 ## Two sites, one style
 
-The repository builds two sites from the same toolchain: this engineering
-site from `docs/` and `mkdocs.yml`, and the end-user help from
-`help/docs/` and `help/mkdocs.yml`
-(see [ADR 0005](adr/0005-a-separate-mkdocs-site-for-end-user-help.md)).
-Every rule on this page applies to both. The help site has its own
-Diátaxis sections (`concepts/`, `get-started/`, `tasks/`, `reference/`,
-`troubleshooting/`), never links into `specs/` or `docs/`, and cites the
-specs and QA cases that ground a page in an HTML comment under the front
-matter, so a reviewer can check each claim. `make help-serve` serves it on
-port 8001, `make help-site` builds it strictly, and `make help-check` is
-the Definition of Done for a help change. A new help page must be in `nav`
-in `help/mkdocs.yml`, or the strict build fails.
+The repository writes two sites in the same style: this engineering site,
+built by MkDocs from `docs/` and `mkdocs.yml`, and the end-user help,
+compiled from `help/docs/` into routes of the React app at `/help`
+(see [ADR 0006](adr/0006-serve-end-user-help-as-routes-of-the-app.md) and
+[spec 09](specs/09-the-help-centre.md)). Every rule on this page applies
+to both. The help is organised by the reader's job in `help/tree.yaml`
+(nine groups of articles, each with a `kind` and a word budget), never
+links into `specs/` or `docs/`, and cites the specs and QA cases that
+ground a page in an HTML comment under the front matter, so a reviewer can
+check each claim. The Vite dev server compiles it on change
+(`make help-serve`), and `make help-check` is the Definition of Done for a
+help change: `npm run help:check` (every page in the tree, links and
+anchors, word budgets, em-dashes, screenshots, diagrams) and then Vale. A
+new help page must be in `help/tree.yaml`, or the compile fails.
 
 ## Build and check the site
 

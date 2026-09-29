@@ -50,9 +50,8 @@ machine.
 1. From the repository root, run `make dev-up`.
 
     tmux opens a window with the backend on top, Postgres logs bottom left,
-    and on the right the Vite dev server above the end-user help server
-    (`make help-serve`, which Vite proxies at `/help/`; it needs uv). Inside
-    an existing tmux session the
+    and the Vite dev server bottom right (it also compiles and serves the
+    end-user help at `/help`). Inside an existing tmux session the
     window is named `dev-console`; outside tmux, a session named
     `carbonos` is created.
 

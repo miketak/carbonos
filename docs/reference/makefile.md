@@ -12,7 +12,7 @@ does the same.
 | Target | Does | Needs |
 | --- | --- | --- |
 | `help` | Lists every target with its description. | |
-| `dev-up` | Starts Postgres, the backend, the frontend and the help server (`help-serve`, proxied at `/help/`) in tmux: a `dev-console` window inside an existing session, or a `carbonos` session outside one. | Docker, tmux, Java 25, Node 22, uv (for the help pane) |
+| `dev-up` | Starts Postgres, the backend and the frontend (which compiles and serves the help at `/help`) in tmux: a `dev-console` window inside an existing session, or a `carbonos` session outside one. | Docker, tmux, Java 25, Node 22 |
 | `dev-down` | Closes the panes `dev-up` opened and stops the containers. | tmux |
 | `db-up` | Starts the compose services: Postgres on 5433, MinIO on 9000 and 9001, Mailpit on 1025 and 8025. | Docker |
 | `db-down` | Stops the compose services and keeps their data. | Docker |
@@ -27,10 +27,8 @@ does the same.
 | `docs` | Builds the docs site into `site/` with `--strict`; any warning fails. | uv |
 | `docs-serve` | Serves the docs on http://127.0.0.1:8000 with live reload. | uv |
 | `docs-check` | `docs`, then `vale`. The Definition of Done for a docs change. | uv, Vale (optional) |
-| `help-site` | Builds the end-user help site (`help/mkdocs.yml`) into `help/site/` with `--strict`. | uv |
-| `help-serve` | Serves the help site on http://127.0.0.1:8001 with live reload, so it can run beside `docs-serve`. | uv |
-| `help-bundle` | `help-site`, then copies `help/site/` to `frontend/help-site/`, the folder the frontend image serves at `/help/`. The release workflows do the same before `railway up`. | uv |
-| `help-check` | `help-site`, then `vale`. The Definition of Done for a help change. | uv, Vale (optional) |
+| `help-serve` | Runs the Vite dev server, which compiles the help from `help/docs` on change and serves it at http://localhost:5173/help (ADR 0006). The same as `frontend`, named for help authors. | Node 22 |
+| `help-check` | The help compiler's checks (`cd frontend && npm run help:check`: every page in `help/tree.yaml`, links and anchors, word budgets, em-dashes, diagrams), then `vale`. The Definition of Done for a help change (ADR 0006). | Node 22, Vale (optional) |
 | `vale [BASE=<ref>]` | Runs Vale on the Markdown changed against `BASE` (default `origin/main`), including untracked files. Skips when Vale is not installed. | Vale |
 | `qa-docs` | Exports the QA procedures as DOCX under `build/qa-docs/`, with the persona's `fixtures/` folder beside them, ready to upload to the QA team's Drive folder. | uv, pandoc |
 

@@ -43,9 +43,9 @@ one kind of question, so you can tell from the section which page you need.
 - Wondering why a tool or structure was chosen? Read the
   [decision records](adr/README.md).
 - Looking for help written for the people who use the product? That is the
-  separate help site under `help/`: `make help-serve` opens it on
-  http://127.0.0.1:8001, and every deployed environment serves it at
-  `/help/` on the app's address (ADR 0005).
+  help centre under `help/docs/`, compiled into the app: `make help-serve`
+  opens it on http://localhost:5173/help, and every deployed environment
+  serves it at `/help` on the app's address (ADR 0006).
 
 ## Build the site
 

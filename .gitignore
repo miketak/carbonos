@@ -14,9 +14,11 @@
 # Local scratch
 temp/
 
-# engineering docs site (make docs), the help site (make help-site) and their Python toolchain
+# engineering docs site (make docs) and its Python toolchain
 site/
-frontend/help-site/
+# the help compiled from help/docs for the React help centre (ADR 0006)
+frontend/src/features/help/generated/
+frontend/public/help-assets/
 .venv/
 __pycache__/
 .vale/styles/*

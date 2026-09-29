@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check help-site help-serve help-bundle help-check vale qa-docs
+.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check help-serve help-check vale qa-docs
 
 # git ref the docs checks diff against
 BASE ?= origin/main
@@ -8,7 +8,7 @@ BASE ?= origin/main
 help:             ## list the targets in this Makefile
 	@grep -hE '^[a-zA-Z0-9_-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':[^#]*## ' '{printf "  %-12s %s\n", $$1, $$2}'
 
-dev-up:           ## start db + backend + frontend + help in tmux (a "dev-console" window if inside tmux, else a "carbonos" session)
+dev-up:           ## start db + backend + frontend in tmux (a "dev-console" window if inside tmux, else a "carbonos" session)
 	./scripts/dev-up.sh
 
 dev-down:         ## tear down the dev panes/session and stop Postgres
@@ -59,17 +59,11 @@ docs-check:       ## docs Definition of Done: strict build, then Vale on markdow
 	$(MAKE) docs
 	$(MAKE) vale
 
-help-site:        ## build the end-user help site into help/site/ (strict: any warning fails)
-	uv run --locked mkdocs build --strict -f help/mkdocs.yml
+help-serve:       ## serve the help centre with live reload: the Vite dev server, at http://localhost:5173/help
+	cd frontend && npm run dev
 
-help-serve:       ## serve the help site with live reload on http://127.0.0.1:8001
-	uv run --locked mkdocs serve -f help/mkdocs.yml -a 127.0.0.1:8001
-
-help-bundle: help-site ## copy the strict help build into frontend/help-site/ for the frontend image (/help/)
-	rm -rf frontend/help-site && cp -r help/site frontend/help-site
-
-help-check:       ## help site Definition of Done: strict build, then Vale on markdown changed against $(BASE)
-	$(MAKE) help-site
+help-check:       ## help Definition of Done: the help compiler's checks (tree, links, budgets, diagrams), then Vale
+	cd frontend && npm run help:check
 	$(MAKE) vale
 
 vale:             ## Vale (advisory) on markdown changed against $(BASE); skips when vale is absent
