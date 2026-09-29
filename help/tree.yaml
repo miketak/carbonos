@@ -92,6 +92,11 @@ groups:
         from: tasks/account/request-access-and-set-your-password.md
         title: Set your password and sign in
         disposition: split
+      - slug: reset-a-forgotten-password
+        kind: task
+        from: new
+        title: Reset a forgotten password
+        disposition: new
       - slug: what-is-a-role
         kind: what-is
         from: concepts/roles-and-who-does-what.md

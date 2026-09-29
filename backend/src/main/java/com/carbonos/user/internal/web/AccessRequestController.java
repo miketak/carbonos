@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.carbonos.user.AuthenticatedUser;
 import com.carbonos.user.internal.AccessRequestService;
+import com.carbonos.user.internal.security.UserSessions;
 import com.carbonos.user.internal.web.dto.CompleteAccessRequest;
 import com.carbonos.user.internal.web.dto.SetupInfoResponse;
 import com.carbonos.user.internal.web.dto.SubmitAccessRequest;
@@ -32,12 +34,14 @@ class AccessRequestController {
 	private final AccessRequestService accessRequests;
 	private final AuthenticationManager authenticationManager;
 	private final SecurityContextRepository securityContextRepository;
+	private final UserSessions sessions;
 
 	AccessRequestController(AccessRequestService accessRequests, AuthenticationManager authenticationManager,
-			SecurityContextRepository securityContextRepository) {
+			SecurityContextRepository securityContextRepository, UserSessions sessions) {
 		this.accessRequests = accessRequests;
 		this.authenticationManager = authenticationManager;
 		this.securityContextRepository = securityContextRepository;
+		this.sessions = sessions;
 	}
 
 	@PostMapping
@@ -66,6 +70,8 @@ class AccessRequestController {
 			context.setAuthentication(authentication);
 			SecurityContextHolder.setContext(context);
 			securityContextRepository.saveContext(context, request, response);
+			// spec 01.9: a new password can end this session from elsewhere
+			sessions.register(request, ((AuthenticatedUser) authentication.getPrincipal()).getId());
 		}
 		catch (AuthenticationException ex) {
 			throw new InvalidCredentialsException();

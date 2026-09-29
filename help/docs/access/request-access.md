@@ -37,4 +37,4 @@ When an account or a waiting request already carries the email, the form refuses
 
 A platform administrator reads the request under **Access requests** in the administration console. Approval creates your account at once, pending its password, and sends the email "Your CarbonOS access is approved": "Set your password to activate your account (the link is valid for 7 days)". Open the link within 7 days and follow [Set your password and sign in](set-your-password-and-sign-in.md). A denial sends the email "Your CarbonOS access request", which says that you are welcome to request access again.
 
-An administrator can also create your account directly under **Users**, with a temporary password handed to you out of band; sign in with it.
+An administrator can also create your account directly under **Users**, with a temporary password handed to you out of band; sign in with it, then change it on your profile.

@@ -9,7 +9,7 @@ description: The lengths, sizes, ranges and windows CarbonOS enforces on account
 The lengths, sizes and ranges CarbonOS enforces, and the message it
 answers with where one is printed.
 
-<!-- sources: backend request records under com.carbonos.ghg.internal.web.dto and com.carbonos.user (Size, Min, Max annotations); PasswordPolicy.java; PlatformSettingsService.java; ActivityImportService.java; EvidencePanel.tsx; verified 2026-09-24; spec 01.8 (account numbers, verified 2026-09-26) -->
+<!-- sources: backend request records under com.carbonos.ghg.internal.web.dto and com.carbonos.user (Size, Min, Max annotations); PasswordPolicy.java; PasswordRateLimiter.java and PasswordService.java (spec 01.9); PlatformSettingsService.java; ActivityImportService.java; EvidencePanel.tsx; verified 2026-09-24; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 ## Accounts and access
 
@@ -17,6 +17,9 @@ answers with where one is printed.
 | --- | --- |
 | Password | "At least 12 characters, with a letter and a digit." At most 72. |
 | Access link | Valid for 7 days, usable once: "This link is invalid or has expired. Access links are valid for 7 days; you can always request access again." |
+| Password reset link | Valid for 1 hour, usable once; setting a password spends every open link of the account. |
+| Password reset requests | 3 per email address and 10 per network address in 15 minutes: "Too many password reset requests. Try again in 15 minutes." |
+| Password changes | 5 per account in 15 minutes: "Too many attempts to change the password. Try again in 15 minutes." |
 | Support access window | Between 1 and 72 hours; 24 by default. A grant keeps the window it was taken under. |
 | Support access reason | At least 10 characters, at most 500: "Give a reason of at least 10 characters." |
 | Platform setting change reason | At least 10 characters. |

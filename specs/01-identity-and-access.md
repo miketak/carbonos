@@ -59,8 +59,8 @@ status, created date) sorted by creation time, and can:
 - **Create** a user with email, display name, role and a temporary password of
   at least 8 characters, communicated out of band. No email is sent. Duplicate
   email is refused with 409.
-- **Update** display name, role and status. Email and password changes are
-  non-goals.
+- **Update** display name, role and status. Email changes are a non-goal;
+  an administrator resets a password by sending a reset link (spec 01.9).
 - **Delete** after confirmation. Disabling is the preferred, reversible action;
   hard delete is acceptable while nothing else references user ids.
 
@@ -136,9 +136,9 @@ it establishes the cross-module event pattern.
 
 ## Non-goals and open questions
 
-- Password reset, change-own-password and forced rotation on first sign-in.
-  A temporary password an administrator sets is the password until an
-  administrator sets another.
+- Forced rotation on first sign-in. Password reset and change-own-password
+  are spec 01.9: a temporary password an administrator sets stays the
+  password until its holder changes it on the profile or resets it.
 - Per-inventory roles and a formal sign-off workflow; membership and
   organization roles are spec 01.2.
 - Audit logging of administrative actions.

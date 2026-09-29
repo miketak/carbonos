@@ -15,6 +15,14 @@ export function updateProfile(input: { displayName: string }): Promise<Profile> 
   return api<Profile>('/api/profile', { method: 'PUT', body: JSON.stringify(input) })
 }
 
+/** Spec 01.9: 204 on success; a wrong current password is a 422 on `currentPassword`. */
+export function changePassword(input: {
+  currentPassword: string
+  newPassword: string
+}): Promise<void> {
+  return api<void>('/api/profile/password', { method: 'PUT', body: JSON.stringify(input) })
+}
+
 function upload(path: string, file: File): Promise<Profile> {
   const body = new FormData()
   body.append('file', file)

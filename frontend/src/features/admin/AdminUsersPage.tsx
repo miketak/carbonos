@@ -5,20 +5,26 @@ import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
 import { useSession } from '../auth/useSession'
 import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog'
+import { ConfirmPasswordResetDialog } from './components/ConfirmPasswordResetDialog'
 import { UserFormModal } from './components/UserFormModal'
 import { UserTable } from './components/UserTable'
-import { useDeleteUser, useUpdateUser, useUsersQuery } from './useUsers'
+import { useDeleteUser, useSendPasswordReset, useUpdateUser, useUsersQuery } from './useUsers'
 import type { Role, Status } from '../auth/api'
 import type { User } from './api'
 
 type Dialog =
-  { kind: 'create' } | { kind: 'edit'; user: User } | { kind: 'delete'; user: User } | null
+  | { kind: 'create' }
+  | { kind: 'edit'; user: User }
+  | { kind: 'delete'; user: User }
+  | { kind: 'reset'; user: User }
+  | null
 
 export function AdminUsersPage() {
   const session = useSession()
   const usersQuery = useUsersQuery()
   const deleteUser = useDeleteUser()
   const updateUser = useUpdateUser()
+  const sendReset = useSendPasswordReset()
   const toast = useToast()
   const [dialog, setDialog] = useState<Dialog>(null)
 
@@ -59,6 +65,7 @@ export function AdminUsersPage() {
           currentUserId={currentUserId}
           onEdit={(user) => setDialog({ kind: 'edit', user })}
           onToggleStatus={(user) => toggleStatus(user)}
+          onResetPassword={(user) => setDialog({ kind: 'reset', user })}
           onDelete={(user) => setDialog({ kind: 'delete', user })}
         />
       </GlassCard>
@@ -79,6 +86,29 @@ export function AdminUsersPage() {
           onSaved={(message) => {
             setDialog(null)
             toast(message)
+          }}
+        />
+      )}
+      {dialog?.kind === 'reset' && (
+        <ConfirmPasswordResetDialog
+          user={dialog.user}
+          busy={sendReset.isPending}
+          onClose={() => setDialog(null)}
+          onConfirm={() => {
+            const { user } = dialog
+            sendReset.mutate(user.id, {
+              onSuccess: () => {
+                setDialog(null)
+                toast(`Reset link sent to ${user.email}.`)
+              },
+              onError: (error) => {
+                setDialog(null)
+                toast(
+                  problemDetail(error) ?? `Could not send a reset link to ${user.displayName}.`,
+                  'error',
+                )
+              },
+            })
           }}
         />
       )}

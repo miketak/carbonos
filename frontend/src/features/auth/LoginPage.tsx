@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
@@ -18,7 +18,8 @@ export function LoginPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
-  const state = (location.state as { from?: string; signedOut?: boolean } | null) ?? {}
+  const state =
+    (location.state as { from?: string; signedOut?: boolean; passwordReset?: boolean } | null) ?? {}
   // a sign-out clears the deep link: the next account lands where its own
   // work starts, not on the page the previous account was bounced from
   const from = state.signedOut ? undefined : state.from
@@ -56,6 +57,11 @@ export function LoginPage() {
           <h1 className="mt-4 text-xl">Sign in</h1>
           <p className="mt-1 text-sm text-ink-muted">Measure. Certify. Sustain.</p>
         </div>
+        {state.passwordReset && (
+          <p role="status" className="mb-4 rounded-lg bg-teal/10 px-4 py-2 text-sm">
+            Your password is reset. Sign in with your new password.
+          </p>
+        )}
         <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
           <InputField
             label="Email"
@@ -83,6 +89,12 @@ export function LoginPage() {
           <Button type="submit" busy={signIn.isPending} className="mt-2">
             Sign in
           </Button>
+          <Link
+            to="/forgot-password"
+            className="text-center text-sm font-medium text-link hover:underline"
+          >
+            Forgot your password?
+          </Link>
         </form>
       </GlassCard>
     </main>

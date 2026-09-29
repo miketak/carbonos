@@ -7,9 +7,10 @@ import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail } from '../../lib/api'
+import { ChangePasswordSection } from './ChangePasswordSection'
 import { useAvatarQuery, useProfileQuery, useUpdateProfile, useUploadAvatar } from './useProfile'
 
-/** Self-service profile: display name and profile picture. */
+/** Self-service profile: display name, profile picture, and password (spec 01.9). */
 export function ProfilePage() {
   const toast = useToast()
   const profileQuery = useProfileQuery()
@@ -124,6 +125,8 @@ export function ProfilePage() {
                   Save changes
                 </Button>
               </form>
+
+              <ChangePasswordSection />
             </>
           )}
         </GlassCard>
