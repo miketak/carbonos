@@ -40,6 +40,11 @@ export function EntitiesPage() {
             The structures the company consolidates. Each facility belongs to one; Table 1 of the
             GHG Protocol turns the relationship into an accounting share under each approach.
           </p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Equity share, financial control and operational control are calculated from each
+            entity&apos;s relationship, economic interest, operation, financial control and parent;
+            edit those facts to change them.
+          </p>
         </div>
         <RoleButton
           allowed={mayWrite(myRole)}

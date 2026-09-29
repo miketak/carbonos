@@ -45,7 +45,7 @@ An entity held through another takes the parent's share times its own, and a cha
 
 ## Edit or remove an entity
 
-**Edit** changes the entity's facts for every future boundary; existing inventories keep their decisions. The organization's history records each edit with the old and new values, for example "economic interest 100% → 60%"; see [Read the history](edit-the-details-and-read-the-history.md#read-the-history).
+**Edit** opens the same fields as **Add entity** and changes the entity's facts for every future boundary; existing inventories keep their decisions. Under the fields, **Share under each approach** shows the entity's **Equity share**, **Financial control** and **Operational control** as last saved. Those shares are Table 1's result, not inputs: change the relationship, economic interest, operation, financial control or parent to change them. The reporting company's form shows every field, but its structure is fixed at 100% and operated: only **Name**, the two dates and **Jurisdiction** can change. The organization's history records each edit with the old and new values, for example "economic interest 100% → 60%"; see [Read the history](edit-the-details-and-read-the-history.md#read-the-history).
 
 **Remove** asks for a **Reason** of at least 5 characters, keeps the entity on file as removed and writes the reason to the history. It is refused while a facility belongs to the entity or another entity is held through it: "'*Entity*' still has facilities. Move them to another entity before deleting it."
 

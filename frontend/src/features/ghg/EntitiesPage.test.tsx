@@ -220,3 +220,52 @@ test('a preparer can add, edit and remove entities (spec 01.4)', async () => {
   expect(within(jvRow).getByRole('button', { name: /^edit$/i })).toBeEnabled()
   expect(within(jvRow).getByRole('button', { name: /^remove$/i })).toBeEnabled()
 })
+
+test('editing the reporting company shows every field, its structure fixed, and the shares Table 1 gives', async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  const ownRow = (await screen.findByText('Sankofa Gold plc')).closest('tr') as HTMLElement
+  await user.click(within(ownRow).getByRole('button', { name: /^edit$/i }))
+  const dialog = await screen.findByRole('dialog', { name: /edit legal entity/i })
+
+  // every field renders; the reporting company's structure is fixed, so those fields are read-only
+  for (const label of [
+    'Relationship',
+    'Economic interest (%)',
+    'Legal ownership (%)',
+    'Operated by the company',
+    'Financial control',
+    'Held through',
+  ]) {
+    expect(within(dialog).getByLabelText(label)).toBeDisabled()
+  }
+  for (const label of [
+    'Name',
+    'Acquired on (optional)',
+    'Disposed of on (optional)',
+    'Jurisdiction (optional)',
+  ]) {
+    expect(within(dialog).getByLabelText(label)).toBeEnabled()
+  }
+  const shares = within(dialog).getByLabelText('Share under each approach')
+  expect(shares).toHaveTextContent(/Equity share\s*100%/)
+  expect(shares).toHaveTextContent(/Financial control\s*100%/)
+  expect(shares).toHaveTextContent(/Operational control\s*100%/)
+})
+
+test('editing another entity leaves its Table 1 facts editable and shows its shares', async () => {
+  const user = userEvent.setup()
+  renderPage()
+
+  const jvRow = (await screen.findByText('Tarkwa Gold JV Ltd')).closest('tr') as HTMLElement
+  await user.click(within(jvRow).getByRole('button', { name: /^edit$/i }))
+  const dialog = await screen.findByRole('dialog', { name: /edit legal entity/i })
+
+  expect(within(dialog).getByLabelText('Relationship')).toBeEnabled()
+  expect(within(dialog).getByLabelText('Economic interest (%)')).toBeEnabled()
+  expect(within(dialog).getByLabelText('Held through')).toBeEnabled()
+  expect(within(dialog).getByLabelText('Share under each approach')).toHaveTextContent(
+    /Equity share\s*40%.*Financial control\s*40%.*Operational control\s*100%/,
+  )
+})
