@@ -1,6 +1,7 @@
 ---
 owner: miketak
 last_reviewed: 2026-09-26
+description: One stable name for each thing in CarbonOS, from activity record to voided run, with the page that explains it.
 ---
 
 # Glossary

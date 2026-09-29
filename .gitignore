@@ -19,6 +19,8 @@ site/
 # the help compiled from help/docs for the React help centre (ADR 0006)
 frontend/src/features/help/generated/
 frontend/public/help-assets/
+# what the Get started walkthrough records (npm run help:walkthrough)
+frontend/e2e/out/
 .venv/
 __pycache__/
 .vale/styles/*

@@ -98,6 +98,7 @@ nav:
       - how-to/add-a-migration.md
       - how-to/deploy-and-release.md
       - how-to/publish-qa-procedures.md
+      - how-to/re-derive-the-get-started-series.md
   - Reference:
       - reference/index.md
       - reference/makefile.md

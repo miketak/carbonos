@@ -58,4 +58,4 @@ then "Ready to launch a run". A warning never holds a run; an error does.
 
 - [Meet Gye Nyame Gold](meet-gye-nyame-gold.md).
 - [Create the organization and its legal entity](create-the-organization-and-its-legal-entity.md), step 1.
-- [Pre-flight gates and findings](../reference/pre-flight-gates-and-findings.md).
+- [Pre-flight gates and findings](../inventories/freeze-and-launch-a-run.md).

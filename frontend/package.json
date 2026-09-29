@@ -16,6 +16,7 @@
     "help:check": "node scripts/compile-help.mjs --check",
     "help:diagrams": "node scripts/render-help-diagrams.mjs",
     "help:inventory": "node scripts/help-inventory.mjs",
+    "help:walkthrough": "node e2e/help-walkthrough.mjs",
     "postbuild": "node scripts/check-bundle.mjs",
     "pretest": "node scripts/compile-help.mjs --if-present"
   },

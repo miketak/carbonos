@@ -1244,7 +1244,7 @@
     @apply mt-2 text-center text-sm text-ink-muted;
   }
   .help-screenshot img {
-    @apply rounded-xl border border-teal/15 p-0 shadow-[0_8px_32px_rgba(36,97,105,0.12)];
+    @apply h-auto w-full rounded-xl border border-teal/15 p-0 shadow-[0_8px_32px_rgba(36,97,105,0.12)];
   }
   .help-prose hr {
     @apply my-8 border-teal/15;
