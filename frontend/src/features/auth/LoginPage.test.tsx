@@ -100,3 +100,23 @@ test('shows an invalid-credentials message on 401', async () => {
 
   expect(await screen.findByRole('alert')).toHaveTextContent(/invalid email or password/i)
 })
+
+test('offers the forgotten-password page (spec 01.9)', async () => {
+  const user = userEvent.setup({ delay: null })
+  renderWithProviders(<LoginPage />, {
+    route: '/login',
+    extraRoutes: [{ path: '/forgot-password', element: <h1>Forgot page</h1> }],
+  })
+
+  await user.click(screen.getByRole('link', { name: 'Forgot your password?' }))
+  expect(await screen.findByRole('heading', { name: 'Forgot page' })).toBeInTheDocument()
+})
+
+test('says the password is reset when a reset brought the visitor here', () => {
+  renderWithProviders(<LoginPage />, {
+    route: { pathname: '/login', state: { passwordReset: true } },
+  })
+  expect(
+    screen.getByText('Your password is reset. Sign in with your new password.'),
+  ).toBeInTheDocument()
+})

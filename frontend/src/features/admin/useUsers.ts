@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createUser, deleteUser, listUsers, updateUser } from './api'
+import { createUser, deleteUser, listUsers, sendPasswordReset, updateUser } from './api'
 import { adminSummaryKey } from './useSummary'
 import type { CreateUserInput, UpdateUserInput, User } from './api'
 
@@ -32,6 +32,11 @@ export function useUpdateUser() {
         queryClient.invalidateQueries({ queryKey: adminSummaryKey }),
       ]),
   })
+}
+
+/** Sends a reset link (spec 01.9); nothing on the list changes, so nothing is invalidated. */
+export function useSendPasswordReset() {
+  return useMutation({ mutationFn: (id: string) => sendPasswordReset(id) })
 }
 
 /** Optimistic removal: the row disappears immediately and returns on failure. */

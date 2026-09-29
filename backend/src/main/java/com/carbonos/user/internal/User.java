@@ -126,6 +126,11 @@ public class User {
 		this.status = UserStatus.ACTIVE;
 	}
 
+	/** A new password (spec 01.9); the status is untouched. */
+	void changePassword(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
 	void markPending() {
 		this.status = UserStatus.PENDING;
 	}

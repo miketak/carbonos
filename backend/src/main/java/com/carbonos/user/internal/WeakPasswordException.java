@@ -9,9 +9,14 @@ import org.springframework.web.ErrorResponseException;
 public class WeakPasswordException extends ErrorResponseException {
 
 	public WeakPasswordException() {
+		this("password");
+	}
+
+	/** The rule under the form's own field name (the profile's is {@code newPassword}, spec 01.9). */
+	public WeakPasswordException(String field) {
 		super(HttpStatus.UNPROCESSABLE_ENTITY);
 		setTitle("Validation failed");
 		setDetail(PasswordPolicy.RULE);
-		getBody().setProperty("errors", Map.of("password", PasswordPolicy.RULE));
+		getBody().setProperty("errors", Map.of(field, PasswordPolicy.RULE));
 	}
 }

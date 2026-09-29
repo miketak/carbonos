@@ -28,6 +28,11 @@ export function updateUser(id: string, input: UpdateUserInput): Promise<User> {
   return api<User>(`/api/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(input) })
 }
 
+/** Spec 01.9: emails the account a reset link valid for 1 hour; 409 for a pending or disabled account. */
+export function sendPasswordReset(id: string): Promise<void> {
+  return api<void>(`/api/admin/users/${id}/password-reset`, { method: 'POST' })
+}
+
 export function deleteUser(id: string): Promise<void> {
   return api<void>(`/api/admin/users/${id}`, { method: 'DELETE' })
 }

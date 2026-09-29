@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.carbonos.user.internal.UserRepository;
 import com.carbonos.user.internal.UserService;
+import com.carbonos.user.internal.security.UserSessions;
 import com.carbonos.user.AuthenticatedUser;
 import com.carbonos.user.internal.web.dto.LoginRequest;
 import com.carbonos.user.internal.web.dto.UserResponse;
@@ -30,12 +31,14 @@ class AuthController {
 
 	private final AuthenticationManager authenticationManager;
 	private final SecurityContextRepository securityContextRepository;
+	private final UserSessions sessions;
 	private final UserRepository users;
 
 	AuthController(AuthenticationManager authenticationManager, SecurityContextRepository securityContextRepository,
-			UserRepository users) {
+			UserSessions sessions, UserRepository users) {
 		this.authenticationManager = authenticationManager;
 		this.securityContextRepository = securityContextRepository;
+		this.sessions = sessions;
 		this.users = users;
 	}
 
@@ -52,6 +55,8 @@ class AuthController {
 			context.setAuthentication(authentication);
 			SecurityContextHolder.setContext(context);
 			securityContextRepository.saveContext(context, request, response);
+			// spec 01.9: a new password can end this session from elsewhere
+			sessions.register(request, ((AuthenticatedUser) authentication.getPrincipal()).getId());
 			var principal = (AuthenticatedUser) authentication.getPrincipal();
 			return currentUser(principal);
 		}

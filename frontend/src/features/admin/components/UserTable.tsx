@@ -9,6 +9,8 @@ interface UserTableProps {
   currentUserId: string
   onEdit: (user: User) => void
   onToggleStatus: (user: User) => void
+  /** Spec 01.9: offered on active accounts only; the server refuses the others. */
+  onResetPassword?: (user: User) => void
   onDelete: (user: User) => void
 }
 
@@ -20,6 +22,7 @@ export function UserTable({
   currentUserId,
   onEdit,
   onToggleStatus,
+  onResetPassword,
   onDelete,
 }: UserTableProps) {
   if (isPending) {
@@ -110,6 +113,15 @@ export function UserTable({
                   >
                     {user.status === 'ACTIVE' ? 'Disable' : 'Enable'}
                   </Button>
+                  {onResetPassword && user.status === 'ACTIVE' && (
+                    <Button
+                      variant="ghost"
+                      className="px-3 py-1.5 text-sm"
+                      onClick={() => onResetPassword(user)}
+                    >
+                      Reset password
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"

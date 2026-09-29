@@ -11,6 +11,7 @@ vi.mock('./api', () => ({
   updateProfile: vi.fn(),
   uploadAvatar: vi.fn(),
   fetchAvatar: vi.fn(),
+  changePassword: vi.fn(),
 }))
 vi.mock('../auth/api', () => ({
   login: vi.fn(),

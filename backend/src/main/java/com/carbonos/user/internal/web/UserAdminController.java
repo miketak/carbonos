@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.carbonos.user.internal.PasswordService;
 import com.carbonos.user.internal.UserService;
 import com.carbonos.user.AuthenticatedUser;
 import com.carbonos.user.internal.web.dto.CreateUserRequest;
@@ -31,9 +32,11 @@ import jakarta.validation.Valid;
 class UserAdminController {
 
 	private final UserService userService;
+	private final PasswordService passwords;
 
-	UserAdminController(UserService userService) {
+	UserAdminController(UserService userService, PasswordService passwords) {
 		this.userService = userService;
+		this.passwords = passwords;
 	}
 
 	@GetMapping
@@ -62,6 +65,13 @@ class UserAdminController {
 			@AuthenticationPrincipal AuthenticatedUser actor) {
 		return UserResponse
 			.from(userService.update(id, body.displayName(), body.role(), body.status(), actor.getId()));
+	}
+
+	/** Spec 01.9: emails the account a one-hour reset link; no password passes through the administrator. */
+	@PostMapping("/{id}/password-reset")
+	@ResponseStatus(HttpStatus.ACCEPTED)
+	void sendPasswordReset(@PathVariable UUID id, @AuthenticationPrincipal AuthenticatedUser actor) {
+		passwords.sendResetByAdministrator(id, actor.getId());
 	}
 
 	@DeleteMapping("/{id}")

@@ -42,6 +42,8 @@ A decided request is never reopened; a person denied, or whose link expired, req
 | Request access with an email that has an account or an open request | "An account or pending request already exists for '*email*'." |
 | Set a password from a used link, or one older than 7 days | "This link is invalid or has expired." |
 | Set a password that breaks the rule | "At least 12 characters, with a letter and a digit." |
+| Send a reset link to a Pending activation account | "This account has not set its first password yet; the link in its approval email still works." |
+| Send a reset link to a Disabled account | "Enable the account before sending a password reset link." |
 | Disable or demote your own account | "You cannot demote or disable your own account." |
 | Delete your own account | "You cannot delete your own account." |
 | Disable, demote or delete the last active administrator | "At least one active administrator must remain." |

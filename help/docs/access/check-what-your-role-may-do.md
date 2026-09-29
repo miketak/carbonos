@@ -53,7 +53,7 @@ A platform administrator works in the administration console, reached from the a
 | Act | Platform administrator |
 | --- | --- |
 | Approve or deny access requests | Yes |
-| Add a user with a temporary password; change a platform role; disable, enable or delete an account | Yes, except on their own account: "You cannot demote or disable your own account." and "You cannot delete your own account." |
+| Add a user with a temporary password; send a password reset link; change a platform role; disable, enable or delete an account | Yes, except on their own account: "You cannot demote or disable your own account." and "You cannot delete your own account." |
 | Change the support-access window and who may create organizations, with a reason | Yes |
 | Assume support access to an organization, with a reason, for the window in force | Yes |
 | Create, clone, edit and validate a factor pack edition | Yes |

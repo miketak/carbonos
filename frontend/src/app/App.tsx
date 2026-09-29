@@ -10,7 +10,9 @@ import { AdminLayout } from '../features/admin/AdminLayout'
 import { AdminOrganizationsPage } from '../features/admin/AdminOrganizationsPage'
 import { AdminSettingsPage } from '../features/admin/AdminSettingsPage'
 import { AdminUsersPage } from '../features/admin/AdminUsersPage'
+import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage'
 import { LoginPage } from '../features/auth/LoginPage'
+import { ResetPasswordPage } from '../features/auth/ResetPasswordPage'
 import { RequireAuth } from '../features/auth/RequireAuth'
 import { SplashGate } from '../features/auth/SplashScreen'
 import { HomePage } from '../features/home/HomePage'
@@ -52,6 +54,8 @@ export function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/set-password" element={<SetPasswordPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/help/*"
           element={
