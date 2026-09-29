@@ -19,6 +19,20 @@ const settingNames: Record<string, string> = {
   editionsInPublishedPeriods: 'Editions inside a published period',
 }
 
+/** A saved value as the form shows it, so the history reads like the setting it records. */
+const valueLabels: Record<string, Record<string, string>> = {
+  organizationCreation: { EVERYONE: 'Everyone signed in', ADMINISTRATORS: 'Administrators only' },
+  editionsInPublishedPeriods: {
+    BLOCKED: 'Blocked (default)',
+    ALLOWED: 'Allowed: published runs keep their factors',
+  },
+}
+
+function valueLabel(setting: string, value: string): string {
+  if (setting === 'supportAccessWindowHours') return `${value} ${value === '1' ? 'hour' : 'hours'}`
+  return valueLabels[setting]?.[value] ?? value
+}
+
 function when(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
@@ -210,8 +224,10 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
                   <td className="px-4 py-3 font-medium">
                     {settingNames[change.setting] ?? change.setting}
                   </td>
-                  <td className="px-4 py-3 text-ink-muted">{change.oldValue}</td>
-                  <td className="px-4 py-3">{change.newValue}</td>
+                  <td className="px-4 py-3 text-ink-muted">
+                    {valueLabel(change.setting, change.oldValue)}
+                  </td>
+                  <td className="px-4 py-3">{valueLabel(change.setting, change.newValue)}</td>
                   <td className="px-4 py-3 text-ink-muted">{change.reason}</td>
                   <td className="px-4 py-3 text-ink-muted">{change.actorEmail}</td>
                   <td className="px-4 py-3 text-ink-muted">{when(change.changedAt)}</td>

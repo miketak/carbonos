@@ -112,8 +112,10 @@ test('a change to the edition setting is listed under its own name', async () =>
   const row = (
     await screen.findByRole('cell', { name: 'Editions inside a published period' })
   ).closest('tr') as HTMLElement
-  expect(row).toHaveTextContent('BLOCKED')
-  expect(row).toHaveTextContent('ALLOWED')
+  // the history reads the form's labels, not the stored values
+  expect(row).toHaveTextContent('Blocked (default)')
+  expect(row).toHaveTextContent('Allowed: published runs keep their factors')
+  expect(row).not.toHaveTextContent('BLOCKED')
   expect(row).toHaveTextContent(/owner decision of 2026-09-29/i)
 })
 
@@ -151,8 +153,8 @@ test('every change is listed with who made it and why', async () => {
   renderPage()
 
   const row = (await screen.findByText(/support access window/i)).closest('tr') as HTMLElement
-  expect(row).toHaveTextContent('24')
-  expect(row).toHaveTextContent('2')
+  expect(row).toHaveTextContent('24 hours')
+  expect(row).toHaveTextContent('2 hours')
   expect(row).toHaveTextContent(/tightening after the Q3 review/i)
   expect(row).toHaveTextContent('ama@ecoriv.com')
 })
