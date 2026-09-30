@@ -93,6 +93,30 @@ const shot = async (name, fullPage = false) => {
   await page.waitForTimeout(500)
   await page.screenshot({ path: join(SCR, `${name}.png`), fullPage, timeout: 60000 })
 }
+// what a screen, a dialog, a tab strip and a select say and do
+const mainText = async (max = 8000) => (await page.locator('main').innerText()).slice(0, max)
+const dialogText = async () => await page.getByRole('dialog').last().innerText()
+const tab = async (name) => {
+  await page.getByRole('tab', { name: new RegExp('^' + name) }).click()
+  await page.waitForTimeout(900)
+}
+// a narrowed list loads from the server, so wait for the option rather than a fixed pause
+const pick = async (label, re) => {
+  const sel = page.getByLabel(label, { exact: true })
+  let hit
+  for (let i = 0; i < 60 && !hit; i++) {
+    const opts = await sel
+      .locator('option')
+      .evaluateAll((os) => os.map((o) => ({ value: o.value, text: o.textContent })))
+    hit = opts.find((o) => re.test(o.text))
+    if (!hit) await page.waitForTimeout(500)
+  }
+  if (!hit) throw new Error(`no option ${re} in ${label}`)
+  await sel.selectOption(hit.value)
+  return hit.text
+}
+const until = async (text, timeout = 30000) =>
+  page.locator('main').getByText(text).first().waitFor({ timeout })
 const done = async () => {
   if (errors.length) console.log('PAGE ERRORS:', errors.join(' | '))
   await browser.close()
@@ -121,6 +145,7 @@ await page.waitForTimeout(800)
 log('1 entities', await mainText())
 await page.getByRole('button', { name: 'Add entity' }).click()
 await page.getByLabel('Name').fill('Gye Nyame Camp Services Ltd')
+await page.getByLabel('Economic interest (%)').fill('100')
 await page.getByLabel('Legal ownership (%)').fill('100')
 await page.getByLabel('Jurisdiction (optional)').fill('GH')
 log('1 entity dialog', await dialogText())
@@ -157,7 +182,7 @@ await addFacility({
   location: 'Obuasi, Ghana',
   grid: 'GHA',
   type: 'Mine',
-  entity: 'Gye Nyame Gold Ltd (Subsidiary)',
+  entity: 'Gye Nyame Gold Ltd (Reporting company)',
   shot: 'step-2-add-facility',
 })
 await addFacility({
@@ -433,15 +458,16 @@ await page.waitForTimeout(800)
 log('7 freeze dialog', await dialogText())
 await shot('step-7-freeze-dialog')
 await page.getByRole('dialog').getByRole('button', { name: 'Freeze inventory' }).click()
-await page.waitForTimeout(1500)
+await until(/^FROZEN/)
 log('7 after freeze', await mainText(12000))
 await shot('step-7-ready-to-launch')
 await tab('Runs')
 log('7 runs tab', await mainText())
 await shot('step-7-runs-tab')
 await page.getByRole('button', { name: 'Launch calculation run' }).click()
-await page.waitForLoadState('networkidle')
-await page.waitForTimeout(2500)
+await page.waitForURL(/\/runs\//, { timeout: 60000 })
+await until(/t CO₂e/)
+await page.waitForTimeout(1500)
 const runUrl = page.url()
 log('7 run page', await page.locator('main').innerText())
 await shot('step-7-run-report')
@@ -475,17 +501,18 @@ await page
   .fill('Reconciled against the fuel farm records and the ECG statements')
 await shot('step-8-mark-final')
 await page.getByRole('dialog').getByRole('button', { name: 'Mark as final' }).click()
-await page.waitForTimeout(1500)
+await until(/^FINAL/)
 log('8 after final', await mainText())
 await page.getByRole('button', { name: 'Publish' }).click()
 await page.waitForTimeout(800)
 log('8 publish dialog', await dialogText())
 await page.getByRole('dialog').getByRole('button', { name: 'Publish' }).click()
-await page.waitForTimeout(1500)
+await until(/^PUBLISHED/)
 log('8 after publish', await mainText())
 await shot('step-8-published')
 await page.goto(runUrl, { waitUntil: 'networkidle' })
-await page.waitForTimeout(1500)
+await until('86,412')
+await page.waitForTimeout(800)
 log('8 run after publish', await page.locator('main').innerText())
 await shot('step-8-run-published')
 const downloads = []
