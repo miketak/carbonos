@@ -89,9 +89,23 @@ const log = (label, t) => {
   appendFileSync(LOG, `\n## ${label}\n${text}\n`)
   console.log(label, text.replace(/\s+/g, ' ').slice(0, 120))
 }
+// A whole page is captured as a window as tall as the page, not with Playwright's fullPage: the
+// header and sidebar are sticky and the background is sized to the window, so a fullPage capture
+// draws them at the scroll offset and ends the background at 900px. A page too tall to render as
+// one window in time (the full run report) falls back to fullPage, from the top.
+const TALLEST_WINDOW = 3000
 const shot = async (name, fullPage = false) => {
+  const viewport = page.viewportSize()
+  let tall = false
+  if (fullPage) {
+    await page.evaluate(() => window.scrollTo(0, 0))
+    const height = await page.evaluate(() => document.documentElement.scrollHeight)
+    tall = height > TALLEST_WINDOW
+    if (!tall) await page.setViewportSize({ width: viewport.width, height })
+  }
   await page.waitForTimeout(500)
-  await page.screenshot({ path: join(SCR, `${name}.png`), fullPage, timeout: 60000 })
+  await page.screenshot({ path: join(SCR, `${name}.png`), fullPage: tall, timeout: 60000 })
+  if (fullPage && !tall) await page.setViewportSize(viewport)
 }
 // what a screen, a dialog, a tab strip and a select say and do
 const mainText = async (max = 8000) => (await page.locator('main').innerText()).slice(0, max)
