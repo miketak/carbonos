@@ -16,7 +16,10 @@ test('plays after triggerSplash and unmounts when finished', () => {
     expect(screen.getByRole('progressbar', { name: 'Loading' })).toBeInTheDocument()
     expect(screen.queryByText(/verif|calibrat/i)).not.toBeInTheDocument()
 
-    act(() => vi.advanceTimersByTime(11000))
+    // five seconds in all: still up just before, gone at the mark
+    act(() => vi.advanceTimersByTime(4900))
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(100))
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   } finally {
     vi.useRealTimers()

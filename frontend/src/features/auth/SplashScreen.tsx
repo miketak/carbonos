@@ -3,13 +3,13 @@ import { Wordmark } from '../../components/Wordmark'
 
 const WORDMARK = 'CarbonOS'
 const TAGLINE = 'Measure. Certify. Sustain.'
-const EXIT_MS = 9650
-const DONE_MS = 10000
+const EXIT_MS = 4650
+const DONE_MS = 5000
 const SKIP_EXIT_MS = 300
 
 /* the loader is theater: everything is already loaded underneath, so it claims nothing (ticket T-25) */
 const PROGRESS_START_MS = 2000
-const PROGRESS_MS = 7300
+const PROGRESS_MS = 2300
 
 const EXPO_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
