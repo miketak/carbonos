@@ -22,7 +22,7 @@ and [spec 07.8](../../../specs/07.8-pdf-readability.md).
 
 **Estimated time:** 50 minutes.
 
-**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+**Procedure version:** 3 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** after procedure 5. Procedure 7 raises a notice
 against the organization it leaves published.
@@ -67,7 +67,7 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | On **Runs**, click **Launch calculation run**. | Run 001 appears with its total 120,458.96 kg CO₂e (120.46 t) and "Boundary version 2". | | |
-| 2 | Open it and read the lines. | One line per included record as the table in the preamble lists them, plus two derived well-to-tank lines, each naming the LPG line it derives from. The straddling record's line reads 17 covered days of 32. The forklift line reads "3 tonne = 3,603.6036 litre (density of Diesel (Adansi CoA), 0.8325 kg/litre)". | | |
+| 2 | Open it and read the lines. | One line per included record as the table in the preamble lists them, plus two derived well-to-tank lines, each naming the LPG line it derives from. The straddling record's line reads 17 covered days of 32. The forklift line reads "3 tonne = 3000 kg ÷ 0.8325 kg/litre = 3603.603604 litre (density of Diesel (Adansi CoA))". | | |
 | 3 | Read the exclusions. | ACT-0007 (outside boundary, member from 2025-07-01), ACT-0008 (outside boundary), ACT-0009 (methodology exclusion, not estimated), each with its reason and detail. | | |
 | 4 | Read the by-gas table. | The refrigerant line carries 20 kg under HFCs. Four lines are priced from factors that publish CO₂e only, so the row "CO₂e from factors without a gas split" carries them together: the Ghana grid 56,257.08, the flights 3,900.00 and the two well-to-tank LPG lines 445.22 and 78.84, which is 60,681.15 kg (60.681 t). The footing row "Total (scope 2 location-based), ties to section 04" equals the section 04 total. | | |
 
@@ -158,7 +158,7 @@ at 0 kg CO₂e per kWh. The inventory total uses the location-based figure.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Click **Create correction** and type the reason "typo". | The dialog's button stays disabled while the reason is under 10 characters: a correction needs a reason of at least 10 characters saying what was wrong in the published inventory. | | |
-| 2 | Give "June electricity was 121 MWh, not 120". | A new draft, **FY2025 correction**, opens with the boundary, the declaration, the classifications, the rule, the instrument and the residual mix inherited. Each inherited decision is marked as inherited. | | |
+| 2 | Give "June electricity was 121 MWh, not 120". | A new draft, **FY2025 (correction)**, opens with the boundary, the declaration, the classifications, the rule, the instrument and the residual mix inherited. Each inherited decision is marked as inherited. | | |
 | 3 | Freeze it and launch a run, then open the report. | The grid line reads 121,000 kWh × 0.468809 = 56,725.89 kg. The header reads "Report version 2, supersedes FY2025", and the correction block reads "Against the published run: 0 lines added, 0 removed, 1 changed". | | |
 | 4 | Open FY2025's report again. | Unchanged, and its header says it is superseded by the correction. | | |
 
@@ -191,3 +191,4 @@ uncertainty; a run label.
   refused while a factor the inventory applies is unapproved (PR #119). F1
   step 2 reads the published inventory's banner and the disabled launch
   button's title (PR #119).
+- **Version 3, 2026-09-29.** A1 step 2 and F2 step 2 quote the forklift line and the correction's name as the product prints them. F2 step 2: the inherited instrument keeps its certificate, registry and vintage (the walkthrough fix of 2026-09-29).

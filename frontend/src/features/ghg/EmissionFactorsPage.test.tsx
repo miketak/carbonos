@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { ApiError } from '../../lib/api'
 import { renderWithProviders } from '../../test/utils'
 import { EmissionFactorsPage } from './EmissionFactorsPage'
 import type { EmissionFactor, FactorPack, Organization } from './api'
@@ -56,6 +57,7 @@ const diesel: EmissionFactor = {
   gwpSet: 'AR5',
   blendGwpSource: null,
   blendComposition: null,
+  blendCompositionEntered: null,
   ch4Fossil: true,
   co2eOnly: false,
   source: 'UK Government GHG Conversion Factors for Company Reporting 2025, Fuels, Diesel',
@@ -391,6 +393,71 @@ test('retiring asks for a date before it sends anything', async () => {
     await within(dialog).findByText('Choose the last day the factor applies.'),
   ).toBeInTheDocument()
   expect(updateEmissionFactor).not.toHaveBeenCalled()
+})
+
+test('a blend retires with its composition in the stored form, not the one shown', async () => {
+  const user = userEvent.setup()
+  const blend: EmissionFactor = {
+    ...diesel,
+    id: 'f-blend',
+    name: 'R-410A (composition)',
+    unit: 'kg',
+    blendComposition: '50% HFC-32, 50% HFC-125',
+    blendCompositionEntered: 'HFC-32:0.5,HFC-125:0.5',
+  }
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
+  mockEmissionFactors([blend])
+  vi.mocked(updateEmissionFactor).mockResolvedValue({ ...blend, validTo: '2025-12-31' })
+  renderPage()
+
+  const row = (await screen.findByText('R-410A (composition)')).closest('tr')!
+  const retire = within(row).getByRole('button', { name: /retire factor/i })
+  await waitFor(() => expect(retire).toBeEnabled())
+  await user.click(retire)
+  const dialog = await screen.findByRole('dialog', { name: /retire r-410a/i })
+  await user.click(within(dialog).getByLabelText('Valid to'))
+  await user.paste('2025-12-31')
+  await user.click(within(dialog).getByRole('button', { name: /^retire factor$/i }))
+
+  await waitFor(() =>
+    expect(updateEmissionFactor).toHaveBeenCalledWith(
+      'f-blend',
+      expect.objectContaining({
+        blendComposition: 'HFC-32:0.5,HFC-125:0.5',
+        validTo: '2025-12-31',
+      }),
+    ),
+  )
+})
+
+test('a refusal about a field the retire dialog does not show is still shown', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
+  mockEmissionFactors([diesel])
+  vi.mocked(updateEmissionFactor).mockRejectedValue(
+    new ApiError(422, {
+      detail: "The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.",
+      errors: {
+        blendComposition: "The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.",
+      },
+    }),
+  )
+  renderPage()
+
+  const row = (await screen.findByText('Diesel (100% mineral diesel)')).closest('tr')!
+  const retire = within(row).getByRole('button', { name: /retire factor/i })
+  await waitFor(() => expect(retire).toBeEnabled())
+  await user.click(retire)
+  const dialog = await screen.findByRole('dialog', { name: /retire diesel/i })
+  await user.click(within(dialog).getByLabelText('Valid to'))
+  await user.paste('2025-12-31')
+  await user.click(within(dialog).getByRole('button', { name: /^retire factor$/i }))
+
+  expect(
+    await within(dialog).findByText(
+      "The blend composition must read like 'HFC-32:0.5,HFC-125:0.5'.",
+    ),
+  ).toBeInTheDocument()
 })
 
 test('a hand-entered blend carries its gas mass and composition, and arrives unapproved (spec 02.1, chapter 4)', async () => {

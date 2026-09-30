@@ -2840,6 +2840,9 @@ class GhgApiIntegrationTests {
 			.param("ids", r410a(orgId) + "," + diesel(orgId) + "," + landfill(orgId)))
 			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].kgCo2ePerUnit").value(1923.5))
 			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].blendComposition").value("50% HFC-32, 50% HFC-125"))
+			// the stored form beside it, which an edit sends back (a retirement resends every field)
+			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].blendCompositionEntered")
+				.value("HFC-32:0.5,HFC-125:0.5"))
 			.andExpect(jsonPath("$.items[?(@.id == '" + r410a(orgId) + "')].ch4Fossil").value(true))
 			.andExpect(jsonPath("$.items[?(@.id == '" + diesel(orgId) + "')].ch4Fossil").value(true))
 			.andExpect(jsonPath("$.items[?(@.id == '" + landfill(orgId) + "')].ch4Fossil").value(false));
@@ -4848,6 +4851,13 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"scope3Categories": ["BUSINESS_TRAVEL"], "exclusionsRationale": "Other categories immaterial"}"""))
 			.andExpect(status().isOk());
+		// an instrument with its certificate and one criterion not met, which the copy must carry as it is
+		mvc.perform(put("/api/ghg/inventories/" + source + "/market-factors/" + pit).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"instrumentType": "CERTIFICATE", "kgCo2ePerKwh": 0, "source": "I-REC(E) Ghana 2025",
+					 "criteria": [true, true, true, false, true, true, true, true], "certificateId": "IREC-GH-2025-0091",
+					 "registry": "I-TRACK", "vintage": 2025, "coveredKwh": 10000}"""))
+			.andExpect(status().isOk());
 
 		// a second inventory copies the view: boundary, declaration, every decision, marked inherited
 		var laterRecord = createActivity(orgId, pit, "Haul fleet diesel, July", "800", "litre", "2025-07-31");
@@ -4869,6 +4879,13 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[?(@.activityId == '" + diesel + "')].inherited").value(true))
 			.andExpect(jsonPath("$[?(@.activityId == '" + lpg + "')].exclusionReason").value("METHODOLOGY"))
 			.andExpect(jsonPath("$[?(@.activityId == '" + lpg + "')].estimatedKgCo2e").value(750.0));
+		// the instrument keeps its certificate and its answers, a "not met" included (spec 07.6)
+		mvc.perform(get("/api/ghg/inventories/" + copyId + "/market-factors").with(asMember()))
+			.andExpect(jsonPath("$[0].certificateId").value("IREC-GH-2025-0091"))
+			.andExpect(jsonPath("$[0].registry").value("I-TRACK"))
+			.andExpect(jsonPath("$[0].vintage").value(2025))
+			.andExpect(jsonPath("$[0].notMetCount").value(1))
+			.andExpect(jsonPath("$[0].unansweredCount").value(0));
 		mvc.perform(get("/api/ghg/inventories/" + copyId + "/inheritance").with(asMember()))
 			.andExpect(jsonPath("$.sourceName").value("2025 Corporate"))
 			.andExpect(jsonPath("$.inherited").value(2))
@@ -5032,7 +5049,9 @@ class GhgApiIntegrationTests {
 					{"scope3Categories": ["INVESTMENTS", "BUSINESS_TRAVEL"],
 					 "notQuantified": [{"category": "INVESTMENTS", "reason": "short"}]}"""))
 			.andExpect(status().is(422))
-			.andExpect(jsonPath("$.errors.notQuantified").exists());
+			// the refusal names the category as the report prints it, not as the enum constant
+			.andExpect(jsonPath("$.errors.notQuantified")
+				.value("Say why '15. Investments' is not quantified (at least 10 characters)."));
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/operational-boundary").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"scope3Categories": ["INVESTMENTS", "BUSINESS_TRAVEL"],
@@ -6089,6 +6108,9 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.primaryFactorName").value("Diesel (100% mineral diesel)"))
 			.andExpect(jsonPath("$.upstreamFactorName").value("Well-to-tank diesel"));
+		// the history files the rule as a method act, not as a review of the activity data
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.reason =~ /upstream rule added.*/)].action").value("UPSTREAM_RULE_ADDED"));
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/upstream-rules").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"primaryFactorId": "%s", "upstreamFactorId": "%s", "kind": "WELL_TO_TANK"}"""

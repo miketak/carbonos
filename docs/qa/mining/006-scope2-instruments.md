@@ -57,7 +57,7 @@ in the banner above the tabs, in full under the register on **Records**.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Edit** on the instrument's row (it loads the row into the form), answer criterion 3 **Met**, set the retirement date 2026-01-15 and click **Add instrument** (one instrument per facility: saving replaces it). | The row reads "All eight met" with the certificate, registry, vintage and "retired 2026-01-15"; the gate warning is gone. | | |
+| 1 | Click **Edit** on the instrument's row (it loads the row into the form), answer criterion 3 **Met**, set the retirement date 2026-01-15 and click **Save instrument** (one instrument per facility: saving replaces it). | The row reads "All eight met" with the certificate, registry, vintage and "retired 2026-01-15"; the gate warning is gone. | | |
 
 ### A4. Coverage beyond the electricity warns
 

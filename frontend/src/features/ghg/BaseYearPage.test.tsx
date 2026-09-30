@@ -4,7 +4,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { ApiError } from '../../lib/api'
 import { BaseYearPage } from './BaseYearPage'
-import type { BaseYear, Inventory } from './api'
+import type { BaseYear, Inventory, Run } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
@@ -155,6 +155,46 @@ test('designating a base year records the inventory, threshold, reason and conve
   expect(await screen.findByText(/base year 2024 designated/i)).toBeInTheDocument()
 })
 
+test('the inventory the select shows is the one sent, even when the list arrives after the form', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getBaseYear).mockResolvedValue(null)
+  // the list resolves after the form first renders, as it can on a slow load
+  let resolveInventories: (value: Inventory[]) => void = () => {}
+  vi.mocked(listInventories).mockReturnValue(
+    new Promise<Inventory[]>((resolve) => {
+      resolveInventories = resolve
+    }),
+  )
+  vi.mocked(setBaseYear).mockResolvedValue({ ...baseYear, recalculations: [] })
+  renderPage()
+
+  await screen.findByRole('heading', { name: /base year and recalculation policy/i })
+  resolveInventories([inventory])
+  await screen.findByRole('option', { name: /2024 Base Year/ })
+  await user.click(screen.getByLabelText('Why this year'))
+  await user.paste('First year with metered data for every site')
+  await user.click(screen.getByRole('button', { name: /designate base year/i }))
+
+  await waitFor(() =>
+    expect(setBaseYear).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({ inventoryId: 'inv-2024' }),
+    ),
+  )
+})
+
+test('a base year with no reason is refused on the spot, in words', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getBaseYear).mockResolvedValue(null)
+  renderPage()
+
+  await screen.findByRole('option', { name: /2024 Base Year/ })
+  await user.click(screen.getByRole('button', { name: /designate base year/i }))
+
+  expect(await screen.findByText('Say why this year is the base year.')).toBeInTheDocument()
+  expect(setBaseYear).not.toHaveBeenCalled()
+})
+
 test('a methodology change is raised by hand with its weight', async () => {
   const user = userEvent.setup()
   vi.mocked(getBaseYear).mockResolvedValue(baseYear)
@@ -266,6 +306,60 @@ test('a verifier with no base year yet sees no designation form', async () => {
   expect(await screen.findByText(/no base year has been designated yet/i)).toBeInTheDocument()
   expect(screen.queryByLabelText('Base-year inventory')).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /designate base year/i })).not.toBeInTheDocument()
+})
+
+test('a voided run is not offered as the recalculated base (spec 05.2)', async () => {
+  const user = userEvent.setup()
+  const run: Run = {
+    id: 'run-2',
+    inventoryId: 'inv-2024',
+    runNo: 2,
+    label: 'Run 002',
+    periodStart: '2024-01-01',
+    periodEnd: '2024-12-31',
+    consolidationApproach: 'OPERATIONAL_CONTROL',
+    gwpSet: 'AR5',
+    activityCount: 2,
+    totalKgCo2e: 3012.8,
+    scope1KgCo2e: 2660,
+    scope2KgCo2e: 352.8,
+    scope3KgCo2e: 0,
+    scope2MarketBasedKgCo2e: 352.8,
+    scope2MarketBasis: 'GRID_AVERAGE',
+    byGas: {
+      co2Kg: 3012.8,
+      ch4Kg: 0,
+      ch4FossilKg: 0,
+      n2oKg: 0,
+      hfcsKg: 0,
+      pfcsKg: 0,
+      hfcsKgCo2e: 0,
+      pfcsKgCo2e: 0,
+      sf6Kg: 0,
+      nf3Kg: 0,
+      co2eUnsplitKg: 0,
+    },
+    biogenicCo2Kg: 0,
+    isFinal: false,
+    voided: false,
+    voidedAt: null,
+    voidedBy: null,
+    voidReason: null,
+    boundaryVersionId: null,
+    boundaryVersionNo: null,
+    createdBy: null,
+    createdAt: '2026-08-29T00:00:00Z',
+  }
+  const voided: Run = { ...run, id: 'run-1', runNo: 1, label: 'Run 001', voided: true }
+  vi.mocked(getBaseYear).mockResolvedValue(baseYear)
+  vi.mocked(listRuns).mockResolvedValue([run, voided])
+  renderPage()
+
+  await screen.findByText(/First year with metered data/)
+  await user.click(screen.getByRole('button', { name: /record recalculated base/i }))
+
+  expect(await screen.findByRole('option', { name: /Run 002/ })).toBeInTheDocument()
+  expect(screen.queryByRole('option', { name: /Run 001/ })).not.toBeInTheDocument()
 })
 
 test('a preparer has the policy form and the candidate outcome controls enabled', async () => {

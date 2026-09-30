@@ -289,3 +289,10 @@ test('naming a stream on a saved fact asks for the reason instead of a dead Save
     expect(onSaved).toHaveBeenCalledWith('Record corrected. Past runs are unaffected.'),
   )
 })
+
+test('a document reference with no file reads as a reference, not as nothing (spec 04.6)', async () => {
+  renderDrawer('act-3', [{ ...fact, evidenceRef: 'WB-2025-11' }])
+  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+
+  expect(within(drawer).getByText('Reference WB-2025-11, nothing attached')).toBeInTheDocument()
+})

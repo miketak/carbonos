@@ -289,7 +289,7 @@ estimate is of the right order.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Declare purchased goods and services too, and for investments enter "the associate reports its own inventory; equity share to be quantified from its 2025 report". Save. | Both warnings are gone. | | |
-| 2 | Enter a reason shorter than 10 characters in **15. Investments: why not quantified this year**. | Refused with "Say why INVESTMENTS is not quantified (at least 10 characters).". | | |
+| 2 | Enter a reason shorter than 10 characters in **15. Investments: why not quantified this year**. | Refused with "Say why '15. Investments' is not quantified (at least 10 characters).". | | |
 
 ### E3. An upstream rule quantifies category 3 (spec 04.7)
 

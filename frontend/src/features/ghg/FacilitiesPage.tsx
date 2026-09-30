@@ -47,6 +47,12 @@ export function FacilitiesPage() {
 
   const facilities = facilitiesQuery.data
   const entityCount = entitiesQuery.data?.length ?? 0
+  // The reporting company is stored as a subsidiary; the entity carries the flag (spec 03.1).
+  const reportingCompanyIds = new Set(
+    (entitiesQuery.data ?? [])
+      .filter((entity) => entity.reportingCompany)
+      .map((entity) => entity.id),
+  )
   const myRole = organizationQuery.data?.myRole ?? null
 
   return (
@@ -77,7 +83,7 @@ export function FacilitiesPage() {
             value={`${new Set(facilities.map((facility) => facility.entityId)).size} of ${entityCount}`}
           />
           <StatChip
-            label="Under subsidiaries"
+            label="Under the company or a subsidiary"
             value={`${facilities.filter((facility) => facility.relationshipType === 'SUBSIDIARY').length} of ${facilities.length}`}
           />
         </div>
@@ -132,7 +138,9 @@ export function FacilitiesPage() {
                   <td className="px-4 py-3">
                     {facility.entityName}
                     <span className="block text-xs text-ink-muted">
-                      {relationshipShortLabels[facility.relationshipType]}
+                      {reportingCompanyIds.has(facility.entityId)
+                        ? 'Reporting company'
+                        : relationshipShortLabels[facility.relationshipType]}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">

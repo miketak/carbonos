@@ -428,7 +428,10 @@ export function MarketFactorsCard({
           )}
           <div className="flex justify-end md:col-span-4">
             <Button type="submit" className="px-4 py-1.5 text-sm" busy={set.isPending}>
-              Add instrument
+              {/* one instrument per facility: saving over an existing one is an edit */}
+              {factorsQuery.data?.some((entry) => entry.facilityId === chosenFacility)
+                ? 'Save instrument'
+                : 'Add instrument'}
             </Button>
           </div>
         </form>

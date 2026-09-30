@@ -65,6 +65,7 @@ export function AssignmentDrawer({
   units,
   densities,
   editable,
+  locked = false,
   period,
   onNavigate,
   onClose,
@@ -81,6 +82,8 @@ export function AssignmentDrawer({
   densities: Density[]
   /** The inventory takes writes and this reader may make them. */
   editable: boolean
+  /** The inventory is past draft, so nobody may write, whatever their role. */
+  locked?: boolean
   /** The inventory's reporting period: the picker offers the versions live in it (spec 02.6). */
   period?: { start: string; end: string }
   onNavigate: (id: string) => void
@@ -115,6 +118,7 @@ export function AssignmentDrawer({
       units={units}
       densities={densities}
       editable={editable}
+      locked={locked}
       period={period}
       onNavigate={onNavigate}
       onClose={onClose}
@@ -135,6 +139,7 @@ function AssignmentPanel({
   units,
   densities,
   editable,
+  locked,
   period,
   onNavigate,
   onClose,
@@ -151,6 +156,7 @@ function AssignmentPanel({
   units: Unit[]
   densities: Density[]
   editable: boolean
+  locked: boolean
   period?: { start: string; end: string }
   onNavigate: (id: string) => void
   onClose: () => void
@@ -247,7 +253,9 @@ function AssignmentPanel({
               <ExcludePanel assignment={assignment} units={units} onExclude={onExclude} />
             ) : (
               <p className="text-sm text-ink-muted">
-                Leaving a record out of the inventory is a preparer's decision. You are reading.
+                {locked
+                  ? 'The inventory is not a draft, so the view is read-only. Reopen it as a draft to leave a record out.'
+                  : "Leaving a record out of the inventory is a preparer's decision. You are reading."}
               </p>
             ))}
         </>

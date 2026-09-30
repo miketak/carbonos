@@ -16,7 +16,7 @@ never applied is deleted).
 
 **Estimated time:** 30 minutes.
 
-**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+**Procedure version:** 3 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** last.
 
@@ -66,7 +66,7 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On the flagged candidate click **Record recalculated base** and read the list under **Recalculated base run**. | Only FY2025's runs are offered, each with its total. | | |
+| 1 | On the flagged candidate click **Record recalculated base** and read the list under **Recalculated base run**. | Only FY2025's runs are offered, each with its total, and not Run 001: a voided run must not be relied on, so it cannot be the recalculated base. | | |
 | 2 | Pick "Run 002 · 120.46 t CO₂e" and confirm. | The card reads RECALCULATED with Ama's email and "recalculated base: Run 002". FY2026's gate passes. | | |
 
 ### D2. Manual candidates need a share or a comparison run
@@ -122,3 +122,4 @@ pack); a second structural change accumulated with the first.
 
 - **Version 2, 2026-09-29.** F1 step 3 expects the structure rows the
   organization history now records beside the member rows (PR #121).
+- **Version 3, 2026-09-29.** D1 step 1: a voided run is no longer offered as the recalculated base (the walkthrough fix of 2026-09-29). B1 step 1: the form sends the inventory the select shows, and an empty reason is refused in words.

@@ -272,16 +272,17 @@ public class InventoryService {
 		requireEditable(inventory);
 		for (var category : scope3Categories) {
 			if (category.scope() != Scope.SCOPE_3) {
-				throw new GhgRuleViolationException(category + " is not a scope 3 category.");
+				throw new GhgRuleViolationException(categoryName(category) + " is not a scope 3 category.");
 			}
 		}
 		for (var entry : notQuantified) {
 			if (!scope3Categories.contains(entry.category())) {
-				throw new GhgRuleViolationException(entry.category() + " is not declared as covered; only a declared "
+				throw new GhgRuleViolationException(
+						"'" + categoryName(entry.category()) + "' is not declared as covered; only a declared "
 						+ "category can be marked as not quantified.");
 			}
 			if (trimToNull(entry.reason()) == null || entry.reason().trim().length() < 10) {
-				throw new GhgFieldException("notQuantified", "Say why " + entry.category() + " is not quantified "
+				throw new GhgFieldException("notQuantified", "Say why '" + categoryName(entry.category()) + "' is not quantified "
 						+ "(at least 10 characters).");
 			}
 		}
@@ -1014,9 +1015,11 @@ public class InventoryService {
 			}
 		}
 		for (var factor : marketFactors.findAllByInventoryId(sourceId)) {
+			// the certificate, registry, vintage and each of the eight answers travel with the instrument
+			// (spec 07.6); the legacy met-or-not flag would lose them
 			marketFactors.save(new MarketFactor(target, factor.getFacility(), factor.getInstrumentType(),
-					factor.getKgCo2ePerKwh(), factor.getSource(), factor.isMeetsQualityCriteria(),
-					factor.getQualityNotes(), factor.coverage()));
+					factor.getKgCo2ePerKwh(), factor.getSource(), factor.getQualityNotes(), factor.coverage(),
+					factor.quality()));
 		}
 		target.setResidualMix(source.getResidualMixAvailable(), source.getResidualMixKgCo2ePerKwh());
 		var dropped = new ArrayList<DroppedExclusion>();
@@ -1309,7 +1312,7 @@ public class InventoryService {
 		}
 		var rule = upstreamRules
 			.save(new UpstreamRule(inventory, primary, upstream, kind, access.currentUserEmail()));
-		record(inventory, null, GhgAuditEvent.Action.REVIEWED,
+		record(inventory, null, GhgAuditEvent.Action.UPSTREAM_RULE_ADDED,
 				"upstream rule added: " + rule.describe() + " (" + kind.phrase() + ")");
 		return rule;
 	}
@@ -1323,7 +1326,7 @@ public class InventoryService {
 			throw GhgNotFoundException.upstreamRule(ruleId);
 		}
 		upstreamRules.delete(rule);
-		record(inventory, null, GhgAuditEvent.Action.REVIEWED, "upstream rule removed: " + rule.describe());
+		record(inventory, null, GhgAuditEvent.Action.UPSTREAM_RULE_REMOVED, "upstream rule removed: " + rule.describe());
 	}
 
 	private EmissionFactor requireFactor(UUID factorId, UUID organizationId) {

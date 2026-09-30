@@ -216,15 +216,22 @@ function PolicyForm({
   const [convention, setConvention] = useState<StructuralChangeConvention>(
     baseYear?.structuralChangeConvention ?? 'TRANSACTION_DATE',
   )
+  const [reasonMissing, setReasonMissing] = useState(false)
+  // the inventories may arrive after the first render: the select shows the first one, so send it
+  const chosenInventoryId = inventoryId || inventories[0]?.id || ''
 
   const validation = fieldErrors(set.error)
   const generalError = set.isError && !validation ? refusalMessage(set.error, myRole) : undefined
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    if (reason.trim() === '') {
+      setReasonMissing(true)
+      return
+    }
     set.mutate(
       {
-        inventoryId,
+        inventoryId: chosenInventoryId,
         thresholdPercent: Number(threshold),
         reason,
         structuralChangeConvention: convention,
@@ -249,7 +256,7 @@ function PolicyForm({
     <form onSubmit={submit} className="mt-4 flex flex-col gap-4" noValidate>
       <SelectField
         label="Base-year inventory"
-        value={inventoryId}
+        value={chosenInventoryId}
         onChange={(event) => setInventoryId(event.target.value)}
         error={validation?.inventoryId}
         hint="The inventory whose period is the base year; its final run is the base-year figure."
@@ -276,8 +283,11 @@ function PolicyForm({
       <InputField
         label="Why this year"
         value={reason}
-        onChange={(event) => setReason(event.target.value)}
-        error={validation?.reason}
+        onChange={(event) => {
+          setReasonMissing(false)
+          setReason(event.target.value)
+        }}
+        error={reasonMissing ? 'Say why this year is the base year.' : validation?.reason}
         hint="The Standard asks for a year with verifiable data and the reason for choosing it."
         placeholder="First year with metered data for every site"
         maxLength={500}
@@ -650,7 +660,8 @@ function RecalculateModal({
 }) {
   const decide = useDecideRecalculation(organizationId)
   const runsQuery = useRunsQuery(baseYear.inventoryId)
-  const runs = runsQuery.data ?? []
+  // a voided run must not be relied on, so it cannot be the recalculated base (spec 05.2)
+  const runs = (runsQuery.data ?? []).filter((run) => !run.voided)
   const [runId, setRunId] = useState('')
   const [note, setNote] = useState('')
   const error = decide.isError ? refusalMessage(decide.error, myRole) : undefined

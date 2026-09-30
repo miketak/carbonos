@@ -415,6 +415,7 @@ const dieselFactor: EmissionFactor = {
   gwpSet: 'AR5',
   blendGwpSource: null,
   blendComposition: null,
+  blendCompositionEntered: null,
   ch4Fossil: true,
   co2eOnly: false,
   source: 'DEFRA 2025',
@@ -972,6 +973,24 @@ test('an entity at 0% under the approach cannot be ticked in and says why (spec 
   expect(screen.getByLabelText('Takoradi Port Co in boundary')).toBeDisabled()
 })
 
+test('once the 0% entity has a reason, its row stops asking for one (spec 07.2)', async () => {
+  vi.mocked(getBoundary).mockResolvedValue([
+    {
+      ...boundary[1],
+      entityName: 'Takoradi Port Co',
+      reportingCompany: false,
+      shareUnderApproach: 0,
+      exclusion: { reason: 'METHODOLOGY', detail: 'Associate: no operational control' },
+    },
+  ])
+  renderPage('boundary')
+
+  expect(
+    await screen.findByText(/The report discloses it with the reason below/),
+  ).toBeInTheDocument()
+  expect(screen.queryByText(/Record why it is left out/)).not.toBeInTheDocument()
+})
+
 test('a correction asks for its reason and the page names what an inventory inherited (spec 05.3)', async () => {
   const user = userEvent.setup()
   vi.mocked(getInventory).mockResolvedValue({
@@ -1332,6 +1351,12 @@ test('a page of records is excluded under one reason (spec 05.6)', async () => {
   await user.click(await screen.findByLabelText('Select all on this page'))
   await user.click(screen.getByRole('button', { name: 'Exclude 2 selected' }))
   const dialog = screen.getByRole('dialog', { name: /Exclude 2 records\?/ })
+  // a gas outside the scopes is named and weighed per record, so the bulk form does not offer it
+  expect(
+    within(within(dialog).getByLabelText('Reason')).queryByRole('option', {
+      name: 'Outside the scopes: Montreal Protocol gas',
+    }),
+  ).not.toBeInTheDocument()
   await user.selectOptions(within(dialog).getByLabelText('Reason'), 'NOT_APPLICABLE')
   await user.type(
     within(dialog).getByLabelText('Justification'),

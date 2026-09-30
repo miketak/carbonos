@@ -308,6 +308,8 @@ export interface EmissionFactor {
   blendGwpSource: string | null
   /** "50% HFC-32, 50% HFC-125": a blend with a composition converts with the inventory's GWP set (spec 07.2). */
   blendComposition: string | null
+  /** The same composition as stored ("HFC-32:0.5,HFC-125:0.5"): what the update endpoint takes back. */
+  blendCompositionEntered: string | null
   /** Fossil-origin methane (fuel combustion) or biogenic (landfill, biomass); AR6 rates them differently. */
   ch4Fossil: boolean
   /** The source publishes CO2e only, so the by-gas table cannot split it (spec 02.1). */
@@ -573,7 +575,8 @@ export interface FactorPackDiff {
   thresholdPercent: number | null
   affectedPercent: number | null
   /** The warning the decision screen shows before accepting, in the words spec 02.7 fixes. */
-  recalculationWarning: string
+  /** Null when the organization has no base year: no candidate can be raised. */
+  recalculationWarning: string | null
 }
 
 /** A shipped, importable factor pack (spec 02.1). */
@@ -1311,6 +1314,8 @@ export interface AuditEvent {
     | 'FACILITY_REMOVED'
     | 'STREAM_ADDED'
     | 'STREAM_REMOVED'
+    | 'UPSTREAM_RULE_ADDED'
+    | 'UPSTREAM_RULE_REMOVED'
   runId: string | null
   runNo: number | null
   actor: string

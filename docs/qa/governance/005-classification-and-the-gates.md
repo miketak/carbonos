@@ -24,7 +24,7 @@ way. Then the freeze cuts a version.
 
 **Estimated time:** 45 minutes.
 
-**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+**Procedure version:** 3 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** after procedure 4.
 
@@ -155,7 +155,7 @@ way. Then the freeze cuts a version.
 | --- | --- | --- | --- | --- |
 | 1 | Under the instruments card, add for Kumasi Plant: instrument certificate, 0 kg CO₂e per kWh, source "I-REC(E) Ghana 2025", covered quantity 150 MWh, reference "IREC-GH-2025-0091", registry "I-TRACK", vintage 2025, and answer criteria 1, 2, 4, 5, 6, 7 and 8 **Met**, leaving 3 at **Not yet answered**. | "Instrument recorded for Kumasi Plant." The row reads "Not applied: 1 unanswered". | | |
 | 2 | Read the **Emission factors** gate. | Two warnings: "The instrument for Kumasi Plant does not meet the Scope 2 Quality Criteria (1 of the eight criteria not yet answered): the market-based figure falls back to location-based." and "The instrument for Kumasi Plant covers 150,000 kWh but the facility's scope 2 electricity in its period is 120,000 kWh: the excess covers nothing.". | | |
-| 3 | Edit the instrument and answer criterion 3 **Met** (the form's button still reads **Add instrument**; it saves the edit). | The row no longer reads "Not applied". The first warning goes; the coverage warning stays. | | |
+| 3 | Click **Edit** on the instrument's row, answer criterion 3 **Met** and click **Save instrument**. | The row no longer reads "Not applied". The first warning goes; the coverage warning stays. | | |
 | 4 | Edit the covered quantity to 120. | The warning goes. | | |
 
 ### E3. The residual mix is stated either way
@@ -172,7 +172,7 @@ way. Then the freeze cuts a version.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Read the pre-flight. | No error remains. The warnings are the ones this procedure left: the straddling record, and the partial-period membership. | | |
+| 1 | Read the pre-flight. | No error remains. The warnings are the ones this procedure left: the straddling record and the partial-period membership, and the two factors that publish CO₂e only (the Ghana grid and the supplier's flights), whose emissions the by-gas table carries on one row. | | |
 | 2 | Click **Freeze inventory** and confirm. | The header reads FROZEN and "Boundary version 1". The bar says the boundary and the view are read-only and runs are allowed. | | |
 | 3 | Try to untick a facility on **Boundary**, and to change ACT-0001's factor. | Neither can be done: the boundary checkboxes are disabled, and the drawer shows the classification without its factor, scope and category controls. The lifecycle bar says the boundary and the view are read-only; reopen the inventory as a draft to change either. | | |
 | 4 | Click **Reopen as draft**, type "short" and read the button. | Disabled until the reason has 10 characters. | | |
@@ -199,3 +199,4 @@ before the three exclusion states existed, which the UI cannot produce.
   declaration warnings with the categories' report labels ("scope 3 '1.
   Purchased goods and services'", "scope 3 '6. Business travel'"; PR
   #119).
+- **Version 3, 2026-09-29.** E2 step 3 clicks **Save instrument**, the label the form now gives an edit. F1 step 1 lists the CO₂e-only warnings. The bulk exclusion dialog of C3 no longer offers the Montreal Protocol reason, which needs a gas and a mass per record (the walkthrough fixes of 2026-09-29).

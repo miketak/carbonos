@@ -22,7 +22,7 @@ closes the notice it raised without touching a factor.
 
 **Estimated time:** 40 minutes.
 
-**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+**Procedure version:** 3 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** after procedure 6. The edition identifiers it
 publishes are citations and can never be reused: a second pass on the same
@@ -63,7 +63,7 @@ database needs new ones.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Still as Admin A, click **Publish** on `ghana-2027-gov`. | The dialog "Publish ghana-2027-gov" lists the conditions; the rules line passes. **Publish** is disabled: no source document yet. | | |
-| 2 | Attach `source-document.txt` and type "Gas supplier delivery note, March 2025 (test source)" as the source document as cited, keeping applies from 2026-01-01. | The dialog shows the document's SHA-256 "computed over the bytes stored". The last condition reads not met, "The approver must not be the curator. You built this draft, so another administrator checks it against the source document and publishes it.", and **Publish** stays disabled. The edition is still a draft. | | |
+| 2 | Attach `source-document.txt`, keeping applies from 2026-01-01. The citation is typed by whoever publishes, in case B2. | The dialog shows the document's SHA-256 "computed over the bytes stored". The last condition reads not met, "The approver must not be the curator. You built this draft, so another administrator checks it against the source document and publishes it.", and **Publish** stays disabled. The edition is still a draft. | | |
 
 ### B2. The second administrator reads the blast radius and publishes
 
@@ -71,7 +71,7 @@ database needs new ones.
 | --- | --- | --- | --- | --- |
 | 1 | As Admin B in the private window, open `ghana-2027-gov` and click **Blast radius**. | A drawer says publishing changes no organization's data. One row changed, `GHANA:grid:GHA:2024`, from 0.468809 to 0.44, -6.15%, held by Adansi Foods Ltd. Adansi's card names the estimated movement, about -3,486 kg CO₂e from its last completed run (the correction's Run 001, 121,000 kWh), and lists the lineage inside a locked period (FY2025). | | |
 | 2 | Clear the applies-from date. | The date condition reads not met, "Give the date the edition applies from. It is the vintage boundary an adoption is run from.", and **Publish** is disabled. | | |
-| 3 | Set 2026-01-01 and publish. | "ghana-2027-gov was published.". PUBLISHED; `ghana` reads SUPERSEDED, because the new edition applies after it. The **Metadata** tab names Admin A as curator and Admin B as approver; it prints the provenance review and the evidence checksum, not the publication moment, which the edition's events carry. | | |
+| 3 | Set 2026-01-01, type "Gas supplier delivery note, March 2025 (test source)" as the source document as cited, and publish. | "ghana-2027-gov was published.". PUBLISHED; `ghana` reads SUPERSEDED, because the new edition applies after it. The **Metadata** tab names Admin A as curator and Admin B as approver; it prints the provenance review and the evidence checksum, not the publication moment, which the edition's events carry. | | |
 | 4 | As Ama, read `GHANA:grid:GHA:2024` on **Emission factors** and the total of Run 005. | 0.468809 and 120,373.32 kg. Publishing moved nothing. | | |
 
 ## C. The organization decides
@@ -83,7 +83,7 @@ database needs new ones.
 | 1 | As Ama, look at the left navigation. | **Updates** carries the badge 1, titled "1 factor pack update waiting". | | |
 | 2 | Open **Updates**. | One row: `ghana-2027-gov` in place of `ghana`, raised now, 1 row affected, 1 moving more than five percent, the estimated movement, status "Waiting on you". | | |
 | 3 | Click **Review**. | The drawer names the edition, the predecessor and the date it applies from. **What moves (7)** lists every lineage the edition carries: six at 0% and `GHANA:grid:GHA:2024` held 0.468809, edition 0.44, -6.15%, with its estimated movement. The movement is estimated over the open FY2025 equity view. **Earlier periods** lists the reported 2025 periods: the coverage warnings that follow are what a vintage means. The last line prints the diff hash. | | |
-| 4 | Read the note above the buttons. | "The organization has no base year, so no recalculation candidate can be raised.". Once a base year is designated (procedure 8), the note says instead that accepting raises a recalculation candidate and, above the significance threshold, holds final designation and publication until it is completed or declined. | | |
+| 4 | Read the drawer above the buttons. | "The organization has no base year, so no recalculation candidate can be raised.", and no warning above the buttons contradicts it. Once a base year is designated (procedure 8), the note says instead that accepting raises a recalculation candidate and, above the significance threshold, holds final designation and publication until it is completed or declined. | | |
 
 ### C2. A preparer reads and cannot decide
 
@@ -176,3 +176,4 @@ procedure 10 case E5, covers the setting).
   procedure 10 case E5, not here: the FY2025 correction is frozen over the
   same period, and a frozen period blocks under either value. C3 step 4
   reads "Support access" at the foot of the sidebar (PR #119).
+- **Version 3, 2026-09-29.** B1 and B2: the source citation is typed by the publisher, since the curator's typing is not kept once the dialog closes. C1 step 4: with no base year the drawer no longer also warns that accepting raises a candidate (the walkthrough fix of 2026-09-29).

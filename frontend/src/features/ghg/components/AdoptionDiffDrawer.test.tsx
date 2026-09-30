@@ -263,3 +263,16 @@ test('a GWP basis change is shown as a banner, because chapter 1 allows one basi
     await screen.findByText(/moves the Global Warming Potential basis from AR5 to AR6/),
   ).toBeInTheDocument()
 })
+
+test('with no base year the screen says no candidate can be raised, and nothing contradicts it', async () => {
+  vi.mocked(getFactorPackDiff).mockResolvedValue({
+    ...diff,
+    hasBaseYear: false,
+    affectedPercent: null,
+    recalculationWarning: null,
+  })
+  renderDrawer()
+
+  expect(await screen.findByText(/no recalculation candidate can be raised/)).toBeInTheDocument()
+  expect(screen.queryByRole('note')).not.toBeInTheDocument()
+})

@@ -20,7 +20,7 @@ case D3, where it meets a decision it cannot make.
 
 **Estimated time:** 45 minutes.
 
-**Procedure version:** 2 (2026-09-29). The change notes are at the foot.
+**Procedure version:** 3 (2026-09-29). The change notes are at the foot.
 
 **Run this procedure** first. Every later procedure signs in with the
 accounts it creates.
@@ -154,7 +154,7 @@ it, which blocks under either value.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama, open the account menu. | It lists the Ama alias, **Edit profile** and **Sign out**. There is no **Administration** entry. | | |
+| 1 | As Ama, open the account menu. | It lists the Ama alias, **Edit profile**, **Help** and **Sign out**. There is no **Administration** entry. | | |
 | 2 | Choose **Edit profile**, change the display name to "Ama Owusu (Owner)" and save. | The name at the top right changes. Change it back to "Ama Owusu". | | |
 | 3 | As Admin A, open the menu from the **GHG accounting** page. | It also lists **Administration**. Inside `/admin` the entry is absent: the sidebar is the navigation there. | | |
 | 4 | As Ama, open `/admin/users` in the address bar. | Refused: a member does not reach the platform area. | | |
@@ -214,3 +214,4 @@ limit on password changes.
   in"; PR #124). New section G: a password changed on the profile, reset
   by email, and reset by a link an administrator sends (spec 01.9, PR
   #123). Every account keeps the password the README lists.
+- **Version 3, 2026-09-29.** F1 step 1 lists **Help** in the account menu (help centre, PR #117). Found by the governance walkthrough of 2026-09-29.

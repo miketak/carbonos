@@ -890,6 +890,21 @@ class FactorPackAdoptionApiIntegrationTests {
 	}
 
 	@Test
+	void theRecalculationWarningIsGivenOnlyWhereABaseYearCouldBeRecalculated() throws Exception {
+		var holder = holder();
+		var noticeId = noticeId(holder.orgId());
+		mvc.perform(get("/api/ghg/factor-pack-notices/" + noticeId + "/diff").with(asOwner()))
+			.andExpect(jsonPath("$.hasBaseYear").value(true))
+			.andExpect(jsonPath("$.recalculationWarning")
+				.value(org.hamcrest.Matchers.startsWith("Accepting raises a base-year recalculation candidate.")));
+		// with no base year the screen says no candidate can be raised; the warning would contradict it
+		baseYears.deleteAll();
+		mvc.perform(get("/api/ghg/factor-pack-notices/" + noticeId + "/diff").with(asOwner()))
+			.andExpect(jsonPath("$.hasBaseYear").value(false))
+			.andExpect(jsonPath("$.recalculationWarning").doesNotExist());
+	}
+
+	@Test
 	void aPreparerCannotDecideAndAVerifierCannotEither() throws Exception {
 		var holder = holder();
 		var preparer = userService.create("kwame@asantegold.test", "Kwame Preparer",

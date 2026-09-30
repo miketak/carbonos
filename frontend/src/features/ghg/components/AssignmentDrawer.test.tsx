@@ -156,6 +156,7 @@ const dieselFactor: EmissionFactor = {
   gwpSet: 'AR5',
   blendGwpSource: null,
   blendComposition: null,
+  blendCompositionEntered: null,
   ch4Fossil: true,
   co2eOnly: false,
   source: 'DEFRA 2025',
@@ -216,12 +217,12 @@ beforeEach(() => {
  * addressed by `?record=`, so the suite opens straight onto it, exactly as a
  * pasted link does.
  */
-function renderDrawer(recordId = 'as-1', myRole: 'OWNER' | 'VERIFIER' = 'OWNER') {
+function renderDrawer(recordId = 'as-1', myRole: 'OWNER' | 'VERIFIER' = 'OWNER', editable = true) {
   return renderWithProviders(
     <AssignmentsSection
       organizationId="org-1"
       inventoryId="inv-1"
-      editable
+      editable={editable}
       myRole={myRole}
       period={{ start: '2025-01-01', end: '2025-12-31' }}
     />,
@@ -743,6 +744,17 @@ test('a verifier reads the classification and is not offered the exclusion form 
   await user.click(within(drawer).getByRole('tab', { name: 'Exclude' }))
   expect(within(drawer).getByText(/You are reading\./)).toBeInTheDocument()
   expect(within(drawer).queryByRole('form')).not.toBeInTheDocument()
+})
+
+test('an owner on a frozen inventory is told the freeze, not the role, keeps the view read-only', async () => {
+  const user = userEvent.setup()
+  vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
+  renderDrawer('as-1', 'OWNER', false)
+
+  const drawer = await screen.findByRole('dialog', { name: 'Diesel consumption' })
+  await user.click(within(drawer).getByRole('tab', { name: 'Exclude' }))
+  expect(within(drawer).getByText(/The inventory is not a draft/)).toBeInTheDocument()
+  expect(within(drawer).queryByText(/preparer's decision/)).not.toBeInTheDocument()
 })
 
 test('an excluded record states its decision and offers the way back in (DR-03)', async () => {

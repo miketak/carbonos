@@ -3,6 +3,7 @@ import { Button } from '../../../components/Button'
 import { InputField, SelectField, TextAreaField } from '../../../components/Field'
 import { Modal } from '../../../components/Modal'
 import { fieldErrors, refusalMessage } from '../../../lib/api'
+import { categoryLabel } from '../../ghg/format'
 import { useCreateFactorPackRow, useUpdateFactorPackRow } from '../useFactorPacks'
 import type { FactorPackRow, ReportingBasis, RowInput, Scope } from '../api'
 
@@ -209,7 +210,7 @@ export function PackRowFormModal({
           >
             {categories[scope].map((option) => (
               <option key={option} value={option}>
-                {option}
+                {categoryLabel(option)}
               </option>
             ))}
           </SelectField>

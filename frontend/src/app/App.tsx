@@ -34,6 +34,7 @@ import { RunDetailPage } from '../features/ghg/RunDetailPage'
 import { LandingRedirect } from '../features/home/LandingRedirect'
 import { HelpFrameSkeleton } from '../components/HelpFrameSkeleton'
 import { LoadingCard } from '../components/LoadingCard'
+import { NotFoundPage } from '../components/NotFoundPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 
 // the help centre is its own lazy chunk: public, and never in the way of the app (spec 09)
@@ -101,6 +102,7 @@ export function App() {
           <Route path="factor-updates" element={<FactorPackUpdatesPage />} />
           <Route path="units" element={<UnitsPage />} />
           <Route path="settings" element={<OrganizationSettingsPage />} />
+          <Route path="*" element={<NotFoundPage inLayout />} />
         </Route>
         <Route
           path="/app/profile"
@@ -136,6 +138,7 @@ export function App() {
           {/* a stale bookmark lands on the dashboard rather than a blank page */}
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
   )
