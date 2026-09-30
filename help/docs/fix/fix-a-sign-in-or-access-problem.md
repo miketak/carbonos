@@ -26,6 +26,6 @@ prints it.
 | "This link is invalid or has expired. Access links are valid for 7 days; you can always request access again." | The set-password link was used already or is older than 7 days. | Request access again, or ask an administrator to add you under **Users** with a temporary password. |
 | "Organization not found" | Your account is not a member of the organization, and you have no support grant. | Ask an owner to add you under the organization's **Settings**. |
 | A button is disabled with "Needs the Preparer, Reviewer or Owner role.", "Needs the Reviewer or Owner role." or "Needs the Owner role." | Your role does not allow the action. | Ask an owner to change your role. |
-| "Settings are the owner's" | You opened **Settings** under support access. | Only an owner administers members and details. |
+| **Settings** opens on **Baseline and targets**, with no **Organization** tab | You are not an owner by membership, or you are inside under support access. | Only an owner administers members and details. Ask an owner. |
 | "Support access cannot adopt an edition for an organization. That is the organization's own decision, so a reviewer or an owner of the organization has to make it." | Accepting or declining a notice under support access. | A reviewer or owner of the organization decides it. |
 | **New organization** is not offered | The platform setting **Who may create an organization** is "Administrators only". | Ask an administrator to create it and name you as the owner. |

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
 import { GlassCard } from '../../components/GlassCard'
@@ -22,9 +22,10 @@ import type { Organization } from './api'
  * its members, its history, and its deletion. The platform administrator has
  * had a panel since spec 01.5; this is the client's.
  *
- * Owner by membership only. Support access never grants membership changes or
- * deletion (spec 01.3), so an administrator inside under a grant is refused
- * here exactly as the server refuses the writes.
+ * The Organization tab of Settings, owner by membership only. Support access
+ * never grants membership changes or deletion (spec 01.3), so an administrator
+ * inside under a grant is sent to Baseline and targets, as every other member
+ * is; the server refuses the writes all the same.
  */
 export function OrganizationSettingsPage() {
   const { organizationId = '' } = useParams()
@@ -50,18 +51,10 @@ export function OrganizationSettingsPage() {
 
   const organization = organizationQuery.data
 
-  // spec 01.4: a refusal is stated, never a blank page. The sidebar hides the
-  // entry, so reaching this means the address was typed or a role changed.
+  // spec 01.7: the Organization tab is the owner's. Every other member (and
+  // support access) is taken to the tab that is theirs too.
   if (!mayManageMembership(organization.myRole)) {
-    return (
-      <GlassCard className="mx-auto max-w-3xl p-10 text-center">
-        <h1 className="text-lg">Settings are the owner's</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Administering {organizationLabel(organization)}, its members and its details needs the
-          Owner role in the organization. Support access does not carry it.
-        </p>
-      </GlassCard>
-    )
+    return <Navigate to="baseline" replace />
   }
 
   return <Settings organization={organization} />
@@ -120,15 +113,7 @@ function Settings({ organization }: { organization: Organization }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-2xl">Settings</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {organizationLabel(organization)}: its details, who works on it, and what has been done to
-          it. Only an owner sees this page.
-        </p>
-      </div>
-
+    <div>
       <GlassCard className="p-6">
         <h2 className="text-xl">Details</h2>
         <p className="text-sm text-ink-muted">

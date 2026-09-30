@@ -6,7 +6,10 @@
 - **Owner**: Michael Takrama
 - **Created**: 2026-09-02; implemented 2026-09-08
 - **Modules**: `ghg` (`BaseYear`, `BaseYearRecalculation`, `BaseYearService`),
-  `src/features/ghg` (Base year page, report base-year section)
+  `src/features/ghg` (Base year page, report base-year section). Since
+  2026-09-29 the page is the **Baseline and targets** tab of Settings,
+  `/app/ghg/{organizationId}/settings/baseline`, open to every member (spec
+  01.7); `/base-year` redirects there. Who may change it is unchanged.
 
 ## Problem
 

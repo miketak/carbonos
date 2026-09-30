@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Name the inventory whose final run is the base-year figure, set the significance threshold and the mid-year convention, and record why that year was chosen.
 role: Reviewer
 minutes: 5
@@ -19,9 +19,9 @@ The base year is the reference every later inventory is compared against, and th
 
 ## Designate the base year
 
-The **Base year** page opens with the card **Base year and recalculation policy**, which says what triggers a recalculation under Chapter 5 and what never does.
+The **Baseline and targets** tab of **Settings** opens with the card **Base year and recalculation policy**, which says what triggers a recalculation under Chapter 5 and what never does.
 
-1. Open **Base year**.
+1. Open **Settings** and the **Baseline and targets** tab.
 2. Choose **Base-year inventory**: "The inventory whose period is the base year; its final run is the base-year figure."
 3. Fill **Significance threshold (%)**: "A change affecting more than this share of base-year emissions requires recalculation."
 4. Fill **Why this year**: "The Standard asks for a year with verifiable data and the reason for choosing it."
@@ -35,10 +35,10 @@ What you see: "Base year 2025 designated.", for an inventory over 2025. The card
 
 ## Edit or clear the policy
 
-1. On **Base year** click **Edit policy**, change the threshold, the reason or the convention, and click **Save policy**.
+1. On **Settings**, **Baseline and targets** click **Edit policy**, change the threshold, the reason or the convention, and click **Save policy**.
 2. To remove the designation, click **Clear base year**: "Base year cleared."
 
 ## What happens next
 
-- Section 07 **Base year** of every run's report changes from "No base year designated. Set one under Base year." to the year, its policy, the base-year run and its total, the recalculation history and an **Emissions profile over time** table with each year's final run.
+- Section 07 **Base year** of every run's report changes from "No base year designated. Set one under Settings, Baseline and targets." to the year, its policy, the base-year run and its total, the recalculation history and an **Emissions profile over time** table with each year's final run.
 - The designation sweeps the inventories already frozen: one whose boundary differs from the base year's gets a candidate at once. From then on a freeze that moves the boundary, or an accepted factor pack update that counts as a methodology change, raises one; see [Decide a recalculation candidate](decide-a-recalculation-candidate.md).

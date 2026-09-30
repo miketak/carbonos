@@ -1,9 +1,12 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { ApiError } from '../../lib/api'
-import { renderWithProviders } from '../../test/utils'
+import { ToastProvider } from '../../components/toast'
 import { OrganizationSettingsPage } from './OrganizationSettingsPage'
+import { SettingsLayout } from './SettingsLayout'
 import type { AuditEvent, Inventory, Organization } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
@@ -39,11 +42,32 @@ function inventoryStub(name: string, status: Inventory['status'], finalRunId: st
   return { id: `inv-${name}`, name, status, finalRunId } as Inventory
 }
 
-function renderSettingsPage() {
-  return renderWithProviders(<OrganizationSettingsPage />, {
-    route: '/app/ghg/org-1/settings',
-    path: '/app/ghg/:organizationId/settings',
+/** Settings as the app mounts it: the layout with its tabs, the Organization tab at the index. */
+function renderSettingsPage(route = '/app/ghg/org-1/settings') {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <MemoryRouter initialEntries={[route]}>
+          <Routes>
+            <Route path="/app/ghg/:organizationId/settings" element={<SettingsLayout />}>
+              <Route index element={<OrganizationSettingsPage />} />
+              <Route path="baseline" element={<p>the baseline tab</p>} />
+            </Route>
+            <Route path="/app/ghg" element={<p>organization list</p>} />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
+    </QueryClientProvider>,
+  )
+}
+
+function settingsTabs() {
+  return within(screen.getByRole('navigation', { name: /settings sections/i }))
+    .getAllByRole('link')
+    .map((link) => link.textContent)
 }
 
 beforeEach(() => {
@@ -389,20 +413,38 @@ test('a refused deletion is shown in the dialog, which stays open (spec 01.4)', 
   expect(screen.getByRole('dialog', { name: /delete organization/i })).toBeInTheDocument()
 })
 
-test('a preparer is refused the page, and told which role it needs (spec 01.7)', async () => {
-  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
+test('an owner has both tabs, Organization first and open (spec 01.7)', async () => {
   renderSettingsPage()
 
-  expect(await screen.findByText(/settings are the owner's/i)).toBeInTheDocument()
-  expect(screen.getByText(/needs the Owner role/i)).toBeInTheDocument()
-  expect(screen.queryByLabelText('Name')).not.toBeInTheDocument()
-  expect(screen.queryByLabelText(/email of an existing account/i)).not.toBeInTheDocument()
+  expect(await screen.findByLabelText('Name')).toBeInTheDocument()
+  expect(settingsTabs()).toEqual(['Organization', 'Baseline and targets'])
+  expect(screen.getByRole('link', { name: 'Organization' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByText(/Only an owner sees the Organization tab/)).toBeInTheDocument()
 })
 
-test('support access never opens the settings, whoever holds it (spec 01.3)', async () => {
-  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'ADMIN' })
+test.each([['PREPARER'], ['REVIEWER'], ['VERIFIER'], ['ADMIN']] as const)(
+  'a %s is taken to Baseline and targets and never sees the Organization tab (spec 01.7)',
+  async (role) => {
+    vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: role })
+    renderSettingsPage()
+
+    expect(await screen.findByText('the baseline tab')).toBeInTheDocument()
+    expect(settingsTabs()).toEqual(['Baseline and targets'])
+    expect(screen.queryByLabelText('Name')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/email of an existing account/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/danger zone/i)).not.toBeInTheDocument()
+  },
+)
+
+test('an owner opens Baseline and targets from its tab', async () => {
+  const user = userEvent.setup()
   renderSettingsPage()
 
-  expect(await screen.findByText(/settings are the owner's/i)).toBeInTheDocument()
-  expect(screen.getByText(/support access does not carry it/i)).toBeInTheDocument()
+  await user.click(await screen.findByRole('link', { name: 'Baseline and targets' }))
+
+  expect(await screen.findByText('the baseline tab')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Baseline and targets' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
 })

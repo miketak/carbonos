@@ -19,6 +19,7 @@ import { HomePage } from '../features/home/HomePage'
 import { ActivityPage } from '../features/ghg/ActivityPage'
 import { SourceDocumentsPage } from '../features/ghg/SourceDocumentsPage'
 import { BaseYearPage } from '../features/ghg/BaseYearPage'
+import { SettingsLayout } from '../features/ghg/SettingsLayout'
 import { EntitiesPage } from '../features/ghg/EntitiesPage'
 import { EmissionFactorsPage } from '../features/ghg/EmissionFactorsPage'
 import { FactorPackUpdatesPage } from '../features/ghg/FactorPackUpdatesPage'
@@ -97,11 +98,15 @@ export function App() {
           <Route path="inventories" element={<InventoriesPage />} />
           <Route path="inventories/:inventoryId" element={<InventoryDetailPage />} />
           <Route path="inventories/:inventoryId/runs/:runId" element={<RunDetailPage />} />
-          <Route path="base-year" element={<BaseYearPage />} />
+          {/* the base year moved under Settings; the old address still lands there */}
+          <Route path="base-year" element={<Navigate to="../settings/baseline" replace />} />
           <Route path="factors" element={<EmissionFactorsPage />} />
           <Route path="factor-updates" element={<FactorPackUpdatesPage />} />
           <Route path="units" element={<UnitsPage />} />
-          <Route path="settings" element={<OrganizationSettingsPage />} />
+          <Route path="settings" element={<SettingsLayout />}>
+            <Route index element={<OrganizationSettingsPage />} />
+            <Route path="baseline" element={<BaseYearPage />} />
+          </Route>
           <Route path="*" element={<NotFoundPage inLayout />} />
         </Route>
         <Route

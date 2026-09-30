@@ -98,7 +98,7 @@ database needs new ones.
 | 1 | As Admin B, open **GHG accounting**. | Adansi Foods Ltd is not listed: an administrator is an outsider. | | |
 | 2 | Open **Administration**, **Organizations**, and click **Assume access** on Adansi Foods Ltd with the reason `short`. | The button stays disabled until the reason has 10 characters. | | |
 | 3 | Type "Ticket 118: the owner asked what the notice means" and confirm. | "Support access to Adansi Foods Ltd assumed.". The row shows the expiry and **End access**. | | |
-| 4 | Open **GHG accounting**, then Adansi Foods Ltd, then **Updates**. | Every page carries the banner "You are in Adansi Foods Ltd under support access until <time>. Every act is recorded in this organization's history.". There is no **Settings** entry, and the foot of the sidebar reads "Support access" where a member's reads their role. | | |
+| 4 | Open **GHG accounting**, then Adansi Foods Ltd, then **Updates**. | Every page carries the banner "You are in Adansi Foods Ltd under support access until <time>. Every act is recorded in this organization's history.". **Settings** opens only on **Baseline and targets**, with no **Organization** tab, and the foot of the sidebar reads "Support access" where a member's reads their role. | | |
 | 5 | Click **Review**, answer the chapter 5 question, and click **Accept**. | Refused: "Support access cannot adopt an edition for an organization. That is the organization's own decision, so a reviewer or an owner of the organization has to make it.". **Decline** is refused with "Support access cannot decline an edition for an organization." and the same second sentence. | | |
 | 6 | Back on **Organizations**, click **End access**. | The organization leaves the administrator's list. | | |
 | 7 | As Ama, open **Settings** and read **History**. | "Support access assumed" and "Support access ended", each with Admin B's email, the moment and the reason. | | |
@@ -111,7 +111,7 @@ database needs new ones.
 | 2 | Answer "Vintage progression: the edition applies to the next reporting year forward" and accept. | "Adopted ghana-2027-gov: 1 version cut, 0 lineages added.". The row reads Accepted with Kofi's email and the badge is gone. | | |
 | 3 | On **Emission factors**, find `GHANA:grid:GHA:2024`. | It offers "2 versions of this factor": the old version until 2025-12-31 at 0.468809, the live one from 2026-01-01 at 0.44. Nothing rewrote a past value. | | |
 | 4 | As Ama (Settings is the owner's), open **Settings** and read **History**. | The adoption is listed as "Factor pack adopted", with Kofi's email, the edition and the answer "as a vintage progression". **Overview** carries no event list; History is the organization's record. | | |
-| 5 | Open **Base year**. | No base year is designated yet, so no candidate was raised. The answer lives on the notice. | | |
+| 5 | Open **Settings** and the **Baseline and targets** tab. | No base year is designated yet, so no candidate was raised. The answer lives on the notice. | | |
 
 ## D. The next run cites the new vintage
 

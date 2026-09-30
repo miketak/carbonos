@@ -636,11 +636,11 @@ test('prints the operational boundary declaration and the exclusions grouped by 
   expect(
     within(exclusions).getByText('Sankofa Gold plc: member from 2025-07-01'),
   ).toBeInTheDocument()
-  // base year not designated: the report says so and links to the page
+  // base year not designated: the report says so and links to its tab under Settings
   expect(screen.getByText(/No base year designated/)).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Base year' })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: 'Baseline and targets' })).toHaveAttribute(
     'href',
-    '/app/ghg/org-1/base-year',
+    '/app/ghg/org-1/settings/baseline',
   )
 })
 

@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { ToastProvider } from '../../components/toast'
 import { OrganizationLayout } from './OrganizationLayout'
@@ -74,6 +74,8 @@ function renderAt(route: string) {
               <Route index element={<p>overview</p>} />
               <Route path="units" element={<p>units</p>} />
               <Route path="settings" element={<p>settings</p>} />
+              <Route path="settings/baseline" element={<p>baseline</p>} />
+              <Route path="base-year" element={<Navigate to="../settings/baseline" replace />} />
             </Route>
           </Routes>
         </MemoryRouter>
@@ -89,60 +91,46 @@ async function navLabels() {
     .map((link) => link.textContent?.trim())
 }
 
-test('an owner is offered Settings, last in the sidebar (spec 01.7)', async () => {
+const allSections = [
+  'Overview',
+  'Legal entities',
+  'Facilities',
+  'Activity data',
+  'Inventories',
+  'Emission factors',
+  'Updates',
+  'Units',
+  'Settings',
+]
+
+test('an owner is offered Settings, last in the sidebar, and no Base year entry (spec 01.7)', async () => {
   renderAt('/app/ghg/org-1')
 
-  // the entry waits on the organization, because the role is what decides it
   await screen.findByRole('link', { name: 'Settings' })
-  expect(await navLabels()).toEqual([
-    'Overview',
-    'Legal entities',
-    'Facilities',
-    'Activity data',
-    'Inventories',
-    'Base year',
-    'Emission factors',
-    'Updates',
-    'Units',
-    'Settings',
-  ])
+  expect(await navLabels()).toEqual(allSections)
 })
 
-test.each([['PREPARER'], ['REVIEWER'], ['VERIFIER']])(
-  'a %s has no Settings entry (spec 01.7)',
+// Settings holds Baseline and targets, which every member uses; only its
+// Organization tab is the owner's
+test.each([['PREPARER'], ['REVIEWER'], ['VERIFIER'], ['ADMIN']])(
+  'a %s is offered Settings too (spec 01.7)',
   async (role) => {
     vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: role as MyRole })
     renderAt('/app/ghg/org-1')
 
-    // wait for the organization before concluding the entry is absent, or this
-    // would pass on any role simply by reading the nav too early
     await waitFor(() => expect(vi.mocked(getOrganization)).toHaveBeenCalled())
-    const labels = await navLabels()
-    expect(labels).not.toContain('Settings')
-    expect(labels).toContain('Units')
+    expect(await navLabels()).toEqual(allSections)
   },
 )
 
-test('support access does not carry Settings either (specs 01.3, 01.7)', async () => {
-  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'ADMIN' })
-  renderAt('/app/ghg/org-1')
+test('the old base-year address lands on Baseline and targets under Settings', async () => {
+  renderAt('/app/ghg/org-1/base-year')
 
-  await waitFor(() => expect(vi.mocked(getOrganization)).toHaveBeenCalled())
-  expect(await navLabels()).not.toContain('Settings')
-})
-
-/**
- * The active pill is positioned by counting rows and dividers in the sections
- * actually rendered. Hiding Settings must not move it, which it would if the
- * arithmetic still ran over the full list.
- */
-test('the active entry is still marked when Settings is hidden', async () => {
-  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
-  renderAt('/app/ghg/org-1/units')
-
-  const nav = await screen.findByRole('navigation', { name: /organization sections/i })
-  const units = within(nav).getByRole('link', { name: 'Units' })
-  expect(units).toHaveAttribute('aria-current', 'page')
+  expect(await screen.findByText('baseline')).toBeInTheDocument()
+  expect(await screen.findByRole('link', { name: 'Settings' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
 })
 
 test('Settings is the active entry when it is open', async () => {

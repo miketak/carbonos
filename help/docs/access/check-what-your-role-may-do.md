@@ -41,7 +41,7 @@ The foot of the organization's sidebar shows your own role: "Your role: Preparer
 | Publish; create a correction | Yes | Yes | No | No | Yes | Needs the Reviewer or Owner role. |
 | Accept or decline a factor pack update | Yes | Yes | No | No | No: refused with "Support access cannot adopt an edition for an organization." | Needs the Reviewer or Owner role. |
 | Add, change and remove members | Yes | No | No | No | No | Needs the Owner role. |
-| Edit the organization's details; read its history on **Settings** | Yes | No | No | No | No: **Settings** is not offered, and the server refuses the edit | Settings are the owner's |
+| Edit the organization's details; read its history on **Settings**, **Organization** tab | Yes | No | No | No | No: the tab is not offered, and the server refuses the edit | The tab is not shown. |
 | Delete the organization | Yes | No | No | No | No | Needs the Owner role. |
 
 A factor is checked by someone other than the person who entered it. Your own **Approve** is refused with "You entered '*factor*'. A factor is checked by someone other than the person who typed it (Corporate Standard chapter 7): ask *name* to approve it."

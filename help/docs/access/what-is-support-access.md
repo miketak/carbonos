@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: The grant that lets a platform administrator enter an organization for a support case, what it records in the organization's history, and the acts it can never do.
 ---
 
@@ -29,7 +29,7 @@ The console's dashboard keeps the platform side: every grant live or taken in th
 
 The grant gives an owner's rights, so support can record, classify, run, mark a run as final and publish for a client. Three acts stay with an owner by membership:
 
-- Change members, or delete the organization. **Settings** is not in the sidebar, and its address answers "Settings are the owner's": "Administering *organization*, its members and its details needs the Owner role in the organization. Support access does not carry it."
+- Change members, or delete the organization. **Settings** opens on **Baseline and targets** only, with no **Organization** tab, and the server refuses the owner's writes.
 - Accept or decline a factor pack update: "Support access cannot adopt an edition for an organization."
 
 ## Where next

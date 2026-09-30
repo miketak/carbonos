@@ -14,11 +14,11 @@ minutes: 4
 
 ## Before you start
 
-- You are an owner. The page says so: "Only an owner sees this page."
+- You are an owner. The page says so: "Only an owner sees the Organization tab."
 
 ## Edit the details
 
-1. Open **Settings** in the organization's sidebar.
+1. Open **Settings** in the organization's sidebar. It opens on the **Organization** tab.
 2. Under **Details**, change **Name**, **Address** or **Contact**.
 3. Click **Save details**.
 4. If another organization already carries the new name, the card says so: "An organization named '*name*' already exists: *other* (ORG-*NNNN*). Confirm to use the name anyway." Click **Save anyway**, or change the name.

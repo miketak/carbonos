@@ -30,7 +30,7 @@ section.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Base year**. If procedure 8 designated 2025 Operational, read the designation; otherwise designate it now with a 5% threshold, the reason "First year with metered data across every site" and the transaction-date convention. | The page shows the year, the reason, the threshold and the convention (Corporate Standard chapter 5 requires a recalculation policy with a significance threshold the company sets, and the reason for the year), and under **Established by** the base-year run: "Run 006 · 41,526.69 t CO₂e", the final run of the published inventory. | | |
+| 1 | Open **Settings** and the **Baseline and targets** tab. If procedure 8 designated 2025 Operational, read the designation; otherwise designate it now with a 5% threshold, the reason "First year with metered data across every site" and the transaction-date convention. | The page shows the year, the reason, the threshold and the convention (Corporate Standard chapter 5 requires a recalculation policy with a significance threshold the company sets, and the reason for the year), and under **Established by** the base-year run: "Run 006 · 41,526.69 t CO₂e", the final run of the published inventory. | | |
 
 ## B. Structural changes
 
@@ -39,7 +39,7 @@ section.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | In 2026 Corporate (pre-populated with E0 and E1 and all their facilities; E2 is outside and, as in procedure 4, needs its reason before a run: **Methodology exclusion**, "Associate: no operational control"), untick S2, the Tarkwa plant. Unticking E1's only facility unticks E1, so the reason control is on E1's row: **Not applicable**, "JV interest sold in January 2026" (E1 still holds 100% under operational control in Table 1, so a methodology exclusion would be a gate error, spec 05.4; a sale is "no operation in the period", which the gate discloses). Freeze. | The inventory freezes (the dialog shows the gates first; nothing is under review, so nothing blocks). The **Reporting boundary** gate warns "Tarkwa Gold JV Ltd is excluded as not applicable in the period but holds a 100% share under this approach: the report discloses the exclusion." | | |
-| 2 | Return to **Base year**. | A FLAGGED candidate reads "structural change: Tarkwa Processing Plant removed; 51.77% of base-year emissions, above the 5% threshold, recalculation required". The 2026 inventory's **Base year** gate blocks with the same sentence until it is decided. | | |
+| 2 | Return to **Settings**, **Baseline and targets**. | A FLAGGED candidate reads "structural change: Tarkwa Processing Plant removed; 51.77% of base-year emissions, above the 5% threshold, recalculation required". The 2026 inventory's **Base year** gate blocks with the same sentence until it is decided. | | |
 
 The share is the plant's lines in run 006 (R2 21,388,500 kg, R17
 38,342.34 kg and the R-407C top-up R6 73,089.45 kg: 21,499,931.79 kg
@@ -110,7 +110,7 @@ recalculation history above.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Under **Base year** click **Clear base year**. Create **2026 Scratch**: operational control, 2026-01-01 to 2026-12-31, pre-populated, and freeze it with every facility in. | The inventory freezes; the base-year page records nothing, because there is no base year to weigh against. | | |
+| 1 | Under **Settings**, **Baseline and targets** click **Clear base year**. Create **2026 Scratch**: operational control, 2026-01-01 to 2026-12-31, pre-populated, and freeze it with every facility in. | The inventory freezes; the base-year page records nothing, because there is no base year to weigh against. | | |
 | 2 | Designate 2025 Operational as the base year again (5%, the same reason and convention). | The designation lists no candidates. | | |
 | 3 | Reopen 2026 Scratch, untick S2 with the reason **Not applicable**, "JV interest sold in January 2026", and freeze. | A FLAGGED candidate reads "structural change: Tarkwa Processing Plant removed; 51.77% of base-year emissions, above the 5% threshold, recalculation required". Version 1 was cut before the base year existed and was never weighed, so this freeze compares with the base-year boundary rather than with version 1 (spec 06); without that rule the divestment would never be flagged. | | |
 | 4 | Reopen 2026 Scratch, tick S2 back in with no membership window, and freeze. | No "added" candidate appears. The removal candidate now reads **SUPERSEDED** with the note "put back in boundary version 3 as the base year held it": against the base year nothing changed (spec 06). The 2026 Scratch **Base year** gate passes. | | |
