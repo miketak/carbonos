@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Fill the report header with the approver, the assurance and the intensity denominators, then read the run's report section by section, including the emissions-by-gas table.
 role: Preparer
 minutes: 10
@@ -44,7 +44,7 @@ Open the run from the **Runs** tab. The heading names the run and the approach, 
 | 04 Emissions by scope | Scope 1, scope 2 on both bases, scope 3 and the total; by category, facility, legal entity and country; the intensity lines; the market-based basis. |
 | 05 Emissions by gas | See [Emissions by gas](#emissions-by-gas). |
 | 06 Biogenic CO₂ and 6A Gases outside the scopes | Reported separately, outside the scopes. |
-| 07 Base year | The base year with its threshold, convention, reason, run and recalculation history, or "No base year designated. Set one under Base year." |
+| 07 Base year | The base year with its threshold, convention, reason, run and recalculation history, or "No base year designated. Set one under Settings, Baseline and targets." |
 | 08 Methodology | The sentences a verifier reads, the upstream rules, **Emission factors applied** and the data-quality table with the uncertainty statement. |
 | 09 Exclusions | Every excluded record with its reason, justification and estimate, or "No exclusions." |
 | 10 Snapshot lines | One line per record and derived line: quantity, factor, weight, CO₂e and any pro-rating, conversion or market-based note. |

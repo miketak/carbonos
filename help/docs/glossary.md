@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-26
+last_reviewed: 2026-09-29
 description: One stable name for each thing in CarbonOS, from activity record to voided run, with the page that explains it.
 ---
 
@@ -17,7 +17,7 @@ relate; this page only says what each word means.
 | Account number | The number CarbonOS assigns to an organization when it is created, shown beside the name as ORG-0042. Two organizations may share a name; the account number never changes and is never reused. | |
 | Activity record | One fact about what an organization did: an activity type, a quantity in a unit, a period, a facility, a source, and the evidence behind it. A record carries no scope, category or factor; each inventory decides those separately. | Activity data |
 | Assignment | An inventory's decision about one record: included and classified with a factor, scope and category, or excluded with a reason. Assignments belong to the inventory, never to the record. | Operational boundary applied to one activity |
-| Base year | The year an organization compares later years against, with a significance threshold and a policy for mid-year structural changes. Designated on **Base year** from a published inventory's final run. | Base year |
+| Base year | The year an organization compares later years against, with a significance threshold and a policy for mid-year structural changes. Designated under **Settings**, **Baseline and targets** from a published inventory's final run. | Base year |
 | Boundary version | The organizational boundary of one inventory as it stood when it was frozen: every entity and facility in the boundary, their shares, membership windows, and the exclusions with reasons. Each freeze cuts a new version; runs cite the version they used. | Organizational boundary |
 | Calculation run | An immutable, numbered snapshot of an inventory's view calculated: one line per included record, the derived lines, and the exclusions. A run is never edited or deleted; a wrong run is voided with a reason. | GHG inventory results |
 | Consolidation approach | Equity share, financial control or operational control: the rule an inventory uses to turn each entity's Table 1 relationship into an accounting share. | Consolidation approach |
@@ -41,7 +41,7 @@ relate; this page only says what each word means.
 | Organization | The reporting company as CarbonOS holds it: its members, entities, facilities, records, factors and inventories, private to its members. | Reporting company |
 | Platform administrator | A person whose account has the Admin role: creates and approves accounts, runs the factor pack catalogue and the platform settings, and can take support access to an organization. Not a member of any organization by right. | |
 | Proxy factor | A factor flagged as standing in for one that is not published or not yet approved, with a justification that says what it stands for. | Proxy data |
-| Recalculation candidate | A record on **Base year** that a change may require the base year to be recalculated: raised by a freeze that moves the boundary, or by hand for a methodology change or a corrected error, and decided as recalculated or declined. | Base year recalculation trigger |
+| Recalculation candidate | A record under **Settings**, **Baseline and targets** that a change may require the base year to be recalculated: raised by a freeze that moves the boundary, or by hand for a methodology change or a corrected error, and decided as recalculated or declined. | Base year recalculation trigger |
 | Report version | Counts the inventories of one period: 1 for the first, one more for each correction. Distinct from the boundary version, which counts freezes of one inventory. | |
 | Residual mix | The emission factor for electricity that no contractual instrument claims. An inventory states whether one is available for its markets; when none is, the grid average stands in and the report says so. | Residual mix (Scope 2 Guidance) |
 | Run line | One row of a calculation run: the record, the factor and its version, the converted quantity, the accounting share, the period share, and the result in kilograms of CO₂e and per gas. | |

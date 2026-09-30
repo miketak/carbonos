@@ -110,8 +110,8 @@ const baseYear: BaseYear = {
 
 function renderPage() {
   return renderWithProviders(<BaseYearPage />, {
-    route: '/app/ghg/org-1/base-year',
-    path: '/app/ghg/:organizationId/base-year',
+    route: '/app/ghg/org-1/settings/baseline',
+    path: '/app/ghg/:organizationId/settings/baseline',
   })
 }
 

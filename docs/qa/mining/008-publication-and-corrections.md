@@ -80,7 +80,7 @@ unapproved after the run holds the designation.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Under **Activity data**, correct R2 (mill electricity) to 50,000 MWh with a reason. | | | |
-| 2 | Under **Base year**, designate 2025 Operational as the base year (if not already) with a 5% threshold, the reason "First year with metered data across every site" and the transaction-date convention. Then create **2026 Corporate** under Inventories: 2026-01-01 to 2026-12-31, operational control, AR5, pre-populated. | | | |
+| 2 | Under **Settings**, **Baseline and targets**, designate 2025 Operational as the base year (if not already) with a 5% threshold, the reason "First year with metered data across every site" and the transaction-date convention. Then create **2026 Corporate** under Inventories: 2026-01-01 to 2026-12-31, operational control, AR5, pre-populated. | | | |
 | 3 | Open run 006's report. | The report reads exactly as published (48,500 MWh; its base-year section still says no base year is designated). A **Since publication** block under the header lists the changed records ("Mill grid electricity: quantity 48500 → 50000", and the camp LPG duplicate removed in procedure 5) and "Later inventories: 2026 Corporate (2026)". | | |
 
 Procedure 9 checks both the base year and 2026 Corporate.

@@ -61,7 +61,7 @@ export function BaseYearPage() {
   return (
     <section className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl">Base year</h1>
+        <h2 className="text-xl">Base year</h2>
         <p className="text-sm text-ink-muted">
           The reference point emissions are compared against over time, and the policy that says
           when it is recalculated.
@@ -79,7 +79,7 @@ export function BaseYearPage() {
           <>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="text-lg">Base year and recalculation policy</h2>
+                <h3 className="text-lg">Base year and recalculation policy</h3>
                 <p className="text-sm text-ink-muted">
                   Structural changes, methodology changes, and significant errors all trigger a
                   recalculation under Chapter 5, on their own or together, so the Standard asks for
@@ -356,7 +356,7 @@ function RecalculationHistory({
     <GlassCard className="p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg">Recalculation history</h2>
+          <h3 className="text-lg">Recalculation history</h3>
           <p className="text-sm text-ink-muted">
             Freezing an inventory whose boundary differs from the base year measures the affected
             facilities against the base-year run and records a candidate here. A change is weighed

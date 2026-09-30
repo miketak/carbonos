@@ -174,7 +174,7 @@ wait the hour.
 | 2 | Add the facility **QA scratch site**, record one activity on it ("QA scratch diesel", 100 litre, any date in 2025), create the inventory **QA scratch** (2025, operational control) and freeze it. | Every write succeeds. | | |
 | 3 | Launch a run (allowed for a preparer). | The run launches. | | |
 | 4 | Look at **Mark as final** on the run. | The button is disabled with the tooltip "Needs the Reviewer or Owner role." (spec 05.5; a direct request is refused with "This action needs the REVIEWER or OWNER role in the organization."). **Publish** stays disabled ("Designate a final run first") until a run is final, so a preparer never reaches it. | | |
-| 5 | Look at the sidebar, then type `/settings` on the end of the organization's URL. | There is no **Settings** entry, and the typed address answers "Settings are the owner's", naming the role it needs. A preparer does not administer the organization. | | |
+| 5 | Open **Settings** from the sidebar. | It opens on **Baseline and targets**, the only tab: there is no **Organization** tab, so no details, members, history or danger zone. A preparer does not administer the organization, but does keep the base year. | | |
 
 Procedure 2 removes these three scratch objects before it builds the
 scenario, so keep the names.
@@ -188,7 +188,7 @@ scenario, so keep the names.
 | 3 | Look at the activity register. | There is no **+ Add activity** and no **Import CSV**. Opening a record opens the drawer in read mode: facts, evidence and history, no fields and no **Save**. | | |
 | 4 | Look at the legal entities, facilities, emission factors and units pages. | The add, edit and remove controls are either absent or disabled with the tooltip "Needs the Preparer, Reviewer or Owner role." | | |
 | 5 | Look at the inventory page. | **Launch calculation run** is disabled with the tooltip "Needs the Preparer, Reviewer or Owner role."; **Mark as final** and **Publish** are disabled with "Needs the Reviewer or Owner role." | | |
-| 6 | On the GHG home, look at the organization card. | It offers **Open** and nothing else: administering an organization is its owner's **Settings** page (spec 01.7), and a verifier has no link to it. **New organization** stays available, because anyone may create their own. | | |
+| 6 | On the GHG home, look at the organization card. | It offers **Open** and nothing else: administering an organization is the **Organization** tab of its owner's **Settings** (spec 01.7), and a verifier has no link to it. In the sidebar, **Settings** opens on **Baseline and targets** only. **New organization** stays available, because anyone may create their own. | | |
 
 Exports are checked in procedure 7.
 
@@ -219,8 +219,8 @@ Exports are checked in procedure 7.
 | 7 | Open the activity register, then legal entities, then inventories. | Every page carries a banner naming Sankofa Gold plc, saying you are inside under support access, giving the moment it expires, and saying every act is recorded in the organization's history. It is not only on the overview. | | |
 | 8 | On the organization, classify one record or change the header. | The act succeeds. | | |
 | 8a | Open **Legal entities**, edit Sankofa Gold plc, type `GH` as its jurisdiction, and save. | Saved. The relationship column reads "Reporting company". | | |
-| 9 | Open the organization overview and read the **Support access** card. | It names the admin's email, the time the access was taken, the reason, and the expiry. The history of grants is on the owner's **Settings** page, which support access does not open. | | |
-| 10 | Look at the sidebar, and at the organization's card on the GHG home. | There is no **Settings** entry and no **Settings** link on the card, and typing `/settings` answers that support access does not carry it: support access never grants membership changes or deletion. The foot of the sidebar reads "Support access" where a member's reads their role. | | |
+| 9 | Open the organization overview and read the **Support access** card. | It names the admin's email, the time the access was taken, the reason, and the expiry. The history of grants is on the **Organization** tab of **Settings**, which support access does not open. | | |
+| 10 | Look at the sidebar, and at the organization's card on the GHG home. | There is no **Settings** link on the card. The sidebar's **Settings** opens on **Baseline and targets** with no **Organization** tab, even when `/settings` is typed: support access never grants membership changes or deletion. The foot of the sidebar reads "Support access" where a member's reads their role. | | |
 | 10a | If you can alter requests, send a new name for the organization (`PUT /api/ghg/organizations/{id}`). | Refused with 403: "This action needs the OWNER role in the organization.". The organization's details are Settings, which support access never carries. | | |
 | 11 | Back on `/admin/organizations`, click **End access**. | The GHG home no longer lists Sankofa Gold plc. | | |
 | 12 | Paste the organization's URL again. | Not found, and the page says support access ends on its own when its window expires and that an administrator holds no standing access without a grant. It does not say the organization may have been deleted. | | |

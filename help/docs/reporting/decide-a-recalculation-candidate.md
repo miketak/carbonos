@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-09-29
 description: Read a base-year recalculation candidate, record a recalculated base or decline it, raise one by hand for a methodology change or an error, and know the four candidate statuses.
 role: Reviewer
 minutes: 10
@@ -19,7 +19,7 @@ A candidate is CarbonOS's record of something that may require the base year to 
 
 ## Read the candidate
 
-Open **Base year**. Under **Recalculation history** each candidate card carries its status, weight, who raised it and its reason: "structural change: *facility* removed; *N*% of base-year emissions, above the *T*% threshold, recalculation required".
+Open **Settings** and the **Baseline and targets** tab. Under **Recalculation history** each candidate card carries its status, weight, who raised it and its reason: "structural change: *facility* removed; *N*% of base-year emissions, above the *T*% threshold, recalculation required".
 
 | Status | Meaning | What leads here |
 | --- | --- | --- |

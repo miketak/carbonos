@@ -45,7 +45,7 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Base year** and click **Designate base year**. Choose FY2025, significance threshold 5, the reason "First year with metered data at every site", and **From the transaction date (membership windows)**. Save. | The page shows the year, the reason, "5% of base-year emissions" and the convention. **Established by** reads "Run 005 · 120.37 t CO₂e", the final run of the published inventory. | | |
+| 1 | Open **Settings** and the **Baseline and targets** tab and click **Designate base year**. Choose FY2025, significance threshold 5, the reason "First year with metered data at every site", and **From the transaction date (membership windows)**. Save. | The page shows the year, the reason, "5% of base-year emissions" and the convention. **Established by** reads "Run 005 · 120.37 t CO₂e", the final run of the published inventory. | | |
 | 2 | Read the candidates. | One FLAGGED candidate at once, against FY2026 version 2: "structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required". The designation weighed the frozen year without a new freeze. | | |
 | 3 | Open FY2026 and read the **Base year** gate. | An error: "Base year flagged for recalculation (structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required). Record the decision under the organization's base year.". | | |
 | 4 | Click **Mark as final** on FY2026's run. | Refused: "The 2025 base year has a recalculation candidate above the significance threshold (structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required). An inventory that reports against the base year cannot be marked final until the recalculation is completed or declined. Calculation runs stay available, because quantifying the movement is how a recalculation is assessed.". The pre-flight bar reads "Base year holds the final designation; runs stay available." Launch a run: it goes through. | | |
@@ -57,7 +57,7 @@ lists: Tema Depot's only line in Run 005 is the delivery fleet diesel,
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Reopen FY2026 with the reason "Sale fell through", tick Tema Depot back in, and freeze. | "Boundary version 3". On **Base year** the candidate reads SUPERSEDED with "put back in boundary version 3 as the base year held it". FY2026's gate passes. | | |
+| 1 | Reopen FY2026 with the reason "Sale fell through", tick Tema Depot back in, and freeze. | "Boundary version 3". On **Settings**, **Baseline and targets** the candidate reads SUPERSEDED with "put back in boundary version 3 as the base year held it". FY2026's gate passes. | | |
 | 2 | Reopen with the reason "Sale completed after all", untick Tema Depot with the same reason as case A1, and freeze. | "Boundary version 4". A new FLAGGED candidate reads "structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required". | | |
 
 ## D. Deciding

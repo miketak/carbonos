@@ -85,6 +85,6 @@ The launch is on hold because a gate other than Base year holds an error, marked
 
 | Finding | Level | What clears it |
 | --- | --- | --- |
-| Base year flagged for recalculation (…). Record the decision under the organization's base year. | Error when above the threshold and reported against; else Warning | Recalculate or decline under **Base year**. Runs stay available. |
+| Base year flagged for recalculation (…). Record the decision under the organization's base year. | Error if above the threshold and reported against, else Warning | Decide it under **Settings**, **Baseline and targets**. |
 | This inventory uses IPCC *set* potentials; the *year* base year uses IPCC *set*. … | Warning | Use the same set, or accept. |
 | The recalculated base '*run*' carries a membership window, but the policy accounts structural changes for the whole year. … | Warning | Recalculate the whole year, or change the convention. |

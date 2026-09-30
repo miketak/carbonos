@@ -198,7 +198,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
   const failingInstruments = emissions.marketInstruments.filter(
     (instrument) => !instrument.meetsQualityCriteria,
   )
-  const baseYearPath = `/app/ghg/${organizationId}/base-year`
+  const baseYearPath = `/app/ghg/${organizationId}/settings/baseline`
 
   return (
     <>
@@ -637,9 +637,9 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
           <BaseYearSection baseYear={report.baseYear} path={baseYearPath} />
         ) : (
           <p className="text-sm text-ink-muted">
-            No base year designated. Set one under{' '}
+            No base year designated. Set one under Settings,{' '}
             <Link to={baseYearPath} className="font-semibold text-link">
-              Base year
+              Baseline and targets
             </Link>
             .
           </p>
