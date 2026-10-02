@@ -30,7 +30,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.B1.2", async () => {
       const s = P.step("1.B1.2")
       const out = await s.do("createUser", {"user":"adminB"})
-      s.done()
+      await s.done()
     })
   })
 
@@ -38,12 +38,12 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.B2.1", async () => {
       const s = P.step("1.B2.1")
       const out = await s.do("createUser", {"user":"kofi"})
-      s.done()
+      await s.done()
     })
     await test.step("1.B2.2", async () => {
       const s = P.step("1.B2.2")
       const out = await s.do("createUser", {"user":"esi"})
-      s.done()
+      await s.done()
     })
     await test.step("1.B2.3", async () => {
       const s = P.step("1.B2.3")
@@ -65,7 +65,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.C1.1", async () => {
       const s = P.step("1.C1.1").as("visitor")
       const out = await s.do("requestAccess", {"user":"ama","company":"Adansi Foods Ltd"})
-      s.done()
+      await s.done()
     })
     await test.step("1.C1.2", async () => {
       const s = P.step("1.C1.2")
@@ -92,7 +92,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.C2.2", async () => {
       const s = P.step("1.C2.2")
       const out = await s.do("approveAccessRequest", {"user":"ama"})
-      s.done()
+      await s.done()
     })
     await test.step("1.C2.3", async () => {
       const s = P.step("1.C2.3")
@@ -185,7 +185,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.D2.3", async () => {
       const s = P.step("1.D2.3").as("adminA")
       const out = await s.do("changeSettings", {"organizationCreation":"EVERYONE","reason":"Governance pack: creation opened again"})
-      s.done()
+      await s.done()
     })
     await test.step("1.D2.4", async () => {
       const s = P.step("1.D2.4")
@@ -219,7 +219,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.E1.1", async () => {
       const s = P.step("1.E1.1").as("adminB")
       const out = await s.do("signIn", {"user":"adminB"})
-      s.done()
+      await s.done()
     })
     await test.step("1.E1.2", async () => {
       const s = P.step("1.E1.2")
@@ -239,7 +239,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.E1.5", async () => {
       const s = P.step("1.E1.5")
       const out = await s.do("signOut", {"user":"adminB"})
-      s.done()
+      await s.done()
     })
   })
 
@@ -247,7 +247,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.E2.1", async () => {
       const s = P.step("1.E2.1").as("adminA")
       const out = await s.do("disableUser", {"user":"yaw"})
-      s.done()
+      await s.done()
     })
     await test.step("1.E2.2", async () => {
       const s = P.step("1.E2.2").as("yaw")
@@ -257,7 +257,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.E2.3", async () => {
       const s = P.step("1.E2.3").as("adminA")
       const out = await s.do("enableUser", {"user":"yaw"})
-      s.done()
+      await s.done()
     })
     await test.step("1.E2.4", async () => {
       const s = P.step("1.E2.4").as("yaw")
@@ -267,7 +267,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.E2.5", async () => {
       const s = P.step("1.E2.5")
       const out = await s.do("signOut", {"user":"yaw"})
-      s.done()
+      await s.done()
     })
   })
 
@@ -279,12 +279,12 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.F1.2", async () => {
       const s = P.step("1.F1.2")
       const out = await s.do("renameProfile", {"user":"ama","displayName":"Ama Owusu (Owner)"})
-      s.done()
+      await s.done()
     })
     await test.step("1.F1.3", async () => {
       const s = P.step("1.F1.3")
       const out = await s.do("renameProfile", {"user":"ama","displayName":"Ama Owusu"})
-      s.done()
+      await s.done()
     })
     await test.step("1.F1.4", async () => {
       const s = P.step("1.F1.4").as("adminA")
@@ -300,12 +300,12 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.G1.1", async () => {
       const s = P.step("1.G1.1").as("yaw")
       const out = await s.do("signIn", {"user":"yaw"})
-      s.done()
+      await s.done()
     })
     await test.step("1.G1.2", async () => {
       const s = P.step("1.G1.2").as("yawSecond")
       const out = await s.do("signIn", {"user":"yawSecond"})
-      s.done()
+      await s.done()
     })
     await test.step("1.G1.3", async () => {
       const s = P.step("1.G1.3")
@@ -320,7 +320,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.G1.5", async () => {
       const s = P.step("1.G1.5")
       const out = await s.do("changePassword", {"user":"yawSecond","new":"Yaw-pass-2027"})
-      s.done()
+      await s.done()
     })
     await test.step("1.G1.6", async () => {
       const s = P.step("1.G1.6").as("yaw")
@@ -347,7 +347,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.G2.4", async () => {
       const s = P.step("1.G2.4")
       const out = await s.do("resetPasswordFromLink", {"user":"yaw","password":"Yaw-pass-2026"})
-      s.done()
+      await s.done()
     })
     await test.step("1.G2.5", async () => {
       const s = P.step("1.G2.5")
@@ -357,7 +357,7 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.G2.6", async () => {
       const s = P.step("1.G2.6")
       const out = await s.do("signIn", {"user":"yaw"})
-      s.done()
+      await s.done()
     })
     await test.step("1.G2.7", async () => {
       const s = P.step("1.G2.7")
@@ -375,17 +375,17 @@ test.describe("Procedure 1: Accounts and the platform", () => {
     await test.step("1.G3.1", async () => {
       const s = P.step("1.G3.1").as("adminA")
       const out = await s.do("sendResetLink", {"user":"esi"})
-      s.done()
+      await s.done()
     })
     await test.step("1.G3.2", async () => {
       const s = P.step("1.G3.2").as("esi")
       const out = await s.do("signIn", {"user":"esi"})
-      s.done()
+      await s.done()
     })
     await test.step("1.G3.3", async () => {
       const s = P.step("1.G3.3")
       const out = await s.do("signOut", {"user":"esi"})
-      s.done()
+      await s.done()
     })
   })
 })

@@ -86,5 +86,6 @@ describe('the compiler', () => {
     expect(spec).toContain(`await test.step("9.A1.3"`)
     expect(spec).toContain(`s.do("createUser", {"user":"kofi"})`)
     expect(spec).toContain(`"outcome":"refused"`)
+    expect(spec).toContain('await s.done()')
   })
 })

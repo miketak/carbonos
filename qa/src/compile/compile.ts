@@ -55,7 +55,7 @@ function compileStep(id: string, step: Step): string[] {
     out.push(`await s.capture(${lit(step.capture)})`)
   }
   if (clauses.length === 0 && !step.capture) {
-    out.push(`s.done()`)
+    out.push(`await s.done()`)
   }
   return out
 }

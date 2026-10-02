@@ -191,6 +191,7 @@ export class StepRun {
   }
 
   private fail(text: string): never {
+    if (process.env.QA_DEBUG) console.error(`[qa] ${this.id} FAIL ${text}\n${new Error().stack}`)
     this.note('FAIL', text)
     this.failed = true
     this.procedure.record({ id: this.id, status: 'FAIL', note: this.notes.join(' | ') })

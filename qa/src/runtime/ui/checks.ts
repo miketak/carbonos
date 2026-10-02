@@ -17,7 +17,10 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
   try {
     switch (check.check) {
       case 'at':
+        // an observation opens the page fresh: the SPA keeps figures for 30 seconds (staleTime), a tester who
+        // opens a page expects what the server holds now
         await open(page, check.nav)
+        await page.reload()
         return { ok: true }
       case 'textVisible': {
         const scope = check.within ? page.locator(check.within) : page
@@ -81,6 +84,7 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         return { ok: true }
       case 'count': {
         await open(page, check.nav)
+        await page.reload()
         const value = await readCount(page, check.label)
         const want = check.equals ?? (check.since !== undefined && check.added !== undefined ? chain.captured(check.since) + check.added : undefined)
         if (want === undefined) return { ok: false, detail: 'nothing to compare the count with' }
