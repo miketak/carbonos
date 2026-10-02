@@ -80,8 +80,8 @@ export function capitalize(text: string): string {
 export function narrateWhereToLook(checks: UiCheck[]): string | undefined {
   const at = checks.find((c) => c.check === 'at')
   if (at && at.check === 'at') return `Open ${b(at.nav)}.`
-  const url = checks.find((c) => c.check === 'url')
-  if (url && url.check === 'url') return `Open ${code(url.path)}.`
+  const visit = checks.find((c) => c.check === 'visit')
+  if (visit && visit.check === 'visit') return `Open ${code(visit.path)} in the address bar.`
   return undefined
 }
 

@@ -34,6 +34,7 @@ export type UiCheck =
   | { check: 'signedOut' }
   | { check: 'signedIn' }
   | { check: 'url'; path: string }
+  | { check: 'visit'; path: string }
   | { check: 'count'; nav: string; label: string; since?: string; added?: number; equals?: number }
   | { check: 'manual'; text: string }
   | { check: 'na'; why: string }

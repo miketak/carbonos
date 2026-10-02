@@ -90,6 +90,10 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         await page.reload()
         await page.waitForURL((url) => url.pathname === '/login' || url.pathname === '/', { timeout: 15_000 })
         return { ok: true }
+      case 'visit':
+        await page.goto(check.path)
+        await page.waitForLoadState('networkidle')
+        return { ok: true }
       case 'url':
         await page.waitForURL((url) => url.pathname.startsWith(check.path), { timeout: 15_000 })
         return { ok: true }

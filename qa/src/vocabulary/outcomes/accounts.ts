@@ -163,7 +163,7 @@ export const platformAccess = defineOutcome({
     if (value) return out.ok ? pass() : fail(`${user} got ${out.status} from the platform area`)
     return out.status === 403 ? pass('403') : fail(`${user} got ${out.status}, expected 403`)
   },
-  ui: ({ value }) => [{ check: 'url', path: '/admin/users' }, value ? { check: 'at', nav: S.nav.users } : { check: 'textAbsent', text: S.button.addUser }],
+  ui: ({ value }) => [{ check: 'visit', path: '/admin/users' }, value ? { check: 'textVisible', text: S.button.addUser } : { check: 'textAbsent', text: S.button.addUser }],
   narrate: ({ value }) => (value ? `The **${S.nav.users}** page opens.` : `Refused: a member does not reach the platform area.`),
 })
 
