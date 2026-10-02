@@ -175,6 +175,15 @@ export async function row(page: Page, text: string): Promise<Locator> {
   return page.locator('article, section > div, div').filter({ has: page.getByText(text, { exact: true }) }).filter({ has: page.getByRole('button') }).last()
 }
 
+/** The row that names the text and offers the button: two candidates may share a reason, and only the open one offers a decision. */
+export async function rowOffering(page: Page, text: string, button: string): Promise<Locator> {
+  const first = await row(page, text)
+  if ((await (await rowButton(first, button)).count()) > 0) return first
+  const name = new RegExp(`^(${button.split('|').map(escapeRegExp).join('|')})( |$)`)
+  const offering = page.getByRole('row').or(page.getByRole('listitem')).filter({ hasText: text }).filter({ has: page.getByRole('button', { name }) })
+  return (await offering.count()) > 0 ? offering.last() : first
+}
+
 /** A tester leaving a dialog behind closes it first: Escape, then its Cancel or Close button. */
 export async function dismissDialogs(page: Page): Promise<void> {
   const dialogs = page.getByRole('dialog')
@@ -314,7 +323,7 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       await page.getByRole('menuitem', { name: t(op.item), exact: true }).click()
       return
     case 'row': {
-      const button = await rowButton(await row(page, await resolveAsync(ctx, t(op.text))), t(op.button))
+      const button = await rowButton(await rowOffering(page, await resolveAsync(ctx, t(op.text)), t(op.button)), t(op.button))
       if (op.ifEnabled) {
         const present = await button.waitFor({ timeout: 3_000 }).then(() => true, () => false)
         if (!present || (await button.isDisabled())) return
