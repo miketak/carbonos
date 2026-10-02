@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.carbonos.user.RateLimits;
+
 /**
  * The password limits of spec 01.9, counted in memory in fixed 15-minute
  * windows (the pattern of the help centre's limiter): three reset requests
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Component;
  * password, not to meter a person. A sweep drops closed windows.
  */
 @Component
-public class PasswordRateLimiter {
+public class PasswordRateLimiter implements RateLimits {
 
 	static final Duration WINDOW = Duration.ofMinutes(15);
 
@@ -40,6 +42,11 @@ public class PasswordRateLimiter {
 	/** The clock is injectable so a test can close a window without sleeping. */
 	PasswordRateLimiter(Clock clock) {
 		this.clock = clock;
+	}
+
+	@Override
+	public void reset() {
+		windows.clear();
 	}
 
 	/** Counts one reset request against both the address asked for and the client asking. */

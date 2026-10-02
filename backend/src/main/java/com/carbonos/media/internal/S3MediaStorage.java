@@ -17,6 +17,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
@@ -69,6 +70,25 @@ class S3MediaStorage implements MediaStorage {
 		}
 		catch (SdkException e) {
 			throw new MediaStorageException("Failed to inspect object '" + key + "'", e);
+		}
+	}
+
+	@Override
+	public void deleteAll() {
+		try {
+			String token = null;
+			do {
+				var page = s3.listObjectsV2(ListObjectsV2Request.builder().bucket(props.bucket())
+					.continuationToken(token).build());
+				for (var object : page.contents()) {
+					s3.deleteObject(request -> request.bucket(props.bucket()).key(object.key()));
+				}
+				token = page.isTruncated() ? page.nextContinuationToken() : null;
+			}
+			while (token != null);
+		}
+		catch (SdkException e) {
+			throw new MediaStorageException("Failed to empty the bucket", e);
 		}
 	}
 

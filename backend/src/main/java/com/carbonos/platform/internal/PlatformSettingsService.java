@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.carbonos.platform.PlatformRules;
 import com.carbonos.platform.PlatformSettings;
 
 /**
@@ -79,19 +80,17 @@ public class PlatformSettingsService implements PlatformSettings {
 		var editions = update.editionsInPublishedPeriods() == null ? row.getEditionsInPublishedPeriods()
 				: update.editionsInPublishedPeriods();
 		if (window < MIN_WINDOW_HOURS || window > MAX_WINDOW_HOURS) {
-			throw new PlatformFieldException("supportAccessWindowHours", "Support access lasts between "
-					+ MIN_WINDOW_HOURS + " and " + MAX_WINDOW_HOURS + " hours.");
+			throw new PlatformFieldException(PlatformRules.SUPPORT_WINDOW_RANGE, MIN_WINDOW_HOURS, MAX_WINDOW_HOURS);
 		}
 		var windowMoved = window != row.getSupportAccessWindowHours();
 		var creationMoved = creation != row.getOrganizationCreation();
 		var editionsMoved = editions != row.getEditionsInPublishedPeriods();
 		if (!windowMoved && !creationMoved && !editionsMoved) {
-			throw new PlatformFieldException("reason", "Nothing changed, so there is nothing to record.");
+			throw new PlatformFieldException(PlatformRules.NOTHING_CHANGED);
 		}
 		var reason = update.reason() == null ? "" : update.reason().trim();
 		if (reason.length() < MIN_REASON_LENGTH) {
-			throw new PlatformFieldException("reason",
-					"Give a reason of at least " + MIN_REASON_LENGTH + " characters.");
+			throw new PlatformFieldException(PlatformRules.REASON_TOO_SHORT, MIN_REASON_LENGTH);
 		}
 		var now = Instant.now();
 		if (windowMoved) {

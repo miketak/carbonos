@@ -34,8 +34,8 @@ stopped Docker daemon, with no SDKMAN. The SessionStart hook in
 - installs Ubuntu's `openjdk-25-jdk-headless` (the proxy blocks Temurin
   downloads) and sets `JAVA_HOME` for the session;
 - starts `dockerd` and pulls the Testcontainers images;
-- runs `npm ci` in `frontend/` when the lockfile changed and `./mvnw test-compile` in `backend/`
-  to warm the dependency caches.
+- runs `npm ci` in `frontend/` and `qa/` when their lockfiles changed, and
+  `./mvnw test-compile` in `backend/`, to warm the dependency caches.
 
 The hook does nothing outside a cloud session. When you change an image in
 `TestcontainersConfiguration.java`, change it in the hook too.

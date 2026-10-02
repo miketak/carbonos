@@ -1,17 +1,11 @@
 package com.carbonos.user.internal.web;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
+import com.carbonos.shared.web.RuleViolation;
+import com.carbonos.user.UserRules;
 
-/**
- * Single 401 for unknown email, wrong password, and disabled account alike,
- * so accounts cannot be enumerated.
- */
-class InvalidCredentialsException extends ErrorResponseException {
+class InvalidCredentialsException extends RuleViolation {
 
 	InvalidCredentialsException() {
-		super(HttpStatus.UNAUTHORIZED);
-		setTitle("Invalid credentials");
-		setDetail("Invalid email or password.");
+		super(UserRules.CREDENTIALS_INVALID, "Invalid credentials");
 	}
 }

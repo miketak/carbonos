@@ -1,0 +1,12 @@
+{
+  "rules": [
+    {
+      "id": "ui.password-confirmation-mismatch",
+      "module": "frontend",
+      "status": 0,
+      "message": "Passwords do not match.",
+      "field": "confirm",
+      "surface": "field"
+    }
+  ]
+}

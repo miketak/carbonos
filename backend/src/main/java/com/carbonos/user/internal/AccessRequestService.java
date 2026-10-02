@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.carbonos.user.AccessRequestApproved;
 import com.carbonos.user.AccessRequestDenied;
+import com.carbonos.user.UserRules;
 
 /**
  * The self-service registration loop (spec 01.1): visitors submit requests,
@@ -110,8 +111,7 @@ public class AccessRequestService {
 	private AccessRequest getPending(UUID id) {
 		var request = requests.findById(id).orElseThrow(() -> new AccessRequestNotFoundException(id));
 		if (request.getStatus() != AccessRequestStatus.PENDING) {
-			throw new UserRuleViolationException(
-					"This request was already decided (" + request.getStatus() + ").");
+			throw new UserRuleViolationException(UserRules.ACCESS_REQUEST_DECIDED, request.getStatus());
 		}
 		return request;
 	}

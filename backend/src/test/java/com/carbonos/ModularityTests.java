@@ -47,6 +47,21 @@ class ModularityTests {
 		}
 	}
 
+	/**
+	 * The {@code qa} module is a local stack's test hook (the rule catalogue,
+	 * the reset, the digest). It reaches the business modules through their
+	 * public APIs only, and never through {@code ghg}, whose state it must only
+	 * ever read back through the database.
+	 */
+	@Test
+	void qaDependsOnlyOnPublicApis() {
+		var qa = modules.getModuleByName("qa").orElseThrow();
+		var dependencies = qa.getAllDependencies(modules);
+		for (var name : List.of("ghg", "help", "mail", "platform")) {
+			assertThat(dependencies.containsModuleNamed(name)).as("qa depends on %s", name).isFalse();
+		}
+	}
+
 	@Test
 	void writesModuleDocumentation() {
 		new Documenter(modules).writeDocumentation();

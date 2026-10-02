@@ -88,6 +88,16 @@ release.
 Nothing is published. The Vale step reports warnings in the job log and
 never fails the job.
 
+## QA scenarios
+
+A third job on every pull request and push to `main`, `QA scenarios / lint,
+export & compile checks`: `npm ci` in `qa/`, the typecheck, `qa lint`,
+`qa export --check`, `qa compile --check` and `qa schema --check`, then the
+unit tests (ADR 0007). The drivers themselves do not run in CI; the run
+records under `qa/runs/` are the gate, and `qa lint` reports a procedure
+whose YAML changed since its last green record. The job is not required by
+the ruleset yet.
+
 ## Required checks
 
 The repository ruleset on `main` requires a pull request and the two `CI`

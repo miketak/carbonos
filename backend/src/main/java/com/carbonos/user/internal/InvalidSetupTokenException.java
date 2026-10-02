@@ -1,14 +1,11 @@
 package com.carbonos.user.internal;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
+import com.carbonos.shared.web.RuleViolation;
+import com.carbonos.user.UserRules;
 
-/** Deliberately non-enumerating: unknown, used, and expired tokens look the same. */
-class InvalidSetupTokenException extends ErrorResponseException {
+class InvalidSetupTokenException extends RuleViolation {
 
 	InvalidSetupTokenException() {
-		super(HttpStatus.NOT_FOUND);
-		setTitle("Invalid link");
-		setDetail("This link is invalid or has expired.");
+		super(UserRules.SETUP_LINK_INVALID, "Invalid link");
 	}
 }

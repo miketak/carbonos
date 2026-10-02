@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.carbonos.user.PasswordChanged;
 import com.carbonos.user.PasswordResetRequested;
+import com.carbonos.user.UserRules;
 import com.carbonos.user.internal.UserSecurityEvent.Action;
 import com.carbonos.user.internal.security.UserSessions;
 
@@ -96,11 +97,10 @@ public class PasswordService {
 	public void sendResetByAdministrator(UUID userId, UUID actorId) {
 		var user = users.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
 		if (user.getStatus() == UserStatus.PENDING) {
-			throw new UserRuleViolationException(
-					"This account has not set its first password yet; the link in its approval email still works.");
+			throw new UserRuleViolationException(UserRules.RESET_PENDING_ACCOUNT);
 		}
 		if (user.getStatus() != UserStatus.ACTIVE) {
-			throw new UserRuleViolationException("Enable the account before sending a password reset link.");
+			throw new UserRuleViolationException(UserRules.RESET_DISABLED_ACCOUNT);
 		}
 		var actor = users.findById(actorId).map(User::getEmail).orElse("unknown administrator");
 		issue(user, actorId, true);

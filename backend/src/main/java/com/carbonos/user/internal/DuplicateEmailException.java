@@ -1,13 +1,11 @@
 package com.carbonos.user.internal;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
+import com.carbonos.shared.web.RuleViolation;
+import com.carbonos.user.UserRules;
 
-class DuplicateEmailException extends ErrorResponseException {
+class DuplicateEmailException extends RuleViolation {
 
 	DuplicateEmailException(String email) {
-		super(HttpStatus.CONFLICT);
-		setTitle("Duplicate email");
-		setDetail("A user with email '" + email + "' already exists.");
+		super(UserRules.EMAIL_DUPLICATE, "Duplicate email", email);
 	}
 }

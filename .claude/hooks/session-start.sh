@@ -47,5 +47,10 @@ if [ ! frontend/node_modules/.package-lock.json -nt frontend/package-lock.json ]
   (cd frontend && npm ci --no-audit --no-fund --loglevel=error)
 fi
 
+# The QA scenario tooling (qa/), the same way.
+if [ ! qa/node_modules/.package-lock.json -nt qa/package-lock.json ]; then
+  (cd qa && npm ci --no-audit --no-fund --loglevel=error)
+fi
+
 # Backend dependencies and plugins, warmed into ~/.m2 by compiling main and test code.
 (cd backend && ./mvnw -B -q -DskipTests test-compile)

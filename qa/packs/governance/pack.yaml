@@ -1,0 +1,54 @@
+# The governance persona: Adansi Foods Ltd (docs/qa/governance/README.md).
+# Actors are the pack's accounts; their addresses are plus-aliases of one
+# mailbox, qa+<alias>@carbonos.test on a local stack (Mailpit catches all).
+persona: governance
+title: "QA procedures: governance (Adansi Foods Ltd)"
+mailbox:
+  local: qa
+  domain: carbonos.test
+actors:
+  adminA:
+    name: Admin
+    alias: admina
+    password: AdminA-pass-2026
+    platformRole: ADMIN
+    seeded: true # CARBONOS_ADMIN_EMAIL / CARBONOS_ADMIN_PASSWORD of the backend
+    window: normal
+  adminB:
+    name: Admin B
+    alias: adminb
+    password: AdminB-pass-2026
+    platformRole: ADMIN
+    window: private
+  ama:
+    name: Ama Owusu
+    alias: ama
+    password: Ama-pass-2026
+    platformRole: MEMBER
+    window: private
+  kofi:
+    name: Kofi Mensah
+    alias: kofi
+    password: Kofi-pass-2026
+    platformRole: MEMBER
+    window: private
+  esi:
+    name: Esi Boateng
+    alias: esi
+    password: Esi-pass-2026
+    platformRole: MEMBER
+    window: private
+  yaw:
+    name: Yaw Darko
+    alias: yaw
+    password: Yaw-pass-2026
+    platformRole: MEMBER
+    window: private
+  # a second session of Yaw's account, in the other window (procedure 1, case G1)
+  yawSecond:
+    sameAs: yaw
+    window: normal
+  # a person with no account, on the landing page or a sign-in page
+  visitor:
+    anonymous: true
+    window: private

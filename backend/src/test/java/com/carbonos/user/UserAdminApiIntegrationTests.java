@@ -109,8 +109,15 @@ class UserAdminApiIntegrationTests {
 					{"email": "not-an-email", "displayName": "", "role": "MEMBER", "temporaryPassword": "short"}"""))
 			.andExpect(status().isUnprocessableContent())
 			.andExpect(jsonPath("$.errors.email").exists())
-			.andExpect(jsonPath("$.errors.displayName").exists())
-			.andExpect(jsonPath("$.errors.temporaryPassword").exists());
+			.andExpect(jsonPath("$.errors.displayName").exists());
+		// the password rule is the policy's, not bean validation's, so it names its rule (ADR 0008)
+		mvc.perform(post("/api/admin/users").with(asUser(admin)).with(csrf()).contentType("application/json")
+			.content("""
+					{"email": "short@ecoriv.com", "displayName": "Short Pass",
+					 "role": "MEMBER", "temporaryPassword": "short1"}"""))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("user.password.weak"))
+			.andExpect(jsonPath("$.errors.temporaryPassword").value("At least 12 characters, with a letter and a digit."));
 	}
 
 	@Test

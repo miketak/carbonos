@@ -88,6 +88,15 @@ not edit them: the procedures name their row numbers and totals.
 | `fixtures/source-document.txt` | a four-line supplier delivery note | procedures 3 and 7, as record evidence and as the edition's source document |
 | `fixtures/not-evidence.zip` | an empty archive | procedure 3, the refused evidence type |
 
+## Where the procedures come from
+
+Procedure 1 is generated from a scenario,
+`qa/packs/governance/001-accounts-and-the-platform.yaml`, and verified by
+an API driver and a browser driver before it is published (ADR 0007). The
+other procedures are still hand-written and follow one by one. A generated
+procedure opens with an HTML comment naming its source; edit the YAML, not
+the Markdown.
+
 ## How to read a procedure
 
 Each case is a table with one row per step: the **Action** to take, the

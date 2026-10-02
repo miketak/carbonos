@@ -27,4 +27,7 @@ public interface MediaStorage {
 	Optional<MediaMetadata> head(String key);
 
 	void delete(String key);
+
+	/** Removes every object in the store. For the QA reset of a local stack; nothing in production calls it. */
+	void deleteAll();
 }

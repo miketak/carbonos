@@ -6,6 +6,9 @@ spring:
     password: carbonos
 
 carbonos:
+  qa:
+    # the QA hooks under /api/qa (rules, reset, digest); a local stack only
+    endpoints: true
   storage:
     endpoint: http://localhost:9000
     region: us-east-1
