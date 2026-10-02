@@ -9,18 +9,22 @@ import { authVerbs } from './verbs/auth.ts'
 import { accountVerbs } from './verbs/accounts.ts'
 import { settingsVerbs } from './verbs/settings.ts'
 import { passwordVerbs } from './verbs/passwords.ts'
+import { organizationVerbs } from './verbs/organization.ts'
+import { structureVerbs } from './verbs/structure.ts'
+import { libraryVerbs } from './verbs/library.ts'
 import { accountOutcomes } from './outcomes/accounts.ts'
 import { sessionOutcomes } from './outcomes/sessions.ts'
 import { settingsOutcomes } from './outcomes/settings.ts'
 import { generalOutcomes } from './outcomes/general.ts'
+import { organizationOutcomes } from './outcomes/organization.ts'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyVerb = Verb<any>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyOutcome = Outcome<any>
 
-const verbList: AnyVerb[] = [...authVerbs, ...accountVerbs, ...settingsVerbs, ...passwordVerbs]
-const outcomeList: AnyOutcome[] = [...accountOutcomes, ...sessionOutcomes, ...settingsOutcomes, ...generalOutcomes]
+const verbList: AnyVerb[] = [...authVerbs, ...accountVerbs, ...settingsVerbs, ...passwordVerbs, ...organizationVerbs, ...structureVerbs, ...libraryVerbs]
+const outcomeList: AnyOutcome[] = [...accountOutcomes, ...sessionOutcomes, ...settingsOutcomes, ...generalOutcomes, ...organizationOutcomes]
 
 export const verbs: ReadonlyMap<string, AnyVerb> = index(verbList, 'verb')
 export const outcomes: ReadonlyMap<string, AnyOutcome> = index(outcomeList, 'outcome')

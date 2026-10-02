@@ -11,7 +11,9 @@ export type UiOp =
   | { op: 'tab'; name: string }
   | { op: 'click'; button: string; within?: string }
   | { op: 'fill'; label: string; value: string; within?: string }
-  | { op: 'choose'; label: string; option: string; within?: string }
+  | { op: 'choose'; label: string; option: string; within?: string; byValue?: boolean }
+  | { op: 'tick'; label: string; within?: string; on?: boolean }
+  | { op: 'orgPage'; organization: string; section: string }
   | { op: 'confirm'; dialog: string; button: string }
   | { op: 'signIn'; email: string; password: string }
   | { op: 'signOut' }
@@ -23,6 +25,10 @@ export type UiOp =
 
 export type UiCheck =
   | { check: 'at'; nav: string }
+  | { check: 'atOrg'; organization: string; section: string }
+  | { check: 'search'; label: string; value: string }
+  | { check: 'buttonDisabled'; button: string; tooltip?: string }
+  | { check: 'rowDialogHas'; row: string; button: string; dialog: string; text: string }
   | { check: 'textVisible'; text: string; within?: string }
   | { check: 'textAbsent'; text: string }
   | { check: 'toast'; text: string }

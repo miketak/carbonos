@@ -5,7 +5,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
+import com.carbonos.ghg.GhgRules;
+import com.carbonos.shared.web.RuleViolation;
 
 /**
  * Another live organization already carries the name (spec 01.8): a 409 that
@@ -14,14 +15,11 @@ import org.springframework.web.ErrorResponseException;
  * {@code allowDuplicateName} proceeds; the client detects this refusal by the
  * {@code duplicates} property, not by the status.
  */
-class DuplicateOrganizationNameException extends ErrorResponseException {
+class DuplicateOrganizationNameException extends RuleViolation {
 
 	DuplicateOrganizationNameException(String name, List<Organization> duplicates) {
-		super(HttpStatus.CONFLICT);
-		setTitle("Duplicate organization name");
-		setDetail("An organization named '" + name + "' already exists: "
-				+ duplicates.stream().map(AccountNumbers::label).collect(Collectors.joining(", "))
-				+ ". Confirm to use the name anyway.");
+		super(GhgRules.ORGANIZATION_NAME_DUPLICATE, "Duplicate organization name", name,
+				duplicates.stream().map(AccountNumbers::label).collect(Collectors.joining(", ")));
 		getBody().setProperty("duplicates", duplicates.stream()
 			.map(organization -> Map.of("id", organization.getId().toString(), "name", organization.getName(),
 					"accountNo", organization.getAccountNo()))

@@ -1,5 +1,7 @@
 package com.carbonos.ghg.internal;
 
+import com.carbonos.ghg.GhgRules;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -363,7 +365,7 @@ public class GhgService {
 		access.checkMemberOwner(organization);
 		var account = userDirectory.findByEmail(email).orElseThrow(() -> GhgNotFoundException.account(email));
 		if (members.findByOrganizationIdAndUserId(organizationId, account.id()).isPresent()) {
-			throw new GhgRuleViolationException(account.email() + " is already a member of '" + organization.getName() + "'.");
+			throw new GhgRuleViolationException(GhgRules.MEMBER_DUPLICATE, account.email(), organization.getName());
 		}
 		var member = members.save(new OrganizationMember(organization, account.id(), account.email(),
 				account.displayName(), role));
@@ -376,7 +378,7 @@ public class GhgService {
 		access.checkMemberOwner(organization);
 		var member = requireMember(organizationId, memberId);
 		if (member.getRole() == OrgRole.OWNER && role != OrgRole.OWNER && isLastOwner(organizationId)) {
-			throw new GhgRuleViolationException("'" + organization.getName() + "' needs at least one owner.");
+			throw new GhgRuleViolationException(GhgRules.LAST_OWNER, organization.getName());
 		}
 		var before = member.getRole();
 		member.setRole(role);
@@ -392,7 +394,7 @@ public class GhgService {
 		access.checkMemberOwner(organization);
 		var member = requireMember(organizationId, memberId);
 		if (member.getRole() == OrgRole.OWNER && isLastOwner(organizationId)) {
-			throw new GhgRuleViolationException("'" + organization.getName() + "' needs at least one owner.");
+			throw new GhgRuleViolationException(GhgRules.LAST_OWNER, organization.getName());
 		}
 		members.delete(member);
 		recordMembership(organizationId, GhgAuditEvent.Action.MEMBER_REMOVED, member.getEmail() + " removed");
@@ -449,8 +451,19 @@ public class GhgService {
 	private static void requireStructure(EntityFacts facts) {
 		if (facts.effectiveFrom() != null && facts.effectiveTo() != null
 				&& facts.effectiveTo().isBefore(facts.effectiveFrom())) {
-			throw new GhgFieldException("effectiveTo", "The disposal date is before the acquisition date.");
+			throw new GhgFieldException(GhgRules.ENTITY_DISPOSAL_BEFORE_ACQUISITION);
 		}
+		// spec 03.1: a share is a percentage; the rule is the service's so the refusal names it
+		if (outOfRange(facts.economicInterestPercent())) {
+			throw new GhgFieldException(GhgRules.ENTITY_PERCENT_RANGE);
+		}
+		if (outOfRange(facts.legalOwnershipPercent())) {
+			throw new GhgFieldException(GhgRules.ENTITY_PERCENT_RANGE.withField("legalOwnershipPercent"));
+		}
+	}
+
+	private static boolean outOfRange(BigDecimal percent) {
+		return percent != null && (percent.signum() < 0 || percent.compareTo(BigDecimal.valueOf(100)) > 0);
 	}
 
 	public LegalEntity createEntity(UUID organizationId, EntityFacts facts) {
@@ -458,7 +471,7 @@ public class GhgService {
 		access.checkWrite(organization);
 		var trimmed = facts.name().trim();
 		if (entities.existsByOrganizationIdAndNameIgnoreCaseAndDeletedAtIsNull(organizationId, trimmed)) {
-			throw new GhgRuleViolationException("An entity named '" + trimmed + "' already exists.");
+			throw new GhgRuleViolationException(GhgRules.ENTITY_NAME_DUPLICATE, trimmed);
 		}
 		var parent = requireParent(facts.parentEntityId(), organizationId, null);
 		requireStructure(facts);
@@ -496,8 +509,7 @@ public class GhgService {
 			throw GhgNotFoundException.entity(parentEntityId);
 		}
 		if (self != null && parent.isOrDescendsFrom(self)) {
-			throw new GhgRuleViolationException("'" + parent.getName() + "' is held through '" + self.getName()
-					+ "': a parent chain cannot loop.");
+			throw new GhgRuleViolationException(GhgRules.ENTITY_PARENT_LOOP, parent.getName(), self.getName());
 		}
 		return parent;
 	}
@@ -518,7 +530,7 @@ public class GhgService {
 		}
 		if (!trimmed.equalsIgnoreCase(entity.getName())
 				&& entities.existsByOrganizationIdAndNameIgnoreCaseAndDeletedAtIsNull(entity.getOrganization().getId(), trimmed)) {
-			throw new GhgRuleViolationException("An entity named '" + trimmed + "' already exists.");
+			throw new GhgRuleViolationException(GhgRules.ENTITY_NAME_DUPLICATE, trimmed);
 		}
 		var parent = requireParent(facts.parentEntityId(), entity.getOrganization().getId(), entity);
 		requireStructure(facts);
@@ -543,8 +555,7 @@ public class GhgService {
 			throw new GhgRuleViolationException("The reporting company cannot be deleted.");
 		}
 		if (facilities.existsByEntityIdAndDeletedAtIsNull(id)) {
-			throw new GhgRuleViolationException("'" + entity.getName()
-					+ "' still has facilities. Move them to another entity before deleting it.");
+			throw new GhgRuleViolationException(GhgRules.ENTITY_HAS_FACILITIES, entity.getName());
 		}
 		if (entities.existsByParentIdAndDeletedAtIsNull(id)) {
 			throw new GhgRuleViolationException("'" + entity.getName()
@@ -575,7 +586,7 @@ public class GhgService {
 	private static void requireLease(FacilityAttributes attributes) {
 		if (attributes.leaseFrom() != null && attributes.leaseTo() != null
 				&& attributes.leaseTo().isBefore(attributes.leaseFrom())) {
-			throw new GhgFieldException("leaseTo", "The lease ends before it starts.");
+			throw new GhgFieldException(GhgRules.LEASE_ENDS_BEFORE_START);
 		}
 	}
 
@@ -683,7 +694,7 @@ public class GhgService {
 		access.checkWrite(facility.getOrganization());
 		var trimmed = facts.name().trim();
 		if (streams.existsByFacilityIdAndNameIgnoreCase(facilityId, trimmed)) {
-			throw new GhgRuleViolationException("'" + facility.getName() + "' already has a stream named '" + trimmed + "'.");
+			throw new GhgRuleViolationException(GhgRules.STREAM_NAME_DUPLICATE, facility.getName(), trimmed);
 		}
 		var stream = streams.save(new SourceStream(facility, trimmed, facts.kind(), trimToNull(facts.fuel()),
 				trimToNull(facts.meterOrSupplier()), facts.contractorOperated(), trimToNull(facts.note())));
@@ -698,8 +709,7 @@ public class GhgService {
 		var trimmed = facts.name().trim();
 		if (!trimmed.equalsIgnoreCase(stream.getName())
 				&& streams.existsByFacilityIdAndNameIgnoreCase(stream.getFacility().getId(), trimmed)) {
-			throw new GhgRuleViolationException("'" + stream.getFacility().getName() + "' already has a stream named '"
-					+ trimmed + "'.");
+			throw new GhgRuleViolationException(GhgRules.STREAM_NAME_DUPLICATE, stream.getFacility().getName(), trimmed);
 		}
 		stream.update(trimmed, facts.kind(), trimToNull(facts.fuel()), trimToNull(facts.meterOrSupplier()),
 				facts.contractorOperated(), trimToNull(facts.note()));
@@ -857,10 +867,8 @@ public class GhgService {
 				.toList();
 			if (!others.isEmpty()) {
 				var checker = others.getFirst();
-				throw new GhgRuleViolationException("You entered '" + factor.getName()
-						+ "'. A factor is checked by someone other than the person who typed it (Corporate Standard "
-						+ "chapter 7): ask " + (checker.getDisplayName() == null ? checker.getEmail() : checker.getDisplayName())
-						+ " to approve it.");
+				throw new GhgRuleViolationException(GhgRules.FACTOR_SELF_APPROVAL, factor.getName(),
+						checker.getDisplayName() == null ? checker.getEmail() : checker.getDisplayName());
 			}
 		}
 		factor.approve(approver, own);
@@ -969,8 +977,7 @@ public class GhgService {
 			}
 			// a split that does not add up would count part of the gas twice or not at all
 			if (!composition.sumsToOne()) {
-				throw new GhgFieldException("blendComposition",
-						"The mass fractions of a blend must add up to 1 (for example HFC-32:0.5,HFC-125:0.5).");
+				throw new GhgFieldException(GhgRules.BLEND_FRACTIONS);
 			}
 		}
 	}
@@ -1027,11 +1034,11 @@ public class GhgService {
 
 	private void requireCustomUnit(UUID organizationId, String code, CustomUnitFacts facts, CustomUnit self) {
 		if (units.registered(code).isPresent()) {
-			throw new GhgFieldException("code", "'" + code + "' is already a registered unit.");
+			throw new GhgFieldException(GhgRules.UNIT_REGISTERED, code);
 		}
 		if ((self == null || !self.getCode().equalsIgnoreCase(code))
 				&& customUnits.existsByOrganizationIdAndCodeIgnoreCase(organizationId, code)) {
-			throw new GhgFieldException("code", "A custom unit named '" + code + "' already exists.");
+			throw new GhgFieldException(GhgRules.UNIT_DUPLICATE, code);
 		}
 		if (units.registered(facts.baseUnit()).isEmpty()) {
 			throw new GhgFieldException("baseUnit", "'" + facts.baseUnit()
@@ -1060,7 +1067,7 @@ public class GhgService {
 		access.checkWrite(organization);
 		var material = facts.material().trim();
 		if (densities.existsByOrganizationIdAndMaterialIgnoreCase(organizationId, material)) {
-			throw new GhgFieldException("material", "A density for '" + material + "' already exists.");
+			throw new GhgFieldException(GhgRules.DENSITY_DUPLICATE, material);
 		}
 		return densities.save(new Density(organizationId, material, facts.kgPerLitre(), facts.source().trim(),
 				trimToNull(facts.note())));
@@ -1071,7 +1078,7 @@ public class GhgService {
 		var material = facts.material().trim();
 		if (!material.equalsIgnoreCase(density.getMaterial())
 				&& densities.existsByOrganizationIdAndMaterialIgnoreCase(density.getOrganizationId(), material)) {
-			throw new GhgFieldException("material", "A density for '" + material + "' already exists.");
+			throw new GhgFieldException(GhgRules.DENSITY_DUPLICATE, material);
 		}
 		density.update(material, facts.kgPerLitre(), facts.source().trim(), trimToNull(facts.note()));
 		return density;

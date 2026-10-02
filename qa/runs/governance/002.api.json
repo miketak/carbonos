@@ -1,0 +1,286 @@
+{
+  "procedure": 2,
+  "driver": "api",
+  "yamlSha256": "7e291c0dbaa792a6551a35dbefad3ba759d1db28665a40ff3ea459e04bfa6937",
+  "productVersion": null,
+  "gitSha": "09ae3f0108267e189330b35ddd7c5891d14fcdac",
+  "date": "2026-10-02",
+  "specialist": "unknown",
+  "digestSha256": "44954d8516454593e263d9b9361daffa5f43d96ad1f43b20f36de12e13e71dbe",
+  "counts": {
+    "pass": 66,
+    "na": 1,
+    "manual": 0
+  },
+  "steps": [
+    {
+      "id": "2.A1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.6",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.7",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.8",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.9",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.10",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A1.11",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A3.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A3.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A3.5",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A3.6",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A3.7",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.5",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B3.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D3.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F3.1",
+      "status": "NA",
+      "note": "the empty Valid to is refused by the page before any request | refused: N/A, the empty Valid to is refused by the page before any request"
+    },
+    {
+      "id": "2.F3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F4.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F4.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F4.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F4.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.5",
+      "status": "PASS"
+    }
+  ]
+}

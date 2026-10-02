@@ -4,17 +4,55 @@
  * the op says so; any CSS selector lives in locators.ts with a reason.
  */
 import { expect, type Locator, type Page } from '@playwright/test'
+import type { ApiContext } from '../../vocabulary/contract.ts'
+import { entity, organization } from '../../vocabulary/organizations.ts'
 import type { UiOp } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
 import { env } from '../shared/env.ts'
 import type { ChainAccess } from '../shared/procedure.ts'
 import { locators, routes } from './locators.ts'
-import { resolveTokens } from './tokens.ts'
+import { resolveTokens } from '../shared/tokens.ts'
 
 export interface ExecuteContext {
   chain: ChainAccess
+  /** The acting member's API view, for the ids the page needs (an organization's route, an entity's option value). */
+  api: ApiContext
   /** The link of the newest email with the subject, with the app's own origin. */
   emailLink(actorKey: string, subject: string, path: string): Promise<string>
+}
+
+/** The sections of an organization, by sidebar label, to their path under /app/ghg/<id>/. */
+const orgSections: Record<string, string> = {
+  Overview: '',
+  'Legal entities': 'entities',
+  Facilities: 'facilities',
+  'Emission factors': 'factors',
+  Units: 'units',
+  Settings: 'settings',
+  Activity: 'activity',
+  Inventories: 'inventories',
+}
+
+/** Tokens that need the API: `{orgId:Name}` and `{entityId:Org|Entity}`. */
+export async function resolveAsync(ctx: ExecuteContext, text: string): Promise<string> {
+  let out = text
+  for (const match of text.matchAll(/\{orgId:([^}]+)\}/g)) {
+    out = out.replace(match[0], (await organization(ctx.api, match[1]!)).id)
+  }
+  for (const match of text.matchAll(/\{entityId:([^}|]+)\|([^}]+)\}/g)) {
+    const org = await organization(ctx.api, match[1]!)
+    out = out.replace(match[0], (await entity(ctx.api.session(), org.id, match[2]!)).id)
+  }
+  return resolveTokens(ctx.chain, out)
+}
+
+export async function openOrgPage(page: Page, ctx: ExecuteContext, organizationRef: string, section: string): Promise<void> {
+  const path = orgSections[section]
+  if (path === undefined) throw new Error(`no organization section "${section}"`)
+  const org = await organization(ctx.api, organizationRef)
+  await dismissDialogs(page)
+  await goto(page, `/app/ghg/${org.id}/${path}`)
+  await page.waitForURL((url) => url.pathname.startsWith(`/app/ghg/${org.id}`), { timeout: 15_000 })
 }
 
 const ZEROS = '0'.repeat(64)
@@ -27,8 +65,12 @@ export function dialog(page: Page, title: string): Locator {
   return page.getByRole('dialog', { name: title, exact: true })
 }
 
+/** The row of a table that names the text; else the list item or card that does. */
 export function row(page: Page, text: string): Locator {
-  return page.getByRole('row').filter({ hasText: text }).first()
+  const rows = page.getByRole('row').filter({ hasText: text })
+  const items = page.getByRole('listitem').filter({ hasText: text })
+  const cards = page.locator('li, tr, article, section > div, div').filter({ has: page.getByText(text, { exact: true }) }).filter({ has: page.getByRole('button') })
+  return rows.or(items).or(cards.last()).first()
 }
 
 /** A tester leaving a dialog behind closes it first: Escape, then its Cancel or Close button. */
@@ -71,6 +113,16 @@ async function settleAfterSignIn(page: Page): Promise<void> {
 export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promise<void> {
   const t = (text: string) => resolveTokens(ctx.chain, text)
   switch (op.op) {
+    case 'orgPage':
+      await openOrgPage(page, ctx, op.organization, op.section)
+      return
+    case 'tick': {
+      const scope = op.within ? dialog(page, t(op.within)) : page
+      const box = scope.getByLabel(t(op.label), { exact: true })
+      if (op.on === false) await box.uncheck()
+      else await box.check()
+      return
+    }
     case 'goto':
       await dismissDialogs(page)
       await goto(page, op.path)
@@ -93,7 +145,8 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
     }
     case 'choose': {
       const scope = op.within ? dialog(page, t(op.within)) : page
-      await scope.getByLabel(t(op.label), { exact: true }).selectOption({ label: t(op.option) })
+      const option = await resolveAsync(ctx, op.option)
+      await scope.getByLabel(t(op.label), { exact: true }).selectOption(op.byValue ? { value: option } : { label: option })
       return
     }
     case 'confirm': {

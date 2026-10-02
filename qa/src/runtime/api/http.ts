@@ -61,8 +61,8 @@ export class HttpSession implements ApiSession {
     return this.send('put', path, body ?? {})
   }
 
-  delete(path: string) {
-    return this.send('delete', path)
+  delete(path: string, body?: unknown) {
+    return this.send('delete', path, body)
   }
 
   async dispose() {

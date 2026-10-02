@@ -22,7 +22,11 @@ function phrase(op: UiOp): string {
     case 'fill':
       return `fill in ${b(op.label)} with ${value(op.value)}`
     case 'choose':
-      return `set ${b(op.label)} to ${b(op.option)}`
+      return op.byValue && op.option.startsWith('{') ? `set ${b(op.label)} to ${op.option.replace(/\{entityId:[^|]+\|([^}]+)\}/, '$1')}` : `set ${b(op.label)} to ${b(op.option)}`
+    case 'tick':
+      return op.on === false ? `untick ${b(op.label)}` : `tick ${b(op.label)}`
+    case 'orgPage':
+      return `in ${op.organization.replace(/ #\d+$/, '')}, open ${b(op.section)}`
     case 'confirm':
       return `confirm ${q(op.dialog)} with ${b(op.button)}`
     case 'signIn':
@@ -80,6 +84,8 @@ export function capitalize(text: string): string {
 export function narrateWhereToLook(checks: UiCheck[]): string | undefined {
   const at = checks.find((c) => c.check === 'at')
   if (at && at.check === 'at') return `Open ${b(at.nav)}.`
+  const atOrg = checks.find((c) => c.check === 'atOrg')
+  if (atOrg && atOrg.check === 'atOrg') return `In ${atOrg.organization.replace(/ #\d+$/, '')}, open ${b(atOrg.section)}.`
   const visit = checks.find((c) => c.check === 'visit')
   if (visit && visit.check === 'visit') return `Open ${code(visit.path)} in the address bar.`
   return undefined

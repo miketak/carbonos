@@ -7,8 +7,6 @@ import java.util.UUID;
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.RelationshipType;
 
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,8 +21,8 @@ import jakarta.validation.constraints.Size;
 public record EntityRequest( //
 		@NotBlank @Size(max = 120) String name, //
 		@NotNull RelationshipType relationshipType, //
-		@NotNull @DecimalMin("0") @DecimalMax("100") @Digits(integer = 3, fraction = 2) BigDecimal economicInterestPercent, //
-		@DecimalMin("0") @DecimalMax("100") @Digits(integer = 3, fraction = 2) BigDecimal legalOwnershipPercent, //
+		@NotNull @Digits(integer = 3, fraction = 2) BigDecimal economicInterestPercent, //
+		@Digits(integer = 3, fraction = 2) BigDecimal legalOwnershipPercent, //
 		@NotNull Boolean operatedByCompany, //
 		Boolean controlledByCompany, //
 		UUID parentEntityId, //

@@ -109,10 +109,10 @@ qa-reset:         ## QA scenarios: reset the local stack through /api/qa/reset a
 	cd qa && npm run -s qa -- reset --persona $(QA_PERSONA)
 
 qa-run-api:       ## QA scenarios: run the API driver: make qa-run-api [QA_PERSONA=governance] [QA_PROC=1]
-	cd qa && npx playwright test --project api $(if $(QA_PROC),generated/$(QA_PERSONA)/api/$(shell printf '%03d' $(QA_PROC))-,generated/$(QA_PERSONA)/api/)
+	cd qa && npx playwright test --project=api $(if $(QA_PROC),generated/$(QA_PERSONA)/api/$(shell printf '%03d' $(QA_PROC))-,generated/$(QA_PERSONA)/api/)
 
 qa-run-ui:        ## QA scenarios: run the UI driver: make qa-run-ui [QA_PERSONA=governance] [QA_PROC=1]
-	cd qa && npx playwright test --project ui $(if $(QA_PROC),generated/$(QA_PERSONA)/ui/$(shell printf '%03d' $(QA_PROC))-,generated/$(QA_PERSONA)/ui/)
+	cd qa && npx playwright test --project=ui $(if $(QA_PROC),generated/$(QA_PERSONA)/ui/$(shell printf '%03d' $(QA_PROC))-,generated/$(QA_PERSONA)/ui/)
 
 qa-record:        ## QA scenarios: the run record from the last run: make qa-record QA_PROC=1 DRIVER=api
 	@test -n "$(QA_PROC)" -a -n "$(DRIVER)" || { echo "Usage: make qa-record QA_PROC=1 DRIVER=api|ui"; exit 1; }
