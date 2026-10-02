@@ -3,10 +3,7 @@ package com.carbonos.ghg.internal;
 import com.carbonos.ghg.GhgRules;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.util.Locale;
 import java.util.ArrayList;
@@ -46,7 +43,6 @@ import com.carbonos.ghg.internal.export.ReportLabels;
 @Transactional
 public class InventoryService {
 
-	private static final String KWH = "kWh";
 
 	/** What V41 wrote on an exclusion whose zero magnitude was a placeholder, not an answer (spec 04.8). */
 	static final String PLACEHOLDER_MAGNITUDE = "magnitude entered before the three states existed; confirm or size it";
@@ -2286,7 +2282,7 @@ public class InventoryService {
 						+ " as a custom unit under Units."));
 			}
 			if (assignment.getScope() == Scope.SCOPE_2 && instruments.containsKey(activity.getFacility().getId())
-					&& !units.canConvert(activityUnit, KWH)) {
+					&& !units.canConvert(activityUnit, LineMath.KWH)) {
 				factorFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType() + "' at "
 						+ activity.getFacility().getName() + " has a market-based factor per kWh but is recorded in "
 						+ describeUnit(units, activityUnit) + ": the market-based figure falls back to location-based."));
@@ -2344,14 +2340,14 @@ public class InventoryService {
 					.filter(assignment -> assignment.getActivity().getFacility().getId().equals(instrument.getFacility().getId()))
 					.filter(assignment -> instrument.overlaps(assignment.getActivity().getPeriodStart(),
 							assignment.getActivity().getPeriodEnd(), inventory))
-					.filter(assignment -> units.canConvert(assignment.getActivity().getUnit(), KWH))
+					.filter(assignment -> units.canConvert(assignment.getActivity().getUnit(), LineMath.KWH))
 					.map(assignment -> units.convert(assignment.getActivity().getQuantity(),
-							assignment.getActivity().getUnit(), KWH))
+							assignment.getActivity().getUnit(), LineMath.KWH))
 					.reduce(BigDecimal.ZERO, BigDecimal::add);
 				if (instrument.getCoveredKwh().compareTo(electricity) > 0) {
 					factorFindings.add(new Finding(Severity.WARNING, "The instrument for "
-							+ instrument.getFacility().getName() + " covers " + kwh(instrument.getCoveredKwh())
-							+ " kWh but the facility's scope 2 electricity in its period is " + kwh(electricity)
+							+ instrument.getFacility().getName() + " covers " + LineMath.kwh(instrument.getCoveredKwh())
+							+ " kWh but the facility's scope 2 electricity in its period is " + LineMath.kwh(electricity)
 							+ " kWh: the excess covers nothing."));
 				}
 			}
@@ -2489,55 +2485,17 @@ public class InventoryService {
 			// spec 04.2: the share over the record's period, pro-rated by the days the version covers
 			var coverage = version.coverage(activity.getFacility().getId(), activity.getPeriodStart(),
 					activity.getPeriodEnd(), inventory.getPeriodStart(), inventory.getPeriodEnd());
-			var share = coverage.coveredDays() == 0 ? BigDecimal.ZERO : coverage.share();
-			var periodShare = coverage.coveredDays() == coverage.totalDays() ? BigDecimal.ONE
-					: BigDecimal.valueOf(coverage.coveredDays())
-						.divide(BigDecimal.valueOf(coverage.totalDays()), 6, RoundingMode.HALF_UP);
-			var period = new GhgRunLine.Period(activity.getPeriodStart(), activity.getPeriodEnd(),
-					coverage.totalDays(), coverage.coveredDays(), periodShare,
-					periodShare.compareTo(BigDecimal.ONE) == 0 ? null
-							: "pro-rated: " + coverage.coveredDays() + " of " + coverage.totalDays()
-									+ " days inside the reporting period and the membership window ("
-									+ periodShare.movePointRight(2).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
-									+ "%)");
-			var quantity = activity.getQuantity();
-			var activityUnit = activity.getUnit();
-			var factorUnit = factor.getUnit();
-			// spec 02.2: within a dimension, through a custom unit, or through a density; the gate proved it converts
-			var conversion = Conversion.of(units, quantity, activityUnit, factorUnit, assignment.getDensity())
-				.orElse(new Conversion(quantity, BigDecimal.ONE, null, false));
-			var conversionFactor = conversion.factor();
-			var convertedQuantity = conversion.convertedQuantity();
-			var perUnit = factor.kgCo2ePerUnit(gwp);
-			var counted = convertedQuantity.multiply(periodShare);
-			var kgCo2e = round(counted.multiply(perUnit).multiply(share));
-			// spec 07.7: every gas carries the same two shares as kgCo2e, so the gas CO2e contributions tie to it
-			var gases = new GhgRunLine.Gases(gas(counted, factor.getCo2KgPerUnit(), share),
-					gas(counted, factor.getCh4KgPerUnit(), share), gas(counted, factor.getN2oKgPerUnit(), share),
-					gas(counted, factor.hfcsKgCo2ePerUnit(gwp), share), gas(counted, factor.pfcsKgCo2ePerUnit(gwp), share),
-					gas(counted, factor.getSf6KgPerUnit(), share), gas(counted, factor.getNf3KgPerUnit(), share),
-					gas(counted, factor.getBiogenicCo2KgPerUnit(), share), gas(counted, factor.getHfcsKgPerUnit(), share),
-					gas(counted, factor.getPfcsKgPerUnit(), share), factor.blendGwpSourceFor(gwp), factor.isCh4Fossil());
-			GhgRunLine.Market market = null;
-			if (assignment.getScope() == Scope.SCOPE_2) {
-				market = marketBased(units, inventory, assignment, instruments.get(activity.getFacility().getId()),
-						remainingCoverage, counted, perUnit, share, periodShare, kgCo2e);
-			}
 			var files = evidenceByActivity.get(activity.getId());
 			var evidenceFiles = files == null ? null : String.join(", ", files);
-			var line = new GhgRunLine(run, assignment, convertedQuantity, conversionFactor, perUnit, share, period,
-					kgCo2e, gases, market, evidenceFiles != null && evidenceFiles.length() > 1000
-							? evidenceFiles.substring(0, 997) + "..." : evidenceFiles,
-					conversion.note() != null && conversion.note().length() > 500
-							? conversion.note().substring(0, 497) + "..." : conversion.note());
-			run.addLine(line);
+			var primary = LineMath.primaryLine(run, assignment, coverage, units, gwp,
+					instruments.get(activity.getFacility().getId()), remainingCoverage, evidenceFiles);
+			run.addLine(primary.line());
 			// spec 04.7: the category 3 lines that ride on this one, right after it
 			if (assignment.getScope() == Scope.SCOPE_1 || assignment.getScope() == Scope.SCOPE_2) {
 				for (var rule : rulesByFactor.getOrDefault(lineageKey(factor), List.of())) {
 					var upstream = rule.getUpstreamFactor();
 					factorsUsed.putIfAbsent(upstream.getId(), upstream);
-					run.addLine(derivedLine(run, assignment, line, rule, units, gwp, convertedQuantity,
-							conversionFactor, share, periodShare, period, evidenceFiles, market));
+					run.addLine(LineMath.derivedLine(run, assignment, primary, rule, units, gwp));
 				}
 			}
 		}
@@ -2549,52 +2507,6 @@ public class InventoryService {
 		record(inventory, run, GhgAuditEvent.Action.RUN_LAUNCHED, "run " + run.getRunNo() + " '" + run.getLabel() + "' launched");
 		events.publishEvent(new GhgRunCompleted(run.getId(), inventoryId, run.getTotalKgCo2e()));
 		return run;
-	}
-
-	/**
-	 * One derived category 3 line (spec 04.7): the primary line's record,
-	 * facility, entity, country, period, quantity, accounting share and period
-	 * share, priced at the upstream factor's rate under the run's GWP set. It
-	 * carries the primary line's stream, tier, uncertainty and evidence, is a
-	 * proxy only when the primary line is, and never carries a market-based
-	 * figure, an instrument or a lease type.
-	 */
-	private static GhgRunLine derivedLine(GhgRun run, InventoryAssignment assignment, GhgRunLine primary,
-			UpstreamRule rule, UnitConverter.Scoped units, GwpSet gwp, BigDecimal primaryConvertedQuantity,
-			BigDecimal primaryConversionFactor, BigDecimal share, BigDecimal periodShare, GhgRunLine.Period period,
-			String evidenceFiles, GhgRunLine.Market market) {
-		var upstream = rule.getUpstreamFactor();
-		var primaryUnit = assignment.getEmissionFactor().getUnit();
-		// the rule refused a pair whose units do not convert, so the ratio always exists
-		var ratio = units.canConvert(primaryUnit, upstream.getUnit()) ? units.ratio(primaryUnit, upstream.getUnit())
-				: BigDecimal.ONE;
-		var converted = primaryConvertedQuantity.multiply(ratio, MathContext.DECIMAL64);
-		var perUnit = upstream.kgCo2ePerUnit(gwp);
-		var counted = converted.multiply(periodShare);
-		var kgCo2e = round(counted.multiply(perUnit).multiply(share));
-		var gases = new GhgRunLine.Gases(gas(counted, upstream.getCo2KgPerUnit(), share),
-				gas(counted, upstream.getCh4KgPerUnit(), share), gas(counted, upstream.getN2oKgPerUnit(), share),
-				gas(counted, upstream.hfcsKgCo2ePerUnit(gwp), share), gas(counted, upstream.pfcsKgCo2ePerUnit(gwp), share),
-				gas(counted, upstream.getSf6KgPerUnit(), share), gas(counted, upstream.getNf3KgPerUnit(), share),
-				gas(counted, upstream.getBiogenicCo2KgPerUnit(), share), gas(counted, upstream.getHfcsKgPerUnit(), share),
-				gas(counted, upstream.getPfcsKgPerUnit(), share), upstream.blendGwpSourceFor(gwp),
-				upstream.isCh4Fossil());
-		var note = new StringBuilder(rule.getKind().phrase()).append(" of ");
-		var ref = primary.getRecordRef();
-		if (ref != null && !ref.isBlank()) {
-			note.append(ref).append(' ');
-		}
-		note.append(primary.getActivityType() == null ? primary.getFacilityName() : primary.getActivityType());
-		// the Scope 3 Standard computes losses from the electricity consumed and is silent on the
-		// market-based balance: this inventory prices every consumed kilowatt-hour at the location-based factor
-		if (rule.getKind() == UpstreamRuleKind.TRANSMISSION_AND_DISTRIBUTION && market != null
-				&& market.instrument() != null) {
-			note.append("; on the consumed kWh, not the market-based balance");
-		}
-		var derived = new GhgRunLine.Derived(primary.getId(), rule.getKind(), note.toString());
-		return new GhgRunLine(run, assignment, converted,
-				primaryConversionFactor.multiply(ratio, MathContext.DECIMAL64), perUnit, share, period, kgCo2e, gases,
-				null, evidenceFiles, null, upstream, ActivityCategory.FUEL_ENERGY_RELATED, derived);
 	}
 
 	/**
@@ -2712,96 +2624,6 @@ public class InventoryService {
 			.toList();
 	}
 
-	// --- market-based scope 2 (spec 07.3) --------------------------------------
-
-	/**
-	 * The market-based side of a scope 2 line: the facility's instrument applied
-	 * to the kWh it still covers, the balance at the residual mix or the grid
-	 * average (the line's own location-based factor), and a note that prints
-	 * the split. Purchased heat, steam and cooling, and lines that do not
-	 * convert to kWh, keep their location-based figure.
-	 */
-	private GhgRunLine.Market marketBased(UnitConverter.Scoped units, Inventory inventory,
-			InventoryAssignment assignment, MarketFactor instrument, Map<UUID, BigDecimal> remainingCoverage,
-			BigDecimal convertedQuantity, BigDecimal perUnit, BigDecimal share, BigDecimal periodShare,
-			BigDecimal locationKgCo2e) {
-		var activity = assignment.getActivity();
-		if (assignment.getCategory() != ActivityCategory.PURCHASED_ELECTRICITY) {
-			return new GhgRunLine.Market(locationKgCo2e, null, null, "no contractual instrument applies to '"
-					+ categoryName(assignment.getCategory()) + "'; the location-based figure stands", BigDecimal.ZERO,
-					BigDecimal.ZERO, null, null);
-		}
-		if (!units.canConvert(activity.getUnit(), KWH)) {
-			return new GhgRunLine.Market(locationKgCo2e, null, null, "recorded in " + activity.getUnit()
-					+ ", which does not convert to kWh; the location-based figure stands", BigDecimal.ZERO,
-					BigDecimal.ZERO, null, null);
-		}
-		// the kWh the run counts: the record's, pro-rated like the location-based side (spec 04.2)
-		var kwh = units.convert(activity.getQuantity(), activity.getUnit(), KWH).multiply(periodShare);
-		var locationPerKwh = kwh.signum() == 0 ? BigDecimal.ZERO
-				: convertedQuantity.multiply(perUnit).divide(kwh, MathContext.DECIMAL64);
-		var covered = BigDecimal.ZERO;
-		BigDecimal instrumentFactor = null;
-		MarketInstrument applied = null;
-		var parts = new ArrayList<String>();
-		if (instrument == null) {
-			parts.add("no contractual instrument");
-		}
-		else if (!instrument.overlaps(activity.getPeriodStart(), activity.getPeriodEnd(), inventory)) {
-			parts.add("the facility's instrument covers " + instrument.effectiveStart(inventory) + " to "
-					+ instrument.effectiveEnd(inventory) + ", not this record's period");
-		}
-		else if (!instrument.isMeetsQualityCriteria()) {
-			// Scope 2 Guidance: an instrument that fails the Quality Criteria is replaced by other data
-			parts.add("the facility's instrument does not meet the Scope 2 Quality Criteria and was not applied");
-		}
-		else {
-			var facilityId = activity.getFacility().getId();
-			var left = remainingCoverage.get(facilityId);
-			covered = left == null ? kwh : kwh.min(left.max(BigDecimal.ZERO));
-			if (left != null) {
-				remainingCoverage.put(facilityId, left.subtract(covered));
-			}
-			if (covered.signum() > 0) {
-				instrumentFactor = instrument.getKgCo2ePerKwh();
-				applied = instrument.getInstrumentType();
-				parts.add(kwh(covered) + " kWh at " + plain(instrumentFactor) + " kg/kWh ("
-						+ instrument.getInstrumentType().name().toLowerCase().replace('_', ' ') + ")");
-			}
-			else {
-				parts.add("the facility's instrument is used up by earlier records");
-			}
-		}
-		var balance = kwh.subtract(covered);
-		var residualAvailable = Boolean.TRUE.equals(inventory.getResidualMixAvailable())
-				&& inventory.getResidualMixKgCo2ePerKwh() != null;
-		var balanceFactor = residualAvailable ? inventory.getResidualMixKgCo2ePerKwh() : locationPerKwh;
-		Scope2MarketBasis basis = null;
-		if (balance.signum() > 0) {
-			basis = residualAvailable ? Scope2MarketBasis.RESIDUAL_MIX : Scope2MarketBasis.GRID_AVERAGE;
-			parts.add(kwh(balance) + " kWh at " + plain(balanceFactor) + " kg/kWh (" + (residualAvailable
-					? "residual mix"
-					: "grid average: the location-based figure stands, " + (inventory.getResidualMixAvailable() == null
-							? "residual-mix availability not stated" : "no residual mix is available"))
-					+ ")");
-		}
-		var kgCo2e = round(covered.multiply(instrumentFactor == null ? BigDecimal.ZERO : instrumentFactor)
-			.add(balance.multiply(balanceFactor))
-			.multiply(share));
-		var reported = applied != null ? applied
-				: basis == Scope2MarketBasis.RESIDUAL_MIX ? MarketInstrument.RESIDUAL_MIX : null;
-		var factorShown = instrumentFactor != null ? instrumentFactor : balance.signum() > 0 ? balanceFactor : null;
-		return new GhgRunLine.Market(kgCo2e, factorShown, reported, String.join("; ", parts), covered, balance,
-				balance.signum() > 0 ? balanceFactor : null, basis);
-	}
-
-	private static final DecimalFormat KWH_FORMAT = new DecimalFormat("#,##0.###",
-			DecimalFormatSymbols.getInstance(Locale.ROOT));
-
-	private static String kwh(BigDecimal value) {
-		return KWH_FORMAT.format(value);
-	}
-
 	private static String plain(BigDecimal value) {
 		return value.stripTrailingZeros().toPlainString();
 	}
@@ -2813,19 +2635,6 @@ public class InventoryService {
 	}
 
 	// --- helpers -------------------------------------------------------------
-
-	private static BigDecimal round(BigDecimal value) {
-		return value.setScale(3, RoundingMode.HALF_UP);
-	}
-
-	/**
-	 * One gas of a line (spec 07.7): the counted quantity (already pro-rated by
-	 * the period share) times the factor's per-unit component times the
-	 * accounting share, stored to three decimals of a kilogram.
-	 */
-	private static BigDecimal gas(BigDecimal counted, BigDecimal componentPerUnit, BigDecimal share) {
-		return round(counted.multiply(componentPerUnit).multiply(share));
-	}
 
 	private InventoryAssignment getAssignment(UUID id) {
 		var assignment = assignments.findWithDetailsById(id)
