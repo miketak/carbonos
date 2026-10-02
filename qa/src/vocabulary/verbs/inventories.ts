@@ -28,10 +28,12 @@ export const createInventory = defineVerb({
       gwpSet: gwpArg.default('AR5'),
       straddle: straddleArg.default('PRO_RATE'),
       prefillBoundary: z.boolean().default(true),
+      copyFrom: z.string().optional(),
     })
     .strict(),
   api: async (ctx, a) => {
     const org = await organization(ctx, a.organization)
+    const source = a.copyFrom ? (await inventory(ctx, a.organization, a.copyFrom)).inv : undefined
     return ctx.session().post(`/api/ghg/organizations/${org.id}/inventories`, {
       name: a.name,
       periodStart: a.periodStart,
@@ -39,7 +41,8 @@ export const createInventory = defineVerb({
       consolidationApproach: a.approach,
       gwpSet: a.gwpSet,
       straddleTreatment: a.straddle,
-      prefillBoundary: a.prefillBoundary,
+      prefillBoundary: source ? false : a.prefillBoundary,
+      copyFromInventoryId: source?.id ?? null,
     })
   },
   ui: (a) => {
@@ -53,13 +56,13 @@ export const createInventory = defineVerb({
       { op: 'choose', label: S.inv.field.straddle, option: S.inv.option.straddle[a.straddle]!, within: d },
       { op: 'choose', label: S.inv.field.approach, option: S.inv.option.approach[a.approach]!, within: d },
       { op: 'choose', label: S.inv.field.gwpSet, option: S.inv.option.gwpSet[a.gwpSet]!, within: d },
-      { op: 'tick', label: S.inv.field.prefillBoundary, within: d, on: a.prefillBoundary },
+      ...(a.copyFrom ? [{ op: 'choose', label: S.inv.field.copyFrom, option: `${a.copyFrom} (`, within: d, prefix: true } as const] : [{ op: 'tick', label: S.inv.field.prefillBoundary, within: d, on: a.prefillBoundary } as const]),
       { op: 'click', button: S.inv.button.createInventory, within: d },
     ]
   },
   postconditions: (a) => [{ outcome: 'inventoryListed', args: { organization: a.organization, name: a.name, status: 'DRAFT' } }],
   narrate: (a) =>
-    `Open **${S.org.sections.inventories}** and click **${S.inv.button.newInventory}**. Name "${a.name}", period ${a.periodStart} to ${a.periodEnd}, consolidation approach ${S.inv.option.approach[a.approach]!.toLowerCase()}, GWP set ${a.gwpSet}, straddling records **${S.inv.option.straddle[a.straddle]}**, and **${S.inv.field.prefillBoundary}** ${a.prefillBoundary ? 'ticked' : 'unticked'}. Click **${S.inv.button.createInventory}**.`,
+    `Open **${S.org.sections.inventories}** and click **${S.inv.button.newInventory}**. Name "${a.name}", period ${a.periodStart} to ${a.periodEnd}, consolidation approach ${S.inv.option.approach[a.approach]!.toLowerCase()}, GWP set ${a.gwpSet}, straddling records **${S.inv.option.straddle[a.straddle]}**, and ${a.copyFrom ? `**${S.inv.field.copyFrom}** ${a.copyFrom}` : `**${S.inv.field.prefillBoundary}** ${a.prefillBoundary ? 'ticked' : 'unticked'}`}. Click **${S.inv.button.createInventory}**.`,
 })
 
 /** The form read before saving (the period hint); nothing is created. */

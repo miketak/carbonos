@@ -43,6 +43,8 @@ function phrase(op: UiOp): string {
       return `click ${b(op.button)} on the row of ${op.text}`
     case 'openRow':
       return `open ${op.text}`
+    case 'clickText':
+      return `open ${q(op.text)}`
     case 'clickAny':
       return `click ${b(op.buttons[0]!)}`
     case 'clickContaining':
@@ -57,6 +59,8 @@ function phrase(op: UiOp): string {
       return `reload the page`
     case 'waitFor':
       return `on the page headed ${q(op.text)}`
+    case 'settle':
+      return 'wait for the run to complete'
   }
 }
 
@@ -76,7 +80,7 @@ export function narrateOps(ops: UiOp[]): string {
   }
   for (const op of ops) {
     clause.push(phrase(op))
-    if (op.op === 'click' || op.op === 'confirm' || op.op === 'signIn' || op.op === 'signOut' || op.op === 'row' || op.op === 'openRow' || op.op === 'clickAny' || op.op === 'clickContaining' || op.op === 'pickOption') flush()
+    if (op.op === 'click' || op.op === 'confirm' || op.op === 'signIn' || op.op === 'signOut' || op.op === 'row' || op.op === 'openRow' || op.op === 'clickAny' || op.op === 'clickContaining' || op.op === 'clickText' || op.op === 'pickOption') flush()
   }
   flush()
   return sentences.join(' ')
@@ -100,6 +104,8 @@ export function narrateWhereToLook(checks: UiCheck[]): string | undefined {
   if (atOrg && atOrg.check === 'atOrg') return `In ${atOrg.organization.replace(/ #\d+$/, '')}, open ${b(atOrg.section)}.`
   const visit = checks.find((c) => c.check === 'visit')
   if (visit && visit.check === 'visit') return `Open ${code(visit.path)} in the address bar.`
+  const atRun = checks.find((c) => c.check === 'atRun')
+  if (atRun && atRun.check === 'atRun') return `Open ${atRun.run.match(/^\d+$/) ? `Run ${atRun.run.padStart(3, '0')}` : atRun.run} of ${q(atRun.inventory)}.`
   const inv = checks.find((c) => c.check === 'atInventory')
   if (inv && inv.check === 'atInventory') return `On the inventory ${q(inv.inventory)}, open ${b(inv.tab)}.`
   const gate = checks.find((c) => c.check === 'gateFinding')

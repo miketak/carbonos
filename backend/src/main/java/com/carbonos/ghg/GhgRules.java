@@ -142,6 +142,37 @@ public class GhgRules implements RuleSource {
 	public static final Rule INVENTORY_ALREADY_DRAFT = Rule.of("ghg.inventory.already-draft", HttpStatus.CONFLICT,
 			"The inventory is already a draft.");
 
+	// runs, the final designation, publication and the correction (specs 05.1, 05.2, 05.3, 05.7)
+	public static final Rule RUN_FINAL_HOLDS = Rule.of("ghg.run.final-holds", HttpStatus.CONFLICT,
+			"Run {run} cannot be designated final. {holds}");
+
+	public static final Rule RUN_VOIDED_NOT_FINAL = Rule.of("ghg.run.voided-not-final", HttpStatus.CONFLICT,
+			"Run {run} is voided and cannot be designated final.");
+
+	public static final Rule RUN_FINAL_NOT_VOIDABLE = Rule.of("ghg.run.final-not-voidable", HttpStatus.CONFLICT,
+			"Run {run} is designated final. Withdraw the designation, with a reason, before voiding it.");
+
+	public static final Rule RUN_ALREADY_VOIDED = Rule.of("ghg.run.already-voided", HttpStatus.CONFLICT,
+			"Run {run} is already voided.");
+
+	public static final Rule RUNS_ARE_A_RECORD = Rule.of("ghg.run.published-not-voidable", HttpStatus.CONFLICT,
+			"A published inventory's runs are a record and cannot be voided.");
+
+	public static final Rule NO_FINAL_RUN = Rule.of("ghg.inventory.no-final-run", HttpStatus.CONFLICT,
+			"No run is designated final.");
+
+	public static final Rule PUBLISH_NEEDS_FINAL = Rule.of("ghg.inventory.publish-needs-final", HttpStatus.CONFLICT,
+			"Designate a final run before publishing the inventory.");
+
+	public static final Rule CORRECTION_NEEDS_PUBLISHED = Rule.of("ghg.correction.needs-published", HttpStatus.CONFLICT,
+			"Only a published inventory can be superseded.");
+
+	public static final Rule CORRECTION_ALREADY_SUPERSEDED = Rule.of("ghg.correction.already-superseded",
+			HttpStatus.CONFLICT, "This inventory has already been superseded.");
+
+	public static final Rule CORRECTION_REASON_TOO_SHORT = Rule.field("ghg.correction.reason-too-short", "reason",
+			"A correction needs a reason of at least 10 characters: what was wrong in the published inventory.");
+
 	private static final List<Rule> ALL = List.of(ROLE_REQUIRED, ORGANIZATION_NAME_DUPLICATE, ACCOUNT_NOT_FOUND,
 			MEMBER_DUPLICATE, LAST_OWNER, ENTITY_DISPOSAL_BEFORE_ACQUISITION, ENTITY_PERCENT_RANGE,
 			ENTITY_NAME_DUPLICATE, ENTITY_PARENT_LOOP, ENTITY_HAS_FACILITIES, LEASE_ENDS_BEFORE_START,
@@ -151,7 +182,9 @@ public class GhgRules implements RuleSource {
 			BOUNDARY_WINDOW_ENDS_BEFORE_START, BOUNDARY_EMPTY, INVENTORY_ALREADY_FROZEN, INVENTORY_FREEZE_BLOCKED,
 			DECLARATION_NOT_SCOPE_3, DECLARATION_NOT_DECLARED, DECLARATION_REASON_TOO_SHORT, PROXY_JUSTIFICATION,
 			EXCLUSION_JUSTIFICATION_TOO_SHORT, UPSTREAM_UNIT_MISMATCH, RESIDUAL_MIX_FACTOR_REQUIRED,
-			INVENTORY_REOPEN_REASON, INVENTORY_ALREADY_DRAFT);
+			INVENTORY_REOPEN_REASON, INVENTORY_ALREADY_DRAFT, RUN_FINAL_HOLDS, RUN_VOIDED_NOT_FINAL,
+			RUN_FINAL_NOT_VOIDABLE, RUN_ALREADY_VOIDED, RUNS_ARE_A_RECORD, NO_FINAL_RUN, PUBLISH_NEEDS_FINAL,
+			CORRECTION_NEEDS_PUBLISHED, CORRECTION_ALREADY_SUPERSEDED, CORRECTION_REASON_TOO_SHORT);
 
 	@Override
 	public String module() {

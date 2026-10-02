@@ -1,0 +1,271 @@
+{
+  "procedure": 6,
+  "driver": "api",
+  "yamlSha256": "b00be540e4adc052a232d6f68e168a4ff0d8bf58d2c951d845b91d8ab1f239d6",
+  "productVersion": null,
+  "gitSha": "6ec0152f786d2a4a4148c9386adb21abeedb747b",
+  "date": "2026-10-02",
+  "specialist": "unknown",
+  "digestSha256": "22ff63e3aab86802453fef74ad643d4cdb55d37d253d67edea563ce7ad4ca2b3",
+  "counts": {
+    "pass": 51,
+    "na": 3,
+    "manual": 7
+  },
+  "steps": [
+    {
+      "id": "6.A1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "6.A1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "6.A1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.A1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "6.A1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "6.A2.1",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Click Void… on Run 001: the dialog \"Void Run 001?\" keeps its button disabled until a reason is typed."
+    },
+    {
+      "id": "6.A2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "6.A2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.A2.4",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Look for Mark as final on Run 001: there is none, a voided run cannot be designated final."
+    },
+    {
+      "id": "6.B1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B1.6",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "6.B2.5",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, The proxy justification is not printed on the line; the lines CSV of case D1 carries it in proxy_justification."
+    },
+    {
+      "id": "6.C1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "6.C1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D1.1",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Click PDF report: the PDF carries the numbered sections of the page, the factor table with each factor's source and vintage, and the row \"CO₂e from factors without a gas split\"."
+    },
+    {
+      "id": "6.D1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.5",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.6",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.7",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.8",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.9",
+      "status": "PASS"
+    },
+    {
+      "id": "6.D2.10",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Open the PDF: the methodology section prints \"Approved by the person who entered them, no other member of the organization being able to check them at the time: Diesel (Solo) (<the Yaw alias>).\". Adansi's PDF of case D1 prints no such sentence: Kofi checked its factors."
+    },
+    {
+      "id": "6.E1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.6",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.7",
+      "status": "NA",
+      "note": "buttonsOffered: N/A, the page offers nothing named and not Reopen as draft"
+    },
+    {
+      "id": "6.E1.8",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.9",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.10",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.11",
+      "status": "PASS"
+    },
+    {
+      "id": "6.E1.12",
+      "status": "PASS"
+    },
+    {
+      "id": "6.F1.1",
+      "status": "NA",
+      "note": "buttonsOffered: N/A, the page offers Create correction and not Reopen as draft, Freeze inventory, Edit inventory"
+    },
+    {
+      "id": "6.F1.2",
+      "status": "NA",
+      "note": "buttonsOffered: N/A, the page offers nothing named and not Void… | screenReads: N/A, the screen reads \"Published. The runs are a record; a correction restates the year.\" | controlDisabled: N/A, the control \"Launch calculation run\" is disabled on screen"
+    },
+    {
+      "id": "6.F1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.F2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "6.F2.2",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, A new draft, FY2025 (correction), opens with the boundary, the declaration, the classifications, the rule, the instrument and the residual mix inherited. Each inherited decision is marked as inherited."
+    },
+    {
+      "id": "6.F2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.F2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "6.F2.5",
+      "status": "PASS"
+    },
+    {
+      "id": "6.G1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "6.G1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "6.G1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "6.G1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "6.G1.5",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Leave the equity view a draft. Procedure 8 reads its base-year gate."
+    }
+  ]
+}

@@ -769,13 +769,12 @@ public class InventoryService {
 			throw GhgNotFoundException.run(runId);
 		}
 		if (run.isVoided()) {
-			throw new GhgRuleViolationException("Run " + run.getRunNo() + " is voided and cannot be designated final.");
+			throw new GhgRuleViolationException(GhgRules.RUN_VOIDED_NOT_FINAL, run.getRunNo());
 		}
 		refuseWhileARecalculationHolds(inventory, "marked final");
 		var holds = finalHolds(inventory);
 		if (!holds.isEmpty()) {
-			throw new GhgRuleViolationException("Run " + run.getRunNo() + " cannot be designated final. "
-					+ String.join(" ", holds));
+			throw new GhgRuleViolationException(GhgRules.RUN_FINAL_HOLDS, run.getRunNo(), String.join(" ", holds));
 		}
 		inventory.designateFinal(runId, access.currentUserEmail(), reviewNote);
 		record(inventory, run, GhgAuditEvent.Action.FINAL_DESIGNATED,
@@ -831,8 +830,11 @@ public class InventoryService {
 	public Inventory withdrawFinal(UUID inventoryId, String reason) {
 		var inventory = get(inventoryId);
 		access.checkApprove(inventory.getOrganization());
+		if (trimToNull(reason) == null || reason.trim().length() < 5) {
+			throw new GhgFieldException(GhgRules.REASON_TOO_SHORT, "Withdrawing the final designation");
+		}
 		if (inventory.getStatus() != InventoryStatus.FINAL) {
-			throw new GhgRuleViolationException("No run is designated final.");
+			throw new GhgRuleViolationException(GhgRules.NO_FINAL_RUN);
 		}
 		var run = runs.findById(inventory.getFinalRunId()).orElse(null);
 		inventory.withdrawFinal();
@@ -853,7 +855,7 @@ public class InventoryService {
 		var inventory = get(inventoryId);
 		access.checkApprove(inventory.getOrganization());
 		if (inventory.getStatus() != InventoryStatus.FINAL) {
-			throw new GhgRuleViolationException("Designate a final run before publishing the inventory.");
+			throw new GhgRuleViolationException(GhgRules.PUBLISH_NEEDS_FINAL);
 		}
 		refuseWhileARecalculationHolds(inventory, "published");
 		inventory.publish(access.currentUserEmail());
@@ -950,15 +952,14 @@ public class InventoryService {
 		var inventory = get(inventoryId);
 		access.checkApprove(inventory.getOrganization());
 		if (inventory.getStatus() != InventoryStatus.PUBLISHED) {
-			throw new GhgRuleViolationException("Only a published inventory can be superseded.");
+			throw new GhgRuleViolationException(GhgRules.CORRECTION_NEEDS_PUBLISHED);
 		}
 		if (inventory.getSupersededById() != null) {
-			throw new GhgRuleViolationException("This inventory has already been superseded.");
+			throw new GhgRuleViolationException(GhgRules.CORRECTION_ALREADY_SUPERSEDED);
 		}
 		var why = trimToNull(reason);
 		if (why == null || why.length() < 10) {
-			throw new GhgFieldException("reason", "A correction needs a reason of at least 10 characters: "
-					+ "what was wrong in the published inventory.");
+			throw new GhgFieldException(GhgRules.CORRECTION_REASON_TOO_SHORT);
 		}
 		var successorName = trimToNull(name) != null ? name.trim() : inventory.getName() + " (correction)";
 		var successor = inventories.save(new Inventory(inventory.getOrganization(), successorName,
@@ -2608,15 +2609,17 @@ public class InventoryService {
 		var run = getRun(id);
 		var inventory = run.getInventory();
 		access.checkWrite(inventory.getOrganization());
+		if (trimToNull(reason) == null || reason.trim().length() < 5) {
+			throw new GhgFieldException(GhgRules.REASON_TOO_SHORT, "Voiding a run");
+		}
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
-			throw new GhgRuleViolationException("A published inventory's runs are a record and cannot be voided.");
+			throw new GhgRuleViolationException(GhgRules.RUNS_ARE_A_RECORD);
 		}
 		if (id.equals(inventory.getFinalRunId())) {
-			throw new GhgRuleViolationException("Run " + run.getRunNo()
-					+ " is designated final. Withdraw the designation, with a reason, before voiding it.");
+			throw new GhgRuleViolationException(GhgRules.RUN_FINAL_NOT_VOIDABLE, run.getRunNo());
 		}
 		if (run.isVoided()) {
-			throw new GhgRuleViolationException("Run " + run.getRunNo() + " is already voided.");
+			throw new GhgRuleViolationException(GhgRules.RUN_ALREADY_VOIDED, run.getRunNo());
 		}
 		run.markVoid(access.currentUserId(), access.currentUserEmail(), reason.trim());
 		auditEvents.save(new GhgAuditEvent(inventory, run, GhgAuditEvent.Action.RUN_VOIDED,

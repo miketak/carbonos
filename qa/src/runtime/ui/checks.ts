@@ -7,7 +7,7 @@ import type { CheckResult } from '../../vocabulary/contract.ts'
 import type { UiCheck } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
 import type { ChainAccess } from '../shared/procedure.ts'
-import { dialog, open, openInventoryPage, openOrgPage, row, rowButton, type ExecuteContext } from './execute.ts'
+import { dialog, open, openInventoryPage, openOrgPage, openRunPage, resolveAsync, row, rowButton, type ExecuteContext } from './execute.ts'
 import { locators } from './locators.ts'
 import { resolveTokens } from '../shared/tokens.ts'
 import type { Windows } from './browser.ts'
@@ -30,6 +30,10 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
       case 'atInventory':
         if (!ctx) return { ok: false, detail: 'no API view to find the inventory' }
         await openInventoryPage(page, ctx, check.organization, check.inventory, check.tab)
+        return { ok: true }
+      case 'atRun':
+        if (!ctx) return { ok: false, detail: 'no API view to find the run' }
+        await openRunPage(page, ctx, check.organization, check.inventory, check.run)
         return { ok: true }
       case 'search':
         await page.getByLabel(t(check.label), { exact: true }).fill(t(check.value))
@@ -120,9 +124,11 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         return { ok: true }
       }
       case 'rowHas': {
-        // a table row or a list item that names the text, waited for (the table renders after the page)
-        let r = page.getByRole('row').or(page.getByRole('listitem')).filter({ hasText: t(check.text) })
-        for (const cell of check.cells) r = r.filter({ hasText: t(cell) })
+        // a table row or a list item that names the text, waited for (the table renders after the page);
+        // the text may name a record by `{activityType:Org|ACT-0007}` where the page prints its activity type
+        const text = ctx ? await resolveAsync(ctx, t(check.text)) : t(check.text)
+        let r = page.getByRole('row').or(page.getByRole('listitem')).filter({ hasText: text })
+        for (const cell of check.cells) r = r.filter({ hasText: ctx ? await resolveAsync(ctx, t(cell)) : t(cell) })
         await expect(r.first()).toBeVisible()
         return { ok: true }
       }

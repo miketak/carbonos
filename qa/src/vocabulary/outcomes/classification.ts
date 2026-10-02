@@ -28,11 +28,14 @@ export const recordView = defineOutcome({
       justification: z.string().optional(),
       estimate: z.enum(['NOT_ESTIMATED', 'EMITS_NOTHING', 'ESTIMATED']).optional(),
       gas: z.string().optional(),
+      changedSincePublication: z.array(z.string()).optional(),
     })
     .strict(),
   api: async (ctx, a) => {
     const { inv } = await inventory(ctx, a.organization, a.inventory)
     const row = await assignment(ctx.session(), inv.id, a.record)
+    const changed = (row as unknown as { changedSincePublication: string[] | null }).changedSincePublication ?? []
+    if (a.changedSincePublication && changed.join(',') !== a.changedSincePublication.join(',')) return fail(`${a.record} changed since publication: ${changed.join(', ') || 'nothing'}`)
     const status = !row.included ? 'EXCLUDED' : row.classified ? 'INCLUDED' : 'UNCLASSIFIED'
     if (a.status && status !== a.status) return fail(`${a.record} is ${status}${row.exclusionReason ? ` (${row.exclusionReason}${row.exclusionDetail ? `: ${row.exclusionDetail}` : ''})` : ''}, expected ${a.status}`)
     if (a.included !== undefined && row.included !== a.included) return fail(`${a.record} is ${row.included ? 'included' : 'excluded'}`)
@@ -59,6 +62,7 @@ export const recordView = defineOutcome({
     if (a.estimate === 'NOT_ESTIMATED') cells.push('not estimated')
     if (a.estimate === 'EMITS_NOTHING') cells.push('emits nothing')
     if (a.gas) cells.push(`${a.gas}, outside the scopes`)
+    if (a.changedSincePublication) cells.push(`${S.run.text.changedSincePublication} ${a.changedSincePublication.join(', ')}`)
     return [
       { check: 'atInventory', organization: a.organization, inventory: a.inventory, tab: 'Records' },
       { check: 'rowHas', text: a.record, cells },
@@ -75,6 +79,7 @@ export const recordView = defineOutcome({
     if (a.estimate === 'NOT_ESTIMATED') parts.push('"; not estimated"')
     if (a.estimate === 'EMITS_NOTHING') parts.push('"; emits nothing"')
     if (a.gas) parts.push(`"; ${a.gas}, outside the scopes"`)
+    if (a.changedSincePublication) parts.push(`${a.record} is marked "${S.run.text.changedSincePublication} ${a.changedSincePublication.join(', ')}"`)
     return parts.join(', ').replace(/^./, (c) => c.toUpperCase()) + '.'
   },
 })

@@ -20,7 +20,8 @@ export type UiOp =
   | { op: 'signIn'; email: string; password: string }
   | { op: 'signOut' }
   | { op: 'accountMenu'; item: string }
-  | { op: 'row'; text: string; button: string }
+  | { op: 'row'; text: string; button: string; ifEnabled?: boolean }
+  | { op: 'clickText'; text: string }
   | { op: 'openRow'; text: string }
   | { op: 'clickAny'; buttons: string[] }
   | { op: 'clickContaining'; text: string }
@@ -28,11 +29,13 @@ export type UiOp =
   | { op: 'emailLink'; actor: string; subject: string; path: string; forged?: boolean }
   | { op: 'reload' }
   | { op: 'waitFor'; text: string }
+  | { op: 'settle' }
 
 export type UiCheck =
   | { check: 'at'; nav: string }
   | { check: 'atOrg'; organization: string; section: string }
   | { check: 'atInventory'; organization: string; inventory: string; tab: string }
+  | { check: 'atRun'; organization: string; inventory: string; run: string }
   | { check: 'search'; label: string; value: string }
   | { check: 'buttonDisabled'; button: string; tooltip?: string; within?: string }
   | { check: 'rowDialogHas'; row: string; button: string; dialog: string; text: string }
