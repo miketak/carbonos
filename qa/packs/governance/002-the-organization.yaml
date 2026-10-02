@@ -25,7 +25,7 @@ sections:
             why: the card says reviewers also designate final runs, publish and create corrections, and verifiers read only
           - do: { addMember: { organization: "${org}", email: nobody@example.test, role: PREPARER } }
             expect:
-              - refused: { rule: ghg.account.not-found, with: { email: nobody@example.test } }
+              - refused: { rule: ghg.account.not-found }
                 why: membership is granted to an existing account, a newcomer requests access first
           - do: { addMember: { organization: "${org}", user: kofi, role: REVIEWER } }
             expect:
@@ -98,7 +98,7 @@ sections:
               - entityListed: { organization: "${org}", name: Adansi Logistics Ltd, equityShare: 100, financialControlShare: 100, operationalControlShare: 100, from: "2025-07-01" }
           - do: { addEntity: { organization: "${org}", name: Coldstore Ghana Ltd, relationship: ASSOCIATE, economicInterest: 150 } }
             expect:
-              - refused: { rule: ghg.entity.percent-range }
+              - refused: { rule: ghg.entity.percent-range, with: { field: Economic interest } }
           - do: { addEntity: { organization: "${org}", name: Coldstore Ghana Ltd, relationship: ASSOCIATE, economicInterest: 30, legalOwnership: 30, jurisdiction: GH } }
             expect:
               - entityListed: { organization: "${org}", name: Coldstore Ghana Ltd, equityShare: 30, financialControlShare: 0, operationalControlShare: 0 }

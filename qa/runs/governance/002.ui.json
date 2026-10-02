@@ -1,6 +1,6 @@
 {
   "procedure": 2,
-  "driver": "api",
+  "driver": "ui",
   "yamlSha256": "fc0533a532e19765e1b4fae7c02a3f3464814404f443011c9cf20115100ff09c",
   "productVersion": null,
   "gitSha": "d88bf785b88f2bf9afe2dfc2e1f255181e880892",
@@ -8,8 +8,8 @@
   "specialist": "unknown",
   "digestSha256": "44954d8516454593e263d9b9361daffa5f43d96ad1f43b20f36de12e13e71dbe",
   "counts": {
-    "pass": 66,
-    "na": 1,
+    "pass": 64,
+    "na": 3,
     "manual": 0
   },
   "steps": [
@@ -55,7 +55,8 @@
     },
     {
       "id": "2.A1.11",
-      "status": "PASS"
+      "status": "NA",
+      "note": "historyCount: N/A, the history card does not count entries by kind"
     },
     {
       "id": "2.A2.1",
@@ -95,7 +96,8 @@
     },
     {
       "id": "2.A3.6",
-      "status": "PASS"
+      "status": "NA",
+      "note": "organizationAbsent: N/A, two organizations share the name; the API tells them apart by account number"
     },
     {
       "id": "2.A3.7",
@@ -183,7 +185,8 @@
     },
     {
       "id": "2.D3.3",
-      "status": "PASS"
+      "status": "NA",
+      "note": "historyCount: N/A, the history card does not count entries by kind | historyCount: N/A, the history card does not count entries by kind | historyCount: N/A, the history card does not count entries by kind | historyCount: N/A, the history card does not count entries by kind"
     },
     {
       "id": "2.E1.1",
@@ -239,8 +242,7 @@
     },
     {
       "id": "2.F3.1",
-      "status": "NA",
-      "note": "the empty Valid to is refused by the page before any request | refused: N/A, the empty Valid to is refused by the page before any request"
+      "status": "PASS"
     },
     {
       "id": "2.F3.2",

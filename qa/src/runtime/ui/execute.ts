@@ -7,7 +7,8 @@ import { expect, type Locator, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { REPO_ROOT } from '../../load.ts'
 import type { ApiContext } from '../../vocabulary/contract.ts'
-import { entity, facility, organization } from '../../vocabulary/organizations.ts'
+import { activity, entity, facility, organization } from '../../vocabulary/organizations.ts'
+import { inventory } from '../../vocabulary/inventories.ts'
 import type { UiOp } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
 import { env } from '../shared/env.ts'
@@ -31,7 +32,8 @@ const orgSections: Record<string, string> = {
   'Emission factors': 'factors',
   Units: 'units',
   Settings: 'settings',
-  Activity: 'activity',
+  'Activity data': 'activity',
+  'Source documents': 'activity/documents',
   Inventories: 'inventories',
 }
 
@@ -49,6 +51,11 @@ export async function resolveAsync(ctx: ExecuteContext, text: string): Promise<s
     const org = await organization(ctx.api, match[1]!)
     out = out.replace(match[0], (await facility(ctx.api.session(), org.id, match[2]!)).id)
   }
+  // `{activityType:Org|ACT-0003}`: the register names a record by its activity type where a tester reads it
+  for (const match of text.matchAll(/\{activityType:([^}|]+)\|([^}]+)\}/g)) {
+    const org = await organization(ctx.api, match[1]!)
+    out = out.replace(match[0], (await activity(ctx.api.session(), org.id, match[2]!)).activityType)
+  }
   return resolveTokens(ctx.chain, out)
 }
 
@@ -61,10 +68,26 @@ export async function openOrgPage(page: Page, ctx: ExecuteContext, organizationR
   await page.waitForURL((url) => url.pathname.startsWith(`/app/ghg/${org.id}`), { timeout: 15_000 })
 }
 
+/** The inventory workbench, on one of its tabs (Records when none is named). */
+export async function openInventoryPage(page: Page, ctx: ExecuteContext, organizationRef: string, name: string, tab?: string): Promise<void> {
+  const { org, inv } = await inventory(ctx.api, organizationRef, name)
+  await dismissDialogs(page)
+  await goto(page, `/app/ghg/${org.id}/inventories/${inv.id}`)
+  await page.waitForURL((url) => url.pathname.endsWith(`/inventories/${inv.id}`), { timeout: 15_000 })
+  await page.getByRole('tab', { name: 'Records' }).first().waitFor()
+  if (tab && tab !== 'Records') await page.getByRole('tab', { name: tab }).click()
+}
+
 const ZEROS = '0'.repeat(64)
 
 export function clickable(scope: Page | Locator, name: string): Locator {
-  return scope.getByRole('button', { name, exact: true }).or(scope.getByRole('link', { name, exact: true })).first()
+  // the visible caption, or an accessible name that starts with it ("Import pack <pack name>")
+  const prefixed = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( |$)`)
+  return scope
+    .getByRole('button', { name, exact: true })
+    .or(scope.getByRole('link', { name, exact: true }))
+    .or(scope.getByRole('button', { name: prefixed }))
+    .first()
 }
 
 export function dialog(page: Page, title: string): Locator {
@@ -125,13 +148,16 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
     case 'orgPage':
       await openOrgPage(page, ctx, op.organization, op.section)
       return
+    case 'inventoryPage':
+      await openInventoryPage(page, ctx, op.organization, op.inventory, op.tab)
+      return
     case 'upload': {
-      const scope = op.within ? dialog(page, t(op.within)) : page
+      const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
       await scope.getByLabel(t(op.label), { exact: true }).setInputFiles(join(REPO_ROOT, 'docs', 'qa', 'governance', 'fixtures', op.fixture))
       return
     }
     case 'tick': {
-      const scope = op.within ? dialog(page, t(op.within)) : page
+      const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
       const box = scope.getByLabel(t(op.label), { exact: true })
       if (op.on === false) await box.uncheck()
       else await box.check()
@@ -148,23 +174,32 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       await page.getByRole('tab', { name: op.name }).click()
       return
     case 'click': {
-      const scope = op.within ? dialog(page, t(op.within)) : page
-      await clickable(scope, t(op.button)).click()
+      const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
+      const button = clickable(scope, t(op.button))
+      if (op.ifEnabled) {
+        // the dialog keeps the button disabled while the gates refuse: a tester sees that, and does not click
+        await button.waitFor()
+        if (await button.isDisabled()) return
+      }
+      await button.click()
       return
     }
     case 'fill': {
-      const scope = op.within ? dialog(page, t(op.within)) : page
-      await scope.getByLabel(t(op.label), { exact: true }).fill(t(op.value))
+      const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
+      const field = scope.getByLabel(t(op.label), { exact: true })
+      await field.fill(t(op.value))
+      // a control that saves when it loses focus (the boundary's shares, dates and details)
+      if (op.blur) await field.blur()
       return
     }
     case 'choose': {
-      const scope = op.within ? dialog(page, t(op.within)) : page
+      const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
       const option = await resolveAsync(ctx, op.option)
       await scope.getByLabel(t(op.label), { exact: true }).selectOption(op.byValue ? { value: option } : { label: option })
       return
     }
     case 'confirm': {
-      const d = dialog(page, t(op.dialog))
+      const d = dialog(page, await resolveAsync(ctx, t(op.dialog)))
       await expect(d).toBeVisible()
       await clickable(d, t(op.button)).click()
       return
@@ -188,7 +223,11 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       await page.getByRole('menuitem', { name: t(op.item), exact: true }).click()
       return
     case 'row':
-      await (await row(page, t(op.text))).getByRole('button', { name: t(op.button), exact: true }).click()
+      await clickable(await row(page, t(op.text)), t(op.button)).click()
+      return
+    case 'openRow':
+      // the register opens a record from its name, the row's first button
+      await (await row(page, t(op.text))).getByRole('button').first().click()
       return
     case 'emailLink': {
       if (op.forged) {

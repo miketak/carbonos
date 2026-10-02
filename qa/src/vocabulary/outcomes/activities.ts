@@ -37,8 +37,9 @@ export const importPreview = defineOutcome({
     }
     if (a.warning && !p.warnings.some((w) => w.row === a.warning!.row && w.message.includes(a.warning!.containing))) return fail(`no warning on row ${a.warning.row} saying "${a.warning.containing}"`)
     if (a.ready) {
-      const ready = p.rows.filter((r) => r.issues.length === 0).map((r) => r.row)
-      if (ready.join(',') !== a.ready.join(',')) return fail(`ready rows are ${ready.join(', ')}`)
+      // a row whose evidence is a reference only still reads Ready; the pill follows the status, not the issue list
+      const ready = p.rows.filter((r) => r.status === 'READY').map((r) => r.row)
+      if (ready.join(',') !== a.ready.join(',')) return fail(`ready rows are ${ready.join(', ') || 'none'}; ${p.rows.map((r) => `${r.row}: ${r.status} ${r.issues.join('+')}`).join(', ')}`)
     }
     if (a.noStream !== undefined && p.rows.filter((r) => r.issues.includes('NO_STREAM')).length !== a.noStream) return fail(`no-stream rows: ${p.rows.filter((r) => r.issues.includes('NO_STREAM')).length}`)
     if (a.noEvidence !== undefined && p.rows.filter((r) => r.issues.includes('NO_EVIDENCE')).length !== a.noEvidence) return fail(`needs-evidence rows: ${p.rows.filter((r) => r.issues.includes('NO_EVIDENCE')).length}`)
@@ -207,7 +208,8 @@ export const attentionCount = defineOutcome({
   args: z.object({ organization: orgArg, count: z.number().int() }).strict(),
   api: async (ctx, a) => {
     const org = await organization(ctx, a.organization)
-    const n = (await activities(ctx.session(), org.id)).filter((r) => !r.removed && !r.draft && r.issues.length > 0).length
+    // the banner counts every live record that is not Ready (a draft included); a reference-only evidence line is still Ready
+    const n = (await activities(ctx.session(), org.id)).filter((r) => !r.removed && r.status !== 'READY').length
     return n === a.count ? pass(String(n)) : fail(`${n} records need attention, expected ${a.count}`)
   },
   ui: (a) => [{ check: 'atOrg', organization: a.organization, section: S.org.sections.activity }, { check: 'textVisible', text: `${S.act.text.resolve} ${a.count} items` }],

@@ -100,7 +100,7 @@ export const enterActivity = defineVerb({
   api: (ctx, a) => correction(ctx, a.organization, a.record, { quantity: a.quantity, unit: a.unit, periodStart: a.periodStart, periodEnd: a.periodEnd }),
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
-    { op: 'row', text: a.record, button: a.record },
+    { op: 'openRow', text: a.record },
     { op: 'fill', label: S.act.field.quantity, value: String(a.quantity) },
     { op: 'fill', label: S.act.field.periodStart, value: a.periodStart },
     { op: 'fill', label: S.act.field.periodEnd, value: a.periodEnd },
@@ -124,7 +124,7 @@ export const correctActivity = defineVerb({
     }),
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
-    { op: 'row', text: a.record, button: a.record },
+    { op: 'openRow', text: a.record },
     ...(a.quantity !== undefined ? [{ op: 'fill', label: S.act.field.quantity, value: String(a.quantity) } as const] : []),
     ...(a.evidenceRef !== undefined ? [{ op: 'fill', label: S.act.field.documentReference, value: a.evidenceRef } as const] : []),
     { op: 'fill', label: S.act.field.reason, value: a.reason },
@@ -150,7 +150,8 @@ export const attachFile = defineVerb({
   },
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
-    { op: 'row', text: a.record, button: a.record },
+    { op: 'openRow', text: a.record },
+    { op: 'tab', name: S.act.tab.evidence },
     { op: 'upload', label: S.act.field.attachFile, fixture: a.file },
   ],
   postconditions: (a) => [{ outcome: 'evidenceListed', args: { organization: a.organization, record: a.record, name: a.file, kind: 'FILE' } }],
@@ -167,7 +168,8 @@ export const attachLink = defineVerb({
   },
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
-    { op: 'row', text: a.record, button: a.record },
+    { op: 'openRow', text: a.record },
+    { op: 'tab', name: S.act.tab.evidence },
     { op: 'fill', label: S.act.field.linkName, value: a.name },
     { op: 'fill', label: S.act.field.url, value: a.url },
     { op: 'click', button: S.act.button.addLink },
@@ -186,10 +188,10 @@ export const removeActivity = defineVerb({
   },
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
-    { op: 'row', text: a.record, button: a.record },
+    { op: 'openRow', text: a.record },
     { op: 'click', button: S.act.button.remove },
-    { op: 'fill', label: S.org.field.reason, value: a.reason, within: `Remove ${a.record}?` },
-    { op: 'confirm', dialog: `Remove ${a.record}?`, button: S.act.button.remove },
+    { op: 'fill', label: S.org.field.reason, value: a.reason, within: `Remove {activityType:${a.organization}|${a.record}}?` },
+    { op: 'confirm', dialog: `Remove {activityType:${a.organization}|${a.record}}?`, button: S.act.button.remove },
   ],
   postconditions: (a) => [{ outcome: 'activityRemoved', args: { organization: a.organization, record: a.record } }],
   narrate: (a) => `Open the "${a.record}" record, click **${S.act.button.remove}**, give "${a.reason}" and confirm.`,

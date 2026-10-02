@@ -26,7 +26,7 @@ public class GhgRules implements RuleSource {
 			"An organization named '{name}' already exists: {duplicates}. Confirm to use the name anyway.");
 
 	public static final Rule ACCOUNT_NOT_FOUND = Rule.of("ghg.account.not-found", HttpStatus.NOT_FOUND,
-			"Account {email} was not found.");
+			"No account with that email.");
 
 	public static final Rule MEMBER_DUPLICATE = Rule.of("ghg.member.duplicate", HttpStatus.CONFLICT,
 			"{email} is already a member of '{organization}'.");
@@ -39,7 +39,7 @@ public class GhgRules implements RuleSource {
 			"effectiveTo", "The disposal date is before the acquisition date.");
 
 	public static final Rule ENTITY_PERCENT_RANGE = Rule.field("ghg.entity.percent-range", "economicInterestPercent",
-			"A percentage is between 0 and 100.");
+			"{field} must be between 0 and 100.");
 
 	public static final Rule ENTITY_NAME_DUPLICATE = Rule.of("ghg.entity.name-duplicate", HttpStatus.CONFLICT,
 			"An entity named '{name}' already exists.");
@@ -99,12 +99,36 @@ public class GhgRules implements RuleSource {
 	public static final Rule EVIDENCE_LINK_SCHEME = Rule.field("ghg.evidence.link-scheme", "url",
 			"A link starts with https:// or http://.");
 
+	// inventories, the boundary and the declaration (specs 03.2, 05.5, 07.2, 07.6)
+	public static final Rule BOUNDARY_WINDOW_ENDS_BEFORE_START = Rule.of("ghg.boundary.window-ends-before-start",
+			HttpStatus.CONFLICT, "The membership window ends before it starts.");
+
+	public static final Rule BOUNDARY_EMPTY = Rule.of("ghg.boundary.empty", HttpStatus.CONFLICT,
+			"The organizational boundary is empty. Add at least one facility before freezing it.");
+
+	public static final Rule INVENTORY_ALREADY_FROZEN = Rule.of("ghg.inventory.already-frozen", HttpStatus.CONFLICT,
+			"The inventory is already frozen.");
+
+	public static final Rule INVENTORY_FREEZE_BLOCKED = Rule.of("ghg.inventory.freeze-blocked", HttpStatus.CONFLICT,
+			"{records} the freeze: {listed}. Classify or exclude them first.");
+
+	public static final Rule DECLARATION_NOT_SCOPE_3 = Rule.of("ghg.declaration.not-scope-3", HttpStatus.CONFLICT,
+			"{category} is not a scope 3 category.");
+
+	public static final Rule DECLARATION_NOT_DECLARED = Rule.of("ghg.declaration.not-declared", HttpStatus.CONFLICT,
+			"'{category}' is not declared as covered; only a declared category can be marked as not quantified.");
+
+	public static final Rule DECLARATION_REASON_TOO_SHORT = Rule.field("ghg.declaration.reason-too-short",
+			"notQuantified", "Say why '{category}' is not quantified (at least 10 characters).");
+
 	private static final List<Rule> ALL = List.of(ROLE_REQUIRED, ORGANIZATION_NAME_DUPLICATE, ACCOUNT_NOT_FOUND,
 			MEMBER_DUPLICATE, LAST_OWNER, ENTITY_DISPOSAL_BEFORE_ACQUISITION, ENTITY_PERCENT_RANGE,
 			ENTITY_NAME_DUPLICATE, ENTITY_PARENT_LOOP, ENTITY_HAS_FACILITIES, LEASE_ENDS_BEFORE_START,
 			STREAM_NAME_DUPLICATE, UNIT_REGISTERED, UNIT_DUPLICATE, DENSITY_DUPLICATE, BLEND_FRACTIONS,
 			FACTOR_SELF_APPROVAL, REASON_TOO_SHORT, ACTIVITY_REMOVED_CANNOT_CORRECT, ACTIVITY_NO_WAY_BACK_TO_DRAFT,
-			ACTIVITY_ALREADY_REMOVED, FACILITY_HAS_RECORDS, EVIDENCE_UNSUPPORTED_TYPE, EVIDENCE_LINK_SCHEME);
+			ACTIVITY_ALREADY_REMOVED, FACILITY_HAS_RECORDS, EVIDENCE_UNSUPPORTED_TYPE, EVIDENCE_LINK_SCHEME,
+			BOUNDARY_WINDOW_ENDS_BEFORE_START, BOUNDARY_EMPTY, INVENTORY_ALREADY_FROZEN, INVENTORY_FREEZE_BLOCKED,
+			DECLARATION_NOT_SCOPE_3, DECLARATION_NOT_DECLARED, DECLARATION_REASON_TOO_SHORT);
 
 	@Override
 	public String module() {

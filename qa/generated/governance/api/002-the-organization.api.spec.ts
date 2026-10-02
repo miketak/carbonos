@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/002-the-organization.yaml (sha256 7e291c0dbaa792a6551a35dbefad3ba759d1db28665a40ff3ea459e04bfa6937); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/002-the-organization.yaml (sha256 fc0533a532e19765e1b4fae7c02a3f3464814404f443011c9cf20115100ff09c); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 2, "7e291c0dbaa792a6551a35dbefad3ba759d1db28665a40ff3ea459e04bfa6937")
+const P = procedure("governance", 2, "fc0533a532e19765e1b4fae7c02a3f3464814404f443011c9cf20115100ff09c")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 2: The organization", () => {
@@ -42,7 +42,7 @@ test.describe("Procedure 2: The organization", () => {
     await test.step("2.A1.7", async () => {
       const s = P.step("2.A1.7")
       const out = await s.do("addMember", {"organization":"Adansi Foods Ltd","email":"nobody@example.test","role":"PREPARER"})
-      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.account.not-found","with":{"email":"nobody@example.test"}},"why":"membership is granted to an existing account, a newcomer requests access first"}])
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.account.not-found"},"why":"membership is granted to an existing account, a newcomer requests access first"}])
     })
     await test.step("2.A1.8", async () => {
       const s = P.step("2.A1.8")
@@ -145,7 +145,7 @@ test.describe("Procedure 2: The organization", () => {
     await test.step("2.B2.3", async () => {
       const s = P.step("2.B2.3")
       const out = await s.do("addEntity", {"organization":"Adansi Foods Ltd","name":"Coldstore Ghana Ltd","relationship":"ASSOCIATE","economicInterest":150})
-      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.entity.percent-range"}}])
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.entity.percent-range","with":{"field":"Economic interest"}}}])
     })
     await test.step("2.B2.4", async () => {
       const s = P.step("2.B2.4")

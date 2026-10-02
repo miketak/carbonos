@@ -146,6 +146,8 @@ export const retireFactor = defineVerb({
   },
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.factors },
+    // the organization's factors are paged fifty at a time: a tester finds the row through the search box
+    { op: 'fill', label: S.org.field.searchFactors, value: a.factor },
     { op: 'row', text: a.factor, button: `Retire factor ${a.factor}` },
     ...(a.validTo ? [{ op: 'fill', label: S.org.field.validTo, value: a.validTo, within: `Retire ${a.factor}` } as const] : []),
     { op: 'click', button: S.org.button.retireFactor, within: `Retire ${a.factor}` },
@@ -167,6 +169,7 @@ export const approveFactor = defineVerb({
   },
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.factors },
+    { op: 'fill', label: S.org.field.searchFactors, value: a.factor },
     { op: 'row', text: a.factor, button: S.org.button.approve },
   ],
   postconditions: (a) => [{ outcome: 'factorListed', args: { organization: a.organization, name: a.factor, approved: true } }],

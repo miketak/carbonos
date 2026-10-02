@@ -40,6 +40,11 @@ committed with the procedure (ADR 0007).
    (`QA_CROSS_CHECK=1`), asks the API about every stored-state outcome too,
    so a failure reads "UI stale" (the API agrees with the scenario, the
    screen does not) or "backend".
+5. Run one driver's chain at a time. Both drivers work on the same local
+   stack, and procedure 1 resets it: a UI chain started while the API chain
+   is between procedures wipes the data the API chain's next procedure
+   expects, and the first sign-in fails with 401. Finish (or record) one
+   chain before starting the other.
 
 Each step ends PASS, FAIL, NA (the driver cannot observe the outcome) or
 MANUAL (an `observe` sentence a human judges); the record counts them.

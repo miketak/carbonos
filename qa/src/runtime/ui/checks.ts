@@ -7,7 +7,7 @@ import type { CheckResult } from '../../vocabulary/contract.ts'
 import type { UiCheck } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
 import type { ChainAccess } from '../shared/procedure.ts'
-import { dialog, open, openOrgPage, row, type ExecuteContext } from './execute.ts'
+import { clickable, dialog, open, openInventoryPage, openOrgPage, row, type ExecuteContext } from './execute.ts'
 import { locators } from './locators.ts'
 import { resolveTokens } from '../shared/tokens.ts'
 import type { Windows } from './browser.ts'
@@ -31,14 +31,15 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         await page.getByLabel(t(check.label), { exact: true }).fill(t(check.value))
         return { ok: true }
       case 'buttonDisabled': {
-        const button = page.getByRole('button', { name: t(check.button), exact: true }).first()
+        const scope = check.within ? dialog(page, t(check.within)) : page
+        const button = scope.getByRole('button', { name: t(check.button), exact: true }).first()
         await expect(button).toBeVisible()
         await expect(button).toBeDisabled()
         if (check.tooltip) await expect(button).toHaveAttribute('title', t(check.tooltip))
         return { ok: true }
       }
       case 'rowDialogHas': {
-        await (await row(page, t(check.row))).getByRole('button', { name: t(check.button), exact: true }).click()
+        await clickable(await row(page, t(check.row)), t(check.button)).click()
         const d = dialog(page, t(check.dialog))
         await expect(d.getByText(t(check.text), { exact: false }).first()).toBeVisible()
         await page.keyboard.press('Escape')
@@ -46,7 +47,8 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
       }
       case 'textVisible': {
         const scope = check.within ? page.locator(check.within) : page
-        await expect(scope.getByText(t(check.text), { exact: false }).first()).toBeVisible()
+        const text = t(check.text)
+        await expect(scope.getByText(wildcard(text) ?? text, { exact: false }).first()).toBeVisible()
         return { ok: true }
       }
       case 'textAbsent':
@@ -57,14 +59,45 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         // a refusal is a toast (role=status), a line under the field or a paragraph in the form (role=alert);
         // which one is the page's choice, the wording is the product's
         const text = t(check.text)
-        const live = page.locator('[role="status"], [role="alert"]').filter({ hasText: text })
+        // a placeholder the scenario did not fill (`<duplicates>`) matches whatever the product printed there
+        const pattern = wildcard(text)
+        const live = page.locator('[role="status"], [role="alert"]').filter({ hasText: pattern ?? text })
         try {
           await expect(live.first()).toBeVisible({ timeout: 5_000 })
           return { ok: true }
         } catch {
           const seen = await windows.notices(page)
-          return seen.some((n) => n.includes(text)) ? { ok: true } : { ok: false, detail: `no ${check.check} read "${text}"; seen: ${seen.slice(-3).join(' / ') || 'nothing'}` }
+          const hit = seen.some((n) => (pattern ? pattern.test(n) : n.includes(text)))
+          return hit ? { ok: true } : { ok: false, detail: `no ${check.check} read "${text}"; seen: ${seen.slice(-3).join(' / ') || 'nothing'}` }
         }
+      }
+      case 'fieldVisible': {
+        const scope = check.within ? dialog(page, t(check.within)) : page
+        await expect(scope.getByLabel(t(check.label), { exact: true }).first()).toBeVisible()
+        return { ok: true }
+      }
+      case 'ticked': {
+        const box = page.getByLabel(t(check.label), { exact: true })
+        await expect(box).toBeVisible()
+        if (check.on) await expect(box).toBeChecked()
+        else await expect(box).not.toBeChecked()
+        if (check.disabled) await expect(box).toBeDisabled()
+        return { ok: true }
+      }
+      case 'tabsVisible': {
+        for (const name of check.names) await expect(page.getByRole('tab', { name }).first()).toBeVisible()
+        return { ok: true }
+      }
+      case 'gateFinding': {
+        // the findings are on the pre-flight panel under Records; the observation opens the workbench fresh
+        if (!ctx) return { ok: false, detail: 'no API view to find the inventory' }
+        await openInventoryPage(page, ctx, check.organization, check.inventory, 'Records')
+        const gate = page.getByRole('listitem').filter({ has: page.getByText(check.gate, { exact: true }) }).first()
+        await expect(gate).toBeVisible()
+        const finding = gate.getByText(t(check.containing), { exact: false })
+        if (check.absent) await expect(finding).toHaveCount(0)
+        else await expect(finding.first()).toBeVisible()
+        return { ok: true }
       }
       case 'fieldValue': {
         const field = page.getByLabel(t(check.label), { exact: true })
@@ -154,4 +187,11 @@ export async function readCount(page: Page, label: string): Promise<number> {
   const n = Number(text.replace(/[^\d]/g, ''))
   if (Number.isNaN(n)) throw new Error(`the tile ${label} reads "${text}"`)
   return n
+}
+
+/** A rule message with unfilled placeholders (`<duplicates>`) as a pattern; undefined when it has none. */
+function wildcard(text: string): RegExp | undefined {
+  if (!/<[a-zA-Z]+>/.test(text)) return undefined
+  const escaped = text.split(/<[a-zA-Z]+>/).map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  return new RegExp(escaped.join('[\\s\\S]*?'))
 }

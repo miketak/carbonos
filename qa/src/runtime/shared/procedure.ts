@@ -79,6 +79,8 @@ export class ProcedureRun implements ChainAccess {
     this.results = { persona, procedure: number, driver: driverName, yamlSha256, startedAt: new Date().toISOString(), steps: [] }
   }
 
+  private started = false
+
   attach(driver: Driver): this {
     this.driver = driver
     return this
@@ -96,12 +98,14 @@ export class ProcedureRun implements ChainAccess {
     } else if (!this.state.finished.includes(this.procedure.after)) {
       throw new Error(`procedure ${this.procedure.after} has not run green on this stack; run it first or restore its checkpoint`)
     }
+    this.started = true
     writeResults(this.results)
   }
 
   async finish(): Promise<void> {
+    // a procedure that never started (its predecessor has not run) leaves the chain as it was
     const failed = this.results.steps.some((s) => s.status === 'FAIL')
-    if (!failed) {
+    if (this.started && !failed) {
       this.state.finished = [...new Set([...this.state.finished, this.number])]
       saveState(this.persona, this.driverName, this.state)
     }

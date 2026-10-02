@@ -119,6 +119,7 @@ export const S = {
       settings: 'Settings',
       activity: 'Activity data',
       documents: 'Source documents',
+      inventories: 'Inventories',
     },
     button: {
       createOrganization: 'Create organization',
@@ -257,6 +258,10 @@ export const S = {
     dialog: {
       import: 'Import activity data',
     },
+    tab: {
+      activity: 'Activity',
+      evidence: 'Evidence',
+    },
     text: {
       controlTotals: 'Control totals',
       recordsToAdd: 'Records to add',
@@ -264,6 +269,45 @@ export const S = {
       resolve: 'Resolve',
       noStream: 'No stream',
       ready: 'Ready',
+    },
+  },
+  inv: {
+    button: {
+      newInventory: 'New inventory',
+      createInventory: 'Create inventory',
+      saveChanges: 'Save changes',
+      cancel: 'Cancel',
+      open: 'Open',
+      editInventory: 'Edit inventory',
+      saveDeclaration: 'Save declaration',
+      reviewActivityData: 'Review activity data',
+      freezeInventory: 'Freeze inventory',
+    },
+    field: {
+      name: 'Name',
+      periodStart: 'Period start',
+      periodEnd: 'Period end',
+      straddle: 'Records that straddle the period or a membership window',
+      purpose: 'Purpose (optional)',
+      approach: 'Consolidation approach',
+      gwpSet: 'GWP set',
+      prefillBoundary: 'Start with every operation the approach includes in the boundary',
+    },
+    dialog: {
+      newInventory: 'New inventory',
+      editInventory: 'Edit inventory',
+      freeze: 'Freeze the inventory?',
+    },
+    option: {
+      approach: { EQUITY_SHARE: 'Equity share', FINANCIAL_CONTROL: 'Financial control', OPERATIONAL_CONTROL: 'Operational control' } as Record<string, string>,
+      gwpSet: { AR5: 'AR5 (default)', AR6: 'AR6' } as Record<string, string>,
+      straddle: { PRO_RATE: 'Pro-rate by days (default)', BLOCK: 'Block the run until the record is split' } as Record<string, string>,
+      whyLeftOut: 'Why is it left out?',
+    },
+    text: {
+      outsideUnder: 'Outside the boundary under',
+      operationalBoundary: 'Operational boundary declaration',
+      declarationSaved: 'Operational boundary declaration saved.',
     },
   },
   historySetting: {

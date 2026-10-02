@@ -25,7 +25,7 @@
       "id": "ghg.account.not-found",
       "module": "ghg",
       "status": 404,
-      "message": "Account {email} was not found.",
+      "message": "No account with that email.",
       "field": null
     },
     {
@@ -48,6 +48,41 @@
       "status": 409,
       "message": "This record was removed and cannot be corrected.",
       "field": null
+    },
+    {
+      "id": "ghg.boundary.empty",
+      "module": "ghg",
+      "status": 409,
+      "message": "The organizational boundary is empty. Add at least one facility before freezing it.",
+      "field": null
+    },
+    {
+      "id": "ghg.boundary.window-ends-before-start",
+      "module": "ghg",
+      "status": 409,
+      "message": "The membership window ends before it starts.",
+      "field": null
+    },
+    {
+      "id": "ghg.declaration.not-declared",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{category}' is not declared as covered; only a declared category can be marked as not quantified.",
+      "field": null
+    },
+    {
+      "id": "ghg.declaration.not-scope-3",
+      "module": "ghg",
+      "status": 409,
+      "message": "{category} is not a scope 3 category.",
+      "field": null
+    },
+    {
+      "id": "ghg.declaration.reason-too-short",
+      "module": "ghg",
+      "status": 422,
+      "message": "Say why '{category}' is not quantified (at least 10 characters).",
+      "field": "notQuantified"
     },
     {
       "id": "ghg.density.duplicate",
@@ -88,7 +123,7 @@
       "id": "ghg.entity.percent-range",
       "module": "ghg",
       "status": 422,
-      "message": "A percentage is between 0 and 100.",
+      "message": "{field} must be between 0 and 100.",
       "field": "economicInterestPercent"
     },
     {
@@ -131,6 +166,20 @@
       "module": "ghg",
       "status": 409,
       "message": "You entered '{name}'. A factor is checked by someone other than the person who typed it (Corporate Standard chapter 7): ask {checker} to approve it.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.already-frozen",
+      "module": "ghg",
+      "status": 409,
+      "message": "The inventory is already frozen.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.freeze-blocked",
+      "module": "ghg",
+      "status": 409,
+      "message": "{records} the freeze: {listed}. Classify or exclude them first.",
       "field": null
     },
     {
@@ -302,5 +351,5 @@
       "field": null
     }
   ],
-  "sha256": "97c2ec7f58c649a66752316d10e5ef66875d87010d81a2de44100866f8f3a955"
+  "sha256": "f456a516e0a2a325c006cde24e618e27877e279b3eacacb25a23373d34366253"
 }

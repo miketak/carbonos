@@ -455,10 +455,10 @@ public class GhgService {
 		}
 		// spec 03.1: a share is a percentage; the rule is the service's so the refusal names it
 		if (outOfRange(facts.economicInterestPercent())) {
-			throw new GhgFieldException(GhgRules.ENTITY_PERCENT_RANGE);
+			throw new GhgFieldException(GhgRules.ENTITY_PERCENT_RANGE, "Economic interest");
 		}
 		if (outOfRange(facts.legalOwnershipPercent())) {
-			throw new GhgFieldException(GhgRules.ENTITY_PERCENT_RANGE.withField("legalOwnershipPercent"));
+			throw new GhgFieldException(GhgRules.ENTITY_PERCENT_RANGE.withField("legalOwnershipPercent"), "Legal ownership");
 		}
 	}
 
