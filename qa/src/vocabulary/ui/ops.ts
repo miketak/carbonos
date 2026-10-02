@@ -27,6 +27,7 @@ export type UiCheck =
   | { check: 'textAbsent'; text: string }
   | { check: 'toast'; text: string }
   | { check: 'fieldError'; label: string; text: string }
+  | { check: 'fieldValue'; label: string; value: string }
   | { check: 'rowHas'; text: string; cells: string[] }
   | { check: 'rowAbsent'; text: string }
   | { check: 'buttonVisible'; button: string; visible: boolean }

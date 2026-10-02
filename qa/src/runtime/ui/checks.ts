@@ -44,6 +44,17 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
           return seen.some((n) => n.includes(text)) ? { ok: true } : { ok: false, detail: `no ${check.check} read "${text}"; seen: ${seen.slice(-3).join(' / ') || 'nothing'}` }
         }
       }
+      case 'fieldValue': {
+        const field = page.getByLabel(t(check.label), { exact: true })
+        const tag = await field.evaluate((el) => el.tagName.toLowerCase())
+        if (tag === 'select') {
+          const selected = field.locator('option:checked')
+          await expect(selected).toHaveText(t(check.value))
+        } else {
+          await expect(field).toHaveValue(t(check.value))
+        }
+        return { ok: true }
+      }
       case 'rowHas': {
         let r = row(page, t(check.text))
         for (const cell of check.cells) r = r.filter({ hasText: t(cell) })

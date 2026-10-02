@@ -29,7 +29,14 @@ export const settings = defineOutcome({
     { check: 'at', nav: S.nav.platformSettings },
     ...Object.entries(want)
       .filter(([, v]) => v !== undefined)
-      .map(([key, value]) => ({ check: 'textVisible', text: `{setting:${key}=${String(value)}}` }) as const),
+      .map(
+        ([key, value]) =>
+          ({
+            check: 'fieldValue',
+            label: fieldLabel(key),
+            value: key === 'supportAccessWindowHours' ? String(value) : settingValueLabel(key, value as string),
+          }) as const,
+      ),
   ],
   narrate: (want) =>
     Object.entries(want)
