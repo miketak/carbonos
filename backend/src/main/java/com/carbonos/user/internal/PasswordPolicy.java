@@ -8,7 +8,7 @@ package com.carbonos.user.internal;
 public final class PasswordPolicy {
 
 	public static final int MIN_LENGTH = 12;
-	public static final String RULE = "At least 12 characters, with a letter and a digit.";
+	public static final String RULE = com.carbonos.user.UserRules.PASSWORD_RULE;
 
 	private PasswordPolicy() {
 	}

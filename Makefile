@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check help-serve help-check vale qa-docs
+.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check help-serve help-check vale qa-docs qa-lint qa-export qa-export-check qa-compile qa-compile-check qa-schema qa-rules qa-doctor qa-reset qa-run-api qa-run-ui qa-record
 
 # git ref the docs checks diff against
 BASE ?= origin/main
@@ -45,9 +45,10 @@ admin:            ## create/reset a local admin: make admin EMAIL=a@b.c PASSWORD
 	@test -n "$(EMAIL)" -a -n "$(PASSWORD)" || { echo "Usage: make admin EMAIL=.. PASSWORD=.. [NAME=..]"; exit 1; }
 	./scripts/create-admin.sh "$(EMAIL)" "$(PASSWORD)" "$(NAME)"
 
-verify:           ## full Definition of Done (backend + frontend)
+verify:           ## full Definition of Done (backend + frontend + QA scenarios)
 	cd backend && source "$$HOME/.sdkman/bin/sdkman-init.sh" && ./mvnw verify
 	cd frontend && npm run lint && npm run format:check && npm test && npm run build
+	$(MAKE) qa-lint qa-compile-check qa-export-check
 
 docs:             ## build the engineering docs into site/ (strict: any warning fails)
 	uv run --locked mkdocs build --strict
@@ -55,8 +56,9 @@ docs:             ## build the engineering docs into site/ (strict: any warning 
 docs-serve:       ## serve the docs with live reload on http://127.0.0.1:8000
 	uv run --locked mkdocs serve
 
-docs-check:       ## docs Definition of Done: strict build, then Vale on markdown changed against $(BASE)
+docs-check:       ## docs Definition of Done: strict build, the QA procedures current, then Vale on markdown changed against $(BASE)
 	$(MAKE) docs
+	$(MAKE) qa-export-check
 	$(MAKE) vale
 
 help-serve:       ## serve the help centre with live reload: the Vite dev server, at http://localhost:5173/help
@@ -74,3 +76,44 @@ vale:             ## Vale (advisory) on markdown changed against $(BASE); skips 
 
 qa-docs:          ## export a persona's QA procedures as DOCX under build/qa-docs: make qa-docs [PERSONA=mining] (needs pandoc)
 	uv run --locked python scripts/publish_qa_docs.py --out build/qa-docs --persona $(or $(PERSONA),mining)
+
+# The QA scenario DSL (qa/): procedures as domain steps, projected to Markdown, an API driver and a UI driver.
+QA_PERSONA ?= governance
+QA_PROC ?=
+
+qa-lint:          ## QA scenarios: schema, ids, rules, specs, surface strings, em-dashes
+	cd qa && npm run -s qa -- lint --persona $(QA_PERSONA)
+
+qa-export:        ## QA scenarios: write the procedure Markdown under docs/qa/<persona>/
+	cd qa && npm run -s qa -- export --persona $(QA_PERSONA)
+
+qa-export-check:  ## QA scenarios: fail when the committed Markdown differs from the YAML
+	cd qa && npm run -s qa -- export --check --persona $(QA_PERSONA)
+
+qa-compile:       ## QA scenarios: write the API and UI specs under qa/generated/<persona>/
+	cd qa && npm run -s qa -- compile --persona $(QA_PERSONA) && npm run -s qa -- schema
+
+qa-compile-check: ## QA scenarios: fail when the committed specs or schema differ from the YAML
+	cd qa && npm run -s qa -- compile --check --persona $(QA_PERSONA) && npm run -s qa -- schema --check
+
+qa-schema:        ## QA scenarios: write qa/schema/scenario.schema.json for editors
+	cd qa && npm run -s qa -- schema
+
+qa-rules:         ## QA scenarios: pull the rule catalogue from the running local backend
+	cd qa && npm run -s qa -- rules
+
+qa-doctor:        ## QA scenarios: is the local stack ready for a run?
+	cd qa && npm run -s qa -- doctor --persona $(QA_PERSONA)
+
+qa-reset:         ## QA scenarios: reset the local stack through /api/qa/reset and empty Mailpit
+	cd qa && npm run -s qa -- reset --persona $(QA_PERSONA)
+
+qa-run-api:       ## QA scenarios: run the API driver: make qa-run-api [QA_PERSONA=governance] [QA_PROC=1]
+	cd qa && npx playwright test --project api $(if $(QA_PROC),generated/$(QA_PERSONA)/api/$(shell printf '%03d' $(QA_PROC))-,generated/$(QA_PERSONA)/api/)
+
+qa-run-ui:        ## QA scenarios: run the UI driver: make qa-run-ui [QA_PERSONA=governance] [QA_PROC=1]
+	cd qa && npx playwright test --project ui $(if $(QA_PROC),generated/$(QA_PERSONA)/ui/$(shell printf '%03d' $(QA_PROC))-,generated/$(QA_PERSONA)/ui/)
+
+qa-record:        ## QA scenarios: the run record from the last run: make qa-record QA_PROC=1 DRIVER=api
+	@test -n "$(QA_PROC)" -a -n "$(DRIVER)" || { echo "Usage: make qa-record QA_PROC=1 DRIVER=api|ui"; exit 1; }
+	cd qa && npm run -s qa -- record $(QA_PROC) $(DRIVER) --persona $(QA_PERSONA)

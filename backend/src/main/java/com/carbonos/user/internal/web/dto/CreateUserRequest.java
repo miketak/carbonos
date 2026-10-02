@@ -12,5 +12,5 @@ public record CreateUserRequest( //
 		@NotBlank @Email @Size(max = 320) String email, //
 		@NotBlank @Size(max = 100) String displayName, //
 		@NotNull UserRole role, //
-		@NotBlank @Size(min = 12, max = 72, message = PasswordPolicy.RULE) String temporaryPassword) {
+		@NotBlank @Size(max = 72, message = PasswordPolicy.RULE) String temporaryPassword) {
 }

@@ -1,0 +1,138 @@
+{
+    "rules": [
+        {
+            "id": "access-request.already-decided",
+            "module": "user",
+            "status": 409,
+            "message": "This request was already decided ({status}).",
+            "field": null
+        },
+        {
+            "id": "access-request.duplicate",
+            "module": "user",
+            "status": 409,
+            "message": "An account or pending request already exists for '{email}'.",
+            "field": null
+        },
+        {
+            "id": "access-request.setup-link.invalid",
+            "module": "user",
+            "status": 404,
+            "message": "This link is invalid or has expired.",
+            "field": null
+        },
+        {
+            "id": "password-reset.link.expired",
+            "module": "user",
+            "status": 410,
+            "message": "This reset link has expired. Reset links are valid for 1 hour.",
+            "field": null
+        },
+        {
+            "id": "password-reset.link.invalid",
+            "module": "user",
+            "status": 404,
+            "message": "This reset link is not valid.",
+            "field": null
+        },
+        {
+            "id": "password-reset.link.used",
+            "module": "user",
+            "status": 410,
+            "message": "This reset link has already been used.",
+            "field": null
+        },
+        {
+            "id": "platform.nothing-changed",
+            "module": "platform",
+            "status": 422,
+            "message": "Nothing changed, so there is nothing to record.",
+            "field": "reason"
+        },
+        {
+            "id": "platform.reason-too-short",
+            "module": "platform",
+            "status": 422,
+            "message": "Give a reason of at least {min} characters.",
+            "field": "reason"
+        },
+        {
+            "id": "platform.support-window.range",
+            "module": "platform",
+            "status": 422,
+            "message": "Support access lasts between {min} and {max} hours.",
+            "field": "supportAccessWindowHours"
+        },
+        {
+            "id": "user.credentials.invalid",
+            "module": "user",
+            "status": 401,
+            "message": "Invalid email or password.",
+            "field": null
+        },
+        {
+            "id": "user.email.duplicate",
+            "module": "user",
+            "status": 409,
+            "message": "A user with email '{email}' already exists.",
+            "field": null
+        },
+        {
+            "id": "user.last-administrator",
+            "module": "user",
+            "status": 409,
+            "message": "At least one active administrator must remain.",
+            "field": null
+        },
+        {
+            "id": "user.password.current-wrong",
+            "module": "user",
+            "status": 422,
+            "message": "The current password is not correct.",
+            "field": "currentPassword"
+        },
+        {
+            "id": "user.password.same",
+            "module": "user",
+            "status": 422,
+            "message": "Choose a password different from your current one.",
+            "field": "newPassword"
+        },
+        {
+            "id": "user.password.weak",
+            "module": "user",
+            "status": 422,
+            "message": "At least 12 characters, with a letter and a digit.",
+            "field": "password"
+        },
+        {
+            "id": "user.reset.disabled-account",
+            "module": "user",
+            "status": 409,
+            "message": "Enable the account before sending a password reset link.",
+            "field": null
+        },
+        {
+            "id": "user.reset.pending-account",
+            "module": "user",
+            "status": 409,
+            "message": "This account has not set its first password yet; the link in its approval email still works.",
+            "field": null
+        },
+        {
+            "id": "user.self.delete",
+            "module": "user",
+            "status": 409,
+            "message": "You cannot delete your own account.",
+            "field": null
+        },
+        {
+            "id": "user.self.demote-or-disable",
+            "module": "user",
+            "status": 409,
+            "message": "You cannot demote or disable your own account.",
+            "field": null
+        }
+    ],
+    "sha256": "204082402bd315062ef9be0bae867e108ea36fc2d798e47915cae4c0c434bf1d"
+}

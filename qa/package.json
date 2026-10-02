@@ -1,0 +1,32 @@
+{
+  "name": "carbonos-qa",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "QA procedures as pure domain scenarios, projected to tester Markdown, an API driver and a UI driver (plan 2026-10-02).",
+  "scripts": {
+    "qa": "tsx src/cli.ts",
+    "lint": "tsx src/cli.ts lint",
+    "export": "tsx src/cli.ts export",
+    "export:check": "tsx src/cli.ts export --check",
+    "compile": "tsx src/cli.ts compile",
+    "compile:check": "tsx src/cli.ts compile --check",
+    "rules": "tsx src/cli.ts rules",
+    "doctor": "tsx src/cli.ts doctor",
+    "reset": "tsx src/cli.ts reset",
+    "record": "tsx src/cli.ts record",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "run:api": "playwright test --project api",
+    "run:ui": "playwright test --project ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63",
+    "@types/node": "^24.13.3",
+    "tsx": "^4.21.0",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.11",
+    "yaml": "^2.9.1",
+    "zod": "^4.3.6"
+  }
+}

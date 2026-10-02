@@ -1,37 +1,31 @@
 package com.carbonos.user.internal;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
+import com.carbonos.shared.web.Rule;
+import com.carbonos.shared.web.RuleViolation;
+import com.carbonos.user.UserRules;
 
-/**
- * A reset link that opens nothing (spec 01.9). Unknown is 404; used and
- * expired are 410 with their own sentence, so the holder knows to ask again.
- * None of them says anything about whether an account exists: only a holder
- * of a real link can reach the used and expired cases.
- */
-class InvalidResetLinkException extends ErrorResponseException {
+/** A reset link that opens nothing (spec 01.9): unknown, spent, or past its hour. */
+class InvalidResetLinkException extends RuleViolation {
 
-	static final String UNKNOWN = "This reset link is not valid.";
+	static final String UNKNOWN = UserRules.RESET_LINK_INVALID.message();
 
-	static final String USED = "This reset link has already been used.";
+	static final String USED = UserRules.RESET_LINK_USED.message();
 
-	static final String EXPIRED = "This reset link has expired. Reset links are valid for 1 hour.";
+	static final String EXPIRED = UserRules.RESET_LINK_EXPIRED.message();
 
-	private InvalidResetLinkException(HttpStatus status, String detail) {
-		super(status);
-		setTitle("Invalid link");
-		setDetail(detail);
+	private InvalidResetLinkException(Rule rule) {
+		super(rule, "Invalid link");
 	}
 
 	static InvalidResetLinkException unknown() {
-		return new InvalidResetLinkException(HttpStatus.NOT_FOUND, UNKNOWN);
+		return new InvalidResetLinkException(UserRules.RESET_LINK_INVALID);
 	}
 
 	static InvalidResetLinkException used() {
-		return new InvalidResetLinkException(HttpStatus.GONE, USED);
+		return new InvalidResetLinkException(UserRules.RESET_LINK_USED);
 	}
 
 	static InvalidResetLinkException expired() {
-		return new InvalidResetLinkException(HttpStatus.GONE, EXPIRED);
+		return new InvalidResetLinkException(UserRules.RESET_LINK_EXPIRED);
 	}
 }

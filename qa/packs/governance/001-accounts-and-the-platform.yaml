@@ -1,0 +1,337 @@
+procedure: 1
+slug: accounts-and-the-platform
+title: Accounts and the platform
+covers: ["01", "01.1", "01.5", "01.6", "01.9", "02.6", "08"]
+sections:
+  - id: A
+    title: Your administrator account
+    cases:
+      - id: A1
+        title: At the start, no organization exists
+        steps:
+          - as: adminA
+            do: { signIn: { user: adminA } }
+            expect:
+              - platformSummary: { organizations: 0, publishedEditions: 3, openNotices: 0 }
+              - accessRequestsPending: { count: 0 }
+            capture: { usersAtStart: userCount }
+          - expect:
+              - userListed: { user: adminA, role: ADMIN, status: ACTIVE }
+
+  - id: B
+    title: Accounts created by an administrator
+    cases:
+      - id: B1
+        title: The password rule holds on the administrator's form
+        steps:
+          - do: { createUser: { user: adminB, password: short1 } }
+            expect:
+              - refused: { rule: user.password.weak }
+              - userAbsent: { user: adminB }
+          - do: { createUser: { user: adminB } }
+      - id: B2
+        title: Three member accounts, and a duplicate is refused
+        steps:
+          - do: { createUser: { user: kofi } }
+          - do: { createUser: { user: esi } }
+          - do: { createUser: { user: yaw } }
+            expect:
+              - userCount: { since: usersAtStart, added: 4 }
+          - do: { createUser: { user: kofi } }
+            expect:
+              - refused: { rule: user.email.duplicate, with: { email: "{email:kofi}" } }
+              - userCount: { since: usersAtStart, added: 4 }
+                why: an administrator may learn that an account exists, a visitor may not (case C1 says less on purpose)
+          - expect:
+              - accessRequestsPending: { count: 0 }
+              - userCount: { since: usersAtStart, added: 4 }
+
+  - id: C
+    title: An account requested by email
+    cases:
+      - id: C1
+        title: A visitor requests access, once
+        steps:
+          - as: visitor
+            do: { requestAccess: { user: ama, company: Adansi Foods Ltd } }
+          - do: { requestAccess: { user: ama, company: Adansi Foods Ltd } }
+            expect:
+              - refused: { rule: access-request.duplicate, with: { email: "{email:ama}" } }
+          - do: { requestAccess: { user: kofi } }
+            expect:
+              - refused: { rule: access-request.duplicate, with: { email: "{email:kofi}" } }
+                why: the message does not say whether the address holds an account or a request
+          - do: { signIn: { user: ama, password: "{wrong}" } }
+            expect:
+              - refused: { rule: user.credentials.invalid }
+                why: a request is not an account
+      - id: C2
+        title: The administrator approves
+        steps:
+          - as: adminA
+            expect:
+              - accessRequestsPending: { count: 1 }
+          - do: { approveAccessRequest: { user: ama } }
+          - expect:
+              - userListed: { user: ama, status: PENDING }
+          - expect:
+              - emailReceived: { to: ama, subject: Your CarbonOS access is approved, linkTo: /set-password }
+                why: on this environment's address, never localhost or production
+      - id: C3
+        title: The link sets the password once
+        steps:
+          - as: ama
+            do: { setPasswordFromLink: { user: ama, password: Ama-pass } }
+            expect:
+              - refused: { rule: user.password.weak }
+                why: too short
+          - do: { setPasswordFromLink: { user: ama, password: twelvelettersx } }
+            expect:
+              - refused: { rule: user.password.weak }
+                why: no digit
+          - do: { setPasswordFromLink: { user: ama } }
+            expect:
+              - organizationCount: { user: ama, count: 0 }
+              - canCreateOrganization: { user: ama, value: true }
+          - do: { openSetupLink: { user: ama } }
+            expect:
+              - refused: { rule: access-request.setup-link.invalid }
+                why: with a way back to the landing page
+          - do: { openSetupLink: { user: ama, link: forged } }
+            expect:
+              - refused: { rule: access-request.setup-link.invalid }
+                why: a forged token is not told apart from a used one
+          - as: adminA
+            expect:
+              - userListed: { user: ama, status: ACTIVE }
+              - userCount: { since: usersAtStart, added: 5 }
+
+  - id: D
+    title: Platform settings
+    intro: >-
+      Settings are on the qa environment for every tester. Cases D2 and D3 put
+      each value back.
+    cases:
+      - id: D1
+        title: A setting needs a value in range, a change and a reason
+        steps:
+          - as: adminA
+            expect:
+              - settings: { supportAccessWindowHours: 24, organizationCreation: EVERYONE, editionsInPublishedPeriods: BLOCKED }
+          - do: { changeSettings: { supportAccessWindowHours: 0, reason: "Governance pack: a window of zero" } }
+            expect:
+              - refused: { rule: platform.support-window.range, with: { min: "1", max: "72" } }
+          - do: { changeSettings: { supportAccessWindowHours: 100, reason: "Governance pack: a window of a hundred" } }
+            expect:
+              - refused: { rule: platform.support-window.range, with: { min: "1", max: "72" } }
+          - do: { changeSettings: { supportAccessWindowHours: 24, reason: "Governance pack: the same value again" } }
+            expect:
+              - refused: { rule: platform.nothing-changed }
+          - do: { changeSettings: { supportAccessWindowHours: 2, reason: short } }
+            expect:
+              - refused: { rule: platform.reason-too-short, with: { min: "10" } }
+          - do: { changeSettings: { supportAccessWindowHours: 2, reason: "Governance pack: a shorter support window" } }
+            expect:
+              - settingHistoryHas: { setting: supportAccessWindowHours, from: 24, to: 2, reason: "Governance pack: a shorter support window", actor: adminA }
+          - expect:
+              - supportAccessWindow: { hours: 2 }
+      - id: D2
+        title: Reserving organization creation takes effect at once
+        steps:
+          - do: { changeSettings: { organizationCreation: ADMINISTRATORS, reason: "Governance pack: creation reserved" } }
+            expect:
+              - settingHistoryHas: { setting: organizationCreation, from: EVERYONE, to: ADMINISTRATORS, reason: "Governance pack: creation reserved" }
+          - as: ama
+            expect:
+              - canCreateOrganization: { user: ama, value: false }
+          - as: adminA
+            do: { changeSettings: { organizationCreation: EVERYONE, reason: "Governance pack: creation opened again" } }
+          - do: { changeSettings: { supportAccessWindowHours: 24, reason: "Governance pack: the window restored" } }
+            expect:
+              - settingHistoryCount: { count: 4 }
+          - as: ama
+            expect:
+              - canCreateOrganization: { user: ama, value: true }
+                why: leave it, procedure 2 creates the organization
+      - id: D3
+        title: The third setting is recorded like the others
+        steps:
+          - as: adminA
+            expect:
+              - settings: { editionsInPublishedPeriods: BLOCKED }
+                why: the hint says published runs keep the factors they reported with either way, and that frozen and final periods always block
+          - do: { changeSettings: { editionsInPublishedPeriods: ALLOWED, reason: "Governance pack: reading the third setting" } }
+            expect:
+              - settingHistoryHas: { setting: editionsInPublishedPeriods, from: BLOCKED, to: ALLOWED, reason: "Governance pack: reading the third setting" }
+          - do: { changeSettings: { editionsInPublishedPeriods: BLOCKED, reason: "Governance pack: the default again" } }
+            expect:
+              - settingHistoryCount: { count: 6 }
+
+  - id: E
+    title: An administrator's own account
+    cases:
+      - id: E1
+        title: Self-demotion, self-disabling and self-deletion are refused
+        steps:
+          - as: adminB
+            do: { signIn: { user: adminB } }
+          - do: { changeUserRole: { user: adminB, role: MEMBER } }
+            expect:
+              - refused: { rule: user.self.demote-or-disable }
+          - do: { disableUser: { user: adminB } }
+            expect:
+              - refused: { rule: user.self.demote-or-disable }
+          - do: { deleteUser: { user: adminB } }
+            expect:
+              - refused: { rule: user.self.delete }
+          - do: { signOut: { user: adminB } }
+      - id: E2
+        title: A disabled account cannot sign in, and is re-enabled
+        steps:
+          - as: adminA
+            do: { disableUser: { user: yaw } }
+          - as: yaw
+            do: { signIn: { user: yaw } }
+            expect:
+              - refused: { rule: user.credentials.invalid }
+          - as: adminA
+            do: { enableUser: { user: yaw } }
+          - as: yaw
+            do: { signIn: { user: yaw } }
+            expect:
+              - organizationCount: { user: yaw, count: 0 }
+          - do: { signOut: { user: yaw } }
+
+  - id: F
+    title: The account menu
+    cases:
+      - id: F1
+        title: The menu carries the profile, and the administrator's entry
+        steps:
+          - as: ama
+            expect:
+              - platformRole: { user: ama, role: MEMBER }
+          - do: { renameProfile: { user: ama, displayName: "Ama Owusu (Owner)" } }
+          - do: { renameProfile: { user: ama, displayName: "Ama Owusu" } }
+          - as: adminA
+            expect:
+              - platformRole: { user: adminA, role: ADMIN }
+                why: inside the administration area the entry is absent, the sidebar is the navigation there
+          - as: ama
+            expect:
+              - platformAccess: { user: ama, value: false }
+
+  - id: G
+    title: Passwords
+    cases:
+      - id: G1
+        title: A member changes their password on the profile
+        steps:
+          - as: yaw
+            do: { signIn: { user: yaw } }
+          - as: yawSecond
+            do: { signIn: { user: yawSecond } }
+            why: two sessions of one account
+          - do: { changePassword: { user: yawSecond, current: "{wrong}", new: Yaw-pass-2027 } }
+            expect:
+              - refused: { rule: user.password.current-wrong }
+          - do: { changePassword: { user: yawSecond, new: Yaw-pass-2026 } }
+            expect:
+              - refused: { rule: user.password.same }
+          - do: { changePassword: { user: yawSecond, new: Yaw-pass-2027 } }
+          - as: yaw
+            expect:
+              - sessionEnded: { user: yaw }
+                why: that session ended with the change
+      - id: G2
+        title: A forgotten password is reset by email
+        steps:
+          - as: visitor
+            do: { requestPasswordReset: { email: nobody@example.test } }
+            expect:
+              - noEmail: { to: nobody@example.test, subject: Reset your CarbonOS password }
+          - do: { requestPasswordReset: { user: yaw } }
+            expect:
+              - emailReceived: { to: yaw, subject: Reset your CarbonOS password, containing: "Somebody, probably you, asked to reset your password", linkTo: /reset-password }
+                why: both answers on the page read the same, and do not say which address holds an account
+          - do: { resetPasswordFromLink: { user: yaw, password: Yaw-pass-2026, confirm: Yaw-pass-2025 } }
+            expect:
+              - refused: { rule: ui.password-confirmation-mismatch }
+          - do: { resetPasswordFromLink: { user: yaw, password: Yaw-pass-2026 } }
+          - do: { signIn: { user: yaw, password: Yaw-pass-2027 } }
+            expect:
+              - refused: { rule: user.credentials.invalid }
+          - do: { signIn: { user: yaw } }
+            why: the pack's password for Yaw holds again
+          - do: { openResetLink: { user: yaw } }
+            expect:
+              - refused: { rule: password-reset.link.used }
+          - do: { openResetLink: { user: yaw, link: forged } }
+            expect:
+              - refused: { rule: password-reset.link.invalid }
+      - id: G3
+        title: An administrator sends a reset link
+        steps:
+          - as: adminA
+            do: { sendResetLink: { user: esi } }
+          - as: esi
+            do: { signIn: { user: esi } }
+          - do: { signOut: { user: esi } }
+            why: leave the link unused, it expires in an hour and Esi's password stands
+
+docs:
+  version: 4
+  estimatedMinutes: 45
+  objective: >-
+    Confirm that a platform administrator creates accounts directly and
+    approves a request that arrives by email, that the password rule holds on
+    both paths, that a platform setting is recorded with a reason and takes
+    effect for members at once, that an administrator cannot demote, disable
+    or delete their own account, and that a password is changed on the
+    profile, reset by email, or reset by a link an administrator sends.
+  coversText: >-
+    Spec 02.6 for the platform setting and spec 08 for the form rules. Support
+    access is in procedure 7, case D3, where it meets a decision it cannot
+    make.
+  runNote: Every later procedure signs in with the accounts it creates.
+  prerequisitesText:
+    - "Admin A: the administrator account the engineering team created for you, and its password."
+    - The mailbox the aliases in the README point at.
+    - A normal window for Admin A and a private window for everyone else.
+  rationale:
+    D3: >-
+      What the setting does to an import is in the mining pack, procedure 10
+      case E5: every reported year of this pack has a frozen correction beside
+      it, which blocks under either value.
+  knownNonGoals: >-
+    the refusal "At least one active administrator must remain.", which the
+    self-account rule reaches first for any administrator acting on their own
+    row; a request approved and then rejected; the expiry of a set-password
+    link by time; the expiry of a reset link and the limit on reset requests
+    (the mining pack, procedure 1, cases A11 and A12); the limit on password
+    changes.
+  changeNotes:
+    - version: 2
+      date: "2026-09-29"
+      text: >-
+        Section D reads the third setting, **Editions inside a published
+        period** (new case D3, PR #122), and **Every change** with the form's
+        labels ("24 hours", "Everyone signed in"; PR #124). New section G: a
+        password changed on the profile, reset by email, and reset by a link
+        an administrator sends (spec 01.9, PR #123). Every account keeps the
+        password the README lists.
+    - version: 3
+      date: "2026-09-29"
+      text: >-
+        F1 step 1 lists **Help** in the account menu (help centre, PR #117).
+        Found by the governance walkthrough of 2026-09-29.
+    - version: 4
+      date: "2026-10-02"
+      text: >-
+        Transliterated to the QA scenario DSL (qa/packs/governance): the
+        procedure is generated from domain steps and verified by the API and
+        UI drivers. The sentences that described the screen (dialog titles,
+        the options of a select, the hint under a field) moved into the
+        drivers' UI projections or were dropped; one row per account where the
+        prose grouped three; B2 counts accounts against the number noted in
+        A1; C1 step 5 signs in with a wrong password by name.

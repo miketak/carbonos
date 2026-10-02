@@ -54,3 +54,32 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+  qa-scenarios:
+    name: QA scenarios / lint, export & compile checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: qa/package-lock.json
+      - name: Install dependencies
+        working-directory: qa
+        run: npm ci
+      - name: Typecheck
+        working-directory: qa
+        run: npm run typecheck
+      - name: Lint the scenarios
+        working-directory: qa
+        run: npm run lint
+      - name: The committed Markdown matches the YAML
+        working-directory: qa
+        run: npm run export:check
+      - name: The committed specs and schema match the YAML
+        working-directory: qa
+        run: npm run compile:check && npm run qa -- schema --check
+      - name: Unit tests
+        working-directory: qa
+        run: npm test

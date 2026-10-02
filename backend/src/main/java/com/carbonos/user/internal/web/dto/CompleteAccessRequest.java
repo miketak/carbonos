@@ -6,5 +6,5 @@ import jakarta.validation.constraints.Size;
 
 public record CompleteAccessRequest(
 		@NotBlank @Size(max = 64) String token, //
-		@NotBlank @Size(min = 12, max = 72, message = PasswordPolicy.RULE) String password) {
+		@NotBlank @Size(max = 72, message = PasswordPolicy.RULE) String password) {
 }

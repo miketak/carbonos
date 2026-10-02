@@ -1,20 +1,12 @@
 package com.carbonos.platform.internal;
 
-import java.util.Map;
+import com.carbonos.shared.web.Rule;
+import com.carbonos.shared.web.RuleViolation;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
+/** A setting refused under its field (spec 01.5); the rules are in {@link com.carbonos.platform.PlatformRules}. */
+class PlatformFieldException extends RuleViolation {
 
-/**
- * A rejected field on a settings write: 422 with {@code errors.<field>}, the
- * shape every form in the product already prints inline.
- */
-class PlatformFieldException extends ErrorResponseException {
-
-	PlatformFieldException(String field, String message) {
-		super(HttpStatus.UNPROCESSABLE_ENTITY);
-		setTitle("Invalid request");
-		setDetail(message);
-		getBody().setProperty("errors", Map.of(field, message));
+	PlatformFieldException(Rule rule, Object... values) {
+		super(rule, "Invalid request", values);
 	}
 }

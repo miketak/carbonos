@@ -1,12 +1,9 @@
 package com.carbonos.user.internal;
 
-import java.util.Map;
+import com.carbonos.shared.web.RuleViolation;
+import com.carbonos.user.UserRules;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
-
-/** A password that fails the policy (spec 01.2): 422 with the rule under errors.password. */
-public class WeakPasswordException extends ErrorResponseException {
+public class WeakPasswordException extends RuleViolation {
 
 	public WeakPasswordException() {
 		this("password");
@@ -14,9 +11,6 @@ public class WeakPasswordException extends ErrorResponseException {
 
 	/** The rule under the form's own field name (the profile's is {@code newPassword}, spec 01.9). */
 	public WeakPasswordException(String field) {
-		super(HttpStatus.UNPROCESSABLE_ENTITY);
-		setTitle("Validation failed");
-		setDetail(PasswordPolicy.RULE);
-		getBody().setProperty("errors", Map.of(field, PasswordPolicy.RULE));
+		super("newPassword".equals(field) ? UserRules.NEW_PASSWORD_WEAK : UserRules.PASSWORD_WEAK, "Validation failed");
 	}
 }

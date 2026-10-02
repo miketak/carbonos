@@ -1,13 +1,11 @@
 package com.carbonos.user.internal;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
+import com.carbonos.shared.web.RuleViolation;
+import com.carbonos.user.UserRules;
 
-class DuplicateAccessRequestException extends ErrorResponseException {
+class DuplicateAccessRequestException extends RuleViolation {
 
 	DuplicateAccessRequestException(String email) {
-		super(HttpStatus.CONFLICT);
-		setTitle("Duplicate request");
-		setDetail("An account or pending request already exists for '" + email + "'.");
+		super(UserRules.ACCESS_REQUEST_DUPLICATE, "Duplicate request", email);
 	}
 }

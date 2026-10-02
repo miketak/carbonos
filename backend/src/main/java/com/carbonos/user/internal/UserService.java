@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.carbonos.user.UserCreated;
+import com.carbonos.user.UserRules;
 
 @Service
 @Transactional
@@ -80,10 +81,10 @@ public class UserService {
 		var losesAdminAccess = user.getRole() == UserRole.ADMIN && user.getStatus() == UserStatus.ACTIVE
 				&& (role != UserRole.ADMIN || status != UserStatus.ACTIVE);
 		if (losesAdminAccess && user.getId().equals(actorId)) {
-			throw new UserRuleViolationException("You cannot demote or disable your own account.");
+			throw new UserRuleViolationException(UserRules.SELF_DEMOTE_OR_DISABLE);
 		}
 		if (losesAdminAccess && isLastActiveAdmin()) {
-			throw new UserRuleViolationException("At least one active administrator must remain.");
+			throw new UserRuleViolationException(UserRules.LAST_ADMINISTRATOR);
 		}
 		user.setDisplayName(displayName);
 		user.setRole(role);
@@ -94,10 +95,10 @@ public class UserService {
 	public void delete(UUID id, UUID actorId) {
 		var user = get(id);
 		if (user.getId().equals(actorId)) {
-			throw new UserRuleViolationException("You cannot delete your own account.");
+			throw new UserRuleViolationException(UserRules.SELF_DELETE);
 		}
 		if (user.getRole() == UserRole.ADMIN && user.getStatus() == UserStatus.ACTIVE && isLastActiveAdmin()) {
-			throw new UserRuleViolationException("At least one active administrator must remain.");
+			throw new UserRuleViolationException(UserRules.LAST_ADMINISTRATOR);
 		}
 		users.delete(user);
 	}

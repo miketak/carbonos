@@ -1,19 +1,13 @@
 package com.carbonos.user.internal;
 
-import java.util.Map;
+import com.carbonos.shared.web.RuleViolation;
+import com.carbonos.user.UserRules;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
+class SamePasswordException extends RuleViolation {
 
-/** A "new" password equal to the current one (spec 01.9): 422 on the new password field. */
-class SamePasswordException extends ErrorResponseException {
-
-	static final String MESSAGE = "Choose a password different from your current one.";
+	static final String MESSAGE = UserRules.PASSWORD_SAME.message();
 
 	SamePasswordException() {
-		super(HttpStatus.UNPROCESSABLE_ENTITY);
-		setTitle("Validation failed");
-		setDetail(MESSAGE);
-		getBody().setProperty("errors", Map.of("newPassword", MESSAGE));
+		super(UserRules.PASSWORD_SAME, "Validation failed");
 	}
 }

@@ -7,6 +7,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+import com.carbonos.user.InitialAdmin;
 import com.carbonos.user.internal.UserRepository;
 import com.carbonos.user.internal.UserRole;
 import com.carbonos.user.internal.UserService;
@@ -17,7 +18,7 @@ import com.carbonos.user.internal.UserService;
  * email is not taken; otherwise does nothing. Safe to run on every boot.
  */
 @Component
-class AdminBootstrap implements ApplicationRunner {
+class AdminBootstrap implements ApplicationRunner, InitialAdmin {
 
 	private static final Logger log = LoggerFactory.getLogger(AdminBootstrap.class);
 
@@ -37,6 +38,11 @@ class AdminBootstrap implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) {
+		seed();
+	}
+
+	@Override
+	public void seed() {
 		if (email.isBlank() || password.isBlank()) {
 			return;
 		}

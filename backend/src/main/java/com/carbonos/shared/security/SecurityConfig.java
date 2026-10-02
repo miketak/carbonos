@@ -78,6 +78,8 @@ class SecurityConfig {
 				// spec 09: a visitor may vote on a help article and report a search; CSRF still applies
 				.requestMatchers(HttpMethod.POST, "/api/help/**").permitAll()
 				.requestMatchers("/api/admin/**").hasRole("ADMIN")
+				// the QA hooks of a local stack (carbonos.qa.endpoints=true); absent otherwise
+				.requestMatchers("/api/qa/**").hasRole("ADMIN")
 				.anyRequest().authenticated())
 			.csrf(csrf -> csrf
 				.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
