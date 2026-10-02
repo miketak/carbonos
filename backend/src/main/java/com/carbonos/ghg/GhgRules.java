@@ -238,6 +238,56 @@ public class GhgRules implements RuleSource {
 			"Support access cannot {act}. That is the organization's own decision, so a reviewer or an owner of the "
 					+ "organization has to make it.");
 
+	// the base year and its recalculation candidates (specs 06, 06.1)
+	public static final Rule BASE_YEAR_STRUCTURAL_AT_FREEZE = Rule.of("ghg.base-year.structural-at-freeze",
+			HttpStatus.CONFLICT, "Structural changes are detected when an inventory is frozen. Freeze the inventory instead.");
+
+	public static final Rule BASE_YEAR_SHARE_OR_RUN = Rule.field("ghg.base-year.share-or-run", "affectedPercent",
+			"Give the affected share of base-year emissions, or name a comparison run of the base-year inventory.");
+
+	public static final Rule BASE_YEAR_COMPARISON_RUN_INVENTORY = Rule.of("ghg.base-year.comparison-run-inventory",
+			HttpStatus.CONFLICT, "The comparison run must be a run of the base-year inventory '{inventory}'.");
+
+	public static final Rule BASE_YEAR_NO_FINAL_RUN = Rule.of("ghg.base-year.no-final-run", HttpStatus.CONFLICT,
+			"The base-year inventory has no final run to compare with. Designate one first.");
+
+	public static final Rule BASE_YEAR_DECISION_KIND = Rule.of("ghg.base-year.decision-kind", HttpStatus.CONFLICT,
+			"A decision is either RECALCULATED or DECLINED.");
+
+	public static final Rule BASE_YEAR_RUN_REQUIRED = Rule.of("ghg.base-year.run-required", HttpStatus.CONFLICT,
+			"A recalculated base year is a run of the base-year inventory. Name the run.");
+
+	public static final Rule BASE_YEAR_RUN_INVENTORY = Rule.of("ghg.base-year.run-inventory", HttpStatus.CONFLICT,
+			"The recalculated base must be a run of the base-year inventory '{inventory}'.");
+
+	public static final Rule BASE_YEAR_RUN_VOIDED = Rule.of("ghg.base-year.run-voided", HttpStatus.CONFLICT,
+			"Run {run} is voided and cannot be the recalculated base.");
+
+	public static final Rule BASE_YEAR_HOLDS_FINAL = Rule.of("ghg.base-year.holds-final", HttpStatus.CONFLICT,
+			"The {year} base year has a recalculation candidate above the significance threshold ({reason}). An "
+					+ "inventory that reports against the base year cannot be {act} until the recalculation is completed "
+					+ "or declined. Calculation runs stay available, because quantifying the movement is how a "
+					+ "recalculation is assessed.");
+
+	// the organization's record (spec 01.3) and a factor never applied (spec 02.11)
+	public static final Rule ORGANIZATION_HAS_RECORDS = Rule.of("ghg.organization.has-records", HttpStatus.CONFLICT,
+			"'{organization}' cannot be deleted while its records stand: {records}. Publish records are kept: withdraw "
+					+ "the final designation or supersede the published inventory first.");
+
+	public static final Rule ORGANIZATION_NAME_CONFIRMATION = Rule.field("ghg.organization.name-confirmation", "name",
+			"Type the organization's name exactly to confirm.");
+
+	public static final Rule FACTOR_PACK_DERIVED_NOT_DELETED = Rule.of("ghg.factor.pack-derived-not-deleted",
+			HttpStatus.CONFLICT,
+			"'{factor}' came from the factor pack '{pack}'. A pack-derived factor is never deleted, because its "
+					+ "versions are the record of what was calculated with. Set its validity end to retire it instead.");
+
+	public static final Rule FACTOR_APPLIED_NOT_DELETED = Rule.of("ghg.factor.applied-not-deleted", HttpStatus.CONFLICT,
+			"'{factor}' was applied by a calculation run. Set its validity end to retire it instead of deleting it.");
+
+	public static final Rule FACTOR_CLASSIFIED_NOT_DELETED = Rule.of("ghg.factor.classified-not-deleted",
+			HttpStatus.CONFLICT, "'{factor}' is applied by a classification in {where}. Choose another factor there before deleting it.");
+
 	private static final List<Rule> ALL = List.of(ROLE_REQUIRED, ORGANIZATION_NAME_DUPLICATE, ACCOUNT_NOT_FOUND,
 			MEMBER_DUPLICATE, LAST_OWNER, ENTITY_DISPOSAL_BEFORE_ACQUISITION, ENTITY_PERCENT_RANGE,
 			ENTITY_NAME_DUPLICATE, ENTITY_PARENT_LOOP, ENTITY_HAS_FACILITIES, LEASE_ENDS_BEFORE_START,
@@ -254,7 +304,11 @@ public class GhgRules implements RuleSource {
 			PACK_EVIDENCE_REQUIRED, PACK_APPROVER_IS_CURATOR, PACK_ALREADY_PUBLISHED, PACK_DRAFT_NOT_WITHDRAWABLE,
 			PACK_ALREADY_WITHDRAWN, PACK_WITHDRAWAL_REASON_TOO_SHORT, PACK_APPLIES_INSIDE_LOCKED_PERIOD,
 			ADOPTION_ANSWER_REQUIRED, NOTICE_ALREADY_DECIDED, SUPPORT_ACCESS_REASON_TOO_SHORT, SUPPORT_ACCESS_MEMBER,
-			SUPPORT_ACCESS_ALREADY_HELD, SUPPORT_ACCESS_CANNOT_DECIDE);
+			SUPPORT_ACCESS_ALREADY_HELD, SUPPORT_ACCESS_CANNOT_DECIDE, BASE_YEAR_STRUCTURAL_AT_FREEZE,
+			BASE_YEAR_SHARE_OR_RUN, BASE_YEAR_COMPARISON_RUN_INVENTORY, BASE_YEAR_NO_FINAL_RUN, BASE_YEAR_DECISION_KIND,
+			BASE_YEAR_RUN_REQUIRED, BASE_YEAR_RUN_INVENTORY, BASE_YEAR_RUN_VOIDED, BASE_YEAR_HOLDS_FINAL,
+			ORGANIZATION_HAS_RECORDS, ORGANIZATION_NAME_CONFIRMATION, FACTOR_PACK_DERIVED_NOT_DELETED,
+			FACTOR_APPLIED_NOT_DELETED, FACTOR_CLASSIFIED_NOT_DELETED);
 
 	@Override
 	public String module() {

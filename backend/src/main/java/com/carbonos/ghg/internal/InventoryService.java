@@ -884,11 +884,8 @@ public class InventoryService {
 					|| !BaseYearService.reportsAgainst(baseYear, inventory)) {
 				continue;
 			}
-			throw new GhgRuleViolationException("The " + baseYear.year()
-					+ " base year has a recalculation candidate above the significance threshold ("
-					+ flag.getReason() + "). An inventory that reports against the base year cannot be " + act
-					+ " until the recalculation is completed or declined. Calculation runs stay available, because "
-					+ "quantifying the movement is how a recalculation is assessed.");
+			throw new GhgRuleViolationException(GhgRules.BASE_YEAR_HOLDS_FINAL, baseYear.year(), flag.getReason(),
+					act);
 		}
 	}
 

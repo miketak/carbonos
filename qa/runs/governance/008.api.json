@@ -1,0 +1,181 @@
+{
+  "procedure": 8,
+  "driver": "api",
+  "yamlSha256": "86d8a9e976c94708772deb086bcdf3060df4b21a919b72dc6e0164452231502a",
+  "productVersion": null,
+  "gitSha": "3dd7eed90aebb7d9020e6d9582f7a7533455c869",
+  "date": "2026-10-02",
+  "specialist": "unknown",
+  "digestSha256": "09961d45a826ace15827fa67f2c9bcf6de9638a8eac7aeb8702bc90fa728efec",
+  "counts": {
+    "pass": 36,
+    "na": 2,
+    "manual": 2
+  },
+  "steps": [
+    {
+      "id": "8.A1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "8.A1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "8.A1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "8.A1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "8.A1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "8.B1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "8.B1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "8.B1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "8.B1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "8.B1.5",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"Base year holds the final designation; runs stay available.\""
+    },
+    {
+      "id": "8.B1.6",
+      "status": "PASS"
+    },
+    {
+      "id": "8.B1.7",
+      "status": "PASS"
+    },
+    {
+      "id": "8.C1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "8.C1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "8.C1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "8.C1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "8.C1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "8.C1.6",
+      "status": "PASS"
+    },
+    {
+      "id": "8.C1.7",
+      "status": "PASS"
+    },
+    {
+      "id": "8.D1.1",
+      "status": "NA",
+      "note": "the dialog lists the runs offered and sends nothing until one is chosen"
+    },
+    {
+      "id": "8.D1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "8.D2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "8.D2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "8.D2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "8.E1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "8.E1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "8.E1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "8.E1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "8.E1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "8.E1.6",
+      "status": "PASS"
+    },
+    {
+      "id": "8.E1.7",
+      "status": "PASS"
+    },
+    {
+      "id": "8.F1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "8.F1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "8.F1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "8.F1.4",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, History lists the members added, the entities, facilities and streams of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label."
+    },
+    {
+      "id": "8.F2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "8.F2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "8.F2.3",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Solo Ltd leaves the list and its URL is not found. The dialog said the record of who removed it, when and why is kept."
+    },
+    {
+      "id": "8.F2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "8.F2.5",
+      "status": "PASS"
+    }
+  ]
+}

@@ -47,7 +47,7 @@ export type UiCheck =
   | { check: 'fieldError'; label: string; text: string }
   | { check: 'fieldValue'; label: string; value: string }
   | { check: 'fieldVisible'; label: string; within?: string }
-  | { check: 'optionListed'; label: string; option: string }
+  | { check: 'optionListed'; label: string; option: string; absent?: boolean }
   | { check: 'ticked'; label: string; on: boolean; disabled?: boolean }
   | { check: 'tabsVisible'; names: string[] }
   | { check: 'gateFinding'; organization: string; inventory: string; gate: string; severity?: string; containing: string; absent?: boolean }

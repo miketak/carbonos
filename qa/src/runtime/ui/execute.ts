@@ -38,6 +38,7 @@ const orgSections: Record<string, string> = {
   'Source documents': 'activity/documents',
   Inventories: 'inventories',
   Updates: 'factor-updates',
+  'Baseline and targets': 'settings/baseline',
 }
 
 /** Tokens that need the API: `{orgId:Name}` and `{entityId:Org|Entity}`. */
@@ -57,6 +58,10 @@ export async function resolveAsync(ctx: ExecuteContext, text: string): Promise<s
   for (const match of text.matchAll(/\{entityId:([^}|]+)\|([^}]+)\}/g)) {
     const org = await organization(ctx.api, match[1]!)
     out = out.replace(match[0], (await entity(ctx.api.session(), org.id, match[2]!)).id)
+  }
+  // `{inventoryId:Org|FY2025}`: a select whose option value is the inventory's id ("FY2025 (" would also match the correction)
+  for (const match of text.matchAll(/\{inventoryId:([^}|]+)\|([^}]+)\}/g)) {
+    out = out.replace(match[0], (await inventory(ctx.api, match[1]!, match[2]!)).inv.id)
   }
   for (const match of text.matchAll(/\{facilityId:([^}|]+)\|([^}]+)\}/g)) {
     const org = await organization(ctx.api, match[1]!)
@@ -168,6 +173,15 @@ export async function row(page: Page, text: string): Promise<Locator> {
   const items = page.getByRole('listitem').filter({ hasText: text })
   if ((await items.count()) > 0) return items.first()
   return page.locator('article, section > div, div').filter({ has: page.getByText(text, { exact: true }) }).filter({ has: page.getByRole('button') }).last()
+}
+
+/** The row that names the text and offers the button: two candidates may share a reason, and only the open one offers a decision. */
+export async function rowOffering(page: Page, text: string, button: string): Promise<Locator> {
+  const first = await row(page, text)
+  if ((await (await rowButton(first, button)).count()) > 0) return first
+  const name = new RegExp(`^(${button.split('|').map(escapeRegExp).join('|')})( |$)`)
+  const offering = page.getByRole('row').or(page.getByRole('listitem')).filter({ hasText: text }).filter({ has: page.getByRole('button', { name }) })
+  return (await offering.count()) > 0 ? offering.last() : first
 }
 
 /** A tester leaving a dialog behind closes it first: Escape, then its Cancel or Close button. */
@@ -309,7 +323,7 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       await page.getByRole('menuitem', { name: t(op.item), exact: true }).click()
       return
     case 'row': {
-      const button = await rowButton(await row(page, await resolveAsync(ctx, t(op.text))), t(op.button))
+      const button = await rowButton(await rowOffering(page, await resolveAsync(ctx, t(op.text)), t(op.button)), t(op.button))
       if (op.ifEnabled) {
         const present = await button.waitFor({ timeout: 3_000 }).then(() => true, () => false)
         if (!present || (await button.isDisabled())) return
