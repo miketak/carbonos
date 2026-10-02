@@ -26,7 +26,7 @@ export const designateBaseYear = defineVerb({
   },
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.base.section },
-    { op: 'choose', label: S.base.field.inventory, option: `${a.inventory} (`, prefix: true },
+    { op: 'choose', label: S.base.field.inventory, option: `{inventoryId:${a.organization}|${a.inventory}}`, byValue: true },
     { op: 'fill', label: S.base.field.threshold, value: String(a.threshold) },
     { op: 'fill', label: S.base.field.reason, value: a.reason },
     { op: 'choose', label: S.base.field.convention, option: S.base.option.convention[a.convention]! },

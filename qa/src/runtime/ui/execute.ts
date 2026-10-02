@@ -59,6 +59,10 @@ export async function resolveAsync(ctx: ExecuteContext, text: string): Promise<s
     const org = await organization(ctx.api, match[1]!)
     out = out.replace(match[0], (await entity(ctx.api.session(), org.id, match[2]!)).id)
   }
+  // `{inventoryId:Org|FY2025}`: a select whose option value is the inventory's id ("FY2025 (" would also match the correction)
+  for (const match of text.matchAll(/\{inventoryId:([^}|]+)\|([^}]+)\}/g)) {
+    out = out.replace(match[0], (await inventory(ctx.api, match[1]!, match[2]!)).inv.id)
+  }
   for (const match of text.matchAll(/\{facilityId:([^}|]+)\|([^}]+)\}/g)) {
     const org = await organization(ctx.api, match[1]!)
     out = out.replace(match[0], (await facility(ctx.api.session(), org.id, match[2]!)).id)
