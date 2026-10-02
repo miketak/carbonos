@@ -42,7 +42,8 @@ committed with the procedure (ADR 0007).
    The UI driver runs one browser context per actor and, by default
    (`QA_CROSS_CHECK=1`), asks the API about every stored-state outcome too,
    so a failure reads "UI stale" (the API agrees with the scenario, the
-   screen does not) or "backend".
+   screen does not) or "backend". A failed check names itself and saves the
+   actor's window as it stood under `qa/out/screens/`.
 5. While a scenario is being written, a few of its cases can be rerun on
    the current stack without the ones before them:
    `QA_ACTOR=ama npx playwright test generated/governance/ui/005- --project=ui --grep "B2|B3"`.

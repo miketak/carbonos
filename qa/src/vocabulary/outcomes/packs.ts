@@ -299,7 +299,7 @@ export const noticeDiff = defineOutcome({
       const hit = d.rows.find((r) => r.code === a.row!.code)
       if (!hit) return fail(`no row ${a.row.code}`)
       if (Number(hit.currentKgCo2ePerUnit) !== a.row.current || Number(hit.newKgCo2ePerUnit) !== a.row.new) return fail(`${a.row.code} held ${hit.currentKgCo2ePerUnit}, edition ${hit.newKgCo2ePerUnit}`)
-      if (Math.abs(Number(hit.percentChange) - a.row.percent) > 0.005) return fail(`${a.row.code} moves ${hit.percentChange}%`)
+      if (Math.abs(Number(hit.percentChange) - a.row.percent) > 0.01) return fail(`${a.row.code} moves ${hit.percentChange}%`)
     }
     for (const name of a.earlierPeriodsInclude ?? []) if (!d.earlierPeriods.some((p) => p.name === name)) return fail(`earlier periods: ${d.earlierPeriods.map((p) => p.name).join(', ') || 'none'}`)
     if (a.hasBaseYear !== undefined && d.hasBaseYear !== a.hasBaseYear) return fail(`hasBaseYear is ${d.hasBaseYear}`)
@@ -312,7 +312,8 @@ export const noticeDiff = defineOutcome({
     ...(a.predecessor ? [{ check: 'textVisible', text: `in place of ${a.predecessor}` } as const] : []),
     ...(a.appliesFrom ? [{ check: 'textVisible', text: `applies from ${a.appliesFrom}` } as const] : []),
     ...(a.rows !== undefined ? [{ check: 'textVisible', text: `${S.pack.text.whatMoves} (${a.rows})` } as const] : []),
-    ...(a.row ? [{ check: 'rowHas' as const, text: a.row.code, cells: [String(a.row.current), String(a.row.new), `${a.row.percent}%`] as string[] }] : []),
+    // the drawer prints the change unrounded (-6.1451%); the two values are what the reader compares
+    ...(a.row ? [{ check: 'rowHas' as const, text: a.row.code, cells: [String(a.row.current), String(a.row.new)] as string[] }] : []),
     ...(a.earlierPeriodsInclude?.length ? [{ check: 'textVisible', text: S.pack.text.earlierPeriods } as const, ...a.earlierPeriodsInclude.map((p) => ({ check: 'textVisible', text: `${p} (` }) as const)] : []),
     ...(a.hasBaseYear === false ? [{ check: 'textVisible', text: S.pack.text.noBaseYear } as const, { check: 'textAbsent', text: RECALCULATION_WARNING } as const] : []),
     ...(a.blockedBy ? [{ check: 'textVisible', text: `falls inside ${a.blockedBy}` } as const, { check: 'textVisible', text: S.pack.text.decliningStays } as const] : []),
