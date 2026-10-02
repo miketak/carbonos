@@ -53,17 +53,18 @@ export const renameOrganization = defineVerb({
 
 export const deleteOrganization = defineVerb({
   name: 'deleteOrganization',
-  args: z.object({ organization: orgArg, reason: z.string() }).strict(),
-  api: async (ctx, { organization: ref, reason }) => {
+  // `typed` is what the owner types to confirm when it is not the name itself (spec 01.3: the name must match exactly)
+  args: z.object({ organization: orgArg, reason: z.string(), typed: z.string().optional() }).strict(),
+  api: async (ctx, { organization: ref, reason, typed }) => {
     const org = await organization(ctx, ref)
-    return ctx.session().delete(`/api/ghg/organizations/${org.id}`, { name: org.name, reason })
+    return ctx.session().delete(`/api/ghg/organizations/${org.id}`, { name: typed ?? org.name, reason })
   },
-  ui: ({ organization: ref, reason }) => [
+  ui: ({ organization: ref, reason, typed }) => [
     { op: 'orgPage', organization: ref, section: S.org.sections.settings },
     { op: 'click', button: S.org.button.deleteOrganization },
-    { op: 'fill', label: `Type ${splitOrgRef(ref).name} to confirm`, value: splitOrgRef(ref).name, within: S.org.dialog.deleteOrganization },
+    { op: 'fill', label: `Type ${splitOrgRef(ref).name} to confirm`, value: typed ?? splitOrgRef(ref).name, within: S.org.dialog.deleteOrganization },
     { op: 'fill', label: S.org.field.reason, value: reason, within: S.org.dialog.deleteOrganization },
-    { op: 'click', button: 'Delete', within: S.org.dialog.deleteOrganization },
+    { op: 'click', button: 'Delete', within: S.org.dialog.deleteOrganization, ifEnabled: true },
   ],
   postconditions: ({ organization: ref }) => [{ outcome: 'organizationAbsent', args: { organization: ref } }],
 })

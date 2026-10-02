@@ -296,13 +296,10 @@ public class GhgService {
 			var names = blockers.stream()
 				.map(inventory -> inventory.getName() + ": " + label(inventory.getStatus()))
 				.collect(Collectors.joining(", "));
-			throw new OrganizationDeletionBlockedException(
-					"'" + organization.getName() + "' cannot be deleted while its records stand: " + names
-							+ ". Publish records are kept: withdraw the final designation or supersede the published inventory first.",
-					blockers);
+			throw new OrganizationDeletionBlockedException(organization.getName(), names, blockers);
 		}
 		if (typedName == null || !typedName.trim().equals(organization.getName())) {
-			throw new GhgFieldException("name", "Type the organization's name exactly to confirm.");
+			throw new GhgFieldException(GhgRules.ORGANIZATION_NAME_CONFIRMATION);
 		}
 		var trimmedReason = reason == null ? "" : reason.trim();
 		if (trimmedReason.length() < 10) {
@@ -879,14 +876,11 @@ public class GhgService {
 		// spec 02.6: a pack-derived factor is never deleted. Its versions are the record of what the
 		// organization calculated with, so it retires by its validity end and stays on file.
 		if (factor.getPackCode() != null) {
-			throw new GhgRuleViolationException("'" + factor.getName() + "' came from the factor pack '"
-					+ (factor.getSourceEdition() == null ? factor.getPack() : factor.getSourceEdition())
-					+ "'. A pack-derived factor is never deleted, because its versions are the record of what "
-					+ "was calculated with. Set its validity end to retire it instead.");
+			throw new GhgRuleViolationException(GhgRules.FACTOR_PACK_DERIVED_NOT_DELETED, factor.getName(),
+					factor.getSourceEdition() == null ? factor.getPack() : factor.getSourceEdition());
 		}
 		if (runLines.existsByFactorId(id)) {
-			throw new GhgRuleViolationException("'" + factor.getName()
-					+ "' was applied by a calculation run. Set its validity end to retire it instead of deleting it.");
+			throw new GhgRuleViolationException(GhgRules.FACTOR_APPLIED_NOT_DELETED, factor.getName());
 		}
 		// spec 02.6: a classification holds the factor by a foreign key, so the refusal names the inventory
 		// that classified with it rather than letting the constraint reach the generic handler as a 500
@@ -895,8 +889,7 @@ public class GhgService {
 			var where = names.isEmpty() ? "an inventory"
 					: names.size() == 1 ? "'" + names.getFirst() + "'"
 							: "'" + names.getFirst() + "' and " + (names.size() - 1) + " other inventories";
-			throw new GhgRuleViolationException("'" + factor.getName() + "' is applied by a classification in " + where
-					+ ". Choose another factor there before deleting it.");
+			throw new GhgRuleViolationException(GhgRules.FACTOR_CLASSIFIED_NOT_DELETED, factor.getName(), where);
 		}
 		emissionFactors.delete(factor);
 	}

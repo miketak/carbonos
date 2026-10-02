@@ -90,7 +90,7 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
       }
       case 'optionListed': {
         // a select's option is in the list even when another is chosen: the status filter counts its records there
-        await expect(page.getByLabel(t(check.label), { exact: true }).locator('option', { hasText: t(check.option) })).toHaveCount(1)
+        await expect(page.getByLabel(t(check.label), { exact: true }).locator('option', { hasText: t(check.option) })).toHaveCount(check.absent ? 0 : 1)
         return { ok: true }
       }
       case 'ticked': {

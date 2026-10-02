@@ -57,6 +57,69 @@
       "field": "recalculationCase"
     },
     {
+      "id": "ghg.base-year.comparison-run-inventory",
+      "module": "ghg",
+      "status": 409,
+      "message": "The comparison run must be a run of the base-year inventory '{inventory}'.",
+      "field": null
+    },
+    {
+      "id": "ghg.base-year.decision-kind",
+      "module": "ghg",
+      "status": 409,
+      "message": "A decision is either RECALCULATED or DECLINED.",
+      "field": null
+    },
+    {
+      "id": "ghg.base-year.holds-final",
+      "module": "ghg",
+      "status": 409,
+      "message": "The {year} base year has a recalculation candidate above the significance threshold ({reason}). An inventory that reports against the base year cannot be {act} until the recalculation is completed or declined. Calculation runs stay available, because quantifying the movement is how a recalculation is assessed.",
+      "field": null
+    },
+    {
+      "id": "ghg.base-year.no-final-run",
+      "module": "ghg",
+      "status": 409,
+      "message": "The base-year inventory has no final run to compare with. Designate one first.",
+      "field": null
+    },
+    {
+      "id": "ghg.base-year.run-inventory",
+      "module": "ghg",
+      "status": 409,
+      "message": "The recalculated base must be a run of the base-year inventory '{inventory}'.",
+      "field": null
+    },
+    {
+      "id": "ghg.base-year.run-required",
+      "module": "ghg",
+      "status": 409,
+      "message": "A recalculated base year is a run of the base-year inventory. Name the run.",
+      "field": null
+    },
+    {
+      "id": "ghg.base-year.run-voided",
+      "module": "ghg",
+      "status": 409,
+      "message": "Run {run} is voided and cannot be the recalculated base.",
+      "field": null
+    },
+    {
+      "id": "ghg.base-year.share-or-run",
+      "module": "ghg",
+      "status": 422,
+      "message": "Give the affected share of base-year emissions, or name a comparison run of the base-year inventory.",
+      "field": "affectedPercent"
+    },
+    {
+      "id": "ghg.base-year.structural-at-freeze",
+      "module": "ghg",
+      "status": 409,
+      "message": "Structural changes are detected when an inventory is frozen. Freeze the inventory instead.",
+      "field": null
+    },
+    {
       "id": "ghg.boundary.empty",
       "module": "ghg",
       "status": 409,
@@ -197,11 +260,32 @@
       "field": "leaseTo"
     },
     {
+      "id": "ghg.factor.applied-not-deleted",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{factor}' was applied by a calculation run. Set its validity end to retire it instead of deleting it.",
+      "field": null
+    },
+    {
       "id": "ghg.factor.blend-fractions",
       "module": "ghg",
       "status": 422,
       "message": "The mass fractions of a blend must add up to 1 (for example HFC-32:0.5,HFC-125:0.5).",
       "field": "blendComposition"
+    },
+    {
+      "id": "ghg.factor.classified-not-deleted",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{factor}' is applied by a classification in {where}. Choose another factor there before deleting it.",
+      "field": null
+    },
+    {
+      "id": "ghg.factor.pack-derived-not-deleted",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{factor}' came from the factor pack '{pack}'. A pack-derived factor is never deleted, because its versions are the record of what was calculated with. Set its validity end to retire it instead.",
+      "field": null
     },
     {
       "id": "ghg.factor.self-approval",
@@ -272,6 +356,20 @@
       "status": 409,
       "message": "This notice is already {status}. A decision on an edition is made once.",
       "field": null
+    },
+    {
+      "id": "ghg.organization.has-records",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{organization}' cannot be deleted while its records stand: {records}. Publish records are kept: withdraw the final designation or supersede the published inventory first.",
+      "field": null
+    },
+    {
+      "id": "ghg.organization.name-confirmation",
+      "module": "ghg",
+      "status": 422,
+      "message": "Type the organization's name exactly to confirm.",
+      "field": "name"
     },
     {
       "id": "ghg.organization.name-duplicate",
@@ -582,5 +680,5 @@
       "field": null
     }
   ],
-  "sha256": "0df67476d40aa3648a653a4b3912032899cf45e68cc1b71bb07608ff6205558e"
+  "sha256": "91bfb533c8d970cd25f619f42613d98519875f237c7342481c5480d68ce03a92"
 }

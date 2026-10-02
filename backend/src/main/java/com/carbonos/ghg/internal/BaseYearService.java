@@ -1,5 +1,7 @@
 package com.carbonos.ghg.internal;
 
+import com.carbonos.ghg.GhgRules;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -127,26 +129,23 @@ public class BaseYearService {
 		access.checkWrite(organizations.findById(organizationId).orElseThrow(() -> GhgNotFoundException.organization(organizationId)));
 		var baseYear = find(organizationId).orElseThrow(() -> GhgNotFoundException.baseYear(organizationId));
 		if (trigger == RecalculationTrigger.STRUCTURAL_CHANGE) {
-			throw new GhgRuleViolationException(
-					"Structural changes are detected when an inventory is frozen. Freeze the inventory instead.");
+			throw new GhgRuleViolationException(GhgRules.BASE_YEAR_STRUCTURAL_AT_FREEZE);
 		}
 		if (affectedPercent == null && comparisonRunId == null) {
-			throw new GhgFieldException("affectedPercent",
-					"Give the affected share of base-year emissions, or name a comparison run of the base-year inventory.");
+			throw new GhgFieldException(GhgRules.BASE_YEAR_SHARE_OR_RUN);
 		}
 		var share = affectedPercent;
 		if (comparisonRunId != null) {
 			var comparison = runs.findById(comparisonRunId)
 				.orElseThrow(() -> GhgNotFoundException.run(comparisonRunId));
 			if (!comparison.getInventory().getId().equals(baseYear.getInventory().getId())) {
-				throw new GhgRuleViolationException("The comparison run must be a run of the base-year inventory '"
-						+ baseYear.getInventory().getName() + "'.");
+				throw new GhgRuleViolationException(GhgRules.BASE_YEAR_COMPARISON_RUN_INVENTORY,
+						baseYear.getInventory().getName());
 			}
 			var baseRunId = baseYear.getInventory().getFinalRunId();
 			var base = baseRunId == null ? null : runs.findById(baseRunId).orElse(null);
 			if (base == null) {
-				throw new GhgRuleViolationException(
-						"The base-year inventory has no final run to compare with. Designate one first.");
+				throw new GhgRuleViolationException(GhgRules.BASE_YEAR_NO_FINAL_RUN);
 			}
 			if (share == null) {
 				share = base.getTotalKgCo2e().signum() == 0 ? BigDecimal.ZERO
@@ -185,20 +184,19 @@ public class BaseYearService {
 			.findFirst()
 			.orElseThrow(() -> GhgNotFoundException.recalculation(recalculationId));
 		if (decision == RecalculationStatus.FLAGGED || decision == RecalculationStatus.SUPERSEDED) {
-			throw new GhgRuleViolationException("A decision is either RECALCULATED or DECLINED.");
+			throw new GhgRuleViolationException(GhgRules.BASE_YEAR_DECISION_KIND);
 		}
 		if (decision == RecalculationStatus.RECALCULATED) {
 			if (runId == null) {
-				throw new GhgRuleViolationException(
-						"A recalculated base year is a run of the base-year inventory. Name the run.");
+				throw new GhgRuleViolationException(GhgRules.BASE_YEAR_RUN_REQUIRED);
 			}
 			var run = runs.findById(runId).orElseThrow(() -> GhgNotFoundException.run(runId));
 			if (!run.getInventory().getId().equals(baseYear.getInventory().getId())) {
-				throw new GhgRuleViolationException("The recalculated base must be a run of the base-year inventory '"
-						+ baseYear.getInventory().getName() + "'.");
+				throw new GhgRuleViolationException(GhgRules.BASE_YEAR_RUN_INVENTORY,
+						baseYear.getInventory().getName());
 			}
 			if (run.isVoided()) {
-				throw new GhgRuleViolationException("Run " + run.getRunNo() + " is voided and cannot be the recalculated base.");
+				throw new GhgRuleViolationException(GhgRules.BASE_YEAR_RUN_VOIDED, run.getRunNo());
 			}
 		}
 		recalculation.decide(decision, decision == RecalculationStatus.RECALCULATED ? runId : null, trimToNull(note),

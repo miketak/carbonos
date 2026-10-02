@@ -1,0 +1,204 @@
+procedure: 8
+slug: base-year-and-the-record
+title: Base year and the organization's record
+after: 7
+covers: ["06", "06.1", "01.3", "01.7", "02.11"]
+let:
+  org: Adansi Foods Ltd
+  inv: FY2026
+  e1: Adansi Logistics Ltd
+  removed: "structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required"
+sections:
+  - id: A
+    title: A later year drops a facility before the designation
+    cases:
+      - id: A1
+        title: FY2026 without Tema Depot
+        steps:
+          - as: ama
+            do: { signIn: { user: ama } }
+          - do: { reopenInventory: { organization: "${org}", inventory: "${inv}", reason: Depot sold in January 2026 } }
+          - do: { setFacilityInBoundary: { organization: "${org}", inventory: "${inv}", facility: Tema Depot, on: false } }
+            expect:
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: "${e1}", inBoundary: false, asksWhy: true }
+                why: E1 leaves the boundary with its only facility; the reason control appears on E1's row
+          - do: { excludeEntity: { organization: "${org}", inventory: "${inv}", entity: "${e1}", reason: NOT_APPLICABLE, detail: "Depot sold on 2026-01-31; no operation in the period" } }
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - boundaryVersion: { organization: "${org}", inventory: "${inv}", versionNo: 2 }
+              - noBaseYear: { organization: "${org}" }
+                why: there is no base year yet
+  - id: B
+    title: The designation sweeps the years already frozen
+    cases:
+      - id: B1
+        title: A base year needs its reason and policy
+        steps:
+          - do: { designateBaseYear: { organization: "${org}", inventory: FY2025, threshold: 5, reason: First year with metered data at every site, convention: TRANSACTION_DATE } }
+            expect:
+              - baseYearReads: { organization: "${org}", inventory: FY2025, year: 2025, threshold: 5, reason: First year with metered data at every site, convention: TRANSACTION_DATE, baseRun: Run 005, baseRunKgCo2e: 120373.32 }
+          - expect:
+              - candidateListed: { organization: "${org}", containing: "${removed}", status: FLAGGED, boundaryVersion: 2, affectedPercent: 11.06, aboveThreshold: true }
+                why: "one FLAGGED candidate at once, against FY2026 version 2: the designation weighed the frozen year without a new freeze"
+          - expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BASE_YEAR, severity: ERROR, containing: "Base year flagged for recalculation (${removed}). Record the decision under the organization's base year." }
+          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 1 } }
+            expect:
+              - refused: { rule: ghg.base-year.holds-final, with: { year: "2025", reason: "${removed}", act: marked final } }
+          - do: { openInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - screenReads: { text: "Base year holds the final designation; runs stay available." }
+          - do: { launchRun: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - runCount: { organization: "${org}", inventory: "${inv}", count: 2 }
+                why: "a run goes through: quantifying the movement is how a recalculation is assessed"
+          - expect:
+              - gateFinding: { organization: "${org}", inventory: FY2025 equity view, gate: BASE_YEAR, severity: WARNING, containing: "This inventory is not held because it is an equity share view and the base year is operational control" }
+                why: a warning, not an error
+  - id: C
+    title: Undoing the removal supersedes the candidate
+    cases:
+      - id: C1
+        title: Put back as the base year held it
+        steps:
+          - do: { reopenInventory: { organization: "${org}", inventory: "${inv}", reason: Sale fell through } }
+          - do: { setFacilityInBoundary: { organization: "${org}", inventory: "${inv}", facility: Tema Depot, on: true } }
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - boundaryVersion: { organization: "${org}", inventory: "${inv}", versionNo: 3 }
+              - candidateListed: { organization: "${org}", containing: "${removed}", status: SUPERSEDED, note: put back in boundary version 3 as the base year held it }
+              - noGateErrors: { organization: "${org}", inventory: "${inv}" }
+          - do: { reopenInventory: { organization: "${org}", inventory: "${inv}", reason: Sale completed after all } }
+          - do: { setFacilityInBoundary: { organization: "${org}", inventory: "${inv}", facility: Tema Depot, on: false } }
+          - do: { excludeEntity: { organization: "${org}", inventory: "${inv}", entity: "${e1}", reason: NOT_APPLICABLE, detail: "Depot sold on 2026-01-31; no operation in the period" } }
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - boundaryVersion: { organization: "${org}", inventory: "${inv}", versionNo: 4 }
+              - candidateListed: { organization: "${org}", containing: "${removed}", status: FLAGGED, boundaryVersion: 4 }
+                why: a new FLAGGED candidate
+  - id: D
+    title: Deciding
+    cases:
+      - id: D1
+        title: A recalculated base is a run of the base-year inventory
+        steps:
+          - do: { recordRecalculatedBase: { organization: "${org}", candidate: "${removed}" } }
+            expect:
+              - recalculationRunsOffered: { organization: "${org}", offered: [Run 002, Run 003, Run 004, Run 005], notOffered: [Run 001] }
+          - do: { recordRecalculatedBase: { organization: "${org}", candidate: "${removed}", run: Run 002 } }
+            expect:
+              - candidateListed: { organization: "${org}", containing: "${removed}", status: RECALCULATED, decidedBy: ama, baseRun: Run 002 }
+              - noGateErrors: { organization: "${org}", inventory: "${inv}" }
+      - id: D2
+        title: Manual candidates need a share or a comparison run
+        steps:
+          - do: { raiseCandidate: { organization: "${org}", trigger: ERROR_CORRECTION, reason: "Scratch: reading the refusal" } }
+            expect:
+              - refused: { rule: ghg.base-year.share-or-run }
+          - do: { raiseCandidate: { organization: "${org}", trigger: METHODOLOGY_CHANGE, reason: Grid factor vintage moved to ghana-2027-gov, affectedPercent: 2.87 } }
+            expect:
+              - candidateListed: { organization: "${org}", containing: "2.87% of base-year emissions, below the 5% threshold, recalculation optional", status: FLAGGED, affectedPercent: 2.87, aboveThreshold: false }
+                why: "the running sum restarted at the recalculation of case D1, so the 11.06% is not added to it"
+          - do: { declineCandidate: { organization: "${org}", candidate: "2.87% of base-year emissions", note: Below the 5% threshold; the notice records the answer } }
+            expect:
+              - candidateListed: { organization: "${org}", containing: "2.87% of base-year emissions", status: DECLINED, decidedBy: ama, note: Below the 5% threshold; the notice records the answer }
+                why: "had this candidate been raised before case D1's recalculation, the next structural change would have read \"11.06% of base-year emissions on its own, 13.93% together with 1 earlier change since the 2025 base year\": the running sum counts every candidate since the base or the last recalculation, declined ones included"
+  - id: E
+    title: A different GWP set is flagged
+    cases:
+      - id: E1
+        title: FY2026 on AR6 against an AR5 base year
+        steps:
+          - do: { reopenInventory: { organization: "${org}", inventory: "${inv}", reason: Reading the GWP flag } }
+          - do: { setGwpSet: { organization: "${org}", inventory: "${inv}", gwpSet: AR6 } }
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+          - do: { launchRun: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - reportBaseYearGwp: { organization: "${org}", inventory: "${inv}", run: 3, matches: false }
+          - do: { reopenInventory: { organization: "${org}", inventory: "${inv}", reason: Back to the base year's set } }
+          - do: { setGwpSet: { organization: "${org}", inventory: "${inv}", gwpSet: AR5 } }
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: FROZEN }
+              - boundaryVersion: { organization: "${org}", inventory: "${inv}", versionNo: 6 }
+                why: FY2026 is where procedure 7 left it, five boundary versions on
+  - id: F
+    title: The organization's record
+    cases:
+      - id: F1
+        title: A published record keeps the organization
+        steps:
+          - do: { deleteFactor: { organization: "${org}", factor: R-410A (composition) } }
+            why: no classification and no run ever applied it
+          - do: { deleteFactor: { organization: "${org}", factor: Long-haul flights (supplier) } }
+            expect:
+              - refused: { rule: ghg.factor.applied-not-deleted, with: { factor: Long-haul flights (supplier) } }
+                why: set its validity end to retire it instead
+          - do: { tryDeleteOrganization: { organization: "${org}", reason: Scratch attempt on a published record } }
+            expect:
+              - deletionBlocked: { organization: "${org}", records: ["FY2025: Published"] }
+          - expect:
+              - historyHas: { organization: "${org}", action: ADMIN_ACCESS_ASSUMED, actor: adminB }
+              - historyHas: { organization: "${org}", action: FACTOR_PACK_ADOPTED, actor: kofi }
+              - observe: { text: "History lists the members added, the entities, facilities and streams of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label." }
+      - id: F2
+        title: A scratch organization is deleted with its name typed
+        steps:
+          - as: yaw
+            do: { signIn: { user: yaw } }
+          - do: { deleteOrganization: { organization: Solo Ltd, typed: solo ltd, reason: Scratch organization of the governance pack } }
+            expect:
+              - dialogButtonDisabled: { dialog: Delete organization, button: Delete, rule: ghg.organization.name-confirmation }
+                why: the name must match exactly
+          - do: { deleteOrganization: { organization: Solo Ltd, reason: Scratch organization of the governance pack } }
+            expect:
+              - observe: { text: "Solo Ltd leaves the list and its URL is not found. The dialog said the record of who removed it, when and why is kept." }
+          - as: adminA
+            do: { signIn: { user: adminA } }
+          - expect:
+              - platformSummary: { organizations: 1 }
+                why: Organizations counts Adansi Foods Ltd alone
+docs:
+  version: 4
+  estimatedMinutes: 30
+  objective: >-
+    Confirm that a base year is designated with its reason and policy, that
+    the designation weighs the years already frozen, that a divestment undone
+    is superseded rather than raised twice, that candidates are decided
+    against a run of the base-year inventory or a typed share, that a
+    different GWP set is flagged, and that the organization is not deleted
+    while its published record stands.
+  coversText: Spec 02.11 for a factor never applied, which is deleted.
+  runNote: It runs last.
+  prerequisitesText:
+    - "FY2025 published with Run 005 final (procedure 6); FY2026 frozen with one run (procedure 7); the equity view a draft."
+    - Ama in the normal window; Yaw in the private window for case F2.
+    - "This share holds if every record was classified as procedure 5 lists: Tema Depot's only line in Run 005 is the delivery fleet diesel, 13,307.75 kg of 120,373.32 kg, 11.06%."
+  knownNonGoals: >-
+    the whole-year convention and its warnings (one policy per organization;
+    the pack keeps the transaction date); an error-correction candidate
+    weighed against a comparison run (the mining pack); a second structural
+    change accumulated with the first.
+  changeNotes:
+    - version: 2
+      date: "2026-09-29"
+      text: >-
+        F1 step 3 expects the structure rows the organization history now
+        records beside the member rows (PR #121).
+    - version: 3
+      date: "2026-09-29"
+      text: >-
+        D1 step 1: a voided run is no longer offered as the recalculated base
+        (the walkthrough fix of 2026-09-29). B1 step 1: the form sends the
+        inventory the select shows, and an empty reason is refused in words.
+    - version: 4
+      date: "2026-10-02"
+      text: >-
+        Transliterated to the QA scenario DSL. The designation, the
+        candidates, the gate, the final-run hold, the runs the dialog offers,
+        the report's GWP note, the deletion refusals and the history are read
+        from the API as well as from the screen; the history's breadth and
+        the tombstone's wording are observed on screen. The refusals carry
+        rule ids (ghg.base-year.*, ghg.organization.has-records,
+        ghg.organization.name-confirmation, ghg.factor.*). E1 counts the
+        boundary versions the procedure cuts (six by its end).

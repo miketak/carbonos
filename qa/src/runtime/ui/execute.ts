@@ -38,6 +38,7 @@ const orgSections: Record<string, string> = {
   'Source documents': 'activity/documents',
   Inventories: 'inventories',
   Updates: 'factor-updates',
+  'Baseline and targets': 'settings/baseline',
 }
 
 /** Tokens that need the API: `{orgId:Name}` and `{entityId:Org|Entity}`. */
