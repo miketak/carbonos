@@ -165,3 +165,15 @@ set (idempotent; the canonical mechanism for Railway).
 Spring Boot 4.1.x / Spring Modulith 2.1.x / Java 25 / React 19 / Vite 8 /
 Node 22 / PostgreSQL 17. Boot 4 renamed starters (`spring-boot-starter-webmvc`,
 per-starter test artifacts), so don't "fix" them back to Boot 3 names.
+
+## Implementation plans
+
+When asked to plan a change (`/plan <what>`), write a concise plan, decisions
+first. Do not write or edit code. Keep it under about 250 words:
+
+1. **Goal**: one sentence.
+2. **Decisions I need from you**: numbered, each with your recommendation.
+3. **Approach**: 3 to 5 one-line bullets.
+4. **Files touched**: path + one phrase each.
+5. **Risks**: max 3.
+6. **Verification**: tests or commands.
