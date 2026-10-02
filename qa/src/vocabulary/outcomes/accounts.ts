@@ -83,11 +83,14 @@ export const accessRequestStatus = defineOutcome({
   ui: ({ user, status }) =>
     status === 'PENDING'
       ? [{ check: 'at', nav: S.nav.accessRequests }, { check: 'rowHas', text: `{name:${user}}`, cells: [`{email:${user}}`] }]
-      : [{ check: 'at', nav: S.nav.accessRequests }, { check: 'textAbsent', text: `{name:${user}}` }, { check: 'textVisible', text: S.text.noPendingRequests }],
+      : [
+          { check: 'at', nav: S.nav.accessRequests },
+          { check: 'rowHas', text: `{name:${user}}`, cells: [S.option.accessOutcome[status]!] },
+        ],
   narrate: ({ user, status }, n) =>
     status === 'PENDING'
       ? `${n.actorName(user)}'s request is listed under **${S.heading.waitingForADecision}**.`
-      : `${n.actorName(user)}'s request has left the queue; the list reads "${S.text.noPendingRequests}".`,
+      : `${n.actorName(user)}'s request is listed under **${S.heading.alreadyDecided}** as "${S.option.accessOutcome[status]}".`,
 })
 
 /** What the visitor sees: the dialog thanks them by name; what the record holds: a pending request. */

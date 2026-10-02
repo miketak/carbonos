@@ -65,6 +65,11 @@ export const S = {
       string,
       string
     >,
+    accessOutcome: {
+      APPROVED: 'Approved, waiting for the password to be set',
+      COMPLETED: 'Approved, account active',
+      DENIED: 'Denied',
+    } as Record<string, string>,
     editions: {
       BLOCKED: 'Blocked (default)',
       ALLOWED: 'Allowed: published runs keep their factors',
@@ -77,6 +82,7 @@ export const S = {
   heading: {
     everyChange: 'Every change',
     waitingForADecision: 'Waiting for a decision',
+    alreadyDecided: 'Already decided',
     platformOverview: 'Platform overview',
     setYourPassword: 'Set your password',
     chooseANewPassword: 'Choose a new password',

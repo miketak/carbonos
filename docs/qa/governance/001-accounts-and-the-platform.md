@@ -61,7 +61,7 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Admin in the normal window, open **Dashboard**. | A line reads "1 access request waiting". |  |  |
-| 2 | Open **Access requests**, then click **Approve** on the row of "Ama Owusu". | Ama Owusu's request has left the queue; the list reads "No pending requests.". Ama Owusu is listed as Pending activation. The mailbox receives "Your CarbonOS access is approved", with a link to `/set-password?token=...` on this environment's address. |  |  |
+| 2 | Open **Access requests**, then click **Approve** on the row of "Ama Owusu". | Ama Owusu's request is listed under **Already decided** as "Approved, waiting for the password to be set". Ama Owusu is listed as Pending activation. The mailbox receives "Your CarbonOS access is approved", with a link to `/set-password?token=...` on this environment's address. |  |  |
 | 3 | Open **Users**. | Ama Owusu is listed as Pending activation. |  |  |
 | 4 | Look. | The mailbox receives "Your CarbonOS access is approved", with a link to `/set-password?token=...` on this environment's address: on this environment's address, never localhost or production. |  |  |
 
