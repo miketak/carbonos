@@ -110,6 +110,7 @@ nav:
       - reference/environments.md
       - reference/conventions.md
       - reference/known-issues.md
+      - reference/calculation-vectors.md
       - Specs:
           - specs/README.md
           - "00 Principles and domain model": specs/00-principles-and-domain-model.md
