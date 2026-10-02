@@ -5,6 +5,7 @@
  * disagrees with the other driver's record for the same YAML.
  */
 import { execSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { REPO_ROOT, loadProcedures } from '../load.ts'
@@ -42,12 +43,13 @@ export function record(persona: string, number: number, driver: 'api' | 'ui'): R
   const skipped = expected.filter((id) => !ran.has(id))
   if (skipped.length) throw new Error(`refusing to record: steps not run (SKIP): ${skipped.join(', ')}`)
   if (!results.digestSha256) throw new Error('the run has no digest')
+  const digest = stateDigest(results)
   const other = recordPath(persona, number, driver === 'api' ? 'ui' : 'api')
   if (existsSync(other)) {
     const otherRecord = JSON.parse(readFileSync(other, 'utf8')) as RunRecord
-    if (otherRecord.yamlSha256 === results.yamlSha256 && otherRecord.digestSha256 !== results.digestSha256) {
+    if (otherRecord.yamlSha256 === results.yamlSha256 && otherRecord.digestSha256 !== digest) {
       throw new Error(
-        `the ${driver} run left the product in a different state from the ${otherRecord.driver} run: digest ${results.digestSha256} vs ${otherRecord.digestSha256}`,
+        `the ${driver} run left the product in a different state from the ${otherRecord.driver} run: digest ${digest} vs ${otherRecord.digestSha256}`,
       )
     }
   }
@@ -59,7 +61,7 @@ export function record(persona: string, number: number, driver: 'api' | 'ui'): R
     gitSha: execSync('git rev-parse HEAD', { cwd: REPO_ROOT }).toString().trim(),
     date: results.finishedAt.slice(0, 10),
     specialist: process.env.QA_SPECIALIST ?? process.env.USER ?? 'unknown',
-    digestSha256: results.digestSha256,
+    digestSha256: digest,
     counts: {
       pass: results.steps.filter((s) => s.status === 'PASS').length,
       na: results.steps.filter((s) => s.status === 'NA').length,
@@ -71,4 +73,24 @@ export function record(persona: string, number: number, driver: 'api' | 'ui'): R
   mkdirSync(join(REPO_ROOT, 'qa', 'runs', persona), { recursive: true })
   writeFileSync(target, JSON.stringify(out, null, 2) + '\n')
   return out
+}
+
+/** The tables the two drivers must leave alike: the product's state, not its audit trail. */
+const ACTS = new Set(['ghg_audit_events'])
+
+/**
+ * The digest the record compares: the row counts the run ended with, without
+ * the audit trail. A screen reaches a decision in several acts where a client
+ * sends one call (the drawer saves the factor, then the scope, then the
+ * category), and each act is history; the state both drivers leave is the
+ * same. Falls back to the server's digest for a run that carries no counts.
+ */
+export function stateDigest(results: RunResults): string {
+  if (!results.digest) return results.digestSha256 ?? ''
+  const text = Object.entries(results.digest)
+    .filter(([table]) => !ACTS.has(table))
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([table, count]) => `${table}=${count}\n`)
+    .join('')
+  return createHash('sha256').update(text).digest('hex')
 }

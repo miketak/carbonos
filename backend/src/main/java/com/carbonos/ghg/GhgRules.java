@@ -121,6 +121,27 @@ public class GhgRules implements RuleSource {
 	public static final Rule DECLARATION_REASON_TOO_SHORT = Rule.field("ghg.declaration.reason-too-short",
 			"notQuantified", "Say why '{category}' is not quantified (at least 10 characters).");
 
+	// classification, exclusions, the method and the reopen (specs 04.1, 04.4, 04.7, 05.5, 07.2)
+	public static final Rule PROXY_JUSTIFICATION = Rule.of("ghg.classification.proxy-justification",
+			HttpStatus.CONFLICT, "A proxy factor needs a justification: say what the factor stands in for.");
+
+	public static final Rule EXCLUSION_JUSTIFICATION_TOO_SHORT = Rule.field("ghg.exclusion.justification-too-short",
+			"justification", "A record exclusion needs a justification of at least 10 characters.");
+
+	public static final Rule UPSTREAM_UNIT_MISMATCH = Rule.field("ghg.upstream-rule.unit-mismatch", "upstreamFactorId",
+			"'{upstream}' is per {upstreamUnit}, which does not convert from '{primary}' per {primaryUnit}. "
+					+ "Choose an upstream factor in a unit the primary factor converts to.");
+
+	public static final Rule RESIDUAL_MIX_FACTOR_REQUIRED = Rule.of("ghg.residual-mix.factor-required",
+			HttpStatus.CONFLICT, "A residual mix that is available needs its factor in kg CO2e per kWh.");
+
+	public static final Rule INVENTORY_REOPEN_REASON = Rule.field("ghg.inventory.reopen-reason", "reason",
+			"Reopening needs a reason of at least 10 characters: what the draft will change. "
+					+ "The next freeze cuts a new boundary version.");
+
+	public static final Rule INVENTORY_ALREADY_DRAFT = Rule.of("ghg.inventory.already-draft", HttpStatus.CONFLICT,
+			"The inventory is already a draft.");
+
 	private static final List<Rule> ALL = List.of(ROLE_REQUIRED, ORGANIZATION_NAME_DUPLICATE, ACCOUNT_NOT_FOUND,
 			MEMBER_DUPLICATE, LAST_OWNER, ENTITY_DISPOSAL_BEFORE_ACQUISITION, ENTITY_PERCENT_RANGE,
 			ENTITY_NAME_DUPLICATE, ENTITY_PARENT_LOOP, ENTITY_HAS_FACILITIES, LEASE_ENDS_BEFORE_START,
@@ -128,7 +149,9 @@ public class GhgRules implements RuleSource {
 			FACTOR_SELF_APPROVAL, REASON_TOO_SHORT, ACTIVITY_REMOVED_CANNOT_CORRECT, ACTIVITY_NO_WAY_BACK_TO_DRAFT,
 			ACTIVITY_ALREADY_REMOVED, FACILITY_HAS_RECORDS, EVIDENCE_UNSUPPORTED_TYPE, EVIDENCE_LINK_SCHEME,
 			BOUNDARY_WINDOW_ENDS_BEFORE_START, BOUNDARY_EMPTY, INVENTORY_ALREADY_FROZEN, INVENTORY_FREEZE_BLOCKED,
-			DECLARATION_NOT_SCOPE_3, DECLARATION_NOT_DECLARED, DECLARATION_REASON_TOO_SHORT);
+			DECLARATION_NOT_SCOPE_3, DECLARATION_NOT_DECLARED, DECLARATION_REASON_TOO_SHORT, PROXY_JUSTIFICATION,
+			EXCLUSION_JUSTIFICATION_TOO_SHORT, UPSTREAM_UNIT_MISMATCH, RESIDUAL_MIX_FACTOR_REQUIRED,
+			INVENTORY_REOPEN_REASON, INVENTORY_ALREADY_DRAFT);
 
 	@Override
 	public String module() {

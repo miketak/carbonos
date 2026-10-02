@@ -726,11 +726,10 @@ public class InventoryService {
 		access.checkWrite(inventory.getOrganization());
 		var why = trimToNull(reason);
 		if (why == null || why.length() < 10) {
-			throw new GhgFieldException("reason", "Reopening needs a reason of at least 10 characters: "
-					+ "what the draft will change. The next freeze cuts a new boundary version.");
+			throw new GhgFieldException(GhgRules.INVENTORY_REOPEN_REASON);
 		}
 		switch (inventory.getStatus()) {
-			case DRAFT -> throw new GhgRuleViolationException("The inventory is already a draft.");
+			case DRAFT -> throw new GhgRuleViolationException(GhgRules.INVENTORY_ALREADY_DRAFT);
 			case FINAL -> throw new GhgRuleViolationException(
 					"A run is designated final. Withdraw the designation before reopening the inventory.");
 			case PUBLISHED -> throw new GhgRuleViolationException(
@@ -1224,7 +1223,7 @@ public class InventoryService {
 		var inventory = get(inventoryId);
 		requireEditable(inventory);
 		if (available && kgCo2ePerKwh == null) {
-			throw new GhgRuleViolationException("A residual mix that is available needs its factor in kg CO2e per kWh.");
+			throw new GhgRuleViolationException(GhgRules.RESIDUAL_MIX_FACTOR_REQUIRED);
 		}
 		inventory.setResidualMix(available, kgCo2ePerKwh);
 		return inventory;
@@ -1300,9 +1299,8 @@ public class InventoryService {
 		}
 		var units = organizationUnits.forOrganization(organizationId);
 		if (!units.canConvert(primary.getUnit(), upstream.getUnit())) {
-			throw new GhgFieldException("upstreamFactorId", "'" + upstream.getName() + "' is per "
-					+ upstream.getUnit() + ", which does not convert from '" + primary.getName() + "' per "
-					+ primary.getUnit() + ". Choose an upstream factor in a unit the primary factor converts to.");
+			throw new GhgFieldException(GhgRules.UPSTREAM_UNIT_MISMATCH, upstream.getName(), upstream.getUnit(),
+					primary.getName(), primary.getUnit());
 		}
 		if (upstreamRules.existsByInventoryIdAndPrimaryFactorIdAndKind(inventoryId, primaryFactorId, kind)) {
 			throw new GhgRuleViolationException("'" + primary.getName() + "' already carries a "
@@ -1622,7 +1620,7 @@ public class InventoryService {
 		var departs = leaseType == null && chosenScope != defaultScope;
 		var justification = trimToNull(scopeJustification);
 		if (proxy && trimToNull(proxyJustification) == null) {
-			throw new GhgRuleViolationException("A proxy factor needs a justification: say what the factor stands in for.");
+			throw new GhgRuleViolationException(GhgRules.PROXY_JUSTIFICATION);
 		}
 		assignment.classify(factor, chosenScope, chosenCategory, leaseType, departs ? justification : null, proxy,
 				proxy ? trimToNull(proxyJustification) : null, density);
@@ -1663,8 +1661,7 @@ public class InventoryService {
 		if (!reason.isAutomatic()) {
 			// spec 04.4: Chapter 9 wants each exclusion justified
 			if (words == null || words.length() < 10) {
-				throw new GhgFieldException("justification",
-						"A record exclusion needs a justification of at least 10 characters.");
+				throw new GhgFieldException(GhgRules.EXCLUSION_JUSTIFICATION_TOO_SHORT);
 			}
 		}
 		if (reason.isOutsideScopes()) {

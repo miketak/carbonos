@@ -80,6 +80,11 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         await expect(scope.getByLabel(t(check.label), { exact: true }).first()).toBeVisible()
         return { ok: true }
       }
+      case 'optionListed': {
+        // a select's option is in the list even when another is chosen: the status filter counts its records there
+        await expect(page.getByLabel(t(check.label), { exact: true }).locator('option', { hasText: t(check.option) })).toHaveCount(1)
+        return { ok: true }
+      }
       case 'ticked': {
         const box = page.getByLabel(t(check.label), { exact: true })
         await expect(box).toBeVisible()
@@ -124,6 +129,13 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
       case 'rowAbsent':
         await expect(page.getByRole('row').filter({ hasText: t(check.text) })).toHaveCount(0)
         return { ok: true }
+      case 'rowLacks': {
+        // the row is there, and no longer carries the text (the prose around the table may still use the words)
+        const rows = page.getByRole('row').or(page.getByRole('listitem')).filter({ hasText: t(check.text) })
+        await expect(rows.first()).toBeVisible()
+        await expect(rows.filter({ hasText: t(check.cell) })).toHaveCount(0)
+        return { ok: true }
+      }
       case 'buttonVisible': {
         if (check.button.startsWith('menu:')) {
           const item = check.button.slice('menu:'.length)

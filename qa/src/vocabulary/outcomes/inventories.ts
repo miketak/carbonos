@@ -36,6 +36,7 @@ export const inventoryStatus = defineOutcome({
 /** The workbench's five tabs: a fact of the screen, not of the API. */
 export const workbenchTabs = defineOutcome({
   name: 'workbenchTabs',
+  readsScreenFirst: true,
   args: z.object({ tabs: z.array(z.string()) }).strict(),
   api: async (_ctx, a) => notApplicable(`the tabs ${a.tabs.join(', ')} are a fact of the screen`),
   ui: (a) => [{ check: 'tabsVisible', names: a.tabs }],
@@ -45,6 +46,7 @@ export const workbenchTabs = defineOutcome({
 /** A hint the form prints before saving, nothing stored. */
 export const formHint = defineOutcome({
   name: 'formHint',
+  readsScreenFirst: true,
   args: z.object({ text: z.string() }).strict(),
   api: async (_ctx, a) => notApplicable(`the form says "${a.text}"; nothing is saved`),
   ui: (a) => [{ check: 'textVisible', text: a.text }],
@@ -53,6 +55,7 @@ export const formHint = defineOutcome({
 
 export const formOffers = defineOutcome({
   name: 'formOffers',
+  readsScreenFirst: true,
   args: z.object({ dialog: z.string(), fields: z.array(z.string()) }).strict(),
   api: async (_ctx, a) => notApplicable(`the form "${a.dialog}" offers ${a.fields.length} fields; nothing is saved`),
   ui: (a) => a.fields.map((label) => ({ check: 'fieldVisible', label, within: a.dialog }) as const),
@@ -73,6 +76,7 @@ export const boundaryRow = defineOutcome({
       shareUnderApproach: z.number().optional(),
       exclusion: z.enum(['NON_GHG', 'DUPLICATE', 'NOT_APPLICABLE', 'METHODOLOGY', 'OTHER', 'none']).optional(),
       cannotTick: z.boolean().optional(),
+      readOnly: z.boolean().optional(),
       asksWhy: z.boolean().optional(),
     })
     .strict(),
@@ -93,11 +97,12 @@ export const boundaryRow = defineOutcome({
     if (a.exclusion && a.exclusion !== 'none' && row.exclusion?.reason !== a.exclusion) return fail(`${a.entity} excluded as ${row.exclusion?.reason ?? 'nothing'}, expected ${a.exclusion}`)
     if (a.cannotTick && !(row.shareUnderApproach === 0 && !row.inBoundary)) return fail(`${a.entity} could be ticked in (share ${row.shareUnderApproach})`)
     if (a.asksWhy && (row.inBoundary || row.exclusion)) return fail(`${a.entity} is ${row.inBoundary ? 'in the boundary' : 'already excluded'}`)
+    if (a.readOnly && inv.status === 'DRAFT') return fail('the inventory is a draft: its boundary is editable')
     return pass()
   },
   ui: (a) => [
     { check: 'atInventory', organization: a.organization, inventory: a.inventory, tab: 'Boundary' },
-    ...(a.inBoundary !== undefined ? [{ check: 'ticked', label: `${a.entity} in boundary`, on: a.inBoundary, disabled: a.cannotTick } as const] : []),
+    ...(a.inBoundary !== undefined ? [{ check: 'ticked', label: `${a.entity} in boundary`, on: a.inBoundary, disabled: a.cannotTick || a.readOnly } as const] : []),
     ...(a.inBoundary === undefined && a.cannotTick ? [{ check: 'ticked', label: `${a.entity} in boundary`, on: false, disabled: true } as const] : []),
     ...Object.entries(a.facilities ?? {}).map(([name, on]) => ({ check: 'ticked', label: `${name} in boundary`, on }) as const),
     ...(a.memberFrom !== undefined ? [{ check: 'fieldValue', label: `${a.entity} member from`, value: a.memberFrom } as const] : []),
@@ -114,6 +119,7 @@ export const boundaryRow = defineOutcome({
     for (const [name, on] of Object.entries(a.facilities ?? {})) parts.push(`${name} is ${on ? 'in' : 'out'}`)
     if (a.shareUnderApproach === 0) parts.push(`it reads "${S.inv.text.outsideUnder} operational control" at 0% from its Table 1 row`)
     if (a.cannotTick) parts.push('its checkbox is disabled')
+    if (a.readOnly) parts.push('its checkbox is disabled, the boundary is frozen')
     if (a.asksWhy) parts.push(`its row asks "${S.inv.option.whyLeftOut}"`)
     if (a.memberFrom !== undefined) parts.push(`**Member from** reads ${a.memberFrom}`)
     if (a.memberUntil !== undefined) parts.push(`**Member until** reads ${a.memberUntil}`)

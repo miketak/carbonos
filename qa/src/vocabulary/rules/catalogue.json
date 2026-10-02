@@ -64,6 +64,13 @@
       "field": null
     },
     {
+      "id": "ghg.classification.proxy-justification",
+      "module": "ghg",
+      "status": 409,
+      "message": "A proxy factor needs a justification: say what the factor stands in for.",
+      "field": null
+    },
+    {
       "id": "ghg.declaration.not-declared",
       "module": "ghg",
       "status": 409,
@@ -141,6 +148,13 @@
       "field": "file"
     },
     {
+      "id": "ghg.exclusion.justification-too-short",
+      "module": "ghg",
+      "status": 422,
+      "message": "A record exclusion needs a justification of at least 10 characters.",
+      "field": "justification"
+    },
+    {
       "id": "ghg.facility.has-records",
       "module": "ghg",
       "status": 409,
@@ -169,6 +183,13 @@
       "field": null
     },
     {
+      "id": "ghg.inventory.already-draft",
+      "module": "ghg",
+      "status": 409,
+      "message": "The inventory is already a draft.",
+      "field": null
+    },
+    {
       "id": "ghg.inventory.already-frozen",
       "module": "ghg",
       "status": 409,
@@ -181,6 +202,13 @@
       "status": 409,
       "message": "{records} the freeze: {listed}. Classify or exclude them first.",
       "field": null
+    },
+    {
+      "id": "ghg.inventory.reopen-reason",
+      "module": "ghg",
+      "status": 422,
+      "message": "Reopening needs a reason of at least 10 characters: what the draft will change. The next freeze cuts a new boundary version.",
+      "field": "reason"
     },
     {
       "id": "ghg.member.duplicate",
@@ -211,6 +239,13 @@
       "field": "reason"
     },
     {
+      "id": "ghg.residual-mix.factor-required",
+      "module": "ghg",
+      "status": 409,
+      "message": "A residual mix that is available needs its factor in kg CO2e per kWh.",
+      "field": null
+    },
+    {
       "id": "ghg.role.required",
       "module": "ghg",
       "status": 403,
@@ -237,6 +272,13 @@
       "status": 422,
       "message": "'{code}' is already a registered unit.",
       "field": "code"
+    },
+    {
+      "id": "ghg.upstream-rule.unit-mismatch",
+      "module": "ghg",
+      "status": 422,
+      "message": "'{upstream}' is per {upstreamUnit}, which does not convert from '{primary}' per {primaryUnit}. Choose an upstream factor in a unit the primary factor converts to.",
+      "field": "upstreamFactorId"
     },
     {
       "id": "password-reset.link.expired",
@@ -351,5 +393,5 @@
       "field": null
     }
   ],
-  "sha256": "f456a516e0a2a325c006cde24e618e27877e279b3eacacb25a23373d34366253"
+  "sha256": "4c7b198be48a6e844bc3a227edda45b602e6079cdc7521833b7b4144af28c18a"
 }

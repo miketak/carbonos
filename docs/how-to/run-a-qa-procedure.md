@@ -34,13 +34,22 @@ committed with the procedure (ADR 0007).
    `test.step` per step; the list reporter names the failing step and why.
 3. `make qa-record QA_PROC=1 DRIVER=api`. It refuses on any FAIL or SKIP,
    on a YAML that changed since the script was generated, and on a digest
-   that disagrees with the other driver's record for the same YAML.
+   that disagrees with the other driver's record for the same YAML. The
+   digest is the row count of every table but the audit trail: a screen
+   reaches a decision in several acts where a client sends one call, and
+   the acts are history, not state.
 4. `make qa-run-ui QA_PROC=1`, then `make qa-record QA_PROC=1 DRIVER=ui`.
    The UI driver runs one browser context per actor and, by default
    (`QA_CROSS_CHECK=1`), asks the API about every stored-state outcome too,
    so a failure reads "UI stale" (the API agrees with the scenario, the
    screen does not) or "backend".
-5. Run one driver's chain at a time. Both drivers work on the same local
+5. While a scenario is being written, a few of its cases can be rerun on
+   the current stack without the ones before them:
+   `QA_ACTOR=ama npx playwright test generated/governance/ui/005- --project=ui --grep "B2|B3"`.
+   `QA_ACTOR` names the actor the skipped steps would have set, and the UI
+   driver signs that actor in when its window is blank. A step that wrote
+   something is not undone by rerunning it; record only a clean chain.
+6. Run one driver's chain at a time. Both drivers work on the same local
    stack, and procedure 1 resets it: a UI chain started while the API chain
    is between procedures wipes the data the API chain's next procedure
    expects, and the first sign-in fails with 401. Finish (or record) one

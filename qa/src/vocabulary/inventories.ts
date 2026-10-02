@@ -83,6 +83,13 @@ export const gateLabels: Record<string, string> = {
 
 /** The scope 3 categories as the declaration lists them (the report labels). */
 export const categoryLabels: Record<string, string> = {
+  STATIONARY_COMBUSTION: 'Stationary combustion',
+  MOBILE_COMBUSTION: 'Mobile combustion',
+  PROCESS_EMISSIONS: 'Process emissions',
+  FUGITIVE_EMISSIONS: 'Fugitive emissions',
+  PURCHASED_ELECTRICITY: 'Purchased electricity',
+  PURCHASED_HEAT_STEAM: 'Purchased heat and steam',
+  PURCHASED_COOLING: 'Purchased cooling',
   PURCHASED_GOODS_SERVICES: '1. Purchased goods and services',
   CAPITAL_GOODS: '2. Capital goods',
   FUEL_ENERGY_RELATED: '3. Fuel- and energy-related activities',
@@ -108,4 +115,118 @@ export const exclusionLabels: Record<string, string> = {
   NOT_APPLICABLE: 'Not applicable',
   METHODOLOGY: 'Methodology exclusion',
   OTHER: 'Other documented reason',
+}
+
+// --- the view: assignments, densities, upstream rules and instruments (procedure 5) ------------------
+
+export interface AssignmentRow {
+  id: string
+  activityId: string
+  recordRef: string
+  facilityName: string
+  activityType: string
+  quantity: number
+  unit: string
+  included: boolean
+  exclusionReason: string | null
+  exclusionDetail: string | null
+  exclusionJustification: string | null
+  estimateState: string | null
+  gas: string | null
+  classified: boolean
+  scope: string | null
+  category: string | null
+  emissionFactorId: string | null
+  factorName: string | null
+  scopeJustification: string | null
+  proxy: boolean
+  proxyJustification: string | null
+  densityMaterial: string | null
+  suggestedFactorId: string | null
+  suggestedFactorName: string | null
+}
+
+export const assignments = (session: ApiSession, inventoryId: string) => get<AssignmentRow[]>(session, `/api/ghg/inventories/${inventoryId}/assignments`)
+
+/** The view's row for a record (ACT-0001) or an activity type. */
+export async function assignment(session: ApiSession, inventoryId: string, ref: string): Promise<AssignmentRow> {
+  const rows = await assignments(session, inventoryId)
+  const found = rows.find((r) => r.recordRef === ref) ?? rows.find((r) => r.activityType === ref)
+  if (!found) throw new Error(`no record '${ref}' in the view`)
+  return found
+}
+
+export interface DensityRow {
+  id: string
+  typical: boolean
+  material: string
+  kgPerLitre: number
+}
+
+export const densities = (session: ApiSession, orgId: string) => get<DensityRow[]>(session, `/api/ghg/organizations/${orgId}/densities`)
+
+/** A density as the drawer lists it: "Diesel (typical value)" is the shared one, "Diesel (Adansi CoA)" the organization's. */
+export async function density(session: ApiSession, orgId: string, name: string): Promise<DensityRow> {
+  const all = await densities(session, orgId)
+  const typical = /^(.*) \(typical value\)$/.exec(name)
+  const found = typical ? all.find((d) => d.typical && d.material === typical[1]) : all.find((d) => !d.typical && d.material === name)
+  if (!found) throw new Error(`no density '${name}'`)
+  return found
+}
+
+export interface UpstreamRuleRow {
+  id: string
+  primaryFactorName: string
+  upstreamFactorName: string
+  kind: string
+  matchingLines: number
+}
+
+export const upstreamRules = (session: ApiSession, inventoryId: string) => get<UpstreamRuleRow[]>(session, `/api/ghg/inventories/${inventoryId}/upstream-rules`)
+
+export interface InstrumentRow {
+  id: string
+  facilityId: string
+  facilityName: string
+  instrumentType: string
+  kgCo2ePerKwh: number
+  source: string
+  meetsQualityCriteria: boolean
+  criteria: Array<{ code: string; title: string; answer: string }>
+  unansweredCount: number
+  notMetCount: number
+  certificateId: string | null
+  registry: string | null
+  vintage: number | null
+  coveredKwh: number
+  periodStart: string | null
+  periodEnd: string | null
+}
+
+export const instruments = (session: ApiSession, inventoryId: string) => get<InstrumentRow[]>(session, `/api/ghg/inventories/${inventoryId}/market-factors`)
+
+export interface VersionRow {
+  id: string
+  versionNo: number
+  frozenBy: string
+  reopenedBy: string | null
+  reopenReason: string | null
+}
+
+export const boundaryVersions = (session: ApiSession, inventoryId: string) => get<VersionRow[]>(session, `/api/ghg/inventories/${inventoryId}/boundary/versions`)
+
+export const scopeLabels: Record<string, string> = { SCOPE_1: 'Scope 1', SCOPE_2: 'Scope 2', SCOPE_3: 'Scope 3' }
+
+export const instrumentLabels: Record<string, string> = {
+  SUPPLIER_SPECIFIC: 'Supplier-specific factor',
+  CONTRACT: 'Power purchase contract',
+  CERTIFICATE: 'Energy attribute certificate',
+  RESIDUAL_MIX: 'Residual mix',
+}
+
+export const recordExclusionLabels: Record<string, string> = {
+  ...exclusionLabels,
+  OUTSIDE_PERIOD: 'Outside reporting period',
+  OUTSIDE_BOUNDARY: 'Outside boundary',
+  OUTSIDE_SCOPES_NON_KYOTO: 'Outside the scopes: Montreal Protocol gas',
 }
