@@ -57,10 +57,14 @@ export const inventories = (session: ApiSession, orgId: string) => get<Inventory
 /** The inventory named under the organization; when two share the name, the newest. */
 export async function inventory(ctx: ApiContext, orgRef: string, name: string): Promise<{ org: OrgRow; inv: InventoryRow }> {
   const org = await organization(ctx, orgRef)
-  const rows = (await inventories(ctx.session(), org.id)).filter((row) => row.name === name)
-  const inv = rows[rows.length - 1]
-  if (!inv) throw new Error(`no inventory named '${name}' under ${org.name}`)
-  return { org, inv }
+  // an inventory created a moment ago (a correction) may take a breath to be listed: ask again before giving up
+  for (let attempt = 0; ; attempt++) {
+    const rows = (await inventories(ctx.session(), org.id)).filter((row) => row.name === name)
+    const inv = rows[rows.length - 1]
+    if (inv) return { org, inv }
+    if (attempt >= 3) throw new Error(`no inventory named '${name}' under ${org.name}`)
+    await new Promise((resolve) => setTimeout(resolve, 1_000))
+  }
 }
 
 export const boundary = (session: ApiSession, inventoryId: string) => get<BoundaryEntity[]>(session, `/api/ghg/inventories/${inventoryId}/boundary`)

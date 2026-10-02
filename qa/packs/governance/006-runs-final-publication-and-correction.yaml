@@ -1,0 +1,295 @@
+procedure: 6
+slug: runs-final-publication-and-correction
+title: Runs, final, publication and correction
+after: 5
+covers: ["05.1", "05.2", "05.3", "05.4", "05.7", "02.11", "07", "07.1", "07.4", "07.5", "07.7", "07.8"]
+let:
+  org: Adansi Foods Ltd
+  inv: FY2025
+  diesel: "Liquid fuels: Diesel (100% mineral diesel) (/litre)"
+  flights: "Long-haul flights (supplier)"
+sections:
+  - id: A
+    title: Runs
+    cases:
+      - id: A1
+        title: The first run, and its lines
+        steps:
+          - as: ama
+            do: { signIn: { user: ama } }
+          - do: { launchRun: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - runListed: { organization: "${org}", inventory: "${inv}", run: 1, totalKgCo2e: 120458.96, boundaryVersion: 2 }
+          - do: { openRun: { organization: "${org}", inventory: "${inv}", run: 1 } }
+            expect:
+              - runLine: { organization: "${org}", inventory: "${inv}", run: 1, record: ACT-0004, kgCo2e: 9591.17, conversionNote: "3 tonne = 3000 kg ÷ 0.8325 kg/litre = 3603.603604 litre (density of Diesel (Adansi CoA))" }
+              - runLine: { organization: "${org}", inventory: "${inv}", run: 1, record: ACT-0006, kgCo2e: 661.78, coveredDays: 17, periodDays: 32 }
+              - runLine: { organization: "${org}", inventory: "${inv}", run: 1, record: ACT-0001, derived: true, kgCo2e: 445.22 }
+              - runLine: { organization: "${org}", inventory: "${inv}", run: 1, record: ACT-0006, derived: true, kgCo2e: 78.84 }
+                why: one line per included record as the table in the preamble lists them, plus two derived well-to-tank lines, each naming the LPG line it derives from
+          - expect:
+              - runExclusions:
+                  organization: "${org}"
+                  inventory: "${inv}"
+                  run: 1
+                  records:
+                    - { record: ACT-0007, reason: OUTSIDE_BOUNDARY, detailContaining: "member from 2025-07-01" }
+                    - { record: ACT-0008, reason: OUTSIDE_BOUNDARY }
+                    - { record: ACT-0009, reason: METHODOLOGY, estimate: NOT_ESTIMATED }
+          - expect:
+              - runByGas: { organization: "${org}", inventory: "${inv}", run: 1, hfcsKg: 20, unsplitKgCo2e: 60681.14 }
+                why: 'four lines are priced from factors that publish CO₂e only, the Ghana grid 56,257.08, the flights 3,900.00 and the two well-to-tank LPG lines 445.22 and 78.84; the footing row "Total (scope 2 location-based), ties to section 04" equals the section 04 total'
+      - id: A2
+        title: Voiding keeps the number and the figures
+        steps:
+          - expect:
+              - observe: { text: 'Click Void… on Run 001: the dialog "Void Run 001?" keeps its button disabled until a reason is typed.' }
+          - do: { voidRun: { organization: "${org}", inventory: "${inv}", run: 1, reason: Scratch run for the void case } }
+            why: its report opens with the banner that the run is voided and must not be relied on, and its figures are kept
+          - do: { launchRun: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - runCount: { organization: "${org}", inventory: "${inv}", count: 2 }
+          - expect:
+              - observe: { text: "Look for Mark as final on Run 001: there is none, a voided run cannot be designated final." }
+  - id: B
+    title: What a final run refuses
+    cases:
+      - id: B1
+        title: A planning value and a blend on another basis hold the designation
+        steps:
+          - do: { reopenInventory: { organization: "${org}", inventory: "${inv}", reason: Reading the final-run holds } }
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0004, factor: "${diesel}", density: Diesel (typical value) } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, severity: WARNING, containing: "converts through the typical density of Diesel (0.84 kg/litre), a planning value. A run may use it; a final run may not" }
+          - do: { setGwpSet: { organization: "${org}", inventory: "${inv}", gwpSet: AR6 } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, severity: WARNING, containing: "whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded)" }
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - boundaryVersion: { organization: "${org}", inventory: "${inv}", versionNo: 3 }
+          - do: { launchRun: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - runListed: { organization: "${org}", inventory: "${inv}", run: 3, boundaryVersion: 3 }
+                why: "the run completes: a run may use both"
+          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 3 } }
+            expect:
+              - refused: { rule: ghg.run.final-holds, with: { run: "3" } }
+                why: "the message names the run by its number and then both holds, the blend first: \"'Chiller refrigerant top-up' uses 'Blends: R407C, Emissions including only Kyoto products', whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded): record the blend's composition, choose a factor on AR6, or run the inventory on AR5 (one GWP set across the inventory).\" and \"'Forklift diesel' converts through the typical density of Diesel (0.84 kg/litre), a planning value.\""
+      - id: B2
+        title: The proxy route, and one GWP set
+        steps:
+          - do: { reopenInventory: { organization: "${org}", inventory: "${inv}", reason: Proxy flag and AR5 restored } }
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0004, factor: "${diesel}", density: Diesel (typical value), proxy: true, proxyJustification: "No certificate of analysis for this delivery; typical mid-range density" } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, containing: "typical density", absent: true }
+                why: "a documented proxy is an answer"
+          - do: { setGwpSet: { organization: "${org}", inventory: "${inv}", gwpSet: AR5 } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, containing: "cannot be re-derived", absent: true }
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - boundaryVersion: { organization: "${org}", inventory: "${inv}", versionNo: 4 }
+          - do: { launchRun: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - runListed: { organization: "${org}", inventory: "${inv}", run: 4, totalKgCo2e: 120373.32 }
+              - runLine: { organization: "${org}", inventory: "${inv}", run: 4, record: ACT-0004, kgCo2e: 9505.54, conversionNote: "(density of Diesel, typical value)" }
+              - observe: { text: "The proxy justification is not printed on the line; the lines CSV of case D1 carries it in proxy_justification." }
+  - id: C
+    title: The report header and the intensity
+    cases:
+      - id: C1
+        title: Metadata persists and reaches the next run
+        steps:
+          - do: { saveReportHeader: { organization: "${org}", inventory: "${inv}", approvedBy: "Kofi Mensah, Reviewer", uncertaintyStatement: "Metered fuel and electricity; the flights figure is the travel agent's estimate", denominators: [{ name: Product output, value: 1500, unit: t }] } }
+            why: "a row left in the fields is not saved; reload the page: every field reads what you typed, the denominator is on the inventory, not in the browser"
+          - do: { launchRun: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, approvedBy: "Kofi Mensah, Reviewer" }
+              - reportIntensity: { organization: "${org}", inventory: "${inv}", run: 5, name: Product output, value: 1500, unit: t, tCo2ePerUnit: 0.080249 }
+                why: 120.373 t divided by 1,500
+              - reportStatementHas: { organization: "${org}", inventory: "${inv}", run: 5, section: uncertainty, containing: "Metered fuel and electricity; the flights figure is the travel agent's estimate" }
+              - reportStatementHas: { organization: "${org}", inventory: "${inv}", run: 5, section: dataQuality, containing: "3 of 9 lines record a quantitative uncertainty; weighted by emissions it is ±2.8% for those lines." }
+                why: "the run has nine lines, seven records and the two derived ones"
+  - id: D
+    title: Exports, and the self-approval sentence
+    cases:
+      - id: D1
+        title: The four downloads match the page
+        steps:
+          - do: { openRun: { organization: "${org}", inventory: "${inv}", run: 5 } }
+            expect:
+              - observe: { text: 'Click PDF report: the PDF carries the numbered sections of the page, the factor table with each factor''s source and vintage, and the row "CO₂e from factors without a gas split".' }
+          - expect:
+              - csvHas: { organization: "${org}", inventory: "${inv}", run: 5, file: lines.csv, columns: [line_id, derived_from_line_id, record_ref, evidence_ref, density_material, density_kg_per_litre, proxy_justification, period_share, co2e_unsplit_kg] }
+                why: "one row per line; the forklift line carries the proxy justification, the straddling line period_share 0.53125 and the flights line co2e_unsplit_kg 3,900"
+          - expect:
+              - csvHas: { organization: "${org}", inventory: "${inv}", run: 5, file: exclusions.csv, rows: 3, cell: { record: ACT-0009, column: estimate_state, value: NOT_ESTIMATED } }
+              - csvHas: { organization: "${org}", inventory: "${inv}", run: 5, file: exclusions.csv, cell: { record: ACT-0009, column: estimated_kg_co2e, value: "" } }
+          - expect:
+              - inputsHas: { organization: "${org}", inventory: "${inv}", run: 5, boundaryVersion: 4, instruments: 1, residualMixAvailable: false }
+      - id: D2
+        title: A self-approved factor is disclosed on the report
+        steps:
+          - as: yaw
+            do: { signIn: { user: yaw } }
+          - do: { addFacility: { organization: Solo Ltd, name: Solo Office, location: Accra, country: GH, entity: Solo Ltd } }
+          - do: { recordActivity: { organization: Solo Ltd, facility: Solo Office, activityType: Office generator diesel, quantity: 100, unit: litre, periodStart: "2025-03-01", periodEnd: "2025-03-31", dataSource: Fuel receipt } }
+          - do: { createInventory: { organization: Solo Ltd, name: Solo FY2025, periodStart: "2025-01-01", periodEnd: "2025-12-31", approach: OPERATIONAL_CONTROL } }
+          - do: { reviewActivityData: { organization: Solo Ltd, inventory: Solo FY2025 } }
+          - do: { classifyRecord: { organization: Solo Ltd, inventory: Solo FY2025, record: Office generator diesel, factor: Diesel (Solo) } }
+          - do: { setResidualMix: { organization: Solo Ltd, inventory: Solo FY2025, available: false } }
+          - do: { freezeInventory: { organization: Solo Ltd, inventory: Solo FY2025 } }
+          - do: { launchRun: { organization: Solo Ltd, inventory: Solo FY2025 } }
+            expect:
+              - runListed: { organization: Solo Ltd, inventory: Solo FY2025, run: 1, totalKgCo2e: 266 }
+          - expect:
+              - observe: { text: 'Open the PDF: the methodology section prints "Approved by the person who entered them, no other member of the organization being able to check them at the time: Diesel (Solo) (<the Yaw alias>).". Adansi''s PDF of case D1 prints no such sentence: Kofi checked its factors.' }
+  - id: E
+    title: Final designation and publication
+    cases:
+      - id: E1
+        title: Only a reviewer or an owner designates and publishes
+        steps:
+          - as: esi
+            do: { signIn: { user: esi } }
+          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5 } }
+            expect:
+              - roleDisabled: { button: Mark as final }
+          - as: kofi
+            do: { signIn: { user: kofi } }
+          - do: { unapproveFactor: { organization: "${org}", factor: "${flights}" } }
+          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5 } }
+            expect:
+              - refused: { rule: ghg.run.final-holds, with: { run: "5" } }
+                why: "\"'Staff flights' uses 'Long-haul flights (supplier)', which is not approved. Approve it under Emission factors, or choose another.\": approval is checked again at the designation, not only at the run"
+          - do: { approveFactor: { organization: "${org}", factor: "${flights}" } }
+            expect:
+              - factorListed: { organization: "${org}", name: "${flights}", approved: true, approvedBy: kofi }
+                why: approved by Kofi, who did not enter it
+          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5, note: Reconciled against the March and June invoices } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: FINAL }
+              - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, finalNote: Reconciled against the March and June invoices }
+              - buttonsOffered: { absent: [Reopen as draft] }
+                why: 'the lifecycle bar reads "Final designated by <the Kofi alias> on <date>: Reconciled against the March and June invoices"'
+          - do: { withdrawFinal: { organization: "${org}", inventory: "${inv}", reason: "" } }
+            expect:
+              - dialogButtonDisabled: { dialog: "Withdraw the final designation?", button: Withdraw designation, rule: ghg.reason-too-short }
+          - do: { withdrawFinal: { organization: "${org}", inventory: "${inv}", reason: Checking the withdrawal } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: FROZEN }
+                why: the history records the withdrawal with Kofi's email
+          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5 } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: FINAL }
+          - as: esi
+            do: { publishInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - roleDisabled: { button: Publish }
+          - as: kofi
+            do: { publishInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: PUBLISHED }
+              - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, version: 1 }
+                why: 'the lifecycle bar reads "Final designated by <the Kofi alias>" and "Published <time>." and says nothing on this inventory can change and that a correction is a new inventory that supersedes it; the Report tab reads "Published by <the Kofi alias>"'
+  - id: F
+    title: The published record and its correction
+    cases:
+      - id: F1
+        title: Nothing on a published inventory changes
+        steps:
+          - as: ama
+            do: { openInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - buttonsOffered: { present: [Create correction], absent: [Reopen as draft, Freeze inventory, Edit inventory] }
+          - do: { openInventory: { organization: "${org}", inventory: "${inv}", tab: Runs } }
+            expect:
+              - buttonsOffered: { absent: ["Void…"] }
+              - screenReads: { text: "Published. The runs are a record; a correction restates the year." }
+              - controlDisabled: { button: Launch calculation run, title: "A published inventory cannot be recalculated. Create a correction that supersedes it." }
+                why: "a published inventory's runs are a record"
+          - do: { correctActivity: { organization: "${org}", record: ACT-0002, quantity: 121, reason: June invoice re-read after publication } }
+            expect:
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0002, changedSincePublication: [quantity] }
+              - runLine: { organization: "${org}", inventory: "${inv}", run: 5, record: ACT-0002, kgCo2e: 56257.08 }
+                why: "the published report still reads 120 MWh and 56,257.08 kg: the report is frozen; the view marks what moved after it"
+      - id: F2
+        title: A correction needs a reason and inherits the view
+        steps:
+          - do: { createCorrection: { organization: "${org}", inventory: "${inv}", reason: typo } }
+            expect:
+              - dialogButtonDisabled: { dialog: Create a correction, button: Create correction, rule: ghg.correction.reason-too-short }
+          - do: { createCorrection: { organization: "${org}", inventory: "${inv}", reason: "June electricity was 121 MWh, not 120" } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "FY2025 (correction)", status: DRAFT }
+              - observe: { text: "A new draft, FY2025 (correction), opens with the boundary, the declaration, the classifications, the rule, the instrument and the residual mix inherited. Each inherited decision is marked as inherited." }
+          - do: { freezeInventory: { organization: "${org}", inventory: "FY2025 (correction)" } }
+          - do: { launchRun: { organization: "${org}", inventory: "FY2025 (correction)" } }
+            expect:
+              - runLine: { organization: "${org}", inventory: "FY2025 (correction)", run: 1, record: ACT-0002, kgCo2e: 56725.89 }
+              - reportHeader: { organization: "${org}", inventory: "FY2025 (correction)", run: 1, version: 2, supersedes: "${inv}" }
+              - reportCorrection: { organization: "${org}", inventory: "FY2025 (correction)", run: 1, added: 0, removed: 0, changed: 1 }
+          - expect:
+              - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, version: 1, supersededBy: "FY2025 (correction)" }
+                why: unchanged, and its header says it is superseded by the correction
+  - id: G
+    title: Copying the view across approaches
+    cases:
+      - id: G1
+        title: The equity share view brings the associate in
+        steps:
+          - do: { createInventory: { organization: "${org}", name: FY2025 equity view, periodStart: "2025-01-01", periodEnd: "2025-12-31", approach: EQUITY_SHARE, copyFrom: "${inv}" } }
+          - do: { openInventory: { organization: "${org}", inventory: FY2025 equity view, tab: Boundary } }
+            expect:
+              - boundaryRow: { organization: "${org}", inventory: FY2025 equity view, entity: Coldstore Ghana Ltd, inBoundary: true, share: 30, facilities: { Takoradi Cold Store: true } }
+          - do: { showInheritance: { organization: "${org}", inventory: FY2025 equity view } }
+            expect:
+              - inheritanceDropped: { organization: "${org}", inventory: FY2025 equity view, entity: Coldstore Ghana Ltd, reason: METHODOLOGY, sharePercent: 30 }
+          - do: { reviewActivityData: { organization: "${org}", inventory: FY2025 equity view } }
+            expect:
+              - recordView: { organization: "${org}", inventory: FY2025 equity view, record: ACT-0008, status: UNCLASSIFIED }
+                why: "Takoradi Cold Store is in the boundary under this approach; the classifications of the other records are inherited and marked"
+          - expect:
+              - observe: { text: "Leave the equity view a draft. Procedure 8 reads its base-year gate." }
+docs:
+  version: 4
+  estimatedMinutes: 50
+  objective: >-
+    Confirm that a run is a numbered snapshot that is voided with a reason and
+    never renumbered, that a final run refuses a planning value and a blend
+    published on another GWP basis, that only a reviewer or an owner
+    designates and publishes, that the report carries its header and
+    intensity, that the exports match the page, that a published report never
+    changes, and that a correction supersedes it with a reason.
+  runNote: Procedure 7 raises a notice against the organization it leaves published.
+  prerequisitesText:
+    - "FY2025 as procedure 5 leaves it: frozen at boundary version 2, every record decided, no gate error."
+    - Ama in the normal window; Kofi, Esi and Yaw in the private window as the cases name them.
+    - "These figures hold if every record was classified as procedure 5 lists. Run 001 rests on the supplier density (3 tonne of diesel at 0.8325 kg/litre is 3,603.6036 litre); the final run rests on the typical one (0.84 kg/litre, 3,571.4286 litre) flagged as a proxy. The product numbers every freeze and every run by act, so a step driven twice shifts them by one, and the verdict reads the state, not the number."
+  knownNonGoals: >-
+    a market-based figure priced at a residual mix (the mining pack); the
+    chain of two corrections; an XLSX export; Monte Carlo uncertainty; a run
+    label.
+  changeNotes:
+    - version: 2
+      date: "2026-09-29"
+      text: >-
+        E1 steps 1a and 1b: Mark as final is refused while a factor the
+        inventory applies is unapproved (PR #119). F1 step 2 reads the
+        published inventory's banner and the disabled launch button's title
+        (PR #119).
+    - version: 3
+      date: "2026-09-29"
+      text: >-
+        A1 step 2 and F2 step 2 quote the forklift line and the correction's
+        name as the product prints them. F2 step 2: the inherited instrument
+        keeps its certificate, registry and vintage (the walkthrough fix of
+        2026-09-29).
+    - version: 4
+      date: "2026-10-02"
+      text: >-
+        Transliterated to the QA scenario DSL. The runs, their lines, the
+        exclusions, the by-gas row, the report header, the intensity, the CSV
+        and JSON exports and the correction block are read from the API as well
+        as from the screen; the PDF's sentences, the voided banner and the
+        inherited marks are observed on screen.

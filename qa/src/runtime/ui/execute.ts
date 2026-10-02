@@ -9,6 +9,7 @@ import { REPO_ROOT } from '../../load.ts'
 import type { ApiContext } from '../../vocabulary/contract.ts'
 import { activity, entity, facility, factor, organization } from '../../vocabulary/organizations.ts'
 import { density, inventory } from '../../vocabulary/inventories.ts'
+import { run } from '../../vocabulary/runs.ts'
 import type { UiOp } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
 import { env } from '../shared/env.ts'
@@ -87,6 +88,15 @@ export async function openInventoryPage(page: Page, ctx: ExecuteContext, organiz
   const target = page.getByRole('tab', { name: tab ?? 'Records' }).first()
   await target.waitFor()
   await expect(target).toHaveAttribute('aria-selected', 'true')
+}
+
+/** A run's page under its inventory. */
+export async function openRunPage(page: Page, ctx: ExecuteContext, organizationRef: string, inventoryName: string, runRef: string): Promise<void> {
+  const { org, inv, run: r } = await run(ctx.api, organizationRef, inventoryName, /^\d+$/.test(runRef) ? Number(runRef) : runRef)
+  await dismissDialogs(page)
+  await goto(page, `/app/ghg/${org.id}/inventories/${inv.id}/runs/${r.id}`)
+  await page.waitForURL((url) => url.pathname.endsWith(`/runs/${r.id}`), { timeout: 15_000 })
+  await page.getByRole('heading').first().waitFor()
 }
 
 const ZEROS = '0'.repeat(64)
@@ -209,9 +219,9 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
       const button = clickable(scope, await resolveAsync(ctx, t(op.button)))
       if (op.ifEnabled) {
-        // the dialog keeps the button disabled while the gates refuse: a tester sees that, and does not click
-        await button.waitFor()
-        if (await button.isDisabled()) return
+        // a button the page withholds (disabled while the gates refuse, or absent for a role) is read, not clicked
+        const present = await button.waitFor({ timeout: 3_000 }).then(() => true, () => false)
+        if (!present || (await button.isDisabled())) return
       }
       await button.click()
       return
@@ -265,8 +275,24 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       await page.locator(locators.accountMenuTrigger).click()
       await page.getByRole('menuitem', { name: t(op.item), exact: true }).click()
       return
-    case 'row':
-      await (await rowButton(await row(page, t(op.text)), t(op.button))).click()
+    case 'row': {
+      const button = await rowButton(await row(page, await resolveAsync(ctx, t(op.text))), t(op.button))
+      if (op.ifEnabled) {
+        const present = await button.waitFor({ timeout: 3_000 }).then(() => true, () => false)
+        if (!present || (await button.isDisabled())) return
+      }
+      await button.click()
+      return
+    }
+    case 'settle':
+      // a click that starts work on the server (a calculation run): give the page a moment to send its request,
+      // then wait for the requests to land
+      await page.waitForTimeout(750)
+      await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => undefined)
+      return
+    case 'clickText':
+      // a disclosure ("Where this inventory came from") or a link named by its text
+      await page.getByText(await resolveAsync(ctx, t(op.text)), { exact: true }).first().click()
       return
     case 'openRow':
       // the register opens a record from its name, the row's first button

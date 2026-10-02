@@ -71,6 +71,27 @@
       "field": null
     },
     {
+      "id": "ghg.correction.already-superseded",
+      "module": "ghg",
+      "status": 409,
+      "message": "This inventory has already been superseded.",
+      "field": null
+    },
+    {
+      "id": "ghg.correction.needs-published",
+      "module": "ghg",
+      "status": 409,
+      "message": "Only a published inventory can be superseded.",
+      "field": null
+    },
+    {
+      "id": "ghg.correction.reason-too-short",
+      "module": "ghg",
+      "status": 422,
+      "message": "A correction needs a reason of at least 10 characters: what was wrong in the published inventory.",
+      "field": "reason"
+    },
+    {
       "id": "ghg.declaration.not-declared",
       "module": "ghg",
       "status": 409,
@@ -204,6 +225,20 @@
       "field": null
     },
     {
+      "id": "ghg.inventory.no-final-run",
+      "module": "ghg",
+      "status": 409,
+      "message": "No run is designated final.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.publish-needs-final",
+      "module": "ghg",
+      "status": 409,
+      "message": "Designate a final run before publishing the inventory.",
+      "field": null
+    },
+    {
       "id": "ghg.inventory.reopen-reason",
       "module": "ghg",
       "status": 422,
@@ -250,6 +285,41 @@
       "module": "ghg",
       "status": 403,
       "message": "This action needs the {needed} role in the organization.",
+      "field": null
+    },
+    {
+      "id": "ghg.run.already-voided",
+      "module": "ghg",
+      "status": 409,
+      "message": "Run {run} is already voided.",
+      "field": null
+    },
+    {
+      "id": "ghg.run.final-holds",
+      "module": "ghg",
+      "status": 409,
+      "message": "Run {run} cannot be designated final. {holds}",
+      "field": null
+    },
+    {
+      "id": "ghg.run.final-not-voidable",
+      "module": "ghg",
+      "status": 409,
+      "message": "Run {run} is designated final. Withdraw the designation, with a reason, before voiding it.",
+      "field": null
+    },
+    {
+      "id": "ghg.run.published-not-voidable",
+      "module": "ghg",
+      "status": 409,
+      "message": "A published inventory's runs are a record and cannot be voided.",
+      "field": null
+    },
+    {
+      "id": "ghg.run.voided-not-final",
+      "module": "ghg",
+      "status": 409,
+      "message": "Run {run} is voided and cannot be designated final.",
       "field": null
     },
     {
@@ -393,5 +463,5 @@
       "field": null
     }
   ],
-  "sha256": "4c7b198be48a6e844bc3a227edda45b602e6079cdc7521833b7b4144af28c18a"
+  "sha256": "fd68008bc5db9cbb543cb7e70a8e98b7b3c6e0040e696550860c649daf95be50"
 }
