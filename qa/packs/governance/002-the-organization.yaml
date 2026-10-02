@@ -1,0 +1,339 @@
+procedure: 2
+slug: the-organization
+title: The organization
+after: 1
+covers: ["01.2", "01.4", "01.7", "01.8", "03.1", "03.3", "03.4", "04.3", "02.2", "02.1", "02.4", "02.9", "02.10", "02.11"]
+let:
+  org: Adansi Foods Ltd
+sections:
+  - id: A
+    title: The organization and its members
+    cases:
+      - id: A1
+        title: The creator is the owner, and members are added by email
+        steps:
+          - as: ama
+            do: { signIn: { user: ama } }
+          - do: { createOrganization: { name: "${org}" } }
+            why: note the account number, case A3 uses it
+          - do: { openOrganization: { organization: "${org}" } }
+            expect:
+              - myRole: { user: ama, organization: "${org}", role: OWNER }
+          - do: { addMember: { organization: "${org}", user: kofi, role: REVIEWER } }
+          - do: { addMember: { organization: "${org}", user: esi, role: PREPARER } }
+          - do: { addMember: { organization: "${org}", user: yaw, role: VERIFIER } }
+            why: the card says reviewers also designate final runs, publish and create corrections, and verifiers read only
+          - do: { addMember: { organization: "${org}", email: nobody@example.test, role: PREPARER } }
+            expect:
+              - refused: { rule: ghg.account.not-found }
+                why: membership is granted to an existing account, a newcomer requests access first
+          - do: { addMember: { organization: "${org}", user: kofi, role: REVIEWER } }
+            expect:
+              - refused: { rule: ghg.member.duplicate, with: { email: "{email:kofi}", organization: "${org}" } }
+          - do: { changeMemberRole: { organization: "${org}", user: ama, role: PREPARER } }
+            expect:
+              - refused: { rule: ghg.member.last-owner, with: { organization: "${org}" } }
+          - do: { removeMember: { organization: "${org}", user: ama } }
+            expect:
+              - refused: { rule: ghg.member.last-owner, with: { organization: "${org}" } }
+          - expect:
+              - historyCount: { organization: "${org}", action: MEMBER_ADDED, count: 3 }
+              - historyHas: { organization: "${org}", action: MEMBER_ADDED, detail: "{email:kofi} added as REVIEWER", actor: ama }
+                why: it updated as you added them, without a reload; structure changes join the same card from section B on
+      - id: A2
+        title: A verifier reads everything and changes nothing
+        steps:
+          - as: yaw
+            do: { signIn: { user: yaw } }
+          - do: { openOrganization: { organization: "${org}" } }
+            expect:
+              - myRole: { user: yaw, organization: "${org}", role: VERIFIER }
+          - expect:
+              - cannotWrite: { user: yaw, organization: "${org}" }
+          - do: { signOut: { user: yaw } }
+      - id: A3
+        title: Two organizations may share a name
+        steps:
+          - as: ama
+            do: { createOrganization: { name: adansi foods ltd } }
+            expect:
+              - refused: { rule: ghg.organization.name-duplicate, with: { name: adansi foods ltd } }
+                why: refused once, in the form, naming the organization of A1 with its number; names are compared without regard to case, and the button now reads Create anyway
+          - do: { createOrganization: { name: adansi foods ltd, confirmDuplicate: true } }
+          - expect:
+              - organizationCount: { user: ama, count: 2 }
+                why: both organizations are listed in the switcher, each with its number
+          - do: { renameOrganization: { organization: adansi foods ltd, name: "${org}" } }
+            expect:
+              - refused: { rule: ghg.organization.name-duplicate, with: { name: "${org}" } }
+                why: the same sentence, naming the first organization; the button reads Save anyway
+          - do: { renameOrganization: { organization: adansi foods ltd, name: "${org}", confirmDuplicate: true } }
+            expect:
+              - historyHas: { organization: "Adansi Foods Ltd #2", action: ORGANIZATION_RENAMED, detail: "renamed from 'adansi foods ltd' to 'Adansi Foods Ltd'" }
+          - do: { deleteOrganization: { organization: "Adansi Foods Ltd #2", reason: "duplicate created for the walkthrough, no client data" } }
+            expect:
+              - organizationCount: { user: ama, count: 1 }
+          - do: { createOrganization: { name: "${org}" } }
+            expect:
+              - refused: { rule: ghg.organization.name-duplicate, with: { name: "${org}" } }
+                why: still refused once, naming only the live organization; the removed one does not count
+
+  - id: B
+    title: Legal entities
+    cases:
+      - id: B1
+        title: The reporting company is there by definition
+        steps:
+          - expect:
+              - entityListed: { organization: "${org}", name: "${org}", reportingCompany: true, equityShare: 100, financialControlShare: 100, operationalControlShare: 100 }
+                why: its row has no Remove, and in its edit form the relationship, the percentages, Operated by the company, Financial control and Held through show their fixed values and are disabled
+      - id: B2
+        title: A subsidiary with dates, and an associate
+        steps:
+          - do: { addEntity: { organization: "${org}", name: Adansi Logistics Ltd, relationship: SUBSIDIARY, economicInterest: 100, legalOwnership: 100, operatedByCompany: true, acquiredOn: "2025-07-01", disposedOn: "2025-01-01", jurisdiction: GH } }
+            expect:
+              - refused: { rule: ghg.entity.disposal-before-acquisition }
+          - do: { addEntity: { organization: "${org}", name: Adansi Logistics Ltd, relationship: SUBSIDIARY, economicInterest: 100, legalOwnership: 100, operatedByCompany: true, acquiredOn: "2025-07-01", jurisdiction: GH } }
+            expect:
+              - entityListed: { organization: "${org}", name: Adansi Logistics Ltd, equityShare: 100, financialControlShare: 100, operationalControlShare: 100, from: "2025-07-01" }
+          - do: { addEntity: { organization: "${org}", name: Coldstore Ghana Ltd, relationship: ASSOCIATE, economicInterest: 150 } }
+            expect:
+              - refused: { rule: ghg.entity.percent-range, with: { field: Economic interest } }
+          - do: { addEntity: { organization: "${org}", name: Coldstore Ghana Ltd, relationship: ASSOCIATE, economicInterest: 30, legalOwnership: 30, jurisdiction: GH } }
+            expect:
+              - entityListed: { organization: "${org}", name: Coldstore Ghana Ltd, equityShare: 30, financialControlShare: 0, operationalControlShare: 0 }
+          - do: { addEntity: { organization: "${org}", name: adansi logistics ltd, relationship: SUBSIDIARY, economicInterest: 100 } }
+            expect:
+              - refused: { rule: ghg.entity.name-duplicate, with: { name: adansi logistics ltd } }
+                why: names are compared without regard to case
+      - id: B3
+        title: A parent chain cannot loop
+        steps:
+          - do: { editEntity: { organization: "${org}", entity: Coldstore Ghana Ltd, heldThrough: Adansi Logistics Ltd } }
+          - do: { editEntity: { organization: "${org}", entity: Adansi Logistics Ltd, heldThrough: Coldstore Ghana Ltd } }
+            expect:
+              - refused: { rule: ghg.entity.parent-loop, with: { parent: Coldstore Ghana Ltd, entity: Adansi Logistics Ltd } }
+          - do: { editEntity: { organization: "${org}", entity: Coldstore Ghana Ltd, heldThrough: directly } }
+            expect:
+              - entityListed: { organization: "${org}", name: Adansi Logistics Ltd, heldThrough: directly }
+
+  - id: C
+    title: Facilities
+    cases:
+      - id: C1
+        title: Three sites, one of them leased
+        steps:
+          - do: { addFacility: { organization: "${org}", name: Kumasi Plant, location: Kumasi, country: GH, gridRegion: GHA, entity: "${org}" } }
+            expect:
+              - facilityListed: { organization: "${org}", name: Kumasi Plant, entity: "${org}", gridRegion: GHA }
+                why: the Legal entity list names the reporting company as such; a blank grid region follows the country
+          - do: { addFacility: { organization: "${org}", name: Tema Depot, location: Tema, country: GH, entity: Adansi Logistics Ltd, lease: OPERATING_LEASE_IN, leaseFrom: "2025-07-01", leaseUntil: "2025-06-30" } }
+            expect:
+              - refused: { rule: ghg.facility.lease-ends-before-start }
+          - do: { addFacility: { organization: "${org}", name: Tema Depot, location: Tema, country: GH, entity: Adansi Logistics Ltd, lease: OPERATING_LEASE_IN, leaseFrom: "2025-07-01" } }
+            expect:
+              - facilityListed: { organization: "${org}", name: Tema Depot, entity: Adansi Logistics Ltd, lease: OPERATING_LEASE_IN }
+          - do: { addFacility: { organization: "${org}", name: Takoradi Cold Store, location: Takoradi, country: GH, entity: Coldstore Ghana Ltd } }
+            expect:
+              - facilityListed: { organization: "${org}", name: Takoradi Cold Store, entity: Coldstore Ghana Ltd }
+      - id: C2
+        title: An entity with facilities is not deleted
+        steps:
+          - do: { removeEntity: { organization: "${org}", entity: Coldstore Ghana Ltd, reason: "walkthrough: trying to remove an entity with a site" } }
+            expect:
+              - refused: { rule: ghg.entity.has-facilities, with: { entity: Coldstore Ghana Ltd } }
+
+  - id: D
+    title: Source streams
+    cases:
+      - id: D1
+        title: A stream sets the default classification
+        steps:
+          - do: { addStream: { organization: "${org}", facility: Kumasi Plant, name: Boiler LPG, kind: STATIONARY_COMBUSTION, fuel: LPG } }
+            expect:
+              - streamListed: { organization: "${org}", facility: Kumasi Plant, name: Boiler LPG, kind: STATIONARY_COMBUSTION, contractorOperated: false }
+          - do: { addStream: { organization: "${org}", facility: Kumasi Plant, name: Plant grid supply, kind: PURCHASED_ELECTRICITY, meterOrSupplier: ECG-KSI-01 } }
+          - do: { addStream: { organization: "${org}", facility: Tema Depot, name: Delivery fleet, kind: MOBILE_COMBUSTION, fuel: Diesel, contractorOperated: true } }
+            expect:
+              - streamListed: { organization: "${org}", facility: Tema Depot, name: Delivery fleet, contractorOperated: true }
+                why: the form says a contractor's source is scope 3 under chapter 4
+      - id: D2
+        title: Names are unique per facility
+        steps:
+          - do: { addStream: { organization: "${org}", facility: Kumasi Plant, name: Boiler LPG, kind: STATIONARY_COMBUSTION } }
+            expect:
+              - refused: { rule: ghg.stream.name-duplicate, with: { facility: Kumasi Plant, name: Boiler LPG } }
+      - id: D3
+        title: The history records the structure, and only real changes
+        steps:
+          - do: { editEntity: { organization: "${org}", entity: Adansi Logistics Ltd } }
+          - expect:
+              - historyHas: { organization: "${org}", action: ENTITY_ADDED, detail: "Adansi Logistics Ltd added", actor: ama }
+              - historyHas: { organization: "${org}", action: ENTITY_ADDED, detail: "Coldstore Ghana Ltd added", actor: ama }
+              - historyHas: { organization: "${org}", action: ENTITY_UPDATED, detail: "Coldstore Ghana Ltd", actor: ama }
+              - historyHas: { organization: "${org}", action: FACILITY_ADDED, detail: "Kumasi Plant added under Adansi Foods Ltd", actor: ama }
+              - historyHas: { organization: "${org}", action: STREAM_ADDED, detail: "Boiler LPG added at Kumasi Plant", actor: ama }
+          - expect:
+              - historyCount: { organization: "${org}", action: ENTITY_UPDATED, count: 2 }
+              - historyCount: { organization: "${org}", action: ENTITY_ADDED, count: 2 }
+              - historyCount: { organization: "${org}", action: FACILITY_ADDED, count: 3 }
+              - historyCount: { organization: "${org}", action: STREAM_ADDED, count: 3 }
+                why: a save that changes nothing writes no row, and a refused act is not an act
+
+  - id: E
+    title: Units and densities
+    cases:
+      - id: E1
+        title: A custom unit is a multiple of a registered one
+        steps:
+          - do: { addCustomUnit: { organization: "${org}", code: litre, label: A litre again, equals: 1, of: litre } }
+            expect:
+              - refused: { rule: ghg.unit.registered, with: { code: litre } }
+          - do: { addCustomUnit: { organization: "${org}", code: crate, label: Crate of 24 bottles, equals: 12, of: litre } }
+            expect:
+              - customUnitListed: { organization: "${org}", code: crate, definition: "1 crate = 12 litre" }
+          - do: { addCustomUnit: { organization: "${org}", code: crate, label: Crate of 24 bottles, equals: 12, of: litre } }
+            expect:
+              - refused: { rule: ghg.unit.duplicate, with: { code: crate } }
+      - id: E2
+        title: A typical density is shared; a supplier's is the organization's own
+        steps:
+          - expect:
+              - densityListed: { organization: "${org}", material: Diesel, typical: true, kgPerLitre: 0.84 }
+                why: typical values are for planning and the gate says so
+          - do: { addDensity: { organization: "${org}", material: Diesel (Adansi CoA), kgPerLitre: 0.8325, source: "Supplier certificate of analysis, May 2025" } }
+          - do: { addDensity: { organization: "${org}", material: Diesel (Adansi CoA), kgPerLitre: 0.8325, source: "Supplier certificate of analysis, May 2025" } }
+            expect:
+              - refused: { rule: ghg.density.duplicate, with: { material: Diesel (Adansi CoA) } }
+
+  - id: F
+    title: Emission factors
+    cases:
+      - id: F1
+        title: Two packs are imported
+        steps:
+          - expect:
+              - factorsEmpty: { organization: "${org}" }
+                why: the Factor packs card lists the three shipped editions by their display names, each with View factors and Import pack
+          - do: { importPack: { organization: "${org}", pack: ghana, packName: "Ghana: grid electricity and transmission losses" } }
+            expect:
+              - importResult: { added: 7, versioned: 0 }
+              - factorListed: { organization: "${org}", name: "Grid electricity T&D losses, Ghana (derived)", approved: false }
+                why: leave it unapproved
+          - do: { importPack: { organization: "${org}", pack: defra-2025, packName: "UK Government (DESNZ) GHG conversion factors 2025" } }
+            expect:
+              - importResult: { added: 1928, versioned: 0 }
+                why: the table pages at 50 and the search narrows it
+          - do: { importPack: { organization: "${org}", pack: defra-2026, packName: "UK Government (DESNZ) GHG conversion factors 2026" } }
+            expect:
+              - importResult: { added: 385, versioned: 1483, discontinued: 445 }
+              - factorListed: { organization: "${org}", name: "Gaseous fuels: LPG", versions: [defra-2025, defra-2026] }
+                why: a row both years carry now shows two versions, defra-2025 to 2025-12-31 and defra-2026 from 2026-01-01; a pack-derived row offers Retire… and never Delete
+      - id: F2
+        title: A blend's fractions add up to 1
+        steps:
+          - do: { addFactor: { organization: "${org}", name: R-410A (composition), scope: SCOPE_1, category: FUGITIVE_EMISSIONS, unit: kg, kgCo2ePerUnit: 1923.5, hfcsKgPerUnit: 1, blendComposition: "HFC-32:0.5,HFC-125:0.6", gwpBasis: AR5, source: "Supplier safety data sheet, 2025", publicationYear: 2025, dataYear: 2025 } }
+            expect:
+              - refused: { rule: ghg.factor.blend-fractions }
+          - do: { addFactor: { organization: "${org}", name: R-410A (composition), scope: SCOPE_1, category: FUGITIVE_EMISSIONS, unit: kg, kgCo2ePerUnit: 1923.5, hfcsKgPerUnit: 1, blendComposition: "HFC-32:0.5,HFC-125:0.5", gwpBasis: AR5, source: "Supplier safety data sheet, 2025", publicationYear: 2025, dataYear: 2025 } }
+            why: an approval is a separate act by a separate person; the form does not tick it for you
+          - do: { addFactor: { organization: "${org}", name: Long-haul flights (supplier), scope: SCOPE_3, category: BUSINESS_TRAVEL, unit: passenger-km, kgCo2ePerUnit: 0.195, source: "Travel agent's emissions statement, 2025", publicationYear: 2025, dataYear: 2025 } }
+      - id: F3
+        title: A factor retires by its validity end
+        steps:
+          - do: { retireFactor: { organization: "${org}", factor: R-410A (composition) } }
+            expect:
+              - refused: { rule: ui.factor.valid-to-required }
+                why: nothing is saved
+          - do: { retireFactor: { organization: "${org}", factor: R-410A (composition), validTo: "2025-12-31" } }
+            why: the row stays listed with its validity ending 2025-12-31, it still covers FY2025 where procedure 5 uses it, and nothing after
+      - id: F4
+        title: The author cannot approve; the reviewer does
+        steps:
+          - do: { approveFactor: { organization: "${org}", factor: Long-haul flights (supplier) } }
+            expect:
+              - refused: { rule: ghg.factor.self-approval, with: { name: Long-haul flights (supplier), checker: Kofi Mensah } }
+          - as: kofi
+            do: { signIn: { user: kofi } }
+          - do: { approveFactor: { organization: "${org}", factor: Long-haul flights (supplier) } }
+            expect:
+              - factorListed: { organization: "${org}", name: Long-haul flights (supplier), approved: true, approvedBy: kofi }
+          - expect:
+              - factorListed: { organization: "${org}", name: R-410A (composition), approved: false }
+                why: leave it unapproved, procedure 5 reads the gate refusing it
+
+  - id: G
+    title: A self-approval is recorded where nobody else could check
+    cases:
+      - id: G1
+        title: Solo Ltd
+        steps:
+          - as: yaw
+            do: { signIn: { user: yaw } }
+          - do: { createOrganization: { name: Solo Ltd } }
+            expect:
+              - myRole: { user: yaw, organization: Solo Ltd, role: OWNER }
+                why: a verifier elsewhere is an owner here, roles are per organization
+          - do: { addFactor: { organization: Solo Ltd, name: Diesel (Solo), scope: SCOPE_1, category: STATIONARY_COMBUSTION, unit: litre, kgCo2ePerUnit: 2.66, source: "Own transcription of DESNZ 2025" } }
+          - do: { approveFactor: { organization: Solo Ltd, factor: Diesel (Solo) } }
+            expect:
+              - factorListed: { organization: Solo Ltd, name: Diesel (Solo), approved: true, approvedBy: yaw, selfApproved: true }
+                why: nobody else is a member, so the refusal of case F4 does not apply, and the record says so; procedure 6 reads the sentence on a report
+          - do: { signOut: { user: yaw } }
+
+docs:
+  version: 4
+  estimatedMinutes: 50
+  objective: >-
+    Confirm that an owner records the organization's members, legal entities,
+    sites, source streams, units, densities and emission factors; that each
+    wrong structure is refused with the rule that refuses it; that a verifier
+    reads everything and changes nothing; and that a hand-entered factor is
+    checked by someone other than the person who typed it, or, where nobody
+    else could, records that it was self-approved.
+  runNote: Procedures 3 to 8 rest on the organization it builds.
+  prerequisitesText:
+    - The six accounts of procedure 1.
+    - Ama in the normal window; the private window for Kofi and Yaw.
+  rationale:
+    A3: >-
+      Spec 01.8: a name is refused once when another organization carries it,
+      and accepted on confirmation; the account number is what tells the two
+      apart, and it never changes.
+  knownNonGoals: >-
+    a joint venture and a franchise (the mining pack records them); a facility
+    deleted with records, which procedure 3 covers; a facility inside a frozen
+    boundary, which procedure 4 covers; reading a pack without importing it,
+    which the mining pack covers in detail; a history row for editing a source
+    stream (only adding and removing one is recorded); the switcher in the
+    header and the way back to a changed name while it is typed (A3).
+  changeNotes:
+    - version: 2
+      date: "2026-09-29"
+      text: >-
+        The sidebar's "Your role" line (A1, A2) and "Reporting company" on
+        **Legal entities** and in the facility form (B1, C1; PR #119). A1 step
+        7 no longer assumes the History card holds only member rows. New case
+        D3 reads the structure rows of the history and checks that a save
+        with no change writes none (PR #121). "Retire, not delete" is gone: F1
+        step 5 reads **Retire…**, and new case F2b retires a factor by setting
+        **Valid to** (PR #119).
+    - version: 3
+      date: "2026-09-29"
+      text: >-
+        Case A3 sat under the heading of section B; the heading now opens B1.
+        B1 step 2 reads the reporting company's structure fields as disabled
+        rather than absent (PR #126). B2 step 2 quotes the list as it reads
+        ("from 2025-07-01"). C1 step 1: the **Facilities** list names the
+        reporting company as such, and its counter reads "Under the company
+        or a subsidiary" (the walkthrough fix of 2026-09-29).
+    - version: 4
+      date: "2026-10-02"
+      text: >-
+        Transliterated to the QA scenario DSL. Cases F2b and F3 are now F3 and
+        F4. The percentage range of an entity's shares is refused by the
+        service with a named rule rather than by form validation. The rows of
+        the history are checked by kind and count; the switcher, the typed
+        name's notice and the disabled fields of the reporting company's form
+        are described in the drivers' projections or listed under the
+        non-goals.

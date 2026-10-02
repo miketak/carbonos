@@ -9,7 +9,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.ErrorResponseException;
 
+import com.carbonos.ghg.GhgRules;
 import com.carbonos.platform.PlatformSettings;
+import com.carbonos.shared.web.RuleViolation;
 import com.carbonos.user.AuthenticatedUser;
 
 /**
@@ -28,12 +30,10 @@ public class GhgAccess {
 	static final String SUPPORT_ACCESS_MARKER = "under support access";
 
 	/** A member acting outside their role (spec 01.2). */
-	public static class RoleRequiredException extends ErrorResponseException {
+	public static class RoleRequiredException extends RuleViolation {
 
 		RoleRequiredException(String needed) {
-			super(HttpStatus.FORBIDDEN);
-			setTitle("Access denied");
-			setDetail("This action needs the " + needed + " role in the organization.");
+			super(GhgRules.ROLE_REQUIRED, "Access denied", needed);
 		}
 	}
 

@@ -7,6 +7,14 @@
       "message": "Passwords do not match.",
       "field": "confirm",
       "surface": "field"
+    },
+    {
+      "id": "ui.factor.valid-to-required",
+      "module": "frontend",
+      "status": 0,
+      "message": "Choose the last day the factor applies.",
+      "field": "validTo",
+      "surface": "field"
     }
   ]
 }

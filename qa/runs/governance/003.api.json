@@ -1,0 +1,123 @@
+{
+  "procedure": 3,
+  "driver": "api",
+  "yamlSha256": "202991c68884a57bfa9bf1d0edbb28b956004821ebcc9b68efca082571085c4f",
+  "productVersion": null,
+  "gitSha": "d88bf785b88f2bf9afe2dfc2e1f255181e880892",
+  "date": "2026-10-02",
+  "specialist": "unknown",
+  "digestSha256": "a2ecd720bc26226d6a9d1f0739a917f2cfd116835d77030558b8e89eb6768fc4",
+  "counts": {
+    "pass": 24,
+    "na": 0,
+    "manual": 2
+  },
+  "steps": [
+    {
+      "id": "3.A1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.A1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "3.A1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "3.A2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.A2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "3.B1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.C1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.C1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "3.C1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "3.D1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.D1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "3.D1.3",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Open the record again: the drawer offers Save but no Save draft. A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft."
+    },
+    {
+      "id": "3.E1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.E1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "3.E1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "3.F1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.F1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "3.F1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "3.F1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "3.G1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.G1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "3.G1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "3.G2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.H1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "3.H1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "3.I1.1",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Type \"diesel\" in the search and choose the facility Kumasi Plant: one record, ACT-0004, and the address bar carries the search and the facility. Open ACT-0004, copy the address and open it in a new tab: the same view opens with the same record in the drawer. Press Escape, then use the arrow keys and Enter on the table: the cursor moves down the rows and Enter opens the record under it."
+    }
+  ]
+}

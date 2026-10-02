@@ -22,7 +22,15 @@ function phrase(op: UiOp): string {
     case 'fill':
       return `fill in ${b(op.label)} with ${value(op.value)}`
     case 'choose':
-      return `set ${b(op.label)} to ${b(op.option)}`
+      return op.byValue && op.option.startsWith('{') ? `set ${b(op.label)} to ${op.option.replace(/\{entityId:[^|]+\|([^}]+)\}/, '$1')}` : `set ${b(op.label)} to ${b(op.option)}`
+    case 'upload':
+      return `choose ${code(op.fixture)} under ${b(op.label)}`
+    case 'tick':
+      return op.on === false ? `untick ${b(op.label)}` : `tick ${b(op.label)}`
+    case 'orgPage':
+      return `in ${op.organization.replace(/ #\d+$/, '')}, open ${b(op.section)}`
+    case 'inventoryPage':
+      return op.tab ? `on the inventory ${q(op.inventory)}, open ${b(op.tab)}` : `open the inventory ${q(op.inventory)}`
     case 'confirm':
       return `confirm ${q(op.dialog)} with ${b(op.button)}`
     case 'signIn':
@@ -33,6 +41,8 @@ function phrase(op: UiOp): string {
       return `open the account menu and choose ${b(op.item)}`
     case 'row':
       return `click ${b(op.button)} on the row of ${op.text}`
+    case 'openRow':
+      return `open ${op.text}`
     case 'emailLink':
       return op.forged
         ? `open ${code(op.path + '?token=')} followed by 64 zeros`
@@ -60,7 +70,7 @@ export function narrateOps(ops: UiOp[]): string {
   }
   for (const op of ops) {
     clause.push(phrase(op))
-    if (op.op === 'click' || op.op === 'confirm' || op.op === 'signIn' || op.op === 'signOut' || op.op === 'row') flush()
+    if (op.op === 'click' || op.op === 'confirm' || op.op === 'signIn' || op.op === 'signOut' || op.op === 'row' || op.op === 'openRow') flush()
   }
   flush()
   return sentences.join(' ')
@@ -80,8 +90,12 @@ export function capitalize(text: string): string {
 export function narrateWhereToLook(checks: UiCheck[]): string | undefined {
   const at = checks.find((c) => c.check === 'at')
   if (at && at.check === 'at') return `Open ${b(at.nav)}.`
+  const atOrg = checks.find((c) => c.check === 'atOrg')
+  if (atOrg && atOrg.check === 'atOrg') return `In ${atOrg.organization.replace(/ #\d+$/, '')}, open ${b(atOrg.section)}.`
   const visit = checks.find((c) => c.check === 'visit')
   if (visit && visit.check === 'visit') return `Open ${code(visit.path)} in the address bar.`
+  const gate = checks.find((c) => c.check === 'gateFinding')
+  if (gate && gate.check === 'gateFinding') return `Read the ${b(gate.gate)} gate on the pre-flight panel under ${b('Records')}.`
   return undefined
 }
 

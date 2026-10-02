@@ -1,138 +1,355 @@
 {
-    "rules": [
-        {
-            "id": "access-request.already-decided",
-            "module": "user",
-            "status": 409,
-            "message": "This request was already decided ({status}).",
-            "field": null
-        },
-        {
-            "id": "access-request.duplicate",
-            "module": "user",
-            "status": 409,
-            "message": "An account or pending request already exists for '{email}'.",
-            "field": null
-        },
-        {
-            "id": "access-request.setup-link.invalid",
-            "module": "user",
-            "status": 404,
-            "message": "This link is invalid or has expired.",
-            "field": null
-        },
-        {
-            "id": "password-reset.link.expired",
-            "module": "user",
-            "status": 410,
-            "message": "This reset link has expired. Reset links are valid for 1 hour.",
-            "field": null
-        },
-        {
-            "id": "password-reset.link.invalid",
-            "module": "user",
-            "status": 404,
-            "message": "This reset link is not valid.",
-            "field": null
-        },
-        {
-            "id": "password-reset.link.used",
-            "module": "user",
-            "status": 410,
-            "message": "This reset link has already been used.",
-            "field": null
-        },
-        {
-            "id": "platform.nothing-changed",
-            "module": "platform",
-            "status": 422,
-            "message": "Nothing changed, so there is nothing to record.",
-            "field": "reason"
-        },
-        {
-            "id": "platform.reason-too-short",
-            "module": "platform",
-            "status": 422,
-            "message": "Give a reason of at least {min} characters.",
-            "field": "reason"
-        },
-        {
-            "id": "platform.support-window.range",
-            "module": "platform",
-            "status": 422,
-            "message": "Support access lasts between {min} and {max} hours.",
-            "field": "supportAccessWindowHours"
-        },
-        {
-            "id": "user.credentials.invalid",
-            "module": "user",
-            "status": 401,
-            "message": "Invalid email or password.",
-            "field": null
-        },
-        {
-            "id": "user.email.duplicate",
-            "module": "user",
-            "status": 409,
-            "message": "A user with email '{email}' already exists.",
-            "field": null
-        },
-        {
-            "id": "user.last-administrator",
-            "module": "user",
-            "status": 409,
-            "message": "At least one active administrator must remain.",
-            "field": null
-        },
-        {
-            "id": "user.password.current-wrong",
-            "module": "user",
-            "status": 422,
-            "message": "The current password is not correct.",
-            "field": "currentPassword"
-        },
-        {
-            "id": "user.password.same",
-            "module": "user",
-            "status": 422,
-            "message": "Choose a password different from your current one.",
-            "field": "newPassword"
-        },
-        {
-            "id": "user.password.weak",
-            "module": "user",
-            "status": 422,
-            "message": "At least 12 characters, with a letter and a digit.",
-            "field": "password"
-        },
-        {
-            "id": "user.reset.disabled-account",
-            "module": "user",
-            "status": 409,
-            "message": "Enable the account before sending a password reset link.",
-            "field": null
-        },
-        {
-            "id": "user.reset.pending-account",
-            "module": "user",
-            "status": 409,
-            "message": "This account has not set its first password yet; the link in its approval email still works.",
-            "field": null
-        },
-        {
-            "id": "user.self.delete",
-            "module": "user",
-            "status": 409,
-            "message": "You cannot delete your own account.",
-            "field": null
-        },
-        {
-            "id": "user.self.demote-or-disable",
-            "module": "user",
-            "status": 409,
-            "message": "You cannot demote or disable your own account.",
-            "field": null
-        }
-    ],
-    "sha256": "204082402bd315062ef9be0bae867e108ea36fc2d798e47915cae4c0c434bf1d"
+  "rules": [
+    {
+      "id": "access-request.already-decided",
+      "module": "user",
+      "status": 409,
+      "message": "This request was already decided ({status}).",
+      "field": null
+    },
+    {
+      "id": "access-request.duplicate",
+      "module": "user",
+      "status": 409,
+      "message": "An account or pending request already exists for '{email}'.",
+      "field": null
+    },
+    {
+      "id": "access-request.setup-link.invalid",
+      "module": "user",
+      "status": 404,
+      "message": "This link is invalid or has expired.",
+      "field": null
+    },
+    {
+      "id": "ghg.account.not-found",
+      "module": "ghg",
+      "status": 404,
+      "message": "No account with that email.",
+      "field": null
+    },
+    {
+      "id": "ghg.activity.already-removed",
+      "module": "ghg",
+      "status": 409,
+      "message": "This record was already removed.",
+      "field": null
+    },
+    {
+      "id": "ghg.activity.no-way-back-to-draft",
+      "module": "ghg",
+      "status": 409,
+      "message": "A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft.",
+      "field": null
+    },
+    {
+      "id": "ghg.activity.removed-cannot-correct",
+      "module": "ghg",
+      "status": 409,
+      "message": "This record was removed and cannot be corrected.",
+      "field": null
+    },
+    {
+      "id": "ghg.boundary.empty",
+      "module": "ghg",
+      "status": 409,
+      "message": "The organizational boundary is empty. Add at least one facility before freezing it.",
+      "field": null
+    },
+    {
+      "id": "ghg.boundary.window-ends-before-start",
+      "module": "ghg",
+      "status": 409,
+      "message": "The membership window ends before it starts.",
+      "field": null
+    },
+    {
+      "id": "ghg.declaration.not-declared",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{category}' is not declared as covered; only a declared category can be marked as not quantified.",
+      "field": null
+    },
+    {
+      "id": "ghg.declaration.not-scope-3",
+      "module": "ghg",
+      "status": 409,
+      "message": "{category} is not a scope 3 category.",
+      "field": null
+    },
+    {
+      "id": "ghg.declaration.reason-too-short",
+      "module": "ghg",
+      "status": 422,
+      "message": "Say why '{category}' is not quantified (at least 10 characters).",
+      "field": "notQuantified"
+    },
+    {
+      "id": "ghg.density.duplicate",
+      "module": "ghg",
+      "status": 422,
+      "message": "A density for '{material}' already exists.",
+      "field": "material"
+    },
+    {
+      "id": "ghg.entity.disposal-before-acquisition",
+      "module": "ghg",
+      "status": 422,
+      "message": "The disposal date is before the acquisition date.",
+      "field": "effectiveTo"
+    },
+    {
+      "id": "ghg.entity.has-facilities",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{entity}' still has facilities. Move them to another entity before deleting it.",
+      "field": null
+    },
+    {
+      "id": "ghg.entity.name-duplicate",
+      "module": "ghg",
+      "status": 409,
+      "message": "An entity named '{name}' already exists.",
+      "field": null
+    },
+    {
+      "id": "ghg.entity.parent-loop",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{parent}' is held through '{entity}': a parent chain cannot loop.",
+      "field": null
+    },
+    {
+      "id": "ghg.entity.percent-range",
+      "module": "ghg",
+      "status": 422,
+      "message": "{field} must be between 0 and 100.",
+      "field": "economicInterestPercent"
+    },
+    {
+      "id": "ghg.evidence.link-scheme",
+      "module": "ghg",
+      "status": 422,
+      "message": "A link starts with https:// or http://.",
+      "field": "url"
+    },
+    {
+      "id": "ghg.evidence.unsupported-type",
+      "module": "ghg",
+      "status": 422,
+      "message": "Attach a PDF, an image (PNG, JPEG, WebP), a spreadsheet (XLSX, XLS, CSV) or a text file.",
+      "field": "file"
+    },
+    {
+      "id": "ghg.facility.has-records",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{facility}' has recorded activity data. Facts are the audit trail: remove or reassign its activity records before deleting the facility.",
+      "field": null
+    },
+    {
+      "id": "ghg.facility.lease-ends-before-start",
+      "module": "ghg",
+      "status": 422,
+      "message": "The lease ends before it starts.",
+      "field": "leaseTo"
+    },
+    {
+      "id": "ghg.factor.blend-fractions",
+      "module": "ghg",
+      "status": 422,
+      "message": "The mass fractions of a blend must add up to 1 (for example HFC-32:0.5,HFC-125:0.5).",
+      "field": "blendComposition"
+    },
+    {
+      "id": "ghg.factor.self-approval",
+      "module": "ghg",
+      "status": 409,
+      "message": "You entered '{name}'. A factor is checked by someone other than the person who typed it (Corporate Standard chapter 7): ask {checker} to approve it.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.already-frozen",
+      "module": "ghg",
+      "status": 409,
+      "message": "The inventory is already frozen.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.freeze-blocked",
+      "module": "ghg",
+      "status": 409,
+      "message": "{records} the freeze: {listed}. Classify or exclude them first.",
+      "field": null
+    },
+    {
+      "id": "ghg.member.duplicate",
+      "module": "ghg",
+      "status": 409,
+      "message": "{email} is already a member of '{organization}'.",
+      "field": null
+    },
+    {
+      "id": "ghg.member.last-owner",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{organization}' needs at least one owner.",
+      "field": null
+    },
+    {
+      "id": "ghg.organization.name-duplicate",
+      "module": "ghg",
+      "status": 409,
+      "message": "An organization named '{name}' already exists: {duplicates}. Confirm to use the name anyway.",
+      "field": null
+    },
+    {
+      "id": "ghg.reason-too-short",
+      "module": "ghg",
+      "status": 422,
+      "message": "{what} needs a reason of at least 5 characters.",
+      "field": "reason"
+    },
+    {
+      "id": "ghg.role.required",
+      "module": "ghg",
+      "status": 403,
+      "message": "This action needs the {needed} role in the organization.",
+      "field": null
+    },
+    {
+      "id": "ghg.stream.name-duplicate",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{facility}' already has a stream named '{name}'.",
+      "field": null
+    },
+    {
+      "id": "ghg.unit.duplicate",
+      "module": "ghg",
+      "status": 422,
+      "message": "A custom unit named '{code}' already exists.",
+      "field": "code"
+    },
+    {
+      "id": "ghg.unit.registered",
+      "module": "ghg",
+      "status": 422,
+      "message": "'{code}' is already a registered unit.",
+      "field": "code"
+    },
+    {
+      "id": "password-reset.link.expired",
+      "module": "user",
+      "status": 410,
+      "message": "This reset link has expired. Reset links are valid for 1 hour.",
+      "field": null
+    },
+    {
+      "id": "password-reset.link.invalid",
+      "module": "user",
+      "status": 404,
+      "message": "This reset link is not valid.",
+      "field": null
+    },
+    {
+      "id": "password-reset.link.used",
+      "module": "user",
+      "status": 410,
+      "message": "This reset link has already been used.",
+      "field": null
+    },
+    {
+      "id": "platform.nothing-changed",
+      "module": "platform",
+      "status": 422,
+      "message": "Nothing changed, so there is nothing to record.",
+      "field": "reason"
+    },
+    {
+      "id": "platform.reason-too-short",
+      "module": "platform",
+      "status": 422,
+      "message": "Give a reason of at least {min} characters.",
+      "field": "reason"
+    },
+    {
+      "id": "platform.support-window.range",
+      "module": "platform",
+      "status": 422,
+      "message": "Support access lasts between {min} and {max} hours.",
+      "field": "supportAccessWindowHours"
+    },
+    {
+      "id": "user.credentials.invalid",
+      "module": "user",
+      "status": 401,
+      "message": "Invalid email or password.",
+      "field": null
+    },
+    {
+      "id": "user.email.duplicate",
+      "module": "user",
+      "status": 409,
+      "message": "A user with email '{email}' already exists.",
+      "field": null
+    },
+    {
+      "id": "user.last-administrator",
+      "module": "user",
+      "status": 409,
+      "message": "At least one active administrator must remain.",
+      "field": null
+    },
+    {
+      "id": "user.password.current-wrong",
+      "module": "user",
+      "status": 422,
+      "message": "The current password is not correct.",
+      "field": "currentPassword"
+    },
+    {
+      "id": "user.password.same",
+      "module": "user",
+      "status": 422,
+      "message": "Choose a password different from your current one.",
+      "field": "newPassword"
+    },
+    {
+      "id": "user.password.weak",
+      "module": "user",
+      "status": 422,
+      "message": "At least 12 characters, with a letter and a digit.",
+      "field": "password"
+    },
+    {
+      "id": "user.reset.disabled-account",
+      "module": "user",
+      "status": 409,
+      "message": "Enable the account before sending a password reset link.",
+      "field": null
+    },
+    {
+      "id": "user.reset.pending-account",
+      "module": "user",
+      "status": 409,
+      "message": "This account has not set its first password yet; the link in its approval email still works.",
+      "field": null
+    },
+    {
+      "id": "user.self.delete",
+      "module": "user",
+      "status": 409,
+      "message": "You cannot delete your own account.",
+      "field": null
+    },
+    {
+      "id": "user.self.demote-or-disable",
+      "module": "user",
+      "status": 409,
+      "message": "You cannot demote or disable your own account.",
+      "field": null
+    }
+  ],
+  "sha256": "f456a516e0a2a325c006cde24e618e27877e279b3eacacb25a23373d34366253"
 }

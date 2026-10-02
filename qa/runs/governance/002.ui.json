@@ -1,298 +1,287 @@
 {
-  "procedure": 1,
-  "driver": "api",
-  "yamlSha256": "9f4b41e20384ccb199d24f311cebcf62b5e97006857b04905dc984f139accfa6",
+  "procedure": 2,
+  "driver": "ui",
+  "yamlSha256": "fc0533a532e19765e1b4fae7c02a3f3464814404f443011c9cf20115100ff09c",
   "productVersion": null,
   "gitSha": "d88bf785b88f2bf9afe2dfc2e1f255181e880892",
   "date": "2026-10-02",
   "specialist": "unknown",
-  "digestSha256": "60b42dc99a89c3b5753abe48d13646f5c2d806b8ff2ce23ec9dce34034518940",
+  "digestSha256": "44954d8516454593e263d9b9361daffa5f43d96ad1f43b20f36de12e13e71dbe",
   "counts": {
-    "pass": 69,
-    "na": 1,
+    "pass": 64,
+    "na": 3,
     "manual": 0
   },
   "steps": [
     {
-      "id": "1.A1.1",
-      "status": "PASS",
-      "note": "usersAtStart = 1"
-    },
-    {
-      "id": "1.A1.2",
+      "id": "2.A1.1",
       "status": "PASS"
     },
     {
-      "id": "1.B1.1",
+      "id": "2.A1.2",
       "status": "PASS"
     },
     {
-      "id": "1.B1.2",
+      "id": "2.A1.3",
       "status": "PASS"
     },
     {
-      "id": "1.B2.1",
+      "id": "2.A1.4",
       "status": "PASS"
     },
     {
-      "id": "1.B2.2",
+      "id": "2.A1.5",
       "status": "PASS"
     },
     {
-      "id": "1.B2.3",
+      "id": "2.A1.6",
       "status": "PASS"
     },
     {
-      "id": "1.B2.4",
+      "id": "2.A1.7",
       "status": "PASS"
     },
     {
-      "id": "1.B2.5",
+      "id": "2.A1.8",
       "status": "PASS"
     },
     {
-      "id": "1.C1.1",
+      "id": "2.A1.9",
       "status": "PASS"
     },
     {
-      "id": "1.C1.2",
+      "id": "2.A1.10",
       "status": "PASS"
     },
     {
-      "id": "1.C1.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C1.4",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C2.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C2.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C2.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C2.4",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C3.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C3.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C3.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C3.4",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C3.5",
-      "status": "PASS"
-    },
-    {
-      "id": "1.C3.6",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D1.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D1.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D1.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D1.4",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D1.5",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D1.6",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D1.7",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D2.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D2.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D2.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D2.4",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D2.5",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D3.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D3.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.D3.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E1.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E1.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E1.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E1.4",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E1.5",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E2.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E2.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E2.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E2.4",
-      "status": "PASS"
-    },
-    {
-      "id": "1.E2.5",
-      "status": "PASS"
-    },
-    {
-      "id": "1.F1.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.F1.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.F1.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.F1.4",
-      "status": "PASS"
-    },
-    {
-      "id": "1.F1.5",
-      "status": "PASS"
-    },
-    {
-      "id": "1.G1.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.G1.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.G1.3",
-      "status": "PASS"
-    },
-    {
-      "id": "1.G1.4",
-      "status": "PASS"
-    },
-    {
-      "id": "1.G1.5",
-      "status": "PASS"
-    },
-    {
-      "id": "1.G1.6",
-      "status": "PASS"
-    },
-    {
-      "id": "1.G2.1",
-      "status": "PASS"
-    },
-    {
-      "id": "1.G2.2",
-      "status": "PASS"
-    },
-    {
-      "id": "1.G2.3",
+      "id": "2.A1.11",
       "status": "NA",
-      "note": "the confirmation field belongs to the page, not the server | refused: N/A, the confirmation field belongs to the page, not the server"
+      "note": "historyCount: N/A, the history card does not count entries by kind"
     },
     {
-      "id": "1.G2.4",
+      "id": "2.A2.1",
       "status": "PASS"
     },
     {
-      "id": "1.G2.5",
+      "id": "2.A2.2",
       "status": "PASS"
     },
     {
-      "id": "1.G2.6",
+      "id": "2.A2.3",
       "status": "PASS"
     },
     {
-      "id": "1.G2.7",
+      "id": "2.A2.4",
       "status": "PASS"
     },
     {
-      "id": "1.G2.8",
+      "id": "2.A3.1",
       "status": "PASS"
     },
     {
-      "id": "1.G3.1",
+      "id": "2.A3.2",
       "status": "PASS"
     },
     {
-      "id": "1.G3.2",
+      "id": "2.A3.3",
       "status": "PASS"
     },
     {
-      "id": "1.G3.3",
+      "id": "2.A3.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A3.5",
+      "status": "PASS"
+    },
+    {
+      "id": "2.A3.6",
+      "status": "NA",
+      "note": "organizationAbsent: N/A, two organizations share the name; the API tells them apart by account number"
+    },
+    {
+      "id": "2.A3.7",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B2.5",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.B3.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.C2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.D3.3",
+      "status": "NA",
+      "note": "historyCount: N/A, the history card does not count entries by kind | historyCount: N/A, the history card does not count entries by kind | historyCount: N/A, the history card does not count entries by kind | historyCount: N/A, the history card does not count entries by kind"
+    },
+    {
+      "id": "2.E1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.E2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F4.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F4.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F4.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.F4.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "2.G1.5",
       "status": "PASS"
     }
   ]

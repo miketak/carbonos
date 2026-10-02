@@ -1,5 +1,7 @@
 package com.carbonos.ghg.internal;
 
+import com.carbonos.ghg.GhgRules;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -233,7 +235,7 @@ public class EvidenceService {
 		checkWrite(owner);
 		var trimmedUrl = url == null ? "" : url.trim();
 		if (!trimmedUrl.startsWith("https://") && !trimmedUrl.startsWith("http://")) {
-			throw new GhgFieldException("url", "A link starts with https:// or http://.");
+			throw new GhgFieldException(GhgRules.EVIDENCE_LINK_SCHEME);
 		}
 		var trimmedName = name == null || name.isBlank() ? trimmedUrl : name.trim();
 		return evidence.save(Evidence.link(owner.activityId(), owner.marketFactorId(), trimmedName, trimmedUrl,
@@ -319,8 +321,7 @@ public class EvidenceService {
 		var extension = dot < 0 ? "" : name.substring(dot + 1).toLowerCase(Locale.ROOT);
 		var known = BY_EXTENSION.get(extension);
 		if (known == null) {
-			throw new GhgFieldException("file",
-					"Attach a PDF, an image (PNG, JPEG, WebP), a spreadsheet (XLSX, XLS, CSV) or a text file.");
+			throw new GhgFieldException(GhgRules.EVIDENCE_UNSUPPORTED_TYPE);
 		}
 		return known;
 	}

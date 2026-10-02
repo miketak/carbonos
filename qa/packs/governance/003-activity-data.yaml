@@ -1,0 +1,203 @@
+procedure: 3
+slug: activity-data
+title: Activity data
+after: 2
+covers: ["04", "04.4", "04.5", "04.6", "08"]
+let:
+  org: Adansi Foods Ltd
+sections:
+  - id: A
+    title: The clean file
+    cases:
+      - id: A1
+        title: The template, and the dry run
+        steps:
+          - as: ama
+            do: { signIn: { user: ama } }
+          - expect:
+              - importTemplateHeader: { organization: "${org}", header: "facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note" }
+          - do: { previewImport: { organization: "${org}", file: adansi-2025.csv } }
+            expect:
+              - importPreview:
+                  recordsToAdd: 10
+                  totals:
+                    - { facility: Kumasi Plant, stream: Boiler LPG, unit: litre, quantity: 2400 }
+                    - { facility: Kumasi Plant, stream: Plant grid supply, unit: MWh, quantity: 120 }
+                    - { facility: Tema Depot, stream: Delivery fleet, unit: litre, quantity: 5000 }
+                  warning: { row: 7, containing: "the period is longer than one month (2025-12-15 to 2026-01-15)" }
+                  ready: [2, 3, 4]
+                  noStream: 7
+                  noEvidence: 2
+                why: '"Missing source" appears nowhere, every row names its data source'
+      - id: A2
+        title: The import, and the same file again
+        steps:
+          - do: { importActivities: { organization: "${org}", file: adansi-2025.csv } }
+            expect:
+              - activityCount: { organization: "${org}", count: 10 }
+              - activityRefs: { organization: "${org}", from: ACT-0001, to: ACT-0010 }
+              - activityOrder: { organization: "${org}", newestPeriodFirst: true, first: ACT-0006, last: ACT-0001 }
+          - do: { previewImport: { organization: "${org}", file: adansi-2025.csv } }
+            expect:
+              - importRejected: { rows: all, messages: { "2": "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file" } }
+
+  - id: B
+    title: The rejected file
+    cases:
+      - id: B1
+        title: Four rows, four reasons, nothing written
+        steps:
+          - do: { previewImport: { organization: "${org}", file: adansi-2025-rejected.csv } }
+            expect:
+              - importRejected:
+                  rows: 4
+                  messages:
+                    "2": "quantity '1,2O0' is not a number"
+                    "3": "period_start is in the future"
+                    "4": "no facility named 'Kumasi Depot'"
+                    "5": "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file"
+                why: the header is row 1, so the rows are named 2 to 5; row 3 also reads "period_end is in the future" because an empty end takes the start; row 5 repeats ACT-0001
+              - activityCount: { organization: "${org}", count: 10 }
+                why: a file imports whole or not at all
+
+  - id: C
+    title: Readiness
+    cases:
+      - id: C1
+        title: The banner counts what is missing, and a fix clears it
+        steps:
+          - expect:
+              - attentionCount: { organization: "${org}", count: 7 }
+                why: ACT-0004 to ACT-0010; the wording is about completeness, not assurance
+          - expect:
+              - activityExists: { organization: "${org}", record: ACT-0009, issues: [NO_STREAM, NO_EVIDENCE] }
+                why: its tier is not missing, a blank tier follows the method, ESTIMATED to tier 4
+          - do: { correctActivity: { organization: "${org}", record: ACT-0009, evidenceRef: WB-2025-11, reason: Weighbridge ticket found } }
+            expect:
+              - activityExists: { organization: "${org}", record: ACT-0009, evidenceRef: WB-2025-11, issues: [NO_STREAM, EVIDENCE_REFERENCE_ONLY] }
+              - attentionCount: { organization: "${org}", count: 7 }
+                why: '"Needs evidence" goes and the drawer reads "Reference WB-2025-11, nothing attached"; the stream is still missing, and a record leaves the count only when every item on it is resolved'
+
+  - id: D
+    title: Drafts
+    cases:
+      - id: D1
+        title: A draft holds a source until its figures arrive
+        steps:
+          - do: { addActivityDraft: { organization: "${org}", facility: Kumasi Plant, activityType: Generator diesel } }
+          - do: { enterActivity: { organization: "${org}", record: Generator diesel, quantity: 150, unit: litre, periodStart: "2025-02-01", periodEnd: "2025-02-28" } }
+          - expect:
+              - observe: { text: "Open the record again: the drawer offers Save but no Save draft. A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft." }
+
+  - id: E
+    title: Corrections
+    cases:
+      - id: E1
+        title: A correction needs a reason and keeps the history
+        steps:
+          - do: { correctActivity: { organization: "${org}", record: ACT-0002, quantity: 121, reason: typo } }
+            expect:
+              - refused: { rule: ghg.reason-too-short, with: { what: A correction } }
+          - do: { correctActivity: { organization: "${org}", record: ACT-0002, quantity: 121, reason: "Invoice re-read: 121 MWh" } }
+            expect:
+              - activityHistoryHas: { organization: "${org}", record: ACT-0002, kind: CORRECTED, reason: "Invoice re-read: 121 MWh", field: quantity, before: "120", after: "121" }
+          - do: { correctActivity: { organization: "${org}", record: ACT-0002, quantity: 120, reason: Back to the invoice figure for the procedures } }
+            expect:
+              - activityHistoryHas: { organization: "${org}", record: ACT-0002, kind: CORRECTED, reason: Back to the invoice figure for the procedures, field: quantity, before: "121", after: "120" }
+                why: the history holds both corrections, nothing is overwritten
+
+  - id: F
+    title: Evidence
+    cases:
+      - id: F1
+        title: A file and a link attach; a wrong type and a bare address are refused
+        steps:
+          - do: { attachFile: { organization: "${org}", record: ACT-0001, file: not-evidence.zip } }
+            expect:
+              - refused: { rule: ghg.evidence.unsupported-type }
+          - do: { attachFile: { organization: "${org}", record: ACT-0001, file: source-document.txt } }
+          - do: { attachLink: { organization: "${org}", record: ACT-0001, name: Supplier portal, url: www.example.test/delivery/LPG-2025-03 } }
+            expect:
+              - refused: { rule: ghg.evidence.link-scheme }
+          - do: { attachLink: { organization: "${org}", record: ACT-0001, name: Supplier portal, url: https://example.test/delivery/LPG-2025-03 } }
+            expect:
+              - evidenceListed: { organization: "${org}", record: ACT-0001, name: Supplier portal, kind: LINK, count: 2 }
+
+  - id: G
+    title: Removals
+    cases:
+      - id: G1
+        title: A removal needs a reason, and several are removed with one
+        steps:
+          - do: { removeActivity: { organization: "${org}", record: Generator diesel, reason: Scratch record for the draft case } }
+            expect:
+              - activityCount: { organization: "${org}", count: 10 }
+                why: the dialog keeps its button disabled until a reason is typed; the record's history is kept
+          - do: { importActivities: { organization: "${org}", file: adansi-2026.csv } }
+            expect:
+              - activityCount: { organization: "${org}", count: 12 }
+          - do: { removeActivities: { organization: "${org}", records: [ACT-0012, ACT-0013], reason: Scratch rows for the bulk removal case } }
+            expect:
+              - activityCount: { organization: "${org}", count: 10 }
+                why: both go under the one reason; procedure 7 imports the same file again for FY2026, and a removed record does not count as a duplicate
+      - id: G2
+        title: A facility with records is not removed
+        steps:
+          - do: { removeFacility: { organization: "${org}", facility: Takoradi Cold Store, reason: walkthrough removal of a site with records } }
+            expect:
+              - refused: { rule: ghg.facility.has-records, with: { facility: Takoradi Cold Store } }
+
+  - id: H
+    title: Source documents
+    cases:
+      - id: H1
+        title: Every document with its record
+        steps:
+          - expect:
+              - sourceDocumentListed: { organization: "${org}", name: source-document.txt, record: ACT-0001 }
+              - sourceDocumentListed: { organization: "${org}", name: Supplier portal, record: ACT-0001 }
+              - importBatchListed: { organization: "${org}", file: adansi-2025.csv }
+              - importBatchListed: { organization: "${org}", file: adansi-2026.csv }
+          - expect:
+              - evidenceIndexHeader: { organization: "${org}", header: "record_ref,activity_type,facility,period_start,period_end,evidence_ref,document,kind,url,content_type,size_bytes,uploaded_by,uploaded_at" }
+
+  - id: I
+    title: The register and its URL
+    cases:
+      - id: I1
+        title: A view is a link
+        steps:
+          - expect:
+              - observe: { text: 'Type "diesel" in the search and choose the facility Kumasi Plant: one record, ACT-0004, and the address bar carries the search and the facility. Open ACT-0004, copy the address and open it in a new tab: the same view opens with the same record in the drawer. Press Escape, then use the arrow keys and Enter on the table: the cursor moves down the rows and Enter opens the record under it.' }
+
+docs:
+  version: 3
+  estimatedMinutes: 30
+  objective: >-
+    Confirm that a clean file previews with control totals and imports once,
+    that a file with a bad row imports nothing and names each row by number,
+    and that a record is drafted, entered, corrected, evidenced and removed
+    with the reasons the record keeps.
+  coversText: Spec 08 for the inline rules.
+  runNote: Procedure 4 onwards works on the ten records it imports.
+  prerequisitesText:
+    - "Adansi Foods Ltd as procedure 2 leaves it: three facilities, three streams."
+    - The fixture files `adansi-2025.csv`, `adansi-2025-rejected.csv`, `adansi-2026.csv`, `source-document.txt` and `not-evidence.zip`.
+    - Ama in the normal window.
+  knownNonGoals: >-
+    the 20 MB evidence limit and the 10,000-row import limit (no fixture of
+    that size); a record in a custom unit (the mining pack); the register's
+    sorting and paging beyond ten records.
+  changeNotes:
+    - version: 2
+      date: "2026-09-29"
+      text: >-
+        C1 step 3 quotes the drawer's evidence line, which now names the
+        reference (the walkthrough fix of 2026-09-29).
+    - version: 3
+      date: "2026-10-02"
+      text: >-
+        Transliterated to the QA scenario DSL. The dialog's title and eyebrow,
+        the readiness pills' wording and the register's keyboard handling are
+        observed by hand (case I1) or described in the drivers' projections;
+        the import outcomes are checked against the server's preview figures.

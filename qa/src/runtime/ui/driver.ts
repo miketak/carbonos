@@ -37,6 +37,29 @@ const CROSS_CHECKED = new Set([
   'platformSummary',
   'emailReceived',
   'noEmail',
+  'organizationListed',
+  'organizationAbsent',
+  'memberListed',
+  'memberAbsent',
+  'historyHas',
+  'historyCount',
+  'entityListed',
+  'entityAbsent',
+  'facilityListed',
+  'streamListed',
+  'customUnitListed',
+  'densityListed',
+  'factorListed',
+  'factorsEmpty',
+  'activityCount',
+  'activityRefs',
+  'activityExists',
+  'activityRemoved',
+  'attentionCount',
+  'evidenceListed',
+  'sourceDocumentListed',
+  'importBatchListed',
+  'facilityAbsent',
 ])
 
 export class UiDriver implements Driver {
@@ -46,13 +69,14 @@ export class UiDriver implements Driver {
   private readonly api: ApiDriver
 
   constructor(private readonly chain: ChainAccess) {
-    this.api = new ApiDriver(chain)
+    this.api = new ApiDriver(chain, true)
   }
 
-  private executeContext(): ExecuteContext {
+  private executeContext(actorKey = '__admin-lookups'): ExecuteContext {
     const chain = this.chain
     return {
       chain,
+      api: this.api.context(actorKey === '__admin-lookups' ? Object.keys(chain.pack.actors).find((k) => 'seeded' in chain.pack.actors[k]! && (chain.pack.actors[k] as { seeded?: boolean }).seeded) ?? actorKey : actorKey),
       emailLink: async (actorKey, subject, path) => {
         const actor = resolveActor(chain.pack, actorKey)
         if (!actor.account) throw new Error(`actor '${actorKey}' has no mailbox`)
@@ -67,7 +91,7 @@ export class UiDriver implements Driver {
   async perform(actorKey: string, verbName: string, args: Record<string, unknown>): Promise<ApiOutcome> {
     const verb = verbByName(verbName)
     const page = await this.windows.page(actorKey)
-    const ctx = this.executeContext()
+    const ctx = this.executeContext(actorKey)
     for (const op of verb.ui(args)) await execute(page, op, ctx)
     // a password the page accepted is the account's from now on
     if (verbName === 'changePassword' || verbName === 'setPasswordFromLink' || verbName === 'resetPasswordFromLink') {
@@ -97,6 +121,8 @@ export class UiDriver implements Driver {
     const route = nav ? routes[nav] : undefined
     const actor = resolveActor(this.chain.pack, actorKey)
     if (route?.startsWith('/admin') && actor.account?.platformRole !== 'ADMIN') return this.lookupWindow()
+    // an organization's pages are read in the acting member's window; a visitor has none
+    if (first && first.check === 'atOrg' && actor.anonymous) return this.lookupWindow()
     return this.windows.page(actorKey)
   }
 
@@ -114,12 +140,13 @@ export class UiDriver implements Driver {
     const checks = outcome.ui(ref.args)
     const page = await this.windowFor(actorKey, checks)
     let result: CheckResult = { ok: true }
+    const ctx = this.executeContext(actorKey)
     for (const check of checks) {
-      result = await runCheck(page, this.windows, check, this.chain)
+      result = await runCheck(page, this.windows, check, this.chain, ctx)
       if (!result.ok) break
     }
     if (env.crossCheck && CROSS_CHECKED.has(ref.outcome)) {
-      const viaApi = await outcome.api(this.api.context(actorKey), ref.args, last)
+      const viaApi = await this.api.check(actorKey, ref, last)
       // the mailbox is not on screen; the cross-check reads it in Mailpit, which is what a tester does by hand
       if (result.manual && viaApi.ok) return { ok: true, detail: `verified in Mailpit (${result.manual})` }
       if (result.ok && !viaApi.ok) return { ok: false, detail: `backend: the screen agrees with the scenario but the API does not: ${viaApi.detail}` }

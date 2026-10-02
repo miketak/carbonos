@@ -1,5 +1,7 @@
 package com.carbonos.ghg.internal;
 
+import com.carbonos.ghg.GhgRules;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -272,18 +274,15 @@ public class InventoryService {
 		requireEditable(inventory);
 		for (var category : scope3Categories) {
 			if (category.scope() != Scope.SCOPE_3) {
-				throw new GhgRuleViolationException(categoryName(category) + " is not a scope 3 category.");
+				throw new GhgRuleViolationException(GhgRules.DECLARATION_NOT_SCOPE_3, categoryName(category));
 			}
 		}
 		for (var entry : notQuantified) {
 			if (!scope3Categories.contains(entry.category())) {
-				throw new GhgRuleViolationException(
-						"'" + categoryName(entry.category()) + "' is not declared as covered; only a declared "
-						+ "category can be marked as not quantified.");
+				throw new GhgRuleViolationException(GhgRules.DECLARATION_NOT_DECLARED, categoryName(entry.category()));
 			}
 			if (trimToNull(entry.reason()) == null || entry.reason().trim().length() < 10) {
-				throw new GhgFieldException("notQuantified", "Say why '" + categoryName(entry.category()) + "' is not quantified "
-						+ "(at least 10 characters).");
+				throw new GhgFieldException(GhgRules.DECLARATION_REASON_TOO_SHORT, categoryName(entry.category()));
 			}
 		}
 		inventory.setOperationalBoundary(scope3Categories, trimToNull(exclusionsRationale));
@@ -663,7 +662,7 @@ public class InventoryService {
 				: input.effectiveFrom() != null ? input.effectiveFrom() : treatment.getEffectiveFrom();
 		var to = input.clearWindow() ? null : input.effectiveTo() != null ? input.effectiveTo() : treatment.getEffectiveTo();
 		if (from != null && to != null && to.isBefore(from)) {
-			throw new GhgRuleViolationException("The membership window ends before it starts.");
+			throw new GhgRuleViolationException(GhgRules.BOUNDARY_WINDOW_ENDS_BEFORE_START);
 		}
 		treatment.update(
 				input.relationshipType() != null ? input.relationshipType() : treatment.getRelationshipType(),
@@ -693,12 +692,11 @@ public class InventoryService {
 		var inventory = get(inventoryId);
 		access.checkWrite(inventory.getOrganization());
 		if (!inventory.isEditable()) {
-			throw new GhgRuleViolationException("The inventory is already frozen.");
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_ALREADY_FROZEN);
 		}
 		var treatments = boundaryTreatments.findAllByInventoryId(inventoryId);
 		if (treatments.isEmpty()) {
-			throw new GhgRuleViolationException(
-					"The organizational boundary is empty. Add at least one facility before freezing it.");
+			throw new GhgRuleViolationException(GhgRules.BOUNDARY_EMPTY);
 		}
 		// spec 05.5: the freeze waits for a clean classification and for the drafts at facilities in the boundary
 		var blockers = freezeBlockers(inventory, treatments);

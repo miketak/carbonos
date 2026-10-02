@@ -1,10 +1,11 @@
 /** The API driver: one HttpSession per actor, verbs as calls, outcomes as queries. */
 import { resolveActor } from '../../model.ts'
-import type { ApiContext, ApiOutcome, CheckResult, OutcomeRef } from '../../vocabulary/contract.ts'
+import type { ApiContext, ApiOutcome, ApiSession, CheckResult, OutcomeRef } from '../../vocabulary/contract.ts'
 import { outcome as outcomeByName, verb as verbByName } from '../../vocabulary/index.ts'
 import { env } from '../shared/env.ts'
 import type { ChainAccess, Driver } from '../shared/procedure.ts'
 import { seededAdmin } from '../shared/qa.ts'
+import { resolveTokens } from '../shared/tokens.ts'
 import { HttpSession } from './http.ts'
 
 export class ApiDriver implements Driver {
@@ -13,7 +14,37 @@ export class ApiDriver implements Driver {
   private readonly sessions = new Map<string, HttpSession>()
   private readonly adminSession = new HttpSession(env.apiUrl, 'admin-lookups')
 
-  constructor(private readonly chain: ChainAccess) {}
+  /** With lazySignIn, an actor's session signs in on first use: the UI driver's cross-check and lookups. */
+  constructor(
+    private readonly chain: ChainAccess,
+    private readonly lazySignIn = false,
+  ) {}
+
+  private readonly signedIn = new Set<string>()
+
+  private lazySession(actorKey: string): ApiSession {
+    const session = this.sessionOf(actorKey)
+    const actor = resolveActor(this.chain.pack, actorKey)
+    if (!this.lazySignIn || !actor.account) return session
+    const chain = this.chain
+    const self = this
+    const ensure = async () => {
+      if (self.signedIn.has(actorKey)) return
+      const me = await session.get('/api/auth/me')
+      if (!me.ok) {
+        const out = await session.post('/api/auth/login', { email: actor.account!.email, password: chain.passwordOf(actorKey) })
+        if (!out.ok) throw new Error(`${actorKey} cannot sign in for a lookup (${out.status})`)
+      }
+      self.signedIn.add(actorKey)
+    }
+    return {
+      get: async (path) => (await ensure(), session.get(path)),
+      post: async (path, body) => (await ensure(), session.post(path, body)),
+      put: async (path, body) => (await ensure(), session.put(path, body)),
+      delete: async (path, body) => (await ensure(), session.delete(path, body)),
+      upload: async (path, file, query) => (await ensure(), session.upload(path, file, query)),
+    }
+  }
 
   context(actorKey: string): ApiContext {
     const chain = this.chain
@@ -26,8 +57,8 @@ export class ApiDriver implements Driver {
       captured: (name) => chain.captured(name),
       capture: (name, value) => chain.capture(name, value),
       mail: chain.mail,
-      session: () => this.sessionOf(actorKey),
-      sessionOf: (key) => this.sessionOf(key),
+      session: () => this.lazySession(actorKey),
+      sessionOf: (key) => this.lazySession(key),
       admin: () => this.admin(),
     }
   }
@@ -51,12 +82,20 @@ export class ApiDriver implements Driver {
     return this.adminSession
   }
 
+  /** The typed tokens of a scenario (`{email:kofi}`, `{name:ama}`) mean the same through the API as on screen. */
+  private resolved<T>(value: T): T {
+    if (typeof value === 'string') return resolveTokens(this.chain, value) as T
+    if (Array.isArray(value)) return value.map((v) => this.resolved(v)) as T
+    if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, this.resolved(v)])) as T
+    return value
+  }
+
   perform(actorKey: string, verbName: string, args: Record<string, unknown>): Promise<ApiOutcome> {
-    return verbByName(verbName).api(this.context(actorKey), args)
+    return verbByName(verbName).api(this.context(actorKey), this.resolved(args))
   }
 
   check(actorKey: string, ref: OutcomeRef, last: ApiOutcome | undefined): Promise<CheckResult> {
-    return outcomeByName(ref.outcome).api(this.context(actorKey), ref.args, last)
+    return outcomeByName(ref.outcome).api(this.context(actorKey), this.resolved(ref.args), last)
   }
 
   async measure(actorKey: string, outcomeName: string): Promise<number> {

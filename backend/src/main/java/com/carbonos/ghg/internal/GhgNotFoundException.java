@@ -3,20 +3,22 @@ package com.carbonos.ghg.internal;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.ErrorResponseException;
+import com.carbonos.ghg.GhgRules;
+import com.carbonos.shared.web.Rule;
+import com.carbonos.shared.web.RuleViolation;
 
-class GhgNotFoundException extends ErrorResponseException {
+class GhgNotFoundException extends RuleViolation {
 
 	private GhgNotFoundException(String what, UUID id, String text) {
-		super(HttpStatus.NOT_FOUND);
-		setTitle(what + " not found");
-		setDetail(what + " " + text + " was not found.");
+		super(HttpStatus.NOT_FOUND, what + " not found", what + " " + text + " was not found.");
+	}
+
+	private GhgNotFoundException(Rule rule, Object... values) {
+		super(rule, "Account not found", values);
 	}
 
 	private GhgNotFoundException(String what, UUID id) {
-		super(HttpStatus.NOT_FOUND);
-		setTitle(what + " not found");
-		setDetail("No " + what.toLowerCase() + " exists with id " + id + ".");
+		super(HttpStatus.NOT_FOUND, what + " not found", "No " + what.toLowerCase() + " exists with id " + id + ".");
 	}
 
 	static GhgNotFoundException organization(UUID id) {
@@ -27,8 +29,9 @@ class GhgNotFoundException extends ErrorResponseException {
 		return new GhgNotFoundException("Legal entity", id);
 	}
 
+	/** A membership is granted to an existing account; a newcomer requests access first (spec 01.2). */
 	static GhgNotFoundException account(String email) {
-		return new GhgNotFoundException("Account", null, email);
+		return new GhgNotFoundException(GhgRules.ACCOUNT_NOT_FOUND, email);
 	}
 
 	static GhgNotFoundException member(UUID id) {

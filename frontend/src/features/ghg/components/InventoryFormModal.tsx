@@ -208,6 +208,7 @@ export function InventoryFormModal({
             <label className="flex items-start gap-2 text-sm">
               <input
                 type="checkbox"
+                aria-label="Start with every operation the approach includes in the boundary"
                 disabled={copyFromInventoryId !== ''}
                 checked={copyFromInventoryId === '' ? prefillBoundary : false}
                 onChange={(event) => setPrefillBoundary(event.target.checked)}
