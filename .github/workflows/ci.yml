@@ -28,6 +28,8 @@ jobs:
       - name: Build and test (includes ModularityTests)
         working-directory: backend
         run: ./mvnw -B verify
+      - name: Recompute the calculation vectors independently of the engine
+        run: python3 scripts/verify-calculation-vectors.py
 
   frontend-checks:
     name: Frontend / lint, test & build
