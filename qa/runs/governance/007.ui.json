@@ -1,6 +1,6 @@
 {
   "procedure": 7,
-  "driver": "api",
+  "driver": "ui",
   "yamlSha256": "df29187277104319156abb1b5419e877ecc76590534f2dbe01c8317771ffba6f",
   "productVersion": null,
   "gitSha": "eb3718c486f981d49528498bbfdb015bceab2091",
@@ -8,8 +8,8 @@
   "specialist": "unknown",
   "digestSha256": "cf0425345fab099692fa27c9d0638a80200bb386baee699ecbae9cd6c2088495",
   "counts": {
-    "pass": 63,
-    "na": 5,
+    "pass": 67,
+    "na": 1,
     "manual": 4
   },
   "steps": [
@@ -36,8 +36,7 @@
     },
     {
       "id": "7.A1.6",
-      "status": "NA",
-      "note": "screenReads: N/A, the screen reads \"This edition is published, so its rows, metadata and values never change again\""
+      "status": "PASS"
     },
     {
       "id": "7.A2.1",
@@ -69,8 +68,7 @@
     },
     {
       "id": "7.B2.3",
-      "status": "NA",
-      "note": "screenReads: N/A, the screen reads \"Give the date the edition applies from. It is the vintage boundary an adoption is run from.\""
+      "status": "PASS"
     },
     {
       "id": "7.B2.4",
@@ -127,7 +125,7 @@
     {
       "id": "7.C3.5",
       "status": "MANUAL",
-      "note": "screenReads: N/A, the screen reads \"under support access until\" | observe: MANUAL, Every page carries the banner \"You are in Adansi Foods Ltd under support access until <time>. Every act is recorded in this organization's history.\". Settings opens only on Baseline and targets, with no Organization tab, and the foot of the sidebar reads \"Support access\" where a member's reads their role."
+      "note": "observe: MANUAL, Every page carries the banner \"You are in Adansi Foods Ltd under support access until <time>. Every act is recorded in this organization's history.\". Settings opens only on Baseline and targets, with no Organization tab, and the foot of the sidebar reads \"Support access\" where a member's reads their role."
     },
     {
       "id": "7.C3.6",
@@ -155,8 +153,7 @@
     },
     {
       "id": "7.C4.2",
-      "status": "NA",
-      "note": "answersOffered: N/A, the answers are the select's options"
+      "status": "PASS"
     },
     {
       "id": "7.C4.3",
@@ -218,7 +215,8 @@
     },
     {
       "id": "7.D1.10",
-      "status": "PASS"
+      "status": "NA",
+      "note": "reportCites: N/A, the edition and the vintage are printed in the PDF's factor table, which the browser downloads | reportCites: N/A, the edition and the vintage are printed in the PDF's factor table, which the browser downloads"
     },
     {
       "id": "7.D1.11",
@@ -286,8 +284,7 @@
     },
     {
       "id": "7.F1.5",
-      "status": "NA",
-      "note": "buttonsOffered: N/A, the page offers Delete draft and not Withdraw"
+      "status": "PASS"
     },
     {
       "id": "7.F1.6",
@@ -303,8 +300,7 @@
     },
     {
       "id": "7.F1.9",
-      "status": "NA",
-      "note": "screenReads: N/A, the screen reads \"The publisher withdrew this edition, so there is nothing to decide.\""
+      "status": "PASS"
     },
     {
       "id": "7.F1.10",
