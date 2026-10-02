@@ -1,5 +1,7 @@
 package com.carbonos.ghg.internal;
 
+import com.carbonos.ghg.GhgRules;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -8,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -475,8 +478,7 @@ public class FactorPackAdoptionService {
 				return candidate;
 			}
 		}
-		throw new GhgFieldException("recalculationCase", "Say how chapter 5 treats this adoption: "
-				+ "VINTAGE_PROGRESSION, RETROSPECTIVE_ADOPTION, or ERRATUM_ON_REPORTED_YEAR.");
+		throw new GhgFieldException(GhgRules.ADOPTION_ANSWER_REQUIRED);
 	}
 
 	/** Declining: nothing changes and the notice closes. No factor is written, so no period can block it. */
@@ -497,8 +499,8 @@ public class FactorPackAdoptionService {
 		var notice = notices.findById(noticeId).orElseThrow(() -> GhgNotFoundException.factorPackNotice(noticeId));
 		access.check(organization(notice.getOrganizationId()));
 		if (notice.getStatus() != FactorPackNotice.Status.OPEN) {
-			throw new GhgRuleViolationException("This notice is already " + notice.getStatus().name().toLowerCase()
-					+ ". A decision on an edition is made once.");
+			throw new GhgRuleViolationException(GhgRules.NOTICE_ALREADY_DECIDED,
+					notice.getStatus().name().toLowerCase(Locale.ROOT));
 		}
 		return notice;
 	}

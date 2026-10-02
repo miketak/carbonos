@@ -173,6 +173,71 @@ public class GhgRules implements RuleSource {
 	public static final Rule CORRECTION_REASON_TOO_SHORT = Rule.field("ghg.correction.reason-too-short", "reason",
 			"A correction needs a reason of at least 10 characters: what was wrong in the published inventory.");
 
+	// factor pack editions, publication and withdrawal (spec 02.5)
+	public static final Rule PACK_EDITION_ID_REUSED = Rule.of("ghg.pack.edition-id-reused", HttpStatus.CONFLICT,
+			"An edition named '{edition}' already exists. An edition identifier is the citation a report prints, so it is never reused.");
+
+	public static final Rule PACK_EDITION_IMMUTABLE = Rule.of("ghg.pack.edition-immutable", HttpStatus.CONFLICT,
+			"'{edition}' is {status}. A published edition's rows, metadata and values never change, because reports already "
+					+ "rest on them. Clone it into a new draft instead.");
+
+	public static final Rule PACK_EDITION_HELD = Rule.of("ghg.pack.edition-held", HttpStatus.CONFLICT,
+			"'{edition}' was imported by {holders}, so its rows are part of their records and it is kept.");
+
+	public static final Rule PACK_APPLIES_FROM_REQUIRED = Rule.field("ghg.pack.applies-from-required", "appliesFrom",
+			"Give the date the edition applies from. It is the vintage boundary an adoption is run from.");
+
+	public static final Rule PACK_EVIDENCE_REQUIRED = Rule.field("ghg.pack.evidence-required", "evidence",
+			"Upload the source document first. A published edition is a citation, so the document it was "
+					+ "transcribed from is kept with its SHA-256.");
+
+	public static final Rule PACK_APPROVER_IS_CURATOR = Rule.field("ghg.pack.approver-is-curator", "approver",
+			"The approver must not be the curator. {curator} built this draft, so somebody else checks it against the "
+					+ "source document and publishes it.");
+
+	public static final Rule PACK_ALREADY_PUBLISHED = Rule.of("ghg.pack.already-published", HttpStatus.CONFLICT,
+			"'{edition}' is already {status}. An edition is published once; clone it into a new draft to correct a row.");
+
+	public static final Rule PACK_DRAFT_NOT_WITHDRAWABLE = Rule.of("ghg.pack.draft-not-withdrawable",
+			HttpStatus.CONFLICT,
+			"'{edition}' is a draft, which no organization can see. Delete it instead of withdrawing it.");
+
+	public static final Rule PACK_ALREADY_WITHDRAWN = Rule.of("ghg.pack.already-withdrawn", HttpStatus.CONFLICT,
+			"'{edition}' is already withdrawn.");
+
+	public static final Rule PACK_WITHDRAWAL_REASON_TOO_SHORT = Rule.field("ghg.pack.withdrawal-reason-too-short",
+			"reason", "Say why the edition is withdrawn, in at least {min} characters. It is the record a verifier reads "
+					+ "beside the figures that rest on it.");
+
+	// adopting an edition (specs 02.6, 02.7)
+	public static final Rule PACK_APPLIES_INSIDE_LOCKED_PERIOD = Rule.of("ghg.pack.applies-inside-locked-period",
+			HttpStatus.CONFLICT,
+			"'{edition}' applies from {appliesFrom}, which falls inside '{inventory}' ({start} to {end}), which is "
+					+ "{status}. A reported period keeps the factors it reported with. {exit}");
+
+	public static final Rule ADOPTION_ANSWER_REQUIRED = Rule.field("ghg.adoption.answer-required",
+			"recalculationCase", "Say how chapter 5 treats this adoption: VINTAGE_PROGRESSION, "
+					+ "RETROSPECTIVE_ADOPTION, or ERRATUM_ON_REPORTED_YEAR.");
+
+	public static final Rule NOTICE_ALREADY_DECIDED = Rule.of("ghg.notice.already-decided", HttpStatus.CONFLICT,
+			"This notice is already {status}. A decision on an edition is made once.");
+
+	// support access (specs 01.3, 01.5)
+	public static final Rule SUPPORT_ACCESS_REASON_TOO_SHORT = Rule.field("ghg.support-access.reason-too-short",
+			"reason", "Give a reason of at least 10 characters.");
+
+	public static final Rule SUPPORT_ACCESS_MEMBER = Rule.of("ghg.support-access.member", HttpStatus.CONFLICT,
+			"You are a member of '{organization}'; membership already gives you access, so support access does not apply.");
+
+	public static final Rule SUPPORT_ACCESS_ALREADY_HELD = Rule.of("ghg.support-access.already-held",
+			HttpStatus.CONFLICT,
+			"You already hold support access to '{organization}' until {until}. End it before assuming it again.");
+
+	public static final Rule SUPPORT_ACCESS_CANNOT_DECIDE = Rule.of("ghg.support-access.cannot-decide",
+			HttpStatus.FORBIDDEN,
+			"Support access cannot {act}. That is the organization's own decision, so a reviewer or an owner of the "
+					+ "organization has to make it.");
+
 	private static final List<Rule> ALL = List.of(ROLE_REQUIRED, ORGANIZATION_NAME_DUPLICATE, ACCOUNT_NOT_FOUND,
 			MEMBER_DUPLICATE, LAST_OWNER, ENTITY_DISPOSAL_BEFORE_ACQUISITION, ENTITY_PERCENT_RANGE,
 			ENTITY_NAME_DUPLICATE, ENTITY_PARENT_LOOP, ENTITY_HAS_FACILITIES, LEASE_ENDS_BEFORE_START,
@@ -184,7 +249,12 @@ public class GhgRules implements RuleSource {
 			EXCLUSION_JUSTIFICATION_TOO_SHORT, UPSTREAM_UNIT_MISMATCH, RESIDUAL_MIX_FACTOR_REQUIRED,
 			INVENTORY_REOPEN_REASON, INVENTORY_ALREADY_DRAFT, RUN_FINAL_HOLDS, RUN_VOIDED_NOT_FINAL,
 			RUN_FINAL_NOT_VOIDABLE, RUN_ALREADY_VOIDED, RUNS_ARE_A_RECORD, NO_FINAL_RUN, PUBLISH_NEEDS_FINAL,
-			CORRECTION_NEEDS_PUBLISHED, CORRECTION_ALREADY_SUPERSEDED, CORRECTION_REASON_TOO_SHORT);
+			CORRECTION_NEEDS_PUBLISHED, CORRECTION_ALREADY_SUPERSEDED, CORRECTION_REASON_TOO_SHORT,
+			PACK_EDITION_ID_REUSED, PACK_EDITION_IMMUTABLE, PACK_EDITION_HELD, PACK_APPLIES_FROM_REQUIRED,
+			PACK_EVIDENCE_REQUIRED, PACK_APPROVER_IS_CURATOR, PACK_ALREADY_PUBLISHED, PACK_DRAFT_NOT_WITHDRAWABLE,
+			PACK_ALREADY_WITHDRAWN, PACK_WITHDRAWAL_REASON_TOO_SHORT, PACK_APPLIES_INSIDE_LOCKED_PERIOD,
+			ADOPTION_ANSWER_REQUIRED, NOTICE_ALREADY_DECIDED, SUPPORT_ACCESS_REASON_TOO_SHORT, SUPPORT_ACCESS_MEMBER,
+			SUPPORT_ACCESS_ALREADY_HELD, SUPPORT_ACCESS_CANNOT_DECIDE);
 
 	@Override
 	public String module() {

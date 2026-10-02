@@ -16,6 +16,7 @@ export type UiOp =
   | { op: 'upload'; label: string; fixture: string; within?: string }
   | { op: 'orgPage'; organization: string; section: string }
   | { op: 'inventoryPage'; organization: string; inventory: string; tab?: string }
+  | { op: 'editionPage'; edition: string; tab?: string }
   | { op: 'confirm'; dialog: string; button: string }
   | { op: 'signIn'; email: string; password: string }
   | { op: 'signOut' }
@@ -36,6 +37,7 @@ export type UiCheck =
   | { check: 'atOrg'; organization: string; section: string }
   | { check: 'atInventory'; organization: string; inventory: string; tab: string }
   | { check: 'atRun'; organization: string; inventory: string; run: string }
+  | { check: 'atEdition'; edition: string; tab?: string }
   | { check: 'search'; label: string; value: string }
   | { check: 'buttonDisabled'; button: string; tooltip?: string; within?: string }
   | { check: 'rowDialogHas'; row: string; button: string; dialog: string; text: string }

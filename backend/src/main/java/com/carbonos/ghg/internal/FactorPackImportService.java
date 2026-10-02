@@ -1,5 +1,7 @@
 package com.carbonos.ghg.internal;
 
+import com.carbonos.ghg.GhgRules;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -452,10 +454,9 @@ public class FactorPackImportService {
 								+ "Editions inside a published period is Blocked; choose an edition that applies from a "
 								+ "later date, or ask a platform administrator about the setting."
 						: "Reopen that inventory, or import the edition into a later period.";
-				throw new GhgRuleViolationException("'" + editionId + "' applies from " + appliesFrom
-						+ ", which falls inside '" + inventory.getName() + "' (" + inventory.getPeriodStart() + " to "
-						+ inventory.getPeriodEnd() + "), which is " + inventory.getStatus()
-						+ ". A reported period keeps the factors it reported with. " + exit);
+				throw new GhgRuleViolationException(GhgRules.PACK_APPLIES_INSIDE_LOCKED_PERIOD, editionId, appliesFrom,
+						inventory.getName(), inventory.getPeriodStart(), inventory.getPeriodEnd(), inventory.getStatus(),
+						exit);
 			}
 		}
 	}

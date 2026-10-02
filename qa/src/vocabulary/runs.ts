@@ -58,6 +58,7 @@ export interface Report {
   intensity: Array<{ name: string; value: number; unit: string; tCo2ePerUnit: number }>
   dataQuality: { statement: string; uncertaintyStatement: string | null; weightedUncertaintyPercent: number | null }
   methodology: { statement: string | null; factorSources: string[] }
+  factors: Array<{ name: string; unit: string; kgCo2ePerUnit: number; sourceEdition: string | null; validFrom: string | null }>
   correction: { addedLines: number; removedLines: number; changedLines: number } | null
   byGas: Array<{ gas: string; kg: number | null; kgCo2e: number }>
 }

@@ -1,5 +1,7 @@
 package com.carbonos.ghg.internal;
 
+import com.carbonos.ghg.GhgRules;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -132,8 +134,7 @@ public class FactorPackAdminService {
 		var editionId = required("editionId", draft.editionId());
 		requireKey("editionId", editionId);
 		if (editions.existsById(editionId)) {
-			throw new GhgRuleViolationException("An edition named '" + editionId
-					+ "' already exists. An edition identifier is the citation a report prints, so it is never reused.");
+			throw new GhgRuleViolationException(GhgRules.PACK_EDITION_ID_REUSED, editionId);
 		}
 		var facts = requireEditionFacts(draft.facts());
 		var curatorId = access.currentUserId();
@@ -179,9 +180,8 @@ public class FactorPackAdminService {
 		var edition = mutable(editionId);
 		var holders = holdersByEdition().getOrDefault(editionId, 0L);
 		if (holders > 0) {
-			throw new GhgRuleViolationException("'" + editionId + "' was imported by " + holders
-					+ (holders == 1 ? " organization" : " organizations")
-					+ ", so its rows are part of their records and it is kept.");
+			throw new GhgRuleViolationException(GhgRules.PACK_EDITION_HELD, editionId,
+					holders + (holders == 1 ? " organization" : " organizations"));
 		}
 		rows.deleteAll(rows.findAllByEditionIdOrderByOrdinalAsc(editionId));
 		editions.delete(edition);
@@ -326,10 +326,8 @@ public class FactorPackAdminService {
 	private FactorPackEdition mutable(String editionId) {
 		var edition = get(editionId);
 		if (!edition.isMutable()) {
-			throw new GhgRuleViolationException("'" + edition.getEditionId() + "' is "
-					+ edition.getStatus().name().toLowerCase(Locale.ROOT)
-					+ ". A published edition's rows, metadata and values never change, because reports already "
-					+ "rest on them. Clone it into a new draft instead.");
+			throw new GhgRuleViolationException(GhgRules.PACK_EDITION_IMMUTABLE, edition.getEditionId(),
+					edition.getStatus().name().toLowerCase(Locale.ROOT));
 		}
 		return edition;
 	}

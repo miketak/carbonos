@@ -6,6 +6,9 @@
  * screen does not) or "backend" (the API disagrees too).
  */
 import type { Page } from '@playwright/test'
+import { mkdir } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { REPO_ROOT } from '../../load.ts'
 import { resolveActor } from '../../model.ts'
 import type { ApiOutcome, CheckResult, OutcomeRef } from '../../vocabulary/contract.ts'
 import { outcome as outcomeByName, verb as verbByName } from '../../vocabulary/index.ts'
@@ -153,7 +156,14 @@ export class UiDriver implements Driver {
     const ctx = this.executeContext(actorKey)
     for (const check of checks) {
       result = await runCheck(page, this.windows, check, this.chain, ctx)
-      if (!result.ok) break
+      if (!result.ok) {
+        // the failing check, named, and the screen as it stood: what a tester would paste into the issue
+        const shot = join(REPO_ROOT, 'qa', 'out', 'screens', `${ref.outcome}-${Date.now()}.png`)
+        await mkdir(dirname(shot), { recursive: true })
+        await page.screenshot({ path: shot, fullPage: true }).catch(() => undefined)
+        result = { ...result, detail: `${JSON.stringify(check)}: ${result.detail ?? ''} (screen: ${shot})` }
+        break
+      }
     }
     if (env.crossCheck && CROSS_CHECKED.has(ref.outcome)) {
       // a page may answer a breath ahead of the server (a bulk removal lands one request at a time): ask again before deciding

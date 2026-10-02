@@ -50,6 +50,13 @@
       "field": null
     },
     {
+      "id": "ghg.adoption.answer-required",
+      "module": "ghg",
+      "status": 422,
+      "message": "Say how chapter 5 treats this adoption: VINTAGE_PROGRESSION, RETROSPECTIVE_ADOPTION, or ERRATUM_ON_REPORTED_YEAR.",
+      "field": "recalculationCase"
+    },
+    {
       "id": "ghg.boundary.empty",
       "module": "ghg",
       "status": 409,
@@ -260,11 +267,95 @@
       "field": null
     },
     {
+      "id": "ghg.notice.already-decided",
+      "module": "ghg",
+      "status": 409,
+      "message": "This notice is already {status}. A decision on an edition is made once.",
+      "field": null
+    },
+    {
       "id": "ghg.organization.name-duplicate",
       "module": "ghg",
       "status": 409,
       "message": "An organization named '{name}' already exists: {duplicates}. Confirm to use the name anyway.",
       "field": null
+    },
+    {
+      "id": "ghg.pack.already-published",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{edition}' is already {status}. An edition is published once; clone it into a new draft to correct a row.",
+      "field": null
+    },
+    {
+      "id": "ghg.pack.already-withdrawn",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{edition}' is already withdrawn.",
+      "field": null
+    },
+    {
+      "id": "ghg.pack.applies-from-required",
+      "module": "ghg",
+      "status": 422,
+      "message": "Give the date the edition applies from. It is the vintage boundary an adoption is run from.",
+      "field": "appliesFrom"
+    },
+    {
+      "id": "ghg.pack.applies-inside-locked-period",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{edition}' applies from {appliesFrom}, which falls inside '{inventory}' ({start} to {end}), which is {status}. A reported period keeps the factors it reported with. {exit}",
+      "field": null
+    },
+    {
+      "id": "ghg.pack.approver-is-curator",
+      "module": "ghg",
+      "status": 422,
+      "message": "The approver must not be the curator. {curator} built this draft, so somebody else checks it against the source document and publishes it.",
+      "field": "approver"
+    },
+    {
+      "id": "ghg.pack.draft-not-withdrawable",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{edition}' is a draft, which no organization can see. Delete it instead of withdrawing it.",
+      "field": null
+    },
+    {
+      "id": "ghg.pack.edition-held",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{edition}' was imported by {holders}, so its rows are part of their records and it is kept.",
+      "field": null
+    },
+    {
+      "id": "ghg.pack.edition-id-reused",
+      "module": "ghg",
+      "status": 409,
+      "message": "An edition named '{edition}' already exists. An edition identifier is the citation a report prints, so it is never reused.",
+      "field": null
+    },
+    {
+      "id": "ghg.pack.edition-immutable",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{edition}' is {status}. A published edition's rows, metadata and values never change, because reports already rest on them. Clone it into a new draft instead.",
+      "field": null
+    },
+    {
+      "id": "ghg.pack.evidence-required",
+      "module": "ghg",
+      "status": 422,
+      "message": "Upload the source document first. A published edition is a citation, so the document it was transcribed from is kept with its SHA-256.",
+      "field": "evidence"
+    },
+    {
+      "id": "ghg.pack.withdrawal-reason-too-short",
+      "module": "ghg",
+      "status": 422,
+      "message": "Say why the edition is withdrawn, in at least {min} characters. It is the record a verifier reads beside the figures that rest on it.",
+      "field": "reason"
     },
     {
       "id": "ghg.reason-too-short",
@@ -328,6 +419,34 @@
       "status": 409,
       "message": "'{facility}' already has a stream named '{name}'.",
       "field": null
+    },
+    {
+      "id": "ghg.support-access.already-held",
+      "module": "ghg",
+      "status": 409,
+      "message": "You already hold support access to '{organization}' until {until}. End it before assuming it again.",
+      "field": null
+    },
+    {
+      "id": "ghg.support-access.cannot-decide",
+      "module": "ghg",
+      "status": 403,
+      "message": "Support access cannot {act}. That is the organization's own decision, so a reviewer or an owner of the organization has to make it.",
+      "field": null
+    },
+    {
+      "id": "ghg.support-access.member",
+      "module": "ghg",
+      "status": 409,
+      "message": "You are a member of '{organization}'; membership already gives you access, so support access does not apply.",
+      "field": null
+    },
+    {
+      "id": "ghg.support-access.reason-too-short",
+      "module": "ghg",
+      "status": 422,
+      "message": "Give a reason of at least 10 characters.",
+      "field": "reason"
     },
     {
       "id": "ghg.unit.duplicate",
@@ -463,5 +582,5 @@
       "field": null
     }
   ],
-  "sha256": "fd68008bc5db9cbb543cb7e70a8e98b7b3c6e0040e696550860c649daf95be50"
+  "sha256": "0df67476d40aa3648a653a4b3912032899cf45e68cc1b71bb07608ff6205558e"
 }

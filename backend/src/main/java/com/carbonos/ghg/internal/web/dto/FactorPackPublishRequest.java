@@ -4,7 +4,6 @@ import java.time.LocalDate;
 
 import com.carbonos.ghg.internal.FactorPackPublication;
 
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -16,8 +15,8 @@ import jakarta.validation.constraints.Size;
 public record FactorPackPublishRequest( //
 		@Size(max = 500) String sourceDocument, //
 		// the draft carries a date of its own, but publishing states the vintage
-		// boundary explicitly: a cleared field is a refusal, not a fallback
-		@NotNull(message = "Give the date the edition applies from. It is the vintage boundary an adoption is run from.") //
+		// boundary explicitly: a cleared field is a refusal the service names
+		// (GhgRules.PACK_APPLIES_FROM_REQUIRED), not a fallback
 		LocalDate appliesFrom, //
 		// a boxed Boolean, because the field is optional and an absent one is not an erratum
 		Boolean erratum, //

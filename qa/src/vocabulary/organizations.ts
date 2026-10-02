@@ -150,8 +150,15 @@ export interface FactorRow {
   versions: Array<{ sourceEdition: string | null; validFrom: string | null; validTo: string | null }>
 }
 
-export async function searchFactors(session: ApiSession, orgId: string, q: string): Promise<FactorRow[]> {
-  const out = await session.get(`/api/ghg/organizations/${orgId}/emission-factors?q=${encodeURIComponent(q)}&includeUnapproved=true&size=50`)
+export interface Period {
+  periodStart: string
+  periodEnd: string
+}
+
+/** With a period, only the versions whose validity overlaps it: what the picker offers for a record of that year (spec 02.6). */
+export async function searchFactors(session: ApiSession, orgId: string, q: string, period?: Period): Promise<FactorRow[]> {
+  const window = period ? `&periodStart=${period.periodStart}&periodEnd=${period.periodEnd}` : ''
+  const out = await session.get(`/api/ghg/organizations/${orgId}/emission-factors?q=${encodeURIComponent(q)}&includeUnapproved=true&size=50${window}`)
   if (!out.ok) throw new Error(`factor search answered ${out.status}`)
   return (out.body as { items: FactorRow[] }).items
 }
@@ -162,9 +169,9 @@ export function factorRef(ref: string): { name: string; unit: string | undefined
   return match ? { name: match[1]!, unit: match[2] } : { name: ref, unit: undefined }
 }
 
-export async function factor(session: ApiSession, orgId: string, ref: string): Promise<FactorRow> {
+export async function factor(session: ApiSession, orgId: string, ref: string, period?: Period): Promise<FactorRow> {
   const { name, unit } = factorRef(ref)
-  const found = (await searchFactors(session, orgId, name)).find((f) => f.name === name && (unit === undefined || f.unit === unit))
+  const found = (await searchFactors(session, orgId, name, period)).find((f) => f.name === name && (unit === undefined || f.unit === unit))
   if (!found) throw new Error(`no factor named '${name}'${unit ? ` per ${unit}` : ''}`)
   return found
 }

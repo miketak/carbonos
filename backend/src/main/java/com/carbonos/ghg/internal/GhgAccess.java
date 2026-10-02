@@ -48,14 +48,10 @@ public class GhgAccess {
 	}
 
 	/** A support administrator acting where the organization alone decides (specs 02.7, 01.5). */
-	public static class TenantDecisionException extends ErrorResponseException {
+	public static class TenantDecisionException extends RuleViolation {
 
 		TenantDecisionException(String act) {
-			super(HttpStatus.FORBIDDEN);
-			setTitle("Access denied");
-			setDetail("Support access cannot " + act
-					+ ". That is the organization's own decision, so a reviewer or an owner of the organization "
-					+ "has to make it.");
+			super(GhgRules.SUPPORT_ACCESS_CANNOT_DECIDE, "Access denied", act);
 		}
 	}
 

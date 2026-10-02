@@ -7,7 +7,7 @@ import type { CheckResult } from '../../vocabulary/contract.ts'
 import type { UiCheck } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
 import type { ChainAccess } from '../shared/procedure.ts'
-import { dialog, open, openInventoryPage, openOrgPage, openRunPage, resolveAsync, row, rowButton, type ExecuteContext } from './execute.ts'
+import { dialog, open, openEditionPage, openInventoryPage, openOrgPage, openRunPage, resolveAsync, row, rowButton, type ExecuteContext } from './execute.ts'
 import { locators } from './locators.ts'
 import { resolveTokens } from '../shared/tokens.ts'
 import type { Windows } from './browser.ts'
@@ -35,11 +35,15 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         if (!ctx) return { ok: false, detail: 'no API view to find the run' }
         await openRunPage(page, ctx, check.organization, check.inventory, check.run)
         return { ok: true }
+      case 'atEdition':
+        await openEditionPage(page, check.edition, check.tab)
+        return { ok: true }
       case 'search':
         await page.getByLabel(t(check.label), { exact: true }).fill(t(check.value))
         return { ok: true }
       case 'buttonDisabled': {
-        const scope = check.within ? dialog(page, t(check.within)) : page
+        // the dialog may be named after an organization's label or an edition's name, which the API supplies
+        const scope = check.within ? dialog(page, ctx ? await resolveAsync(ctx, t(check.within)) : t(check.within)) : page
         const button = scope.getByRole('button', { name: t(check.button), exact: true }).first()
         await expect(button).toBeVisible()
         await expect(button).toBeDisabled()

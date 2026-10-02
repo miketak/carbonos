@@ -42,18 +42,27 @@ committed with the procedure (ADR 0007).
    The UI driver runs one browser context per actor and, by default
    (`QA_CROSS_CHECK=1`), asks the API about every stored-state outcome too,
    so a failure reads "UI stale" (the API agrees with the scenario, the
-   screen does not) or "backend".
+   screen does not) or "backend". A failed check names itself and saves the
+   actor's window as it stood under `qa/out/screens/`.
 5. While a scenario is being written, a few of its cases can be rerun on
    the current stack without the ones before them:
    `QA_ACTOR=ama npx playwright test generated/governance/ui/005- --project=ui --grep "B2|B3"`.
    `QA_ACTOR` names the actor the skipped steps would have set, and the UI
-   driver signs that actor in when its window is blank. A step that wrote
-   something is not undone by rerunning it; record only a clean chain.
+   driver signs that actor in when its window is blank; with `--project=api`
+   the API driver signs that actor in on first use the same way. A step that
+   wrote something is not undone by rerunning it; record only a clean chain.
 6. Run one driver's chain at a time. Both drivers work on the same local
    stack, and procedure 1 resets it: a UI chain started while the API chain
    is between procedures wipes the data the API chain's next procedure
    expects, and the first sign-in fails with 401. Finish (or record) one
    chain before starting the other.
+7. To drive one late procedure through the browser without the browser
+   replaying everything before it, replay the earlier procedures through the
+   API (procedures 1 to 6 take under a minute) and carry that chain's state
+   over: `cp qa/.state/governance.api.json qa/.state/governance.ui.json`.
+   The UI chain then finds its predecessor green on this stack. A record
+   made that way is a record of the one procedure; the honest full run is
+   still each driver's own chain from the reset.
 
 Each step ends PASS, FAIL, NA (the driver cannot observe the outcome) or
 MANUAL (an `observe` sentence a human judges); the record counts them.

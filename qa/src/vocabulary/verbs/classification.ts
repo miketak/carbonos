@@ -38,8 +38,9 @@ export const classifyRecord = defineVerb({
     })
     .strict(),
   api: async (ctx, a) => {
-    const { org, a: row } = await view(ctx, a.organization, a.inventory, a.record)
-    const chosen = await factor(ctx.session(), org.id, a.factor)
+    const { org, inv, a: row } = await view(ctx, a.organization, a.inventory, a.record)
+    // the version live in the inventory's period, as the picker offers it (spec 02.6)
+    const chosen = await factor(ctx.session(), org.id, a.factor, { periodStart: inv.periodStart, periodEnd: inv.periodEnd })
     const dens = a.density ? await density(ctx.session(), org.id, a.density) : undefined
     return ctx.session().put(`/api/ghg/assignments/${row.id}/classify`, {
       emissionFactorId: chosen.id,

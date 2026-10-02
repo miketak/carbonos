@@ -115,7 +115,7 @@ export const historyHas = defineOutcome({
     ...(detail ? [{ check: 'textVisible', text: detail } as const] : []),
   ],
   narrate: ({ action, detail, actor }, n) =>
-    `**${S.org.text.history}** holds a ${words(action)} entry${detail ? ` reading "${detail}"` : ''}${actor ? `, with ${n.actorAlias(actor)} and the moment` : ''}.`,
+    `**${S.org.text.history}** holds ${/^[aeiou]/i.test(action) ? 'an' : 'a'} ${words(action)} entry${detail ? ` reading "${detail}"` : ''}${actor ? `, with ${n.actorAlias(actor)} and the moment` : ''}.`,
 })
 
 export const historyCount = defineOutcome({
@@ -327,7 +327,8 @@ export const factorListed = defineOutcome({
     if (a.selfApproved !== undefined && row.selfApproved !== a.selfApproved) return fail(`${a.name} selfApproved is ${row.selfApproved}`)
     if (a.validTo && row.validTo !== a.validTo) return fail(`${a.name} valid to ${row.validTo}`)
     if (a.versions) {
-      const editions = (row.versions ?? []).map((v) => v.sourceEdition ?? '').sort()
+      // a lineage with one vintage comes back without its chain (spec 02.6): the row is then its only version
+      const editions = (row.versions?.length ? row.versions : [row]).map((v) => v.sourceEdition ?? '').sort()
       const want = [...a.versions].sort()
       if (editions.join(',') !== want.join(',')) return fail(`${a.name} has versions ${editions.join(', ')}`)
     }
@@ -354,7 +355,7 @@ export const factorListed = defineOutcome({
     if (a.approvedBy) parts.push(`"by ${n.actorAlias(a.approvedBy)}" with the date`)
     if (a.selfApproved) parts.push(`and "${S.org.text.selfApproved}"`)
     if (a.validTo) parts.push(`with its validity ending ${a.validTo}`)
-    if (a.versions) parts.push(`with ${a.versions.length} versions: ${a.versions.join(' and ')}`)
+    if (a.versions) parts.push(a.versions.length === 1 ? `with one version, ${a.versions[0]}` : `with ${a.versions.length} versions: ${a.versions.join(' and ')}`)
     return parts.join(' ') + '.'
   },
 })
