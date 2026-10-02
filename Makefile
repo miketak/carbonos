@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify dev-up dev-down docs docs-serve docs-check help-serve help-check vale qa-docs qa-lint qa-export qa-export-check qa-compile qa-compile-check qa-schema qa-rules qa-doctor qa-reset qa-run-api qa-run-ui qa-record
+.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify vectors-check dev-up dev-down docs docs-serve docs-check help-serve help-check vale qa-docs qa-lint qa-export qa-export-check qa-compile qa-compile-check qa-schema qa-rules qa-doctor qa-reset qa-run-api qa-run-ui qa-record
 
 # git ref the docs checks diff against
 BASE ?= origin/main
@@ -48,7 +48,10 @@ admin:            ## create/reset a local admin: make admin EMAIL=a@b.c PASSWORD
 verify:           ## full Definition of Done (backend + frontend + QA scenarios)
 	cd backend && source "$$HOME/.sdkman/bin/sdkman-init.sh" && ./mvnw verify
 	cd frontend && npm run lint && npm run format:check && npm test && npm run build
-	$(MAKE) qa-lint qa-compile-check qa-export-check
+	$(MAKE) vectors-check qa-lint qa-compile-check qa-export-check
+
+vectors-check:    ## recompute the calculation vectors' expected figures in Python, independently of the engine
+	python3 scripts/verify-calculation-vectors.py
 
 docs:             ## build the engineering docs into site/ (strict: any warning fails)
 	uv run --locked mkdocs build --strict

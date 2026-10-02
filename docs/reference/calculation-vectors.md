@@ -159,6 +159,29 @@ used up, 350 for the residual mix, 149600 outside the scopes, 4.76 and 9.52
 for the base year). A change that moves one of them fails here in a second
 and there in minutes, for the same reason.
 
+## The independent check
+
+`scripts/verify-calculation-vectors.py` recomputes every `expected` figure
+from the formulas above in Python's `decimal` module, with no Spring, no
+JPA and no `LineMath`: the GWP tables from `gwpReference`, the factor
+library, the unit sizes, the rounding rules and the note formats are written
+out again in the script. `make vectors-check` runs it (the backend CI job
+does too), and it exits non-zero on the first disagreement:
+
+```bash
+python3 scripts/verify-calculation-vectors.py              # every vector
+python3 scripts/verify-calculation-vectors.py -v           # every check
+python3 scripts/verify-calculation-vectors.py --only L04 M03
+```
+
+A vector now has two readers that must agree with it. The Java tests say
+whether the engine produces the figure; the script says whether the figure
+follows from the stated formula. When a new vector fails only in Java, the
+engine drifted; when it fails only in Python, the hand computation or the
+`source` line is wrong; when both fail, the vector is. Two things the script
+takes from outside the file: the base year the running-sum reasons cite
+(`2025`, as the fixtures set it) and the registered unit sizes.
+
 ## Later: the QA pack
 
 The QA package imports committed JSON the same way (`with { type: 'json' }`),

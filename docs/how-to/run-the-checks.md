@@ -56,7 +56,9 @@ and `rounding`. [Calculation vectors](../reference/calculation-vectors.md) is
 the format, field by field.
 
 To add a vector, append it to its group with the formula in `source`, run the
-tests, and read a disagreement before changing either side: the engine
+tests and `make vectors-check` (a Python script that recomputes the expected
+figures from the formulas without the engine), and read a disagreement before
+changing either side: the engine
 rounds the period share to six decimals and every kilogram to three before
 summing, so a figure computed to full precision can differ by a rounding
 (`L04` and `L16` say so in their `source`). A vector that mirrors an
