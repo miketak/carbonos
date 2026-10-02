@@ -87,6 +87,8 @@ export const addFactor = defineVerb({
       source: a.source,
       publicationYear: a.publicationYear ?? null,
       dataYear: a.dataYear ?? null,
+      // as the form does: an approval is a separate act by a separate person (spec 02.11)
+      approved: false,
     })
   },
   ui: (a) => {
@@ -138,6 +140,8 @@ export const retireFactor = defineVerb({
       validTo: a.validTo,
       note: full.note ?? null,
       reportingBasis: full.reportingBasis ?? null,
+      // as the page does: an update that says nothing about approval would approve the factor
+      approved: full.approved,
     })
   },
   ui: (a) => [

@@ -51,6 +51,15 @@ const CROSS_CHECKED = new Set([
   'densityListed',
   'factorListed',
   'factorsEmpty',
+  'activityCount',
+  'activityRefs',
+  'activityExists',
+  'activityRemoved',
+  'attentionCount',
+  'evidenceListed',
+  'sourceDocumentListed',
+  'importBatchListed',
+  'facilityAbsent',
 ])
 
 export class UiDriver implements Driver {

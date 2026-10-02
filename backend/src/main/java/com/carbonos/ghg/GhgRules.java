@@ -75,11 +75,36 @@ public class GhgRules implements RuleSource {
 			"You entered '{name}'. A factor is checked by someone other than the person who typed it "
 					+ "(Corporate Standard chapter 7): ask {checker} to approve it.");
 
+	// activity data, corrections, removals and evidence (specs 04.4, 04.5, 04.6)
+	public static final Rule REASON_TOO_SHORT = Rule.field("ghg.reason-too-short", "reason",
+			"{what} needs a reason of at least 5 characters.");
+
+	public static final Rule ACTIVITY_REMOVED_CANNOT_CORRECT = Rule.of("ghg.activity.removed-cannot-correct",
+			HttpStatus.CONFLICT, "This record was removed and cannot be corrected.");
+
+	public static final Rule ACTIVITY_NO_WAY_BACK_TO_DRAFT = Rule.of("ghg.activity.no-way-back-to-draft",
+			HttpStatus.CONFLICT,
+			"A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft.");
+
+	public static final Rule ACTIVITY_ALREADY_REMOVED = Rule.of("ghg.activity.already-removed", HttpStatus.CONFLICT,
+			"This record was already removed.");
+
+	public static final Rule FACILITY_HAS_RECORDS = Rule.of("ghg.facility.has-records", HttpStatus.CONFLICT,
+			"'{facility}' has recorded activity data. Facts are the audit trail: "
+					+ "remove or reassign its activity records before deleting the facility.");
+
+	public static final Rule EVIDENCE_UNSUPPORTED_TYPE = Rule.field("ghg.evidence.unsupported-type", "file",
+			"Attach a PDF, an image (PNG, JPEG, WebP), a spreadsheet (XLSX, XLS, CSV) or a text file.");
+
+	public static final Rule EVIDENCE_LINK_SCHEME = Rule.field("ghg.evidence.link-scheme", "url",
+			"A link starts with https:// or http://.");
+
 	private static final List<Rule> ALL = List.of(ROLE_REQUIRED, ORGANIZATION_NAME_DUPLICATE, ACCOUNT_NOT_FOUND,
 			MEMBER_DUPLICATE, LAST_OWNER, ENTITY_DISPOSAL_BEFORE_ACQUISITION, ENTITY_PERCENT_RANGE,
 			ENTITY_NAME_DUPLICATE, ENTITY_PARENT_LOOP, ENTITY_HAS_FACILITIES, LEASE_ENDS_BEFORE_START,
 			STREAM_NAME_DUPLICATE, UNIT_REGISTERED, UNIT_DUPLICATE, DENSITY_DUPLICATE, BLEND_FRACTIONS,
-			FACTOR_SELF_APPROVAL);
+			FACTOR_SELF_APPROVAL, REASON_TOO_SHORT, ACTIVITY_REMOVED_CANNOT_CORRECT, ACTIVITY_NO_WAY_BACK_TO_DRAFT,
+			ACTIVITY_ALREADY_REMOVED, FACILITY_HAS_RECORDS, EVIDENCE_UNSUPPORTED_TYPE, EVIDENCE_LINK_SCHEME);
 
 	@Override
 	public String module() {

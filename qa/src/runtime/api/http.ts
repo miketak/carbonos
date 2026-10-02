@@ -65,6 +65,25 @@ export class HttpSession implements ApiSession {
     return this.send('delete', path, body)
   }
 
+  /** A multipart POST: the file under `file`, the other fields as form parts; `query` goes on the URL. */
+  async upload(path: string, file: { name: string; buffer: Buffer; mimeType: string }, query: Record<string, string> = {}): Promise<ApiOutcome> {
+    const ctx = await this.ctx()
+    const headers: Record<string, string> = {}
+    const token = await this.csrf()
+    if (token) headers['X-XSRF-TOKEN'] = token
+    const search = new URLSearchParams(query).toString()
+    const response = await ctx.post(search ? `${path}?${search}` : path, { headers, multipart: { file } })
+    const text = await response.text()
+    let parsed: unknown
+    try {
+      parsed = text ? JSON.parse(text) : undefined
+    } catch {
+      parsed = text
+    }
+    const rule = parsed && typeof parsed === 'object' ? (parsed as { rule?: string }).rule : undefined
+    return { status: response.status(), ok: response.ok(), body: parsed, rule }
+  }
+
   async dispose() {
     await this.context?.dispose()
     this.context = undefined

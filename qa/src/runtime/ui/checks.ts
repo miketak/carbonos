@@ -38,7 +38,7 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         return { ok: true }
       }
       case 'rowDialogHas': {
-        await row(page, t(check.row)).getByRole('button', { name: t(check.button), exact: true }).click()
+        await (await row(page, t(check.row))).getByRole('button', { name: t(check.button), exact: true }).click()
         const d = dialog(page, t(check.dialog))
         await expect(d.getByText(t(check.text), { exact: false }).first()).toBeVisible()
         await page.keyboard.press('Escape')
@@ -78,7 +78,8 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         return { ok: true }
       }
       case 'rowHas': {
-        let r = row(page, t(check.text))
+        // a table row or a list item that names the text, waited for (the table renders after the page)
+        let r = page.getByRole('row').or(page.getByRole('listitem')).filter({ hasText: t(check.text) })
         for (const cell of check.cells) r = r.filter({ hasText: t(cell) })
         await expect(r.first()).toBeVisible()
         return { ok: true }

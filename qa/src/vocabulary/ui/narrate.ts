@@ -23,6 +23,8 @@ function phrase(op: UiOp): string {
       return `fill in ${b(op.label)} with ${value(op.value)}`
     case 'choose':
       return op.byValue && op.option.startsWith('{') ? `set ${b(op.label)} to ${op.option.replace(/\{entityId:[^|]+\|([^}]+)\}/, '$1')}` : `set ${b(op.label)} to ${b(op.option)}`
+    case 'upload':
+      return `choose ${code(op.fixture)} under ${b(op.label)}`
     case 'tick':
       return op.on === false ? `untick ${b(op.label)}` : `tick ${b(op.label)}`
     case 'orgPage':

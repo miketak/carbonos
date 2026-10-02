@@ -162,6 +162,43 @@ export async function factor(session: ApiSession, orgId: string, name: string): 
   return found
 }
 
+export interface ActivityRow {
+  id: string
+  recordNo: number
+  recordRef: string
+  draft: boolean
+  status: string
+  issues: string[]
+  facilityId: string
+  facilityName: string
+  streamId: string | null
+  streamName: string | null
+  activityType: string
+  quantity: number | null
+  unit: string | null
+  periodStart: string | null
+  periodEnd: string | null
+  dataSource: string | null
+  evidenceRef: string | null
+  dataQuality: string
+  note: string | null
+  dataQualityTier: number
+  uncertaintyPercent: number | null
+  removed: boolean
+  evidenceCount: number
+  revisionCount: number
+}
+
+export const activities = (session: ApiSession, orgId: string) => list<ActivityRow>(session, `/api/ghg/organizations/${orgId}/activities`)
+
+/** A record by its reference (ACT-0009) or by its activity type, among the live records. */
+export async function activity(session: ApiSession, orgId: string, ref: string): Promise<ActivityRow> {
+  const all = (await activities(session, orgId)).filter((a) => !a.removed)
+  const found = all.find((a) => a.recordRef === ref) ?? all.find((a) => a.activityType === ref)
+  if (!found) throw new Error(`no record '${ref}'`)
+  return found
+}
+
 export function refusal(status: number, detail: string): ApiOutcome {
   return { status, ok: false, body: { detail } }
 }

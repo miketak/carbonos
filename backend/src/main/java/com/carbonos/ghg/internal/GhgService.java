@@ -639,9 +639,7 @@ public class GhgService {
 		var facility = getFacility(id);
 		access.checkWrite(facility.getOrganization());
 		if (activities.existsByFacilityIdAndDeletedAtIsNull(id)) {
-			throw new GhgRuleViolationException(
-					"'" + facility.getName() + "' has recorded activity data. Facts are the audit trail: "
-							+ "remove or reassign its activity records before deleting the facility.");
+			throw new GhgRuleViolationException(GhgRules.FACILITY_HAS_RECORDS, facility.getName());
 		}
 		var holders = boundaryTreatments.unpublishedInventoriesHolding(id);
 		if (!holders.isEmpty()) {
@@ -666,7 +664,7 @@ public class GhgService {
 
 	private static void requireReason(String reason, String what) {
 		if (reason == null || reason.trim().length() < 5) {
-			throw new GhgFieldException("reason", what + " needs a reason of at least 5 characters.");
+			throw new GhgFieldException(GhgRules.REASON_TOO_SHORT, what);
 		}
 	}
 
@@ -1324,12 +1322,11 @@ public class GhgService {
 		var activity = getActivity(id);
 		access.checkWrite(activity.getFacility().getOrganization());
 		if (activity.isDeleted()) {
-			throw new GhgRuleViolationException("This record was removed and cannot be corrected.");
+			throw new GhgRuleViolationException(GhgRules.ACTIVITY_REMOVED_CANNOT_CORRECT);
 		}
 		// spec 04.6: a draft is not yet a fact, so editing it needs no reason; a fact never goes back
 		if (!activity.isDraft() && facts.draft()) {
-			throw new GhgRuleViolationException(
-					"A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft.");
+			throw new GhgRuleViolationException(GhgRules.ACTIVITY_NO_WAY_BACK_TO_DRAFT);
 		}
 		var promoting = activity.isDraft() && !facts.draft();
 		if (!activity.isDraft()) {
@@ -1377,7 +1374,7 @@ public class GhgService {
 		var activity = getActivity(id);
 		access.checkWrite(activity.getFacility().getOrganization());
 		if (activity.isDeleted()) {
-			throw new GhgRuleViolationException("This record was already removed.");
+			throw new GhgRuleViolationException(GhgRules.ACTIVITY_ALREADY_REMOVED);
 		}
 		if (runLines.existsByActivityId(id)) {
 			throw new GhgRuleViolationException(

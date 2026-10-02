@@ -4,8 +4,10 @@
  * the op says so; any CSS selector lives in locators.ts with a reason.
  */
 import { expect, type Locator, type Page } from '@playwright/test'
+import { join } from 'node:path'
+import { REPO_ROOT } from '../../load.ts'
 import type { ApiContext } from '../../vocabulary/contract.ts'
-import { entity, organization } from '../../vocabulary/organizations.ts'
+import { entity, facility, organization } from '../../vocabulary/organizations.ts'
 import type { UiOp } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
 import { env } from '../shared/env.ts'
@@ -43,6 +45,10 @@ export async function resolveAsync(ctx: ExecuteContext, text: string): Promise<s
     const org = await organization(ctx.api, match[1]!)
     out = out.replace(match[0], (await entity(ctx.api.session(), org.id, match[2]!)).id)
   }
+  for (const match of text.matchAll(/\{facilityId:([^}|]+)\|([^}]+)\}/g)) {
+    const org = await organization(ctx.api, match[1]!)
+    out = out.replace(match[0], (await facility(ctx.api.session(), org.id, match[2]!)).id)
+  }
   return resolveTokens(ctx.chain, out)
 }
 
@@ -65,12 +71,15 @@ export function dialog(page: Page, title: string): Locator {
   return page.getByRole('dialog', { name: title, exact: true })
 }
 
-/** The row of a table that names the text; else the list item or card that does. */
-export function row(page: Page, text: string): Locator {
+/** The row of a table that names the text; else the list item, else the smallest card that does and holds a button. */
+export async function row(page: Page, text: string): Promise<Locator> {
   const rows = page.getByRole('row').filter({ hasText: text })
+  // the table or list renders after the page: give it a moment before deciding which shape the page has
+  await rows.or(page.getByRole('listitem').filter({ hasText: text })).first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => undefined)
+  if ((await rows.count()) > 0) return rows.first()
   const items = page.getByRole('listitem').filter({ hasText: text })
-  const cards = page.locator('li, tr, article, section > div, div').filter({ has: page.getByText(text, { exact: true }) }).filter({ has: page.getByRole('button') })
-  return rows.or(items).or(cards.last()).first()
+  if ((await items.count()) > 0) return items.first()
+  return page.locator('article, section > div, div').filter({ has: page.getByText(text, { exact: true }) }).filter({ has: page.getByRole('button') }).last()
 }
 
 /** A tester leaving a dialog behind closes it first: Escape, then its Cancel or Close button. */
@@ -116,6 +125,11 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
     case 'orgPage':
       await openOrgPage(page, ctx, op.organization, op.section)
       return
+    case 'upload': {
+      const scope = op.within ? dialog(page, t(op.within)) : page
+      await scope.getByLabel(t(op.label), { exact: true }).setInputFiles(join(REPO_ROOT, 'docs', 'qa', 'governance', 'fixtures', op.fixture))
+      return
+    }
     case 'tick': {
       const scope = op.within ? dialog(page, t(op.within)) : page
       const box = scope.getByLabel(t(op.label), { exact: true })
@@ -174,7 +188,7 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       await page.getByRole('menuitem', { name: t(op.item), exact: true }).click()
       return
     case 'row':
-      await row(page, t(op.text)).getByRole('button', { name: t(op.button), exact: true }).click()
+      await (await row(page, t(op.text))).getByRole('button', { name: t(op.button), exact: true }).click()
       return
     case 'emailLink': {
       if (op.forged) {

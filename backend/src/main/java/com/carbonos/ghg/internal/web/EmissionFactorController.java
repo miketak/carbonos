@@ -140,7 +140,7 @@ class EmissionFactorController {
 				body.dataYear(), body.validFrom(), body.validTo(), body.note());
 		return new GhgService.FactorFacts(body.name(), body.defaultScope(), body.defaultCategory(),
 				Boolean.TRUE.equals(body.scopeAgnostic()), body.unit(), body.kgCo2ePerUnit(), gases,
-				body.blendComposition(), body.blendGwpSource(), provenance, Boolean.TRUE.equals(body.approved()),
+				body.blendComposition(), body.blendGwpSource(), provenance, body.approved() == null || body.approved(),
 				body.reportingBasis());
 	}
 

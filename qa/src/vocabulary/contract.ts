@@ -39,6 +39,7 @@ export interface ApiSession {
   post(path: string, body?: unknown): Promise<ApiOutcome>
   put(path: string, body?: unknown): Promise<ApiOutcome>
   delete(path: string, body?: unknown): Promise<ApiOutcome>
+  upload(path: string, file: { name: string; buffer: Buffer; mimeType: string }, query?: Record<string, string>): Promise<ApiOutcome>
 }
 
 /** What a verb or outcome knows at run time, in either driver. */

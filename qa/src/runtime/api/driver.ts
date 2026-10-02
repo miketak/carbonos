@@ -42,6 +42,7 @@ export class ApiDriver implements Driver {
       post: async (path, body) => (await ensure(), session.post(path, body)),
       put: async (path, body) => (await ensure(), session.put(path, body)),
       delete: async (path, body) => (await ensure(), session.delete(path, body)),
+      upload: async (path, file, query) => (await ensure(), session.upload(path, file, query)),
     }
   }
 

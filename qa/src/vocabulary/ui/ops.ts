@@ -13,6 +13,7 @@ export type UiOp =
   | { op: 'fill'; label: string; value: string; within?: string }
   | { op: 'choose'; label: string; option: string; within?: string; byValue?: boolean }
   | { op: 'tick'; label: string; within?: string; on?: boolean }
+  | { op: 'upload'; label: string; fixture: string; within?: string }
   | { op: 'orgPage'; organization: string; section: string }
   | { op: 'confirm'; dialog: string; button: string }
   | { op: 'signIn'; email: string; password: string }

@@ -29,6 +29,27 @@
       "field": null
     },
     {
+      "id": "ghg.activity.already-removed",
+      "module": "ghg",
+      "status": 409,
+      "message": "This record was already removed.",
+      "field": null
+    },
+    {
+      "id": "ghg.activity.no-way-back-to-draft",
+      "module": "ghg",
+      "status": 409,
+      "message": "A saved record is corrected with a reason or removed with a reason; it cannot go back to a draft.",
+      "field": null
+    },
+    {
+      "id": "ghg.activity.removed-cannot-correct",
+      "module": "ghg",
+      "status": 409,
+      "message": "This record was removed and cannot be corrected.",
+      "field": null
+    },
+    {
       "id": "ghg.density.duplicate",
       "module": "ghg",
       "status": 422,
@@ -71,6 +92,27 @@
       "field": "economicInterestPercent"
     },
     {
+      "id": "ghg.evidence.link-scheme",
+      "module": "ghg",
+      "status": 422,
+      "message": "A link starts with https:// or http://.",
+      "field": "url"
+    },
+    {
+      "id": "ghg.evidence.unsupported-type",
+      "module": "ghg",
+      "status": 422,
+      "message": "Attach a PDF, an image (PNG, JPEG, WebP), a spreadsheet (XLSX, XLS, CSV) or a text file.",
+      "field": "file"
+    },
+    {
+      "id": "ghg.facility.has-records",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{facility}' has recorded activity data. Facts are the audit trail: remove or reassign its activity records before deleting the facility.",
+      "field": null
+    },
+    {
       "id": "ghg.facility.lease-ends-before-start",
       "module": "ghg",
       "status": 422,
@@ -111,6 +153,13 @@
       "status": 409,
       "message": "An organization named '{name}' already exists: {duplicates}. Confirm to use the name anyway.",
       "field": null
+    },
+    {
+      "id": "ghg.reason-too-short",
+      "module": "ghg",
+      "status": 422,
+      "message": "{what} needs a reason of at least 5 characters.",
+      "field": "reason"
     },
     {
       "id": "ghg.role.required",
@@ -253,5 +302,5 @@
       "field": null
     }
   ],
-  "sha256": "0e5806a7679c351e2b1315d98df08a55c563296a2b0750c90b6ad6b913a57900"
+  "sha256": "97c2ec7f58c649a66752316d10e5ef66875d87010d81a2de44100866f8f3a955"
 }
