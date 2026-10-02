@@ -27,6 +27,10 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         await openOrgPage(page, ctx, check.organization, check.section)
         await page.reload()
         return { ok: true }
+      case 'atInventory':
+        if (!ctx) return { ok: false, detail: 'no API view to find the inventory' }
+        await openInventoryPage(page, ctx, check.organization, check.inventory, check.tab)
+        return { ok: true }
       case 'search':
         await page.getByLabel(t(check.label), { exact: true }).fill(t(check.value))
         return { ok: true }

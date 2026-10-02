@@ -13,20 +13,22 @@ import { organizationVerbs } from './verbs/organization.ts'
 import { structureVerbs } from './verbs/structure.ts'
 import { libraryVerbs } from './verbs/library.ts'
 import { activityVerbs } from './verbs/activities.ts'
+import { inventoryVerbs } from './verbs/inventories.ts'
 import { accountOutcomes } from './outcomes/accounts.ts'
 import { sessionOutcomes } from './outcomes/sessions.ts'
 import { settingsOutcomes } from './outcomes/settings.ts'
 import { generalOutcomes } from './outcomes/general.ts'
 import { organizationOutcomes } from './outcomes/organization.ts'
 import { activityOutcomes } from './outcomes/activities.ts'
+import { inventoryOutcomes } from './outcomes/inventories.ts'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyVerb = Verb<any>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyOutcome = Outcome<any>
 
-const verbList: AnyVerb[] = [...authVerbs, ...accountVerbs, ...settingsVerbs, ...passwordVerbs, ...organizationVerbs, ...structureVerbs, ...libraryVerbs, ...activityVerbs]
-const outcomeList: AnyOutcome[] = [...accountOutcomes, ...sessionOutcomes, ...settingsOutcomes, ...generalOutcomes, ...organizationOutcomes, ...activityOutcomes]
+const verbList: AnyVerb[] = [...authVerbs, ...accountVerbs, ...settingsVerbs, ...passwordVerbs, ...organizationVerbs, ...structureVerbs, ...libraryVerbs, ...activityVerbs, ...inventoryVerbs]
+const outcomeList: AnyOutcome[] = [...accountOutcomes, ...sessionOutcomes, ...settingsOutcomes, ...generalOutcomes, ...organizationOutcomes, ...activityOutcomes, ...inventoryOutcomes]
 
 export const verbs: ReadonlyMap<string, AnyVerb> = index(verbList, 'verb')
 export const outcomes: ReadonlyMap<string, AnyOutcome> = index(outcomeList, 'outcome')

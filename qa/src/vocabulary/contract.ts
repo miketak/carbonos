@@ -111,6 +111,8 @@ export interface Outcome<A = Record<string, unknown>> {
   narrate: (args: A, ctx: NarrationContext) => string
   /** A number the chain may capture (`capture: { usersAtStart: userCount }`). */
   measureApi?: (ctx: ApiContext, args: A) => Promise<number>
+  /** The outcome reads a refusal (like `refused`): the step's action is expected to fail. */
+  expectsRefusal?: boolean
 }
 
 export function defineVerb<A>(verb: Verb<A>): Verb<A> {

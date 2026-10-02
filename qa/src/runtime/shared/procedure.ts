@@ -221,7 +221,7 @@ export class StepRun {
   /** Verifies the step's listed outcomes, after the verb's postconditions. */
   async expect(out: ApiOutcome | undefined, clauses: ExpectClauseRef[]): Promise<void> {
     const last = out ?? this.last
-    const expectsRefusal = clauses.some((c) => c.outcome === 'refused')
+    const expectsRefusal = clauses.some((c) => c.outcome === 'refused' || outcomeByName(c.outcome).expectsRefusal === true)
     if (this.driver.knowsStatus && last && !last.ok && !last.na && !expectsRefusal) {
       this.fail(`the action was refused with ${last.status}: ${detailOf(last)}`)
     }
