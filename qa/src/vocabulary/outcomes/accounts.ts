@@ -90,6 +90,21 @@ export const accessRequestStatus = defineOutcome({
       : `${n.actorName(user)}'s request has left the queue; the list reads "${S.text.noPendingRequests}".`,
 })
 
+/** What the visitor sees: the dialog thanks them by name; what the record holds: a pending request. */
+export const accessRequestSubmitted = defineOutcome({
+  name: 'accessRequestSubmitted',
+  args: z.object({ user: actorArg }).strict(),
+  api: async (ctx, { user }) => {
+    const email = account(ctx, user).email
+    const out = await (await ctx.admin()).get('/api/admin/access-requests')
+    if (!out.ok) return fail(`could not list access requests: ${out.status}`)
+    const rows = (out.body as Array<{ email: string; status: string }>).filter((r) => r.email === email)
+    return rows.some((r) => r.status === 'PENDING') ? pass() : fail(`no pending request for ${user}`)
+  },
+  ui: ({ user }) => [{ check: 'textVisible', text: `${S.text.thanks} {name:${user}}` }],
+  narrate: ({ user }, n) => `The dialog thanks ${n.actorName(user).split(' ')[0]} by name and says the request is with the team.`,
+})
+
 export const accessRequestsPending = defineOutcome({
   name: 'accessRequestsPending',
   args: z.object({ count: z.number().int() }).strict(),
@@ -152,4 +167,4 @@ function words(n: number): string {
   return ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'][n] ?? String(n)
 }
 
-export const accountOutcomes = [userListed, userAbsent, userCount, accessRequestStatus, accessRequestsPending, displayName, platformRole, platformAccess]
+export const accountOutcomes = [userListed, userAbsent, userCount, accessRequestStatus, accessRequestSubmitted, accessRequestsPending, displayName, platformRole, platformAccess]

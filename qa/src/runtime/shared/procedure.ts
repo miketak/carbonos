@@ -1,21 +1,27 @@
 /**
- * The runtime the generated API specs call. One procedure object per spec
- * file: it holds the actors' sessions, the chain state, the results, and the
- * rules of a step (postconditions after a success, a refusal only when the
- * scenario expects one, N/A and MANUAL as annotations, never passes).
+ * The runtime the generated specs call, shared by both drivers. One
+ * procedure object per spec file: the chain state, the results, and the
+ * rules of a step. A driver supplies how a verb is performed and how an
+ * outcome is observed; the step logic is the same for both:
+ *
+ * - a verb's postconditions are verified after it, unless the step expects a
+ *   refusal (the API driver also skips them when the call was refused);
+ * - a refusal the scenario did not expect fails the step (the API driver
+ *   sees it in the status, the UI driver through the refusal's absence from
+ *   the step's checks and the postconditions that then do not hold);
+ * - N/A and MANUAL are annotations, never passes.
  */
 import { test } from '@playwright/test'
 import { loadPack, loadProcedures } from '../../load.ts'
-import { resolveActor, type Pack, type Procedure, type ResolvedActor } from '../../model.ts'
-import type { ApiContext, ApiOutcome, CheckResult, OutcomeRef } from '../../vocabulary/contract.ts'
+import { resolveActor, type Pack, type Procedure } from '../../model.ts'
+import type { ApiOutcome, CheckResult, OutcomeRef } from '../../vocabulary/contract.ts'
 import { detailOf } from '../../vocabulary/helpers.ts'
 import { outcome as outcomeByName, verb as verbByName } from '../../vocabulary/index.ts'
-import { env } from '../shared/env.ts'
-import { Mailpit } from '../shared/mailpit.ts'
-import { QaHooks } from '../shared/qa.ts'
-import { writeResults, type RunResults, type StepResult, type StepStatus } from '../shared/results.ts'
-import { clearState, loadState, saveState, type ChainState } from '../shared/state.ts'
-import { HttpSession } from './http.ts'
+import { Mailpit } from './mailpit.ts'
+import { env } from './env.ts'
+import { QaHooks } from './qa.ts'
+import { writeResults, type RunResults, type StepResult, type StepStatus } from './results.ts'
+import { clearState, loadState, saveState, type ChainState } from './state.ts'
 
 export { test }
 
@@ -23,21 +29,42 @@ export interface ExpectClauseRef extends OutcomeRef {
   why?: string
 }
 
-export class ApiProcedure {
+/** What a driver does; the procedure does the rest. */
+export interface Driver {
+  readonly name: 'api' | 'ui'
+  /** Knows from the answer whether the verb was refused (the API driver). */
+  readonly knowsStatus: boolean
+  perform(actorKey: string, verbName: string, args: Record<string, unknown>): Promise<ApiOutcome>
+  check(actorKey: string, ref: OutcomeRef, last: ApiOutcome | undefined): Promise<CheckResult>
+  measure(actorKey: string, outcomeName: string): Promise<number>
+  dispose(): Promise<void>
+}
+
+/** What a driver may ask the procedure for. */
+export interface ChainAccess {
+  pack: Pack
+  passwordOf(actorKey: string): string
+  setPassword(actorKey: string, password: string): void
+  captured(name: string): number
+  capture(name: string, value: number): void
+  mail: Mailpit
+}
+
+export class ProcedureRun implements ChainAccess {
   readonly pack: Pack
   readonly procedure: Procedure
-  private readonly sessions = new Map<string, HttpSession>()
-  private readonly adminSession: HttpSession
-  private readonly hooks: QaHooks
   readonly mail: Mailpit
+  private readonly hooks: QaHooks
   private state: ChainState
   private results: RunResults
   private currentActor: string | undefined
+  private driver!: Driver
 
   constructor(
     readonly persona: string,
     readonly number: number,
     readonly yamlSha256: string,
+    readonly driverName: 'api' | 'ui',
   ) {
     this.pack = loadPack(persona)
     const found = loadProcedures(persona).find((p) => p.procedure === number)
@@ -46,18 +73,15 @@ export class ApiProcedure {
     if (found.sha256 !== yamlSha256) {
       throw new Error(`${found.file} changed since this script was generated; run make qa-compile`)
     }
-    this.adminSession = new HttpSession(env.apiUrl, 'admin-lookups')
     this.hooks = new QaHooks(this.pack)
     this.mail = new Mailpit(env.mailpitUrl)
-    this.state = loadState(persona, 'api')
-    this.results = {
-      persona,
-      procedure: number,
-      driver: 'api',
-      yamlSha256,
-      startedAt: new Date().toISOString(),
-      steps: [],
-    }
+    this.state = loadState(persona, driverName)
+    this.results = { persona, procedure: number, driver: driverName, yamlSha256, startedAt: new Date().toISOString(), steps: [] }
+  }
+
+  attach(driver: Driver): this {
+    this.driver = driver
+    return this
   }
 
   /** Resets the stack when the chain starts here; otherwise checks the chain. */
@@ -67,8 +91,8 @@ export class ApiProcedure {
         await this.hooks.reset()
         await this.mail.clear()
       }
-      clearState(this.persona, 'api')
-      this.state = loadState(this.persona, 'api')
+      clearState(this.persona, this.driverName)
+      this.state = loadState(this.persona, this.driverName)
     } else if (!this.state.finished.includes(this.procedure.after)) {
       throw new Error(`procedure ${this.procedure.after} has not run green on this stack; run it first or restore its checkpoint`)
     }
@@ -79,7 +103,7 @@ export class ApiProcedure {
     const failed = this.results.steps.some((s) => s.status === 'FAIL')
     if (!failed) {
       this.state.finished = [...new Set([...this.state.finished, this.number])]
-      saveState(this.persona, 'api', this.state)
+      saveState(this.persona, this.driverName, this.state)
     }
     try {
       const digest = await this.hooks.digest()
@@ -90,72 +114,35 @@ export class ApiProcedure {
     }
     this.results.finishedAt = new Date().toISOString()
     writeResults(this.results)
-    for (const session of this.sessions.values()) await session.dispose()
-    await this.adminSession.dispose()
+    await this.driver.dispose()
+    await this.hooks.session.dispose()
   }
 
   step(id: string): StepRun {
-    return new StepRun(this, id)
+    return new StepRun(this, this.driver, id)
   }
 
-  /** @internal */
-  context(actorKey: string): ApiContext {
-    const self = this
-    const actor = resolveActor(this.pack, actorKey)
-    return {
-      pack: this.pack,
-      actor,
-      actorOf: (key) => resolveActor(self.pack, key),
-      passwordOf: (key) => self.passwordOf(key),
-      setPassword: (key, password) => {
-        self.state.passwords[self.baseKey(key)] = password
-        saveState(self.persona, 'api', self.state)
-      },
-      captured: (name) => {
-        const value = self.state.captures[name]
-        if (value === undefined) throw new Error(`nothing captured as '${name}'`)
-        return value
-      },
-      capture: (name, value) => {
-        self.state.captures[name] = value
-        saveState(self.persona, 'api', self.state)
-      },
-      mail: this.mail,
-      session: () => self.sessionOf(actorKey),
-      sessionOf: (key) => self.sessionOf(key),
-      admin: () => self.admin(),
-    }
-  }
-
-  private baseKey(actorKey: string): string {
-    const actor = resolveActor(this.pack, actorKey)
-    return actor.account?.key ?? actorKey
-  }
-
-  private passwordOf(actorKey: string): string {
+  passwordOf(actorKey: string): string {
     const actor = resolveActor(this.pack, actorKey)
     if (!actor.account) throw new Error(`actor '${actorKey}' has no password`)
     return this.state.passwords[actor.account.key] ?? actor.account.password
   }
 
-  private sessionOf(actorKey: string): HttpSession {
-    resolveActor(this.pack, actorKey)
-    let session = this.sessions.get(actorKey)
-    if (!session) {
-      session = new HttpSession(env.apiUrl, actorKey)
-      this.sessions.set(actorKey, session)
-    }
-    return session
+  setPassword(actorKey: string, password: string): void {
+    const actor = resolveActor(this.pack, actorKey)
+    this.state.passwords[actor.account?.key ?? actorKey] = password
+    saveState(this.persona, this.driverName, this.state)
   }
 
-  private async admin(): Promise<HttpSession> {
-    const me = await this.adminSession.get('/api/auth/me')
-    if (!me.ok) {
-      const { seededAdmin } = await import('../shared/qa.ts')
-      const out = await this.adminSession.post('/api/auth/login', seededAdmin(this.pack))
-      if (!out.ok) throw new Error(`the seeded administrator cannot sign in for lookups (${out.status})`)
-    }
-    return this.adminSession
+  captured(name: string): number {
+    const value = this.state.captures[name]
+    if (value === undefined) throw new Error(`nothing captured as '${name}'`)
+    return value
+  }
+
+  capture(name: string, value: number): void {
+    this.state.captures[name] = value
+    saveState(this.persona, this.driverName, this.state)
   }
 
   /** @internal */
@@ -180,22 +167,20 @@ export class ApiProcedure {
 
 export class StepRun {
   private last: ApiOutcome | undefined
+  private pending: { verb: string; postconditions: OutcomeRef[] } | undefined
   private readonly notes: string[] = []
   private status: StepStatus = 'PASS'
   private failed = false
 
   constructor(
-    private readonly procedure: ApiProcedure,
+    private readonly procedure: ProcedureRun,
+    private readonly driver: Driver,
     readonly id: string,
   ) {}
 
   as(actorKey: string): this {
     this.procedure.setActor(actorKey)
     return this
-  }
-
-  private ctx(): ApiContext {
-    return this.procedure.context(this.procedure.actorKey())
   }
 
   private note(status: StepStatus, text: string) {
@@ -212,38 +197,30 @@ export class StepRun {
     throw new Error(`${this.id}: ${text}`)
   }
 
-  /** Performs the verb as the current actor and verifies its postconditions when it succeeded. */
+  /** Performs the verb as the current actor; its postconditions are verified when the step closes. */
   async do(verbName: string, rawArgs: Record<string, unknown>): Promise<ApiOutcome> {
     const verb = verbByName(verbName)
     const args = verb.args.parse(rawArgs)
-    const ctx = this.ctx()
     let out: ApiOutcome
     try {
-      out = await verb.api(ctx, args)
+      out = await this.driver.perform(this.procedure.actorKey(), verbName, args)
     } catch (error) {
       return this.fail(`${verbName} failed: ${error instanceof Error ? error.message : String(error)}`)
     }
     this.last = out
-    if (out.na) {
-      this.note('NA', out.na)
-      return out
-    }
-    if (out.ok) {
-      for (const ref of verb.postconditions(args)) {
-        const result = await this.check(ref, out)
-        if (!result.ok) this.fail(`after ${verbName}, ${ref.outcome} does not hold: ${result.detail}`)
-      }
-    }
+    if (out.na) this.note('NA', out.na)
+    this.pending = { verb: verbName, postconditions: verb.postconditions(args) }
     return out
   }
 
-  /** Verifies the step's listed outcomes; an unexpected refusal of the verb fails here. */
+  /** Verifies the step's listed outcomes, after the verb's postconditions. */
   async expect(out: ApiOutcome | undefined, clauses: ExpectClauseRef[]): Promise<void> {
     const last = out ?? this.last
     const expectsRefusal = clauses.some((c) => c.outcome === 'refused')
-    if (last && !last.ok && !last.na && !expectsRefusal) {
+    if (this.driver.knowsStatus && last && !last.ok && !last.na && !expectsRefusal) {
       this.fail(`the action was refused with ${last.status}: ${detailOf(last)}`)
     }
+    await this.postconditions(expectsRefusal)
     for (const clause of clauses) {
       const result = await this.check(clause, last)
       if (!result.ok) this.fail(`${clause.outcome} does not hold: ${result.detail}`)
@@ -253,20 +230,39 @@ export class StepRun {
 
   /** Measures outcomes that can be measured and keeps the values for later steps. */
   async capture(what: Record<string, string>): Promise<void> {
-    const ctx = this.ctx()
+    await this.postconditions(false)
     for (const [name, outcomeName] of Object.entries(what)) {
-      const outcome = outcomeByName(outcomeName)
-      if (!outcome.measureApi) this.fail(`${outcomeName} cannot be measured`)
-      const value = await outcome.measureApi(ctx, {})
-      ctx.capture(name, value)
+      let value: number
+      try {
+        value = await this.driver.measure(this.procedure.actorKey(), outcomeName)
+      } catch (error) {
+        return this.fail(`${outcomeName} cannot be measured: ${error instanceof Error ? error.message : String(error)}`)
+      }
+      this.procedure.capture(name, value)
       this.note('PASS', `${name} = ${value}`)
     }
     this.close()
   }
 
   /** Ends a step that only acted (no expect clause): the postconditions were its verification. */
-  done(): void {
+  async done(): Promise<void> {
+    if (this.driver.knowsStatus && this.last && !this.last.ok && !this.last.na) {
+      this.fail(`the action was refused with ${this.last.status}: ${detailOf(this.last)}`)
+    }
+    await this.postconditions(false)
     this.close()
+  }
+
+  private async postconditions(expectsRefusal: boolean): Promise<void> {
+    const pending = this.pending
+    this.pending = undefined
+    if (!pending || expectsRefusal) return
+    if (this.driver.knowsStatus && this.last && (!this.last.ok || this.last.na)) return
+    if (this.last?.na) return
+    for (const ref of pending.postconditions) {
+      const result = await this.check(ref, this.last)
+      if (!result.ok) this.fail(`after ${pending.verb}, ${ref.outcome} does not hold: ${result.detail}`)
+    }
   }
 
   private close() {
@@ -279,7 +275,7 @@ export class StepRun {
     const args = outcome.args.parse(ref.args)
     let result: CheckResult
     try {
-      result = await outcome.api(this.ctx(), args, last)
+      result = await this.driver.check(this.procedure.actorKey(), { outcome: ref.outcome, args }, last)
     } catch (error) {
       return { ok: false, detail: error instanceof Error ? error.message : String(error) }
     }
@@ -287,8 +283,4 @@ export class StepRun {
     else if (result.manual) this.note('MANUAL', `${ref.outcome}: MANUAL, ${result.manual}`)
     return result
   }
-}
-
-export function procedure(persona: string, number: number, yamlSha256: string): ApiProcedure {
-  return new ApiProcedure(persona, number, yamlSha256)
 }

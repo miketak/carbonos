@@ -52,7 +52,7 @@ export const requestAccess = defineVerb({
     ...(company ? [{ op: 'fill', label: S.field.company, value: company, within: S.dialog.requestAccess } as const] : []),
     { op: 'click', button: S.button.requestAccess, within: S.dialog.requestAccess },
   ],
-  postconditions: ({ user }) => [{ outcome: 'accessRequestStatus', args: { user, status: 'PENDING' } }],
+  postconditions: ({ user }) => [{ outcome: 'accessRequestSubmitted', args: { user } }],
 })
 
 export const authVerbs = [signIn, signOut, requestAccess]

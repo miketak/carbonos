@@ -52,7 +52,7 @@ class UserAdminController {
 	@PostMapping
 	ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest body) {
 		if (!com.carbonos.user.internal.PasswordPolicy.accepts(body.temporaryPassword())) {
-			throw new com.carbonos.user.internal.WeakPasswordException();
+			throw new com.carbonos.user.internal.WeakPasswordException("temporaryPassword");
 		}
 		var user = userService.create(body.email(), body.displayName(), body.role(), body.temporaryPassword());
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(user.getId())

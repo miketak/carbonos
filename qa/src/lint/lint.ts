@@ -81,7 +81,7 @@ export function lint(persona: string): LintReport {
     }
     const text = readFileSync(join(REPO_ROOT, file), 'utf8')
     text.split('\n').forEach((line, i) => {
-      if (line.includes('—')) problems.push(`${file}:${i + 1}: em-dash`)
+      if (line.includes(String.fromCharCode(0x2014))) problems.push(`${file}:${i + 1}: em-dash`)
     })
     summary.push(
       `${file}: ${steps} steps, ${[...kinds.entries()].map(([k, v]) => `${k} ${v}`).join(', ')}${observes ? `, observe ${observes} (MANUAL)` : ''}`,

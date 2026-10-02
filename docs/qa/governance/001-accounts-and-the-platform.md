@@ -51,7 +51,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Signed out, in the private window, open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Ama Owusu", fill in **Work email** with the Ama alias, fill in **Company (optional)** with `Adansi Foods Ltd`, then click **Request access**. | Ama Owusu's request is listed under **Waiting for a decision**. |  |  |
+| 1 | Signed out, in the private window, open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Ama Owusu", fill in **Work email** with the Ama alias, fill in **Company (optional)** with `Adansi Foods Ltd`, then click **Request access**. | The dialog thanks Ama by name and says the request is with the team. |  |  |
 | 2 | Open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Ama Owusu", fill in **Work email** with the Ama alias, fill in **Company (optional)** with `Adansi Foods Ltd`, then click **Request access**. | Refused: "An account or pending request already exists for 'the Ama alias'.". |  |  |
 | 3 | Open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Kofi Mensah", fill in **Work email** with the Kofi alias, then click **Request access**. | Refused: "An account or pending request already exists for 'the Kofi alias'.": the message does not say whether the address holds an account or a request. |  |  |
 | 4 | Try to sign in as "Ama Owusu" with any password. | Refused: "Invalid email or password.": a request is not an account. |  |  |

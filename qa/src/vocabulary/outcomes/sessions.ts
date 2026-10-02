@@ -12,7 +12,7 @@ export const signedIn = defineOutcome({
     const out = await ctx.sessionOf(user).get('/api/auth/me')
     return out.ok ? pass() : fail(`${user} is not signed in (${out.status})`)
   },
-  ui: () => [{ check: 'url', path: '/app' }],
+  ui: () => [{ check: 'signedIn' }],
   narrate: ({ user }, n) => `${n.actorName(user)} is signed in.`,
 })
 

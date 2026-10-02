@@ -27,6 +27,11 @@ public record Rule(String id, HttpStatus status, String message, String field) {
 		return new Rule(id, HttpStatus.UNPROCESSABLE_ENTITY, message, field);
 	}
 
+	/** The same rule under another form's field name (the profile's password field is {@code newPassword}). */
+	public Rule withField(String otherField) {
+		return new Rule(id, status, message, otherField);
+	}
+
 	/** The message with its placeholders filled in, in order of appearance. */
 	public String format(Object... values) {
 		var out = message;

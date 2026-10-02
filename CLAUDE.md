@@ -1,7 +1,8 @@
 # CarbonOS
 
 Monorepo: Spring Boot modular monolith (`backend/`) + React SPA (`frontend/`),
-deployed to Railway. Specs live in `specs/`.
+deployed to Railway. Specs live in `specs/`. QA procedures are scenarios in
+`qa/` (ADR 0007), projected to the Markdown under `docs/qa/`.
 
 ## Architecture rules (enforced)
 
@@ -23,6 +24,12 @@ deployed to Railway. Specs live in `specs/`.
 - Every schema change is a Flyway migration in
   `backend/src/main/resources/db/migration`. Never edit an applied migration;
   add a new one. Hibernate `ddl-auto` stays `validate`.
+- A refusal the product makes is a `Rule` (`shared/web/Rule.java`) declared
+  in the module's `*Rules` class and thrown as a `RuleViolation`, so the
+  problem detail carries a `rule` id the QA scenarios cite (ADR 0008). A
+  new refusal gets a rule; a reworded one updates the catalogue
+  (`make qa-rules`) and regenerates the pack (`make qa-export`) in the same PR.
+  The `qa` module (`/api/qa/**`) exists only with `carbonos.qa.endpoints=true`.
 
 **Frontend: feature-sliced React.**
 
@@ -55,6 +62,10 @@ deployed to Railway. Specs live in `specs/`.
    - New behavior has tests; bug fixes have a regression test.
    - Schema changes have a Flyway migration.
    - Spec status/index updated.
+   - QA scenarios: `make qa-lint qa-compile-check qa-export-check` pass. Edit
+     the YAML under `qa/packs/`, never the generated Markdown, specs or
+     records; a product string or flow a procedure relies on changes the
+     scenario or the vocabulary (`qa/src/vocabulary/`) in the same PR.
 
 ## Documentation
 
@@ -104,6 +115,11 @@ npm run build                     # type-check + production build
 
 make docs-serve                   # engineering docs on :8000 (needs uv)
 make docs-check                   # strict docs build + Vale
+
+make qa-lint qa-export qa-compile # QA scenarios: check, then regenerate docs/qa and qa/generated
+make qa-doctor                    # is the local stack ready for a driver run?
+make qa-run-api QA_PROC=1         # drive procedure 1 through the API (qa-run-ui: through the browser)
+make qa-record QA_PROC=1 DRIVER=api
 ```
 
 Java 25 (Temurin) is installed via SDKMAN; non-login shells may need

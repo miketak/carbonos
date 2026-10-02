@@ -98,6 +98,8 @@ nav:
       - how-to/add-a-migration.md
       - how-to/deploy-and-release.md
       - how-to/publish-qa-procedures.md
+      - how-to/write-a-qa-scenario.md
+      - how-to/run-a-qa-procedure.md
       - how-to/re-derive-the-get-started-series.md
   - Reference:
       - reference/index.md
@@ -209,6 +211,8 @@ nav:
           - adr/0004-a-platform-module-for-deployment-policy.md
           - adr/0005-a-separate-mkdocs-site-for-end-user-help.md
           - adr/0006-serve-end-user-help-as-routes-of-the-app.md
+          - adr/0007-qa-procedures-as-pure-scenarios-with-generated-projections.md
+          - adr/0008-a-qa-module-for-local-test-hooks.md
       - Reviews:
           - reviews/2026-09-08-ghg-officer-ui-audit.md
           - reviews/2026-09-11-ghg-officer-ui-audit.md

@@ -31,6 +31,7 @@ export type UiCheck =
   | { check: 'rowAbsent'; text: string }
   | { check: 'buttonVisible'; button: string; visible: boolean }
   | { check: 'signedOut' }
+  | { check: 'signedIn' }
   | { check: 'url'; path: string }
   | { check: 'count'; nav: string; label: string; since?: string; added?: number; equals?: number }
   | { check: 'manual'; text: string }

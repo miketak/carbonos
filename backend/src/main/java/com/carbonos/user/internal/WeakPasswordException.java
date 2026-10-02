@@ -9,8 +9,8 @@ public class WeakPasswordException extends RuleViolation {
 		this("password");
 	}
 
-	/** The rule under the form's own field name (the profile's is {@code newPassword}, spec 01.9). */
+	/** The rule under the form's own field name: {@code temporaryPassword} on Users, {@code newPassword} on the profile (spec 01.9). */
 	public WeakPasswordException(String field) {
-		super("newPassword".equals(field) ? UserRules.NEW_PASSWORD_WEAK : UserRules.PASSWORD_WEAK, "Validation failed");
+		super(UserRules.PASSWORD_WEAK.withField(field), "Validation failed");
 	}
 }

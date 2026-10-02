@@ -49,3 +49,5 @@ form.
 | [0004](0004-a-platform-module-for-deployment-policy.md) | A platform module for deployment policy | accepted | 2026-09-14 |
 | [0005](0005-a-separate-mkdocs-site-for-end-user-help.md) | Publish end-user help as a second MkDocs site under help/, sharing the uv toolchain | superseded by ADR-0006 | 2026-09-24 |
 | [0006](0006-serve-end-user-help-as-routes-of-the-app.md) | Serve end-user help as routes of the React app, compiled from help/docs at build time | accepted | 2026-09-28 |
+| [0007](0007-qa-procedures-as-pure-scenarios-with-generated-projections.md) | Write QA procedures as pure domain scenarios and generate their projections | proposed | 2026-10-02 |
+| [0008](0008-a-qa-module-for-local-test-hooks.md) | A `qa` module for the local stack's test hooks | proposed | 2026-10-02 |

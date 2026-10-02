@@ -16,9 +16,6 @@ public class UserRules implements RuleSource {
 
 	public static final Rule PASSWORD_WEAK = Rule.field("user.password.weak", "password", PASSWORD_RULE);
 
-	/** The profile's change names its field {@code newPassword} (spec 01.9). */
-	public static final Rule NEW_PASSWORD_WEAK = Rule.field("user.password.weak", "newPassword", PASSWORD_RULE);
-
 	public static final Rule PASSWORD_SAME = Rule.field("user.password.same", "newPassword",
 			"Choose a password different from your current one.");
 
