@@ -26,11 +26,12 @@ does the same.
 | `verify` | The full Definition of Done: `./mvnw verify`, then the frontend's lint, format check, tests and build, then `qa-lint`, `qa-compile-check` and `qa-export-check`. | Docker, Java 25, Node 22 |
 | `docs` | Builds the docs site into `site/` with `--strict`; any warning fails. | uv |
 | `docs-serve` | Serves the docs on http://127.0.0.1:8000 with live reload. | uv |
-| `docs-check` | `docs`, then `qa-export-check` (the QA procedures match their YAML), then `vale`. The Definition of Done for a docs change. | uv, Node 22, Vale (optional) |
+| `docs-check` | `docs`, then `qa-export-check` (the QA procedures match their YAML), then `qa-sheets-check`, then `vale`. The Definition of Done for a docs change. | uv, Node 22, Vale (optional) |
 | `help-serve` | Runs the Vite dev server, which compiles the help from `help/docs` on change and serves it at http://localhost:5173/help (ADR 0006). The same as `frontend`, named for help authors. | Node 22 |
 | `help-check` | The help compiler's checks (`cd frontend && npm run help:check`: every page in `help/tree.yaml`, links and anchors, word budgets, em-dashes, diagrams), then `vale`. The Definition of Done for a help change (ADR 0006). | Node 22, Vale (optional) |
 | `vale [BASE=<ref>]` | Runs Vale on the Markdown changed against `BASE` (default `origin/main`), including untracked files. Skips when Vale is not installed. | Vale |
-| `qa-docs` | Exports the QA procedures as DOCX under `build/qa-docs/`, with the persona's `fixtures/` folder beside them, ready to upload to the QA team's Drive folder. | uv, pandoc |
+| `qa-docs` | Exports a persona's QA procedures (governance by default, `PERSONA=mining` for the other) as DOCX under `build/qa-docs/`, with the verdict workbook (`XLSX=0` skips it) and the persona's `fixtures/` folder beside them, ready to upload to the QA team's Drive folder. | uv, pandoc |
+| `qa-sheets-check` | Parses the governance procedures and builds the verdict workbook in memory, writing nothing: the guard that the Markdown still has the shape `scripts/qa_sheets.py` reads. Part of `docs-check`. | uv |
 
 Targets that need an argument refuse to run without it and print their
 usage. The Python environment for the docs targets is created under

@@ -111,7 +111,11 @@ as such; a refusal it makes with a message is quoted. Where an expected result q
 with a value in it, the value is the one this scenario produces; a
 different value is a failure worth a note. At the end, fill in the
 sign-off table and file one issue per failed case with the **QA failure**
-template at https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml. The line under the document's title
+template at https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml. The same steps come as a
+workbook beside the documents, one sheet per procedure and one row per
+step, where the Pass/Fail cell offers PASS, FAIL and N/A and the Summary
+tab tallies the cases and carries the sign-off; record there if you prefer
+a sheet to a document. The line under the document's title
 ("Version v0.6.0 (5b27661), built ...") is the value for "Procedure and
 version tested"; add the procedure version beside it.
 

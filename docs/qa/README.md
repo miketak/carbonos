@@ -19,5 +19,6 @@ by copying a README, then writes its own scenario and procedures against
 the same specs.
 
 Each persona's README says what to prepare and how to read a procedure.
-`make qa-docs` exports a persona's procedures as Google Docs, with its
-fixture files beside them (see the how-to "Publish the QA procedures").
+`make qa-docs` exports a persona's procedures as Google Docs, with a verdict
+workbook (one sheet per procedure, one row per step) and its fixture files
+beside them (see the how-to "Publish the QA procedures").

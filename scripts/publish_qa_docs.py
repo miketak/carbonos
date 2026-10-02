@@ -5,8 +5,10 @@ Converts docs/qa/<persona>/README.md and docs/qa/<persona>/NNN-*.md with pandoc:
 title, a subtitle carries the git ref and build date, relative links point at
 GitHub, the pages are landscape so the step tables have room, and every table
 gets an outline. The persona's fixtures/ folder, when it has one, is copied next to the
-documents. Upload both to the shared Drive folder by hand; Drive converts the DOCX files to
-Google Docs. See docs/how-to/publish-qa-procedures.md.
+documents, and the verdict workbook (one row per step, see qa_sheets.py) is
+built beside them unless --no-xlsx is given. Upload the lot to the shared Drive
+folder by hand; Drive converts the DOCX files to Google Docs and the workbook to
+a Google Sheet. See docs/how-to/publish-qa-procedures.md.
 """
 
 from __future__ import annotations
@@ -118,7 +120,7 @@ def docx_path(out_dir: Path, source: Path) -> Path:
 # --- build ---------------------------------------------------------------------------
 
 
-def build(out_dir: Path, persona: str = DEFAULT_PERSONA) -> list[tuple[str, Path]]:
+def build(out_dir: Path, persona: str = DEFAULT_PERSONA, xlsx: bool = True) -> list[tuple[str, Path]]:
     pandoc = shutil.which("pandoc")
     if pandoc is None:
         sys.exit("pandoc is not installed: apt-get install pandoc, brew install pandoc, or see the how-to.")
@@ -149,6 +151,10 @@ def build(out_dir: Path, persona: str = DEFAULT_PERSONA) -> list[tuple[str, Path
     copied = copy_fixtures(out_dir, persona)
     if copied:
         print(f"copied {copied} fixture files to {_display(out_dir / 'fixtures')}")
+    if xlsx:
+        import qa_sheets
+
+        qa_sheets.build(out_dir, persona, info)
     print(f"{len(built)} documents, {info.subtitle}")
     return built
 
@@ -250,8 +256,9 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "build" / "qa-docs", help="where the DOCX files go")
     parser.add_argument("--persona", default=DEFAULT_PERSONA, help="the folder under docs/qa to export (default: mining)")
+    parser.add_argument("--no-xlsx", action="store_true", help="skip the verdict workbook (qa_sheets.py)")
     args = parser.parse_args(argv)
-    build(args.out, args.persona)
+    build(args.out, args.persona, xlsx=not args.no_xlsx)
 
 
 if __name__ == "__main__":
