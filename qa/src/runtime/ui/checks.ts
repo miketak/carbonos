@@ -7,7 +7,7 @@ import type { CheckResult } from '../../vocabulary/contract.ts'
 import type { UiCheck } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
 import type { ChainAccess } from '../shared/procedure.ts'
-import { clickable, dialog, open, openInventoryPage, openOrgPage, row, type ExecuteContext } from './execute.ts'
+import { dialog, open, openInventoryPage, openOrgPage, row, rowButton, type ExecuteContext } from './execute.ts'
 import { locators } from './locators.ts'
 import { resolveTokens } from '../shared/tokens.ts'
 import type { Windows } from './browser.ts'
@@ -39,7 +39,7 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         return { ok: true }
       }
       case 'rowDialogHas': {
-        await clickable(await row(page, t(check.row)), t(check.button)).click()
+        await (await rowButton(await row(page, t(check.row)), t(check.button))).click()
         const d = dialog(page, t(check.dialog))
         await expect(d.getByText(t(check.text), { exact: false }).first()).toBeVisible()
         await page.keyboard.press('Escape')

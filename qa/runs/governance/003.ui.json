@@ -1,6 +1,6 @@
 {
   "procedure": 3,
-  "driver": "api",
+  "driver": "ui",
   "yamlSha256": "202991c68884a57bfa9bf1d0edbb28b956004821ebcc9b68efca082571085c4f",
   "productVersion": null,
   "gitSha": "181580b4a912c4ab1973b2d52f01800a63f0ee69",
@@ -8,8 +8,8 @@
   "specialist": "unknown",
   "digestSha256": "a2ecd720bc26226d6a9d1f0739a917f2cfd116835d77030558b8e89eb6768fc4",
   "counts": {
-    "pass": 24,
-    "na": 0,
+    "pass": 17,
+    "na": 7,
     "manual": 2
   },
   "steps": [
@@ -19,7 +19,8 @@
     },
     {
       "id": "3.A1.2",
-      "status": "PASS"
+      "status": "NA",
+      "note": "importTemplateHeader: N/A, a download the browser saves; the API reads the file"
     },
     {
       "id": "3.A1.3",
@@ -27,7 +28,8 @@
     },
     {
       "id": "3.A2.1",
-      "status": "PASS"
+      "status": "NA",
+      "note": "activityOrder: N/A, the order of the register is read from the table, not asserted on screen yet"
     },
     {
       "id": "3.A2.2",
@@ -47,7 +49,8 @@
     },
     {
       "id": "3.C1.3",
-      "status": "PASS"
+      "status": "NA",
+      "note": "activityHistoryHas: N/A, the record history opens in a modal the checks do not drive yet"
     },
     {
       "id": "3.D1.1",
@@ -55,7 +58,8 @@
     },
     {
       "id": "3.D1.2",
-      "status": "PASS"
+      "status": "NA",
+      "note": "activityHistoryHas: N/A, the record history opens in a modal the checks do not drive yet"
     },
     {
       "id": "3.D1.3",
@@ -68,11 +72,13 @@
     },
     {
       "id": "3.E1.2",
-      "status": "PASS"
+      "status": "NA",
+      "note": "activityHistoryHas: N/A, the record history opens in a modal the checks do not drive yet | activityHistoryHas: N/A, the record history opens in a modal the checks do not drive yet"
     },
     {
       "id": "3.E1.3",
-      "status": "PASS"
+      "status": "NA",
+      "note": "activityHistoryHas: N/A, the record history opens in a modal the checks do not drive yet | activityHistoryHas: N/A, the record history opens in a modal the checks do not drive yet"
     },
     {
       "id": "3.F1.1",
@@ -112,7 +118,8 @@
     },
     {
       "id": "3.H1.2",
-      "status": "PASS"
+      "status": "NA",
+      "note": "evidenceIndexHeader: N/A, a download the browser saves; the API reads the file"
     },
     {
       "id": "3.I1.1",

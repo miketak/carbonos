@@ -81,13 +81,25 @@ export async function openInventoryPage(page: Page, ctx: ExecuteContext, organiz
 const ZEROS = '0'.repeat(64)
 
 export function clickable(scope: Page | Locator, name: string): Locator {
-  // the visible caption, or an accessible name that starts with it ("Import pack <pack name>")
-  const prefixed = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( |$)`)
+  // a button may carry a keyboard hint after its caption ("+ Add activity N"), which joins its accessible name
+  const withKey = new RegExp(`^${escapeRegExp(name)} [A-Z]$`)
   return scope
     .getByRole('button', { name, exact: true })
     .or(scope.getByRole('link', { name, exact: true }))
-    .or(scope.getByRole('button', { name: prefixed }))
+    .or(scope.getByRole('button', { name: withKey }))
     .first()
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** A row's button by its caption, else by an accessible name that starts with it ("Import pack <pack name>"). */
+export async function rowButton(scope: Locator, name: string): Promise<Locator> {
+  const exact = clickable(scope, name)
+  if ((await exact.count()) > 0) return exact
+  const prefixed = new RegExp(`^${escapeRegExp(name)} `)
+  return scope.getByRole('button', { name: prefixed }).first()
 }
 
 export function dialog(page: Page, title: string): Locator {
@@ -112,8 +124,9 @@ export async function dismissDialogs(page: Page): Promise<void> {
   await page.keyboard.press('Escape')
   if ((await dialogs.count()) === 0) return
   const close = dialogs.first().getByRole('button', { name: /^(Cancel|Close|Done)$/ }).first()
-  if ((await close.count()) > 0) await close.click()
-  await expect(dialogs).toHaveCount(0)
+  // a drawer that will not close keeps nothing: the navigation that follows replaces the page anyway
+  if ((await close.count()) > 0) await close.click({ timeout: 3_000 }).catch(() => undefined)
+  await expect(dialogs).toHaveCount(0, { timeout: 3_000 }).catch(() => undefined)
 }
 
 /** Goes where the sidebar label leads; by its link when the sidebar is on screen, else by its route. */
@@ -159,8 +172,12 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
     case 'tick': {
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
       const box = scope.getByLabel(t(op.label), { exact: true })
-      if (op.on === false) await box.uncheck()
-      else await box.check()
+      // a controlled checkbox (the boundary's) flips only after the server answers: click, then wait for the state
+      const want = op.on !== false
+      if ((await box.isChecked()) !== want) {
+        await box.click()
+        await expect(box).toBeChecked({ checked: want })
+      }
       return
     }
     case 'goto':
@@ -223,7 +240,7 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       await page.getByRole('menuitem', { name: t(op.item), exact: true }).click()
       return
     case 'row':
-      await clickable(await row(page, t(op.text)), t(op.button)).click()
+      await (await rowButton(await row(page, t(op.text)), t(op.button))).click()
       return
     case 'openRow':
       // the register opens a record from its name, the row's first button
