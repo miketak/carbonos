@@ -1,0 +1,3823 @@
+{
+  "version": 1,
+  "notes": "Hand-computed expected outputs for the GHG calculation engine. A line is round3(converted × periodShare × kgCo2ePerUnit × accountingShare), each gas column alike; the period share is coveredDays/totalDays to six decimals half up (exactly 1 when every day is covered); conversions are DECIMAL64; a run total is the sum of its rounded lines; base-year shares are to two decimals half up; tonnes to three. Decimals are strings so no digit is lost; dates are ISO.",
+  "gwpReference": {
+    "AR5": {
+      "CH4_fossil": "28",
+      "CH4_biogenic": "28",
+      "N2O": "265",
+      "SF6": "23500",
+      "HFC_32": "677",
+      "HFC_125": "3170"
+    },
+    "AR6": {
+      "CH4_fossil": "29.8",
+      "CH4_biogenic": "27.9",
+      "N2O": "273",
+      "SF6": "25200",
+      "HFC_32": "771",
+      "HFC_125": "3740"
+    }
+  },
+  "factors": {
+    "diesel": {
+      "name": "Diesel (100% mineral diesel)",
+      "scope": "SCOPE_1",
+      "category": "MOBILE_COMBUSTION",
+      "unit": "litre",
+      "kgCo2ePerUnit": "2.66",
+      "co2": "2.6307",
+      "ch4": "0.0001",
+      "ch4Fossil": true,
+      "n2o": "0.0001"
+    },
+    "dieselPerKg": {
+      "name": "Diesel per kilogram",
+      "scope": "SCOPE_1",
+      "category": "MOBILE_COMBUSTION",
+      "unit": "kg",
+      "kgCo2ePerUnit": "3.17",
+      "co2": "3.17"
+    },
+    "grid": {
+      "name": "Grid electricity (Ghana)",
+      "scope": "SCOPE_2",
+      "category": "PURCHASED_ELECTRICITY",
+      "unit": "kWh",
+      "kgCo2ePerUnit": "0.441",
+      "co2": "0.441"
+    },
+    "co2eOnlySteam": {
+      "name": "Supplier steam, CO2e only",
+      "scope": "SCOPE_2",
+      "category": "PURCHASED_HEAT_STEAM",
+      "unit": "kWh",
+      "kgCo2ePerUnit": "0.5"
+    },
+    "everyGas": {
+      "name": "Test fuel with every gas",
+      "scope": "SCOPE_1",
+      "category": "STATIONARY_COMBUSTION",
+      "unit": "litre",
+      "kgCo2ePerUnit": "4.588",
+      "co2": "2.5",
+      "ch4": "0.01",
+      "ch4Fossil": true,
+      "n2o": "0.002",
+      "hfcsKg": "0.001",
+      "sf6": "0.0001",
+      "biogenicCo2": "0.3"
+    },
+    "pellets": {
+      "name": "Wood pellets (biomass)",
+      "scope": "SCOPE_1",
+      "category": "STATIONARY_COMBUSTION",
+      "unit": "tonne",
+      "kgCo2ePerUnit": "14.99",
+      "ch4": "0.1",
+      "ch4Fossil": false,
+      "n2o": "0.046",
+      "biogenicCo2": "1800"
+    },
+    "landfill": {
+      "name": "Commercial and industrial waste to landfill",
+      "scope": "SCOPE_3",
+      "category": "WASTE_GENERATED",
+      "unit": "tonne",
+      "kgCo2ePerUnit": "446.2",
+      "co2": "12.2",
+      "ch4": "15.5",
+      "ch4Fossil": false
+    },
+    "r410a": {
+      "name": "Refrigerant R-410A leakage",
+      "scope": "SCOPE_1",
+      "category": "FUGITIVE_EMISSIONS",
+      "unit": "kg",
+      "kgCo2ePerUnit": "1923.5",
+      "hfcsKg": "1",
+      "blendComposition": "HFC-32:0.5,HFC-125:0.5",
+      "blendGwpSource": "AR5"
+    },
+    "r410aNoComposition": {
+      "name": "Refrigerant R-410A leakage (no composition)",
+      "scope": "SCOPE_1",
+      "category": "FUGITIVE_EMISSIONS",
+      "unit": "kg",
+      "kgCo2ePerUnit": "1923.5",
+      "hfcsKg": "1",
+      "blendGwpSource": "AR5"
+    },
+    "hcfc22": {
+      "name": "HCFC-22 (R-22) leakage",
+      "scope": "SCOPE_1",
+      "category": "FUGITIVE_EMISSIONS",
+      "unit": "kg",
+      "kgCo2ePerUnit": "1760",
+      "hfcsKg": "1",
+      "blendGwpSource": "AR5",
+      "reportingBasis": "OUTSIDE_SCOPES_NON_KYOTO"
+    },
+    "wttDiesel": {
+      "name": "Well-to-tank, diesel",
+      "scope": "SCOPE_3",
+      "category": "FUEL_ENERGY_RELATED",
+      "unit": "litre",
+      "kgCo2ePerUnit": "0.61",
+      "co2": "0.61"
+    },
+    "wttDieselPerGallon": {
+      "name": "Well-to-tank, diesel per US gallon",
+      "scope": "SCOPE_3",
+      "category": "FUEL_ENERGY_RELATED",
+      "unit": "US-gallon",
+      "kgCo2ePerUnit": "2.31",
+      "co2": "2.31"
+    },
+    "tdLosses": {
+      "name": "Transmission and distribution losses",
+      "scope": "SCOPE_3",
+      "category": "FUEL_ENERGY_RELATED",
+      "unit": "kWh",
+      "kgCo2ePerUnit": "0.04",
+      "co2": "0.04"
+    },
+    "tiny": {
+      "name": "Tiny factor",
+      "scope": "SCOPE_1",
+      "category": "STATIONARY_COMBUSTION",
+      "unit": "litre",
+      "kgCo2ePerUnit": "0.001",
+      "co2": "0.001"
+    }
+  },
+  "lines": [
+    {
+      "id": "L01",
+      "description": "Diesel, a full year at 100%",
+      "source": "1000 litre × 2.66 kg/litre × 1 × 1 = 2660; co2 1000 × 2.6307; ch4 1000 × 0.0001; n2o 1000 × 0.0001; the gas rows foot: 2630.7 + 0.1×28 + 0.1×265 = 2660 (mirrors GhgApiIntegrationTests 2660)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "2660.000",
+            "co2Kg": "2630.700",
+            "ch4Kg": "0.100",
+            "n2oKg": "0.100",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "2660.000",
+          "scope1KgCo2e": "2660.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "2630.700",
+          "ch4Kg": "0.100",
+          "ch4FossilKg": "0.100",
+          "n2oKg": "0.100",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L02",
+      "description": "Diesel under a 40% equity share",
+      "source": "1000 × 2.66 × 0.4 = 1064; every gas carries the same 0.4 (mirrors 1064)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "EQUITY_SHARE",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "0.4000",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "1064.000",
+            "co2Kg": "1052.280",
+            "ch4Kg": "0.040",
+            "n2oKg": "0.040",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "0.4",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "1064.000",
+          "scope1KgCo2e": "1064.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "1052.280",
+          "ch4Kg": "0.040",
+          "ch4FossilKg": "0.040",
+          "n2oKg": "0.040",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L03",
+      "description": "US gallons converted to litres before pricing",
+      "source": "10000 US-gallon × 3.785411784 = 37854.11784 litre; × 2.66 = 100691.9534544 → 100691.953; the gas rows round each to 3 dp so they foot within 0.15 kg (mirrors 100691.953)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "10000",
+            "unit": "US-gallon",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "100691.953",
+            "co2Kg": "99582.828",
+            "ch4Kg": "3.785",
+            "n2oKg": "3.785",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "37854.11784",
+            "conversionFactor": "3.785412",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "100691.953",
+          "scope1KgCo2e": "100691.953",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "99582.828",
+          "ch4Kg": "3.785",
+          "ch4FossilKg": "3.785",
+          "n2oKg": "3.785",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0.15"
+        }
+      }
+    },
+    {
+      "id": "L04",
+      "description": "An annual record pro-rated to a membership window from July",
+      "source": "period share 184/365 = 0.504110 (6 dp, half up); 100000 × 0.504110 × 2.66 = 134093.26 (mirrors 134093.26; the exact 134093.151 is not what the engine prints because the share is rounded first); the gas rows each round to 3 dp, so they foot within 0.03 kg",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "100000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 184,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "134093.260",
+            "co2Kg": "132616.218",
+            "ch4Kg": "5.041",
+            "n2oKg": "5.041",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "100000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "1",
+            "periodShare": "0.50411",
+            "periodNote": "pro-rated: 184 of 365 days inside the reporting period and the membership window (50.41%)",
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "134093.260",
+          "scope1KgCo2e": "134093.260",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "132616.218",
+          "ch4Kg": "5.041",
+          "ch4FossilKg": "5.041",
+          "n2oKg": "5.041",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0.03"
+        }
+      }
+    },
+    {
+      "id": "L05",
+      "description": "A year-end read straddling the period end",
+      "source": "16 of 31 days = 0.516129; 1000 × 0.516129 × 2.66 = 1372.903 (mirrors 1372.903); ch4 and n2o round 0.0516129 up to 0.052, so the gas rows foot within 0.12 kg",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Boiler diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-12-16",
+              "end": "2026-01-15"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 16,
+              "totalDays": 31
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "1372.903",
+            "co2Kg": "1357.781",
+            "ch4Kg": "0.052",
+            "n2oKg": "0.052",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "1",
+            "periodShare": "0.516129",
+            "periodNote": "pro-rated: 16 of 31 days inside the reporting period and the membership window (51.61%)",
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "1372.903",
+          "scope1KgCo2e": "1372.903",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "1357.781",
+          "ch4Kg": "0.052",
+          "ch4FossilKg": "0.052",
+          "n2oKg": "0.052",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0.12"
+        }
+      }
+    },
+    {
+      "id": "L06",
+      "description": "Every gas column carries the period share and the accounting share",
+      "source": "perUnit = 2.5 + 0.01×28 + 0.002×265 + 0.001 kg HFC at (4.588 − 2.5)/kg + 0.0001×23500 = 7.748; counted 1000 × 0.5; × 7.748 × 0.4 = 1549.6; HFCs 500 × 2.088 × 0.4 = 417.6 (mirrors 1549.6)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "EQUITY_SHARE",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Test fuel",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-03-01"
+            },
+            "factor": "everyGas",
+            "coverage": {
+              "share": "0.4",
+              "coveredDays": 30,
+              "totalDays": 60
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "1549.600",
+            "co2Kg": "500.000",
+            "ch4Kg": "2.000",
+            "n2oKg": "0.400",
+            "hfcsKgCo2e": "417.600",
+            "sf6Kg": "0.020",
+            "biogenicCo2Kg": "60.000",
+            "hfcsKg": "0.200",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "7.748",
+            "weight": "0.4",
+            "periodShare": "0.5",
+            "periodNote": "pro-rated: 30 of 60 days inside the reporting period and the membership window (50%)",
+            "scope": "SCOPE_1",
+            "category": "STATIONARY_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "1549.600",
+          "scope1KgCo2e": "1549.600",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "500.000",
+          "ch4Kg": "2.000",
+          "ch4FossilKg": "2.000",
+          "n2oKg": "0.400",
+          "hfcsKgCo2e": "417.600",
+          "biogenicCo2Kg": "60.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L07",
+      "description": "An HFC blend priced on AR5 from its composition",
+      "source": "10 kg × (0.5×677 + 0.5×3170) = 19235 (mirrors 19235)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Chiller top-up",
+            "facility": "Kumasi Plant",
+            "quantity": "10",
+            "unit": "kg",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "r410a",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "19235.000",
+            "co2Kg": "0.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "19235.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "10.000",
+            "blendGwpSource": "AR5",
+            "ch4Fossil": false,
+            "convertedQuantity": "10",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "1923.5",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "FUGITIVE_EMISSIONS",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "19235.000",
+          "scope1KgCo2e": "19235.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "19235.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0",
+          "assessmentReports": [
+            "AR5"
+          ]
+        }
+      }
+    },
+    {
+      "id": "L08",
+      "description": "The same blend re-derived on AR6",
+      "source": "10 × (0.5×771 + 0.5×3740) = 22555 (mirrors 22555)",
+      "inputs": {
+        "gwpSet": "AR6",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Chiller top-up",
+            "facility": "Kumasi Plant",
+            "quantity": "10",
+            "unit": "kg",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "r410a",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "22555.000",
+            "co2Kg": "0.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "22555.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "10.000",
+            "blendGwpSource": "AR6",
+            "ch4Fossil": false,
+            "convertedQuantity": "10",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2255.5",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "FUGITIVE_EMISSIONS",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "22555.000",
+          "scope1KgCo2e": "22555.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "22555.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0",
+          "assessmentReports": [
+            "AR6"
+          ]
+        }
+      }
+    },
+    {
+      "id": "L09",
+      "description": "A blend without a composition keeps the published CO2e and its source basis",
+      "source": "10 × 1923.5 = 19235 under AR6 too; the line says AR5, so the run cites both sets",
+      "inputs": {
+        "gwpSet": "AR6",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Chiller top-up",
+            "facility": "Kumasi Plant",
+            "quantity": "10",
+            "unit": "kg",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "r410aNoComposition",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "19235.000",
+            "co2Kg": "0.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "19235.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "10.000",
+            "blendGwpSource": "AR5",
+            "ch4Fossil": false,
+            "convertedQuantity": "10",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "1923.5",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "FUGITIVE_EMISSIONS",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "19235.000",
+          "scope1KgCo2e": "19235.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "19235.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0",
+          "assessmentReports": [
+            "AR6",
+            "AR5"
+          ]
+        }
+      }
+    },
+    {
+      "id": "L10",
+      "description": "A CO2e-only factor is unsplit and keeps its figure on either set",
+      "source": "1000 kWh × 0.5 = 500; no gas column; purchased steam takes no instrument",
+      "inputs": {
+        "gwpSet": "AR6",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Supplier steam",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "kWh",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "co2eOnlySteam",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "500.000",
+            "co2Kg": "0.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.5",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_HEAT_STEAM",
+            "reportingBasis": "SCOPES",
+            "unsplit": true,
+            "market": {
+              "kgCo2e": "500.000",
+              "instrument": null,
+              "coveredKwh": "0",
+              "balanceKwh": "0",
+              "balanceBasis": null,
+              "noteStartsWith": "no contractual instrument applies to"
+            },
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "500.000",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "500.000",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "500.000",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "500.000",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L11",
+      "description": "Biomass and landfill on AR5: biogenic CO2 apart, methane counted",
+      "source": "pellets 10 × (0.1×28 + 0.046×265) = 149.9 with 18000 kg biogenic CO2 apart; landfill 1 × (12.2 + 15.5×28) = 446.2; total 596.1 (mirrors 596.1)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Pellet boiler",
+            "facility": "Kumasi Plant",
+            "quantity": "10",
+            "unit": "tonne",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "pellets",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          },
+          {
+            "ref": 2,
+            "activityType": "Waste to landfill",
+            "facility": "Kumasi Plant",
+            "quantity": "1",
+            "unit": "tonne",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "landfill",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "149.900",
+            "co2Kg": "0.000",
+            "ch4Kg": "1.000",
+            "n2oKg": "0.460",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "18000.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "10",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "14.99",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "STATIONARY_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          },
+          {
+            "ref": "ACT-0002",
+            "kgCo2e": "446.200",
+            "co2Kg": "12.200",
+            "ch4Kg": "15.500",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "1",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "446.2",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_3",
+            "category": "WASTE_GENERATED",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "596.100",
+          "scope1KgCo2e": "149.900",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "446.200",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "12.200",
+          "ch4Kg": "16.500",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.460",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "18000.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 2,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L12",
+      "description": "Biomass on AR6 uses the non-fossil methane potential",
+      "source": "10 × (0.1×27.9 + 0.046×273) = 153.48 (mirrors 153.48)",
+      "inputs": {
+        "gwpSet": "AR6",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Pellet boiler",
+            "facility": "Kumasi Plant",
+            "quantity": "10",
+            "unit": "tonne",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "pellets",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "153.480",
+            "co2Kg": "0.000",
+            "ch4Kg": "1.000",
+            "n2oKg": "0.460",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "18000.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "10",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "15.348",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "STATIONARY_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "153.480",
+          "scope1KgCo2e": "153.480",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0.000",
+          "ch4Kg": "1.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.460",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "18000.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L13",
+      "description": "Diesel on AR6 uses the fossil methane potential",
+      "source": "perUnit 2.6307 + 0.0001×29.8 + 0.0001×273 = 2.66098; × 1000 = 2660.98",
+      "inputs": {
+        "gwpSet": "AR6",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "2660.980",
+            "co2Kg": "2630.700",
+            "ch4Kg": "0.100",
+            "n2oKg": "0.100",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66098",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "2660.980",
+          "scope1KgCo2e": "2660.980",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "2630.700",
+          "ch4Kg": "0.100",
+          "ch4FossilKg": "0.100",
+          "n2oKg": "0.100",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L14",
+      "description": "A zero quantity prices to zero everywhere and is still a line",
+      "source": "0 × 2.66 = 0; counted",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "0",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "0.000",
+            "co2Kg": "0.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "0",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "0.000",
+          "scope1KgCo2e": "0.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0.000",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L15",
+      "description": "Volume to mass through a density",
+      "source": "1000 litre × 0.84 kg/litre = 840 kg; × 3.17 = 2662.8",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "dieselPerKg",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            },
+            "density": {
+              "material": "Diesel",
+              "kgPerLitre": "0.84",
+              "typical": true
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "2662.800",
+            "co2Kg": "2662.800",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "840",
+            "conversionFactor": "0.84",
+            "conversionNote": "1000 litre = 1000 litre × 0.84 kg/litre = 840 kg (density of Diesel, typical value)",
+            "kgCo2ePerUnit": "3.17",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "2662.800",
+          "scope1KgCo2e": "2662.800",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "2662.800",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L16",
+      "description": "Mass to volume through a density",
+      "source": "12 tonne = 12000 kg ÷ 0.84 = 14285.714286 litre; × 2.66 = 38000; ch4 and n2o round 1.4285714 to 1.429, so the gas rows foot within 0.13 kg",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "12",
+            "unit": "tonne",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            },
+            "density": {
+              "material": "Diesel",
+              "kgPerLitre": "0.84",
+              "typical": false
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "38000.000",
+            "co2Kg": "37581.429",
+            "ch4Kg": "1.429",
+            "n2oKg": "1.429",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "14285.714286",
+            "conversionFactor": "1190.47619",
+            "conversionNote": "12 tonne = 12000 kg ÷ 0.84 kg/litre = 14285.714286 litre (density of Diesel)",
+            "kgCo2ePerUnit": "2.66",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "38000.000",
+          "scope1KgCo2e": "38000.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "37581.429",
+          "ch4Kg": "1.429",
+          "ch4FossilKg": "1.429",
+          "n2oKg": "1.429",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0.13"
+        }
+      }
+    },
+    {
+      "id": "L17",
+      "description": "A custom unit converts as a multiple of its base",
+      "source": "3 drum × 200 litre = 600 litre; × 2.66 = 1596",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "3",
+            "unit": "drum",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ],
+        "customUnits": [
+          {
+            "code": "drum",
+            "base": "litre",
+            "factor": "200"
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "1596.000",
+            "co2Kg": "1578.420",
+            "ch4Kg": "0.060",
+            "n2oKg": "0.060",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "600",
+            "conversionFactor": "200",
+            "conversionNote": "1 drum = 200 litre",
+            "kgCo2ePerUnit": "2.66",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "1596.000",
+          "scope1KgCo2e": "1596.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "1578.420",
+          "ch4Kg": "0.060",
+          "ch4FossilKg": "0.060",
+          "n2oKg": "0.060",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L18",
+      "description": "A well-to-tank line derived from a scope 1 line",
+      "source": "derived: 1000 litre × 0.61 = 610 in scope 3, category 3; run 2660 + 610 = 3270",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            },
+            "upstreamRules": [
+              {
+                "upstream": "wttDiesel",
+                "kind": "WELL_TO_TANK"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "2660.000",
+            "co2Kg": "2630.700",
+            "ch4Kg": "0.100",
+            "n2oKg": "0.100",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": [
+              {
+                "upstream": "wttDiesel",
+                "kind": "WELL_TO_TANK",
+                "kgCo2e": "610.000",
+                "co2Kg": "610.000",
+                "scope": "SCOPE_3",
+                "category": "FUEL_ENERGY_RELATED",
+                "note": "well-to-tank of ACT-0001 Fleet diesel",
+                "conversionFactor": "1"
+              }
+            ]
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "3270.000",
+          "scope1KgCo2e": "2660.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "610.000",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "3240.700",
+          "ch4Kg": "0.100",
+          "ch4FossilKg": "0.100",
+          "n2oKg": "0.100",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 2,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L19",
+      "description": "A derived line converts into the upstream factor's unit",
+      "source": "1000 litre = 264.172052 US-gallon; × 2.31 = 610.237",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            },
+            "upstreamRules": [
+              {
+                "upstream": "wttDieselPerGallon",
+                "kind": "WELL_TO_TANK"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "2660.000",
+            "co2Kg": "2630.700",
+            "ch4Kg": "0.100",
+            "n2oKg": "0.100",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": [
+              {
+                "upstream": "wttDieselPerGallon",
+                "kind": "WELL_TO_TANK",
+                "kgCo2e": "610.237",
+                "co2Kg": "610.237",
+                "scope": "SCOPE_3",
+                "category": "FUEL_ENERGY_RELATED",
+                "note": "well-to-tank of ACT-0001 Fleet diesel",
+                "conversionFactor": "0.264172"
+              }
+            ]
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "3270.237",
+          "scope1KgCo2e": "2660.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "610.237",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "3240.937",
+          "ch4Kg": "0.100",
+          "ch4FossilKg": "0.100",
+          "n2oKg": "0.100",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 2,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L20",
+      "description": "A Montreal Protocol gas is priced but counted outside the scopes",
+      "source": "85 kg × 1760 = 149600 on the line; no scope total and no gas total counts it (mirrors 149600)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "HCFC-22 top-up",
+            "facility": "Kumasi Plant",
+            "quantity": "85",
+            "unit": "kg",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "hcfc22",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "149600.000",
+            "co2Kg": "0.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "149600.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "85.000",
+            "blendGwpSource": "AR5",
+            "ch4Fossil": false,
+            "convertedQuantity": "85",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "1760",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "FUGITIVE_EMISSIONS",
+            "reportingBasis": "OUTSIDE_SCOPES_NON_KYOTO",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "0",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0",
+          "ch4Kg": "0",
+          "ch4FossilKg": "0",
+          "n2oKg": "0",
+          "hfcsKgCo2e": "0",
+          "biogenicCo2Kg": "0",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 1,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L21",
+      "description": "A record entirely outside the period counts nothing",
+      "source": "covered days 0 → accounting share 0 and period share 0/30 = 0",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "500",
+            "unit": "litre",
+            "period": {
+              "start": "2024-06-01",
+              "end": "2024-06-30"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 0,
+              "totalDays": 30
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "0.000",
+            "co2Kg": "0.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "500",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "0",
+            "periodShare": "0",
+            "periodNote": "pro-rated: 0 of 30 days inside the reporting period and the membership window (0%)",
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "0.000",
+          "scope1KgCo2e": "0.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0.000",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L22",
+      "description": "A facility at a zero share counts nothing",
+      "source": "1000 × 2.66 × 0 = 0",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "EQUITY_SHARE",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Fleet diesel",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "diesel",
+            "coverage": {
+              "share": "0",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "0.000",
+            "co2Kg": "0.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": true,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "2.66",
+            "weight": "0",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "MOBILE_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "0.000",
+          "scope1KgCo2e": "0.000",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0.000",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "L23",
+      "description": "The total is the sum of the rounded lines",
+      "source": "three lines of 0.5 × 0.001 = 0.0005 each round half up to 0.001; the total is 0.003, not round(0.0015)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Tiny",
+            "facility": "Kumasi Plant",
+            "quantity": "0.5",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "tiny",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          },
+          {
+            "ref": 2,
+            "activityType": "Tiny",
+            "facility": "Kumasi Plant",
+            "quantity": "0.5",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "tiny",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          },
+          {
+            "ref": 3,
+            "activityType": "Tiny",
+            "facility": "Kumasi Plant",
+            "quantity": "0.5",
+            "unit": "litre",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "tiny",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "0.001",
+            "co2Kg": "0.001",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "0.5",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.001",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "STATIONARY_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          },
+          {
+            "ref": "ACT-0002",
+            "kgCo2e": "0.001",
+            "co2Kg": "0.001",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "0.5",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.001",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "STATIONARY_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          },
+          {
+            "ref": "ACT-0003",
+            "kgCo2e": "0.001",
+            "co2Kg": "0.001",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "0.5",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.001",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_1",
+            "category": "STATIONARY_COMBUSTION",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "0.003",
+          "scope1KgCo2e": "0.003",
+          "scope2KgCo2e": "0",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "0",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "0.003",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 3,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "M01",
+      "description": "A certificate covers the plant; the office stays at the grid average",
+      "source": "plant 1000 kWh × 0.05 = 50 (certificate); office 1 MWh = 1000 kWh × 0.441 = 441 (grid average); location 882, market 491 (mirrors 882/491)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "kWh",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          },
+          {
+            "ref": 2,
+            "activityType": "Office grid electricity",
+            "facility": "Accra Office",
+            "quantity": "1",
+            "unit": "MWh",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ],
+        "instruments": [
+          {
+            "facility": "Kumasi Plant",
+            "type": "CERTIFICATE",
+            "kgCo2ePerKwh": "0.05",
+            "coveredKwh": "1000"
+          }
+        ],
+        "residualMix": {
+          "available": false
+        }
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "441.000",
+            "co2Kg": "441.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "50.000",
+              "instrument": "CERTIFICATE",
+              "coveredKwh": "1000",
+              "balanceKwh": "0",
+              "balanceBasis": null,
+              "note": "1,000 kWh at 0.05 kg/kWh (certificate)"
+            },
+            "derived": []
+          },
+          {
+            "ref": "ACT-0002",
+            "kgCo2e": "441.000",
+            "co2Kg": "441.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1000",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "441.000",
+              "instrument": null,
+              "coveredKwh": "0",
+              "balanceKwh": "1000",
+              "balanceBasis": "GRID_AVERAGE",
+              "note": "no contractual instrument; 1,000 kWh at 0.441 kg/kWh (grid average: the location-based figure stands, no residual mix is available)"
+            },
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "882.000",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "882.000",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "491.000",
+          "scope2MarketBasis": "INSTRUMENTS",
+          "co2Kg": "882.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 2,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "M02",
+      "description": "No instrument anywhere: the market-based figure is the location-based one",
+      "source": "1000 × 0.441 = 441 both ways; basis grid average",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "kWh",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ],
+        "residualMix": {
+          "available": false
+        }
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "441.000",
+            "co2Kg": "441.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "441.000",
+              "instrument": null,
+              "coveredKwh": "0",
+              "balanceKwh": "1000",
+              "balanceBasis": "GRID_AVERAGE",
+              "note": "no contractual instrument; 1,000 kWh at 0.441 kg/kWh (grid average: the location-based figure stands, no residual mix is available)"
+            },
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "441.000",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "441.000",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "441.000",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "441.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "M03",
+      "description": "An instrument is consumed chronologically and runs out",
+      "source": "contract at 0 covering 20,000,000 kWh: first 30,000 MWh takes 20,000,000 and leaves 10,000,000 at 0.441 = 4,410,000; the second 16,500 MWh finds it used up: 7,276,500; market 11,686,500 (mirrors 11686500)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "30000",
+            "unit": "MWh",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-06-30"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          },
+          {
+            "ref": 2,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "16500",
+            "unit": "MWh",
+            "period": {
+              "start": "2025-07-01",
+              "end": "2025-12-31"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ],
+        "instruments": [
+          {
+            "facility": "Kumasi Plant",
+            "type": "CONTRACT",
+            "kgCo2ePerKwh": "0",
+            "coveredKwh": "20000000"
+          }
+        ],
+        "residualMix": {
+          "available": false
+        }
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "13230000.000",
+            "co2Kg": "13230000.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "30000000",
+            "conversionFactor": "1000",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "4410000.000",
+              "instrument": "CONTRACT",
+              "coveredKwh": "20000000",
+              "balanceKwh": "10000000",
+              "balanceBasis": "GRID_AVERAGE",
+              "note": "20,000,000 kWh at 0 kg/kWh (contract); 10,000,000 kWh at 0.441 kg/kWh (grid average: the location-based figure stands, no residual mix is available)"
+            },
+            "derived": []
+          },
+          {
+            "ref": "ACT-0002",
+            "kgCo2e": "7276500.000",
+            "co2Kg": "7276500.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "16500000",
+            "conversionFactor": "1000",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "7276500.000",
+              "instrument": null,
+              "coveredKwh": "0",
+              "balanceKwh": "16500000",
+              "balanceBasis": "GRID_AVERAGE",
+              "note": "the facility's instrument is used up by earlier records; 16,500,000 kWh at 0.441 kg/kWh (grid average: the location-based figure stands, no residual mix is available)"
+            },
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "20506500.000",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "20506500.000",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "11686500.000",
+          "scope2MarketBasis": "INSTRUMENTS",
+          "co2Kg": "20506500.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 2,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "M04",
+      "description": "An instrument dated inside the year leaves the earlier record to the residual mix",
+      "source": "instrument from 2025-07-01: the first record is outside it → 30,000,000 kWh × 0.5 residual = 15,000,000; the second is covered in full → 0; 3,500,000 kWh of coverage stays unused (mirrors 15000000)",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "30000",
+            "unit": "MWh",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-06-30"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          },
+          {
+            "ref": 2,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "16500",
+            "unit": "MWh",
+            "period": {
+              "start": "2025-07-01",
+              "end": "2025-12-31"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ],
+        "instruments": [
+          {
+            "facility": "Kumasi Plant",
+            "type": "CONTRACT",
+            "kgCo2ePerKwh": "0",
+            "coveredKwh": "20000000",
+            "periodStart": "2025-07-01"
+          }
+        ],
+        "residualMix": {
+          "available": true,
+          "kgCo2ePerKwh": "0.5"
+        }
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "13230000.000",
+            "co2Kg": "13230000.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "30000000",
+            "conversionFactor": "1000",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "15000000.000",
+              "instrument": "RESIDUAL_MIX",
+              "coveredKwh": "0",
+              "balanceKwh": "30000000",
+              "balanceBasis": "RESIDUAL_MIX",
+              "note": "the facility's instrument covers 2025-07-01 to 2025-12-31, not this record's period; 30,000,000 kWh at 0.5 kg/kWh (residual mix)"
+            },
+            "derived": []
+          },
+          {
+            "ref": "ACT-0002",
+            "kgCo2e": "7276500.000",
+            "co2Kg": "7276500.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "16500000",
+            "conversionFactor": "1000",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "0.000",
+              "instrument": "CONTRACT",
+              "coveredKwh": "16500000",
+              "balanceKwh": "0",
+              "balanceBasis": null,
+              "note": "16,500,000 kWh at 0 kg/kWh (contract)"
+            },
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "20506500.000",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "20506500.000",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "15000000.000",
+          "scope2MarketBasis": "INSTRUMENTS",
+          "co2Kg": "20506500.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 2,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "M05",
+      "description": "An instrument that fails the Quality Criteria falls to the residual mix, on AR6",
+      "source": "1000 kWh × 0.35 = 350 against 441 location-based; the grid factor is CO2 only, so AR6 changes nothing (mirrors 350)",
+      "inputs": {
+        "gwpSet": "AR6",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "kWh",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ],
+        "instruments": [
+          {
+            "facility": "Kumasi Plant",
+            "type": "SUPPLIER_SPECIFIC",
+            "kgCo2ePerKwh": "0.02",
+            "coveredKwh": "1000",
+            "meetsQualityCriteria": false
+          }
+        ],
+        "residualMix": {
+          "available": true,
+          "kgCo2ePerKwh": "0.35"
+        }
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "441.000",
+            "co2Kg": "441.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "350.000",
+              "instrument": "RESIDUAL_MIX",
+              "coveredKwh": "0",
+              "balanceKwh": "1000",
+              "balanceBasis": "RESIDUAL_MIX",
+              "note": "the facility's instrument does not meet the Scope 2 Quality Criteria and was not applied; 1,000 kWh at 0.35 kg/kWh (residual mix)"
+            },
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "441.000",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "441.000",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "350.000",
+          "scope2MarketBasis": "RESIDUAL_MIX",
+          "co2Kg": "441.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "M06",
+      "description": "Residual-mix availability not stated reads so in the note",
+      "source": "1000 × 0.441 = 441; the note says the availability was not stated",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "kWh",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            }
+          }
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "441.000",
+            "co2Kg": "441.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "441.000",
+              "instrument": null,
+              "coveredKwh": "0",
+              "balanceKwh": "1000",
+              "balanceBasis": "GRID_AVERAGE",
+              "note": "no contractual instrument; 1,000 kWh at 0.441 kg/kWh (grid average: the location-based figure stands, residual-mix availability not stated)"
+            },
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "441.000",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "441.000",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "441.000",
+          "scope2MarketBasis": "GRID_AVERAGE",
+          "co2Kg": "441.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "M07",
+      "description": "Transmission losses are derived on the consumed kWh, not the market-based balance",
+      "source": "derived 1000 kWh × 0.04 = 40 in scope 3; the market-based 50 is untouched",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "kWh",
+            "period": {
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 365,
+              "totalDays": 365
+            },
+            "upstreamRules": [
+              {
+                "upstream": "tdLosses",
+                "kind": "TRANSMISSION_AND_DISTRIBUTION"
+              }
+            ]
+          }
+        ],
+        "instruments": [
+          {
+            "facility": "Kumasi Plant",
+            "type": "CERTIFICATE",
+            "kgCo2ePerKwh": "0.05",
+            "coveredKwh": "1000"
+          }
+        ],
+        "residualMix": {
+          "available": false
+        }
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "441.000",
+            "co2Kg": "441.000",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "1",
+            "periodNote": null,
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "50.000",
+              "instrument": "CERTIFICATE",
+              "coveredKwh": "1000",
+              "balanceKwh": "0",
+              "balanceBasis": null,
+              "note": "1,000 kWh at 0.05 kg/kWh (certificate)"
+            },
+            "derived": [
+              {
+                "upstream": "tdLosses",
+                "kind": "TRANSMISSION_AND_DISTRIBUTION",
+                "kgCo2e": "40.000",
+                "co2Kg": "40.000",
+                "scope": "SCOPE_3",
+                "category": "FUEL_ENERGY_RELATED",
+                "note": "transmission and distribution losses of ACT-0001 Plant grid electricity; on the consumed kWh, not the market-based balance",
+                "conversionFactor": "1"
+              }
+            ]
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "481.000",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "441.000",
+          "scope3KgCo2e": "40.000",
+          "scope2MarketBasedKgCo2e": "50.000",
+          "scope2MarketBasis": "INSTRUMENTS",
+          "co2Kg": "481.000",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 2,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    },
+    {
+      "id": "M08",
+      "description": "An instrument meets a pro-rated record",
+      "source": "1000 kWh at 50% of its days = 500 kWh counted; 400 covered at 0.05 = 20, 100 at 0.441 = 44.1; market 64.1; location 220.5",
+      "inputs": {
+        "gwpSet": "AR5",
+        "approach": "OPERATIONAL_CONTROL",
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "records": [
+          {
+            "ref": 1,
+            "activityType": "Plant grid electricity",
+            "facility": "Kumasi Plant",
+            "quantity": "1000",
+            "unit": "kWh",
+            "period": {
+              "start": "2025-12-17",
+              "end": "2026-01-15"
+            },
+            "factor": "grid",
+            "coverage": {
+              "share": "1",
+              "coveredDays": 15,
+              "totalDays": 30
+            }
+          }
+        ],
+        "instruments": [
+          {
+            "facility": "Kumasi Plant",
+            "type": "CERTIFICATE",
+            "kgCo2ePerKwh": "0.05",
+            "coveredKwh": "400"
+          }
+        ],
+        "residualMix": {
+          "available": false
+        }
+      },
+      "expected": {
+        "records": [
+          {
+            "ref": "ACT-0001",
+            "kgCo2e": "220.500",
+            "co2Kg": "220.500",
+            "ch4Kg": "0.000",
+            "n2oKg": "0.000",
+            "hfcsKgCo2e": "0.000",
+            "sf6Kg": "0.000",
+            "biogenicCo2Kg": "0.000",
+            "hfcsKg": "0.000",
+            "blendGwpSource": null,
+            "ch4Fossil": false,
+            "convertedQuantity": "1000",
+            "conversionFactor": "1",
+            "conversionNote": null,
+            "kgCo2ePerUnit": "0.441",
+            "weight": "1",
+            "periodShare": "0.5",
+            "periodNote": "pro-rated: 15 of 30 days inside the reporting period and the membership window (50%)",
+            "scope": "SCOPE_2",
+            "category": "PURCHASED_ELECTRICITY",
+            "reportingBasis": "SCOPES",
+            "unsplit": false,
+            "market": {
+              "kgCo2e": "64.100",
+              "instrument": "CERTIFICATE",
+              "coveredKwh": "400",
+              "balanceKwh": "100",
+              "balanceBasis": "GRID_AVERAGE",
+              "note": "400 kWh at 0.05 kg/kWh (certificate); 100 kWh at 0.441 kg/kWh (grid average: the location-based figure stands, no residual mix is available)"
+            },
+            "derived": []
+          }
+        ],
+        "run": {
+          "totalKgCo2e": "220.500",
+          "scope1KgCo2e": "0",
+          "scope2KgCo2e": "220.500",
+          "scope3KgCo2e": "0",
+          "scope2MarketBasedKgCo2e": "64.100",
+          "scope2MarketBasis": "INSTRUMENTS",
+          "co2Kg": "220.500",
+          "ch4Kg": "0.000",
+          "ch4FossilKg": "0",
+          "n2oKg": "0.000",
+          "hfcsKgCo2e": "0.000",
+          "biogenicCo2Kg": "0.000",
+          "co2eUnsplitKg": "0",
+          "activityCount": 1,
+          "outsideScopesLines": 0,
+          "gasFootingToleranceKg": "0"
+        }
+      }
+    }
+  ],
+  "proRating": [
+    {
+      "id": "P01",
+      "description": "A whole calendar year in its own period",
+      "source": "365 days, all covered, share 1",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "record": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "windowFrom": null,
+        "windowTo": null
+      },
+      "expected": {
+        "days": 365,
+        "coveredDays": 365,
+        "periodShare": "1",
+        "periodNote": null
+      }
+    },
+    {
+      "id": "P02",
+      "description": "A leap year has 366 days",
+      "source": "2024-01-01 to 2024-12-31 is 366 days",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2024-01-01",
+          "end": "2024-12-31"
+        },
+        "record": {
+          "start": "2024-01-01",
+          "end": "2024-12-31"
+        },
+        "windowFrom": null,
+        "windowTo": null
+      },
+      "expected": {
+        "days": 366,
+        "coveredDays": 366,
+        "periodShare": "1",
+        "periodNote": null
+      }
+    },
+    {
+      "id": "P03",
+      "description": "A leap year split at 2 July is exactly half",
+      "source": "2024-07-02 to 2024-12-31 is 183 of 366 days = 0.5",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2024-01-01",
+          "end": "2024-12-31"
+        },
+        "record": {
+          "start": "2024-01-01",
+          "end": "2024-12-31"
+        },
+        "windowFrom": "2024-07-02",
+        "windowTo": null
+      },
+      "expected": {
+        "days": 366,
+        "coveredDays": 183,
+        "periodShare": "0.500000",
+        "periodNote": "pro-rated: 183 of 366 days inside the reporting period and the membership window (50%)"
+      }
+    },
+    {
+      "id": "P04",
+      "description": "A window ending 1 July in a leap year is the other half",
+      "source": "2024-01-01 to 2024-07-01 is 183 of 366 days",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2024-01-01",
+          "end": "2024-12-31"
+        },
+        "record": {
+          "start": "2024-01-01",
+          "end": "2024-12-31"
+        },
+        "windowFrom": null,
+        "windowTo": "2024-07-01"
+      },
+      "expected": {
+        "days": 366,
+        "coveredDays": 183,
+        "periodShare": "0.500000",
+        "periodNote": "pro-rated: 183 of 366 days inside the reporting period and the membership window (50%)"
+      }
+    },
+    {
+      "id": "P05",
+      "description": "A window ending 30 June 2025",
+      "source": "181 of 365 = 0.49589041 → 0.495890",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "record": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "windowFrom": null,
+        "windowTo": "2025-06-30"
+      },
+      "expected": {
+        "days": 365,
+        "coveredDays": 181,
+        "periodShare": "0.495890",
+        "periodNote": "pro-rated: 181 of 365 days inside the reporting period and the membership window (49.59%)"
+      }
+    },
+    {
+      "id": "P06",
+      "description": "A window from 1 July 2025",
+      "source": "184 of 365 = 0.50410958 → 0.504110; with P05 the two shares sum to 1.000000",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "record": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "windowFrom": "2025-07-01",
+        "windowTo": null
+      },
+      "expected": {
+        "days": 365,
+        "coveredDays": 184,
+        "periodShare": "0.504110",
+        "periodNote": "pro-rated: 184 of 365 days inside the reporting period and the membership window (50.41%)"
+      }
+    },
+    {
+      "id": "P07",
+      "description": "A three-day record cut after one day",
+      "source": "1 of 3 = 0.333333",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "record": {
+          "start": "2025-03-01",
+          "end": "2025-03-03"
+        },
+        "windowFrom": null,
+        "windowTo": "2025-03-01"
+      },
+      "expected": {
+        "days": 3,
+        "coveredDays": 1,
+        "periodShare": "0.333333",
+        "periodNote": "pro-rated: 1 of 3 days inside the reporting period and the membership window (33.33%)"
+      }
+    },
+    {
+      "id": "P08",
+      "description": "The rest of the three-day record",
+      "source": "2 of 3 = 0.666667; with P07 the shares sum to 1.000000",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "record": {
+          "start": "2025-03-01",
+          "end": "2025-03-03"
+        },
+        "windowFrom": "2025-03-02",
+        "windowTo": null
+      },
+      "expected": {
+        "days": 3,
+        "coveredDays": 2,
+        "periodShare": "0.666667",
+        "periodNote": "pro-rated: 2 of 3 days inside the reporting period and the membership window (66.67%)"
+      }
+    },
+    {
+      "id": "P09",
+      "description": "A record entirely outside the period",
+      "source": "no day inside 2025: covered 0, share 0",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "record": {
+          "start": "2024-06-01",
+          "end": "2024-06-30"
+        },
+        "windowFrom": null,
+        "windowTo": null
+      },
+      "expected": {
+        "days": 30,
+        "coveredDays": 0,
+        "periodShare": "0.000000",
+        "periodNote": "pro-rated: 0 of 30 days inside the reporting period and the membership window (0%)"
+      }
+    },
+    {
+      "id": "P10",
+      "description": "A window at both ends inside a month",
+      "source": "2025-03-10 to 2025-03-19 is 10 of 31 days = 0.322581",
+      "inputs": {
+        "inventoryPeriod": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "record": {
+          "start": "2025-03-01",
+          "end": "2025-03-31"
+        },
+        "windowFrom": "2025-03-10",
+        "windowTo": "2025-03-19"
+      },
+      "expected": {
+        "days": 31,
+        "coveredDays": 10,
+        "periodShare": "0.322581",
+        "periodNote": "pro-rated: 10 of 31 days inside the reporting period and the membership window (32.26%)"
+      }
+    }
+  ],
+  "proRatingSums": [
+    {
+      "id": "S01",
+      "description": "Two windows that meet in a leap year share the record exactly",
+      "vectors": [
+        "P03",
+        "P04"
+      ],
+      "expected": "1.000000"
+    },
+    {
+      "id": "S02",
+      "description": "Two windows that meet on 1 July 2025 share the record exactly",
+      "vectors": [
+        "P05",
+        "P06"
+      ],
+      "expected": "1.000000"
+    },
+    {
+      "id": "S03",
+      "description": "Thirds sum to one within a millionth",
+      "vectors": [
+        "P07",
+        "P08"
+      ],
+      "expected": "1.000000"
+    }
+  ],
+  "conversions": [
+    {
+      "id": "C01",
+      "description": "US gallons to litres",
+      "source": "1 US gallon = 3.785411784 litre",
+      "inputs": {
+        "quantity": "10000",
+        "from": "US-gallon",
+        "to": "litre"
+      },
+      "expected": {
+        "present": true,
+        "convertedQuantity": "37854.11784",
+        "factor": "3.785412",
+        "note": null,
+        "viaDensity": false
+      }
+    },
+    {
+      "id": "C02",
+      "description": "Megawatt-hours to kilowatt-hours",
+      "source": "1 MWh = 1000 kWh",
+      "inputs": {
+        "quantity": "1",
+        "from": "MWh",
+        "to": "kWh"
+      },
+      "expected": {
+        "present": true,
+        "convertedQuantity": "1000",
+        "factor": "1000",
+        "note": null,
+        "viaDensity": false
+      }
+    },
+    {
+      "id": "C03",
+      "description": "Tonnes to litres through a typical density",
+      "source": "12000 kg ÷ 0.84 = 14285.714286 litre",
+      "inputs": {
+        "quantity": "12",
+        "from": "tonne",
+        "to": "litre",
+        "density": {
+          "material": "Diesel",
+          "kgPerLitre": "0.84",
+          "typical": true
+        }
+      },
+      "expected": {
+        "present": true,
+        "convertedQuantity": "14285.714286",
+        "factor": "1190.47619",
+        "note": "12 tonne = 12000 kg ÷ 0.84 kg/litre = 14285.714286 litre (density of Diesel, typical value)",
+        "viaDensity": true
+      }
+    },
+    {
+      "id": "C04",
+      "description": "Litres to kilograms through the organization's own density",
+      "source": "1000 × 0.84 = 840 kg; no \"typical value\" in the note",
+      "inputs": {
+        "quantity": "1000",
+        "from": "litre",
+        "to": "kg",
+        "density": {
+          "material": "Diesel",
+          "kgPerLitre": "0.84",
+          "typical": false
+        }
+      },
+      "expected": {
+        "present": true,
+        "convertedQuantity": "840",
+        "factor": "0.84",
+        "note": "1000 litre = 1000 litre × 0.84 kg/litre = 840 kg (density of Diesel)",
+        "viaDensity": true
+      }
+    },
+    {
+      "id": "C05",
+      "description": "Kilograms to litres with no density",
+      "source": "mass and volume do not meet without a density",
+      "inputs": {
+        "quantity": "1",
+        "from": "kg",
+        "to": "litre"
+      },
+      "expected": {
+        "present": false
+      }
+    },
+    {
+      "id": "C06",
+      "description": "The same unit passes through",
+      "source": "factor 1, no note",
+      "inputs": {
+        "quantity": "7",
+        "from": "litre",
+        "to": "litre"
+      },
+      "expected": {
+        "present": true,
+        "convertedQuantity": "7",
+        "factor": "1",
+        "note": null,
+        "viaDensity": false
+      }
+    },
+    {
+      "id": "C07",
+      "description": "A zero quantity through a density",
+      "source": "converted 0, factor 0",
+      "inputs": {
+        "quantity": "0",
+        "from": "litre",
+        "to": "kg",
+        "density": {
+          "material": "Diesel",
+          "kgPerLitre": "0.84",
+          "typical": true
+        }
+      },
+      "expected": {
+        "present": true,
+        "convertedQuantity": "0",
+        "factor": "0",
+        "note": "0 litre = 0 litre × 0.84 kg/litre = 0 kg (density of Diesel, typical value)",
+        "viaDensity": true
+      }
+    },
+    {
+      "id": "C08",
+      "description": "A custom unit, with its definition in the note",
+      "source": "1 drum = 200 litre",
+      "inputs": {
+        "quantity": "3",
+        "from": "drum",
+        "to": "litre",
+        "customUnits": [
+          {
+            "code": "drum",
+            "base": "litre",
+            "factor": "200"
+          }
+        ]
+      },
+      "expected": {
+        "present": true,
+        "convertedQuantity": "600",
+        "factor": "200",
+        "note": "1 drum = 200 litre",
+        "viaDensity": false
+      }
+    }
+  ],
+  "baseYear": [
+    {
+      "id": "B01",
+      "description": "A divestment below the threshold",
+      "source": "1330 / 27930 × 100 = 4.76; below 5",
+      "inputs": {
+        "thresholdPercent": "5",
+        "baseTotalKg": "27930",
+        "steps": [
+          {
+            "op": "flag",
+            "trigger": "STRUCTURAL_CHANGE",
+            "what": "structural change: Takoradi Port Loadout removed",
+            "affectedKg": "1330"
+          }
+        ]
+      },
+      "expected": {
+        "flags": [
+          {
+            "affectedPercent": "4.76",
+            "cumulativePercent": "4.76",
+            "aboveThreshold": false,
+            "reason": "structural change: Takoradi Port Loadout removed; 4.76% of base-year emissions, below the 5% threshold, recalculation optional"
+          }
+        ],
+        "hasUnresolvedFlag": true
+      }
+    },
+    {
+      "id": "B02",
+      "description": "Two changes cross a threshold together",
+      "source": "4.76 + 4.76 = 9.52 against 3",
+      "inputs": {
+        "thresholdPercent": "3",
+        "baseTotalKg": "27930",
+        "steps": [
+          {
+            "op": "flag",
+            "trigger": "STRUCTURAL_CHANGE",
+            "what": "structural change: Takoradi Port Loadout removed",
+            "affectedKg": "1330"
+          },
+          {
+            "op": "flag",
+            "trigger": "METHODOLOGY_CHANGE",
+            "what": "methodology change: supplier factor",
+            "affectedPercent": "4.76"
+          }
+        ]
+      },
+      "expected": {
+        "flags": [
+          {
+            "affectedPercent": "4.76",
+            "cumulativePercent": "4.76",
+            "aboveThreshold": true,
+            "reason": "structural change: Takoradi Port Loadout removed; 4.76% of base-year emissions, above the 3% threshold, recalculation required"
+          },
+          {
+            "affectedPercent": "4.76",
+            "cumulativePercent": "9.52",
+            "aboveThreshold": true,
+            "reason": "methodology change: supplier factor; 4.76% of base-year emissions on its own, 9.52% together with 1 earlier change since the 2025 base year, above the 3% threshold, recalculation required"
+          }
+        ],
+        "hasUnresolvedFlag": true
+      }
+    },
+    {
+      "id": "B03",
+      "description": "A recalculation resets the running sum",
+      "source": "after the 4.76 is recalculated, a new 2.00 stands alone",
+      "inputs": {
+        "thresholdPercent": "5",
+        "baseTotalKg": "27930",
+        "steps": [
+          {
+            "op": "flag",
+            "trigger": "STRUCTURAL_CHANGE",
+            "what": "structural change: Takoradi Port Loadout removed",
+            "affectedKg": "1330"
+          },
+          {
+            "op": "decide",
+            "status": "RECALCULATED"
+          },
+          {
+            "op": "flag",
+            "trigger": "METHODOLOGY_CHANGE",
+            "what": "methodology change: supplier factor",
+            "affectedPercent": "2.00"
+          }
+        ]
+      },
+      "expected": {
+        "flags": [
+          {
+            "affectedPercent": "4.76",
+            "cumulativePercent": "4.76",
+            "aboveThreshold": false,
+            "reason": "structural change: Takoradi Port Loadout removed; 4.76% of base-year emissions, below the 5% threshold, recalculation optional"
+          },
+          {
+            "affectedPercent": "2.00",
+            "cumulativePercent": "2.00",
+            "aboveThreshold": false,
+            "reason": "methodology change: supplier factor; 2% of base-year emissions, below the 5% threshold, recalculation optional"
+          }
+        ],
+        "hasUnresolvedFlag": true
+      }
+    },
+    {
+      "id": "B04",
+      "description": "A refusal keeps counting",
+      "source": "4.76 declined, then 2.00: 6.76 together",
+      "inputs": {
+        "thresholdPercent": "5",
+        "baseTotalKg": "27930",
+        "steps": [
+          {
+            "op": "flag",
+            "trigger": "STRUCTURAL_CHANGE",
+            "what": "structural change: Takoradi Port Loadout removed",
+            "affectedKg": "1330"
+          },
+          {
+            "op": "decide",
+            "status": "DECLINED"
+          },
+          {
+            "op": "flag",
+            "trigger": "METHODOLOGY_CHANGE",
+            "what": "methodology change: supplier factor",
+            "affectedPercent": "2.00"
+          }
+        ]
+      },
+      "expected": {
+        "flags": [
+          {
+            "affectedPercent": "4.76",
+            "cumulativePercent": "4.76",
+            "aboveThreshold": false,
+            "reason": "structural change: Takoradi Port Loadout removed; 4.76% of base-year emissions, below the 5% threshold, recalculation optional"
+          },
+          {
+            "affectedPercent": "2.00",
+            "cumulativePercent": "6.76",
+            "aboveThreshold": true,
+            "reason": "methodology change: supplier factor; 2% of base-year emissions on its own, 6.76% together with 1 earlier change since the 2025 base year, above the 5% threshold, recalculation required"
+          }
+        ],
+        "hasUnresolvedFlag": true
+      }
+    }
+  ],
+  "baseYearShares": [
+    {
+      "id": "B05",
+      "description": "A comparison run's share is the difference over the base",
+      "source": "|28500 − 27930| × 100 / 27930 = 2.04",
+      "inputs": {
+        "partKg": "570",
+        "baseKg": "27930"
+      },
+      "expected": "2.04"
+    },
+    {
+      "id": "B06",
+      "description": "Nothing against an empty base",
+      "source": "0 base → 0",
+      "inputs": {
+        "partKg": "100",
+        "baseKg": "0"
+      },
+      "expected": "0"
+    },
+    {
+      "id": "B07",
+      "description": "The share rounds half up at two decimals",
+      "source": "1397 × 100 / 27930 = 5.0017… → 5.00",
+      "inputs": {
+        "partKg": "1397",
+        "baseKg": "27930"
+      },
+      "expected": "5.00"
+    },
+    {
+      "id": "B08",
+      "description": "A third",
+      "source": "100/3 = 33.333… → 33.33",
+      "inputs": {
+        "partKg": "1",
+        "baseKg": "3"
+      },
+      "expected": "33.33"
+    }
+  ],
+  "rounding": [
+    {
+      "id": "R01",
+      "stage": "LINE_KG",
+      "description": "Half up at the third decimal",
+      "source": "0.0005 → 0.001",
+      "input": "0.0005",
+      "expected": "0.001"
+    },
+    {
+      "id": "R02",
+      "stage": "LINE_KG",
+      "description": "Below the half rounds down",
+      "source": "0.00049 → 0.000",
+      "input": "0.00049",
+      "expected": "0.000"
+    },
+    {
+      "id": "R03",
+      "stage": "LINE_KG",
+      "description": "Negative half rounds away from zero",
+      "source": "−0.0005 → −0.001",
+      "input": "-0.0005",
+      "expected": "-0.001"
+    },
+    {
+      "id": "R04",
+      "stage": "LINE_KG",
+      "description": "Scale three is kept on an exact value",
+      "source": "2660 → 2660.000",
+      "input": "2660",
+      "expected": "2660.000"
+    },
+    {
+      "id": "R05",
+      "stage": "PERIOD_SHARE",
+      "description": "Six decimals, half up",
+      "source": "184/365 = 0.5041095890 → 0.504110",
+      "coveredDays": 184,
+      "totalDays": 365,
+      "expected": "0.504110"
+    },
+    {
+      "id": "R06",
+      "stage": "PERIOD_SHARE",
+      "description": "16 of 31 days",
+      "source": "0.5161290322 → 0.516129",
+      "coveredDays": 16,
+      "totalDays": 31,
+      "expected": "0.516129"
+    },
+    {
+      "id": "R07",
+      "stage": "PERIOD_SHARE",
+      "description": "Every day covered is exactly one, not 1.000000",
+      "source": "365/365 → 1",
+      "coveredDays": 365,
+      "totalDays": 365,
+      "expected": "1"
+    },
+    {
+      "id": "R08",
+      "stage": "TONNES",
+      "description": "Kilograms to tonnes at three decimals, half up",
+      "source": "1234.5 kg → 1.235 t",
+      "input": "1234.5",
+      "expected": "1.235"
+    },
+    {
+      "id": "R09",
+      "stage": "TONNES",
+      "description": "Below the half",
+      "source": "1234.4 kg → 1.234 t",
+      "input": "1234.4",
+      "expected": "1.234"
+    },
+    {
+      "id": "R10",
+      "stage": "TONNES",
+      "description": "A market-based scope 2 total",
+      "source": "11686500 kg → 11686.500 t",
+      "input": "11686500",
+      "expected": "11686.500"
+    },
+    {
+      "id": "R11",
+      "stage": "TONNES",
+      "description": "Below a tonne",
+      "source": "491 kg → 0.491 t",
+      "input": "491",
+      "expected": "0.491"
+    },
+    {
+      "id": "R12",
+      "stage": "BASE_YEAR_PERCENT",
+      "description": "Two decimals, half up",
+      "source": "1330/27930 → 4.76",
+      "partKg": "1330",
+      "baseKg": "27930",
+      "expected": "4.76"
+    }
+  ]
+}

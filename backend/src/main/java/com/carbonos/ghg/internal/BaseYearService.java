@@ -148,12 +148,8 @@ public class BaseYearService {
 				throw new GhgRuleViolationException(GhgRules.BASE_YEAR_NO_FINAL_RUN);
 			}
 			if (share == null) {
-				share = base.getTotalKgCo2e().signum() == 0 ? BigDecimal.ZERO
-						: comparison.getTotalKgCo2e()
-							.subtract(base.getTotalKgCo2e())
-							.abs()
-							.multiply(new BigDecimal("100"))
-							.divide(base.getTotalKgCo2e(), 2, RoundingMode.HALF_UP);
+				share = percentOfBase(comparison.getTotalKgCo2e().subtract(base.getTotalKgCo2e()).abs(),
+						base.getTotalKgCo2e());
 			}
 		}
 		var what = (trigger == RecalculationTrigger.METHODOLOGY_CHANGE ? "methodology change: "
@@ -298,8 +294,7 @@ public class BaseYearService {
 		if (affectedKg.signum() == 0 || baseRun.getTotalKgCo2e().signum() == 0) {
 			return; // facilities that did not exist in the base year are organic growth, not a structural change
 		}
-		var percent = affectedKg.multiply(new BigDecimal("100"))
-			.divide(baseRun.getTotalKgCo2e(), 2, RoundingMode.HALF_UP);
+		var percent = percentOfBase(affectedKg, baseRun.getTotalKgCo2e());
 		baseYear.flag(RecalculationTrigger.STRUCTURAL_CHANGE, "structural change: " + String.join(", ", changes.values()),
 				inventory, version, percent, null);
 	}
@@ -349,6 +344,12 @@ public class BaseYearService {
 	}
 
 	/** Why an inventory does not report against the base year, for the gate's wording. */
+	/** A part of the base-year emissions as a percentage of them, to two decimals; nothing against an empty base. */
+	static BigDecimal percentOfBase(BigDecimal partKg, BigDecimal baseKg) {
+		return baseKg.signum() == 0 ? BigDecimal.ZERO
+				: partKg.multiply(new BigDecimal("100")).divide(baseKg, 2, RoundingMode.HALF_UP);
+	}
+
 	public static String whyNotAgainst(BaseYear baseYear, Inventory inventory) {
 		var base = baseYear.getInventory();
 		if (inventory.getConsolidationApproach() != base.getConsolidationApproach()) {

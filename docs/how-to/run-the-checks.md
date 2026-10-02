@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-10-02
 ---
 
 # Run the checks
@@ -32,6 +32,36 @@ module imports another module's internals. Docker must be running.
 | Hibernate reports a schema mismatch at startup | Your entity and your Flyway migration disagree. Fix the migration, or add a new one; `ddl-auto` stays `validate`. |
 | A Testcontainers test cannot start | Check that Docker is running and has memory to spare. |
 | One integration test fails | Run it alone: `./mvnw test -Dtest='GhgApiIntegrationTests#theTestName' -Dsurefire.failIfNoSpecifiedTests=false`. |
+
+### The calculation vectors
+
+The inventory calculation engine is checked against test vectors before
+any container starts: `backend/src/test/resources/ghg/calculation-vectors.json`
+holds known inputs with hand-computed expected outputs, and the parameterized
+tests under `backend/src/test/java/com/carbonos/ghg/internal/` (the
+`*VectorsTest` classes) reproduce every vector through `LineMath`, the
+boundary's coverage, `Conversion`, `BaseYear` and the report's tonnes. They
+run in about a second:
+
+```bash
+cd backend && ./mvnw -o test -Dtest='*VectorsTest,ReportResponseTonnesTest' -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+Each vector has an `id`, a `description`, a `source` (the arithmetic that
+gives the expected figure, or the published example it comes from), its
+`inputs` and its `expected` figures. Decimals are strings so no digit is
+lost. The groups are `lines` (a run of records, with the market-based side
+and the derived category 3 lines), `proRating`, `conversions`, `baseYear`
+and `rounding`.
+
+To add a vector, append it to its group with the formula in `source`, run the
+tests, and read a disagreement before changing either side: the engine
+rounds the period share to six decimals and every kilogram to three before
+summing, so a figure computed to full precision can differ by a rounding
+(`L04` and `L16` say so in their `source`). A vector that mirrors an
+integration test's pinned figure keeps the two in step; the `gasFootingToleranceKg`
+of a line vector bounds the drift the rounded gas rows carry against the
+total.
 
 ## The frontend half
 
