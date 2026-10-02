@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-09
+last_reviewed: 2026-10-02
 ---
 
 # Set up the dev environment
@@ -24,6 +24,21 @@ Install these once:
 The backend build sources SDKMAN itself, so a non-login shell still finds
 Java. If you run Maven by hand, run
 `source "$HOME/.sdkman/bin/sdkman-init.sh"` first.
+
+## In a Claude Code cloud session
+
+Cloud sessions run in a fresh Ubuntu container that ships Java 21 and a
+stopped Docker daemon, with no SDKMAN. The SessionStart hook in
+`.claude/hooks/session-start.sh` prepares it before the session starts:
+
+- installs Ubuntu's `openjdk-25-jdk-headless` (the proxy blocks Temurin
+  downloads) and sets `JAVA_HOME` for the session;
+- starts `dockerd` and pulls the Testcontainers images;
+- runs `npm ci` in `frontend/` when the lockfile changed and `./mvnw test-compile` in `backend/`
+  to warm the dependency caches.
+
+The hook does nothing outside a cloud session. When you change an image in
+`TestcontainersConfiguration.java`, change it in the hook too.
 
 ## Local services
 
