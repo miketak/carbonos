@@ -52,7 +52,8 @@ gives the expected figure, or the published example it comes from), its
 `inputs` and its `expected` figures. Decimals are strings so no digit is
 lost. The groups are `lines` (a run of records, with the market-based side
 and the derived category 3 lines), `proRating`, `conversions`, `baseYear`
-and `rounding`.
+and `rounding`. [Calculation vectors](../reference/calculation-vectors.md) is
+the format, field by field.
 
 To add a vector, append it to its group with the formula in `source`, run the
 tests, and read a disagreement before changing either side: the engine
