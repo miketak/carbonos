@@ -14,12 +14,14 @@ import org.springframework.stereotype.Service;
 
 import com.carbonos.media.MediaStorage;
 import com.carbonos.user.InitialAdmin;
+import com.carbonos.user.RateLimits;
 
 /**
  * Brings a local stack back to what a fresh deployment gets: the schema and
  * seed rows the migrations create, an empty object store, no session, and
  * the administrator from {@code CARBONOS_ADMIN_EMAIL}. The backend keeps
- * running, so a driver's next request works without a restart.
+ * running, so a driver's next request works without a restart; the in-memory
+ * rate limits start over too.
  */
 @Service
 @ConditionalOnProperty(name = "carbonos.qa.endpoints", havingValue = "true")
@@ -32,14 +34,16 @@ class QaResetService {
 	private final SessionRegistry sessions;
 	private final MediaStorage media;
 	private final InitialAdmin initialAdmin;
+	private final RateLimits rateLimits;
 
 	QaResetService(Flyway flyway, JdbcTemplate jdbc, SessionRegistry sessions, MediaStorage media,
-			InitialAdmin initialAdmin) {
+			InitialAdmin initialAdmin, RateLimits rateLimits) {
 		this.flyway = flyway;
 		this.jdbc = jdbc;
 		this.sessions = sessions;
 		this.media = media;
 		this.initialAdmin = initialAdmin;
+		this.rateLimits = rateLimits;
 	}
 
 	void reset() {
@@ -54,6 +58,7 @@ class QaResetService {
 		cleanable.clean();
 		cleanable.migrate();
 		media.deleteAll();
+		rateLimits.reset();
 		initialAdmin.seed();
 	}
 

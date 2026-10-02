@@ -99,7 +99,7 @@ export const requestPasswordReset = defineVerb({
     { op: 'fill', label: S.field.email, value: user ? tok.email(user) : email! },
     { op: 'click', button: S.button.sendResetLink },
   ],
-  postconditions: () => [],
+  postconditions: () => [{ outcome: 'resetRequestAccepted', args: {} }],
 })
 
 export const resetPasswordFromLink = defineVerb({

@@ -82,6 +82,15 @@ export const emailReceived = defineOutcome({
   },
 })
 
+/** The page's answer to a reset request, the same whether or not the address holds an account. */
+export const resetRequestAccepted = defineOutcome({
+  name: 'resetRequestAccepted',
+  args: z.object({}).strict(),
+  api: async (_ctx, _args, last) => (last?.ok ? pass() : fail(`the request was answered ${last?.status ?? 'nothing'}: ${String((last?.body as { detail?: string })?.detail ?? '')}`)),
+  ui: () => [{ check: 'textVisible', text: S.text.resetLinkOnItsWay }],
+  narrate: () => `The answer reads "If <the address> ${S.text.resetLinkOnItsWay}".`,
+})
+
 export const noEmail = defineOutcome({
   name: 'noEmail',
   args: z.object({ to: z.string(), subject: z.string() }).strict(),
@@ -124,4 +133,4 @@ export const canCreateOrganization = defineOutcome({
       : `**${S.button.newOrganization}** is gone. The empty state reads "${S.text.notAMember}".`,
 })
 
-export const sessionOutcomes = [signedIn, sessionEnded, otherSessionsEnded, allSessionsEnded, emailReceived, noEmail, organizationCount, canCreateOrganization]
+export const sessionOutcomes = [signedIn, sessionEnded, otherSessionsEnded, allSessionsEnded, emailReceived, resetRequestAccepted, noEmail, organizationCount, canCreateOrganization]
