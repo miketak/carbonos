@@ -14,6 +14,8 @@ export const routes: Record<string, string> = {
   'Access requests': '/admin/access-requests',
   Users: '/admin/users',
   'Platform settings': '/admin/settings',
+  Organizations: '/admin/organizations',
+  'Factor packs': '/admin/factor-packs',
   'GHG accounting': '/app/ghg',
   'Edit profile': '/app/profile',
 }

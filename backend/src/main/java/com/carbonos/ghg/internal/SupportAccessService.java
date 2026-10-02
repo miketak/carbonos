@@ -1,5 +1,7 @@
 package com.carbonos.ghg.internal;
 
+import com.carbonos.ghg.GhgRules;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -78,19 +80,18 @@ public class SupportAccessService {
 		var organization = liveOrganization(organizationId);
 		var adminId = access.currentUserId();
 		if (members.findByOrganizationIdAndUserId(organizationId, adminId).isPresent()) {
-			throw new GhgRuleViolationException("You are a member of '" + organization.getName()
-					+ "'; membership already gives you access, so support access does not apply.");
+			throw new GhgRuleViolationException(GhgRules.SUPPORT_ACCESS_MEMBER, organization.getName());
 		}
 		var trimmed = reason == null ? "" : reason.trim();
 		if (trimmed.length() < 10) {
-			throw new GhgFieldException("reason", "Give a reason of at least 10 characters.");
+			throw new GhgFieldException(GhgRules.SUPPORT_ACCESS_REASON_TOO_SHORT);
 		}
 		var now = Instant.now();
 		var existing = grants.findFirstByOrganizationIdAndAdminUserIdAndEndedAtIsNullAndExpiresAtAfter(
 				organizationId, adminId, now);
 		if (existing.isPresent()) {
-			throw new GhgRuleViolationException("You already hold support access to '" + organization.getName()
-					+ "' until " + existing.get().getExpiresAt() + ". End it before assuming it again.");
+			throw new GhgRuleViolationException(GhgRules.SUPPORT_ACCESS_ALREADY_HELD, organization.getName(),
+					existing.get().getExpiresAt());
 		}
 		var email = userDirectory.findById(adminId).map(UserDirectory.UserSummary::email)
 			.orElse(access.currentUserEmail());

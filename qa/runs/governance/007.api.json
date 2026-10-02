@@ -1,0 +1,314 @@
+{
+  "procedure": 7,
+  "driver": "api",
+  "yamlSha256": "517d9ef213a8445f295b6fbcba33c65c811a5bd968256e41285341b6aad3707c",
+  "productVersion": null,
+  "gitSha": "ff45f84a46f6f6c196aada6a792a1de2cf0095a8",
+  "date": "2026-10-02",
+  "specialist": "unknown",
+  "digestSha256": "cf0425345fab099692fa27c9d0638a80200bb386baee699ecbae9cd6c2088495",
+  "counts": {
+    "pass": 63,
+    "na": 5,
+    "manual": 4
+  },
+  "steps": [
+    {
+      "id": "7.A1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.A1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.A1.3",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Click Clone on the ghana edition: the dialog \"Clone ghana\" says the draft starts with the 7 rows of ghana, copied, with the name, source, URL, year and GWP basis filled in."
+    },
+    {
+      "id": "7.A1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "7.A1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "7.A1.6",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"This edition is published, so its rows, metadata and values never change again\""
+    },
+    {
+      "id": "7.A2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.A2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.A2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "7.B1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.B1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.B2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.B2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.B2.3",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"Give the date the edition applies from. It is the vintage boundary an adoption is run from.\""
+    },
+    {
+      "id": "7.B2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "7.B2.5",
+      "status": "PASS"
+    },
+    {
+      "id": "7.B2.6",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C3.3",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C3.4",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C3.5",
+      "status": "MANUAL",
+      "note": "screenReads: N/A, the screen reads \"under support access until\" | observe: MANUAL, Every page carries the banner \"You are in Adansi Foods Ltd under support access until <time>. Every act is recorded in this organization's history.\". Settings opens only on Baseline and targets, with no Organization tab, and the foot of the sidebar reads \"Support access\" where a member's reads their role."
+    },
+    {
+      "id": "7.C3.6",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C3.7",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C3.8",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C3.9",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C3.10",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C4.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C4.2",
+      "status": "NA",
+      "note": "answersOffered: N/A, the answers are the select's options"
+    },
+    {
+      "id": "7.C4.3",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C4.4",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C4.5",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C4.6",
+      "status": "PASS"
+    },
+    {
+      "id": "7.C4.7",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Open Settings and the Baseline and targets tab: no base year is designated yet, so no candidate was raised. The answer lives on the notice."
+    },
+    {
+      "id": "7.D1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.D1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.D1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "7.D1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "7.D1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "7.D1.6",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, The picker offers the defra-2026 LPG version, the one live in 2026. The grid preview reads \"110 MWh → 110,000 kWh × 0.44 kg CO₂e/kWh\": the suggestion is the version live in the period."
+    },
+    {
+      "id": "7.D1.7",
+      "status": "PASS"
+    },
+    {
+      "id": "7.D1.8",
+      "status": "PASS"
+    },
+    {
+      "id": "7.D1.9",
+      "status": "PASS"
+    },
+    {
+      "id": "7.D1.10",
+      "status": "PASS"
+    },
+    {
+      "id": "7.D1.11",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.6",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.7",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.8",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.9",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.10",
+      "status": "PASS"
+    },
+    {
+      "id": "7.E1.11",
+      "status": "PASS"
+    },
+    {
+      "id": "7.F1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.F1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.F1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "7.F1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "7.F1.5",
+      "status": "NA",
+      "note": "buttonsOffered: N/A, the page offers Delete draft and not Withdraw"
+    },
+    {
+      "id": "7.F1.6",
+      "status": "PASS"
+    },
+    {
+      "id": "7.F1.7",
+      "status": "PASS"
+    },
+    {
+      "id": "7.F1.8",
+      "status": "PASS"
+    },
+    {
+      "id": "7.F1.9",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"The publisher withdrew this edition, so there is nothing to decide.\""
+    },
+    {
+      "id": "7.F1.10",
+      "status": "PASS"
+    }
+  ]
+}

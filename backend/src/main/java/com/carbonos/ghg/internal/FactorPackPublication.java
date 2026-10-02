@@ -1,5 +1,7 @@
 package com.carbonos.ghg.internal;
 
+import com.carbonos.ghg.GhgRules;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -144,13 +146,10 @@ public class FactorPackPublication {
 		// boundary, and a cleared field is refused rather than quietly filled
 		var appliesFrom = request.appliesFrom();
 		if (appliesFrom == null) {
-			throw new GhgFieldException("appliesFrom",
-					"Give the date the edition applies from. It is the vintage boundary an adoption is run from.");
+			throw new GhgFieldException(GhgRules.PACK_APPLIES_FROM_REQUIRED);
 		}
 		if (edition.getEvidenceChecksum() == null || edition.getEvidenceKey() == null) {
-			throw new GhgFieldException("evidence",
-					"Upload the source document first. A published edition is a citation, so the document it was "
-							+ "transcribed from is kept with its SHA-256.");
+			throw new GhgFieldException(GhgRules.PACK_EVIDENCE_REQUIRED);
 		}
 		var editionRows = rows.findAllByEditionIdOrderByOrdinalAsc(edition.getEditionId());
 		if (editionRows.isEmpty()) {
@@ -165,7 +164,8 @@ public class FactorPackPublication {
 			throw new GhgFieldException("erratumNote", "Keep the erratum note under 1,000 characters.");
 		}
 
-		var predecessor = blastRadius.predecessorOf(edition);
+		// the predecessor is read as of the date being published, not the draft's, which may be empty
+		var predecessor = blastRadius.predecessorOf(edition, appliesFrom);
 		var predecessorRows = predecessor == null ? List.<FactorPackRow>of()
 				: rows.findAllByEditionIdOrderByOrdinalAsc(predecessor.getEditionId());
 		var log = blastRadius.changes(editionRows, predecessorRows);
@@ -254,17 +254,14 @@ public class FactorPackPublication {
 	 */
 	public FactorPackEdition withdraw(FactorPackEdition edition, String reason, UUID actorId, String actorEmail) {
 		if (edition.getStatus() == FactorPackStatus.DRAFT) {
-			throw new GhgRuleViolationException("'" + edition.getEditionId()
-					+ "' is a draft, which no organization can see. Delete it instead of withdrawing it.");
+			throw new GhgRuleViolationException(GhgRules.PACK_DRAFT_NOT_WITHDRAWABLE, edition.getEditionId());
 		}
 		if (edition.getStatus() == FactorPackStatus.WITHDRAWN) {
-			throw new GhgRuleViolationException("'" + edition.getEditionId() + "' is already withdrawn.");
+			throw new GhgRuleViolationException(GhgRules.PACK_ALREADY_WITHDRAWN, edition.getEditionId());
 		}
 		var trimmed = reason == null ? "" : reason.trim();
 		if (trimmed.length() < MIN_WITHDRAWAL_REASON) {
-			throw new GhgFieldException("reason", "Say why the edition is withdrawn, in at least "
-					+ MIN_WITHDRAWAL_REASON + " characters. It is the record a verifier reads beside the figures "
-					+ "that rest on it.");
+			throw new GhgFieldException(GhgRules.PACK_WITHDRAWAL_REASON_TOO_SHORT, MIN_WITHDRAWAL_REASON);
 		}
 		edition.withdraw(trimmed, actorEmail);
 		var closed = notices.findAllByEditionIdAndStatus(edition.getEditionId(), FactorPackNotice.Status.OPEN);
@@ -292,9 +289,8 @@ public class FactorPackPublication {
 
 	private static void requireDraft(FactorPackEdition edition) {
 		if (!edition.isMutable()) {
-			throw new GhgRuleViolationException("'" + edition.getEditionId() + "' is already "
-					+ edition.getStatus().name().toLowerCase(Locale.ROOT)
-					+ ". An edition is published once; clone it into a new draft to correct a row.");
+			throw new GhgRuleViolationException(GhgRules.PACK_ALREADY_PUBLISHED, edition.getEditionId(),
+					edition.getStatus().name().toLowerCase(Locale.ROOT));
 		}
 	}
 
@@ -309,8 +305,7 @@ public class FactorPackPublication {
 		var sameEmail = edition.getCuratorEmail() != null && approverEmail != null
 				&& edition.getCuratorEmail().equalsIgnoreCase(approverEmail);
 		if (sameId || sameEmail) {
-			throw new GhgFieldException("approver", "The approver must not be the curator. " + edition.getCuratorName()
-					+ " built this draft, so somebody else checks it against the source document and publishes it.");
+			throw new GhgFieldException(GhgRules.PACK_APPROVER_IS_CURATOR, edition.getCuratorName());
 		}
 	}
 

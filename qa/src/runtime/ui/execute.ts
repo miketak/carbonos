@@ -7,8 +7,9 @@ import { expect, type Locator, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { REPO_ROOT } from '../../load.ts'
 import type { ApiContext } from '../../vocabulary/contract.ts'
-import { activity, entity, facility, factor, organization } from '../../vocabulary/organizations.ts'
+import { ORG_LABEL, activity, entity, facility, factor, organization } from '../../vocabulary/organizations.ts'
 import { density, inventory } from '../../vocabulary/inventories.ts'
+import { notice } from '../../vocabulary/packs.ts'
 import { run } from '../../vocabulary/runs.ts'
 import type { UiOp } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
@@ -36,6 +37,7 @@ const orgSections: Record<string, string> = {
   'Activity data': 'activity',
   'Source documents': 'activity/documents',
   Inventories: 'inventories',
+  Updates: 'factor-updates',
 }
 
 /** Tokens that need the API: `{orgId:Name}` and `{entityId:Org|Entity}`. */
@@ -43,6 +45,14 @@ export async function resolveAsync(ctx: ExecuteContext, text: string): Promise<s
   let out = text
   for (const match of text.matchAll(/\{orgId:([^}]+)\}/g)) {
     out = out.replace(match[0], (await organization(ctx.api, match[1]!)).id)
+  }
+  // `{orgLabel:Name}`: the administration pages name an organization with its account number
+  for (const match of text.matchAll(/\{orgLabel:([^}]+)\}/g)) {
+    out = out.replace(match[0], ORG_LABEL(await organization(ctx.api, match[1]!)))
+  }
+  // `{editionName:Org|edition-id}`: the Updates page and its drawer name an edition by its name, not its identifier
+  for (const match of text.matchAll(/\{editionName:([^}|]+)\|([^}]+)\}/g)) {
+    out = out.replace(match[0], (await notice(ctx.api, match[1]!, match[2]!)).notice.editionName)
   }
   for (const match of text.matchAll(/\{entityId:([^}|]+)\|([^}]+)\}/g)) {
     const org = await organization(ctx.api, match[1]!)
@@ -90,6 +100,19 @@ export async function openInventoryPage(page: Page, ctx: ExecuteContext, organiz
   await expect(target).toHaveAttribute('aria-selected', 'true')
 }
 
+/** An edition's page in the maintenance console, on one of its tabs (Rows when none is named). */
+export async function openEditionPage(page: Page, editionId: string, tab?: string): Promise<void> {
+  await dismissDialogs(page)
+  await goto(page, `/admin/factor-packs/${encodeURIComponent(editionId)}`)
+  await page.waitForURL((url) => url.pathname.endsWith(`/factor-packs/${encodeURIComponent(editionId)}`), { timeout: 15_000 })
+  await page.getByRole('heading', { name: editionId, exact: true }).waitFor()
+  if (tab && tab !== 'Rows') {
+    const target = page.getByRole('tab', { name: new RegExp(`^${escapeRegExp(tab)}`) }).first()
+    await target.click()
+    await expect(target).toHaveAttribute('aria-selected', 'true')
+  }
+}
+
 /** A run's page under its inventory. */
 export async function openRunPage(page: Page, ctx: ExecuteContext, organizationRef: string, inventoryName: string, runRef: string): Promise<void> {
   const { org, inv, run: r } = await run(ctx.api, organizationRef, inventoryName, /^\d+$/.test(runRef) ? Number(runRef) : runRef)
@@ -117,6 +140,13 @@ function escapeRegExp(text: string): string {
 
 /** A row's button by its caption, else by an accessible name that starts with it ("Import pack <pack name>"). */
 export async function rowButton(scope: Locator, name: string): Promise<Locator> {
+  // "Review|View": whichever caption the row carries now (a notice's button reads Review until it is decided)
+  if (name.includes('|')) {
+    const [first, ...rest] = name.split('|')
+    let target = await rowButton(scope, first!)
+    for (const other of rest) target = target.or(await rowButton(scope, other))
+    return target.first()
+  }
   const exact = clickable(scope, name)
   if ((await exact.count()) > 0) return exact
   const prefixed = new RegExp(`^${escapeRegExp(name)} `)
@@ -186,6 +216,9 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       return
     case 'inventoryPage':
       await openInventoryPage(page, ctx, op.organization, op.inventory, op.tab)
+      return
+    case 'editionPage':
+      await openEditionPage(page, op.edition, op.tab)
       return
     case 'upload': {
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page

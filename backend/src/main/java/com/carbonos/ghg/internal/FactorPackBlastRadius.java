@@ -122,13 +122,24 @@ public class FactorPackBlastRadius {
 	 */
 	@Transactional(readOnly = true)
 	public FactorPackEdition predecessorOf(FactorPackEdition edition) {
+		return predecessorOf(edition, edition.getAppliesFrom());
+	}
+
+	/**
+	 * The predecessor as of the date the edition applies from: the latest
+	 * published or superseded edition of the family applying on or before it.
+	 * Publication passes the date it is about to record, because a draft may
+	 * carry none, and an edition applying earlier than the one standing is not
+	 * its successor and supersedes nothing (spec 02.5).
+	 */
+	public FactorPackEdition predecessorOf(FactorPackEdition edition, LocalDate appliesFrom) {
 		return editions.findAllByPackKeyOrderByEditionIdAsc(edition.getPackKey())
 			.stream()
 			.filter(candidate -> !candidate.getEditionId().equals(edition.getEditionId()))
 			.filter(candidate -> candidate.getStatus() == FactorPackStatus.PUBLISHED
 					|| candidate.getStatus() == FactorPackStatus.SUPERSEDED)
-			.filter(candidate -> edition.getAppliesFrom() == null || candidate.getAppliesFrom() == null
-					|| !candidate.getAppliesFrom().isAfter(edition.getAppliesFrom()))
+			.filter(candidate -> appliesFrom == null || candidate.getAppliesFrom() == null
+					|| !candidate.getAppliesFrom().isAfter(appliesFrom))
 			.max(Comparator
 				.comparing((FactorPackEdition candidate) -> candidate.getAppliesFrom() == null ? LocalDate.MIN
 						: candidate.getAppliesFrom())
