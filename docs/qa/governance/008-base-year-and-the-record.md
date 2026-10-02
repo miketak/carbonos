@@ -27,7 +27,7 @@
 | 2 | Click **Reopen as draft**, type "Depot sold in January 2026" and confirm. |  |  |  |
 | 3 | On **Boundary**, untick **Tema Depot in boundary**. | Adansi Logistics Ltd is out of the boundary; its row asks "Why is it left out?": E1 leaves the boundary with its only facility; the reason control appears on E1's row. |  |  |
 | 4 | On Adansi Logistics Ltd's row, choose **Not applicable** with the detail "Depot sold on 2026-01-31; no operation in the period". | The row reads left out: **Not applicable**. |  |  |
-| 5 | Click **Freeze inventory**. | The header reads "Boundary version 2". No candidate is raised: "No base year has been designated yet.": there is no base year yet. |  |  |
+| 5 | Click **Freeze inventory**. | The header reads "Boundary version 2". No candidate is raised: **Baseline and targets** still offers **Designate base year**: there is no base year yet. |  |  |
 
 ## B. The designation sweeps the years already frozen
 
@@ -94,7 +94,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Emission factors**, click **Delete** on "R-410A (composition)". | "R-410A (composition)" is deleted: no classification and no run ever applied it. No classification and no run ever applied it. |  |  |
+| 1 | On **Emission factors**, click **Delete** on "R-410A (composition)". | "R-410A (composition)" is deleted: no classification and no run ever applied it. |  |  |
 | 2 | On **Emission factors**, click **Delete** on "Long-haul flights (supplier)". | Refused: "'Long-haul flights (supplier)' was applied by a calculation run. Set its validity end to retire it instead of deleting it.": set its validity end to retire it instead. |  |  |
 | 3 | Open **Settings**, and under **Danger zone** click **Delete organization**. | The dialog lists "FY2025: Published" and refuses: "Publish records are kept: withdraw the final designation or supersede the published inventory first.". |  |  |
 | 4 | In Adansi Foods Ltd, open **Settings**. | **History** holds an admin access assumed entry, with the Admin B alias and the moment. **History** holds a factor pack adopted entry, with the Kofi alias and the moment. History lists the members added, the entities, facilities and streams of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label. |  |  |

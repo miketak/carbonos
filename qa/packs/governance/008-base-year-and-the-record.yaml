@@ -129,7 +129,6 @@ sections:
         title: A published record keeps the organization
         steps:
           - do: { deleteFactor: { organization: "${org}", factor: R-410A (composition) } }
-            why: no classification and no run ever applied it
           - do: { deleteFactor: { organization: "${org}", factor: Long-haul flights (supplier) } }
             expect:
               - refused: { rule: ghg.factor.applied-not-deleted, with: { factor: Long-haul flights (supplier) } }

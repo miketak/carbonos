@@ -505,7 +505,6 @@ export const S = {
       trigger: { METHODOLOGY_CHANGE: 'Methodology change', ERROR_CORRECTION: 'Significant error corrected' } as Record<string, string>,
     },
     text: {
-      none: 'No base year has been designated yet.',
       ofBaseYear: 'of base-year emissions',
       baseRun: 'Base-year run:',
       recalculatedBase: 'recalculated base:',

@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/008-base-year-and-the-record.yaml (sha256 fc094b6f236b5968e98b41f203dd27538c6f772c230dc9e28efe7493204215ec); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/008-base-year-and-the-record.yaml (sha256 86d8a9e976c94708772deb086bcdf3060df4b21a919b72dc6e0164452231502a); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 8, "fc094b6f236b5968e98b41f203dd27538c6f772c230dc9e28efe7493204215ec")
+const P = procedure("governance", 8, "86d8a9e976c94708772deb086bcdf3060df4b21a919b72dc6e0164452231502a")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 8: Base year and the organization's record", () => {

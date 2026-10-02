@@ -57,8 +57,9 @@ export const noBaseYear = defineOutcome({
     const org = await organization(ctx, a.organization)
     return (await readBaseYear(ctx.session(), org.id)) ? fail('a base year is designated') : pass()
   },
-  ui: (a) => [{ check: 'atOrg', organization: a.organization, section: S.base.section }, { check: 'textVisible', text: S.base.text.none }],
-  narrate: () => `No candidate is raised: "${S.base.text.none}"`,
+  // without a base year the tab shows the designation form, not a history
+  ui: (a) => [{ check: 'atOrg', organization: a.organization, section: S.base.section }, { check: 'buttonVisible', button: S.base.button.designate, visible: true }],
+  narrate: () => `No candidate is raised: **${S.base.section}** still offers **${S.base.button.designate}**.`,
 })
 
 /** One recalculation candidate, found by a part of its reason. */
