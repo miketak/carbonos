@@ -94,6 +94,8 @@ export function narrateWhereToLook(checks: UiCheck[]): string | undefined {
   if (atOrg && atOrg.check === 'atOrg') return `In ${atOrg.organization.replace(/ #\d+$/, '')}, open ${b(atOrg.section)}.`
   const visit = checks.find((c) => c.check === 'visit')
   if (visit && visit.check === 'visit') return `Open ${code(visit.path)} in the address bar.`
+  const inv = checks.find((c) => c.check === 'atInventory')
+  if (inv && inv.check === 'atInventory') return `On the inventory ${q(inv.inventory)}, open ${b(inv.tab)}.`
   const gate = checks.find((c) => c.check === 'gateFinding')
   if (gate && gate.check === 'gateFinding') return `Read the ${b(gate.gate)} gate on the pre-flight panel under ${b('Records')}.`
   return undefined

@@ -1,0 +1,139 @@
+{
+  "procedure": 4,
+  "driver": "ui",
+  "yamlSha256": "62533740ec225c53c7b123cb0db35ef801b69c6521a4c2caba00b19670dedd4b",
+  "productVersion": null,
+  "gitSha": "172ca78cfb15ceb757b18639bfd4f4e8c266de7c",
+  "date": "2026-10-02",
+  "specialist": "unknown",
+  "digestSha256": "875ba8c857897f0a211718aa1e35125929fba8bcfa7029ac0807ece333f982e1",
+  "counts": {
+    "pass": 28,
+    "na": 0,
+    "manual": 2
+  },
+  "steps": [
+    {
+      "id": "4.A1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "4.A1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "4.A1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "4.A1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "4.A1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "4.A2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "4.A2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "4.A2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B4.1",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B4.2",
+      "status": "PASS"
+    },
+    {
+      "id": "4.B4.3",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Note for procedure 5: ACT-0007 (Tema Depot, May 2025) falls before the window. Review will exclude it with the computed detail \"member from 2025-07-01\"."
+    },
+    {
+      "id": "4.C1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "4.C1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "4.C1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "4.C1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "4.D1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "4.D1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "4.D1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "4.D1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "4.D1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "4.E1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "4.E1.2",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Procedure 5 sets the straddle treatment to Block the run until the record is split and back; procedure 6 sets the GWP set to AR6 and back. The declaration stays on Boundary; Method holds the upstream rules, the instruments and the residual mix."
+    }
+  ]
+}

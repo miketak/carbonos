@@ -1,0 +1,182 @@
+procedure: 4
+slug: inventory-boundary-and-declaration
+title: Inventory, boundary and declaration
+after: 3
+covers: ["05", "05.1", "05.6", "03", "03.2", "03.4", "07.2", "07.6"]
+let:
+  org: Adansi Foods Ltd
+  inv: FY2025
+  e1: Adansi Logistics Ltd
+  e2: Coldstore Ghana Ltd
+sections:
+  - id: A
+    title: Creating the inventory
+    cases:
+      - id: A1
+        title: Pre-population from the approach
+        steps:
+          - as: ama
+            do: { signIn: { user: ama } }
+          - do: { createInventory: { organization: "${org}", name: "${inv}", periodStart: "2025-01-01", periodEnd: "2025-12-31", approach: OPERATIONAL_CONTROL, gwpSet: AR5, straddle: PRO_RATE, prefillBoundary: true } }
+            expect:
+              - inventoryListed: { organization: "${org}", name: "${inv}", status: DRAFT }
+                why: '"FY2025 created." appears first'
+          - do: { openInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - workbenchTabs: { tabs: [Records, Boundary, Method, Runs, Report] }
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: DRAFT }
+          - do: { openInventory: { organization: "${org}", inventory: "${inv}", tab: Boundary } }
+            expect:
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: "${org}", inBoundary: true, facilities: { Kumasi Plant: true } }
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: "${e1}", inBoundary: true, facilities: { Tema Depot: true } }
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: "${e2}", inBoundary: false, shareUnderApproach: 0, cannotTick: true, asksWhy: true }
+                why: its 0% comes from its Table 1 row, an associate under operational control
+          - expect:
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: "${e1}", memberFrom: "2025-07-01" }
+                why: Member from is taken from the acquisition date
+      - id: A2
+        title: The period hint
+        steps:
+          - do: { startNewInventory: { organization: "${org}", periodStart: "2025-01-01", periodEnd: "2026-06-30" } }
+            expect:
+              - formHint: { text: "This period is 18 months. Chapter 9 expects an annual inventory; keep it only if the period is deliberate." }
+                why: it can still be saved
+          - do: { startNewInventory: { organization: "${org}", periodStart: "2025-07-01", periodEnd: "2026-06-30" } }
+            expect:
+              - formHint: { text: "A fiscal year: the inventory will be labelled FY2025/26." }
+          - do: { cancelDialog: { dialog: New inventory } }
+  - id: B
+    title: The boundary
+    cases:
+      - id: B1
+        title: An operation left out needs a reason
+        steps:
+          - do: { setFacilityInBoundary: { organization: "${org}", inventory: "${inv}", facility: Tema Depot, on: false } }
+            expect:
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: "${e1}", inBoundary: false, facilities: { Tema Depot: false }, asksWhy: true }
+                why: unticking E1's only facility unticks E1, and the reason control appears on the entity's row
+          - expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BOUNDARY, severity: ERROR, containing: "'Tema Depot' (Adansi Logistics Ltd) is neither in the boundary nor excluded with a reason. Tick it in, or record why it is left out." }
+                why: "the facility is named first: the reason is recorded on its entity's row"
+          - do: { excludeEntity: { organization: "${org}", inventory: "${inv}", entity: "${e1}", reason: NOT_APPLICABLE, detail: "Scratch: testing the exclusion flow" } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BOUNDARY, containing: "is neither in the boundary nor excluded with a reason", absent: true }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BOUNDARY, severity: WARNING, containing: "Adansi Logistics Ltd is excluded as not applicable in the period but holds a 100% share under this approach: the report discloses the exclusion." }
+                why: the error becomes a warning, the entity holds a 100% share under this approach
+          - do: { setFacilityInBoundary: { organization: "${org}", inventory: "${inv}", facility: Tema Depot, on: true } }
+            expect:
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: "${e1}", inBoundary: true, exclusion: none }
+                why: an operation back in the boundary carries no exclusion
+      - id: B2
+        title: The associate is disclosed, and can be excluded on method
+        steps:
+          - expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BOUNDARY, severity: WARNING, containing: "Coldstore Ghana Ltd has a 0% accounting share under operational control, so its facilities are outside the boundary under this approach and the report discloses the exclusion. Record why it is left out so the report says so." }
+          - do: { excludeEntity: { organization: "${org}", inventory: "${inv}", entity: "${e2}", reason: METHODOLOGY, detail: "Associate: no operational control" } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BOUNDARY, containing: "Record why it is left out so the report says so", absent: true }
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: "${e2}", exclusion: METHODOLOGY }
+      - id: B3
+        title: A share override is compared with the entity record
+        steps:
+          - do: { setEntityShare: { organization: "${org}", inventory: "${inv}", entity: "${e1}", economicInterest: 80 } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BOUNDARY, severity: WARNING, containing: "differs from the entity record" }
+              - entityListed: { organization: "${org}", name: "${e1}", equityShare: 100 }
+                why: the override is for this inventory only; Legal entities still reads 100%
+          - do: { setEntityShare: { organization: "${org}", inventory: "${inv}", entity: "${e1}", economicInterest: 100 } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BOUNDARY, containing: "differs from the entity record", absent: true }
+      - id: B4
+        title: A membership window is effective-dated
+        steps:
+          - expect:
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: "${e1}", memberFrom: "2025-07-01" }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BOUNDARY, severity: WARNING, containing: "Adansi Logistics Ltd is a member from 2025-07-01: a partial-period membership, accounted from that date." }
+          - do: { setMembershipWindow: { organization: "${org}", inventory: "${inv}", entity: "${e1}", until: "2025-06-30" } }
+            expect:
+              - refused: { rule: ghg.boundary.window-ends-before-start }
+                why: clear the typed date; the window stays as it was
+          - expect:
+              - observe: { text: "Note for procedure 5: ACT-0007 (Tema Depot, May 2025) falls before the window. Review will exclude it with the computed detail \"member from 2025-07-01\"." }
+  - id: C
+    title: The declaration
+    cases:
+      - id: C1
+        title: A declared category without lines warns, and a reason silences it
+        steps:
+          - do: { declareScope3: { organization: "${org}", inventory: "${inv}", categories: [INVESTMENTS] } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, severity: WARNING, containing: "Scope 3 '15. Investments' is declared as covered but no included record is classified into it: a reader takes 'covered' to mean quantified. Classify records into it, or say in the declaration why it is not quantified this year." }
+                why: '"Operational boundary declaration saved." first'
+          - do: { declareScope3: { organization: "${org}", inventory: "${inv}", categories: [INVESTMENTS], notQuantified: [{ category: INVESTMENTS, reason: n/a }] } }
+            expect:
+              - refused: { rule: ghg.declaration.reason-too-short, with: { category: 15. Investments } }
+          - do: { declareScope3: { organization: "${org}", inventory: "${inv}", categories: [INVESTMENTS], notQuantified: [{ category: INVESTMENTS, reason: "Minority holding; no emissions data available this year" }] } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, containing: "is declared as covered but no included record is classified into it", absent: true }
+                why: the report will print the category as "declared, not quantified" with the reason
+          - expect:
+              - declarationHas: { organization: "${org}", inventory: "${inv}", category: BUSINESS_TRAVEL, covered: false }
+              - declarationHas: { organization: "${org}", inventory: "${inv}", category: PURCHASED_GOODS_SERVICES, covered: false }
+                why: procedure 5 classifies records into both and reads the cross-check the other way round
+  - id: D
+    title: The freeze waits for a clean view
+    cases:
+      - id: D1
+        title: Unclassified records block the freeze, and the boundary stays live
+        steps:
+          - do: { reviewActivityData: { organization: "${org}", inventory: "${inv}" } }
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - freezeBlocked: { notClassified: 8 }
+          - do: { cancelDialog: { dialog: "Freeze the inventory?" } }
+          - do: { setFacilityInBoundary: { organization: "${org}", inventory: "${inv}", facility: Tema Depot, on: false } }
+          - do: { setFacilityInBoundary: { organization: "${org}", inventory: "${inv}", facility: Tema Depot, on: true } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: DRAFT }
+                why: "the boundary is still editable: nothing is frozen"
+  - id: E
+    title: The levers procedures 5 and 6 pull
+    cases:
+      - id: E1
+        title: Edit inventory
+        steps:
+          - do: { openInventoryForm: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - formOffers: { dialog: Edit inventory, fields: [Name, Period start, Period end, "Records that straddle the period or a membership window", "Purpose (optional)", Consolidation approach, GWP set] }
+          - do: { cancelDialog: { dialog: Edit inventory } }
+            expect:
+              - observe: { text: "Procedure 5 sets the straddle treatment to Block the run until the record is split and back; procedure 6 sets the GWP set to AR6 and back. The declaration stays on Boundary; Method holds the upstream rules, the instruments and the residual mix." }
+docs:
+  version: 3
+  estimatedMinutes: 35
+  objective: >-
+    Confirm that an inventory starts from its consolidation approach with the
+    boundary pre-populated from Table 1, that every operation is either in the
+    boundary or left out with a reason the report discloses, that an entity's
+    share and membership window are effective-dated, that the scope 3
+    declaration cross-checks the classification, and that the freeze waits for
+    a clean view.
+  coversText: The declaration half of spec 07.6.
+  runNote: Procedure 5 classifies the view it builds.
+  prerequisitesText:
+    - "Adansi Foods Ltd as procedure 3 leaves it: ten records, ACT-0001 to ACT-0010."
+    - Ama in the normal window.
+  knownNonGoals: >-
+    renaming a facility inside a frozen version (the mining pack); an empty
+    boundary; a financial-control inventory, which would consolidate the
+    associate by decision; deleting a facility inside a frozen boundary.
+  changeNotes:
+    - version: 2
+      date: "2026-09-29"
+      text: >-
+        C1 step 1 quotes the declaration warning with the category's report
+        label, "Scope 3 '15. Investments' ..." (PR #119).
+    - version: 3
+      date: "2026-10-02"
+      text: >-
+        Transliterated to the QA scenario DSL. The gate findings are read from
+        the validation report as well as from the pre-flight panel; the freeze
+        refusal is checked against the records the server lists; the period
+        hint and the edit form are observed on screen only.

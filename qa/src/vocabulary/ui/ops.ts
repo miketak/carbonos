@@ -29,6 +29,7 @@ export type UiOp =
 export type UiCheck =
   | { check: 'at'; nav: string }
   | { check: 'atOrg'; organization: string; section: string }
+  | { check: 'atInventory'; organization: string; inventory: string; tab: string }
   | { check: 'search'; label: string; value: string }
   | { check: 'buttonDisabled'; button: string; tooltip?: string; within?: string }
   | { check: 'rowDialogHas'; row: string; button: string; dialog: string; text: string }

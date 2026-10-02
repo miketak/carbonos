@@ -146,7 +146,12 @@ export class UiDriver implements Driver {
       if (!result.ok) break
     }
     if (env.crossCheck && CROSS_CHECKED.has(ref.outcome)) {
-      const viaApi = await this.api.check(actorKey, ref, last)
+      // a page may answer a breath ahead of the server (a bulk removal lands one request at a time): ask again before deciding
+      let viaApi = await this.api.check(actorKey, ref, last)
+      for (let attempt = 0; attempt < 5 && !viaApi.ok && result.ok; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 1_000))
+        viaApi = await this.api.check(actorKey, ref, last)
+      }
       // the mailbox is not on screen; the cross-check reads it in Mailpit, which is what a tester does by hand
       if (result.manual && viaApi.ok) return { ok: true, detail: `verified in Mailpit (${result.manual})` }
       if (result.ok && !viaApi.ok) return { ok: false, detail: `backend: the screen agrees with the scenario but the API does not: ${viaApi.detail}` }

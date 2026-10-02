@@ -219,6 +219,9 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       const d = dialog(page, await resolveAsync(ctx, t(op.dialog)))
       await expect(d).toBeVisible()
       await clickable(d, t(op.button)).click()
+      // a dialog that works through several requests (a bulk removal) closes when the last one lands; a refused
+      // one stays open with its message, and the step's outcome reads it
+      await expect(d).toBeHidden({ timeout: 15_000 }).catch(() => undefined)
       return
     }
     case 'signIn':
