@@ -96,6 +96,8 @@ export const requestPasswordReset = defineVerb({
   ui: ({ user, email }) => [
     { op: 'goto', path: '/login' },
     { op: 'click', button: S.nav.forgotPassword },
+    // a client-side navigation: the sign-in form's Email field is still there until the page has changed
+    { op: 'waitFor', text: S.heading.resetYourPassword },
     { op: 'fill', label: S.field.email, value: user ? tok.email(user) : email! },
     { op: 'click', button: S.button.sendResetLink },
   ],

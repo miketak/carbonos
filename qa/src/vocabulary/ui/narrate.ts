@@ -40,7 +40,7 @@ function phrase(op: UiOp): string {
     case 'reload':
       return `reload the page`
     case 'waitFor':
-      return `wait for ${q(op.text)}`
+      return `on the page headed ${q(op.text)}`
   }
 }
 
