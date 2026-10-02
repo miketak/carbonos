@@ -1,0 +1,301 @@
+procedure: 5
+slug: classification-and-the-gates
+title: Classification and the gates
+after: 4
+covers: ["04.1", "04.2", "04.3", "04.7", "04.8", "02.2", "03.2", "05.5", "05.6", "07.3", "07.6"]
+let:
+  org: Adansi Foods Ltd
+  inv: FY2025
+  lpg: "Gaseous fuels: LPG (/litre)"
+  diesel: "Liquid fuels: Diesel (100% mineral diesel) (/litre)"
+  grid: "Grid electricity, Ghana (2024) (/kWh)"
+  r407c: "Blends: R407C, Emissions including only Kyoto products (/kg)"
+  r410a: "R-410A (composition)"
+  flights: "Long-haul flights (supplier)"
+  investmentsWhy: "Minority holding; no emissions data available this year"
+sections:
+  - id: A
+    title: Review
+    cases:
+      - id: A1
+        title: Review decides the obvious records
+        steps:
+          - as: ama
+            do: { signIn: { user: ama } }
+          - do: { openInventory: { organization: "${org}", inventory: "${inv}", tab: Records } }
+            expect:
+              - recordCounts: { organization: "${org}", inventory: "${inv}", total: 10, unclassified: 8, excluded: 2 }
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0007, status: EXCLUDED, reason: OUTSIDE_BOUNDARY, detailContaining: "member from 2025-07-01" }
+                why: E1 joined on 2025-07-01 and the record is earlier
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0008, status: EXCLUDED, reason: OUTSIDE_BOUNDARY }
+                why: the facility is not in the boundary
+          - expect:
+              - observe: { text: "Open ACT-0007's drawer: an excluded record's drawer has no tabs; the chip reads the computed reason and its detail, \"Excluded · Outside boundary (Adansi Logistics Ltd: member from 2025-07-01)\", and no justification was asked." }
+  - id: B
+    title: Classification, one record per rule
+    cases:
+      - id: B1
+        title: A plain scope 1 line
+        steps:
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0001, factor: "${lpg}" } }
+            expect:
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0001, status: INCLUDED, scope: SCOPE_1, category: STATIONARY_COMBUSTION, factor: "Gaseous fuels: LPG" }
+                why: the stream's default scope is taken without a justification
+              - observe: { text: "The picker offered the defra-2025 version, the one live in the period, at 1.557 kg CO₂e per litre. There is no arithmetic preview line, because the record's unit is the factor's own (the preview appears only where a unit converts, as cases B2 and B4 show)." }
+      - id: B2
+        title: The grid factor is suggested
+        steps:
+          - do: { openRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0002 } }
+            expect:
+              - screenReads: { text: "Suggested for this facility's grid: Grid electricity, Ghana (2024)" }
+                why: ACT-0002 is the plant grid electricity, 120 MWh; the Ghana pack's row for the data year is offered
+          - do: { classifyWithSuggestion: { organization: "${org}", inventory: "${inv}", record: ACT-0002 } }
+            expect:
+              - screenReads: { text: "120 MWh → 120,000 kWh × 0.468809 kg CO₂e/kWh" }
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0002, status: INCLUDED, scope: SCOPE_2, category: PURCHASED_ELECTRICITY, factor: "Grid electricity, Ghana (2024)" }
+      - id: B3
+        title: A contractor's stream lands in scope 3, and the lease is inherited
+        steps:
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0003, factor: "${diesel}" } }
+            expect:
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0003, status: INCLUDED, scope: SCOPE_3, category: PURCHASED_GOODS_SERVICES }
+                why: no justification field, the stream is operated by a contractor; the drawer says the lease "operating lease (leased in)" is inherited from Tema Depot
+          - expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, severity: WARNING, containing: "Records are classified into scope 3 '1. Purchased goods and services' but the declaration does not list it as covered. Declare it, or reclassify the records." }
+          - do: { declareScope3: { organization: "${org}", inventory: "${inv}", categories: [INVESTMENTS, PURCHASED_GOODS_SERVICES], notQuantified: [{ category: INVESTMENTS, reason: "${investmentsWhy}" }] } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, containing: "scope 3 '1. Purchased goods and services' but the declaration does not list it", absent: true }
+      - id: B4
+        title: Mass meets volume through a density
+        steps:
+          - do: { pickFactorWithoutDensity: { organization: "${org}", inventory: "${inv}", record: ACT-0004, factor: "${diesel}" } }
+            expect:
+              - screenReads: { text: "tonne meets a factor per litre: choose the density that converts between them" }
+                why: nothing is sent yet; the drawer keeps the factor in view and the gate still lists ACT-0004 as unclassified
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0004, factor: "${diesel}", density: Diesel (typical value) } }
+            expect:
+              - screenReads: { text: "3 tonne → 3,571.4286 litre (density of Diesel, 0.84 kg/litre) × 2.66155 kg CO₂e/litre" }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, severity: WARNING, containing: "'Forklift diesel' converts through the typical density of Diesel (0.84 kg/litre), a planning value. A run may use it; a final run may not: record the supplier's density, or flag the classification as a proxy with a justification." }
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0004, factor: "${diesel}", density: Diesel (Adansi CoA) } }
+            expect:
+              - screenReads: { text: "3 tonne → 3,603.6036 litre" }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, containing: "typical density", absent: true }
+                why: procedure 6 puts the typical value back to read the final-run hold
+      - id: B5
+        title: The DESNZ blend, and the hand-entered one
+        steps:
+          - expect:
+              - observe: { text: "Open ACT-0005 (chiller refrigerant top-up, 20 kg) and search for \"R407C\": \"Blends: R407C, Emissions including only Kyoto products\" per kg, 1,624 kg CO₂e/kg, is offered." }
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0005, factor: "${r407c}" } }
+            expect:
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0005, status: INCLUDED, scope: SCOPE_1, category: FUGITIVE_EMISSIONS }
+                why: no preview line, the record's unit is the factor's own; the factor publishes an HFC mass, so the by-gas table of a run carries 20 kg under HFCs
+      - id: B6
+        title: A departure needs a justification; a proxy needs one too
+        steps:
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0001, factor: "${lpg}", scope: SCOPE_3, category: PURCHASED_GOODS_SERVICES } }
+            expect:
+              - screenReads: { text: "The stream suggests Scope 1." }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, severity: ERROR, containing: "'Boiler LPG' is classified in scope 3; its stream 'Boiler LPG' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1." }
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0001, factor: "${lpg}", scope: SCOPE_1, category: STATIONARY_COMBUSTION } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, containing: "'Boiler LPG' is classified in scope 3", absent: true }
+          - expect:
+              - observe: { text: "On ACT-0010 (staff flights), choose \"Long-haul flights (supplier)\" and tick proxy factor: a justification field opens and nothing is sent until it is filled. The drawer never records a proxy without its justification, so the rule \"A proxy factor needs a justification: say what the factor stands in for.\" is met before the API is reached." }
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0010, factor: "${flights}", proxy: true, proxyJustification: "Travel agent's average; no per-flight data" } }
+            expect:
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0010, status: INCLUDED, scope: SCOPE_3, category: BUSINESS_TRAVEL, proxy: true }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, severity: WARNING, containing: "Records are classified into scope 3 '6. Business travel' but the declaration does not list it as covered. Declare it, or reclassify the records." }
+          - do: { declareScope3: { organization: "${org}", inventory: "${inv}", categories: [INVESTMENTS, PURCHASED_GOODS_SERVICES, BUSINESS_TRAVEL], notQuantified: [{ category: INVESTMENTS, reason: "${investmentsWhy}" }] } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, containing: "scope 3 '6. Business travel' but the declaration does not list it", absent: true }
+      - id: B7
+        title: An unapproved factor blocks until the reviewer approves it
+        steps:
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0005, factor: "${r410a}", showUnapproved: true } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, severity: ERROR, containing: "'Chiller refrigerant top-up' uses 'R-410A (composition)', which is not approved. Approve it under Emission factors, or choose another." }
+          - as: kofi
+            do: { signIn: { user: kofi } }
+          - do: { approveFactor: { organization: "${org}", factor: "${r410a}" } }
+            expect:
+              - factorListed: { organization: "${org}", name: "${r410a}", approved: true, approvedBy: kofi }
+          - as: ama
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, containing: "which is not approved", absent: true }
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0005, factor: "${r407c}" } }
+            why: the composition blend is now unused; procedure 8 deletes it
+  - id: C
+    title: Exclusions with a reason
+    cases:
+      - id: C1
+        title: A methodology exclusion, not estimated
+        steps:
+          - expect:
+              - observe: { text: "Open ACT-0009 (canteen waste), switch to Exclude and choose Methodology exclusion: the form asks for a justification, a magnitude in kg CO₂e, and offers the two statements \"This record emits nothing\" and \"Not estimated: there is no basis to size this record\". With \"short\" typed, the button stays disabled while the justification is under 10 characters, and while no magnitude and no statement is given." }
+          - do: { excludeRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0009, reason: METHODOLOGY, justification: "Waste contractor's factor not available; supplier study pending", notEstimated: true } }
+            expect:
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0009, status: EXCLUDED, reason: METHODOLOGY, estimate: NOT_ESTIMATED }
+                why: it never reads "about 0 kg CO₂e"
+      - id: C2
+        title: A Montreal Protocol gas is reported outside the scopes
+        steps:
+          - expect:
+              - observe: { text: "Open ACT-0001 (litres) and read the reasons on Exclude: \"Outside the scopes: Montreal Protocol gas\" is not offered; the block reports a mass of gas, so the reason needs a mass unit. On ACT-0005 (kg) the reason is offered, and choosing it asks for a justification and a Gas, and no magnitude." }
+          - do: { excludeRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0005, reason: OUTSIDE_SCOPES_NON_KYOTO, justification: "Scratch: reading the Montreal Protocol form", gas: HCFC-22 } }
+            expect:
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0005, status: EXCLUDED, reason: OUTSIDE_SCOPES_NON_KYOTO, gas: HCFC-22 }
+          - do: { includeRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0005 } }
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0005, factor: "${r407c}" } }
+            expect:
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0005, status: INCLUDED, scope: SCOPE_1, factor: "Blends: R407C, Emissions including only Kyoto products" }
+                why: the record is included again, as case B5 left it
+      - id: C3
+        title: A page of records under one reason
+        steps:
+          - expect:
+              - observe: { text: "Tick ACT-0007 and ACT-0008 and read the footer: \"2 selected\" with Exclude 2 selected." }
+          - do: { excludeSelected: { organization: "${org}", inventory: "${inv}", records: [ACT-0007, ACT-0008], reason: NOT_APPLICABLE, justification: "Scratch: bulk exclusion" } }
+            why: 'a toast counts two; the dialog asked for no magnitude: one number typed once cannot size two records, so each reads "not estimated" in its drawer'
+          - do: { includeRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0007 } }
+          - do: { includeRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0008 } }
+          - do: { reviewActivityData: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0007, status: EXCLUDED, reason: OUTSIDE_BOUNDARY, detailContaining: "member from 2025-07-01" }
+              - recordView: { organization: "${org}", inventory: "${inv}", record: ACT-0008, status: EXCLUDED, reason: OUTSIDE_BOUNDARY }
+                why: review excludes both again with the computed reasons of case A1; nothing the tester typed survives
+  - id: D
+    title: A straddling record
+    cases:
+      - id: D1
+        title: Pro-rated by days, or blocked
+        steps:
+          - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0006, factor: "${lpg}" } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: COMPLETENESS, severity: WARNING, containing: "'Year-end boiler LPG' (Kumasi Plant) covers 2025-12-15 to 2026-01-15; 17 of 32 days fall inside the reporting period and the membership window: the run pro-rates it to 53.13%." }
+          - do: { setStraddleTreatment: { organization: "${org}", inventory: "${inv}", straddle: BLOCK } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: COMPLETENESS, severity: ERROR, containing: "17 of 32 days fall inside the reporting period and the membership window. The inventory blocks straddling records: split the record at the cut-off or exclude it." }
+                why: the same finding is an error
+          - do: { setStraddleTreatment: { organization: "${org}", inventory: "${inv}", straddle: PRO_RATE } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: COMPLETENESS, severity: WARNING, containing: "the run pro-rates it to 53.13%" }
+  - id: E
+    title: Method
+    cases:
+      - id: E1
+        title: Category 3 is quantified by an upstream rule
+        steps:
+          - do: { declareScope3: { organization: "${org}", inventory: "${inv}", categories: [INVESTMENTS, PURCHASED_GOODS_SERVICES, BUSINESS_TRAVEL, FUEL_ENERGY_RELATED], notQuantified: [{ category: INVESTMENTS, reason: "${investmentsWhy}" }] } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, severity: WARNING, containing: "Fuel- and energy-related activities is declared, but no upstream rule matches a scope 1 or scope 2 factor in this view; add a rule or say why category 3 is not quantified." }
+          - expect:
+              - observe: { text: "On Method, in Add an upstream rule, type \"LPG\" in Narrow the primary factors and choose \"Gaseous fuels: LPG (/litre)\"; the Upstream factor list holds a group \"Suggested: named after the primary factor\" with \"Well-to-tank: Gaseous fuels: LPG (/litre)\", the defra-2025 version: both lists offer only the versions live in the inventory's period. The suggestion is offered, never applied." }
+          - do: { addUpstreamRule: { organization: "${org}", inventory: "${inv}", primary: "${lpg}", upstream: "Well-to-tank: Gaseous fuels: LPG (/litre)", kind: WELL_TO_TANK } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, containing: "no upstream rule matches", absent: true }
+                why: '"Upstream rule added." Every LPG litre now carries a well-to-tank line at 0.18551 kg CO₂e/litre'
+          - do: { addUpstreamRule: { organization: "${org}", inventory: "${inv}", primary: "${lpg}", upstream: "${grid}", kind: WELL_TO_TANK } }
+            expect:
+              - refused: { rule: ghg.upstream-rule.unit-mismatch, with: { upstream: "Grid electricity, Ghana (2024)", upstreamUnit: kWh, primary: "Gaseous fuels: LPG", primaryUnit: litre } }
+      - id: E2
+        title: An instrument is applied only when the eight criteria are met
+        steps:
+          - do: { addInstrument: { organization: "${org}", inventory: "${inv}", facility: Kumasi Plant, instrument: CERTIFICATE, kgCo2ePerKwh: 0, source: "I-REC(E) Ghana 2025", coveredMwh: 150, reference: IREC-GH-2025-0091, registry: I-TRACK, vintage: 2025, criteria: [met, met, unanswered, met, met, met, met, met] } }
+            expect:
+              - instrumentListed: { organization: "${org}", inventory: "${inv}", facility: Kumasi Plant, notApplied: "Not applied: 1 unanswered" }
+                why: '"Instrument recorded for Kumasi Plant."'
+          - expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, severity: WARNING, containing: "The instrument for Kumasi Plant does not meet the Scope 2 Quality Criteria (1 of the eight criteria not yet answered): the market-based figure falls back to location-based." }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, severity: WARNING, containing: "The instrument for Kumasi Plant covers 150,000 kWh but the facility's scope 2 electricity in its period is 120,000 kWh: the excess covers nothing." }
+          - do: { editInstrument: { organization: "${org}", inventory: "${inv}", facility: Kumasi Plant, criteria: [met, met, met, met, met, met, met, met] } }
+            expect:
+              - instrumentListed: { organization: "${org}", inventory: "${inv}", facility: Kumasi Plant, notApplied: false }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, containing: "does not meet the Scope 2 Quality Criteria", absent: true }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, severity: WARNING, containing: "the excess covers nothing" }
+                why: the first warning goes; the coverage warning stays
+          - do: { editInstrument: { organization: "${org}", inventory: "${inv}", facility: Kumasi Plant, coveredMwh: 120 } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, containing: "the excess covers nothing", absent: true }
+      - id: E3
+        title: The residual mix is stated either way
+        steps:
+          - expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, severity: WARNING, containing: "The inventory does not say whether a residual mix is available." }
+          - do: { setResidualMix: { organization: "${org}", inventory: "${inv}", available: true } }
+            expect:
+              - refused: { rule: ghg.residual-mix.factor-required }
+          - do: { setResidualMix: { organization: "${org}", inventory: "${inv}", available: false } }
+            expect:
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: EMISSION_FACTOR, containing: "does not say whether a residual mix is available", absent: true }
+                why: the report will print the double-counting disclosure and price uncovered kWh at the grid average
+  - id: F
+    title: The freeze
+    cases:
+      - id: F1
+        title: A version is cut, and a frozen inventory refuses writes
+        steps:
+          - expect:
+              - noGateErrors: { organization: "${org}", inventory: "${inv}" }
+                why: "the warnings are the ones this procedure left: the straddling record and the partial-period membership, and the two factors that publish CO₂e only (the Ghana grid and the supplier's flights), whose emissions the by-gas table carries on one row"
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: FROZEN }
+              - boundaryVersion: { organization: "${org}", inventory: "${inv}", versionNo: 1 }
+              - screenReads: { text: "Frozen. The boundary and the activity view are read-only and runs are allowed." }
+          - expect:
+              - boundaryRow: { organization: "${org}", inventory: "${inv}", entity: Adansi Logistics Ltd, inBoundary: true, readOnly: true }
+              - observe: { text: "Try to change ACT-0001's factor: the drawer shows the classification without its factor, scope and category controls. The lifecycle bar says the boundary and the view are read-only; reopen the inventory as a draft to change either." }
+          - do: { reopenInventory: { organization: "${org}", inventory: "${inv}", reason: short } }
+            expect:
+              - dialogButtonDisabled: { dialog: "Reopen as a draft?", button: Reopen as draft, rule: ghg.inventory.reopen-reason }
+          - do: { reopenInventory: { organization: "${org}", inventory: "${inv}", reason: Checking that a reopen keeps the version } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: DRAFT }
+              - boundaryVersion: { organization: "${org}", inventory: "${inv}", versionNo: 1, reopenReason: Checking that a reopen keeps the version }
+                why: Runs carries the same act in the inventory's history
+          - do: { freezeInventory: { organization: "${org}", inventory: "${inv}" } }
+            expect:
+              - boundaryVersion: { organization: "${org}", inventory: "${inv}", versionNo: 2, count: 2 }
+docs:
+  version: 4
+  estimatedMinutes: 45
+  objective: >-
+    Confirm, one record per rule, that classification is an accounting
+    decision: the stream sets the default, the grid factor is suggested, mass
+    meets volume through a density, a departure needs a justification, a
+    proxy needs one too, an unapproved factor blocks, an exclusion needs a
+    reason and one of three answers, a Montreal Protocol gas is reported
+    outside the scopes, a straddling record is pro-rated or blocked, an
+    upstream rule quantifies category 3, an instrument is applied only when
+    the eight criteria are met, and the residual mix is stated either way.
+    Then the freeze cuts a version.
+  prerequisitesText:
+    - "FY2025 as procedure 4 leaves it: a draft, reviewed, Tema Depot in the boundary, Coldstore Ghana Ltd excluded on method, Investments declared and not quantified."
+    - Ama in the normal window; Kofi in the private window for case B7.
+  knownNonGoals: >-
+    a custom unit in a classification (the mining pack); Appendix F for a
+    leased asset in scope 1 or 2; the coverage matrix over twelve months,
+    which needs monthly records; a legacy magnitude entered before the three
+    exclusion states existed, which the UI cannot produce.
+  changeNotes:
+    - version: 2
+      date: "2026-09-29"
+      text: >-
+        B3 step 2 and B6 step 4 quote the declaration warnings with the
+        categories' report labels (PR #119).
+    - version: 3
+      date: "2026-09-29"
+      text: >-
+        E2 step 3 clicks Save instrument, the label the form now gives an
+        edit. F1 step 1 lists the CO₂e-only warnings. The bulk exclusion
+        dialog of C3 no longer offers the Montreal Protocol reason, which
+        needs a gas and a mass per record (the walkthrough fixes of
+        2026-09-29).
+    - version: 4
+      date: "2026-10-02"
+      text: >-
+        Transliterated to the QA scenario DSL. The view's records, the gate
+        findings, the rules, the instrument and the versions are read from the
+        API as well as from the screen; the picker's offer, the drawer's
+        sentences and the disabled buttons are observed on screen.

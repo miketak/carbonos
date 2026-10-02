@@ -157,6 +157,8 @@ export class ProcedureRun implements ChainAccess {
 
   /** @internal */
   actorKey(): string {
+    // QA_ACTOR names the actor when a run starts mid-procedure (`--grep` on a few cases while a scenario is written)
+    if (!this.currentActor && process.env.QA_ACTOR) this.currentActor = process.env.QA_ACTOR
     if (!this.currentActor) throw new Error('no actor: the first step of a procedure says who acts')
     return this.currentActor
   }
@@ -218,15 +220,22 @@ export class StepRun {
     return out
   }
 
-  /** Verifies the step's listed outcomes, after the verb's postconditions. */
+  /** Verifies the step's listed outcomes where the action left the tester, then the verb's postconditions (which may move). */
   async expect(out: ApiOutcome | undefined, clauses: ExpectClauseRef[]): Promise<void> {
     const last = out ?? this.last
     const expectsRefusal = clauses.some((c) => c.outcome === 'refused' || outcomeByName(c.outcome).expectsRefusal === true)
     if (this.driver.knowsStatus && last && !last.ok && !last.na && !expectsRefusal) {
       this.fail(`the action was refused with ${last.status}: ${detailOf(last)}`)
     }
+    // a line the drawer prints is read before the postconditions move the page; the rest after them, settled
+    const first = clauses.filter((c) => outcomeByName(c.outcome).readsScreenFirst === true)
+    const rest = clauses.filter((c) => !first.includes(c))
+    for (const clause of first) {
+      const result = await this.check(clause, last)
+      if (!result.ok) this.fail(`${clause.outcome} does not hold: ${result.detail}`)
+    }
     await this.postconditions(expectsRefusal)
-    for (const clause of clauses) {
+    for (const clause of rest) {
       const result = await this.check(clause, last)
       if (!result.ok) this.fail(`${clause.outcome} does not hold: ${result.detail}`)
     }

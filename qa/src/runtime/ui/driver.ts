@@ -88,9 +88,19 @@ export class UiDriver implements Driver {
     }
   }
 
+  /** A run that starts mid-procedure (QA_ACTOR with `--grep`) finds the actor's window blank: sign in as the chain knows them. */
+  private async signedInWindow(actorKey: string): Promise<Page> {
+    const page = await this.windows.page(actorKey)
+    if (!process.env.QA_ACTOR || page.url() !== 'about:blank') return page
+    const actor = resolveActor(this.chain.pack, actorKey)
+    if (!actor.account) return page
+    await execute(page, { op: 'signIn', email: actor.account.email, password: this.chain.passwordOf(actorKey) }, this.executeContext(actorKey))
+    return page
+  }
+
   async perform(actorKey: string, verbName: string, args: Record<string, unknown>): Promise<ApiOutcome> {
     const verb = verbByName(verbName)
-    const page = await this.windows.page(actorKey)
+    const page = await this.signedInWindow(actorKey)
     const ctx = this.executeContext(actorKey)
     for (const op of verb.ui(args)) await execute(page, op, ctx)
     // a password the page accepted is the account's from now on
@@ -123,7 +133,7 @@ export class UiDriver implements Driver {
     if (route?.startsWith('/admin') && actor.account?.platformRole !== 'ADMIN') return this.lookupWindow()
     // an organization's pages are read in the acting member's window; a visitor has none
     if (first && first.check === 'atOrg' && actor.anonymous) return this.lookupWindow()
-    return this.windows.page(actorKey)
+    return this.signedInWindow(actorKey)
   }
 
   private async lookupWindow(): Promise<Page> {

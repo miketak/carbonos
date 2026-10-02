@@ -43,6 +43,12 @@ function phrase(op: UiOp): string {
       return `click ${b(op.button)} on the row of ${op.text}`
     case 'openRow':
       return `open ${op.text}`
+    case 'clickAny':
+      return `click ${b(op.buttons[0]!)}`
+    case 'clickContaining':
+      return `click ${q(op.text)}`
+    case 'pickOption':
+      return `choose ${b(op.text.replace(/ \(\/$/, ''))}`
     case 'emailLink':
       return op.forged
         ? `open ${code(op.path + '?token=')} followed by 64 zeros`
@@ -70,7 +76,7 @@ export function narrateOps(ops: UiOp[]): string {
   }
   for (const op of ops) {
     clause.push(phrase(op))
-    if (op.op === 'click' || op.op === 'confirm' || op.op === 'signIn' || op.op === 'signOut' || op.op === 'row' || op.op === 'openRow') flush()
+    if (op.op === 'click' || op.op === 'confirm' || op.op === 'signIn' || op.op === 'signOut' || op.op === 'row' || op.op === 'openRow' || op.op === 'clickAny' || op.op === 'clickContaining' || op.op === 'pickOption') flush()
   }
   flush()
   return sentences.join(' ')

@@ -3,10 +3,10 @@
   "driver": "api",
   "yamlSha256": "9f4b41e20384ccb199d24f311cebcf62b5e97006857b04905dc984f139accfa6",
   "productVersion": null,
-  "gitSha": "172ca78cfb15ceb757b18639bfd4f4e8c266de7c",
+  "gitSha": "aab57be5b5c9d566cd2806154db6d314fa1ec27b",
   "date": "2026-10-02",
   "specialist": "unknown",
-  "digestSha256": "60b42dc99a89c3b5753abe48d13646f5c2d806b8ff2ce23ec9dce34034518940",
+  "digestSha256": "ca916fc7273c29f86e65d6d11763b3e60ac5ef8ce32dd002c6c784c0a7db9260",
   "counts": {
     "pass": 69,
     "na": 1,

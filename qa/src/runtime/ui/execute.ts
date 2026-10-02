@@ -7,8 +7,8 @@ import { expect, type Locator, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { REPO_ROOT } from '../../load.ts'
 import type { ApiContext } from '../../vocabulary/contract.ts'
-import { activity, entity, facility, organization } from '../../vocabulary/organizations.ts'
-import { inventory } from '../../vocabulary/inventories.ts'
+import { activity, entity, facility, factor, organization } from '../../vocabulary/organizations.ts'
+import { density, inventory } from '../../vocabulary/inventories.ts'
 import type { UiOp } from '../../vocabulary/ui/ops.ts'
 import { S } from '../../vocabulary/ui/surface.ts'
 import { env } from '../shared/env.ts'
@@ -51,6 +51,14 @@ export async function resolveAsync(ctx: ExecuteContext, text: string): Promise<s
     const org = await organization(ctx.api, match[1]!)
     out = out.replace(match[0], (await facility(ctx.api.session(), org.id, match[2]!)).id)
   }
+  for (const match of text.matchAll(/\{densityId:([^}|]+)\|([^}]+)\}/g)) {
+    const org = await organization(ctx.api, match[1]!)
+    out = out.replace(match[0], (await density(ctx.api.session(), org.id, match[2]!)).id)
+  }
+  for (const match of text.matchAll(/\{factorId:([^}|]+)\|([^}]+)\}/g)) {
+    const org = await organization(ctx.api, match[1]!)
+    out = out.replace(match[0], (await factor(ctx.api.session(), org.id, match[2]!)).id)
+  }
   // `{activityType:Org|ACT-0003}`: the register names a record by its activity type where a tester reads it
   for (const match of text.matchAll(/\{activityType:([^}|]+)\|([^}]+)\}/g)) {
     const org = await organization(ctx.api, match[1]!)
@@ -72,10 +80,13 @@ export async function openOrgPage(page: Page, ctx: ExecuteContext, organizationR
 export async function openInventoryPage(page: Page, ctx: ExecuteContext, organizationRef: string, name: string, tab?: string): Promise<void> {
   const { org, inv } = await inventory(ctx.api, organizationRef, name)
   await dismissDialogs(page)
-  await goto(page, `/app/ghg/${org.id}/inventories/${inv.id}`)
+  // the workbench keeps its tab in the address (`?tab=method`): opening it there is what a tester's bookmark does
+  const query = tab && tab !== 'Records' ? `?tab=${tab.toLowerCase()}` : ''
+  await goto(page, `/app/ghg/${org.id}/inventories/${inv.id}${query}`)
   await page.waitForURL((url) => url.pathname.endsWith(`/inventories/${inv.id}`), { timeout: 15_000 })
-  await page.getByRole('tab', { name: 'Records' }).first().waitFor()
-  if (tab && tab !== 'Records') await page.getByRole('tab', { name: tab }).click()
+  const target = page.getByRole('tab', { name: tab ?? 'Records' }).first()
+  await target.waitFor()
+  await expect(target).toHaveAttribute('aria-selected', 'true')
 }
 
 const ZEROS = '0'.repeat(64)
@@ -103,6 +114,8 @@ export async function rowButton(scope: Locator, name: string): Promise<Locator> 
 }
 
 export function dialog(page: Page, title: string): Locator {
+  // `[role="dialog"]` or `[aria-label="Add instrument"]`: a region named by a selector rather than a dialog title
+  if (title.startsWith('[')) return page.locator(title).first()
   return page.getByRole('dialog', { name: title, exact: true })
 }
 
@@ -171,7 +184,9 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
     }
     case 'tick': {
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
-      const box = scope.getByLabel(t(op.label), { exact: true })
+      const label = await resolveAsync(ctx, t(op.label))
+      // a label that goes on after its caption ("Show unapproved (3 hidden)") is matched by its start
+      const box = op.prefix ? scope.getByLabel(new RegExp(`^${escapeRegExp(label)}`)) : scope.getByLabel(label, { exact: true })
       // a controlled checkbox (the boundary's) flips only after the server answers: click, then wait for the state
       const want = op.on !== false
       if ((await box.isChecked()) !== want) {
@@ -192,7 +207,7 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       return
     case 'click': {
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
-      const button = clickable(scope, t(op.button))
+      const button = clickable(scope, await resolveAsync(ctx, t(op.button)))
       if (op.ifEnabled) {
         // the dialog keeps the button disabled while the gates refuse: a tester sees that, and does not click
         await button.waitFor()
@@ -203,7 +218,7 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
     }
     case 'fill': {
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
-      const field = scope.getByLabel(t(op.label), { exact: true })
+      const field = scope.getByLabel(await resolveAsync(ctx, t(op.label)), { exact: true })
       await field.fill(t(op.value))
       // a control that saves when it loses focus (the boundary's shares, dates and details)
       if (op.blur) await field.blur()
@@ -212,7 +227,15 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
     case 'choose': {
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
       const option = await resolveAsync(ctx, op.option)
-      await scope.getByLabel(t(op.label), { exact: true }).selectOption(op.byValue ? { value: option } : { label: option })
+      const select = scope.getByLabel(await resolveAsync(ctx, t(op.label)), { exact: true })
+      if (op.prefix) {
+        // an option whose text goes on after what the scenario names ("Gaseous fuels: LPG (/litre) · Butane"): the first that starts with it
+        const match = select.locator('option').filter({ hasText: option }).first()
+        await match.waitFor({ state: 'attached' })
+        await select.selectOption({ value: (await match.getAttribute('value')) ?? '' })
+        return
+      }
+      await select.selectOption(op.byValue ? { value: option } : { label: option })
       return
     }
     case 'confirm': {
@@ -247,8 +270,24 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       return
     case 'openRow':
       // the register opens a record from its name, the row's first button
-      await (await row(page, t(op.text))).getByRole('button').first().click()
+      await (await row(page, await resolveAsync(ctx, t(op.text)))).getByRole('button').first().click()
       return
+    case 'clickAny': {
+      // whichever of the captions the page shows now ("Choose factor…" before a choice, "Change factor…" after)
+      let target = clickable(page, t(op.buttons[0]!))
+      for (const name of op.buttons.slice(1)) target = target.or(clickable(page, t(name)))
+      await target.first().click()
+      return
+    }
+    case 'clickContaining':
+      await page.getByRole('button', { name: await resolveAsync(ctx, t(op.text)) }).first().click()
+      return
+    case 'pickOption': {
+      // an option of a listbox-like group, by the start of its text
+      const group = page.getByLabel(await resolveAsync(ctx, t(op.group)), { exact: true })
+      await group.getByRole('button').filter({ hasText: await resolveAsync(ctx, t(op.text)) }).first().click()
+      return
+    }
     case 'emailLink': {
       if (op.forged) {
         await page.goto(`${op.path}?token=${ZEROS}`)
@@ -269,6 +308,8 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
 
 /** A navigation the page itself interrupts (a redirect on load) is tried once more. */
 export async function goto(page: Page, path: string): Promise<void> {
+  // a save clicked a moment ago is still in flight: leaving the page now would abort it, so let the requests land first
+  if (page.url() !== 'about:blank') await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined)
   try {
     await page.goto(path)
   } catch (error) {

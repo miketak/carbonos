@@ -10,7 +10,8 @@ const approachArg = z.enum(['EQUITY_SHARE', 'FINANCIAL_CONTROL', 'OPERATIONAL_CO
 const gwpArg = z.enum(['AR5', 'AR6'])
 const straddleArg = z.enum(['PRO_RATE', 'BLOCK'])
 const exclusionArg = z.enum(['NON_GHG', 'DUPLICATE', 'NOT_APPLICABLE', 'METHODOLOGY', 'OTHER'])
-const categoryArg = z.string().refine((c) => c in categoryLabels, { message: 'a scope 3 category' })
+const scope3 = Object.keys(categoryLabels).filter((c) => /^\d/.test(categoryLabels[c]!))
+const categoryArg = z.string().refine((c) => scope3.includes(c), { message: 'a scope 3 category' })
 
 /** The form alone, nothing saved: the drivers report the step as not applicable through the API. */
 const formOnly = (why: string): ApiOutcome => ({ status: 0, ok: true, na: why })
@@ -189,7 +190,7 @@ export const declareScope3 = defineVerb({
   },
   ui: (a) => [
     { op: 'inventoryPage', organization: a.organization, inventory: a.inventory, tab: 'Boundary' },
-    ...Object.keys(categoryLabels).map((c) => ({ op: 'tick', label: categoryLabels[c]!, on: a.categories.includes(c) }) as const),
+    ...scope3.map((c) => ({ op: 'tick', label: categoryLabels[c]!, on: a.categories.includes(c) }) as const),
     ...(a.notQuantified ?? []).map((n) => ({ op: 'fill', label: `${categoryLabels[n.category]}: why not quantified this year`, value: n.reason }) as const),
     { op: 'click', button: S.inv.button.saveDeclaration },
   ],

@@ -156,9 +156,16 @@ export async function searchFactors(session: ApiSession, orgId: string, q: strin
   return (out.body as { items: FactorRow[] }).items
 }
 
-export async function factor(session: ApiSession, orgId: string, name: string): Promise<FactorRow> {
-  const found = (await searchFactors(session, orgId, name)).find((f) => f.name === name)
-  if (!found) throw new Error(`no factor named '${name}'`)
+/** A factor reference as the picker prints it: the name, with the unit after it ("Gaseous fuels: LPG (/litre)") where rows share a name. */
+export function factorRef(ref: string): { name: string; unit: string | undefined } {
+  const match = /^(.*) \(\/([^)]+)\)$/.exec(ref)
+  return match ? { name: match[1]!, unit: match[2] } : { name: ref, unit: undefined }
+}
+
+export async function factor(session: ApiSession, orgId: string, ref: string): Promise<FactorRow> {
+  const { name, unit } = factorRef(ref)
+  const found = (await searchFactors(session, orgId, name)).find((f) => f.name === name && (unit === undefined || f.unit === unit))
+  if (!found) throw new Error(`no factor named '${name}'${unit ? ` per ${unit}` : ''}`)
   return found
 }
 

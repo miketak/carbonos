@@ -1,0 +1,253 @@
+{
+  "procedure": 5,
+  "driver": "api",
+  "yamlSha256": "1538824cf3d81fcafa3f0cc7c70e60ca9eb7d02c9fdf50dbf2f5d2f909879e19",
+  "productVersion": null,
+  "gitSha": "aab57be5b5c9d566cd2806154db6d314fa1ec27b",
+  "date": "2026-10-02",
+  "specialist": "unknown",
+  "digestSha256": "d0431a88b136fe172e23a9017f303a171e4690f38e936ef8746c05451f0553de",
+  "counts": {
+    "pass": 39,
+    "na": 7,
+    "manual": 9
+  },
+  "steps": [
+    {
+      "id": "5.A1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "5.A1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.A1.3",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Open ACT-0007's drawer: an excluded record's drawer has no tabs; the chip reads the computed reason and its detail, \"Excluded · Outside boundary (Adansi Logistics Ltd: member from 2025-07-01)\", and no justification was asked."
+    },
+    {
+      "id": "5.B1.1",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, The picker offered the defra-2025 version, the one live in the period, at 1.557 kg CO₂e per litre. There is no arithmetic preview line, because the record's unit is the factor's own (the preview appears only where a unit converts, as cases B2 and B4 show)."
+    },
+    {
+      "id": "5.B2.1",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"Suggested for this facility's grid: Grid electricity, Ghana (2024)\""
+    },
+    {
+      "id": "5.B2.2",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"120 MWh → 120,000 kWh × 0.468809 kg CO₂e/kWh\""
+    },
+    {
+      "id": "5.B3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B3.3",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B4.1",
+      "status": "NA",
+      "note": "the drawer keeps the factor in view and sends nothing until a density is chosen | screenReads: N/A, the screen reads \"tonne meets a factor per litre: choose the density that converts between them\""
+    },
+    {
+      "id": "5.B4.2",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"3 tonne → 3,571.4286 litre (density of Diesel, 0.84 kg/litre) × 2.66155 kg CO₂e/litre\""
+    },
+    {
+      "id": "5.B4.3",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"3 tonne → 3,603.6036 litre\""
+    },
+    {
+      "id": "5.B5.1",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Open ACT-0005 (chiller refrigerant top-up, 20 kg) and search for \"R407C\": \"Blends: R407C, Emissions including only Kyoto products\" per kg, 1,624 kg CO₂e/kg, is offered."
+    },
+    {
+      "id": "5.B5.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B6.1",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"The stream suggests Scope 1.\""
+    },
+    {
+      "id": "5.B6.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B6.3",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, On ACT-0010 (staff flights), choose \"Long-haul flights (supplier)\" and tick proxy factor: a justification field opens and nothing is sent until it is filled. The drawer never records a proxy without its justification, so the rule \"A proxy factor needs a justification: say what the factor stands in for.\" is met before the API is reached."
+    },
+    {
+      "id": "5.B6.4",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B6.5",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B7.1",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B7.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B7.3",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B7.4",
+      "status": "PASS"
+    },
+    {
+      "id": "5.B7.5",
+      "status": "PASS"
+    },
+    {
+      "id": "5.C1.1",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Open ACT-0009 (canteen waste), switch to Exclude and choose Methodology exclusion: the form asks for a justification, a magnitude in kg CO₂e, and offers the two statements \"This record emits nothing\" and \"Not estimated: there is no basis to size this record\". With \"short\" typed, the button stays disabled while the justification is under 10 characters, and while no magnitude and no statement is given."
+    },
+    {
+      "id": "5.C1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.C2.1",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Open ACT-0001 (litres) and read the reasons on Exclude: \"Outside the scopes: Montreal Protocol gas\" is not offered; the block reports a mass of gas, so the reason needs a mass unit. On ACT-0005 (kg) the reason is offered, and choosing it asks for a justification and a Gas, and no magnitude."
+    },
+    {
+      "id": "5.C2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.C2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "5.C2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "5.C3.1",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Tick ACT-0007 and ACT-0008 and read the footer: \"2 selected\" with Exclude 2 selected."
+    },
+    {
+      "id": "5.C3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.C3.3",
+      "status": "PASS"
+    },
+    {
+      "id": "5.C3.4",
+      "status": "PASS"
+    },
+    {
+      "id": "5.C3.5",
+      "status": "PASS"
+    },
+    {
+      "id": "5.D1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "5.D1.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.D1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E1.2",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, On Method, in Add an upstream rule, type \"LPG\" in Narrow the primary factors and choose \"Gaseous fuels: LPG (/litre)\"; the Upstream factor list holds a group \"Suggested: named after the primary factor\" with \"Well-to-tank: Gaseous fuels: LPG (/litre)\", the defra-2025 version: both lists offer only the versions live in the inventory's period. The suggestion is offered, never applied."
+    },
+    {
+      "id": "5.E1.3",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E2.1",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E2.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E2.4",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "5.E3.3",
+      "status": "PASS"
+    },
+    {
+      "id": "5.F1.1",
+      "status": "PASS"
+    },
+    {
+      "id": "5.F1.2",
+      "status": "NA",
+      "note": "screenReads: N/A, the screen reads \"Frozen. The boundary and the activity view are read-only and runs are allowed.\""
+    },
+    {
+      "id": "5.F1.3",
+      "status": "MANUAL",
+      "note": "observe: MANUAL, Try to change ACT-0001's factor: the drawer shows the classification without its factor, scope and category controls. The lifecycle bar says the boundary and the view are read-only; reopen the inventory as a draft to change either."
+    },
+    {
+      "id": "5.F1.4",
+      "status": "PASS"
+    },
+    {
+      "id": "5.F1.5",
+      "status": "PASS"
+    },
+    {
+      "id": "5.F1.6",
+      "status": "PASS"
+    }
+  ]
+}

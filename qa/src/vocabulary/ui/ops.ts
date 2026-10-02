@@ -11,8 +11,8 @@ export type UiOp =
   | { op: 'tab'; name: string }
   | { op: 'click'; button: string; within?: string; ifEnabled?: boolean }
   | { op: 'fill'; label: string; value: string; within?: string; blur?: boolean }
-  | { op: 'choose'; label: string; option: string; within?: string; byValue?: boolean }
-  | { op: 'tick'; label: string; within?: string; on?: boolean }
+  | { op: 'choose'; label: string; option: string; within?: string; byValue?: boolean; prefix?: boolean }
+  | { op: 'tick'; label: string; within?: string; on?: boolean; prefix?: boolean }
   | { op: 'upload'; label: string; fixture: string; within?: string }
   | { op: 'orgPage'; organization: string; section: string }
   | { op: 'inventoryPage'; organization: string; inventory: string; tab?: string }
@@ -22,6 +22,9 @@ export type UiOp =
   | { op: 'accountMenu'; item: string }
   | { op: 'row'; text: string; button: string }
   | { op: 'openRow'; text: string }
+  | { op: 'clickAny'; buttons: string[] }
+  | { op: 'clickContaining'; text: string }
+  | { op: 'pickOption'; group: string; text: string }
   | { op: 'emailLink'; actor: string; subject: string; path: string; forged?: boolean }
   | { op: 'reload' }
   | { op: 'waitFor'; text: string }
@@ -39,11 +42,13 @@ export type UiCheck =
   | { check: 'fieldError'; label: string; text: string }
   | { check: 'fieldValue'; label: string; value: string }
   | { check: 'fieldVisible'; label: string; within?: string }
+  | { check: 'optionListed'; label: string; option: string }
   | { check: 'ticked'; label: string; on: boolean; disabled?: boolean }
   | { check: 'tabsVisible'; names: string[] }
   | { check: 'gateFinding'; organization: string; inventory: string; gate: string; severity?: string; containing: string; absent?: boolean }
   | { check: 'rowHas'; text: string; cells: string[] }
   | { check: 'rowAbsent'; text: string }
+  | { check: 'rowLacks'; text: string; cell: string }
   | { check: 'buttonVisible'; button: string; visible: boolean }
   | { check: 'signedOut' }
   | { check: 'signedIn' }

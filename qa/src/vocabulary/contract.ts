@@ -113,6 +113,8 @@ export interface Outcome<A = Record<string, unknown>> {
   measureApi?: (ctx: ApiContext, args: A) => Promise<number>
   /** The outcome reads a refusal (like `refused`): the step's action is expected to fail. */
   expectsRefusal?: boolean
+  /** The outcome reads the screen where the action left it, before the verb's postconditions move on (a drawer's line). */
+  readsScreenFirst?: boolean
 }
 
 export function defineVerb<A>(verb: Verb<A>): Verb<A> {
