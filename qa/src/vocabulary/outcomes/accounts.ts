@@ -147,7 +147,8 @@ export const platformRole = defineOutcome({
     if (!row) return fail(`${user} is not listed`)
     return row.role === role ? pass(role) : fail(`${user} is ${row.role}`)
   },
-  ui: ({ role }) => [{ check: 'buttonVisible', button: `menu:${S.nav.administration}`, visible: role === 'ADMIN' }],
+  // read from GHG accounting: inside the administration area the entry is absent, the sidebar is the navigation there
+  ui: ({ role }) => [{ check: 'at', nav: S.nav.ghg }, { check: 'buttonVisible', button: `menu:${S.nav.administration}`, visible: role === 'ADMIN' }],
   narrate: ({ role }) =>
     role === 'ADMIN'
       ? `The account menu lists **${S.nav.editProfile}**, **${S.nav.help}**, **${S.nav.administration}** and **${S.button.signOut}**.`

@@ -140,10 +140,10 @@ What the setting does to an import is in the mining pack, procedure 10 case E5: 
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama Owusu in the private window, look. | The account menu lists **Edit profile**, **Help** and **Sign out**; there is no **Administration** entry. |  |  |
+| 1 | As Ama Owusu in the private window, open **GHG accounting**. | The account menu lists **Edit profile**, **Help** and **Sign out**; there is no **Administration** entry. |  |  |
 | 2 | Open the account menu and choose **Edit profile**, fill in **Display name** with `Ama Owusu (Owner)`, then click **Save changes**. | The name at the top right reads "Ama Owusu (Owner)". |  |  |
 | 3 | Open the account menu and choose **Edit profile**, fill in **Display name** with `Ama Owusu`, then click **Save changes**. | The name at the top right reads "Ama Owusu". |  |  |
-| 4 | As Admin in the normal window, look. | The account menu lists **Edit profile**, **Help**, **Administration** and **Sign out**: inside the administration area the entry is absent, the sidebar is the navigation there. |  |  |
+| 4 | As Admin in the normal window, open **GHG accounting**. | The account menu lists **Edit profile**, **Help**, **Administration** and **Sign out**: inside the administration area the entry is absent, the sidebar is the navigation there. |  |  |
 | 5 | As Ama Owusu in the private window, open `/admin/users`. | Refused: a member does not reach the platform area. |  |  |
 
 ## G. Passwords
