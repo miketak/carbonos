@@ -102,6 +102,7 @@ export const enterActivity = defineVerb({
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
     { op: 'openRow', text: a.record },
     { op: 'fill', label: S.act.field.quantity, value: String(a.quantity) },
+    { op: 'choose', label: S.org.field.unit, option: a.unit, byValue: true },
     { op: 'fill', label: S.act.field.periodStart, value: a.periodStart },
     { op: 'fill', label: S.act.field.periodEnd, value: a.periodEnd },
     { op: 'click', button: S.act.button.save },
