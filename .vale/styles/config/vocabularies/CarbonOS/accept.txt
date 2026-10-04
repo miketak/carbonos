@@ -125,3 +125,9 @@ YAML
 Zensical
 Genset
 genset
+mockup
+mockups
+artboard
+artboards
+popover
+popovers

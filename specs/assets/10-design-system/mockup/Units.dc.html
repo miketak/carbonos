@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Units and densities</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="units" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Overview.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li aria-current="page">Units</li></ol></div><a href="Overview.dc.html" class="muted">Help</a></div>
+  <div class="page-head">
+    <div style="max-width: 820px">
+      <h1 class="page-title">Units and densities</h1>
+      <p class="page-sub">Records are kept in the unit they arrive in. A custom unit converts like the registered unit it is a multiple of; a density bridges mass and volume. Every run line prints the conversion it applied.</p>
+    </div>
+  </div>
+  <section class="panel">
+    <div class="panel-head"><div><div class="panel-title">Custom units</div><div class="muted" style="font-size: 13px; margin-top: 2px">A drum, a bag, a truckload: define it as a multiple of a registered unit and records in it convert like any other.</div></div></div>
+    <div class="panel-body tight"><table class="table"><thead><tr><th>Unit</th><th>Definition</th><th class="actions" style="width: 100px"></th></tr></thead><tbody>
+      <tr><td><div class="cell-2"><span class="t mono">drum</span><span class="s">Drum (200 L)</span></div></td><td class="mono">1 drum = 200 litre</td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Delete</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t mono">tonne-anfo</span><span class="s">Tonne ANFO</span></div></td><td class="mono">1 tonne-anfo = 1 tonne</td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Delete</button></td></tr>
+    </tbody></table></div>
+    <div class="panel-body" style="border-top: 1px solid var(--hairline)"><div style="display: grid; grid-template-columns: 1fr 1.4fr 1fr 1.2fr auto; gap: 12px; align-items: end">
+      <div class="field"><label for="u-code">Code</label><input id="u-code" type="text" placeholder="drum"></div>
+      <div class="field"><label for="u-label">Label</label><input id="u-label" type="text" placeholder="Drum (200 L)"></div>
+      <div class="field"><label for="u-n">One unit equals</label><input id="u-n" type="text" placeholder="200"></div>
+      <div class="field"><label for="u-of">Of</label><select id="u-of"><optgroup label="Volume"><option>Litre (litre)</option></optgroup><optgroup label="Mass"><option>Kilogram (kg)</option><option>Tonne (tonne)</option></optgroup></select></div>
+      <button type="button" class="btn btn-secondary" onClick="{{defineUnit}}">Define unit</button>
+    </div></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><div class="panel-title">Densities</div><div class="muted" style="font-size: 13px; margin-top: 2px">Fuel is often invoiced by mass and its factor published per litre. A density bridges the two and prints on the run line.</div></div></div>
+    <div class="panel-body tight"><table class="table"><thead><tr><th>Material</th><th class="num">kg per litre</th><th>Source</th><th class="actions" style="width: 100px"></th></tr></thead><tbody>
+      <tr><td>Diesel <span class="chip" style="height: 22px; font-size: 12px; margin-left: 6px">Typical value</span></td><td class="num">0.8400</td><td class="muted">Typical mid-range density of automotive diesel at 15 C</td><td class="actions"></td></tr>
+      <tr><td>Diesel (GOIL, 2025 CoA)</td><td class="num">0.8325</td><td>Supplier certificate of analysis, batch 2025-03</td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Delete</button></td></tr>
+      <tr><td>LPG <span class="chip" style="height: 22px; font-size: 12px; margin-left: 6px">Typical value</span></td><td class="num">0.5100</td><td class="muted">Typical density of propane and butane mix</td><td class="actions"></td></tr>
+    </tbody></table></div>
+    <div class="panel-body" style="border-top: 1px solid var(--hairline)"><div style="display: grid; grid-template-columns: 1.4fr 0.8fr 1.6fr 1fr auto; gap: 12px; align-items: end">
+      <div class="field"><label for="d-mat">Material</label><input id="d-mat" type="text" placeholder="Diesel (GOIL, 2025 CoA)"></div>
+      <div class="field"><label for="d-kg">kg per litre</label><input id="d-kg" type="text" placeholder="0.8325"></div>
+      <div class="field"><label for="d-src">Source</label><input id="d-src" type="text" placeholder="Supplier certificate of analysis, batch 2025-03"></div>
+      <div class="field"><label for="d-note">Note (optional)</label><input id="d-note" type="text"></div>
+      <button type="button" class="btn btn-secondary" onClick="{{recordDensity}}">Record density</button>
+    </div></div>
+  </section>
+</main>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    const flash = (text) => { this.setState({ toast: text }); setTimeout(() => this.setState({ toast: null }), 3000) }
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      defineUnit: () => flash('1 drum = 200 litre defined.'), recordDensity: () => flash('Density of Diesel (GOIL, 2025 CoA) recorded.'),
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

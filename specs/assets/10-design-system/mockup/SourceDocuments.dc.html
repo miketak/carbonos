@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Source documents</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="activity" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Main.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li>Data collection</li><li><a href="Main.dc.html">Activity data</a></li><li aria-current="page">Source documents</li></ol></div></div>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Source documents</h1>
+      <p class="page-sub">The supporting documents behind your activity records.</p>
+    </div>
+    <div class="page-actions">
+      <div class="segmented" role="group" aria-label="View">
+        <a class="btn btn-sm" style="border-radius: 0; border: 0; color: var(--ink-muted)" href="Main.dc.html">Records</a>
+        <button type="button" aria-pressed="true">Source documents</button>
+      </div>
+      <a class="btn btn-secondary" href="#index"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg>Download evidence index (CSV)</a>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><div><div class="panel-title">Imported files</div><div class="muted" style="font-size: 13px; margin-top: 2px">Each CSV import is kept as uploaded, with its digest, so a record traces to its row.</div></div></div>
+    <div class="panel-body tight">
+      <table class="table"><tbody>
+        <tr><td><div class="cell-2"><span class="t mono">gye-nyame-2025.csv</span><span class="s">7 rows (ACT-0001 to ACT-0007)<span class="sep">·</span>4 KB<span class="sep">·</span>Kofi Mensah, 2026-02-03<span class="sep">·</span><span class="mono">sha256 3f9a…c21e</span></span></div></td><td class="actions" style="width: 120px; text-align: right"><a href="#file">Download</a></td></tr>
+      </tbody></table>
+    </div>
+  </section>
+
+  <div class="toolbar-grid" style="grid-template-columns: minmax(240px, 2fr) repeat(2, minmax(0, 1fr))">
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <label for="q" class="sr-only">Search</label><input id="q" type="search" placeholder="Document, activity, facility or reference">
+    </div>
+      <label class="sr-only" for="fac">Facility</label><select id="fac" ><option>All facilities</option><option>Nyame Pit and Plant</option><option>Obuasi Camp</option></select>
+      <label class="sr-only" for="show">Show</label><select id="show" ><option>All documents</option><option>Links only</option><option>Record removed</option></select>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Document</th><th>Record</th><th>Facility / period</th><th>Attached by</th><th class="actions" style="width: 120px"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+        <tr><td><div class="cell-2"><span class="t">fuel-farm-2025.pdf</span><span class="s">file<span class="sep">·</span>220 KB</span></div></td><td><a href="Main.dc.html"><span class="mono">ACT-0001</span> · Haul fleet diesel →</a></td><td><div class="cell-2"><span>Nyame Pit and Plant</span><span class="s">2025-01-01 → 2025-12-31</span></div></td><td class="muted">Kofi Mensah, 2026-02-03</td><td class="actions" style="text-align: right"><span class="muted" style="font-size: 13px">on a calculated run</span></td></tr>
+        <tr><td><div class="cell-2"><span class="t">ecg-obu-2025-h1.pdf</span><span class="s">file<span class="sep">·</span>180 KB</span></div></td><td><a href="Main.dc.html"><span class="mono">ACT-0003</span> · Plant grid electricity H1 →</a></td><td><div class="cell-2"><span>Nyame Pit and Plant</span><span class="s">2025-01-01 → 2025-06-30</span></div></td><td class="muted">A. Mensah, 2026-02-03</td><td class="actions" style="text-align: right"><span class="muted" style="font-size: 13px">on a calculated run</span></td></tr>
+        <tr><td><div class="cell-2"><span class="t">ecg-obu-2025-h2.pdf</span><span class="s">file<span class="sep">·</span>184 KB</span></div></td><td><a href="Main.dc.html"><span class="mono">ACT-0004</span> · Plant grid electricity H2 →</a></td><td><div class="cell-2"><span>Nyame Pit and Plant</span><span class="s">2025-07-01 → 2025-12-31</span></div></td><td class="muted">A. Mensah, 2026-02-03</td><td class="actions" style="text-align: right"><span class="muted" style="font-size: 13px">on a calculated run</span></td></tr>
+        <tr><td><div class="cell-2"><span class="t">ECG bill (SharePoint)</span><span class="s">link</span></div></td><td><a href="Main.dc.html"><span class="mono">ACT-0004</span> · Plant grid electricity H2 →</a></td><td><div class="cell-2"><span>Nyame Pit and Plant</span><span class="s">2025-07-01 → 2025-12-31</span></div></td><td class="muted">Kofi Mensah, 2026-09-11</td><td class="actions" style="text-align: right"><button type="button" class="link-btn">remove</button></td></tr>
+        <tr><td><div class="cell-2"><span class="t">invoice-2938.pdf</span><span class="s">file<span class="sep">·</span>96 KB</span></div></td><td><a href="Main.dc.html"><span class="mono">ACT-0006</span> · Kitchen LPG →</a></td><td><div class="cell-2"><span>Obuasi Camp</span><span class="s">2025-01-01 → 2025-12-31</span></div></td><td class="muted">Kofi Mensah, 2026-09-11</td><td class="actions" style="text-align: right"><button type="button" class="link-btn">remove</button></td></tr>
+        <tr><td><div class="cell-2"><span class="t">r22-topup-2024.pdf</span><span class="s">file<span class="sep">·</span>60 KB</span></div></td><td><s class="muted"><span class="mono">ACT-0009</span> · R-22 top-up</s> <span class="muted">(record removed)</span></td><td><div class="cell-2"><span>Obuasi Camp</span><span class="s">2024-11-01 → 2024-11-30</span></div></td><td class="muted">A. Mensah, 2025-01-14</td><td class="actions" style="text-align: right"><button type="button" class="link-btn">remove</button></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tfoot"><span>6 documents, page 1 of 1</span><div class="pager"><button type="button" class="btn btn-ghost btn-sm" disabled>Previous</button><span class="rule"></span><button type="button" class="btn btn-ghost btn-sm" disabled>Next</button></div></div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    return { theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }) }
+  }
+}
+</script>
+</body>
+</html>

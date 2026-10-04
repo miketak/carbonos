@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add facility</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="facilities" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Facilities.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li><a href="Facilities.dc.html">Facilities</a></li><li aria-current="page">Add facility</li></ol></div></div>
+  <div class="page-head">
+    <div style="max-width: 720px">
+      <h1 class="page-title">Add facility</h1>
+      <p class="page-sub">A site under one of the organization's legal entities. The entity's relationship sets the accounting share every inventory starts from.</p>
+    </div>
+  </div>
+  <form style="max-width: 760px; display: flex; flex-direction: column; gap: 24px" onSubmit="{{noop}}">
+    <div class="form-grid">
+      <div class="field"><label for="f-name">Name</label><input id="f-name" type="text" placeholder="Accra HQ"></div>
+      <div class="field"><label for="f-loc">Location</label><input id="f-loc" type="text" placeholder="Accra, Ghana"></div>
+      <div class="field"><label for="f-country">Country (optional)</label><input id="f-country" type="text" placeholder="GH"><span class="field-hint">ISO 3166-1 alpha-2 code, for the report's country breakdown.</span></div>
+      <div class="field"><label for="f-grid">Grid region (optional)</label><input id="f-grid" type="text" placeholder="GHA or US-CAMX"><span class="field-hint">The grid the site draws from; its location-based factor is suggested. Blank follows the country.</span></div>
+      <div class="field"><label for="f-type">Facility type (optional)</label><select id="f-type"><option>Not stated</option><option>Office</option><option>Mine</option><option>Processing plant</option><option>Warehouse</option><option>Port or loadout</option><option>Camp</option><option>Fleet depot</option><option>Construction site</option><option>Well site</option><option>Other</option></select></div>
+      <div class="field"><label for="f-lease">Lease (optional)</label><select id="f-lease" onChange="{{setLease}}"><option>Owned, not leased</option><option>Finance lease (leased in)</option><option>Operating lease (leased in)</option><option>Finance lease (leased out)</option><option>Operating lease (leased out)</option></select><span class="field-hint">Records at a leased site inherit the lease; Appendix F sets their scope under each approach.</span></div>
+      <sc-if value="{{leased}}" hint-placeholder-val="{{false}}">
+        <div class="field"><label for="f-lf">Lease from (optional)</label><input id="f-lf" type="text" placeholder="2024-01-01"></div>
+        <div class="field"><label for="f-lu">Lease until (optional)</label><input id="f-lu" type="text" placeholder=""></div>
+      </sc-if>
+      <div class="field span2"><label for="f-entity">Legal entity</label><select id="f-entity"><option>Gye Nyame Gold Ltd (Reporting company)</option><option>Gye Nyame Camp Services Ltd (Subsidiary)</option><option>Tarkwa Gold JV Ltd (Joint venture)</option></select><span class="field-hint">Ownership and control facts live on the entity. Add entities under Legal entities.</span></div>
+    </div>
+    <div class="form-actions">
+      <a class="btn btn-ghost" href="Facilities.dc.html">Cancel</a>
+      <button type="button" class="btn btn-primary" onClick="{{submit}}">Add facility</button>
+    </div>
+  </form>
+</main>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      noop: (e) => { if (e && e.preventDefault) e.preventDefault() },
+      leased: !!s.leased, setLease: (e) => this.setState({ leased: e.target.value !== 'Owned, not leased' }),
+      submit: () => { this.setState({ toast: 'Accra HQ added.' }); setTimeout(() => this.setState({ toast: null }), 3000) },
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

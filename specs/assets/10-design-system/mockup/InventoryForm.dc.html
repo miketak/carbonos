@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New inventory</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="inventories" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Inventories.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li><a href="Inventories.dc.html">Inventories</a></li><li aria-current="page">New inventory</li></ol></div></div>
+  <div class="page-head">
+    <div style="max-width: 720px">
+      <h1 class="page-title">New inventory</h1>
+      <p class="page-sub">One accounting view over the organization's facts: a reporting period, a consolidation approach and the decisions this view makes about each record.</p>
+    </div>
+  </div>
+  <form style="max-width: 760px; display: flex; flex-direction: column; gap: 24px" onSubmit="{{noop}}">
+    <div class="field"><label for="i-name">Name</label><input id="i-name" type="text" value="2026 Corporate Inventory"></div>
+    <div class="form-grid">
+      <div class="field"><label for="i-ps">Period start</label><input id="i-ps" type="text" value="2026-01-01"></div>
+      <div class="field"><label for="i-pe">Period end</label><input id="i-pe" type="text" value="2026-12-31"></div>
+    </div>
+    <div class="field"><label for="i-straddle">Records that straddle the period or a membership window</label><select id="i-straddle"><option>Pro-rate by days (default)</option><option>Block the run until the record is split</option></select></div>
+    <div class="field"><label for="i-purpose">Purpose (optional)</label><input id="i-purpose" type="text" placeholder="Corporate reporting, UK regulatory…"></div>
+    <div class="form-grid">
+      <div class="field"><label for="i-approach">Consolidation approach</label><select id="i-approach"><option>Operational control</option><option>Financial control</option><option>Equity share</option></select></div>
+      <div class="field"><label for="i-gwp">GWP set</label><select id="i-gwp"><option>AR5 (default)</option><option>AR6</option></select></div>
+    </div>
+    <div class="field"><label for="i-copy">Copy the view from (optional)</label><select id="i-copy"><option>Start from scratch</option><option>FY2025 (FY2025)</option><option>FY2024 (FY2024)</option></select></div>
+    <label class="check"><input type="checkbox" checked> Start with every operation the approach includes in the boundary</label>
+    <p class="field-hint">Chapter 3: under a control approach every controlled operation is in by definition; untick it to draw the boundary by hand.</p>
+    <div class="form-actions">
+      <a class="btn btn-ghost" href="Inventories.dc.html">Cancel</a>
+      <a class="btn btn-primary" href="Inventory.dc.html">Create inventory</a>
+    </div>
+  </form>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    return { theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }), noop: (e) => { if (e && e.preventDefault) e.preventDefault() } }
+  }
+}
+</script>
+</body>
+</html>
