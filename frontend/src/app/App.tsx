@@ -21,6 +21,7 @@ import { SourceDocumentsPage } from '../features/ghg/SourceDocumentsPage'
 import { BaseYearPage } from '../features/ghg/BaseYearPage'
 import { SettingsLayout } from '../features/ghg/SettingsLayout'
 import { EntitiesPage } from '../features/ghg/EntitiesPage'
+import { EntityFormPage } from '../features/ghg/EntityFormPage'
 import { EmissionFactorsPage } from '../features/ghg/EmissionFactorsPage'
 import { FactorPackUpdatesPage } from '../features/ghg/FactorPackUpdatesPage'
 import { UnitsPage } from '../features/ghg/UnitsPage'
@@ -94,6 +95,8 @@ export function App() {
         >
           <Route index element={<OverviewPage />} />
           <Route path="entities" element={<EntitiesPage />} />
+          <Route path="entities/new" element={<EntityFormPage />} />
+          <Route path="entities/:entityId/edit" element={<EntityFormPage />} />
           <Route path="facilities" element={<FacilitiesPage />} />
           <Route path="facilities/new" element={<FacilityFormPage />} />
           <Route path="facilities/:facilityId/edit" element={<FacilityFormPage />} />

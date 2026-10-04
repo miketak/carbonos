@@ -71,8 +71,8 @@ camp and a leased warehouse.
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Start adding an entity and type 150 in **Economic interest (%)**. Save. | The dialog stays open, the field is outlined as invalid and reads "Economic interest must be between 0 and 100." under it; nothing is created. | | |
-| 2 | Change it to 60 and type 20 in **Legal ownership (%)**. Do not save; cancel the dialog. | The message is gone (the value is valid again) and a note under the fields says the two percentages differ by 40 points and that equity share follows economic interest; the note does not block saving. | | |
+| 1 | Start adding an entity and type 150 in **Economic interest (%)**. Save. | The **Add legal entity** page stays, the field is outlined as invalid and reads "Economic interest must be between 0 and 100." under it; nothing is created. | | |
+| 2 | Change it to 60 and type 20 in **Legal ownership (%)**. Do not save; click **Cancel**. | The message is gone (the value is valid again) and a note under the fields says the two percentages differ by 40 points and that equity share follows economic interest; the note does not block saving. | | |
 
 ### B3. An associate consolidated by decision
 

@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
-import { EntityFormModal } from './components/EntityFormModal'
 import { RemoveDialog } from './components/RemoveDialog'
 import { RoleButton } from './components/RoleButton'
 import { relationshipShortLabels } from './format'
@@ -12,8 +11,7 @@ import { mayWrite, WRITE_TOOLTIP } from './roles'
 import { useDeleteEntity, useEntitiesQuery, useOrganizationQuery } from './useGhg'
 import type { Entity } from './api'
 
-type Dialog =
-  { kind: 'create' } | { kind: 'edit'; entity: Entity } | { kind: 'remove'; entity: Entity } | null
+type Dialog = { kind: 'remove'; entity: Entity } | null
 
 function percent(share: number): string {
   return `${Math.round(share * 100)}%`
@@ -26,6 +24,7 @@ export function EntitiesPage() {
   const organizationQuery = useOrganizationQuery(organizationId)
   const deleteEntity = useDeleteEntity(organizationId)
   const toast = useToast()
+  const navigate = useNavigate()
   const [dialog, setDialog] = useState<Dialog>(null)
 
   const entities = entitiesQuery.data
@@ -50,7 +49,7 @@ export function EntitiesPage() {
           allowed={mayWrite(myRole)}
           tooltip={WRITE_TOOLTIP}
           className="px-4 py-1.5 text-sm"
-          onClick={() => setDialog({ kind: 'create' })}
+          onClick={() => navigate('new')}
         >
           Add entity
         </RoleButton>
@@ -150,7 +149,7 @@ export function EntitiesPage() {
                       tooltip={WRITE_TOOLTIP}
                       variant="ghost"
                       className="px-2 py-1 text-xs"
-                      onClick={() => setDialog({ kind: 'edit', entity })}
+                      onClick={() => navigate(`${entity.id}/edit`)}
                     >
                       Edit
                     </RoleButton>
@@ -173,16 +172,6 @@ export function EntitiesPage() {
         )}
       </GlassCard>
 
-      {dialog?.kind === 'create' && (
-        <EntityFormModal
-          organizationId={organizationId}
-          onClose={() => setDialog(null)}
-          onSaved={(message) => {
-            setDialog(null)
-            toast(message)
-          }}
-        />
-      )}
       {dialog?.kind === 'remove' && (
         <RemoveDialog
           title={`Remove ${dialog.entity.name}?`}
@@ -204,17 +193,6 @@ export function EntitiesPage() {
               },
             )
           }
-        />
-      )}
-      {dialog?.kind === 'edit' && (
-        <EntityFormModal
-          organizationId={organizationId}
-          entity={dialog.entity}
-          onClose={() => setDialog(null)}
-          onSaved={(message) => {
-            setDialog(null)
-            toast(message)
-          }}
         />
       )}
     </section>

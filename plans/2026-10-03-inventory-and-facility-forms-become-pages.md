@@ -1,6 +1,6 @@
 # The inventory and facility forms become pages
 
-**Status:** approved 2026-10-03, implemented in the same PR. Supersedes [the list editors of the ghg feature become drawers](2026-10-02-ghg-form-drawers.md), which was approved and never implemented.
+**Status:** approved 2026-10-03, implemented as PR #146; the legal entity form followed under the same rule the same day (`entities/new`, `entities/:id/edit`), at the owner's request. Supersedes [the list editors of the ghg feature become drawers](2026-10-02-ghg-form-drawers.md), which was approved and never implemented.
 
 ## Context
 
