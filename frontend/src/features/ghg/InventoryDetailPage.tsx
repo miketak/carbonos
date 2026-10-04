@@ -13,7 +13,6 @@ import { AssignmentsSection } from './components/AssignmentsSection'
 import { ApproachBadge, InventoryStatusBadge } from './components/badges'
 import { BoundarySection } from './components/BoundarySection'
 import { Breadcrumb } from './components/Breadcrumb'
-import { InventoryFormModal } from './components/InventoryFormModal'
 import { LifecycleBar } from './components/LifecycleBar'
 import { MarketFactorsCard } from './components/MarketFactorsCard'
 import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
@@ -70,9 +69,8 @@ export function InventoryDetailPage() {
   const boundaryQuery = useBoundaryQuery(inventoryId)
   const inheritanceQuery = useInheritanceQuery(inventoryId)
   const organizationQuery = useOrganizationQuery(organizationId)
-  const toast = useToast()
+  const navigate = useNavigate()
   const { filters, set, query } = useInventoryFilters()
-  const [editing, setEditing] = useState(false)
   // The workbench renders once the inventory has loaded, but nothing its tabs
   // ask for depends on that answer: they need only the identifier in the
   // address. Asking now runs them alongside the inventory instead of one hop
@@ -138,7 +136,7 @@ export function InventoryDetailPage() {
               tooltip={WRITE_TOOLTIP}
               variant="ghost"
               className="px-3 py-1 text-xs"
-              onClick={() => setEditing(true)}
+              onClick={() => navigate('edit')}
               title="Name, period, purpose, straddle treatment, approach and GWP set"
             >
               Edit inventory
@@ -224,18 +222,6 @@ export function InventoryDetailPage() {
       <div className="animate-fade-up" style={{ '--stagger': 1 } as CSSProperties}>
         <LifecycleBar inventory={inventory} inBoundaryCount={inBoundaryCount} myRole={myRole} />
       </div>
-      {editing && (
-        <InventoryFormModal
-          organizationId={organizationId}
-          inventory={inventory}
-          myRole={myRole}
-          onClose={() => setEditing(false)}
-          onSaved={(message) => {
-            setEditing(false)
-            toast(message)
-          }}
-        />
-      )}
 
       <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
         <InventoryWorkbench

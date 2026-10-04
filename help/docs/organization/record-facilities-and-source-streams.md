@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-03
 description: Record each site with its country, grid region, lease and legal entity, then register its source streams, whose kind and operator set the scope a record defaults to.
 role: Preparer
 minutes: 6
@@ -11,7 +11,7 @@ screens: [step-2-source-streams.png]
 
 A facility is a site, and a source stream is one source of emissions at it. Every activity record names both, so record them before the first record.
 
-<!-- sources: specs 03, 04.1, 04.3, 04.7; old page tasks/organization/record-facilities-and-source-streams.md (verified 2026-09-24); FacilitiesPage.tsx, FacilityFormModal.tsx, StreamsModal.tsx, RemoveDialog.tsx, StreamKind.java, GhgService.java (deleteFacility, deleteStream), StructureChanges.java (the history reasons, spec 01.7 as amended 2026-09-29); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "2 facility dialog", "2 facilities", "2 streams dialog empty", "2 streams Nyame Pit and Plant", "2 streams Obuasi Camp", "3 toasts" -->
+<!-- sources: specs 03, 04.1, 04.3, 04.7; old page tasks/organization/record-facilities-and-source-streams.md (verified 2026-09-24); FacilitiesPage.tsx, FacilityFormPage.tsx, StreamsModal.tsx, RemoveDialog.tsx, StreamKind.java, GhgService.java (deleteFacility, deleteStream), StructureChanges.java (the history reasons, spec 01.7 as amended 2026-09-29); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "2 facility dialog", "2 facilities", "2 streams dialog empty", "2 streams Nyame Pit and Plant", "2 streams Obuasi Camp", "3 toasts" -->
 
 ## Before you start
 
@@ -20,7 +20,7 @@ A facility is a site, and a source stream is one source of emissions at it. Ever
 
 ## Add a facility
 
-1. Open **Facilities** and click **Add facility**.
+1. Open **Facilities** and click **Add facility**. The form takes the page, under the breadcrumb **Facilities › Add facility**.
 2. Fill **Name** and **Location**, for example `Nyame Pit and Plant` and `Obuasi, Ghana`.
 3. Fill **Country (optional)** with the ISO 3166-1 alpha-2 code, for example `GH`.
 4. Fill **Grid region (optional)** only for a grid the country does not imply.

@@ -1063,28 +1063,22 @@ test('a declared category can say why it is not quantified this year (spec 07.6)
   await waitFor(() => expect(vi.mocked(getValidation).mock.calls.length).toBeGreaterThan(gateReads))
 })
 
-test('a draft can be edited: the straddle treatment is saved through the API (spec 04.2)', async () => {
+test('a draft offers Edit inventory, which leads to its own page (spec 08)', async () => {
   const user = userEvent.setup()
-  vi.mocked(updateInventory).mockResolvedValue({ ...inventory, straddleTreatment: 'BLOCK' })
-  renderPage()
+  renderWithProviders(<InventoryDetailPage />, {
+    route: '/app/ghg/org-1/inventories/inv-1',
+    path: '/app/ghg/:organizationId/inventories/:inventoryId',
+    extraRoutes: [
+      {
+        path: '/app/ghg/:organizationId/inventories/:inventoryId/edit',
+        element: <h1>Edit inventory</h1>,
+      },
+    ],
+  })
 
   await user.click(await screen.findByRole('button', { name: 'Edit inventory' }))
-  const dialog = await screen.findByRole('dialog', { name: 'Edit inventory' })
-  expect(within(dialog).getByLabelText('Name')).toHaveValue('2025 Corporate Inventory')
-  expect(within(dialog).queryByLabelText(/copy the view from/i)).not.toBeInTheDocument()
-  await user.selectOptions(within(dialog).getByLabelText(/records that straddle/i), 'BLOCK')
-  await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
-  await waitFor(() => expect(updateInventory).toHaveBeenCalledTimes(1))
-  expect(vi.mocked(updateInventory).mock.calls[0][0]).toBe('inv-1')
-  expect(vi.mocked(updateInventory).mock.calls[0][1]).toMatchObject({
-    name: '2025 Corporate Inventory',
-    periodStart: '2025-01-01',
-    periodEnd: '2025-12-31',
-    consolidationApproach: 'EQUITY_SHARE',
-    gwpSet: 'AR5',
-    straddleTreatment: 'BLOCK',
-  })
-  expect(await screen.findByText(/2025 Corporate Inventory updated/)).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Edit inventory' })).toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test('a frozen inventory offers no edit button', async () => {

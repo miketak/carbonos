@@ -161,7 +161,8 @@ export async function rowButton(scope: Locator, name: string): Promise<Locator> 
 export function dialog(page: Page, title: string): Locator {
   // `[role="dialog"]` or `[aria-label="Add instrument"]`: a region named by a selector rather than a dialog title
   if (title.startsWith('[')) return page.locator(title).first()
-  return page.getByRole('dialog', { name: title, exact: true })
+  // a form that takes the whole page (New inventory, Add facility: spec 08, form surfaces) carries the same name as a dialog would
+  return page.getByRole('dialog', { name: title, exact: true }).or(page.getByRole('form', { name: title, exact: true }))
 }
 
 /** The row of a table that names the text; else the list item, else the smallest card that does and holds a button. */

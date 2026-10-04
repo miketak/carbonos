@@ -1,6 +1,6 @@
 # The list editors of the ghg feature become drawers
 
-**Status:** approved 2026-10-02, not yet implemented.
+**Status:** approved 2026-10-02, superseded 2026-10-03 by [the inventory and facility forms become pages](2026-10-03-inventory-and-facility-forms-become-pages.md): the scope narrowed to those two forms, and they become pages, not drawers. Nothing of this plan was implemented.
 
 ## Context
 

@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
-import { FacilityFormModal } from './components/FacilityFormModal'
 import { RemoveDialog } from './components/RemoveDialog'
 import { RoleButton } from './components/RoleButton'
 import { StreamsModal } from './components/StreamsModal'
@@ -20,11 +19,7 @@ import {
 import type { Facility } from './api'
 
 type Dialog =
-  | { kind: 'create' }
-  | { kind: 'edit'; facility: Facility }
-  | { kind: 'streams'; facility: Facility }
-  | { kind: 'remove'; facility: Facility }
-  | null
+  { kind: 'streams'; facility: Facility } | { kind: 'remove'; facility: Facility } | null
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
@@ -43,6 +38,7 @@ export function FacilitiesPage() {
   const organizationQuery = useOrganizationQuery(organizationId)
   const deleteFacility = useDeleteFacility(organizationId)
   const toast = useToast()
+  const navigate = useNavigate()
   const [dialog, setDialog] = useState<Dialog>(null)
 
   const facilities = facilitiesQuery.data
@@ -69,7 +65,7 @@ export function FacilitiesPage() {
           allowed={mayWrite(myRole)}
           tooltip={WRITE_TOOLTIP}
           className="px-4 py-1.5 text-sm"
-          onClick={() => setDialog({ kind: 'create' })}
+          onClick={() => navigate('new')}
         >
           Add facility
         </RoleButton>
@@ -156,7 +152,7 @@ export function FacilitiesPage() {
                       tooltip={WRITE_TOOLTIP}
                       variant="ghost"
                       className="px-2 py-1 text-xs"
-                      onClick={() => setDialog({ kind: 'edit', facility })}
+                      onClick={() => navigate(`${facility.id}/edit`)}
                     >
                       Edit
                     </RoleButton>
@@ -177,16 +173,6 @@ export function FacilitiesPage() {
         )}
       </GlassCard>
 
-      {dialog?.kind === 'create' && (
-        <FacilityFormModal
-          organizationId={organizationId}
-          onClose={() => setDialog(null)}
-          onSaved={(message) => {
-            setDialog(null)
-            toast(message)
-          }}
-        />
-      )}
       {dialog?.kind === 'remove' && (
         <RemoveDialog
           title={`Remove ${dialog.facility.name}?`}
@@ -215,17 +201,6 @@ export function FacilitiesPage() {
           organizationId={organizationId}
           facility={dialog.facility}
           onClose={() => setDialog(null)}
-        />
-      )}
-      {dialog?.kind === 'edit' && (
-        <FacilityFormModal
-          organizationId={organizationId}
-          facility={dialog.facility}
-          onClose={() => setDialog(null)}
-          onSaved={(message) => {
-            setDialog(null)
-            toast(message)
-          }}
         />
       )}
     </section>

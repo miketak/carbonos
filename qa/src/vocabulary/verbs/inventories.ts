@@ -60,9 +60,10 @@ export const createInventory = defineVerb({
       { op: 'click', button: S.inv.button.createInventory, within: d },
     ]
   },
-  postconditions: (a) => [{ outcome: 'inventoryListed', args: { organization: a.organization, name: a.name, status: 'DRAFT' } }],
+  // the save lands on the new inventory's workbench (spec 08, form surfaces), so the header, not the list, is what the tester reads
+  postconditions: (a) => [{ outcome: 'inventoryStatus', args: { organization: a.organization, inventory: a.name, status: 'DRAFT' } }],
   narrate: (a) =>
-    `Open **${S.org.sections.inventories}** and click **${S.inv.button.newInventory}**. Name "${a.name}", period ${a.periodStart} to ${a.periodEnd}, consolidation approach ${S.inv.option.approach[a.approach]!.toLowerCase()}, GWP set ${a.gwpSet}, straddling records **${S.inv.option.straddle[a.straddle]}**, and ${a.copyFrom ? `**${S.inv.field.copyFrom}** ${a.copyFrom}` : `**${S.inv.field.prefillBoundary}** ${a.prefillBoundary ? 'ticked' : 'unticked'}`}. Click **${S.inv.button.createInventory}**.`,
+    `Open **${S.org.sections.inventories}** and click **${S.inv.button.newInventory}**. Name "${a.name}", period ${a.periodStart} to ${a.periodEnd}, consolidation approach ${S.inv.option.approach[a.approach]!.toLowerCase()}, GWP set ${a.gwpSet}, straddling records **${S.inv.option.straddle[a.straddle]}**, and ${a.copyFrom ? `**${S.inv.field.copyFrom}** ${a.copyFrom}` : `**${S.inv.field.prefillBoundary}** ${a.prefillBoundary ? 'ticked' : 'unticked'}`}. Click **${S.inv.button.createInventory}**. The inventory opens on its workbench.`,
 })
 
 /** The form read before saving (the period hint); nothing is created. */
