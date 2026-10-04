@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Edit profile</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}" style="flex-direction: column">
+<header class="topbar">
+  <a class="sidebar-brand" href="Organizations.dc.html" aria-label="CarbonOS home" style="padding: 0">
+    <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true" shape-rendering="geometricPrecision"><defs><linearGradient id="cm-profile" gradientUnits="userSpaceOnUse" x1="60" y1="32" x2="4" y2="32"><stop offset="0" stop-color="#00b6aa"/><stop offset="0.15" stop-color="#05b8a7"/><stop offset="0.33" stop-color="#15bfa0"/><stop offset="0.54" stop-color="#2fca93"/><stop offset="0.77" stop-color="#53da82"/><stop offset="1" stop-color="#82ef6d"/></linearGradient></defs><path d="M 51.15 48.07 A 25 25 0 1 1 51.15 15.93" fill="none" stroke="url(#cm-profile)" stroke-width="8" stroke-linecap="round"/><rect x="20" y="18" width="10" height="6" rx="3" fill="url(#cm-profile)"/><rect x="20" y="29" width="17" height="6" rx="3" fill="url(#cm-profile)"/><rect x="20" y="40" width="24" height="6" rx="3" fill="url(#cm-profile)"/></svg>
+    <span>Carbon<span class="os">OS</span></span>
+  </a>
+  <div style="display: flex; align-items: center; gap: 16px">
+    <a href="Overview.dc.html" class="btn btn-ghost btn-sm">Back to Gye Nyame Gold</a>
+    <button type="button" class="account" style="width: auto" onClick="{{toggleTheme}}" title="Switch theme"><span class="avatar" aria-hidden="true">KM</span><span class="account-name">Kofi Mensah</span></button>
+  </div>
+</header>
+<main class="page" style="max-width: 720px">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Organizations.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li><a href="Organizations.dc.html">CarbonOS</a></li><li aria-current="page">Edit profile</li></ol></div></div>
+  <h1 class="page-title">Edit profile</h1>
+  <section class="panel"><div class="panel-body" style="display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; align-items: center; gap: 16px">
+      <span class="avatar" style="width: 64px; height: 64px; font-size: 20px" aria-hidden="true">KM</span>
+      <div><button type="button" class="btn btn-secondary btn-sm">Change picture</button><div class="muted" style="font-size: 13px; margin-top: 6px">PNG, JPEG, or WebP · up to 5 MB</div></div>
+    </div>
+    <div class="field"><label for="p-email">Email</label><input id="p-email" type="email" value="kofi@ecoriv.com" disabled></div>
+    <div class="field"><label for="p-name">Display name</label><input id="p-name" type="text" value="Kofi Mensah"></div>
+    <div style="display: flex; justify-content: flex-end"><button type="button" class="btn btn-primary" onClick="{{saveProfile}}">Save changes</button></div>
+  </div></section>
+  <section class="panel">
+    <div class="panel-head"><div><div class="panel-title">Change password</div><div class="muted" style="font-size: 13px; margin-top: 2px">You stay signed in here; every other session of your account is signed out.</div></div></div>
+    <div class="panel-body" style="display: flex; flex-direction: column; gap: 20px">
+      <div class="field"><label for="p-cur">Current password</label><input id="p-cur" type="password"></div>
+      <div class="field"><label for="p-new">New password</label><input id="p-new" type="password"><span class="field-hint">At least 12 characters, with a letter and a digit.</span></div>
+      <div class="field"><label for="p-conf">Confirm new password</label><input id="p-conf" type="password"></div>
+      <div style="display: flex; justify-content: flex-end"><button type="button" class="btn btn-secondary" onClick="{{savePassword}}">Change password</button></div>
+    </div>
+  </section>
+</main>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    const flash = (text) => { this.setState({ toast: text }); setTimeout(() => this.setState({ toast: null }), 3000) }
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      saveProfile: () => flash('Profile updated'), savePassword: () => flash('Password changed. Your other sessions are signed out.'),
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

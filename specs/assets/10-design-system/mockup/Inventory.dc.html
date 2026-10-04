@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inventory workbench</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="inventories" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Inventories.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li><a href="Inventories.dc.html">Inventories</a></li><li aria-current="page">FY2025</li></ol></div><span class="saved">Boundary version 3 · GWP AR5</span></div>
+  <div class="page-head">
+    <div>
+      <div class="page-title-row"><h1 class="page-title">FY2025</h1><span class="chip">Operational control</span><span class="chip chip-primary">{{statusChip}}</span></div>
+      <p class="page-sub"><span class="mono">2025-01-01 → 2025-12-31</span><span class="sep">·</span>Corporate reporting</p>
+    </div>
+    <div class="page-actions" style="position: relative">
+      <button type="button" class="preflight-chip {{preClass}}" aria-haspopup="dialog" aria-expanded="{{preOpen}}" onClick="{{togglePre}}"><span class="mark" aria-hidden="true">{{preMark}}</span>{{preLabel}}</button>
+      <sc-if value="{{preOpen}}" hint-placeholder-val="{{false}}">
+        <div class="menu preflight-pop" role="dialog" aria-label="Pre-flight checks">
+          <div class="pop-head"><div class="panel-title">Pre-flight checks</div><div class="muted" style="font-size: 13px; margin-top: 2px">{{preDetail}}</div></div>
+          <div class="gate"><span class="status status-success"></span><span class="name">Reporting boundary</span><span class="verdict">Pass</span></div>
+          <div class="gate"><span class="status status-success"></span><span class="name">Activity data completeness</span><span class="verdict">Pass</span></div>
+          <div class="gate"><span class="status status-success"></span><span class="name">Classification</span><span class="verdict">Pass</span></div>
+          <div class="gate warn"><span class="status status-warning"></span><span class="name">Emission factors</span><span class="verdict">Warn</span><span class="finding">Diesel (GOIL CoA) is self-approved: nobody else could check it.</span></div>
+          <div class="gate"><span class="status status-success"></span><span class="name">Base year</span><span class="verdict">Pass</span></div>
+          <div class="pop-foot"><a href="Factors.dc.html">Resolve the finding →</a><button type="button" class="btn btn-ghost btn-sm" onClick="{{togglePre}}">Close</button></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isFinal}}" hint-placeholder-val="{{true}}">
+        <button type="button" class="btn btn-secondary" onClick="{{openWithdraw}}">Withdraw final designation</button>
+        <button type="button" class="btn btn-primary" onClick="{{openPublish}}">Publish</button>
+      </sc-if>
+      <sc-if value="{{isPublished}}" hint-placeholder-val="{{false}}">
+        <button type="button" class="btn btn-primary" onClick="{{openCorrection}}">Create correction</button>
+      </sc-if>
+      <sc-if value="{{isFrozen}}" hint-placeholder-val="{{false}}">
+        <button type="button" class="btn btn-secondary" onClick="{{openReopen}}">Reopen as draft</button>
+        <button type="button" class="btn btn-primary" disabled title="Designate a final run first">Publish</button>
+      </sc-if>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="panel-title">Inventory lifecycle</div>
+      <span class="muted" style="font-size: 13px">3 boundary versions cut</span>
+    </div>
+    <div class="panel-body">
+      <div class="lifecycle">
+        <span class="life-step done"><span class="dot"></span>Draft</span><span class="life-line"></span>
+        <span class="life-step done"><span class="dot"></span>Frozen</span><span class="life-line"></span>
+        <span class="life-step {{finalStep}}"><span class="dot"></span>Final</span><span class="life-line"></span>
+        <span class="life-step {{pubStep}}"><span class="dot"></span>Published</span>
+      </div>
+      <p class="muted" style="margin-top: 8px">{{lifecycleText}}</p>
+      <p style="margin-top: 8px; font-size: 14px">Final designated by K. Boateng on 2026-02-10: reconciled against the fuel ledger.</p>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist" aria-label="The inventory">
+    <button type="button" role="tab" class="tab" aria-selected="{{t.records}}" onClick="{{go.records}}">Records</button>
+    <button type="button" role="tab" class="tab" aria-selected="{{t.boundary}}" onClick="{{go.boundary}}">Boundary <span class="tab-count">2</span></button>
+    <button type="button" role="tab" class="tab" aria-selected="{{t.method}}" onClick="{{go.method}}">Method</button>
+    <button type="button" role="tab" class="tab" aria-selected="{{t.runs}}" onClick="{{go.runs}}">Runs <span class="tab-count">1</span></button>
+    <button type="button" role="tab" class="tab" aria-selected="{{t.report}}" onClick="{{go.report}}">Report</button>
+  </div>
+
+  <sc-if value="{{is.records}}" hint-placeholder-val="{{true}}">
+    <sc-if value="{{tableMode}}" hint-placeholder-val="{{false}}">
+    <div class="section-head">
+      <div><h2 class="section-title">Activity view</h2><p class="muted" style="font-size: 14px">This inventory's accounting decisions about the facts. The records themselves are never modified.</p></div>
+      <button type="button" class="btn btn-secondary" disabled title="Reopen the inventory as a draft to review activity data">Review activity data</button>
+    </div>
+    <div class="toolbar-grid">
+      <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><label for="vq" class="sr-only">Search the view</label><input id="vq" type="search" placeholder="Reference, activity, facility, stream, factor, unit, evidence"></div>
+      <select aria-label="Facility"><option>All facilities</option></select>
+      <select aria-label="Status"><option>All (7)</option><option>Unclassified (0)</option><option>Included and classified (6)</option><option>Excluded (1)</option></select>
+      <select aria-label="Scope"><option>All scopes</option><option>Scope 1</option><option>Scope 2</option><option>Scope 3</option></select>
+      <select aria-label="Category"><option>All categories</option></select>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th class="sel"><input type="checkbox" aria-label="Select all"></th><th>Fact</th><th>Facility / period</th><th class="num">Quantity</th><th>Factor</th><th>Status</th></tr></thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+            <tr class="row-link" onClick="{{r.open}}">
+              <td class="sel"><input type="checkbox" aria-label="Select {{r.ref}}"></td>
+              <td><div class="cell-2"><span class="t">{{r.activity}}</span><span class="s">{{r.ref}}</span></div></td>
+              <td><div class="cell-2"><span>{{r.facility}}</span><span class="s">{{r.period}}</span></div></td>
+              <td class="num"><div class="cell-2" style="align-items: flex-end"><span class="t">{{r.qty}}</span><span class="s">{{r.unit}}</span></div></td>
+              <td><div class="cell-2"><span>{{r.factor}}</span><span class="s">{{r.factorMeta}}</span></div></td>
+              <td><div class="cell-2"><span class="status {{r.statusClass}}">{{r.status}}</span><span class="s">{{r.scope}}</span></div></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    <div class="tfoot"><span>7 of 7 records, page 1 of 1 <span class="faint" style="margin-left: 12px">Select a row to classify <kbd>j</kbd> <kbd>k</kbd> <kbd>↵</kbd></span></span></div>
+    </sc-if>
+
+    <sc-if value="{{splitMode}}" hint-placeholder-val="{{true}}">
+    <div class="split">
+      <section class="split-list" aria-label="Activity view">
+        <div class="section-head">
+          <h2 class="section-title">Activity view</h2>
+          <button type="button" class="icon-btn" aria-label="Search the view"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Status">
+          <button type="button" role="tab" class="tab" aria-selected="true">All <span class="tab-count">7</span></button>
+          <button type="button" role="tab" class="tab" aria-selected="false">Unclassified <span class="tab-count">0</span></button>
+          <button type="button" role="tab" class="tab" aria-selected="false">Excluded <span class="tab-count">0</span></button>
+        </div>
+        <div style="display: flex; flex-direction: column">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+            <button type="button" class="mrow" aria-current="{{r.selected}}" onClick="{{r.open}}">
+              <span class="t">{{r.activity}}</span>
+              <span class="m">{{r.facility}}<span class="sep" style="margin: 0 6px; color: var(--ink-faint)">·</span>{{r.scope}}<span class="sep" style="margin: 0 6px; color: var(--ink-faint)">·</span>{{r.category}}</span>
+              <span class="q">{{r.qty}} {{r.unit}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div class="muted" style="font-size: 13px; padding-top: 4px">Showing 7 of 7</div>
+      </section>
+
+      <section class="split-detail" aria-label="{{rec.activity}}">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+          <div style="min-width: 0">
+            <div class="eyebrow">{{rec.scope}} / {{rec.category}}</div>
+            <h2 class="detail-title">{{rec.activity}}</h2>
+            <div class="detail-meta">{{rec.ref}}<span class="sep" style="margin: 0 8px; color: var(--ink-faint)">·</span>{{rec.facility}}<span class="sep" style="margin: 0 8px; color: var(--ink-faint)">·</span>{{rec.qty}} {{rec.unit}}<span class="sep" style="margin: 0 8px; color: var(--ink-faint)">·</span>{{rec.period}}<span class="sep" style="margin: 0 8px; color: var(--ink-faint)">·</span><span class="status {{rec.statusClass}}">{{rec.status}}</span></div>
+          </div>
+          <div style="display: flex; gap: 4px; flex: none">
+            <button type="button" class="icon-btn" aria-label="Previous record" onClick="{{prevRec}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+            <button type="button" class="icon-btn" aria-label="Next record" onClick="{{nextRec}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+            <button type="button" class="icon-btn" aria-label="Close" onClick="{{closeDrawer}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Decision">
+          <button type="button" role="tab" class="tab" aria-selected="{{dClassifySel}}" onClick="{{goClassify}}">Classify</button>
+          <button type="button" role="tab" class="tab" aria-selected="{{dExcludeSel}}" onClick="{{goExclude}}">Exclude</button>
+        </div>
+        <sc-if value="{{dClassify}}" hint-placeholder-val="{{true}}">
+          <div class="banner banner-info"><div>The inventory is not a draft, so the view is read-only. Reopen it as a draft to change a decision.</div></div>
+          <div class="form-grid">
+            <div class="field"><label for="c-scope">Scope</label><select id="c-scope" disabled><option>{{rec.scope}}</option></select><span class="field-hint">The stream suggests {{rec.scope}}.</span></div>
+            <div class="field"><label for="c-cat">Category</label><select id="c-cat" disabled><option>{{rec.category}}</option></select></div>
+            <div class="field span2"><label for="c-factor">Emission factor</label><select id="c-factor" disabled><option>{{rec.factor}}</option></select><span class="field-hint">{{rec.factorMeta}}</span></div>
+            <div class="field"><label for="c-density">Density</label><select id="c-density" disabled><option>Diesel (typical value)</option></select></div>
+            <div class="field"><label for="c-lease">Lease treatment</label><select id="c-lease" disabled><option>Owned, not leased</option></select></div>
+          </div>
+          <label class="check"><input type="checkbox" disabled> Proxy factor: stands in for one that is not published or not yet approved</label>
+          <div class="note-ok"><span class="ring" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span><div><div class="t">Included and classified</div><div class="muted" style="font-size: 13px">Decided by A. Mensah on 2026-01-28 · kept at boundary version 3</div></div></div>
+          <div class="detail-foot"><button type="button" class="btn btn-ghost" onClick="{{closeDrawer}}">Done</button><button type="button" class="btn btn-primary" disabled title="Reopen the inventory as a draft to classify">Save decision</button></div>
+        </sc-if>
+        <sc-if value="{{dExclude}}" hint-placeholder-val="{{false}}">
+          <p class="muted">A record left out is still reported: the report totals what was excluded, per reason.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button type="button" class="btn btn-secondary btn-sm">Outside reporting period</button><button type="button" class="btn btn-secondary btn-sm">Outside boundary</button><button type="button" class="btn btn-secondary btn-sm">Non-GHG activity</button><button type="button" class="btn btn-secondary btn-sm">Duplicate</button><button type="button" class="btn btn-secondary btn-sm">Not applicable</button><button type="button" class="btn btn-secondary btn-sm">Methodology exclusion</button><button type="button" class="btn btn-secondary btn-sm">Other documented reason</button>
+          </div>
+          <div class="field"><label for="x-just">Justification</label><input id="x-just" type="text" placeholder="Why this record is left out"></div>
+          <div class="field"><label for="x-est">Estimated emissions left out (kg CO₂e)</label><input id="x-est" type="text"><span class="field-hint">The report totals these per reason.</span></div>
+          <label class="check"><input type="checkbox"> This record emits nothing</label>
+          <label class="check"><input type="checkbox"> Not estimated: there is no basis to size this record</label>
+          <div class="banner banner-info"><div>The inventory is not a draft, so the view is read-only. Reopen it as a draft to leave a record out.</div></div>
+          <div class="detail-foot"><button type="button" class="btn btn-ghost" onClick="{{closeDrawer}}">Cancel</button><button type="button" class="btn btn-primary" disabled>Exclude</button></div>
+        </sc-if>
+      </section>
+    </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{is.boundary}}" hint-placeholder-val="{{false}}">
+    <section class="panel">
+      <div class="panel-head"><div><div class="panel-title">Organizational boundary</div><div class="muted" style="font-size: 13px; margin-top: 2px">Which legal entities and facilities this view accounts for, and the Table 1 share of each under the consolidation approach.</div></div></div>
+      <div class="panel-body tight">
+        <table class="table"><thead><tr><th>Entity and facilities</th><th>Table 1 row</th><th>Member from</th><th class="num">Accounting share</th></tr></thead><tbody>
+          <tr><td><label class="check"><input type="checkbox" checked disabled> <span style="font-weight: 500">Gye Nyame Gold Ltd</span> <span class="chip" style="height: 22px; font-size: 12px">reporting company</span></label></td><td class="muted">Reporting company, operated</td><td class="mono">2025-01-01</td><td class="num" style="font-weight: 500">100%</td></tr>
+          <tr><td style="padding-left: 48px"><label class="check"><input type="checkbox" checked disabled> Nyame Pit and Plant <span class="muted">Obuasi, Ghana</span></label></td><td></td><td></td><td></td></tr>
+          <tr><td><label class="check"><input type="checkbox" checked disabled> <span style="font-weight: 500">Gye Nyame Camp Services Ltd</span></label></td><td class="muted">Subsidiary, 100% economic interest, operated</td><td class="mono">2025-01-01</td><td class="num" style="font-weight: 500">100%</td></tr>
+          <tr><td style="padding-left: 48px"><label class="check"><input type="checkbox" checked disabled> Obuasi Camp <span class="muted">Obuasi, Ghana</span></label></td><td></td><td></td><td></td></tr>
+          <tr><td><label class="check"><input type="checkbox" disabled> <span style="font-weight: 500">Tarkwa Gold JV Ltd</span></label></td><td style="color: var(--warning)">0% under operational control: outside the boundary</td><td class="mono muted">–</td><td class="num muted">excluded</td></tr>
+        </tbody></table>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div class="panel-title">Boundary version history</div></div>
+      <div class="panel-body tight"><table class="table"><tbody>
+        <tr><td><div class="cell-2"><span class="t">Boundary version 3</span><span class="s">frozen 2026-02-02, 10:14 by ama@ecoriv.test<span class="sep">·</span>2 entities, 2 facilities</span></div></td></tr>
+        <tr><td><div class="cell-2"><span class="t">Boundary version 2</span><span class="s">frozen 2026-01-20, 09:02 by ama@ecoriv.test<span class="sep">·</span>Reopened by Kofi Mensah on 2026-02-01: Boundary v1 omitted the Nkran camp</span></div></td></tr>
+        <tr><td><div class="cell-2"><span class="t">Boundary version 1</span><span class="s">frozen 2026-01-12, 16:40 by ama@ecoriv.test</span></div></td></tr>
+      </tbody></table></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><div class="panel-title">Operational boundary declaration</div><div class="muted" style="font-size: 13px; margin-top: 2px">Scope 1 and scope 2 are always covered. Declare which scope 3 categories this view quantifies.</div></div></div>
+      <div class="panel-body" style="display: flex; flex-direction: column; gap: 12px">
+        <label class="check"><input type="checkbox" checked disabled> 3. Fuel- and energy-related activities</label>
+        <label class="check"><input type="checkbox" checked disabled> 4. Upstream transportation and distribution</label>
+        <label class="check"><input type="checkbox" disabled> 6. Business travel</label>
+        <div class="field"><label for="why-ex">Why other categories are excluded</label><textarea id="why-ex" disabled>Categories 1, 2, 5 and 7 to 15 are below the materiality threshold for a single-site mine; screened in 2024.</textarea></div>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{is.method}}" hint-placeholder-val="{{false}}">
+    <section class="panel">
+      <div class="panel-head"><div><div class="panel-title">Upstream rules</div><div class="muted" style="font-size: 13px; margin-top: 2px">Fuel- and energy-related activities (Scope 3 Standard, category 3) ride on the records.</div></div></div>
+      <div class="panel-body tight"><table class="table"><thead><tr><th>Primary factor</th><th>Upstream factor</th><th>Kind</th><th class="num">Records</th><th class="actions"></th></tr></thead><tbody>
+        <tr><td>Diesel (average biofuel blend)</td><td>Diesel (well-to-tank)</td><td>Well-to-tank (upstream emissions of the fuel)</td><td class="num">3</td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Remove</button></td></tr>
+        <tr><td>Grid electricity (Ghana)</td><td>Ghana grid T&amp;D losses</td><td>Transmission and distribution losses</td><td class="num">2</td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Remove</button></td></tr>
+      </tbody></table></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><div class="panel-title">Market-based scope 2 instruments</div><div class="muted" style="font-size: 13px; margin-top: 2px">Every run reports scope 2 location-based and market-based side by side.</div></div></div>
+      <div class="panel-body tight"><table class="table"><thead><tr><th>Facility</th><th>Instrument</th><th class="num">kg CO₂e/kWh</th><th>Covers</th><th>Source</th><th>Quality criteria</th><th class="actions"></th></tr></thead><tbody>
+        <tr><td>Nyame Pit and Plant</td><td>Power purchase contract</td><td class="num">0.000</td><td><div class="cell-2"><span class="mono">1,200 MWh</span><span class="s mono">2025-01-01 → 2025-12-31</span></div></td><td>Obuom solar PPA 2025</td><td><div class="cell-2"><span class="status status-warning">Not applied: 2 not met, 1 unanswered</span><span class="s">5 met · 2 not met · 1 unanswered · IREC-GH-2025-0417</span></div></td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Edit</button></td></tr>
+      </tbody></table></div>
+      <div class="panel-body" style="border-top: 1px solid var(--hairline)"><div class="form-grid"><div class="field"><label for="rm-av">Residual mix available</label><select id="rm-av"><option>Not yet stated</option><option>Yes, an adjusted residual mix is published</option><option>No residual mix is available</option></select></div><div class="field"><label for="rm-v">Residual mix, kg CO₂e per kWh</label><input id="rm-v" type="text" placeholder="0.4034"></div><div class="span2" style="display: flex; justify-content: flex-end"><button type="button" class="btn btn-secondary btn-sm">Save residual mix</button></div></div></div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{is.runs}}" hint-placeholder-val="{{false}}">
+    <div class="panel"><div class="panel-body" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+      <label for="run-label" class="sr-only">Run label</label><input id="run-label" type="text" value="Run 002" style="max-width: 240px">
+      <button type="button" class="btn btn-primary" onClick="{{launch}}">Launch calculation run</button>
+      <span class="muted" style="font-size: 13px">Recalculation creates a new run; earlier runs are kept.</span>
+    </div></div>
+    <section class="panel">
+      <div class="panel-head"><div><div class="panel-title">Calculation runs</div><div class="muted" style="font-size: 13px; margin-top: 2px">Immutable snapshots of this view, lines and exclusions alike. A run is never deleted: it can be voided with a reason, and its number is never reused.</div></div></div>
+      <div class="panel-body tight"><table class="table"><thead><tr><th>Run</th><th>Calculated</th><th class="num">Scope 1</th><th class="num">Scope 2</th><th class="num">Scope 3</th><th class="num">Total</th><th class="actions" style="width: 220px"></th></tr></thead><tbody>
+        <tr><td><div class="cell-2"><span class="t"><span class="mono muted">#001</span> <a href="Run.dc.html">Run 001</a> <span class="chip chip-primary" style="margin-left: 6px">Final</span></span><span class="s">Final designated by K. Boateng on 2026-02-10</span></div></td><td><div class="cell-2"><span class="mono">2026-02-05 14:31</span><span class="s">14 lines · boundary v3</span></div></td><td class="num">34,194 t</td><td class="num">32,817 t</td><td class="num">19,401 t</td><td class="num" style="font-weight: 600">86,412 t</td><td class="actions" style="text-align: right"><button type="button" class="btn btn-ghost btn-sm" onClick="{{openVoid}}">Void…</button></td></tr>
+        <tr><td><div class="cell-2"><span class="t"><span class="mono muted">#000</span> <s>Run 000 (trial)</s> <span class="chip chip-warning" style="margin-left: 6px">Voided</span></span><span class="s">Voided by Kofi Mensah on 2026-02-04: Mill meter under-read by 2.5%</span></div></td><td><div class="cell-2"><span class="mono">2026-02-03 11:40</span><span class="s">14 lines · boundary v2</span></div></td><td class="num muted">34,002 t</td><td class="num muted">31,998 t</td><td class="num muted">19,401 t</td><td class="num muted">85,401 t</td><td class="actions"></td></tr>
+      </tbody></table></div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{is.report}}" hint-placeholder-val="{{false}}">
+    <section class="panel">
+      <div class="panel-head"><div><div class="panel-title">Report header</div><div class="muted" style="font-size: 13px; margin-top: 2px">Printed at the top of the report: who prepared it, who approved it, when it was published, the version in the correction chain, and its assurance.</div></div></div>
+      <div class="panel-body"><div class="form-grid">
+        <div class="field"><label for="r-appr">Approved by (optional)</label><input id="r-appr" type="text" placeholder="Name and role; defaults to whoever publishes" value="K. Boateng, Reviewer"></div>
+        <div class="field"><label for="r-ass">Assurance</label><select id="r-ass"><option>Not verified</option><option>Limited assurance</option><option>Reasonable assurance</option></select></div>
+        <div class="field"><label for="r-prov">Assurance provider (optional)</label><input id="r-prov" type="text"></div>
+        <div class="field"><label for="r-ref">Assurance statement reference (optional)</label><input id="r-ref" type="text"></div>
+        <div class="field span2"><label for="r-unc">Uncertainty statement (optional)</label><textarea id="r-unc" placeholder="Fuel data are metered; the cyanide estimate rests on supplier averages."></textarea></div>
+        <div class="span2"><div style="font-weight: 500; font-size: 13px; margin-bottom: 6px">Intensity denominators</div><div class="attachment"><span class="name">Gold produced: 120,000 oz</span><button type="button" class="link-btn">remove</button></div></div>
+        <div class="span2" style="display: flex; justify-content: flex-end"><button type="button" class="btn btn-primary" onClick="{{saveHeader}}">Save report header</button></div>
+      </div></div>
+    </section>
+  </sc-if>
+</main>
+
+
+<sc-if value="{{modalPublish}}" hint-placeholder-val="{{false}}"><div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="Publish the inventory?"><div class="modal-head"><h2 class="modal-title">Publish the inventory?</h2></div><div class="modal-body"><p class="muted">Publishing issues the report; nothing on this inventory can change afterwards. A correction is a new inventory that supersedes it.</p></div><div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{closeModal}}">Cancel</button><button type="button" class="btn btn-primary" onClick="{{doPublish}}">Publish</button></div></div></div></sc-if>
+<sc-if value="{{modalWithdraw}}" hint-placeholder-val="{{false}}"><div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="Withdraw the final designation?"><div class="modal-head"><h2 class="modal-title">Withdraw the final designation?</h2></div><div class="modal-body"><div class="field"><label for="w-r">Reason</label><input id="w-r" type="text" placeholder="Why the final run must be replaced"></div></div><div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{closeModal}}">Cancel</button><button type="button" class="btn btn-primary" onClick="{{doWithdraw}}">Withdraw designation</button></div></div></div></sc-if>
+<sc-if value="{{modalReopen}}" hint-placeholder-val="{{false}}"><div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="Reopen as a draft?"><div class="modal-head"><h2 class="modal-title">Reopen as a draft?</h2></div><div class="modal-body"><div class="field"><label for="ro-r">Reason</label><input id="ro-r" type="text" placeholder="What the draft will change, for example: instruments added for Nkran"><span class="field-hint">At least 10 characters.</span></div></div><div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{closeModal}}">Cancel</button><button type="button" class="btn btn-primary" onClick="{{closeModal}}">Reopen as draft</button></div></div></div></sc-if>
+<sc-if value="{{modalCorrection}}" hint-placeholder-val="{{false}}"><div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="Create a correction"><div class="modal-head"><h2 class="modal-title">Create a correction</h2></div><div class="modal-body"><div class="field"><label for="c-n">Name</label><input id="c-n" type="text" value="FY2025 (correction)"></div><div class="field"><label for="c-r">Reason for the correction</label><input id="c-r" type="text" placeholder="LPG at the camp was recorded in kg as litres"></div></div><div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{closeModal}}">Cancel</button><a class="btn btn-primary" href="Inventory.dc.html">Create correction</a></div></div></div></sc-if>
+<sc-if value="{{modalVoid}}" hint-placeholder-val="{{false}}"><div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="Void Run 001?"><div class="modal-head"><h2 class="modal-title">Void Run 001?</h2></div><div class="modal-body"><p class="muted">The run keeps its number, lines and totals on the record, marked VOIDED with your reason and your name. Run numbers are never reused. This cannot be undone.</p><div class="field"><label for="v-r">Reason</label><input id="v-r" type="text" placeholder="Why this run must not be relied on"></div></div><div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{closeModal}}">Cancel</button><button type="button" class="btn btn-danger" onClick="{{closeModal}}">Void run</button></div></div></div></sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    const tab = s.tab || 'records'
+    const status = s.status || 'FINAL'
+    const data = [
+      { ref: 'ACT-0001', activity: 'Haul fleet diesel', facility: 'Nyame Pit and Plant', period: '2025-01-01 → 2025-12-31', qty: '11,923,608', unit: 'litre', factor: 'Diesel (average biofuel blend) (/litre)', factorMeta: 'defra-2025 · via Diesel (GOIL)', status: 'Included', tone: 'success', scope: 'Scope 1', category: 'Mobile combustion' },
+      { ref: 'ACT-0002', activity: 'Contract haulage diesel', facility: 'Nyame Pit and Plant', period: '2025-01-01 → 2025-12-31', qty: '1,200,000', unit: 'litre', factor: 'Diesel (average biofuel blend) (/litre)', factorMeta: 'defra-2025', status: 'Included', tone: 'success', scope: 'Scope 3', category: '4. Upstream transportation and distribution' },
+      { ref: 'ACT-0003', activity: 'Plant grid electricity H1', facility: 'Nyame Pit and Plant', period: '2025-01-01 → 2025-06-30', qty: '34,000,000', unit: 'kWh', factor: 'Grid electricity (Ghana) (/kWh)', factorMeta: 'ghana · 2025 edition', status: 'Included', tone: 'success', scope: 'Scope 2', category: 'Purchased electricity' },
+      { ref: 'ACT-0004', activity: 'Plant grid electricity H2', facility: 'Nyame Pit and Plant', period: '2025-07-01 → 2025-12-31', qty: '36,000,000', unit: 'kWh', factor: 'Grid electricity (Ghana) (/kWh)', factorMeta: 'ghana · 2025 edition', status: 'Included', tone: 'success', scope: 'Scope 2', category: 'Purchased electricity' },
+      { ref: 'ACT-0005', activity: 'Genset diesel', facility: 'Obuasi Camp', period: '2025-01-01 → 2025-12-31', qty: '900,000', unit: 'litre', factor: 'Diesel (100% mineral diesel) (/litre)', factorMeta: 'defra-2025 · operating lease (leased in)', status: 'Included', tone: 'success', scope: 'Scope 1', category: 'Stationary combustion' },
+      { ref: 'ACT-0006', activity: 'Kitchen LPG', facility: 'Obuasi Camp', period: '2025-01-01 → 2025-12-31', qty: '40,000', unit: 'litre', factor: 'LPG (/litre)', factorMeta: 'defra-2025', status: 'Included', tone: 'success', scope: 'Scope 1', category: 'Stationary combustion' },
+      { ref: 'ACT-0007', activity: 'Year-end kitchen LPG', facility: 'Obuasi Camp', period: '2025-12-20 → 2026-01-20', qty: '1,600', unit: 'litre', factor: 'LPG (/litre)', factorMeta: 'pro-rated 53.13% by days', status: 'Included', tone: 'success', scope: 'Scope 1', category: 'Stationary combustion' },
+    ]
+    const open = s.open === undefined ? "ACT-0001" : s.open
+    const idx = data.findIndex((r) => r.ref === open)
+    const rec = idx >= 0 ? data[idx] : data[0]
+    const sel = (k) => (k === tab ? 'true' : 'false')
+    const flash = (text, extra) => { this.setState({ toast: text, ...(extra || {}) }); setTimeout(() => this.setState({ toast: null }), 3000) }
+    const lifecycle = { FINAL: 'Final. A run is designated the final result. Withdraw the designation to reopen the inventory, or publish it to issue the report.', PUBLISHED: 'Published. The report was issued; nothing on this inventory can change. A correction is a new inventory that supersedes this one.', FROZEN: 'Frozen. The boundary and the activity view are read-only and runs are allowed. Reopen the inventory as a draft to change either.' }
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      preOpen: !!s.preOpen, togglePre: () => this.setState({ preOpen: !s.preOpen }), preClass: "is-warn", preMark: "!", preLabel: "Ready to launch · 1 warning", preDetail: "Every gate passes; 1 carries a warning.",
+      t: { records: sel('records'), boundary: sel('boundary'), method: sel('method'), runs: sel('runs'), report: sel('report') },
+      is: { records: tab === 'records', boundary: tab === 'boundary', method: tab === 'method', runs: tab === 'runs', report: tab === 'report' },
+      go: { records: () => this.setState({ tab: 'records' }), boundary: () => this.setState({ tab: 'boundary' }), method: () => this.setState({ tab: 'method' }), runs: () => this.setState({ tab: 'runs' }), report: () => this.setState({ tab: 'report' }) },
+      rows: data.map((r) => ({ ...r, statusClass: 'status-' + r.tone, selected: r.ref === open ? 'true' : 'false', open: () => this.setState({ open: r.ref, dtab: 'classify' }) })),
+      tableMode: !open, splitMode: !!open, drawerOpen: !!open, rec: { ...rec, statusClass: "status-" + rec.tone }, recPos: idx >= 0 ? idx + 1 : 1, closeDrawer: () => this.setState({ open: null }),
+      dClassify: (s.dtab || "classify") === "classify", dExclude: s.dtab === "exclude", dClassifySel: (s.dtab || "classify") === "classify" ? "true" : "false", dExcludeSel: s.dtab === "exclude" ? "true" : "false", goClassify: () => this.setState({ dtab: 'classify' }), goExclude: () => this.setState({ dtab: 'exclude' }),
+      statusChip: status === 'FINAL' ? 'Final · boundary v3' : status === 'PUBLISHED' ? 'Published · boundary v3' : 'Frozen · boundary v3',
+      isFinal: status === 'FINAL', isPublished: status === 'PUBLISHED', isFrozen: status === 'FROZEN',
+      finalStep: status === 'FINAL' ? 'now' : status === 'PUBLISHED' ? 'done' : '', pubStep: status === 'PUBLISHED' ? 'now' : '',
+      lifecycleText: lifecycle[status],
+      modalPublish: s.modal === 'publish', modalWithdraw: s.modal === 'withdraw', modalReopen: s.modal === 'reopen', modalCorrection: s.modal === 'correction', modalVoid: s.modal === 'void',
+      openPublish: () => this.setState({ modal: 'publish' }), openWithdraw: () => this.setState({ modal: 'withdraw' }), openReopen: () => this.setState({ modal: 'reopen' }), openCorrection: () => this.setState({ modal: 'correction' }), openVoid: () => this.setState({ modal: 'void' }),
+      closeModal: () => this.setState({ modal: null }),
+      doPublish: () => flash('Inventory published.', { modal: null, status: 'PUBLISHED' }),
+      doWithdraw: () => flash('Final designation withdrawn.', { modal: null, status: 'FROZEN' }),
+      launch: () => flash('Calculation complete.'),
+      saveHeader: () => flash('Report header saved.'),
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

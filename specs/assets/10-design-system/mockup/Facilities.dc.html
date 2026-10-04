@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facilities</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="facilities" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Overview.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li aria-current="page">Facilities</li></ol></div><a href="Overview.dc.html" class="muted">Help</a></div>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Facilities</h1>
+      <p class="page-sub">The organization's sites. Each belongs to a legal entity, whose relationship sets the accounting share every inventory starts from.</p>
+    </div>
+    <div class="page-actions"><a class="btn btn-primary" href="FacilityForm.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add facility</a></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Facilities</div><div class="stat-value">2</div></div>
+    <div class="stat"><div class="stat-label">Legal entities represented</div><div class="stat-value">2 <span class="stat-unit">of 3</span></div></div>
+    <div class="stat"><div class="stat-label">Under the company or a subsidiary</div><div class="stat-value">2 <span class="stat-unit">of 2</span></div></div>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Facility</th><th>Location</th><th>Legal entity</th><th class="actions" style="width: 280px"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+        <tr>
+          <td><div class="cell-2"><span class="t">Nyame Pit and Plant</span><span class="s"><span class="mono">FAC-0001</span></span></div></td>
+          <td><div class="cell-2"><span>Obuasi, Ghana</span><span class="s">Mine<span class="sep">·</span>grid GHA</span></div></td>
+          <td><div class="cell-2"><span>Gye Nyame Gold Ltd</span><span class="s">Reporting company</span></div></td>
+          <td class="actions" style="text-align: right"><button type="button" class="btn btn-ghost btn-sm" onClick="{{openStreams}}">Source streams</button> <a class="btn btn-ghost btn-sm" href="FacilityForm.dc.html">Edit</a> <button type="button" class="btn btn-ghost btn-sm" onClick="{{openRemove}}">Remove</button></td>
+        </tr>
+        <tr>
+          <td><div class="cell-2"><span class="t">Obuasi Camp</span><span class="s"><span class="mono">FAC-0002</span></span></div></td>
+          <td><div class="cell-2"><span>Obuasi, Ghana</span><span class="s">Camp<span class="sep">·</span>grid GHA</span><span class="s" style="color: var(--warning)">Operating lease (leased in) from 2024-01-01</span></div></td>
+          <td><div class="cell-2"><span>Gye Nyame Camp Services Ltd</span><span class="s">Subsidiary</span></div></td>
+          <td class="actions" style="text-align: right"><button type="button" class="btn btn-ghost btn-sm" onClick="{{openStreams}}">Source streams</button> <a class="btn btn-ghost btn-sm" href="FacilityForm.dc.html">Edit</a> <button type="button" class="btn btn-ghost btn-sm" onClick="{{openRemove}}">Remove</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<sc-if value="{{streamsOpen}}" hint-placeholder-val="{{false}}">
+  <div class="scrim">
+    <div class="modal lg" role="dialog" aria-modal="true" aria-label="Source streams: Nyame Pit and Plant">
+      <div class="modal-head"><h2 class="modal-title">Source streams: Nyame Pit and Plant</h2></div>
+      <div class="modal-body">
+        <p class="muted">Every source of emissions at the site. A record names its stream; a contractor's source is scope 3 (Corporate Standard chapter 4).</p>
+        <table class="table">
+          <tbody>
+            <tr><td><div class="cell-2"><span class="t">Haul fleet</span><span class="s">Mobile combustion · Diesel · Fuel farm · owned or controlled · defaults to Scope 1, Mobile combustion</span></div></td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Remove</button></td></tr>
+            <tr><td><div class="cell-2"><span class="t">Contract ore haulage</span><span class="s">Mobile combustion · Diesel · contractor-operated · defaults to Scope 3, 4. Upstream transportation and distribution</span></div></td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Remove</button></td></tr>
+            <tr><td><div class="cell-2"><span class="t">Plant grid supply</span><span class="s">Purchased electricity · ECG-OBU-01 · owned or controlled · defaults to Scope 2, Purchased electricity</span></div></td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Remove</button></td></tr>
+          </tbody>
+        </table>
+        <div class="form-grid">
+          <div class="field"><label for="s-name">Stream name</label><input id="s-name" type="text" placeholder="Standby gensets"></div>
+          <div class="field"><label for="s-kind">Kind</label><select id="s-kind"><option>Stationary combustion</option><option>Mobile combustion</option><option>Process</option><option>Fugitive</option><option>Purchased electricity</option><option>Purchased heat, steam or cooling</option><option>Waste</option><option>Transport</option><option>Business travel</option><option>Employee commuting</option><option>Purchased goods and services</option><option>Other</option></select></div>
+          <div class="field"><label for="s-fuel">Fuel or material (optional)</label><input id="s-fuel" type="text" placeholder="Diesel"></div>
+          <div class="field"><label for="s-meter">Meter or supplier (optional)</label><input id="s-meter" type="text" placeholder="Bulk tank dip, ECG account 1234"></div>
+          <label class="check span2"><input type="checkbox"> Operated by a contractor (its emissions default to scope 3)</label>
+        </div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{close}}">Close</button><button type="button" class="btn btn-primary" onClick="{{addStream}}">Add stream</button></div>
+    </div>
+  </div>
+</sc-if>
+<sc-if value="{{removeOpen}}" hint-placeholder-val="{{false}}">
+  <div class="scrim">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Remove Obuasi Camp?">
+      <div class="modal-head"><h2 class="modal-title">Remove Obuasi Camp?</h2></div>
+      <div class="modal-body"><p class="muted">The facility stays on file as removed, with your name, the date and the reason. A facility with activity records, or one an unpublished inventory still holds in its boundary, cannot be removed.</p><div class="field"><label for="rm">Reason</label><input id="rm" type="text" placeholder="Why it is removed, for the audit trail"></div></div>
+      <div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{close}}">Cancel</button><button type="button" class="btn btn-danger" onClick="{{close}}">Remove</button></div>
+    </div>
+  </div>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      streamsOpen: s.modal === 'streams', removeOpen: s.modal === 'remove',
+      openStreams: () => this.setState({ modal: 'streams' }), openRemove: () => this.setState({ modal: 'remove' }), close: () => this.setState({ modal: null }),
+      addStream: () => { this.setState({ toast: 'Standby gensets added to Nyame Pit and Plant.' }); setTimeout(() => this.setState({ toast: null }), 3000) },
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

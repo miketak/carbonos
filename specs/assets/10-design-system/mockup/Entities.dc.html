@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Legal entities</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="entities" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Overview.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li aria-current="page">Legal entities</li></ol></div><a href="Overview.dc.html" class="muted">Help</a></div>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Legal entities</h1>
+      <p class="page-sub">The structures the company consolidates. Each facility belongs to one; Table 1 of the GHG Protocol turns the relationship into an accounting share under each approach.</p>
+    </div>
+    <div class="page-actions"><a class="btn btn-primary" href="EntityForm.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entity</a></div>
+  </div>
+  <p class="muted" style="font-size: 13px">Equity share, financial control and operational control are calculated from each entity's relationship, economic interest, operation, financial control and parent; edit those facts to change them.</p>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Entity</th><th>Relationship</th><th class="num">Economic interest</th><th class="num">Legal ownership</th><th>Operated</th><th class="num">Equity share</th><th class="num">Financial ctrl</th><th class="num">Operational ctrl</th><th class="actions" style="width: 160px"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+        <tr>
+          <td><div class="cell-2"><span class="t">Gye Nyame Gold Ltd</span><span class="s"><span class="chip" style="height: 22px; font-size: 12px">Reporting company</span></span></div></td>
+          <td><div class="cell-2"><span>Reporting company</span><span class="s">(GH)</span></div></td>
+          <td class="num">100%</td><td class="num">same</td><td>Yes</td>
+          <td class="num" style="font-weight: 500">100%</td><td class="num" style="font-weight: 500">100%</td><td class="num" style="font-weight: 500">100%</td>
+          <td class="actions" style="text-align: right"><a class="btn btn-ghost btn-sm" href="EntityForm.dc.html">Edit</a></td>
+        </tr>
+        <tr>
+          <td><div class="cell-2"><span class="t">Gye Nyame Camp Services Ltd</span><span class="s">held through Gye Nyame Gold Ltd</span></div></td>
+          <td><div class="cell-2"><span>Subsidiary</span><span class="s">(GH) · from 2023-01-01</span></div></td>
+          <td class="num">100%</td><td class="num">same</td><td>Yes</td>
+          <td class="num" style="font-weight: 500">100%</td><td class="num" style="font-weight: 500">100%</td><td class="num" style="font-weight: 500">100%</td>
+          <td class="actions" style="text-align: right"><a class="btn btn-ghost btn-sm" href="EntityForm.dc.html">Edit</a> <button type="button" class="btn btn-ghost btn-sm" onClick="{{openRemove}}">Remove</button></td>
+        </tr>
+        <tr>
+          <td><div class="cell-2"><span class="t">Tarkwa Gold JV Ltd</span><span class="s">held through Gye Nyame Gold Ltd</span></div></td>
+          <td><div class="cell-2"><span>Joint venture</span><span class="s" style="color: var(--warning)">financially controlled by decision</span></div></td>
+          <td class="num">60%</td><td class="num">51%</td><td>No</td>
+          <td class="num" style="font-weight: 500">60%</td><td class="num" style="font-weight: 500">100%</td><td class="num" style="font-weight: 500">0%</td>
+          <td class="actions" style="text-align: right"><a class="btn btn-ghost btn-sm" href="EntityForm.dc.html">Edit</a> <button type="button" class="btn btn-ghost btn-sm" onClick="{{openRemove}}">Remove</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tfoot"><span>3 entities</span></div>
+</main>
+<sc-if value="{{removeOpen}}" hint-placeholder-val="{{false}}">
+  <div class="scrim">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Remove Tarkwa Gold JV Ltd?">
+      <div class="modal-head"><h2 class="modal-title">Remove Tarkwa Gold JV Ltd?</h2></div>
+      <div class="modal-body">
+        <p class="muted">The entity stays on file as removed, with your name, the date and the reason. An entity with facilities, or one other entities are held through, cannot be removed.</p>
+        <div class="field"><label for="rm">Reason</label><input id="rm" type="text" placeholder="Why it is removed, for the audit trail"></div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{close}}">Cancel</button><button type="button" class="btn btn-danger" onClick="{{doRemove}}">Remove</button></div>
+    </div>
+  </div>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      removeOpen: !!s.removeOpen, openRemove: () => this.setState({ removeOpen: true }), close: () => this.setState({ removeOpen: false }),
+      doRemove: () => { this.setState({ removeOpen: false, toast: 'Tarkwa Gold JV Ltd removed.' }); setTimeout(() => this.setState({ toast: null }), 3000) },
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

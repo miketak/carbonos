@@ -6,6 +6,9 @@
 - **Created**: 2026-09-09
 - **Modules**: frontend `ghg` (entity, record and instrument forms; the inventory and facility form pages), `auth` (splash), shared `lib` and styles
 - **Amended**: 2026-10-03, form surfaces (the inventory, facility and legal entity forms become pages)
+- **Amended**: 2026-10-03, spec 10: the app header leaves the workspace,
+  and the activity and classification drawers become the detail of a split
+  register
 
 ## Problem
 
@@ -82,6 +85,10 @@ the pointer event. The document now declares `scroll-padding-top: 5rem`, so
 any scroll-into-view lands the control below the header. Modals keep their
 own scrim and close only on a mouse-down that starts on the scrim itself.
 
+Spec 10 removes the sticky header from the organization and administration
+areas; the scroll padding and this rule then apply only where a sticky bar
+remains (the help centre and the landing page).
+
 ### Form surfaces
 
 Where a form appears follows from what it edits, so the same kind of job
@@ -117,8 +124,10 @@ meets the same kind of surface everywhere in the app:
   entity**, a row's **Edit**) stay the role-gated buttons of spec 01.4: a verifier sees them
   disabled with the tooltip, not a link to a page that would refuse.
 - A row editor of a list-shaped register (an activity record, a
-  classification) is a **drawer** beside the register, keyed off the URL
-  (the pattern spec 04.6 establishes).
+  classification) is the **detail** of a split register: the register
+  collapses to a summary list on the left and the record opens on the
+  right, keyed off the URL as the drawer was (spec 10; the pattern spec
+  04.6 established as a drawer).
 - A one-shot form (a removal reason, a correction, a candidate, the
   recalculated base), a batch operation (the CSV import) and every
   confirmation are **modals**.

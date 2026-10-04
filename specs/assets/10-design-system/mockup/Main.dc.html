@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Activity data</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="activity" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs">
+    <div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Overview.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li>Data collection</li><li aria-current="page">Activity data</li></ol></div>
+    <span class="saved">{{savedLine}}</span>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <div class="page-title-row"><h1 class="page-title">Activity data</h1></div>
+      <p class="page-sub">7 activities<span class="sep">·</span>2 need attention</p>
+    </div>
+    <div class="page-actions">
+      <div class="segmented" role="group" aria-label="View">
+        <button type="button" aria-pressed="true">Records</button>
+        <a class="btn btn-sm" style="border-radius: 0; border: 0; border-left: 1px solid var(--hairline-strong); color: var(--ink-muted)" href="SourceDocuments.dc.html">Source documents</a>
+      </div>
+      <button type="button" class="btn btn-secondary" onClick="{{openImport}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Import CSV</button>
+      <button type="button" class="btn btn-primary" title="Press N" onClick="{{openNew}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add activity</button>
+    </div>
+  </div>
+
+  <!-- the register: the full table, until a record is opened -->
+  <sc-if value="{{tableMode}}" hint-placeholder-val="{{false}}">
+    <div class="stats" aria-label="Record completeness">
+      <div class="stat"><div class="stat-label">Records ready</div><div class="stat-value">5 <span class="stat-unit">of 7</span></div><div class="stat-note">Ready means the figures, a stream, a source and evidence are present; nothing here has been verified.</div></div>
+      <div class="stat"><div class="stat-label">With a document on file</div><div class="stat-value">4</div><div class="stat-note">Files print on the run's lines and in the calculation file.</div></div>
+      <div class="stat"><div class="stat-label">Needs attention</div><div class="stat-value">2</div><div class="stat-note"><button type="button" class="link-btn" onClick="{{tabAttention}}">Resolve 2 items →</button></div></div>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Readiness">
+      <button type="button" role="tab" class="tab" aria-selected="{{tabAllSel}}" onClick="{{tabAll}}">All records <span class="tab-count">7</span></button>
+      <button type="button" role="tab" class="tab" aria-selected="{{tabAttSel}}" onClick="{{tabAttention}}">Needs attention <span class="tab-count warn">2</span></button>
+      <button type="button" role="tab" class="tab" aria-selected="{{tabReadySel}}" onClick="{{tabReady}}">Ready <span class="tab-count">5</span></button>
+    </div>
+    <div class="toolbar-grid">
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <label for="q" class="sr-only">Search</label>
+        <input id="q" type="search" placeholder="Find an activity, facility, stream, reference or ACT-0001">
+      </div>
+      <label class="sr-only" for="f-fac">Facility</label>
+      <select id="f-fac"><option>All facilities</option><option>Nyame Pit and Plant</option><option>Obuasi Camp</option></select>
+      <label class="sr-only" for="f-str">Stream</label>
+      <select id="f-str"><option>All streams</option><option>Haul fleet (Nyame Pit and Plant)</option><option>Plant grid supply (Nyame Pit and Plant)</option><option>Camp gensets (Obuasi Camp)</option><option>Camp kitchens (Obuasi Camp)</option></select>
+      <label class="sr-only" for="f-per">Period</label>
+      <select id="f-per"><option>All periods</option><option>2025</option></select>
+      <label class="sr-only" for="f-sort">Sort by</label>
+      <select id="f-sort"><option>Period ↓</option><option>Record number</option><option>Facility</option><option>Activity</option><option>Quantity</option><option>Entered</option></select>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr>
+          <th class="sel"><input type="checkbox" aria-label="Select all"></th>
+          <th>Activity</th><th>Facility / period</th><th class="num">Quantity</th><th>Data status</th><th>Attachments</th><th class="actions"><span class="sr-only">Actions</span></th>
+        </tr></thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+            <tr class="row-link" onClick="{{r.open}}">
+              <td class="sel"><input type="checkbox" aria-label="Select {{r.ref}}"></td>
+              <td><div class="cell-2"><span class="t">{{r.activity}}</span><span class="s">{{r.stream}}<span class="sep">·</span>{{r.ref}}</span></div></td>
+              <td><div class="cell-2"><span class="t" style="font-weight: 400">{{r.facility}}</span><span class="s">{{r.period}}</span></div></td>
+              <td class="num"><div class="cell-2" style="align-items: flex-end"><span class="t">{{r.qty}}</span><span class="s">{{r.unit}}</span></div></td>
+              <td><span class="status {{r.statusClass}}">{{r.status}}</span></td>
+              <td class="muted">{{r.att}}</td>
+              <td class="actions"><button type="button" class="icon-btn" aria-label="More actions for {{r.ref}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    <div class="tfoot">
+      <span>{{countLine}} <span class="faint" style="margin-left: 12px">Select a row to edit <kbd>j</kbd> <kbd>k</kbd> <kbd>↵</kbd></span></span>
+      <div class="pager">
+        <button type="button" class="btn btn-ghost btn-sm" disabled>Previous</button>
+        <span class="rule"></span>
+        <button type="button" class="btn btn-ghost btn-sm" disabled>Next</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- the workbench: the list as a summary beside the open record -->
+  <sc-if value="{{splitMode}}" hint-placeholder-val="{{true}}">
+    <div class="split">
+      <section class="split-list" aria-label="Activity">
+        <div class="section-head">
+          <h2 class="section-title">Activity</h2>
+          <button type="button" class="icon-btn" aria-label="Search activity"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Readiness">
+          <button type="button" role="tab" class="tab" aria-selected="{{tabAllSel}}" onClick="{{tabAll}}">All</button>
+          <button type="button" role="tab" class="tab" aria-selected="{{tabAttSel}}" onClick="{{tabAttention}}">Needs attention <span class="tab-count warn">2</span></button>
+          <button type="button" role="tab" class="tab" aria-selected="{{tabReadySel}}" onClick="{{tabReady}}">Ready <span class="tab-count">5</span></button>
+        </div>
+        <div style="display: flex; flex-direction: column">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+            <button type="button" class="mrow" aria-current="{{r.selected}}" onClick="{{r.open}}">
+              <span class="t">{{r.activity}}<sc-if value="{{r.attention}}" hint-placeholder-val="{{false}}"><span class="dot" aria-hidden="true"></span></sc-if></span>
+              <span class="m">{{r.facility}}<span class="sep" style="margin: 0 6px; color: var(--ink-faint)">·</span>{{r.periodShort}}</span>
+              <sc-if value="{{r.attention}}" hint-placeholder-val="{{false}}"><span class="w">{{r.issue}}</span></sc-if>
+              <span class="q">{{r.qty}} {{r.unitShort}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div class="muted" style="font-size: 13px; padding-top: 4px">{{countLine}}</div>
+      </section>
+
+      <section class="split-detail" aria-label="{{rec.activity}}">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+          <div style="min-width: 0">
+            <div class="eyebrow">{{rec.scope}} / {{rec.category}}</div>
+            <h2 class="detail-title">{{rec.activity}}</h2>
+            <div class="detail-meta">{{rec.ref}}<span class="sep" style="margin: 0 8px; color: var(--ink-faint)">·</span>Updated just now<span class="sep" style="margin: 0 8px; color: var(--ink-faint)">·</span><span class="status {{rec.statusClass}}">{{rec.status}}</span></div>
+          </div>
+          <div style="display: flex; gap: 4px; flex: none">
+            <button type="button" class="icon-btn" aria-label="Previous record" onClick="{{prevRec}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+            <button type="button" class="icon-btn" aria-label="Next record" onClick="{{nextRec}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+            <button type="button" class="icon-btn" aria-label="Close" onClick="{{closeDetail}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Record">
+          <button type="button" role="tab" class="tab" aria-selected="{{dAct}}" onClick="{{goAct}}">Activity</button>
+          <button type="button" role="tab" class="tab" aria-selected="{{dCalc}}" onClick="{{goCalc}}">Calculation</button>
+          <button type="button" role="tab" class="tab" aria-selected="{{dEv}}" onClick="{{goEv}}">Evidence <span class="tab-count">{{rec.evCount}}</span></button>
+        </div>
+
+        <sc-if value="{{dActOn}}" hint-placeholder-val="{{true}}">
+          <div class="form-grid">
+            <div class="field"><label for="d-fac">Facility</label><select id="d-fac"><option>{{rec.facility}}</option><option>Nyame Pit and Plant</option><option>Obuasi Camp</option></select></div>
+            <div class="field"><label for="d-str">Stream</label><select id="d-str"><option>{{rec.stream}}</option><option>No stream</option></select></div>
+            <div class="field"><label for="d-ps">Period start</label><input id="d-ps" type="text" value="{{rec.start}}"><span class="field-hint">The period the quantity covers, not the invoice date.</span></div>
+            <div class="field"><label for="d-pe">Period end</label><input id="d-pe" type="text" value="{{rec.end}}"><span class="field-hint">Same as the start for a single reading.</span></div>
+          </div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 20px 24px">
+            <div class="field"><label for="d-qty">Activity quantity</label><input id="d-qty" type="text" value="{{rec.qtyRaw}}" placeholder="Enter the quantity"></div>
+            <div class="field"><label for="d-unit">Unit</label><select id="d-unit"><option>{{rec.unit}}</option><optgroup label="Energy"><option>Kilowatt-hour (kWh)</option></optgroup><optgroup label="Volume"><option>Litre (litre)</option></optgroup><optgroup label="Mass"><option>Kilogram (kg)</option><option>Tonne (tonne)</option></optgroup><option>Unregistered unit…</option></select></div>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label for="d-src">Data source</label><input id="d-src" type="text" value="{{rec.source}}" placeholder="Example: utility invoice, dispensing log, meter reading"></div>
+            <div class="field"><label for="d-ref">Document reference</label><input id="d-ref" type="text" value="{{rec.docref}}" placeholder="Example: INV-2938"></div>
+          </div>
+          <sc-if value="{{rec.hasFile}}" hint-placeholder-val="{{true}}">
+            <div class="attachment"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg><span class="name">{{rec.evFile}}</span><a href="#evidence" style="display: inline-flex; align-items: center; gap: 4px">View <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
+          </sc-if>
+          <sc-if value="{{rec.noFile}}" hint-placeholder-val="{{false}}">
+            <div class="attachment" style="border-style: dashed"><span class="name muted" style="font-weight: 400">{{rec.evLine}}</span><button type="button" class="link-btn" onClick="{{goEv}}">Attach a file or link →</button></div>
+          </sc-if>
+          <sc-if value="{{rec.ready}}" hint-placeholder-val="{{true}}">
+            <div class="note-ok"><span class="ring" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span><div><div class="t">Activity data complete</div><div class="muted" style="font-size: 13px">Ready for calculation</div></div></div>
+          </sc-if>
+          <sc-if value="{{rec.notReady}}" hint-placeholder-val="{{false}}">
+            <div class="note-ok"><span class="ring" style="border-color: var(--warning-dot); color: var(--warning)" aria-hidden="true">!</span><div><div class="t">A draft, not yet a fact</div><div class="muted" style="font-size: 13px">{{rec.issueLine}}</div></div></div>
+          </sc-if>
+          <div class="detail-foot">
+            <button type="button" class="btn btn-ghost" onClick="{{closeDetail}}">Cancel</button>
+            <button type="button" class="btn btn-primary" onClick="{{save}}">Save activity</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{dCalcOn}}" hint-placeholder-val="{{false}}">
+          <dl class="kv">
+            <dt>Stream default</dt><dd>{{rec.scope}} · {{rec.category}}</dd>
+            <dt>Suggested factor</dt><dd>{{rec.factor}}</dd>
+            <dt>Factor edition</dt><dd>{{rec.factorMeta}}</dd>
+            <dt>Density</dt><dd>{{rec.density}}</dd>
+            <dt>Method</dt><dd>Measured · tier 1: metered or invoiced primary data</dd>
+          </dl>
+          <div class="banner banner-info"><div>Scope is confirmed in each inventory's review. The figures here are the stream's defaults; the inventory workbench records the decision.</div></div>
+          <div class="detail-foot"><a class="btn btn-secondary" href="Inventory.dc.html">Open in FY2025 workbench</a></div>
+        </sc-if>
+
+        <sc-if value="{{dEvOn}}" hint-placeholder-val="{{false}}">
+          <p class="muted">Invoices, meter photos, registers and certificates. Files print on the run's lines and in the calculation file; a link opens the document where it lives.</p>
+          <sc-if value="{{rec.hasFile}}" hint-placeholder-val="{{true}}">
+            <div class="attachment"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg><span class="name"><a href="#evidence">{{rec.evFile}}</a><span class="muted" style="display: block; font-size: 13px; font-weight: 400">file, 220 KB · Kofi Mensah, 2026-09-11</span></span><button type="button" class="link-btn">remove</button></div>
+          </sc-if>
+          <sc-if value="{{rec.noFile}}" hint-placeholder-val="{{false}}"><div class="empty"><div class="t">No evidence attached yet.</div></div></sc-if>
+          <div class="field"><label for="d-file">Attach a file</label><input id="d-file" type="text" class="control" placeholder="Choose a file"><span class="field-hint">PDF, image, spreadsheet or text, up to 20 MB.</span></div>
+          <div class="form-grid">
+            <div class="field"><label for="d-ln">Link name</label><input id="d-ln" type="text" placeholder="Fuel register"></div>
+            <div class="field"><label for="d-url">URL</label><input id="d-url" type="text" placeholder="https://"></div>
+            <div class="span2" style="display: flex; justify-content: flex-end"><button type="button" class="btn btn-secondary btn-sm" onClick="{{attachLink}}">Add link</button></div>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+  </sc-if>
+</main>
+
+<sc-if value="{{importOpen}}" hint-placeholder-val="{{false}}">
+  <div class="scrim">
+    <div class="modal lg" role="dialog" aria-modal="true" aria-label="Import activity data">
+      <div class="modal-head"><div class="eyebrow">Bulk entry</div><h2 class="modal-title">Import activity data</h2></div>
+      <div class="modal-body">
+        <p class="muted">Bring several source records into the register at once. Check the preview before adding them.</p>
+        <div class="grid-2">
+          <div class="panel"><div class="panel-body"><div class="eyebrow">Step 1</div><div style="font-weight: 600; margin: 6px 0 10px">Use the activity template</div><button type="button" class="btn btn-secondary btn-sm">Download CSV template</button> <a href="#columns" style="margin-left: 10px; font-size: 14px">What each column must contain</a></div></div>
+          <div class="panel"><div class="panel-body"><div class="eyebrow">Step 2</div><div style="font-weight: 600; margin: 6px 0 10px">Select your completed CSV</div><div class="empty" style="padding: 20px"><div class="t">Choose a CSV file</div><div style="font-size: 13px">Or drop it here. Up to 5 MB; the file is kept with the records it creates.</div></div></div></div>
+        </div>
+        <div>
+          <div class="section-head"><h3 class="panel-title">Control totals</h3><span class="muted" style="font-size: 13px">Check them against the spreadsheet's footer.</span></div>
+          <table class="table" style="margin-top: 8px"><thead><tr><th>Facility</th><th>Stream</th><th class="num">Rows</th><th class="num">Total</th></tr></thead>
+          <tbody><tr><td>Nyame Pit and Plant</td><td>Haul fleet</td><td class="num">12</td><td class="num">11,923,608 litre</td></tr><tr><td>Obuasi Camp</td><td>Camp gensets</td><td class="num">12</td><td class="num">900,000 litre</td></tr></tbody></table>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap"><span class="chip chip-warning">3 rows: needs evidence</span></div>
+        <div>
+          <div class="section-head"><h3 class="panel-title">24 records to add</h3><span class="muted" style="font-size: 13px">Row numbers count the header as row 1, as the spreadsheet does.</span></div>
+          <table class="table" style="margin-top: 8px"><thead><tr><th>Row</th><th>Activity</th><th>Facility / period</th><th class="num">Quantity</th><th>Data status</th></tr></thead>
+          <tbody>
+            <tr><td class="muted">2</td><td>Haul fleet diesel</td><td>Nyame Pit and Plant · Jan 2025</td><td class="num">1,002,400 litre</td><td><span class="status status-success">Ready</span></td></tr>
+            <tr><td class="muted">3</td><td>Haul fleet diesel</td><td>Nyame Pit and Plant · Feb 2025</td><td class="num">980,120 litre</td><td><span class="status status-warning">Needs evidence</span></td></tr>
+            <tr><td class="muted">4</td><td>Genset diesel</td><td>Obuasi Camp · Jan 2025</td><td class="num">75,000 litre</td><td><span class="status status-success">Ready</span></td></tr>
+          </tbody></table>
+          <p class="muted" style="font-size: 13px; margin-top: 8px">and 21 more</p>
+        </div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{closeModal}}">Cancel</button><button type="button" class="btn btn-primary" onClick="{{doImport}}">Add records</button></div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    const data = [
+      { ref: 'ACT-0001', activity: 'Haul fleet diesel', stream: 'Haul fleet', facility: 'Nyame Pit and Plant', start: '2025-01-01', end: '2025-12-31', period: '2025-01-01 → 2025-12-31', periodShort: '2025', qty: '11,923,608', unit: 'litre', unitShort: 'L', tone: 'success', status: 'Ready', att: '1', source: 'Fuel farm reconciliation', docref: 'FF-2025', evFile: 'fuel-farm-2025.pdf', evCount: 1, scope: 'Scope 1', category: 'Mobile combustion', factor: 'Diesel (average biofuel blend), 2.66 kg CO₂e per litre', factorMeta: 'defra-2025 · DEFRA 2025, data year 2024', density: 'Diesel (GOIL, 2025 CoA), 0.8325 kg per litre' },
+      { ref: 'ACT-0002', activity: 'Contract haulage diesel', stream: 'Contract ore haulage', facility: 'Nyame Pit and Plant', start: '2025-01-01', end: '2025-12-31', period: '2025-01-01 → 2025-12-31', periodShort: '2025', qty: '1,200,000', unit: 'litre', unitShort: 'L', tone: 'warning', status: 'Needs evidence', issue: 'Missing evidence', att: '–', source: 'Contractor statement', docref: '', evFile: '', evCount: 0, scope: 'Scope 3', category: '4. Upstream transportation and distribution', factor: 'Diesel (average biofuel blend), 2.66 kg CO₂e per litre', factorMeta: 'defra-2025', density: 'Diesel (typical value), 0.84 kg per litre' },
+      { ref: 'ACT-0003', activity: 'Plant grid electricity H1', stream: 'Plant grid supply', facility: 'Nyame Pit and Plant', start: '2025-01-01', end: '2025-06-30', period: '2025-01-01 → 2025-06-30', periodShort: 'Jan to Jun 2025', qty: '34,000,000', unit: 'kWh', unitShort: 'kWh', tone: 'success', status: 'Ready', att: '1', source: 'ECG bill', docref: 'ECG-OBU-2025-H1', evFile: 'ecg-obu-2025-h1.pdf', evCount: 1, scope: 'Scope 2', category: 'Purchased electricity', factor: 'Grid electricity (Ghana), 0.4688 kg CO₂e per kWh', factorMeta: 'ghana · Ember Yearly Electricity Data', density: 'Not applicable' },
+      { ref: 'ACT-0004', activity: 'Plant grid electricity H2', stream: 'Plant grid supply', facility: 'Nyame Pit and Plant', start: '2025-07-01', end: '2025-12-31', period: '2025-07-01 → 2025-12-31', periodShort: 'Jul to Dec 2025', qty: '36,000,000', unit: 'kWh', unitShort: 'kWh', tone: 'success', status: 'Ready', att: '1', source: 'ECG bill', docref: 'ECG-OBU-2025-H2', evFile: 'ecg-obu-2025-h2.pdf', evCount: 1, scope: 'Scope 2', category: 'Purchased electricity', factor: 'Grid electricity (Ghana), 0.4688 kg CO₂e per kWh', factorMeta: 'ghana · Ember Yearly Electricity Data', density: 'Not applicable' },
+      { ref: 'ACT-0005', activity: 'Genset diesel', stream: 'Camp gensets', facility: 'Obuasi Camp', start: '2025-01-01', end: '2025-12-31', period: '2025-01-01 → 2025-12-31', periodShort: '2025', qty: '900,000', unit: 'litre', unitShort: 'L', tone: 'success', status: 'Ready', att: 'ref', source: 'Tank meter 3', docref: 'WB-2025-11', evFile: '', evCount: 0, scope: 'Scope 1', category: 'Stationary combustion', factor: 'Diesel (100% mineral diesel), 2.70 kg CO₂e per litre', factorMeta: 'defra-2025', density: 'Diesel (typical value), 0.84 kg per litre' },
+      { ref: 'ACT-0006', activity: 'Kitchen LPG', stream: 'Camp kitchens', facility: 'Obuasi Camp', start: '2025-01-01', end: '2025-12-31', period: '2025-01-01 → 2025-12-31', periodShort: '2025', qty: '40,000', unit: 'litre', unitShort: 'L', tone: 'success', status: 'Ready', att: '1', source: 'Supplier invoice', docref: 'INV-2938', evFile: 'invoice-2938.pdf', evCount: 1, scope: 'Scope 1', category: 'Stationary combustion', factor: 'LPG, 1.56 kg CO₂e per litre', factorMeta: 'defra-2025', density: 'LPG (typical value), 0.51 kg per litre' },
+      { ref: 'ACT-0007', activity: 'Year-end kitchen LPG', stream: 'Camp kitchens', facility: 'Obuasi Camp', start: '2025-12-20', end: '2026-01-20', period: '2025-12-20 → 2026-01-20', periodShort: 'Dec 2025 to Jan 2026', qty: '', unit: 'Select unit…', unitShort: '', tone: 'warning', status: 'Missing quantity +1', issue: 'Missing quantity, missing unit', att: '–', source: '', docref: '', evFile: '', evCount: 0, scope: 'Scope 1', category: 'Stationary combustion', factor: 'LPG, 1.56 kg CO₂e per litre', factorMeta: 'defra-2025', density: 'LPG (typical value), 0.51 kg per litre' },
+    ]
+    const tab = s.tab || 'all'
+    const visible = data.filter((r) => tab === 'all' || (tab === 'attention' ? r.tone === 'warning' : r.tone === 'success'))
+    const open = s.open === undefined ? 'ACT-0001' : s.open
+    const idx = data.findIndex((r) => r.ref === open)
+    const rec = idx >= 0 ? data[idx] : data[0]
+    const ready = rec.tone === 'success'
+    const go = (delta) => { const n = (idx + delta + data.length) % data.length; this.setState({ open: data[n].ref, dtab: 'act' }) }
+    const flash = (text, extra) => { this.setState({ toast: text, ...(extra || {}) }); setTimeout(() => this.setState({ toast: null }), 3000) }
+    const dtab = s.dtab || 'act'
+    return {
+      theme,
+      toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      savedLine: open ? 'All changes saved' : 'Last import 12 min ago',
+      tableMode: !open, splitMode: !!open,
+      rows: visible.map((r) => ({ ...r, statusClass: 'status-' + r.tone, attention: r.tone === 'warning', selected: r.ref === open ? 'true' : 'false', qty: r.qty || 'Missing', open: () => this.setState({ open: r.ref, dtab: 'act' }) })),
+      countLine: 'Showing ' + visible.length + ' of 7',
+      tabAllSel: tab === 'all' ? 'true' : 'false', tabAttSel: tab === 'attention' ? 'true' : 'false', tabReadySel: tab === 'ready' ? 'true' : 'false',
+      tabAll: () => this.setState({ tab: 'all' }), tabAttention: () => this.setState({ tab: 'attention' }), tabReady: () => this.setState({ tab: 'ready' }),
+      rec: { ...rec, qtyRaw: rec.qty, statusClass: 'status-' + rec.tone, ready, notReady: !ready, hasFile: !!rec.evFile, noFile: !rec.evFile, evLine: rec.docref ? 'Reference ' + rec.docref + ', nothing attached' : 'Nothing attached', issueLine: rec.issue || 'Not ready for review yet.' },
+      prevRec: () => go(-1), nextRec: () => go(1),
+      closeDetail: () => this.setState({ open: null }),
+      openNew: () => this.setState({ open: 'ACT-0007', dtab: 'act' }),
+      dAct: dtab === 'act' ? 'true' : 'false', dCalc: dtab === 'calc' ? 'true' : 'false', dEv: dtab === 'ev' ? 'true' : 'false',
+      dActOn: dtab === 'act', dCalcOn: dtab === 'calc', dEvOn: dtab === 'ev',
+      goAct: () => this.setState({ dtab: 'act' }), goCalc: () => this.setState({ dtab: 'calc' }), goEv: () => this.setState({ dtab: 'ev' }),
+      openImport: () => this.setState({ modal: 'import' }), importOpen: s.modal === 'import', closeModal: () => this.setState({ modal: null }),
+      doImport: () => flash('24 records imported.', { modal: null }),
+      save: () => flash('Record corrected. Past runs are unaffected.'),
+      attachLink: () => flash('Link attached.'),
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>
