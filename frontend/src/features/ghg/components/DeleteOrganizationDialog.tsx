@@ -69,14 +69,14 @@ export function DeleteOrganizationDialog({
             <p className="text-sm text-ink-muted">
               <strong>{organization.name}</strong> has records the company has issued:
             </p>
-            <ul className="mt-2 flex flex-col gap-1 text-sm font-medium text-dark-teal">
+            <ul className="mt-2 flex flex-col gap-1 text-sm font-medium">
               {blockers.map((inventory) => (
                 <li key={inventory.id}>
                   {inventory.name}: {blockingLabel(inventory)}
                 </li>
               ))}
             </ul>
-            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+            <p role="alert" className="mt-3 text-sm font-medium text-danger">
               Publish records are kept: withdraw the final designation or supersede the published
               inventory first.
             </p>
@@ -107,7 +107,7 @@ export function DeleteOrganizationDialog({
           </>
         )}
         {error && (
-          <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+          <p role="alert" className="mt-3 text-sm font-medium text-danger">
             {error}
           </p>
         )}

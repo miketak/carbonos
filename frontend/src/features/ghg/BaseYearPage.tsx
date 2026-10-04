@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import type { CSSProperties, FormEvent } from 'react'
+import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField, SelectField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
 import { Modal } from '../../components/Modal'
+import { Panel, PanelBody, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { Stat, StatStrip } from '../../components/StatStrip'
+import { StatusDot } from '../../components/StatusDot'
+import type { StatusTone } from '../../components/StatusDot'
+import { Table, Td } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
 import { RoleButton } from './components/RoleButton'
@@ -30,12 +34,12 @@ import type {
   StructuralChangeConvention,
 } from './api'
 
-const statusStyles: Record<RecalculationStatus, string> = {
-  FLAGGED: 'bg-amber-100 text-amber-800',
-  RECALCULATED: 'bg-accent-green/25 text-dark-teal',
-  DECLINED: 'bg-slate-200 text-slate-600',
+const statusTones: Record<RecalculationStatus, StatusTone> = {
+  FLAGGED: 'warning',
+  RECALCULATED: 'success',
+  DECLINED: 'neutral',
   // spec 06: a removal put back as the base year held it changed nothing against it
-  SUPERSEDED: 'bg-slate-100 text-slate-500',
+  SUPERSEDED: 'neutral',
 }
 
 /**
@@ -61,39 +65,33 @@ export function BaseYearPage() {
   return (
     <section className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl">Base year</h2>
-        <p className="text-sm text-ink-muted">
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Base year</h2>
+        <p className="mt-1 text-sm text-ink-muted">
           The reference point emissions are compared against over time, and the policy that says
           when it is recalculated.
         </p>
       </div>
 
-      <GlassCard className="animate-fade-up p-6">
+      <Panel>
         {baseYearQuery.isPending && (
-          <div aria-label="Loading base year" className="flex flex-col gap-2">
+          <PanelBody aria-label="Loading base year" className="flex flex-col gap-2">
             <Skeleton className="h-8" />
             <Skeleton className="h-8" />
-          </div>
+          </PanelBody>
         )}
         {baseYearQuery.isSuccess && (
           <>
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h3 className="text-lg">Base year and recalculation policy</h3>
-                <p className="text-sm text-ink-muted">
-                  Structural changes, methodology changes, and significant errors all trigger a
-                  recalculation under Chapter 5, on their own or together, so the Standard asks for
-                  a threshold and a policy. Organic growth or decline, and facilities that did not
-                  exist in the base year, never trigger one.
-                </p>
-              </div>
+            <PanelHead
+              title="Base year and recalculation policy"
+              description="Structural changes, methodology changes, and significant errors all trigger a recalculation under Chapter 5, on their own or together, so the Standard asks for a threshold and a policy. Organic growth or decline, and facilities that did not exist in the base year, never trigger one."
+            >
               {baseYear && !editing && (
-                <div className="flex gap-2">
+                <>
                   <RoleButton
                     allowed={mayWrite(myRole)}
                     tooltip={WRITE_TOOLTIP}
                     variant="ghost"
-                    className="px-3 py-1.5 text-sm"
+                    size="sm"
                     onClick={() => setEditing(true)}
                   >
                     Edit policy
@@ -102,7 +100,7 @@ export function BaseYearPage() {
                     allowed={mayWrite(myRole)}
                     tooltip={WRITE_TOOLTIP}
                     variant="ghost"
-                    className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+                    size="sm"
                     busy={clear.isPending}
                     onClick={() =>
                       clear.mutate(undefined, {
@@ -113,39 +111,34 @@ export function BaseYearPage() {
                   >
                     Clear base year
                   </RoleButton>
-                </div>
+                </>
               )}
-            </div>
-
-            {baseYear && !editing && <Designation baseYear={baseYear} />}
-            {(!baseYear || editing) &&
-              (mayWrite(myRole) ? (
-                <PolicyForm
-                  organizationId={organizationId}
-                  inventories={inventories}
-                  baseYear={baseYear ?? null}
-                  myRole={myRole}
-                  onCancel={baseYear ? () => setEditing(false) : undefined}
-                  onSaved={(saved) => {
-                    setEditing(false)
-                    toast(`Base year ${saved.year} designated.`)
-                  }}
-                />
-              ) : (
-                <p className="mt-4 text-sm text-ink-muted">No base year has been designated yet.</p>
-              ))}
+            </PanelHead>
+            <PanelBody>
+              {baseYear && !editing && <Designation baseYear={baseYear} />}
+              {(!baseYear || editing) &&
+                (mayWrite(myRole) ? (
+                  <PolicyForm
+                    organizationId={organizationId}
+                    inventories={inventories}
+                    baseYear={baseYear ?? null}
+                    myRole={myRole}
+                    onCancel={baseYear ? () => setEditing(false) : undefined}
+                    onSaved={(saved) => {
+                      setEditing(false)
+                      toast(`Base year ${saved.year} designated.`)
+                    }}
+                  />
+                ) : (
+                  <p className="text-sm text-ink-muted">No base year has been designated yet.</p>
+                ))}
+            </PanelBody>
           </>
         )}
-      </GlassCard>
+      </Panel>
 
       {baseYear && (
-        <div className="animate-fade-up" style={{ '--stagger': 1 } as CSSProperties}>
-          <RecalculationHistory
-            organizationId={organizationId}
-            baseYear={baseYear}
-            myRole={myRole}
-          />
-        </div>
+        <RecalculationHistory organizationId={organizationId} baseYear={baseYear} myRole={myRole} />
       )}
     </section>
   )
@@ -155,42 +148,52 @@ function Designation({ baseYear }: { baseYear: BaseYear }) {
   const runsQuery = useRunsQuery(baseYear.inventoryId)
   const baseRun = runsQuery.data?.find((run) => run.id === baseYear.baseRunId)
   return (
-    <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-      <div>
-        <dt className="text-xs text-ink-muted uppercase">Base year</dt>
-        <dd className="text-2xl font-bold text-dark-teal">{baseYear.year}</dd>
-      </div>
-      <div>
-        <dt className="text-xs text-ink-muted uppercase">Established by</dt>
-        <dd>
-          <Link to={`../inventories/${baseYear.inventoryId}`} className="font-semibold text-link">
-            {baseYear.inventoryName}
-          </Link>
-          {baseRun && (
-            <span className="block text-xs text-ink-muted">
-              Base-year run: {baseRun.label} · {formatCo2e(baseRun.totalKgCo2e)}
+    <div>
+      <StatStrip label="Base year designation">
+        <Stat label="Base year" value={baseYear.year} />
+        <Stat
+          label="Established by"
+          value={
+            <Link
+              to={`../inventories/${baseYear.inventoryId}`}
+              className="text-lg font-semibold text-link hover:underline"
+            >
+              {baseYear.inventoryName}
+            </Link>
+          }
+          note={
+            <>
+              {baseRun && (
+                <span className="block">
+                  Base-year run: {baseRun.label} · {formatCo2e(baseRun.totalKgCo2e)}
+                </span>
+              )}
+              {!baseYear.baseRunId && (
+                <span className="block text-warning">
+                  No final run yet: designate one so structural changes can be weighed against it.
+                </span>
+              )}
+            </>
+          }
+        />
+        <Stat
+          label="Significance threshold"
+          value={`${baseYear.thresholdPercent}%`}
+          unit="of base-year emissions"
+        />
+        <Stat
+          label="Mid-year structural changes"
+          value={
+            <span className="text-base font-normal">
+              {conventionLabels[baseYear.structuralChangeConvention]}
             </span>
-          )}
-          {!baseYear.baseRunId && (
-            <span className="block text-xs text-amber-700">
-              No final run yet: designate one so structural changes can be weighed against it.
-            </span>
-          )}
-        </dd>
-      </div>
-      <div>
-        <dt className="text-xs text-ink-muted uppercase">Significance threshold</dt>
-        <dd className="font-semibold">{baseYear.thresholdPercent}% of base-year emissions</dd>
-      </div>
-      <div>
-        <dt className="text-xs text-ink-muted uppercase">Mid-year structural changes</dt>
-        <dd>{conventionLabels[baseYear.structuralChangeConvention]}</dd>
-      </div>
-      <div className="sm:col-span-2">
-        <dt className="text-xs text-ink-muted uppercase">Why this year</dt>
-        <dd>{baseYear.reason}</dd>
-      </div>
-    </dl>
+          }
+        />
+      </StatStrip>
+      <p className="mt-4">
+        <span className="text-ink-muted">Why this year:</span> {baseYear.reason}
+      </p>
+    </div>
   )
 }
 
@@ -242,7 +245,7 @@ function PolicyForm({
 
   if (inventories.length === 0) {
     return (
-      <p className="mt-4 text-sm text-ink-muted">
+      <p className="text-sm text-ink-muted">
         Create an inventory for the base year first, under{' '}
         <Link to="../inventories" className="font-semibold text-link">
           Inventories
@@ -253,7 +256,7 @@ function PolicyForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 flex flex-col gap-4" noValidate>
+    <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
       <SelectField
         label="Base-year inventory"
         value={chosenInventoryId}
@@ -305,13 +308,13 @@ function PolicyForm({
           </option>
         ))}
       </SelectField>
-      <p className="text-xs text-ink-muted">
+      <p className="text-[13px] text-ink-muted">
         Structural changes are detected when an inventory is frozen. Methodology changes and
         significant errors are raised by hand under the recalculation history. All three are
         mandatory triggers under Chapter 5.
       </p>
       {generalError && (
-        <p role="alert" className="text-sm font-medium text-red-600">
+        <p role="alert" className="text-sm font-medium text-danger">
           {generalError}
         </p>
       )}
@@ -353,98 +356,104 @@ function RecalculationHistory({
     runsQuery.data?.find((run) => run.id === runId)?.label ?? 'a run of the base-year inventory'
 
   return (
-    <GlassCard className="p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3 className="text-lg">Recalculation history</h3>
-          <p className="text-sm text-ink-muted">
-            Freezing an inventory whose boundary differs from the base year measures the affected
-            facilities against the base-year run and records a candidate here. A change is weighed
-            on its own and together with the outstanding earlier ones.
-          </p>
-        </div>
+    <Panel>
+      <PanelHead
+        title="Recalculation history"
+        description="Freezing an inventory whose boundary differs from the base year measures the affected facilities against the base-year run and records a candidate here. A change is weighed on its own and together with the outstanding earlier ones."
+      >
         <RoleButton
           allowed={mayWrite(myRole)}
           tooltip={WRITE_TOOLTIP}
-          variant="ghost"
-          className="px-3 py-1.5 text-sm"
+          variant="secondary"
+          size="sm"
           onClick={() => setDecision({ kind: 'raise' })}
         >
           Raise a candidate
         </RoleButton>
-      </div>
+      </PanelHead>
       {baseYear.recalculations.length === 0 && (
-        <p className="mt-4 text-sm text-ink-muted">
-          No recalculation candidates yet. Freezing an inventory whose boundary differs from the
-          base year records one here; a methodology change or a significant error is raised by hand.
-        </p>
+        <PanelBody>
+          <p className="text-sm text-ink-muted">
+            No recalculation candidates yet. Freezing an inventory whose boundary differs from the
+            base year records one here; a methodology change or a significant error is raised by
+            hand.
+          </p>
+        </PanelBody>
       )}
-      <ul className="mt-4 flex flex-col gap-3">
-        {baseYear.recalculations.map((recalculation) => (
-          <li
-            key={recalculation.id}
-            className="rounded-xl border border-teal/10 bg-white/40 p-4 text-sm"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusStyles[recalculation.status]}`}
-              >
-                {recalculation.status}
-              </span>
-              <span className="text-xs text-ink-muted">
-                {new Date(recalculation.createdAt).toLocaleString()}
-                {recalculation.boundaryVersionNo !== null
-                  ? ` · boundary v${recalculation.boundaryVersionNo}`
-                  : ''}
-                {recalculation.affectedPercent !== null
-                  ? ` · ${recalculation.affectedPercent}% of base-year emissions`
-                  : ''}
-                {recalculation.cumulativePercent !== null &&
-                recalculation.cumulativePercent !== recalculation.affectedPercent
-                  ? `, ${recalculation.cumulativePercent}% together with earlier changes`
-                  : ''}
-                {recalculation.affectedPercent !== null
-                  ? `, ${recalculation.aboveThreshold ? 'above' : 'below'} the threshold`
-                  : ''}
-                {recalculation.raisedBy ? ` · raised by ${recalculation.raisedBy}` : ''}
-              </span>
-            </div>
-            <p className="mt-2">{recalculation.reason}</p>
-            {recalculation.status === 'FLAGGED' ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <RoleButton
-                  allowed={mayWrite(myRole)}
-                  tooltip={WRITE_TOOLTIP}
-                  className="px-3 py-1.5 text-xs"
-                  onClick={() => setDecision({ kind: 'recalculate', recalculation })}
-                >
-                  Record recalculated base
-                </RoleButton>
-                <RoleButton
-                  allowed={mayWrite(myRole)}
-                  tooltip={WRITE_TOOLTIP}
-                  variant="ghost"
-                  className="px-3 py-1.5 text-xs"
-                  onClick={() => setDecision({ kind: 'decline', recalculation })}
-                >
-                  Decline
-                </RoleButton>
-              </div>
-            ) : (
-              <p className="mt-2 text-xs text-ink-muted">
-                {recalculation.decidedBy ? `Decided by ${recalculation.decidedBy}` : 'Decided'}
-                {recalculation.decidedAt
-                  ? `, ${new Date(recalculation.decidedAt).toLocaleString()}`
-                  : ''}
-                {recalculation.decisionNote ? ` · ${recalculation.decisionNote}` : ''}
-                {recalculation.status === 'RECALCULATED' && recalculation.runId
-                  ? ` · recalculated base: ${runLabel(recalculation.runId)}`
-                  : ''}
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+      {baseYear.recalculations.length > 0 && (
+        <Table className="[&_tbody_tr:last-child_td]:border-b-0">
+          <tbody>
+            {baseYear.recalculations.map((recalculation) => (
+              <tr key={recalculation.id} className="align-top">
+                <Td className="w-40 align-top">
+                  <StatusDot tone={statusTones[recalculation.status]}>
+                    {recalculation.status}
+                  </StatusDot>
+                </Td>
+                <Td>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-medium">
+                      {new Date(recalculation.createdAt).toLocaleString()}
+                      {recalculation.boundaryVersionNo !== null
+                        ? ` · boundary v${recalculation.boundaryVersionNo}`
+                        : ''}
+                      {recalculation.affectedPercent !== null
+                        ? ` · ${recalculation.affectedPercent}% of base-year emissions`
+                        : ''}
+                      {recalculation.cumulativePercent !== null &&
+                      recalculation.cumulativePercent !== recalculation.affectedPercent
+                        ? `, ${recalculation.cumulativePercent}% together with earlier changes`
+                        : ''}
+                      {recalculation.affectedPercent !== null
+                        ? `, ${recalculation.aboveThreshold ? 'above' : 'below'} the threshold`
+                        : ''}
+                      {recalculation.raisedBy ? ` · raised by ${recalculation.raisedBy}` : ''}
+                    </span>
+                    <span className="text-[13px] text-ink-muted">{recalculation.reason}</span>
+                    {recalculation.status !== 'FLAGGED' && (
+                      <span className="text-[13px] text-ink-muted">
+                        {recalculation.decidedBy
+                          ? `Decided by ${recalculation.decidedBy}`
+                          : 'Decided'}
+                        {recalculation.decidedAt
+                          ? `, ${new Date(recalculation.decidedAt).toLocaleString()}`
+                          : ''}
+                        {recalculation.decisionNote ? ` · ${recalculation.decisionNote}` : ''}
+                        {recalculation.status === 'RECALCULATED' && recalculation.runId
+                          ? ` · recalculated base: ${runLabel(recalculation.runId)}`
+                          : ''}
+                      </span>
+                    )}
+                  </div>
+                </Td>
+                <Td align="right" className="w-80">
+                  {recalculation.status === 'FLAGGED' && (
+                    <div className="flex flex-wrap justify-end gap-1">
+                      <RoleButton
+                        allowed={mayWrite(myRole)}
+                        tooltip={WRITE_TOOLTIP}
+                        size="sm"
+                        onClick={() => setDecision({ kind: 'recalculate', recalculation })}
+                      >
+                        Record recalculated base
+                      </RoleButton>
+                      <RoleButton
+                        allowed={mayWrite(myRole)}
+                        tooltip={WRITE_TOOLTIP}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDecision({ kind: 'decline', recalculation })}
+                      >
+                        Decline
+                      </RoleButton>
+                    </div>
+                  )}
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
 
       {decision?.kind === 'decline' && (
         <DeclineModal
@@ -482,7 +491,7 @@ function RecalculationHistory({
           }}
         />
       )}
-    </GlassCard>
+    </Panel>
   )
 }
 
@@ -566,7 +575,7 @@ function RaiseModal({
           error={validation?.comparisonRunId}
         />
         {error && (
-          <p role="alert" className="text-sm font-medium text-red-600">
+          <p role="alert" className="text-sm font-medium text-danger">
             {error}
           </p>
         )}
@@ -615,7 +624,7 @@ function DeclineModal({
         />
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-sm font-medium text-red-600">
+        <p role="alert" className="mt-2 text-sm font-medium text-danger">
           {error}
         </p>
       )}
@@ -677,7 +686,7 @@ function RecalculateModal({
       <div className="mt-4 flex flex-col gap-3">
         {runsQuery.isPending && <Skeleton className="h-10" />}
         {runsQuery.isSuccess && runs.length === 0 && (
-          <p className="text-sm text-amber-700">
+          <p className="text-sm text-warning">
             The base-year inventory has no runs yet. Reopen it, apply the change, freeze it and
             launch a run first.
           </p>
@@ -702,7 +711,7 @@ function RecalculateModal({
         />
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-sm font-medium text-red-600">
+        <p role="alert" className="mt-2 text-sm font-medium text-danger">
           {error}
         </p>
       )}

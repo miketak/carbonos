@@ -3,8 +3,9 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
-import { GlassCard } from '../../../components/GlassCard'
 import { HelpLink } from '../../../components/HelpLink'
+import { Panel, PanelHead } from '../../../components/Panel'
+import { Table, Td, Th, TwoLine } from '../../../components/Table'
 import { useToast } from '../../../components/toast'
 import { ApiError, refusalMessage } from '../../../lib/api'
 import { useSession } from '../../auth/useSession'
@@ -65,35 +66,33 @@ export function MembersCard({ organization }: { organization: Organization }) {
   }
 
   return (
-    <GlassCard className="p-6">
-      <div className="flex items-center gap-2">
-        <h2 className="text-xl">Members</h2>
+    <Panel>
+      <PanelHead
+        title="Members"
+        description={`Who works on this organization and in which role. Preparers record, classify and run; reviewers also designate final runs, publish and create corrections; verifiers read only. Every act is recorded under the member's own email.${
+          organization.myRole
+            ? ` Your role: ${roleLabels[organization.myRole as OrgRole] ?? organization.myRole}.`
+            : ''
+        }`}
+      >
         <HelpLink topic="roles" />
-      </div>
-      <p className="text-sm text-ink-muted">
-        Who works on this organization and in which role. Preparers record, classify and run;
-        reviewers also designate final runs, publish and create corrections; verifiers read only.
-        Every act is recorded under the member's own email.
-        {organization.myRole &&
-          ` Your role: ${roleLabels[organization.myRole as OrgRole] ?? organization.myRole}.`}
-      </p>
+      </PanelHead>
       {membersQuery.data && membersQuery.data.length > 0 && (
-        <table className="mt-4 w-full text-left text-sm">
+        <Table className={canManage ? '[&_tbody_tr:last-child_td]:border-b-0' : ''}>
           <thead>
-            <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-              <th className="px-3 py-2 font-semibold">Member</th>
-              <th className="px-3 py-2 font-semibold">Role</th>
-              {canManage && <th className="px-3 py-2" />}
+            <tr>
+              <Th>Member</Th>
+              <Th>Role</Th>
+              {canManage && <Th className="w-28" />}
             </tr>
           </thead>
           <tbody>
             {membersQuery.data.map((member) => (
-              <tr key={member.id} className="border-b border-teal/5 last:border-0">
-                <td className="px-3 py-2">
-                  <span className="font-medium">{member.displayName}</span>
-                  <span className="block text-xs text-ink-muted">{member.email}</span>
-                </td>
-                <td className="px-3 py-2">
+              <tr key={member.id}>
+                <Td>
+                  <TwoLine primary={member.displayName} secondary={member.email} />
+                </Td>
+                <Td>
                   {canManage ? (
                     <select
                       aria-label={`Role of ${member.displayName}`}
@@ -107,7 +106,7 @@ export function MembersCard({ organization }: { organization: Organization }) {
                           },
                         )
                       }
-                      className="rounded-lg border border-teal/40 bg-white/70 px-2 py-1 text-sm"
+                      className="min-h-9 min-w-40 rounded-lg border border-hairline-strong bg-surface px-2 text-sm text-ink transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-focus/40 focus:outline-none"
                     >
                       {Object.entries(roleLabels).map(([value, label]) => (
                         <option key={value} value={value}>
@@ -118,12 +117,12 @@ export function MembersCard({ organization }: { organization: Organization }) {
                   ) : (
                     roleLabels[member.role]
                   )}
-                </td>
+                </Td>
                 {canManage && (
-                  <td className="px-3 py-2 text-right">
+                  <Td align="right">
                     <Button
                       variant="ghost"
-                      className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                      size="sm"
                       aria-label={`Remove ${member.displayName}`}
                       onClick={() =>
                         remove.mutate(member.id, {
@@ -134,15 +133,19 @@ export function MembersCard({ organization }: { organization: Organization }) {
                     >
                       Remove
                     </Button>
-                  </td>
+                  </Td>
                 )}
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       )}
       {canManage && (
-        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-3 md:items-end" noValidate>
+        <form
+          onSubmit={submit}
+          className="grid gap-3 border-t border-hairline p-5 md:grid-cols-[1.6fr_1.2fr_auto] md:items-end"
+          noValidate
+        >
           <InputField
             label="Email of an existing account"
             type="email"
@@ -165,14 +168,14 @@ export function MembersCard({ organization }: { organization: Organization }) {
           </SelectField>
           <Button
             type="submit"
-            className="px-4 py-1.5 text-sm"
+            variant="secondary"
             busy={add.isPending}
             disabled={email.trim() === ''}
           >
             Add member
           </Button>
           {addError && (
-            <p role="alert" className="text-xs font-medium text-red-600 md:col-span-3">
+            <p role="alert" className="text-[13px] font-medium text-danger md:col-span-3">
               {addError === UNKNOWN_EMAIL ? (
                 <>
                   No account with that email. Add the user under{' '}
@@ -192,6 +195,6 @@ export function MembersCard({ organization }: { organization: Organization }) {
           )}
         </form>
       )}
-    </GlassCard>
+    </Panel>
   )
 }
