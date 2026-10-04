@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-02
+last_reviewed: 2026-10-04
 ---
 
 # Run the checks
@@ -74,7 +74,7 @@ cd frontend && npm run lint && npm run format:check && npm test && npm run build
 
 | Step | Tool | When it fails |
 | --- | --- | --- |
-| `lint` | oxlint | Fix the reported rule; there is no auto-fix. |
+| `lint` | oxlint, then the design-token guard (`scripts/check-design-tokens.mjs`) | Fix the reported rule; there is no auto-fix. The guard names a feature file that reaches for the brand palette, a tint, a blur, a monospace face or a hex colour: use the kit and the token utilities (spec 10, ADR 0009). |
 | `format:check` | Prettier | Run `npm run format` and commit the result. |
 | `test` | vitest | Run one file: `npx vitest run src/features/ghg/ActivityPage.test.tsx`. |
 | `build` | TypeScript and Vite | The TypeScript error names the file and line; `strict` is on and `any` is not allowed. |

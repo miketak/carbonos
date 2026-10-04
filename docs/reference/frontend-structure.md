@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-14
+last_reviewed: 2026-10-04
 ---
 
 # Frontend structure
@@ -16,7 +16,7 @@ flowchart TB
     accDescr: app wires routing and providers; features hold pages, components and queries per backend module; components is shared UI; lib is shared infrastructure that every feature calls.
     app["src/app\nApp.tsx routes, providers.tsx"]
     features["src/features/*\nauth, access, admin, profile, ghg, home"]
-    components["src/components\nButton, Field, Modal, Drawer, Tabs, GlassCard, toast"]
+    components["src/components\nSidebar, PageHeader, Panel, Table, Button, Field, Modal, Drawer, Tabs, toast"]
     lib["src/lib\napi(), validate, useCountUp, useShortcuts"]
     app --> features
     features --> components
@@ -30,7 +30,7 @@ flowchart TB
 | --- | --- | --- |
 | `src/app` | `App.tsx` (routes), `providers.tsx` (TanStack Query client, router, toasts) | Wiring only. |
 | `src/features/<name>` | Pages, feature components under `components/`, `api.ts` (typed calls), `use<Name>.ts` (TanStack Query hooks), tests beside the code | A feature never imports another feature's internals. |
-| `src/components` | Shared UI: `AppHeader` (the CarbonOS top bar both workspaces wear) and the `AccountMenu` it carries in the top right, `Wordmark` (the CarbonOS lockup every surface shows: the `CarbonOsMark` symbol, the capitalised name and the ECORIV byline; `public/favicon.svg` is drawn from the same numbers in `carbonOsMarkGeometry.ts`), `LoadingCard`, `Button`, `InputField`, `SelectField` and `TextAreaField`, `Modal`, `Drawer` (a panel beside the page), `Tabs`, `StatusPill`, `MonthField`, `ProgressBar`, `GlassCard`, `Skeleton`, the toast host | No business logic. |
+| `src/components` | Shared UI, the kit of spec 10: `Sidebar` (the rail of the workspace and the administration area, with the `AccountMenu` in its foot) and `AppHeader` (the plain top bar of the organizations list and the profile), `Wordmark` (the CarbonOS lockup: the `CarbonOsMark` symbol and the two-tone name; `public/favicon.svg` is drawn from the same numbers in `carbonOsMarkGeometry.ts`), `PageHeader` (Back, breadcrumb, help, status line, title, chips, subtitle, actions), `Panel`, `Table` and its cells, `FilterRow` with `SearchField` and `FilterSelect`, `StatStrip`, `Tabs`, `Chip`, `StatusDot`, `Banner`, `SplitView` (a summary list beside a record's detail), `Popover`, `Button`, `InputField`, `SelectField` and `TextAreaField`, `MonthField`, `Modal`, `Drawer` (a panel beside the page), `ProgressBar`, `Skeleton`, `LoadingCard`, the toast host. Colour comes from the tokens in `index.css` (`src/lib/theme.ts` keeps the light or dark choice), never from the brand palette. | No business logic. |
 | `src/lib` | `api.ts` (the fetch wrapper), `validate.ts` (numeric checks), `useCountUp.ts`, `useShortcuts.ts` (single-key page shortcuts that stay quiet while typing) | Shared infrastructure only. |
 | `src/test` | Render helpers with providers, the API mock | |
 
@@ -66,13 +66,14 @@ the open record in the URL (`activityFilters.ts`, `inventoryFilters.ts`),
 eliding defaults and resetting the page whenever the list changes; one server
 query that returns the page **and** the counts, with
 `placeholderData: (previous) => previous` so a filter change does not blank
-the table; a banner above the card turning the counts into a sentence with
-one action (`CompletenessBanner`, `PreflightBanner`); one `GlassCard` holding
-`Tabs`, the toolbar, the body and a footer bar; a body with exactly three
-states (skeleton, filtered-empty, cold-empty); a non-modal `Drawer` keyed off
-the `record` parameter, taking the current page so previous and next need no
-fetch (`ActivityDrawer`, `AssignmentDrawer`); `RoleButton` for write gating;
-and `useShortcuts` with a cursor validated against the page.
+the table; a `StatStrip` above the table turning the counts into figures with one
+action (`CompletenessBanner`), or the pre-flight chip and popover in the page
+header (`PreflightChip`); `Tabs`, a `FilterRow`, the table and a footer; a body
+with exactly three states (skeleton, filtered-empty, cold-empty); a
+`SplitView` keyed off the `record` parameter, the register as a summary list
+beside the record's detail, taking the current page so previous and next need
+no fetch (`ActivityDrawer`, `AssignmentDetail`); `RoleButton` for write
+gating; and `useShortcuts` with a cursor validated against the page.
 
 Because the view is the URL, a link reopens it. That is the property to
 preserve when editing either screen: a filter moved back into `useState` is a
@@ -130,7 +131,7 @@ the server checks of spec 01.2 stay the authority.
 | --- | --- |
 | `npm run dev` | Vite on 5173, proxying `/api` to 8080 |
 | `npm run build` | `tsc -b && vite build` |
-| `npm run lint` | oxlint |
+| `npm run lint` | oxlint, then `scripts/check-design-tokens.mjs`, which fails on a brand colour, a tint, a blur, a monospace face or a hex literal outside the landing page and the style sheet (spec 10, ADR 0009) |
 | `npm run format` and `format:check` | Prettier |
 | `npm test` and `test:watch` | vitest |
 | `npm run preview` | Serves the production build |

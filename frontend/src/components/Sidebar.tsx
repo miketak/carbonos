@@ -71,7 +71,7 @@ export function Sidebar({
         {section.badge && section.badge.count > 0 && (
           <span
             title={section.badge.title}
-            className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-sidebar-accent px-1.5 text-xs font-semibold text-[#0c2b30]"
+            className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-sidebar-accent px-1.5 text-xs font-semibold text-sidebar-bg"
           >
             {section.badge.count}
             <span className="sr-only"> {section.badge.srLabel}</span>

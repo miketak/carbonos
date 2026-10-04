@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { GlassCard } from '../../components/GlassCard'
+import { Panel } from '../../components/Panel'
 import { HelpBreadcrumb } from './HelpBreadcrumb'
 import { HelpNotFound } from './HelpNotFound'
 import { groupBySlug, manifest } from './manifest'
@@ -31,7 +31,7 @@ export function TopicPage() {
           if (!page) return null
           return (
             <li key={articleSlug}>
-              <GlassCard className="help-card">
+              <Panel className="help-card">
                 <h2 className="help-card-title">
                   <Link to={`/help/${articleSlug}`}>
                     {group.series && page.step ? `${page.step}. ` : ''}
@@ -47,7 +47,7 @@ export function TopicPage() {
                 >
                   View topic
                 </Link>
-              </GlassCard>
+              </Panel>
             </li>
           )
         })}
