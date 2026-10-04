@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/compile-help.mjs --if-present && tsc -b && vite build",
-    "lint": "oxlint",
+    "lint": "oxlint && node scripts/check-design-tokens.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

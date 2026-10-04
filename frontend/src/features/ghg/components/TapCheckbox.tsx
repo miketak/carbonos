@@ -21,7 +21,7 @@ export function TapCheckbox({
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        className="h-5 w-5 accent-teal-deep disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-5 w-5 accent-primary disabled:cursor-not-allowed disabled:opacity-60"
       />
     </label>
   )
