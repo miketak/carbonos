@@ -139,7 +139,7 @@ test('records a supplier density with its source', async () => {
   })
   renderPage()
 
-  const card = (await screen.findByText('Densities')).closest('div')!
+  const card = await screen.findByRole('region', { name: 'Densities' })
   await user.type(within(card).getByLabelText('Material'), 'Diesel (GOIL)')
   await user.type(within(card).getByLabelText('kg per litre'), '0.8325')
   await user.type(within(card).getByLabelText('Source'), 'GOIL CoA 2025-03')

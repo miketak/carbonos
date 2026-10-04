@@ -2,7 +2,10 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Drawer } from '../../../components/Drawer'
 import { SelectField, TextAreaField } from '../../../components/Field'
+import { Panel } from '../../../components/Panel'
 import { Skeleton } from '../../../components/Skeleton'
+import { Stat, StatStrip } from '../../../components/StatStrip'
+import { Table, Td, Th } from '../../../components/Table'
 import { useToast } from '../../../components/toast'
 import { fieldErrors, refusalMessage } from '../../../lib/api'
 import { formatCo2e, formatPeriod } from '../format'
@@ -24,6 +27,13 @@ const caseLabels: Record<RecalculationCase, string> = {
   ERRATUM_ON_REPORTED_YEAR:
     'Erratum: the edition corrects a wrong value in a year already reported',
 }
+
+/*
+ * The notices in the drawer stay paragraphs (a test reads them as such), so
+ * they carry the Banner's look by hand: a hairline box with a coloured edge.
+ */
+const noticeClasses =
+  'rounded-lg border border-hairline border-l-[3px] bg-surface px-4 py-3.5 text-sm'
 
 function percent(value: number | null): string {
   if (value == null) return 'not measured'
@@ -47,19 +57,19 @@ function ApartGroup({
 }) {
   if (rows.length === 0) return null
   return (
-    <section className="rounded-lg border border-teal/15 bg-white/60 p-3">
-      <h3 className="text-sm font-semibold text-dark-teal">
+    <Panel className="p-4">
+      <h3 className="text-sm font-semibold">
         {heading} ({rows.length})
       </h3>
-      <p className="mt-1 text-xs text-ink-muted">{note}</p>
-      <ul className="mt-2 flex flex-col gap-1 text-xs">
+      <p className="mt-1 text-[13px] text-ink-muted">{note}</p>
+      <ul className="mt-2 flex flex-col gap-1 text-[13px]">
         {rows.map((row) => (
           <li key={row.code}>
-            <span className="font-mono">{row.code}</span> · {row.name}
+            {row.code} · {row.name}
           </li>
         ))}
       </ul>
-    </section>
+    </Panel>
   )
 }
 
@@ -142,17 +152,15 @@ export function AdoptionDiffDrawer({
       title={notice.editionName}
       subtitle={
         <>
-          <span className="font-mono text-xs">{notice.editionId}</span>
-          {notice.predecessorEditionId && (
-            <span className="text-xs">in place of {notice.predecessorEditionId}</span>
-          )}
-          {notice.appliesFrom && <span className="text-xs">applies from {notice.appliesFrom}</span>}
+          <span>{notice.editionId}</span>
+          {notice.predecessorEditionId && <span>in place of {notice.predecessorEditionId}</span>}
+          {notice.appliesFrom && <span>applies from {notice.appliesFrom}</span>}
         </>
       }
       onClose={onClose}
       footer={
         open ? (
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <RoleButton
               allowed={allowed}
               tooltip={APPROVE_TOOLTIP}
@@ -193,9 +201,9 @@ export function AdoptionDiffDrawer({
       )}
 
       {diff && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           {diff.gwpBasisChanged && (
-            <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+            <p role="status" className={`${noticeClasses} border-l-warning-dot`}>
               This edition moves the Global Warming Potential basis from {diff.currentGwpBasis} to{' '}
               {diff.newGwpBasis}. Chapter 1 requires one basis across the inventory and across
               years, so it cannot be answered as a vintage progression.
@@ -203,7 +211,7 @@ export function AdoptionDiffDrawer({
           )}
 
           {diff.lockedPeriod && (
-            <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+            <p role="status" className={`${noticeClasses} border-l-warning-dot`}>
               {diff.appliesFrom} falls inside {diff.lockedPeriod.name} (
               {formatPeriod(diff.lockedPeriod.periodStart, diff.lockedPeriod.periodEnd)}), which is{' '}
               {diff.lockedPeriod.status.toLowerCase()}. A reported period keeps the factors it
@@ -215,89 +223,78 @@ export function AdoptionDiffDrawer({
             </p>
           )}
 
-          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="text-xs text-ink-muted">Rows moving</dt>
-              <dd className="font-semibold">{notice.rowsAffected}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-ink-muted">Over five percent</dt>
-              <dd className="font-semibold">{notice.rowsOverThreshold}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-ink-muted">Estimated movement</dt>
-              <dd className="font-semibold">{movement(diff.estimatedKgCo2eDelta)}</dd>
-            </div>
-          </dl>
-          <p className="text-xs text-ink-muted">
-            {diff.estimatedOver
-              ? `The movement is an estimate over ${diff.estimatedOver}, using the activity data already recorded. That data can change before the next run.`
-              : 'There is no open period to estimate the movement over yet.'}
-            {diff.hasBaseYear && diff.affectedPercent != null
-              ? ` It is ${diff.affectedPercent}% of base-year emissions, measured against your ${diff.thresholdPercent}% significance threshold.`
-              : ' The organization has no base year, so no recalculation candidate can be raised.'}
-          </p>
+          <div className="flex flex-col gap-3">
+            <StatStrip label="The movement this edition makes">
+              <Stat label="Rows moving" value={notice.rowsAffected} />
+              <Stat label="Over five percent" value={notice.rowsOverThreshold} />
+              <Stat label="Estimated movement" value={movement(diff.estimatedKgCo2eDelta)} />
+            </StatStrip>
+            <p className="text-sm text-ink-muted">
+              {diff.estimatedOver
+                ? `The movement is an estimate over ${diff.estimatedOver}, using the activity data already recorded. That data can change before the next run.`
+                : 'There is no open period to estimate the movement over yet.'}
+              {diff.hasBaseYear && diff.affectedPercent != null
+                ? ` It is ${diff.affectedPercent}% of base-year emissions, measured against your ${diff.thresholdPercent}% significance threshold.`
+                : ' The organization has no base year, so no recalculation candidate can be raised.'}
+            </p>
+          </div>
 
           <section>
-            <h3 className="text-sm font-semibold text-dark-teal">
-              What moves ({diff.rows.length})
-            </h3>
-            <div className="mt-2 overflow-x-auto">
-              <table className="w-full min-w-[36rem] text-left text-xs">
-                <thead className="text-ink-muted">
+            <h3 className="text-base font-semibold">What moves ({diff.rows.length})</h3>
+            <div className="mt-2">
+              <Table>
+                <thead>
                   <tr>
-                    <th scope="col" className="py-1 pr-2 font-medium">
-                      Factor
-                    </th>
-                    <th scope="col" className="py-1 pr-2 font-medium">
+                    <Th scope="col">Factor</Th>
+                    <Th scope="col" align="right">
                       Now
-                    </th>
-                    <th scope="col" className="py-1 pr-2 font-medium">
+                    </Th>
+                    <Th scope="col" align="right">
                       New
-                    </th>
-                    <th scope="col" className="py-1 pr-2 font-medium">
+                    </Th>
+                    <Th scope="col" align="right">
                       Change
-                    </th>
-                    <th scope="col" className="py-1 pr-2 font-medium">
+                    </Th>
+                    <Th scope="col" align="right">
                       Estimated movement
-                    </th>
+                    </Th>
                   </tr>
                 </thead>
                 <tbody>
                   {diff.rows.map((row) => (
-                    <tr key={row.code} className="border-t border-teal/10 align-top">
-                      <th scope="row" className="py-1.5 pr-2 text-left font-normal">
-                        <span className="font-semibold">{row.name}</span>
-                        <span className="block font-mono text-[11px] text-ink-muted">
-                          {row.code} · per {row.unit}
-                        </span>
-                        {row.gasesChanged.length > 0 && (
-                          <span className="block text-[11px] text-ink-muted">
-                            Gases changed: {row.gasesChanged.join(', ')}
+                    <tr key={row.code}>
+                      <Td>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium">{row.name}</span>
+                          <span className="text-[13px] text-ink-muted">
+                            {row.code} · per {row.unit}
                           </span>
-                        )}
-                        {row.provenanceChanged && (
-                          <span className="block text-[11px] text-ink-muted">
-                            Provenance changed
-                            {row.gwpBasisChanged ? ', including the GWP basis' : ''}
-                          </span>
-                        )}
-                      </th>
-                      <td className="py-1.5 pr-2 tabular-nums">{row.currentKgCo2ePerUnit}</td>
-                      <td className="py-1.5 pr-2 tabular-nums">{row.newKgCo2ePerUnit}</td>
-                      <td className="py-1.5 pr-2 tabular-nums">
+                          {row.gasesChanged.length > 0 && (
+                            <span className="text-[13px] text-ink-muted">
+                              Gases changed: {row.gasesChanged.join(', ')}
+                            </span>
+                          )}
+                          {row.provenanceChanged && (
+                            <span className="text-[13px] text-ink-muted">
+                              Provenance changed
+                              {row.gwpBasisChanged ? ', including the GWP basis' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </Td>
+                      <Td align="right">{row.currentKgCo2ePerUnit}</Td>
+                      <Td align="right">{row.newKgCo2ePerUnit}</Td>
+                      <Td align="right">
                         {row.absoluteChange ?? 'not stated'}
-                        <span className="block text-[11px] text-ink-muted">
+                        <span className="block text-[13px] text-ink-muted">
                           {percent(row.percentChange)}
                         </span>
-                      </td>
-                      <td className="py-1.5 pr-2 tabular-nums">
-                        {movement(row.estimatedKgCo2eDelta)}
-                      </td>
+                      </Td>
+                      <Td align="right">{movement(row.estimatedKgCo2eDelta)}</Td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           </section>
 
@@ -318,27 +315,25 @@ export function AdoptionDiffDrawer({
           />
 
           {diff.earlierPeriods.length > 0 && (
-            <section className="rounded-lg border border-teal/15 bg-white/60 p-3">
-              <h3 className="text-sm font-semibold text-dark-teal">
+            <Panel className="p-4">
+              <h3 className="text-sm font-semibold">
                 Earlier periods ({diff.earlierPeriods.length})
               </h3>
-              <p className="mt-1 text-xs text-ink-muted">
+              <p className="mt-1 text-[13px] text-ink-muted">
                 These end before {diff.appliesFrom}, so they will raise coverage warnings once the
                 edition is accepted. The warning is correct and is what a vintage means.
               </p>
-              <ul className="mt-2 flex flex-col gap-1 text-xs">
+              <ul className="mt-2 flex flex-col gap-1 text-[13px]">
                 {diff.earlierPeriods.map((period) => (
                   <li key={period.inventoryId}>
                     {period.name} ({formatPeriod(period.periodStart, period.periodEnd)})
                   </li>
                 ))}
               </ul>
-            </section>
+            </Panel>
           )}
 
-          <p className="text-[11px] text-ink-muted">
-            Diff hash <span className="font-mono">{diff.diffHash.slice(0, 16)}…</span>
-          </p>
+          <p className="text-[13px] text-ink-muted">Diff hash {diff.diffHash.slice(0, 16)}…</p>
 
           {open && (
             <form id="adoption-decision" onSubmit={submit} className="flex flex-col gap-3">
@@ -365,12 +360,12 @@ export function AdoptionDiffDrawer({
                 hint="Required when a vintage progression is at or above your significance threshold, because that is the case a verifier questions."
               />
               {diff.recalculationWarning && (
-                <p role="note" className="rounded-lg bg-teal/10 p-3 text-sm text-dark-teal">
+                <p role="note" className={`${noticeClasses} border-l-info`}>
                   {diff.recalculationWarning}
                 </p>
               )}
               {refusal && (
-                <p role="alert" className="text-sm text-red-700">
+                <p role="alert" className="text-sm text-danger">
                   {refusal}
                 </p>
               )}

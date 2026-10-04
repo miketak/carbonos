@@ -3,8 +3,9 @@ import type { FormEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { Panel, PanelBody, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { Table, Td, Th } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail, refusalMessage } from '../../lib/api'
 import { accountLabel, organizationLabel } from '../../lib/organizationLabel'
@@ -33,19 +34,19 @@ export function OrganizationSettingsPage() {
 
   if (organizationQuery.isPending) {
     return (
-      <div aria-label="Loading the organization settings" className="mx-auto max-w-3xl">
+      <div aria-label="Loading the organization settings" className="flex flex-col gap-4">
         <Skeleton className="h-9 w-64" />
-        <Skeleton className="mt-4 h-56" />
+        <Skeleton className="h-56" />
       </div>
     )
   }
 
   if (!organizationQuery.data) {
     return (
-      <GlassCard className="mx-auto max-w-3xl p-10 text-center">
-        <h1 className="text-lg">The organization could not be loaded</h1>
+      <Panel className="p-10 text-center">
+        <h2 className="text-lg font-semibold">The organization could not be loaded</h2>
         <p className="mt-1 text-sm text-ink-muted">Reload to try again.</p>
-      </GlassCard>
+      </Panel>
     )
   }
 
@@ -113,120 +114,122 @@ function Settings({ organization }: { organization: Organization }) {
   }
 
   return (
-    <div>
-      <GlassCard className="p-6">
-        <h2 className="text-xl">Details</h2>
-        <p className="text-sm text-ink-muted">
-          The name and the account number {accountLabel(organization.accountNo)} identify the
-          organization across the product; the address and contact print on the report header (spec
-          07.4). Two organizations may share a name; the account number never changes.
-        </p>
-        {/* noValidate as everywhere else: the server is the authority and its
-            refusal is what the reader sees, rather than a silent browser block */}
-        <form onSubmit={submit} className="mt-5 flex flex-col gap-5" noValidate>
-          <InputField
-            label="Name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            error={errors?.name}
-          />
-          <InputField
-            label="Address"
-            value={address}
-            onChange={(event) => setAddress(event.target.value)}
-            error={errors?.address}
-            hint="Optional. Printed on the report header."
-          />
-          <InputField
-            label="Contact"
-            value={contact}
-            onChange={(event) => setContact(event.target.value)}
-            error={errors?.contact}
-            hint="Optional. Who a reader of the report should write to."
-          />
-          {confirming && (
-            <DuplicateNameNotice
-              detail={problemDetail(save.error)}
-              duplicates={duplicates}
-              proceed="Save anyway"
+    <div className="flex flex-col gap-6">
+      <Panel>
+        <PanelHead
+          title="Details"
+          description={`The name and the account number ${accountLabel(organization.accountNo)} identify the organization across the product; the address and contact print on the report header (spec 07.4). Two organizations may share a name; the account number never changes.`}
+        />
+        <PanelBody>
+          {/* noValidate as everywhere else: the server is the authority and its
+              refusal is what the reader sees, rather than a silent browser block */}
+          <form onSubmit={submit} className="grid gap-x-6 gap-y-5 md:grid-cols-2" noValidate>
+            <div className="md:col-span-2">
+              <InputField
+                label="Name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                error={errors?.name}
+              />
+            </div>
+            <InputField
+              label="Address"
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+              error={errors?.address}
+              hint="Optional. Printed on the report header."
             />
-          )}
-          {error && (
-            <p role="alert" className="text-sm text-red-600">
-              {error}
-            </p>
-          )}
-          <div>
-            <Button type="submit" busy={save.isPending}>
-              {confirming ? 'Save anyway' : 'Save details'}
-            </Button>
-          </div>
-        </form>
-      </GlassCard>
+            <InputField
+              label="Contact"
+              value={contact}
+              onChange={(event) => setContact(event.target.value)}
+              error={errors?.contact}
+              hint="Optional. Who a reader of the report should write to."
+            />
+            {confirming && (
+              <div className="md:col-span-2">
+                <DuplicateNameNotice
+                  detail={problemDetail(save.error)}
+                  duplicates={duplicates}
+                  proceed="Save anyway"
+                />
+              </div>
+            )}
+            {error && (
+              <p role="alert" className="text-sm text-danger md:col-span-2">
+                {error}
+              </p>
+            )}
+            <div className="flex justify-end md:col-span-2">
+              <Button type="submit" busy={save.isPending}>
+                {confirming ? 'Save anyway' : 'Save details'}
+              </Button>
+            </div>
+          </form>
+        </PanelBody>
+      </Panel>
 
-      <div className="mt-8">
-        <MembersCard organization={organization} />
-      </div>
+      <MembersCard organization={organization} />
 
-      <h2 className="mt-8 mb-3 text-lg">History</h2>
-      <GlassCard className="overflow-x-auto">
+      <Panel>
+        <PanelHead title="History" />
         {eventsQuery.isPending && (
-          <div aria-label="Loading the organization history" className="flex flex-col gap-2 p-4">
+          <PanelBody aria-label="Loading the organization history">
             <Skeleton className="h-8" />
-          </div>
+          </PanelBody>
         )}
         {eventsQuery.data && events.length === 0 && (
-          <p className="p-6 text-sm text-ink-muted">
-            Nothing has happened to the organization itself yet. Membership, support access, changes
-            to legal entities, facilities and source streams, and deletion are recorded here; what
-            happens inside an inventory is in its own history.
-          </p>
+          <PanelBody>
+            <p className="text-sm text-ink-muted">
+              Nothing has happened to the organization itself yet. Membership, support access,
+              changes to legal entities, facilities and source streams, and deletion are recorded
+              here; what happens inside an inventory is in its own history.
+            </p>
+          </PanelBody>
         )}
         {events.length > 0 && (
-          <table className="w-full text-left text-sm">
+          <Table className="[&_tbody_tr:last-child_td]:border-b-0">
             <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Action</th>
-                <th className="px-4 py-3 font-semibold">Who</th>
-                <th className="px-4 py-3 font-semibold">When</th>
-                <th className="px-4 py-3 font-semibold">Reason</th>
+              <tr>
+                <Th>Action</Th>
+                <Th>Who</Th>
+                <Th>When</Th>
+                <Th>Reason</Th>
               </tr>
             </thead>
             <tbody>
               {events.map((event) => (
-                <tr key={event.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-4 py-3 font-medium">{actionLabels[event.action]}</td>
-                  <td className="px-4 py-3 text-ink-muted">{event.actor}</td>
-                  <td className="px-4 py-3 text-ink-muted">{formatDateTime(event.at)}</td>
-                  <td className="px-4 py-3 text-ink-muted">{event.reason}</td>
+                <tr key={event.id}>
+                  <Td className="font-medium">{actionLabels[event.action]}</Td>
+                  <Td>{event.actor}</Td>
+                  <Td className="whitespace-nowrap">{formatDateTime(event.at)}</Td>
+                  <Td className="text-ink-muted">{event.reason}</Td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
-      </GlassCard>
+      </Panel>
 
-      <h2 className="mt-8 mb-3 text-lg text-red-700">Danger zone</h2>
-      {/* Not a GlassCard: this one has to look unlike the cards above it, and a
-          border colour passed to GlassCard loses to its own anyway, because both
-          are border-colour utilities and the generated stylesheet decides, not
-          the order of the class attribute. The tinted panel is the warning
-          surface ImportActivitiesModal already uses. */}
-      <div className="rounded-xl border border-red-200 bg-red-50/60 p-6">
-        <h3 className="font-medium text-red-800">Delete this organization</h3>
-        <p className="mt-1 text-sm text-red-700/80">
-          Everything under it goes: facilities, activity data, inventories and runs. An organization
-          with a published record cannot be deleted. You will be asked to type the name and give a
-          reason, and the deletion is kept (spec 01.3).
-        </p>
-        <Button
-          variant="ghost"
-          className="mt-4 border border-red-300 bg-white/70 text-red-700 hover:bg-red-100"
-          onClick={() => setDeleting(true)}
-        >
-          Delete organization
-        </Button>
-      </div>
+      {/* spec 10: the one panel that has to look unlike the others carries the danger border;
+          the important flag settles which border-colour utility wins, since both are the same
+          property and the generated stylesheet decides the order, not the class attribute */}
+      <Panel className="border-danger-dot!">
+        <PanelHead title={<span className="text-danger">Danger zone</span>} />
+        <PanelBody className="flex flex-wrap items-center justify-between gap-4">
+          <div className="max-w-3xl">
+            <h3 className="font-semibold">Delete this organization</h3>
+            <p className="mt-1 text-sm text-ink-muted">
+              Everything under it goes: facilities, activity data, inventories and runs. An
+              organization with a published record cannot be deleted. You will be asked to type the
+              name and give a reason, and the deletion is kept (spec 01.3).
+            </p>
+          </div>
+          <Button variant="secondary" className="text-danger" onClick={() => setDeleting(true)}>
+            Delete organization
+          </Button>
+        </PanelBody>
+      </Panel>
 
       {deleting && (
         <DeleteOrganizationDialog

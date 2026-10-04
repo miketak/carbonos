@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Button } from '../../../components/Button'
 import { Drawer } from '../../../components/Drawer'
-import { InputField, SelectField } from '../../../components/Field'
+import { FilterRow, FilterSelect, SearchField } from '../../../components/FilterRow'
 import { Skeleton } from '../../../components/Skeleton'
+import { StatusDot } from '../../../components/StatusDot'
+import { Table, TableFooter, Td } from '../../../components/Table'
 import { refusalMessage } from '../../../lib/api'
 import { usePackRowsQuery } from '../useGhg'
 import type { FactorPack, PackRow } from '../api'
@@ -51,105 +53,119 @@ export function PackRowsDrawer({ organizationId, pack, onClose }: PackRowsDrawer
       }
       onClose={onClose}
     >
-      <p className="text-sm text-ink-muted">
-        Reading a pack changes nothing. Import it from the factors page when you want its rows in
-        this organization.
-      </p>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <InputField
-          label="Search"
-          value={search}
-          placeholder="A code, a name or a detail"
-          onChange={(event) => {
-            setSearch(event.target.value)
-            setPage(0)
-          }}
-        />
-        <SelectField
-          label="Publisher's category"
-          value={category}
-          onChange={(event) => {
-            setCategory(event.target.value)
-            setPage(0)
-          }}
-        >
-          <option value="">Every category</option>
-          {(rows.data?.categories ?? []).map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </SelectField>
-      </div>
-
-      {rows.isPending && <Skeleton className="mt-4 h-40" />}
-      {rows.isError && (
-        <p role="alert" className="mt-4 text-sm font-medium text-red-600">
-          {refusalMessage(rows.error)}
+      <div className="flex flex-col gap-5">
+        <p className="text-ink-muted">
+          Reading a pack changes nothing. Import it from the factors page when you want its rows in
+          this organization.
         </p>
-      )}
 
-      {rows.data && rows.data.rows.length === 0 && (
-        <p className="mt-4 text-sm text-ink-muted">No factor in this pack matches.</p>
-      )}
+        <FilterRow
+          search={
+            <SearchField
+              label="Search"
+              value={search}
+              placeholder="A code, a name or a detail"
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setPage(0)
+              }}
+            />
+          }
+        >
+          <FilterSelect
+            label="Publisher's category"
+            value={category}
+            onChange={(event) => {
+              setCategory(event.target.value)
+              setPage(0)
+            }}
+          >
+            <option value="">Every category</option>
+            {(rows.data?.categories ?? []).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </FilterSelect>
+        </FilterRow>
 
-      {rows.data && rows.data.rows.length > 0 && (
-        <ul className="mt-4 grid gap-0">
-          {rows.data.rows.map((row: PackRow) => (
-            <li
-              key={row.code}
-              className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-teal/5 py-2 last:border-0"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="font-medium">{row.name}</span>
-                <span className="block text-xs text-ink-muted">
-                  {[row.sourceCategory, row.sourceActivity, row.sourceDetail]
-                    .filter(Boolean)
-                    .join(' / ')}
-                </span>
-                <span className="block font-mono text-xs break-all text-ink-muted">{row.code}</span>
-              </span>
-              <span className="text-right">
-                <span className="block tabular-nums">
-                  {row.kgCo2ePerUnit} <span className="text-ink-muted">kg CO2e</span>
-                </span>
-                <span className="block text-xs text-ink-muted">per {row.unit}</span>
-                {row.co2eOnly && <span className="block text-xs text-ink-muted">CO2e only</span>}
-                {!row.approved && (
-                  <span className="block text-xs font-semibold text-amber-700">Not approved</span>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+        {rows.isPending && <Skeleton className="h-40" />}
+        {rows.isError && (
+          <p role="alert" className="text-sm font-medium text-danger">
+            {refusalMessage(rows.error)}
+          </p>
+        )}
 
-      {rows.data && total > PAGE_SIZE && (
-        <div className="mt-4 flex items-center justify-between text-sm">
-          <span className="text-ink-muted">
+        {rows.data && rows.data.rows.length === 0 && (
+          <p className="text-sm text-ink-muted">No factor in this pack matches.</p>
+        )}
+
+        {rows.data && rows.data.rows.length > 0 && (
+          <Table>
+            <tbody>
+              {rows.data.rows.map((row: PackRow) => (
+                <tr key={row.code}>
+                  <Td>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-medium">{row.name}</span>
+                      <span className="text-[13px] text-ink-muted">
+                        {[row.sourceCategory, row.sourceActivity, row.sourceDetail]
+                          .filter(Boolean)
+                          .join(' / ')}
+                      </span>
+                      <span className="text-[13px] break-all text-ink-muted">{row.code}</span>
+                    </div>
+                  </Td>
+                  <Td align="right">
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className="font-medium">
+                        {row.kgCo2ePerUnit} <span className="text-ink-muted">kg CO2e</span>
+                      </span>
+                      <span className="text-[13px] text-ink-muted">per {row.unit}</span>
+                      {row.co2eOnly && (
+                        <span className="text-[13px] text-ink-muted">CO2e only</span>
+                      )}
+                      {!row.approved && (
+                        <StatusDot tone="warning" className="text-[13px]">
+                          Not approved
+                        </StatusDot>
+                      )}
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+
+        {rows.data && total > PAGE_SIZE && (
+          <TableFooter
+            pager={
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((current) => Math.max(0, current - 1))}
+                >
+                  Previous
+                </Button>
+                <span aria-hidden="true" className="mx-2 h-5 w-px bg-hairline" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={to >= total}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Next
+                </Button>
+              </>
+            }
+          >
             {from} to {to} of {total.toLocaleString()}
-          </span>
-          <span className="flex gap-2">
-            <Button
-              variant="ghost"
-              className="px-3 py-1 text-xs"
-              disabled={page === 0}
-              onClick={() => setPage((current) => Math.max(0, current - 1))}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="ghost"
-              className="px-3 py-1 text-xs"
-              disabled={to >= total}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              Next
-            </Button>
-          </span>
-        </div>
-      )}
+          </TableFooter>
+        )}
+      </div>
     </Drawer>
   )
 }

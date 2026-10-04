@@ -2,13 +2,17 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
+import { Chip } from '../../components/Chip'
 import { InputField, SelectField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { FilterRow, FilterSelect, SearchField } from '../../components/FilterRow'
 import { Modal } from '../../components/Modal'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel, PanelBody, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { StatusDot } from '../../components/StatusDot'
+import { Table, TableFooter, Td, Th, TwoLine } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
-import { ScopeBadge } from './components/badges'
 import { PackRowsDrawer } from './components/PackRowsDrawer'
 import { RoleButton } from './components/RoleButton'
 import {
@@ -200,53 +204,56 @@ function FactorTable({
   onDelete?: (factor: EmissionFactor) => void
 }) {
   return (
-    <table className="w-full text-left text-sm">
+    <Table>
       <thead>
-        <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-          <th className="px-4 py-3 font-semibold">Factor</th>
-          <th className="px-4 py-3 font-semibold">Suggested scope</th>
-          <th className="px-4 py-3 font-semibold">Factor value</th>
-          <th className="px-4 py-3 font-semibold">Gases (kg per unit)</th>
-          <th className="px-4 py-3 font-semibold">Source and vintage</th>
-          <th className="px-4 py-3 font-semibold">Packs</th>
-          <th className="px-4 py-3 font-semibold">Status</th>
-          {editable && <th className="px-4 py-3" />}
+        <tr>
+          <Th>Factor</Th>
+          <Th>Suggested scope</Th>
+          <Th align="right">Factor value</Th>
+          <Th>Gases (kg per unit)</Th>
+          <Th>Source and vintage</Th>
+          <Th>Packs</Th>
+          <Th>Status</Th>
+          {editable && <Th className="w-40" />}
         </tr>
       </thead>
       <tbody>
         {factors.map((factor) => (
-          <tr key={factor.id} className="border-b border-teal/5 last:border-0">
-            <td className="px-4 py-3">
-              <span className="font-medium">{factor.name}</span>
+          <tr key={factor.id}>
+            <Td>
               {/* FU-03: 1,157 of the 1,868 DEFRA rows share a display name, so the publisher's
                   own category and activity go with it */}
-              {factor.sourceCategory && (
-                <span className="block text-xs text-ink-muted">
-                  {[factor.sourceCategory, factor.sourceActivity, factor.sourceDetail]
-                    .filter((part) => part !== null && part !== '')
-                    .join(' / ')}
-                </span>
-              )}
-              {factor.reportingBasis === 'OUTSIDE_SCOPES_NON_KYOTO' && (
-                <span className="block text-xs text-amber-800">
-                  {reportingBasisLabels[factor.reportingBasis]}
-                </span>
-              )}
-            </td>
-            <td className="px-4 py-3">
-              <span className="inline-flex items-center gap-1.5">
-                <ScopeBadge scope={factor.defaultScope} />
-                <span className="text-xs text-ink-muted">
-                  {categoryLabel(factor.defaultCategory)}
-                  {factor.scopeAgnostic ? ' · any scope' : ''}
-                </span>
-              </span>
-            </td>
-            <td className="px-4 py-3 whitespace-nowrap">
+              <TwoLine
+                primary={factor.name}
+                secondary={
+                  (factor.sourceCategory ||
+                    factor.reportingBasis === 'OUTSIDE_SCOPES_NON_KYOTO') && (
+                    <>
+                      {factor.sourceCategory &&
+                        [factor.sourceCategory, factor.sourceActivity, factor.sourceDetail]
+                          .filter((part) => part !== null && part !== '')
+                          .join(' / ')}
+                      {factor.reportingBasis === 'OUTSIDE_SCOPES_NON_KYOTO' && (
+                        <span className="block text-warning">
+                          {reportingBasisLabels[factor.reportingBasis]}
+                        </span>
+                      )}
+                    </>
+                  )
+                }
+              />
+            </Td>
+            <Td>
+              <TwoLine
+                primary={scopeLabels[factor.defaultScope]}
+                secondary={`${categoryLabel(factor.defaultCategory)}${factor.scopeAgnostic ? ' · any scope' : ''}`}
+              />
+            </Td>
+            <Td align="right">
               {factor.kgCo2ePerUnit} kg CO₂e/{factor.unit}
-            </td>
-            <td className="px-4 py-3 text-xs text-ink-muted">{gasSplit(factor)}</td>
-            <td className="px-4 py-3 text-xs text-ink-muted">
+            </Td>
+            <Td className="text-[13px] text-ink-muted">{gasSplit(factor)}</Td>
+            <Td className="text-[13px] text-ink-muted">
               {factor.sourceUrl ? (
                 <a href={factor.sourceUrl} target="_blank" rel="noreferrer" className="text-link">
                   {provenance(factor)}
@@ -271,101 +278,97 @@ function FactorTable({
                   </ul>
                 </details>
               )}
-            </td>
+            </Td>
             {/* spec 02.3: the packs that delivered the row, always apart from its source */}
-            <td className="px-4 py-3 text-xs">
+            <Td>
               {factor.packs.length === 0 ? (
-                <span className="text-ink-muted">entered by hand</span>
+                <span className="text-[13px] text-ink-muted">entered by hand</span>
               ) : (
                 <span className="flex flex-wrap gap-1">
                   {factor.packs.map((pack) => (
-                    <span
-                      key={pack}
-                      className="rounded-full border border-teal/30 px-1.5 text-ink-muted"
-                      title="Delivered by a factor pack"
-                    >
+                    <Chip key={pack} title="Delivered by a factor pack">
                       {pack}
-                    </span>
+                    </Chip>
                   ))}
                 </span>
               )}
-            </td>
-            <td className="px-4 py-3">
-              {factor.approved ? (
-                <>
-                  <span className="rounded-full bg-accent-green/25 px-2 py-0.5 text-xs font-semibold text-dark-teal">
-                    Approved
+            </Td>
+            <Td>
+              <div className="flex flex-col gap-0.5">
+                {factor.approved ? (
+                  <>
+                    <StatusDot tone="success">Approved</StatusDot>
+                    {/* spec 02.11: approval is a control, so the record names who and when */}
+                    {factor.approvedBy && (
+                      <span className="text-[13px] text-ink-muted">
+                        by {factor.approvedBy}
+                        {factor.approvedAt ? ` on ${formatDateTime(factor.approvedAt)}` : ''}
+                        {factor.selfApproved ? ' (self-approved: nobody else could check it)' : ''}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <StatusDot tone="warning">Not approved</StatusDot>
+                )}
+                {/* spec 02.6: an import leaves this row alone and reports it as a conflict */}
+                {factor.locallyEdited && (
+                  <span
+                    className="text-[13px] text-ink-muted"
+                    title="Edited here, so an import leaves it alone and reports it as a conflict."
+                  >
+                    Locally edited
                   </span>
-                  {/* spec 02.11: approval is a control, so the record names who and when */}
-                  {factor.approvedBy && (
-                    <span className="mt-1 block text-xs text-ink-muted">
-                      by {factor.approvedBy}
-                      {factor.approvedAt ? ` on ${formatDateTime(factor.approvedAt)}` : ''}
-                      {factor.selfApproved ? ' (self-approved: nobody else could check it)' : ''}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                  Not approved
-                </span>
-              )}
-              {/* spec 02.6: an import leaves this row alone and reports it as a conflict */}
-              {factor.locallyEdited && (
-                <span
-                  className="mt-1 block text-xs text-ink-muted"
-                  title="Edited here, so an import leaves it alone and reports it as a conflict."
-                >
-                  Locally edited
-                </span>
-              )}
-            </td>
+                )}
+              </div>
+            </Td>
             {editable && (
-              <td className="px-4 py-3 text-right whitespace-nowrap">
-                <RoleButton
-                  allowed={mayWrite(myRole)}
-                  tooltip={WRITE_TOOLTIP}
-                  variant="ghost"
-                  className="px-2 py-1 text-xs"
-                  onClick={() => onApprove?.(factor, !factor.approved)}
-                >
-                  {factor.approved ? 'Unapprove' : 'Approve'}
-                </RoleButton>
-                {/* spec 02.6: a factor leaves service by its validity end; a pack-derived one is
-                    never deleted, its versions being the record of what was calculated with */}
-                <RoleButton
-                  allowed={mayWrite(myRole)}
-                  tooltip={WRITE_TOOLTIP}
-                  variant="ghost"
-                  className="px-2 py-1 text-xs"
-                  aria-label={`Retire factor ${factor.name}`}
-                  title={
-                    factor.packCode === null
-                      ? undefined
-                      : 'From a factor pack. Its versions are the record of what was calculated with, so it retires by its validity end instead of being deleted.'
-                  }
-                  onClick={() => onRetire?.(factor)}
-                >
-                  Retire…
-                </RoleButton>
-                {factor.packCode === null && (
+              <Td align="right">
+                <div className="flex flex-wrap justify-end gap-1">
                   <RoleButton
                     allowed={mayWrite(myRole)}
                     tooltip={WRITE_TOOLTIP}
                     variant="ghost"
-                    className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                    aria-label={`Delete factor ${factor.name}`}
-                    onClick={() => onDelete?.(factor)}
+                    size="sm"
+                    onClick={() => onApprove?.(factor, !factor.approved)}
                   >
-                    Delete
+                    {factor.approved ? 'Unapprove' : 'Approve'}
                   </RoleButton>
-                )}
-              </td>
+                  {/* spec 02.6: a factor leaves service by its validity end; a pack-derived one is
+                      never deleted, its versions being the record of what was calculated with */}
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Retire factor ${factor.name}`}
+                    title={
+                      factor.packCode === null
+                        ? undefined
+                        : 'From a factor pack. Its versions are the record of what was calculated with, so it retires by its validity end instead of being deleted.'
+                    }
+                    onClick={() => onRetire?.(factor)}
+                  >
+                    Retire…
+                  </RoleButton>
+                  {factor.packCode === null && (
+                    <RoleButton
+                      allowed={mayWrite(myRole)}
+                      tooltip={WRITE_TOOLTIP}
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Delete factor ${factor.name}`}
+                      onClick={() => onDelete?.(factor)}
+                    >
+                      Delete
+                    </RoleButton>
+                  )}
+                </div>
+              </Td>
             )}
           </tr>
         ))}
       </tbody>
-    </table>
+    </Table>
   )
 }
 
@@ -434,96 +437,118 @@ export function EmissionFactorsPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl">Emission factors</h1>
-          <p className="text-sm text-ink-muted">
-            This organization's factors, each with its source, vintage and validity. Import a pack
-            to establish a baseline, or add one by hand. Only approved factors can be run. A factor
-            suggests a scope; the classification decides (Corporate Standard chapter 4).
-          </p>
-        </div>
-        <RoleButton
-          allowed={mayWrite(myRole)}
-          tooltip={WRITE_TOOLTIP}
-          className="px-4 py-1.5 text-sm"
-          onClick={() => setAdding(true)}
-        >
-          Add factor
-        </RoleButton>
-      </div>
+      <PageHeader
+        back={{ to: `/app/ghg/${organizationId}` }}
+        title="Emission factors"
+        subtitle="This organization's factors, each with its source, vintage and validity. Import a pack to establish a baseline, or add one by hand. Only approved factors can be run. A factor suggests a scope; the classification decides (Corporate Standard chapter 4)."
+        actions={
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
+            onClick={() => setAdding(true)}
+          >
+            Add factor
+          </RoleButton>
+        }
+      />
 
-      <GlassCard className="animate-fade-up p-6">
-        <h2 className="text-lg">Factor packs</h2>
-        <p className="text-sm text-ink-muted">
-          Built from published tables. Importing an edition adds its factors to this organization
-          with their citations. A later edition never overwrites a figure: it closes the version you
-          hold and cuts a new one from the edition's applies-from date, so a period you have already
-          reported keeps the factors it reported with.
-        </p>
-        {packsQuery.isPending && <Skeleton className="mt-3 h-16" />}
-        {packsQuery.data && (
-          <ul className="mt-3 grid gap-3 md:grid-cols-2">
-            {packsQuery.data.map((pack) => (
-              <li
-                key={pack.id}
-                className="flex flex-col gap-1 rounded-xl border border-teal/10 bg-white/40 p-3 text-sm"
-              >
-                <span className="font-medium">{pack.name}</span>
-                <span className="text-xs text-ink-muted">
-                  {pack.factorCount} factors · {pack.source}
-                  {pack.publicationYear ? `, ${pack.publicationYear}` : ''} · IPCC {pack.gwpBasis} ·
-                  retrieved {pack.retrieved}
-                </span>
-                {pack.notes && <span className="text-xs text-ink-muted">{pack.notes}</span>}
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="ghost"
-                    className="px-3 py-1 text-xs"
-                    aria-label={`View the factors in ${pack.name}`}
-                    onClick={() => setViewing(pack)}
-                  >
-                    View factors
-                  </Button>
-                  <RoleButton
-                    allowed={mayWrite(myRole)}
-                    tooltip={WRITE_TOOLTIP}
-                    variant="ghost"
-                    className="px-3 py-1 text-xs"
-                    aria-label={`Import pack ${pack.name}`}
-                    busy={importPack.isPending && importPack.variables === pack.id}
-                    onClick={() =>
-                      importPack.mutate(pack.id, {
-                        onSuccess: (result) => toast(importNote(result)),
-                        onError: (error) => toast(refusalMessage(error, myRole), 'error'),
-                      })
-                    }
-                  >
-                    Import pack
-                  </RoleButton>
-                </div>
-              </li>
-            ))}
-          </ul>
+      <Panel>
+        <PanelHead
+          title="Factor packs"
+          description="Built from published tables. Importing an edition adds its factors to this organization with their citations. A later edition never overwrites a figure: it closes the version you hold and cuts a new one from the edition's applies-from date, so a period you have already reported keeps the factors it reported with."
+        />
+        {packsQuery.isPending && (
+          <PanelBody>
+            <Skeleton className="h-16" />
+          </PanelBody>
         )}
-      </GlassCard>
+        {packsQuery.data && (
+          <Table className="[&_tbody_tr:last-child_td]:border-b-0">
+            <thead>
+              <tr>
+                <Th>Pack</Th>
+                <Th align="right">Factors</Th>
+                <Th>Source</Th>
+                <Th>GWP</Th>
+                <Th>Retrieved</Th>
+                <Th className="w-60" />
+              </tr>
+            </thead>
+            <tbody>
+              {packsQuery.data.map((pack) => (
+                <tr key={pack.id}>
+                  <Td>
+                    <TwoLine
+                      primary={pack.name}
+                      secondary={
+                        <>
+                          {pack.id}
+                          {pack.notes && <span className="block">{pack.notes}</span>}
+                        </>
+                      }
+                    />
+                  </Td>
+                  <Td align="right">{pack.factorCount.toLocaleString()}</Td>
+                  <Td>
+                    {pack.source}
+                    {pack.publicationYear ? `, ${pack.publicationYear}` : ''}
+                  </Td>
+                  <Td>IPCC {pack.gwpBasis}</Td>
+                  <Td>{pack.retrieved}</Td>
+                  <Td align="right">
+                    <div className="flex flex-wrap justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`View the factors in ${pack.name}`}
+                        onClick={() => setViewing(pack)}
+                      >
+                        View factors
+                      </Button>
+                      <RoleButton
+                        allowed={mayWrite(myRole)}
+                        tooltip={WRITE_TOOLTIP}
+                        variant="secondary"
+                        size="sm"
+                        aria-label={`Import pack ${pack.name}`}
+                        busy={importPack.isPending && importPack.variables === pack.id}
+                        onClick={() =>
+                          importPack.mutate(pack.id, {
+                            onSuccess: (result) => toast(importNote(result)),
+                            onError: (error) => toast(refusalMessage(error, myRole), 'error'),
+                          })
+                        }
+                      >
+                        Import pack
+                      </RoleButton>
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Panel>
 
-      <GlassCard className="animate-fade-up overflow-x-auto p-0">
-        <div className="flex flex-wrap items-end justify-between gap-3 px-4 pt-4">
-          <h2 className="text-lg">This organization's factors</h2>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-xl font-semibold tracking-[-0.01em]">This organization's factors</h2>
           <p className="text-sm text-ink-muted">
             {ownTotal.toLocaleString()} factor{ownTotal === 1 ? '' : 's'}
             {filtered ? ' match' : ''}
           </p>
         </div>
-        <div className="grid gap-2 px-4 pt-3 md:grid-cols-2 md:items-end xl:grid-cols-4">
-          <InputField
-            label="Search factors"
-            placeholder="Name, publication, taxonomy or pack tag"
-            value={search}
-            onChange={(event) => narrow(() => setSearch(event.target.value))}
-          />
-          <SelectField
+        <FilterRow
+          search={
+            <SearchField
+              label="Search factors"
+              placeholder="Name, publication, taxonomy or pack tag"
+              value={search}
+              onChange={(event) => narrow(() => setSearch(event.target.value))}
+            />
+          }
+        >
+          <FilterSelect
             label="Published category"
             value={category}
             onChange={(event) =>
@@ -539,8 +564,8 @@ export function EmissionFactorsPage() {
                 {value}
               </option>
             ))}
-          </SelectField>
-          <SelectField
+          </FilterSelect>
+          <FilterSelect
             label="Published activity"
             value={activity}
             onChange={(event) => narrow(() => setActivity(event.target.value))}
@@ -551,8 +576,8 @@ export function EmissionFactorsPage() {
                 {value}
               </option>
             ))}
-          </SelectField>
-          <SelectField
+          </FilterSelect>
+          <FilterSelect
             label="Unit"
             value={unit}
             onChange={(event) => narrow(() => setUnit(event.target.value))}
@@ -563,24 +588,25 @@ export function EmissionFactorsPage() {
                 {value}
               </option>
             ))}
-          </SelectField>
-        </div>
-        <label className="flex items-center gap-1.5 px-4 pt-2 text-xs text-ink-muted">
-          <input
-            type="checkbox"
-            checked={showUnapproved}
-            onChange={(event) => narrow(() => setShowUnapproved(event.target.checked))}
-          />
-          Show unapproved
-          {hiddenUnapproved > 0 && !showUnapproved && ` (${hiddenUnapproved} hidden)`}
-        </label>
+          </FilterSelect>
+          <label className="flex min-h-11 items-center gap-2.5 text-[15px]">
+            <input
+              type="checkbox"
+              checked={showUnapproved}
+              onChange={(event) => narrow(() => setShowUnapproved(event.target.checked))}
+              className="size-[18px] accent-primary"
+            />
+            Show unapproved
+            {hiddenUnapproved > 0 && !showUnapproved && ` (${hiddenUnapproved} hidden)`}
+          </label>
+        </FilterRow>
         {ownQuery.isPending && (
-          <div aria-label="Loading emission factors" className="flex flex-col gap-2 p-4">
+          <div aria-label="Loading emission factors" className="flex flex-col gap-2">
             <Skeleton className="h-8" />
           </div>
         )}
         {ownQuery.data && own.length === 0 && (
-          <p className="px-4 pb-4 text-sm text-ink-muted">
+          <p className="text-sm text-ink-muted">
             {filtered
               ? 'No factor matches these filters.'
               : 'None yet. Import a pack or add a supplier-specific factor.'}
@@ -597,29 +623,33 @@ export function EmissionFactorsPage() {
           />
         )}
         {pageCount > 1 && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-            <Button
-              variant="ghost"
-              className="px-3 py-1 text-xs"
-              disabled={page === 0}
-              onClick={() => setPage((current) => Math.max(0, current - 1))}
-            >
-              Previous
-            </Button>
-            <span className="text-xs text-ink-muted">
-              Page {page + 1} of {pageCount}
-            </span>
-            <Button
-              variant="ghost"
-              className="px-3 py-1 text-xs"
-              disabled={page + 1 >= pageCount}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              Next
-            </Button>
-          </div>
+          <TableFooter
+            pager={
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((current) => Math.max(0, current - 1))}
+                >
+                  Previous
+                </Button>
+                <span aria-hidden="true" className="mx-2 h-5 w-px bg-hairline" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={page + 1 >= pageCount}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Next
+                </Button>
+              </>
+            }
+          >
+            Page {page + 1} of {pageCount}
+          </TableFooter>
         )}
-      </GlassCard>
+      </div>
 
       {adding && (
         <FactorFormModal
@@ -715,7 +745,7 @@ function RetireFactorModal({
           required
         />
         {generalError && (
-          <p role="alert" className="text-sm font-medium text-red-600">
+          <p role="alert" className="text-sm font-medium text-danger">
             {generalError}
           </p>
         )}
@@ -809,8 +839,8 @@ function FactorFormModal({
   }
 
   return (
-    <Modal title="Add an emission factor" onClose={onClose}>
-      <form onSubmit={submit} className="grid gap-3 md:grid-cols-2" noValidate>
+    <Modal title="Add an emission factor" size="lg" onClose={onClose}>
+      <form onSubmit={submit} className="grid gap-x-6 gap-y-5 md:grid-cols-2" noValidate>
         <div className="md:col-span-2">
           <InputField
             label="Name"
@@ -885,12 +915,12 @@ function FactorFormModal({
           value={n2o}
           onChange={(event) => setN2o(event.target.value)}
         />
-        <label className="flex items-center gap-2 self-end pb-2 text-sm">
+        <label className="flex min-h-11 items-center gap-2.5 self-end text-[15px]">
           <input
             type="checkbox"
             checked={ch4Fossil}
             onChange={(event) => setCh4Fossil(event.target.checked)}
-            className="size-4 accent-teal"
+            className="size-[18px] accent-primary"
           />
           Methane is of fossil origin
         </label>
@@ -997,22 +1027,22 @@ function FactorFormModal({
               </option>
             ))}
           </SelectField>
-          <p className="mt-1 text-xs text-ink-muted">
+          <p className="mt-1.5 text-[13px] text-ink-muted">
             Chapter 4 counts the seven Kyoto gas groups. A Montreal Protocol gas (HCFC-22, a CFC, a
             halon) is reported separately as optional information; no scope total includes it.
           </p>
         </div>
-        <label className="flex items-center gap-2 text-sm md:col-span-2">
+        <label className="flex min-h-11 items-center gap-2.5 text-[15px] md:col-span-2">
           <input
             type="checkbox"
             checked={approved}
             onChange={(event) => setApproved(event.target.checked)}
-            className="size-4 accent-teal"
+            className="size-[18px] accent-primary"
           />
           Approved for use in runs
         </label>
         {generalError && (
-          <p role="alert" className="text-sm font-medium text-red-600 md:col-span-2">
+          <p role="alert" className="text-sm font-medium text-danger md:col-span-2">
             {generalError}
           </p>
         )}
