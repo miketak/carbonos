@@ -111,3 +111,25 @@ test('links to the help centre, in a new tab', async () => {
   expect(help).toHaveAttribute('href', '/help')
   expect(help).toHaveAttribute('target', '_blank')
 })
+
+test('the menu switches the theme and keeps the choice in the browser (spec 10)', async () => {
+  vi.mocked(me).mockResolvedValue(member)
+  localStorage.removeItem('carbonos.theme')
+  await open()
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Switch to dark theme' }))
+  expect(localStorage.getItem('carbonos.theme')).toBe('dark')
+  expect(document.documentElement.dataset.theme).toBe('dark')
+  await open()
+  expect(screen.getByRole('menuitem', { name: 'Switch to light theme' })).toBeInTheDocument()
+})
+
+test('in the rail the trigger carries the name and the role line', async () => {
+  vi.mocked(me).mockResolvedValue(member)
+  renderWithProviders(<AccountMenu variant="rail" roleLine="Your role: Owner" />, {
+    route: '/app/ghg/org-1',
+    path: '/app/ghg/:organizationId',
+  })
+  const trigger = await screen.findByRole('button', { name: /account menu/i })
+  expect(trigger).toHaveTextContent('Kofi Mensah')
+  expect(trigger).toHaveTextContent('Your role: Owner')
+})
