@@ -21,12 +21,15 @@ import { SourceDocumentsPage } from '../features/ghg/SourceDocumentsPage'
 import { BaseYearPage } from '../features/ghg/BaseYearPage'
 import { SettingsLayout } from '../features/ghg/SettingsLayout'
 import { EntitiesPage } from '../features/ghg/EntitiesPage'
+import { EntityFormPage } from '../features/ghg/EntityFormPage'
 import { EmissionFactorsPage } from '../features/ghg/EmissionFactorsPage'
 import { FactorPackUpdatesPage } from '../features/ghg/FactorPackUpdatesPage'
 import { UnitsPage } from '../features/ghg/UnitsPage'
 import { FacilitiesPage } from '../features/ghg/FacilitiesPage'
+import { FacilityFormPage } from '../features/ghg/FacilityFormPage'
 import { InventoriesPage } from '../features/ghg/InventoriesPage'
 import { InventoryDetailPage } from '../features/ghg/InventoryDetailPage'
+import { InventoryFormPage } from '../features/ghg/InventoryFormPage'
 import { OrganizationLayout } from '../features/ghg/OrganizationLayout'
 import { OrganizationSettingsPage } from '../features/ghg/OrganizationSettingsPage'
 import { OrganizationsPage } from '../features/ghg/OrganizationsPage'
@@ -92,11 +95,17 @@ export function App() {
         >
           <Route index element={<OverviewPage />} />
           <Route path="entities" element={<EntitiesPage />} />
+          <Route path="entities/new" element={<EntityFormPage />} />
+          <Route path="entities/:entityId/edit" element={<EntityFormPage />} />
           <Route path="facilities" element={<FacilitiesPage />} />
+          <Route path="facilities/new" element={<FacilityFormPage />} />
+          <Route path="facilities/:facilityId/edit" element={<FacilityFormPage />} />
           <Route path="activity" element={<ActivityPage />} />
           <Route path="activity/documents" element={<SourceDocumentsPage />} />
           <Route path="inventories" element={<InventoriesPage />} />
+          <Route path="inventories/new" element={<InventoryFormPage />} />
           <Route path="inventories/:inventoryId" element={<InventoryDetailPage />} />
+          <Route path="inventories/:inventoryId/edit" element={<InventoryFormPage />} />
           <Route path="inventories/:inventoryId/runs/:runId" element={<RunDetailPage />} />
           {/* the base year moved under Settings; the old address still lands there */}
           <Route path="base-year" element={<Navigate to="../settings/baseline" replace />} />

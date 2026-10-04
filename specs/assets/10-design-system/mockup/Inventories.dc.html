@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GHG inventories</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="inventories" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Overview.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li aria-current="page">Inventories</li></ol></div><a href="Overview.dc.html" class="muted">Help</a></div>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">GHG inventories</h1>
+      <p class="page-sub">Accounting views over the organization's facts. The same period can be viewed under different accounting contexts.</p>
+    </div>
+    <div class="page-actions"><a class="btn btn-primary" href="InventoryForm.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New inventory</a></div>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Inventory</th><th>Period</th><th>Approach</th><th>Status</th><th class="num">Latest run</th><th class="actions" style="width: 180px"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+        <tr class="row-link"><td><a href="Inventory.dc.html" style="font-weight: 500; color: var(--ink)">FY2026 Corporate Inventory</a></td><td><div class="cell-2"><span class="mono">2026-01-01 → 2026-12-31</span><span class="s">Corporate reporting</span></div></td><td>Operational control</td><td><span class="status status-neutral">Draft</span></td><td class="num muted">–</td><td class="actions" style="text-align: right"><a class="btn btn-secondary btn-sm" href="Inventory.dc.html">Open</a> <button type="button" class="btn btn-ghost btn-sm" onClick="{{openDelete}}">Delete</button></td></tr>
+        <tr class="row-link"><td><a href="Inventory.dc.html" style="font-weight: 500; color: var(--ink)">FY2025</a></td><td><div class="cell-2"><span class="mono">2025-01-01 → 2025-12-31</span><span class="s">Corporate reporting</span></div></td><td>Operational control</td><td><div class="cell-2"><span class="status status-info">Final</span><span class="s mono">boundary v3</span></div></td><td class="num">86,412 t</td><td class="actions" style="text-align: right"><a class="btn btn-secondary btn-sm" href="Inventory.dc.html">Open</a></td></tr>
+        <tr class="row-link"><td><a href="Inventory.dc.html" style="font-weight: 500; color: var(--ink)">FY2025 (equity share view)</a></td><td><div class="cell-2"><span class="mono">2025-01-01 → 2025-12-31</span><span class="s">Investor disclosure</span></div></td><td>Equity share</td><td><div class="cell-2"><span class="status status-info">Frozen</span><span class="s mono">boundary v1</span></div></td><td class="num">79,204 t</td><td class="actions" style="text-align: right"><a class="btn btn-secondary btn-sm" href="Inventory.dc.html">Open</a> <button type="button" class="btn btn-ghost btn-sm" onClick="{{openDelete}}">Delete</button></td></tr>
+        <tr class="row-link"><td><a href="Inventory.dc.html" style="font-weight: 500; color: var(--ink)">FY2024</a></td><td><div class="cell-2"><span class="mono">2024-01-01 → 2024-12-31</span><span class="s">Corporate reporting</span></div></td><td>Operational control</td><td><div class="cell-2"><span class="status status-success">Published</span><span class="s mono">boundary v2</span></div></td><td class="num">81,970 t</td><td class="actions" style="text-align: right"><a class="btn btn-secondary btn-sm" href="Inventory.dc.html">Open</a></td></tr>
+        <tr class="row-link"><td><a href="Inventory.dc.html" style="font-weight: 500; color: var(--ink)">FY2023</a></td><td><div class="cell-2"><span class="mono">2023-01-01 → 2023-12-31</span><span class="s">Corporate reporting</span></div></td><td>Operational control</td><td><div class="cell-2"><span class="status status-neutral">Published · superseded</span><span class="s">Superseded by a correction</span></div></td><td class="num">77,118 t</td><td class="actions" style="text-align: right"><a class="btn btn-secondary btn-sm" href="Inventory.dc.html">Open</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tfoot"><span>5 inventories</span></div>
+</main>
+<sc-if value="{{deleteOpen}}" hint-placeholder-val="{{false}}">
+  <div class="scrim">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Delete FY2026 Corporate Inventory?">
+      <div class="modal-head"><h2 class="modal-title">Delete FY2026 Corporate Inventory?</h2></div>
+      <div class="modal-body"><p class="muted">The draft and its decisions are removed. The activity records it reviewed are untouched.</p></div>
+      <div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{close}}">Cancel</button><button type="button" class="btn btn-danger" onClick="{{doDelete}}">Delete</button></div>
+    </div>
+  </div>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      deleteOpen: !!s.deleteOpen, openDelete: () => this.setState({ deleteOpen: true }), close: () => this.setState({ deleteOpen: false }),
+      doDelete: () => { this.setState({ deleteOpen: false, toast: 'FY2026 Corporate Inventory deleted.' }); setTimeout(() => this.setState({ toast: null }), 3000) },
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

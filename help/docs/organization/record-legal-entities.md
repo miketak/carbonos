@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-03
 description: Record each subsidiary, joint venture or associate with its Table 1 relationship, economic interest, operation and parent, and read the share it carries under each approach.
 role: Preparer
 minutes: 5
@@ -11,7 +11,7 @@ screens: [step-1-legal-entities.png]
 
 A legal entity is a structure the company consolidates: a subsidiary, a joint venture, an associate. Record each one before its facilities, because the entity's facts set the accounting share.
 
-<!-- sources: specs 03.1 to 03.4; old page tasks/organization/record-legal-entities.md (verified 2026-09-24); EntitiesPage.tsx, EntityFormModal.tsx, RemoveDialog.tsx, GhgService.java (requireParent, updateEntity, deleteEntity, requireReason), StructureChanges.java (the history reasons, spec 01.7 as amended 2026-09-29); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "1 entities", "1 entity dialog", "1 entities after", "3 toasts", "5 inventory dialog" -->
+<!-- sources: specs 03.1 to 03.4; old page tasks/organization/record-legal-entities.md (verified 2026-09-24); EntitiesPage.tsx, EntityFormPage.tsx, RemoveDialog.tsx, GhgService.java (requireParent, updateEntity, deleteEntity, requireReason), StructureChanges.java (the history reasons, spec 01.7 as amended 2026-09-29); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "1 entities", "1 entity dialog", "1 entities after", "3 toasts", "5 inventory dialog" -->
 
 ## Before you start
 
@@ -20,7 +20,7 @@ A legal entity is a structure the company consolidates: a subsidiary, a joint ve
 
 ## Add an entity
 
-1. Open **Legal entities** and click **Add entity**.
+1. Open **Legal entities** and click **Add entity**. The form takes the page, under the breadcrumb **Legal entities › Add legal entity**.
 2. Fill **Name**, for example `Gye Nyame Camp Services Ltd`.
 3. Choose **Relationship**, a row of Table 1 (listed below); for a wholly owned subsidiary, "Group company or subsidiary (financial control)".
 4. Fill **Economic interest (%)** and, for disclosure, **Legal ownership (%)**.

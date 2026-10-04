@@ -1,22 +1,21 @@
 import type { ReactNode } from 'react'
+import { StatusDot } from './StatusDot'
+import type { StatusTone } from './StatusDot'
 
 export type PillTone = 'ready' | 'attention' | 'draft' | 'neutral'
 
-const tones: Record<PillTone, string> = {
-  ready: 'border-teal/30 bg-accent-green/25 text-dark-teal',
-  attention: 'border-amber-300 bg-amber-50 text-amber-800',
-  draft: 'border-slate-300 bg-slate-100 text-slate-700',
-  neutral: 'border-teal/20 bg-teal/10 text-ink-muted',
+const tones: Record<PillTone, StatusTone> = {
+  ready: 'success',
+  attention: 'warning',
+  draft: 'neutral',
+  neutral: 'neutral',
 }
 
-const marks: Record<PillTone, string> = {
-  ready: '✓',
-  attention: '△',
-  draft: '◌',
-  neutral: '·',
-}
-
-/** A small state label: a mark and a word, coloured by tone but never by colour alone. */
+/**
+ * The readiness pill of the first design, now the dot and word of spec 10
+ * under its old name and tones, while the features move to StatusDot
+ * (rollout step 5).
+ */
 export function StatusPill({
   tone,
   title,
@@ -27,12 +26,8 @@ export function StatusPill({
   children: ReactNode
 }) {
   return (
-    <span
-      title={title}
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${tones[tone]}`}
-    >
-      <span aria-hidden="true">{marks[tone]}</span>
+    <StatusDot tone={tones[tone]} title={title}>
       {children}
-    </span>
+    </StatusDot>
   )
 }

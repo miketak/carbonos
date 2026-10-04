@@ -1,4 +1,4 @@
-import { GlassCard } from '../../../components/GlassCard'
+import { Panel, PanelBody, PanelHead } from '../../../components/Panel'
 import { formatDateTime } from '../format'
 import { usePublicPlatformSettingsQuery } from '../useGhg'
 import type { Organization } from '../api'
@@ -24,24 +24,24 @@ export function SupportAccessCard({ organization }: { organization: Organization
     hours === undefined ? 'a fixed window' : `${hours} ${hours === 1 ? 'hour' : 'hours'}`
 
   return (
-    <GlassCard className="p-6">
-      <h2 className="text-xl">Support access</h2>
-      <p className="text-sm text-ink-muted">
-        A platform administrator can take an owner's rights here for {windowHours} to work a support
-        case. Every grant is recorded, and every act under it is attributed to the administrator.
-        Adopting a new factor pack edition stays your decision, whoever is here.
-      </p>
-      <ul className="mt-4 flex flex-col gap-2 text-sm">
-        {grants.map((grant) => (
-          <li key={`${grant.adminEmail}-${grant.grantedAt}`} className="font-medium text-dark-teal">
-            Support access: {grant.adminEmail} since {formatDateTime(grant.grantedAt)}:{' '}
-            {grant.reason}
-            <span className="block text-xs font-normal text-ink-muted">
-              Until {formatDateTime(grant.expiresAt)}.
-            </span>
-          </li>
-        ))}
-      </ul>
-    </GlassCard>
+    <Panel>
+      <PanelHead
+        title="Support access"
+        description={`A platform administrator can take an owner's rights here for ${windowHours} to work a support case. Every grant is recorded, and every act under it is attributed to the administrator. Adopting a new factor pack edition stays your decision, whoever is here.`}
+      />
+      <PanelBody>
+        <ul className="flex flex-col gap-2 text-sm">
+          {grants.map((grant) => (
+            <li key={`${grant.adminEmail}-${grant.grantedAt}`} className="font-medium">
+              Support access: {grant.adminEmail} since {formatDateTime(grant.grantedAt)}:{' '}
+              {grant.reason}
+              <span className="block text-[13px] font-normal text-ink-muted">
+                Until {formatDateTime(grant.expiresAt)}.
+              </span>
+            </li>
+          ))}
+        </ul>
+      </PanelBody>
+    </Panel>
   )
 }

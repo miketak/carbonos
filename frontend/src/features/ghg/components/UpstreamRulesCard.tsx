@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { InputField, SelectField } from '../../../components/Field'
-import { GlassCard } from '../../../components/GlassCard'
+import { Panel, PanelBody, PanelHead } from '../../../components/Panel'
+import { Table, Td, Th } from '../../../components/Table'
 import { useToast } from '../../../components/toast'
 import { refusalMessage } from '../../../lib/api'
 import { upstreamRuleKindLabels } from '../format'
@@ -137,43 +138,42 @@ export function UpstreamRulesCard({
   }
 
   return (
-    <GlassCard className="mt-6 p-6">
-      <h2 className="text-xl">Upstream rules</h2>
-      <p className="text-sm text-ink-muted">
-        Fuel- and energy-related activities (Scope 3 Standard, category 3) ride on the records this
-        inventory already holds: the well-to-tank emissions of every litre in scope 1 and the
-        transmission and distribution losses of every kilowatt-hour in scope 2. A rule derives those
-        lines; nothing is entered twice.
-      </p>
+    <Panel>
+      <PanelHead
+        title="Upstream rules"
+        description="Fuel- and energy-related activities (Scope 3 Standard, category 3) ride on the records this inventory already holds: the well-to-tank emissions of every litre in scope 1 and the transmission and distribution losses of every kilowatt-hour in scope 2. A rule derives those lines; nothing is entered twice."
+      />
       {rules.length === 0 ? (
-        <p className="mt-3 text-sm text-ink-muted">
+        <p className="p-5 text-sm text-ink-muted">
           No upstream rules. Category 3 is not quantified by this view.
         </p>
       ) : (
-        <table aria-label="Upstream rules" className="mt-3 w-full text-left text-sm">
+        <Table aria-label="Upstream rules">
           <thead>
-            <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-              <th className="py-1.5 pr-3 font-semibold">Primary factor</th>
-              <th className="py-1.5 pr-3 font-semibold">Upstream factor</th>
-              <th className="py-1.5 pr-3 font-semibold">Kind</th>
-              <th className="py-1.5 pr-3 text-right font-semibold">Records</th>
-              <th className="py-1.5" />
+            <tr>
+              <Th className="pl-5">Primary factor</Th>
+              <Th>Upstream factor</Th>
+              <Th>Kind</Th>
+              <Th align="right">Records</Th>
+              <Th className="pr-5">
+                <span className="sr-only">Actions</span>
+              </Th>
             </tr>
           </thead>
           <tbody>
             {rules.map((rule) => (
-              <tr key={rule.id} className="border-b border-teal/5 last:border-0">
-                <td className="py-1.5 pr-3">{rule.primaryFactorName}</td>
-                <td className="py-1.5 pr-3">{rule.upstreamFactorName}</td>
-                <td className="py-1.5 pr-3 text-ink-muted">{upstreamRuleKindLabels[rule.kind]}</td>
-                <td className="py-1.5 pr-3 text-right tabular-nums">{rule.matchingLines}</td>
-                <td className="py-1.5 text-right">
+              <tr key={rule.id}>
+                <Td className="pl-5">{rule.primaryFactorName}</Td>
+                <Td>{rule.upstreamFactorName}</Td>
+                <Td className="text-ink-muted">{upstreamRuleKindLabels[rule.kind]}</Td>
+                <Td align="right">{rule.matchingLines}</Td>
+                <Td align="right" className="pr-5">
                   {editable && (
                     <RoleButton
                       allowed={mayWrite(myRole)}
                       tooltip={WRITE_TOOLTIP}
                       variant="ghost"
-                      className="px-2.5 py-1 text-xs"
+                      size="sm"
                       onClick={() =>
                         remove.mutate(rule.id, {
                           onSuccess: () => toast('Upstream rule removed.'),
@@ -184,104 +184,105 @@ export function UpstreamRulesCard({
                       Remove
                     </RoleButton>
                   )}
-                </td>
+                </Td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       )}
       {editable && (
-        <form
-          onSubmit={submit}
-          aria-label="Add an upstream rule"
-          className="mt-4 grid gap-3 md:grid-cols-4"
-        >
-          <div className="flex flex-col gap-3">
-            <InputField
-              label="Narrow the primary factors"
-              placeholder="Name, publication, taxonomy or pack tag"
-              value={primarySearch}
-              hint={beyondHint(beyondPrimary)}
-              onChange={(event) => setPrimarySearch(event.target.value)}
-            />
-            <SelectField
-              label="Primary factor"
-              value={primary?.id ?? ''}
-              required
-              onChange={(event) =>
-                setPrimary(primaryChoices.find((f) => f.id === event.target.value) ?? null)
-              }
-            >
-              <option value="">Choose the factor the records already use…</option>
-              {primaryChoices.map((factor) => (
-                <option key={factor.id} value={factor.id}>
-                  {describe(factor)}
-                </option>
-              ))}
-            </SelectField>
-          </div>
-          <div className="flex flex-col gap-3">
-            <InputField
-              label="Narrow the upstream factors"
-              placeholder="Well-to-tank, T&D losses…"
-              value={upstreamSearch}
-              hint={beyondHint(beyondUpstream)}
-              onChange={(event) => setUpstreamSearch(event.target.value)}
-            />
-            <SelectField
-              label="Upstream factor"
-              value={upstream?.id ?? ''}
-              required
-              hint="Its unit must convert from the primary factor's."
-              onChange={(event) =>
-                setUpstream(
-                  [...suggested, ...upstreamChoices].find((f) => f.id === event.target.value) ??
-                    null,
-                )
-              }
-            >
-              <option value="">Choose the upstream factor…</option>
-              {suggested.length > 0 && (
-                <optgroup label="Suggested: named after the primary factor">
-                  {suggested.map((factor) => (
-                    <option key={factor.id} value={factor.id}>
-                      {describe(factor)}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              {upstreamChoices.map((factor) => (
-                <option key={factor.id} value={factor.id}>
-                  {describe(factor)}
-                </option>
-              ))}
-            </SelectField>
-          </div>
-          <SelectField
-            label="Kind"
-            value={kind}
-            onChange={(event) => setKind(event.target.value as UpstreamRuleKind)}
+        <PanelBody className="border-t border-hairline">
+          <form
+            onSubmit={submit}
+            aria-label="Add an upstream rule"
+            className="grid gap-5 md:grid-cols-4"
           >
-            {kinds.map((value) => (
-              <option key={value} value={value}>
-                {upstreamRuleKindLabels[value]}
-              </option>
-            ))}
-          </SelectField>
-          <div className="flex items-end">
-            <RoleButton
-              allowed={mayWrite(myRole)}
-              tooltip={WRITE_TOOLTIP}
-              type="submit"
-              className="px-4 py-1.5 text-sm"
-              busy={add.isPending}
-              disabled={primary === null || upstream === null}
+            <div className="flex flex-col gap-4">
+              <InputField
+                label="Narrow the primary factors"
+                placeholder="Name, publication, taxonomy or pack tag"
+                value={primarySearch}
+                hint={beyondHint(beyondPrimary)}
+                onChange={(event) => setPrimarySearch(event.target.value)}
+              />
+              <SelectField
+                label="Primary factor"
+                value={primary?.id ?? ''}
+                required
+                onChange={(event) =>
+                  setPrimary(primaryChoices.find((f) => f.id === event.target.value) ?? null)
+                }
+              >
+                <option value="">Choose the factor the records already use…</option>
+                {primaryChoices.map((factor) => (
+                  <option key={factor.id} value={factor.id}>
+                    {describe(factor)}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+            <div className="flex flex-col gap-4">
+              <InputField
+                label="Narrow the upstream factors"
+                placeholder="Well-to-tank, T&D losses…"
+                value={upstreamSearch}
+                hint={beyondHint(beyondUpstream)}
+                onChange={(event) => setUpstreamSearch(event.target.value)}
+              />
+              <SelectField
+                label="Upstream factor"
+                value={upstream?.id ?? ''}
+                required
+                hint="Its unit must convert from the primary factor's."
+                onChange={(event) =>
+                  setUpstream(
+                    [...suggested, ...upstreamChoices].find((f) => f.id === event.target.value) ??
+                      null,
+                  )
+                }
+              >
+                <option value="">Choose the upstream factor…</option>
+                {suggested.length > 0 && (
+                  <optgroup label="Suggested: named after the primary factor">
+                    {suggested.map((factor) => (
+                      <option key={factor.id} value={factor.id}>
+                        {describe(factor)}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {upstreamChoices.map((factor) => (
+                  <option key={factor.id} value={factor.id}>
+                    {describe(factor)}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+            <SelectField
+              label="Kind"
+              value={kind}
+              onChange={(event) => setKind(event.target.value as UpstreamRuleKind)}
             >
-              Add rule
-            </RoleButton>
-          </div>
-        </form>
+              {kinds.map((value) => (
+                <option key={value} value={value}>
+                  {upstreamRuleKindLabels[value]}
+                </option>
+              ))}
+            </SelectField>
+            <div className="flex items-end">
+              <RoleButton
+                allowed={mayWrite(myRole)}
+                tooltip={WRITE_TOOLTIP}
+                type="submit"
+                busy={add.isPending}
+                disabled={primary === null || upstream === null}
+              >
+                Add rule
+              </RoleButton>
+            </div>
+          </form>
+        </PanelBody>
       )}
-    </GlassCard>
+    </Panel>
   )
 }

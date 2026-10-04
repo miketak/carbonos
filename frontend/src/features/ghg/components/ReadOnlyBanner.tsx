@@ -1,3 +1,4 @@
+import { Banner } from '../../../components/Banner'
 import type { MyRole } from '../roles'
 import { isReadOnly } from '../roles'
 
@@ -5,11 +6,8 @@ import { isReadOnly } from '../roles'
 export function ReadOnlyBanner({ myRole }: { myRole: MyRole | undefined }) {
   if (!isReadOnly(myRole)) return null
   return (
-    <p
-      role="status"
-      className="mb-6 rounded-lg border border-teal/20 bg-white/70 px-4 py-2.5 text-sm font-medium text-dark-teal"
-    >
+    <Banner role="status" tone="neutral" className="mb-6 font-medium">
       Your role in this organization is Verifier (read-only).
-    </p>
+    </Banner>
   )
 }

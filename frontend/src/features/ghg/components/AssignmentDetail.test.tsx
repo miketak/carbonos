@@ -213,9 +213,9 @@ beforeEach(() => {
 })
 
 /**
- * The register with a record open in the drawer (spec 05.6). The drawer is
- * addressed by `?record=`, so the suite opens straight onto it, exactly as a
- * pasted link does.
+ * The register with a record open beside it (spec 05.6, spec 10). The detail
+ * is addressed by `?record=`, so the suite opens straight onto it, exactly as
+ * a pasted link does.
  */
 function renderDrawer(recordId = 'as-1', myRole: 'OWNER' | 'VERIFIER' = 'OWNER', editable = true) {
   return renderWithProviders(
@@ -233,13 +233,13 @@ function renderDrawer(recordId = 'as-1', myRole: 'OWNER' | 'VERIFIER' = 'OWNER',
   )
 }
 
-test('the drawer opens on the record named in the URL, with its place in the page', async () => {
+test('the detail opens on the record named in the URL, with its place in the page', async () => {
   vi.mocked(searchAssignments).mockResolvedValue(
     pageOf([unclassified, { ...unclassified, id: 'as-2', activityType: 'Grid electricity' }]),
   )
   renderDrawer('as-2')
 
-  const drawer = await screen.findByRole('dialog', { name: 'Grid electricity' })
+  const drawer = await screen.findByRole('region', { name: 'Grid electricity' })
   expect(within(drawer).getByText('2/2')).toBeInTheDocument()
   expect(within(drawer).getByRole('button', { name: 'Next record' })).toBeDisabled()
   expect(within(drawer).getByRole('button', { name: 'Previous record' })).toBeEnabled()
@@ -248,7 +248,7 @@ test('the drawer opens on the record named in the URL, with its place in the pag
 test('a record the filters left behind says so instead of rendering nothing', async () => {
   renderDrawer('as-missing')
 
-  const drawer = await screen.findByRole('dialog', { name: /not in this view/i })
+  const drawer = await screen.findByRole('region', { name: /not in this view/i })
   expect(within(drawer).getByText(/not on the page in front of you/i)).toBeInTheDocument()
 })
 
@@ -517,7 +517,7 @@ test('picking a per-litre factor for a tonne record asks for the density before 
   )
 })
 
-test('the drawer suggests the grid factor of the facility and names an inherited lease (spec 03.4)', async () => {
+test('the detail suggests the grid factor of the facility and names an inherited lease (spec 03.4)', async () => {
   const user = userEvent.setup()
   mockEmissionFactors([
     {
@@ -737,7 +737,7 @@ test('a verifier reads the classification and is not offered the exclusion form 
   vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
   renderDrawer('as-1', 'VERIFIER')
 
-  const drawer = await screen.findByRole('dialog', { name: 'Diesel consumption' })
+  const drawer = await screen.findByRole('region', { name: 'Diesel consumption' })
   // the factor arrives on its own query, so the classification waits for it
   expect(await within(drawer).findByLabelText('Diesel consumption scope')).toBeDisabled()
   expect(within(drawer).queryByRole('button', { name: /change factor/i })).not.toBeInTheDocument()
@@ -751,7 +751,7 @@ test('an owner on a frozen inventory is told the freeze, not the role, keeps the
   vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
   renderDrawer('as-1', 'OWNER', false)
 
-  const drawer = await screen.findByRole('dialog', { name: 'Diesel consumption' })
+  const drawer = await screen.findByRole('region', { name: 'Diesel consumption' })
   await user.click(within(drawer).getByRole('tab', { name: 'Exclude' }))
   expect(within(drawer).getByText(/The inventory is not a draft/)).toBeInTheDocument()
   expect(within(drawer).queryByText(/preparer's decision/)).not.toBeInTheDocument()
@@ -772,7 +772,7 @@ test('an excluded record states its decision and offers the way back in (DR-03)'
   vi.mocked(includeAssignment).mockResolvedValue(unclassified)
   renderDrawer()
 
-  const drawer = await screen.findByRole('dialog', { name: 'Diesel consumption' })
+  const drawer = await screen.findByRole('region', { name: 'Diesel consumption' })
   expect(within(drawer).getByText(/Tema JV: member from 2025-07-01/)).toBeInTheDocument()
   expect(within(drawer).queryByRole('tab', { name: 'Classify' })).not.toBeInTheDocument()
   await user.click(within(drawer).getByRole('button', { name: /Re-include Diesel consumption/ }))

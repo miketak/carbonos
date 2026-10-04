@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-24
+last_reviewed: 2026-10-03
 ---
 
 # Decision records
@@ -51,3 +51,4 @@ form.
 | [0006](0006-serve-end-user-help-as-routes-of-the-app.md) | Serve end-user help as routes of the React app, compiled from help/docs at build time | accepted | 2026-09-28 |
 | [0007](0007-qa-procedures-as-pure-scenarios-with-generated-projections.md) | Write QA procedures as pure domain scenarios and generate their projections | proposed | 2026-10-02 |
 | [0008](0008-a-qa-module-for-local-test-hooks.md) | A `qa` module for the local stack's test hooks | proposed | 2026-10-02 |
+| [0009](0009-semantic-design-tokens-with-two-themes.md) | Semantic design tokens as CSS variables, with two themes | accepted | 2026-10-03 |

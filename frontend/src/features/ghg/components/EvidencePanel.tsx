@@ -23,11 +23,31 @@ export function formatSize(bytes: number | null): string {
   return `${bytes} B`
 }
 
+function FileIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="shrink-0 text-ink-muted"
+    >
+      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+      <path d="M14 3v6h6" />
+    </svg>
+  )
+}
+
 /**
  * The evidence behind a record or an instrument (spec 04.4): files kept in
  * the object store and links to a document system, so a verifier's sample
  * traces from a line to the primary document without a chase. Rendered in
- * the evidence modal and on the drawer's Evidence tab (spec 04.6).
+ * the evidence modal and on the record detail's Evidence tab (spec 04.6).
  */
 export function EvidencePanel({
   owner,
@@ -65,23 +85,29 @@ export function EvidencePanel({
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <p className="text-sm text-ink-muted">
         Invoices, meter photos, registers and certificates. Files print on the run's lines and in
         the calculation file; a link opens the document where it lives.
       </p>
       {evidenceQuery.data && evidenceQuery.data.length === 0 && (
-        <p className="mt-3 text-sm text-ink-muted">No evidence attached yet.</p>
+        <p className="rounded-lg border border-dashed border-hairline-strong px-6 py-8 text-center text-sm text-ink-muted">
+          No evidence attached yet.
+        </p>
       )}
       {evidenceQuery.data && evidenceQuery.data.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-2 text-sm">
+        <ul className="flex flex-col gap-2 text-sm">
           {evidenceQuery.data.map((item) => (
-            <li key={item.id} className="flex items-center justify-between gap-2">
-              <span className="min-w-0">
+            <li
+              key={item.id}
+              className="flex min-h-[52px] items-center gap-3 rounded-lg border border-hairline px-3.5 py-2"
+            >
+              <FileIcon />
+              <span className="min-w-0 flex-1">
                 {item.kind === 'FILE' ? (
                   <a
                     href={evidenceDownloadUrl(item.id)}
-                    className="font-semibold text-link hover:underline"
+                    className="font-medium text-link hover:underline"
                     download
                   >
                     {item.name}
@@ -91,12 +117,12 @@ export function EvidencePanel({
                     href={item.url ?? '#'}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-semibold text-link hover:underline"
+                    className="font-medium text-link hover:underline"
                   >
                     {item.name}
                   </a>
                 )}
-                <span className="block text-xs text-ink-muted">
+                <span className="block text-[13px] text-ink-muted">
                   {item.kind === 'FILE' ? `file, ${formatSize(item.sizeBytes)}` : 'link'} ·{' '}
                   {item.uploadedBy}, {formatDateTime(item.uploadedAt)}
                 </span>
@@ -105,7 +131,7 @@ export function EvidencePanel({
                 <button
                   type="button"
                   aria-label={`Remove ${item.name}`}
-                  className="text-xs text-red-600 hover:underline"
+                  className="text-[13px] font-medium text-link hover:underline"
                   onClick={() =>
                     remove.mutate(item.id, {
                       onError: (error) => toast(refusalMessage(error, myRole), 'error'),
@@ -119,7 +145,7 @@ export function EvidencePanel({
                   <button
                     type="button"
                     aria-label={`Remove ${item.name}`}
-                    className="text-xs text-red-600 opacity-50"
+                    className="text-[13px] font-medium text-link opacity-50"
                     disabled
                     title={WRITE_TOOLTIP}
                     aria-describedby={`evidence-role-${item.id}`}
@@ -136,8 +162,8 @@ export function EvidencePanel({
         </ul>
       )}
       {editable && (
-        <div className="mt-4 flex flex-col gap-3 border-t border-teal/10 pt-4">
-          <label className="flex flex-col gap-1.5 text-sm font-medium">
+        <div className="flex flex-col gap-5 border-t border-hairline pt-5">
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium">
             Attach a file
             <input
               type="file"
@@ -155,14 +181,11 @@ export function EvidencePanel({
                 event.target.value = ''
               }}
             />
-            <span className="text-xs font-normal text-ink-muted">
+            <span className="text-[13px] font-normal text-ink-muted">
               {uploadErrors?.file ?? 'PDF, image, spreadsheet or text, up to 20 MB.'}
             </span>
           </label>
-          <form
-            onSubmit={submitLink}
-            className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end"
-          >
+          <form onSubmit={submitLink} className="grid gap-x-6 gap-y-5 md:grid-cols-2">
             <InputField
               label="Link name"
               placeholder="Fuel register"
@@ -177,15 +200,17 @@ export function EvidencePanel({
               onChange={(event) => setLinkUrl(event.target.value)}
               required
             />
-            <Button
-              type="submit"
-              variant="ghost"
-              className="px-3 py-1.5 text-sm"
-              disabled={linkUrl.trim() === ''}
-              busy={addLink.isPending}
-            >
-              Add link
-            </Button>
+            <div className="flex justify-end md:col-span-2">
+              <Button
+                type="submit"
+                variant="secondary"
+                size="sm"
+                disabled={linkUrl.trim() === ''}
+                busy={addLink.isPending}
+              >
+                Add link
+              </Button>
+            </div>
           </form>
         </div>
       )}

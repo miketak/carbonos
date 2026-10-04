@@ -1,28 +1,28 @@
 import { useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
-import { InputField, TextAreaField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { Chip } from '../../components/Chip'
+import { controlClasses, InputField, TextAreaField } from '../../components/Field'
+import { HelpLink } from '../../components/HelpLink'
 import { Modal } from '../../components/Modal'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel, PanelBody, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { Table, Td, Th, TwoLine } from '../../components/Table'
 import { Tabs } from '../../components/Tabs'
 import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
 import { AssignmentsSection } from './components/AssignmentsSection'
 import { ApproachBadge, InventoryStatusBadge } from './components/badges'
 import { BoundarySection } from './components/BoundarySection'
-import { Breadcrumb } from './components/Breadcrumb'
-import { InventoryFormModal } from './components/InventoryFormModal'
-import { LifecycleBar } from './components/LifecycleBar'
+import { LifecyclePanel, useLifecycleActions } from './components/LifecycleBar'
 import { MarketFactorsCard } from './components/MarketFactorsCard'
 import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
-import { PreflightBanner } from './components/PreflightBanner'
-import { PreflightPanel } from './components/PreflightPanel'
+import { PreflightChip } from './components/PreflightChip'
 import { ReportMetadataCard } from './components/ReportMetadataCard'
 import { UpstreamRulesCard } from './components/UpstreamRulesCard'
 import { RoleButton } from './components/RoleButton'
-import { ScopeBreakdown } from './components/ScopeBreakdown'
 import { actionLabels, approachLabels, exclusionLabels, formatCo2e } from './format'
 import { useInventoryFilters } from './inventoryFilters'
 import type { InventoryTab } from './inventoryFilters'
@@ -70,9 +70,8 @@ export function InventoryDetailPage() {
   const boundaryQuery = useBoundaryQuery(inventoryId)
   const inheritanceQuery = useInheritanceQuery(inventoryId)
   const organizationQuery = useOrganizationQuery(organizationId)
-  const toast = useToast()
+  const navigate = useNavigate()
   const { filters, set, query } = useInventoryFilters()
-  const [editing, setEditing] = useState(false)
   // The workbench renders once the inventory has loaded, but nothing its tabs
   // ask for depends on that answer: they need only the identifier in the
   // address. Asking now runs them alongside the inventory instead of one hop
@@ -94,7 +93,7 @@ export function InventoryDetailPage() {
   }
   if (inventoryQuery.isError) {
     return (
-      <GlassCard className="p-8 text-center">
+      <Panel className="p-8 text-center">
         <h1 className="text-lg">Inventory not found</h1>
         <p className="mt-1 text-sm text-ink-muted">
           It may have been deleted.{' '}
@@ -102,7 +101,7 @@ export function InventoryDetailPage() {
             Back to inventories
           </Link>
         </p>
-      </GlassCard>
+      </Panel>
     )
   }
 
@@ -117,41 +116,21 @@ export function InventoryDetailPage() {
       0,
     ) ?? 0
   return (
-    <div className="flex flex-col gap-8">
-      <div className="animate-fade-up">
-        <Breadcrumb
-          items={[
-            { label: 'Inventories', to: `/app/ghg/${organizationId}/inventories` },
-            { label: inventory.name },
-          ]}
-        />
-        <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl">{inventory.name}</h1>
-          <ApproachBadge approach={inventory.consolidationApproach} />
-          <InventoryStatusBadge inventory={inventory} />
-          <span className="inline-block rounded-full border border-teal/20 px-2.5 py-0.5 font-mono text-xs font-bold tracking-widest whitespace-nowrap text-ink-muted">
-            GWP {inventory.gwpSet}
-          </span>
-          {editable && (
-            <RoleButton
-              allowed={mayWrite(myRole)}
-              tooltip={WRITE_TOOLTIP}
-              variant="ghost"
-              className="px-3 py-1 text-xs"
-              onClick={() => setEditing(true)}
-              title="Name, period, purpose, straddle treatment, approach and GWP set"
-            >
-              Edit inventory
-            </RoleButton>
-          )}
-        </div>
-        <p className="mt-1 text-sm text-ink-muted">
-          {inventory.periodStart} → {inventory.periodEnd}
-          {inventory.purpose ? ` · ${inventory.purpose}` : ''}
-        </p>
-        {(inventory.supersededById || inheritance || inventory.status === 'PUBLISHED') && (
-          <details className="mt-2 text-sm">
-            <summary className="cursor-pointer text-ink-muted hover:text-dark-teal">
+    <InventoryWorkbench
+      organizationId={organizationId}
+      inventoryId={inventoryId}
+      inventory={inventory}
+      editable={editable}
+      myRole={myRole}
+      inBoundaryCount={inBoundaryCount}
+      tab={filters.tab}
+      onTab={(tab) => set({ tab })}
+      onResolve={() => set({ tab: 'records', status: 'UNCLASSIFIED' })}
+      onEdit={() => navigate('edit')}
+      provenance={
+        (inventory.supersededById || inheritance || inventory.status === 'PUBLISHED') && (
+          <details className="text-sm">
+            <summary className="cursor-pointer text-ink-muted hover:text-ink">
               Where this inventory came from
             </summary>
             <div className="mt-1">
@@ -190,7 +169,7 @@ export function InventoryDetailPage() {
                 </p>
               )}
               {inheritance && inheritance.droppedExclusions.length > 0 && editable && (
-                <div className="mt-1 text-sm text-amber-700">
+                <div className="mt-1 text-sm text-warning">
                   <p>
                     {inheritance.droppedExclusions.length} boundary exclusion
                     {inheritance.droppedExclusions.length === 1 ? '' : 's'} of the source{' '}
@@ -208,55 +187,24 @@ export function InventoryDetailPage() {
                 </div>
               )}
               {inventory.status === 'PUBLISHED' && (
-                <p className="mt-1 text-sm text-amber-700">
+                <p className="mt-1 text-sm text-warning">
                   Published: the activity view shows each record as the published run snapshotted
                   it, and marks records whose facts changed since.
                 </p>
               )}
             </div>
           </details>
-        )}
-      </div>
-
-      {/* The lifecycle is a control strip under the title, not one more card in
-          the stack: it is where the acts live and it has to be reachable from
-          every tab. */}
-      <div className="animate-fade-up" style={{ '--stagger': 1 } as CSSProperties}>
-        <LifecycleBar inventory={inventory} inBoundaryCount={inBoundaryCount} myRole={myRole} />
-      </div>
-      {editing && (
-        <InventoryFormModal
-          organizationId={organizationId}
-          inventory={inventory}
-          myRole={myRole}
-          onClose={() => setEditing(false)}
-          onSaved={(message) => {
-            setEditing(false)
-            toast(message)
-          }}
-        />
-      )}
-
-      <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
-        <InventoryWorkbench
-          organizationId={organizationId}
-          inventoryId={inventoryId}
-          inventory={inventory}
-          editable={editable}
-          myRole={myRole}
-          tab={filters.tab}
-          onTab={(tab) => set({ tab })}
-          onResolve={() => set({ tab: 'records', status: 'UNCLASSIFIED' })}
-        />
-      </div>
-    </div>
+        )
+      }
+    />
   )
 }
 
 /**
- * The banner, the tabs and the body of the active tab. Only the active tab's
- * sections mount, so opening an inventory no longer fires every query the page
- * has between it.
+ * The title row with the pre-flight chip and the lifecycle acts, the
+ * lifecycle panel, the tabs and the body of the active tab (spec 10). Only
+ * the active tab's sections mount, so opening an inventory no longer fires
+ * every query the page has between it.
  */
 function InventoryWorkbench({
   organizationId,
@@ -264,22 +212,29 @@ function InventoryWorkbench({
   inventory,
   editable,
   myRole,
+  inBoundaryCount,
   tab,
   onTab,
   onResolve,
+  onEdit,
+  provenance,
 }: {
   organizationId: string
   inventoryId: string
   inventory: Inventory
   editable: boolean
   myRole: Organization['myRole']
+  inBoundaryCount: number
   tab: InventoryTab
   onTab: (tab: InventoryTab) => void
   onResolve: () => void
+  onEdit: () => void
+  provenance: ReactNode
 }) {
   const validationQuery = useValidationQuery(inventoryId)
   const runsQuery = useRunsQuery(inventoryId)
   const boundaryQuery = useBoundaryQuery(inventoryId)
+  const lifecycle = useLifecycleActions(inventory, inBoundaryCount, myRole)
   const report = validationQuery.data
 
   const inBoundary =
@@ -289,10 +244,65 @@ function InventoryWorkbench({
     ) ?? undefined
 
   return (
-    <div className="flex flex-col gap-4">
-      {report && (
-        <PreflightBanner report={report} status={inventory.status} onResolve={onResolve} />
-      )}
+    <div className="flex flex-col gap-7">
+      <PageHeader
+        back={{ to: `/app/ghg/${organizationId}/inventories` }}
+        crumbs={[
+          { label: 'Inventories', to: `/app/ghg/${organizationId}/inventories` },
+          { label: inventory.name },
+        ]}
+        help={<HelpLink topic="lifecycle" />}
+        status={
+          <>
+            {/* spec 05.5: the boundary version is named apart from the report version */}
+            {inventory.status !== 'DRAFT' && inventory.currentBoundaryVersionNo !== null && (
+              <>
+                <span>Boundary version {inventory.currentBoundaryVersionNo}</span>
+                <span aria-hidden="true"> · </span>
+              </>
+            )}
+            <span>GWP {inventory.gwpSet}</span>
+          </>
+        }
+        title={inventory.name}
+        chips={
+          <>
+            <ApproachBadge approach={inventory.consolidationApproach} />
+            <InventoryStatusBadge inventory={inventory} />
+          </>
+        }
+        subtitle={
+          <>
+            {inventory.periodStart} → {inventory.periodEnd}
+            {inventory.purpose ? ` · ${inventory.purpose}` : ''}
+          </>
+        }
+        actions={
+          <>
+            {editable && (
+              <RoleButton
+                allowed={mayWrite(myRole)}
+                tooltip={WRITE_TOOLTIP}
+                variant="ghost"
+                onClick={onEdit}
+                title="Name, period, purpose, straddle treatment, approach and GWP set"
+              >
+                Edit inventory
+              </RoleButton>
+            )}
+            {report && (
+              <PreflightChip report={report} status={inventory.status} onResolve={onResolve} />
+            )}
+            {lifecycle.actions}
+          </>
+        }
+      />
+      {provenance}
+
+      {/* the lifecycle is a panel under the title, not one more card in the stack: its acts sit in
+          the title row so they are reachable from every tab */}
+      <LifecyclePanel inventory={inventory} versionsCut={lifecycle.versionsCut} />
+      {lifecycle.dialogs}
 
       <Tabs<InventoryTab>
         label="The inventory"
@@ -308,16 +318,13 @@ function InventoryWorkbench({
       />
 
       {tab === 'records' && (
-        <div className="flex flex-col gap-6">
-          <AssignmentsSection
-            organizationId={organizationId}
-            inventoryId={inventoryId}
-            editable={editable}
-            myRole={myRole}
-            period={{ start: inventory.periodStart, end: inventory.periodEnd }}
-          />
-          {report && <PreflightPanel report={report} />}
-        </div>
+        <AssignmentsSection
+          organizationId={organizationId}
+          inventoryId={inventoryId}
+          editable={editable}
+          myRole={myRole}
+          period={{ start: inventory.periodStart, end: inventory.periodEnd }}
+        />
       )}
 
       {tab === 'boundary' && (
@@ -392,18 +399,22 @@ function LaunchSection({
   // spec 05.1: the runs of a published inventory are its record; the button says so in the
   // backend's own words instead of sitting disabled without a reason
   const published = inventory.status === 'PUBLISHED'
+  const runs = runsQuery.data ?? []
 
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-2">
-      <div className="flex flex-col gap-4">
-        {/* the gates are read on the Records tab, beside the records that fail
-            them; here the launch button only states whether it may go */}
-        <GlassCard className="flex flex-wrap items-center gap-3 p-5">
+    <div className="flex flex-col gap-6">
+      {/* the gates are read from the chip in the title row; here the launch button only states
+          whether it may go */}
+      <Panel>
+        <PanelBody className="flex flex-wrap items-center gap-3">
+          <label htmlFor="run-label" className="sr-only">
+            Run label
+          </label>
           <input
-            aria-label="Run label"
+            id="run-label"
             value={label}
             onChange={(event) => setCustomLabel(event.target.value)}
-            className="min-w-40 flex-1 rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-teal focus:outline-none"
+            className={`${controlClasses} max-w-60 font-medium`}
           />
           <RoleButton
             allowed={mayWrite(myRole)}
@@ -429,102 +440,144 @@ function LaunchSection({
           >
             Launch calculation run
           </RoleButton>
-        </GlassCard>
-      </div>
+          <span className="text-[13px] text-ink-muted">
+            Recalculation creates a new run; earlier runs are kept.
+          </span>
+        </PanelBody>
+      </Panel>
 
-      <GlassCard className="p-6">
-        <h2 className="text-xl">Calculation runs</h2>
-        <p className="text-sm text-ink-muted">
-          Immutable snapshots of this view, lines and exclusions alike. Recalculation creates a new
-          run; earlier runs are kept. A run is never deleted: it can be voided with a reason, and
-          its number is never reused.
-        </p>
+      <Panel>
+        <PanelHead
+          title="Calculation runs"
+          description="Immutable snapshots of this view, lines and exclusions alike. A run is never deleted: it can be voided with a reason, and its number is never reused."
+        />
         {runsQuery.isPending && (
-          <div aria-label="Loading runs" className="mt-4">
+          <div aria-label="Loading runs" className="p-5">
             <Skeleton className="h-16" />
           </div>
         )}
-        {runsQuery.data?.length === 0 && (
-          <p className="mt-4 text-sm text-ink-muted">No runs yet.</p>
+        {runsQuery.data?.length === 0 && <p className="p-5 text-sm text-ink-muted">No runs yet.</p>}
+        {runs.length > 0 && (
+          <Table>
+            <thead>
+              <tr>
+                <Th className="pl-5">Run</Th>
+                <Th>Calculated</Th>
+                <Th align="right">Scope 1</Th>
+                <Th align="right">Scope 2</Th>
+                <Th align="right">Scope 3</Th>
+                <Th align="right">Total</Th>
+                <Th className="pr-5">
+                  <span className="sr-only">Actions</span>
+                </Th>
+              </tr>
+            </thead>
+            <tbody>
+              {runs.map((run) => {
+                const isFinal = run.id === inventory.finalRunId
+                const muted = run.voided ? 'text-ink-muted' : ''
+                return (
+                  <tr key={run.id}>
+                    <Td className="pl-5">
+                      <TwoLine
+                        primary={
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="font-normal text-ink-muted">
+                              #{String(run.runNo).padStart(3, '0')}
+                            </span>
+                            <Link
+                              to={`runs/${run.id}`}
+                              className={`hover:text-link ${run.voided ? 'line-through' : ''}`}
+                            >
+                              {run.label}
+                            </Link>
+                            {run.voided && <Chip tone="warning">VOIDED</Chip>}
+                            {isFinal && <Chip tone="primary">FINAL</Chip>}
+                          </span>
+                        }
+                        secondary={
+                          run.voided ? (
+                            <>
+                              Voided by {run.voidedBy ?? 'unknown'}
+                              {run.voidedAt ? ` on ${new Date(run.voidedAt).toLocaleString()}` : ''}
+                              : {run.voidReason}
+                            </>
+                          ) : isFinal && inventory.finalDesignatedBy ? (
+                            <>
+                              Final designated by {inventory.finalDesignatedBy}
+                              {inventory.finalDesignatedAt
+                                ? ` on ${new Date(inventory.finalDesignatedAt).toLocaleDateString()}`
+                                : ''}
+                            </>
+                          ) : undefined
+                        }
+                      />
+                    </Td>
+                    <Td>
+                      <TwoLine
+                        primary={
+                          <span className="font-normal">
+                            {new Date(run.createdAt).toLocaleString()}
+                          </span>
+                        }
+                        secondary={`${run.activityCount} line${run.activityCount === 1 ? '' : 's'} · boundary v${run.boundaryVersionNo ?? '?'}`}
+                      />
+                    </Td>
+                    <Td align="right" className={muted}>
+                      {formatCo2e(run.scope1KgCo2e)}
+                    </Td>
+                    <Td align="right" className={muted}>
+                      {formatCo2e(run.scope2KgCo2e)}
+                    </Td>
+                    <Td align="right" className={muted}>
+                      {formatCo2e(run.scope3KgCo2e)}
+                    </Td>
+                    <Td align="right" className={`font-semibold ${muted}`}>
+                      {formatCo2e(run.totalKgCo2e)}
+                    </Td>
+                    <Td align="right" className="pr-5">
+                      <span className="inline-flex gap-1">
+                        {!isFinal && canDesignate && !run.voided && (
+                          <RoleButton
+                            allowed={mayApprove(myRole)}
+                            tooltip={APPROVE_TOOLTIP}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setFinalNote('')
+                              setFinalizeError(null)
+                              setFinalizing(run)
+                            }}
+                          >
+                            Mark as final
+                          </RoleButton>
+                        )}
+                        {canVoid && !run.voided && !isFinal && (
+                          <RoleButton
+                            allowed={mayWrite(myRole)}
+                            tooltip={WRITE_TOOLTIP}
+                            variant="ghost"
+                            size="sm"
+                            className="text-danger"
+                            onClick={() => {
+                              setVoidReason('')
+                              setVoidError(null)
+                              setVoiding(run)
+                            }}
+                          >
+                            Void…
+                          </RoleButton>
+                        )}
+                      </span>
+                    </Td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </Table>
         )}
-        <ul className="mt-4 flex flex-col gap-4">
-          {runsQuery.data?.map((run) => (
-            <li key={run.id} className="border-b border-teal/5 pb-4 last:border-0 last:pb-0">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <span className="mr-2 font-mono text-xs text-ink-muted">
-                    #{String(run.runNo).padStart(3, '0')}
-                  </span>
-                  <Link
-                    to={`runs/${run.id}`}
-                    className={`font-semibold hover:text-link ${run.voided ? 'line-through' : ''}`}
-                  >
-                    {run.label}
-                  </Link>
-                  {run.voided && (
-                    <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600">
-                      VOIDED
-                    </span>
-                  )}
-                  {run.id === inventory.finalRunId && (
-                    <span className="ml-2 rounded-full bg-accent-green/25 px-2 py-0.5 text-xs font-bold text-dark-teal">
-                      FINAL
-                    </span>
-                  )}
-                  <span className="block text-xs text-ink-muted">
-                    {new Date(run.createdAt).toLocaleString()} · {run.activityCount} line
-                    {run.activityCount === 1 ? '' : 's'} · boundary v{run.boundaryVersionNo ?? '?'}
-                  </span>
-                  {run.voided && (
-                    <span className="block text-xs text-slate-600">
-                      Voided by {run.voidedBy ?? 'unknown'}
-                      {run.voidedAt ? ` on ${new Date(run.voidedAt).toLocaleString()}` : ''}:{' '}
-                      {run.voidReason}
-                    </span>
-                  )}
-                </div>
-                <span className="font-bold text-dark-teal">{formatCo2e(run.totalKgCo2e)}</span>
-              </div>
-              <div className="mt-2">
-                <ScopeBreakdown run={run} />
-              </div>
-              <div className="mt-2 flex gap-2">
-                {run.id !== inventory.finalRunId && canDesignate && !run.voided && (
-                  <RoleButton
-                    allowed={mayApprove(myRole)}
-                    tooltip={APPROVE_TOOLTIP}
-                    variant="ghost"
-                    className="px-2 py-1 text-xs"
-                    onClick={() => {
-                      setFinalNote('')
-                      setFinalizeError(null)
-                      setFinalizing(run)
-                    }}
-                  >
-                    Mark as final
-                  </RoleButton>
-                )}
-                {canVoid && !run.voided && run.id !== inventory.finalRunId && (
-                  <RoleButton
-                    allowed={mayWrite(myRole)}
-                    tooltip={WRITE_TOOLTIP}
-                    variant="ghost"
-                    className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                    onClick={() => {
-                      setVoidReason('')
-                      setVoidError(null)
-                      setVoiding(run)
-                    }}
-                  >
-                    Void…
-                  </RoleButton>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
         <HistoryList events={eventsQuery.data ?? []} />
-      </GlassCard>
+      </Panel>
 
       {finalizing && (
         <Modal title={`Mark ${finalizing.label} as final?`} onClose={() => setFinalizing(null)}>
@@ -546,7 +599,7 @@ function LaunchSection({
             />
           </div>
           {finalizeError && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+            <p role="alert" className="mt-3 text-sm font-medium text-danger">
               {finalizeError}
             </p>
           )}
@@ -597,7 +650,7 @@ function LaunchSection({
             />
           </div>
           {voidError && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+            <p role="alert" className="mt-3 text-sm font-medium text-danger">
               {voidError}
             </p>
           )}
@@ -607,6 +660,7 @@ function LaunchSection({
             </Button>
             <Button
               type="button"
+              variant="danger"
               disabled={voidReason.trim().length < 5}
               busy={voidRun.isPending}
               onClick={() =>
@@ -635,7 +689,7 @@ function LaunchSection({
 function HistoryList({ events }: { events: AuditEvent[] }) {
   if (events.length === 0) return null
   return (
-    <div className="mt-6 border-t border-teal/10 pt-4">
+    <PanelBody className="border-t border-hairline">
       <h3 className="text-sm font-semibold">History</h3>
       <ul className="mt-2 flex flex-col gap-2 text-sm">
         {events.map((event) => (
@@ -644,12 +698,12 @@ function HistoryList({ events }: { events: AuditEvent[] }) {
             {event.runNo !== null && (
               <span className="text-ink-muted"> · run #{String(event.runNo).padStart(3, '0')}</span>
             )}
-            <span className="block text-xs text-ink-muted">
+            <span className="block text-[13px] text-ink-muted">
               {event.actor}, {new Date(event.at).toLocaleString()}: {event.reason}
             </span>
           </li>
         ))}
       </ul>
-    </div>
+    </PanelBody>
   )
 }

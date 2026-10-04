@@ -114,7 +114,7 @@ export function UserFormModal({ user, onClose, onSaved }: UserFormModalProps) {
           </div>
         )}
         {conflictMessage && Object.keys(serverErrors).length === 0 && (
-          <p role="alert" className="text-sm font-medium text-red-600">
+          <p role="alert" className="text-sm font-medium text-danger">
             {conflictMessage}
           </p>
         )}

@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField, SelectField, TextAreaField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
 import { Modal } from '../../components/Modal'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel, PanelBody, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
-import { StatusPill } from '../../components/StatusPill'
-import type { PillTone } from '../../components/StatusPill'
+import { StatusDot } from '../../components/StatusDot'
+import type { StatusTone } from '../../components/StatusDot'
+import { Table, Td, Th, TwoLine } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
 import {
@@ -21,11 +23,11 @@ type Dialog =
   | { kind: 'edition'; family: FactorPackFamily; cloneFrom: FactorPackEdition | null }
   | null
 
-const tones: Record<FactorPackStatus, PillTone> = {
-  DRAFT: 'draft',
-  PUBLISHED: 'ready',
-  SUPERSEDED: 'neutral',
-  WITHDRAWN: 'attention',
+const tones: Record<FactorPackStatus, StatusTone> = {
+  DRAFT: 'neutral',
+  PUBLISHED: 'success',
+  SUPERSEDED: 'info',
+  WITHDRAWN: 'warning',
 }
 
 const statusHints: Record<FactorPackStatus, string> = {
@@ -34,6 +36,8 @@ const statusHints: Record<FactorPackStatus, string> = {
   SUPERSEDED: 'A successor was published: readable, not importable.',
   WITHDRAWN: 'Withdrawn with a reason: readable, not importable.',
 }
+
+const crumbs = [{ label: 'Administration' }, { label: 'Factor packs' }]
 
 /**
  * The factor pack catalogue as its maintainer sees it (spec 02.5): every
@@ -50,19 +54,13 @@ export function AdminFactorPacksPage() {
   const families = packsQuery.data ?? []
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl">Factor packs</h1>
-          <p className="mt-1 max-w-3xl text-sm text-ink-muted">
-            A family is the lineage of one publication; an edition is one dated release of it, and
-            the edition is what a citation names. Only a draft can be changed: once an edition is
-            published its rows and values never move again, because reports already rest on them. To
-            correct a published edition, clone it into a new draft.
-          </p>
-        </div>
-        <Button onClick={() => setDialog({ kind: 'family' })}>Add family</Button>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        crumbs={crumbs}
+        title="Factor packs"
+        subtitle="A family is the lineage of one publication; an edition is one dated release of it, and the edition is what a citation names. Only a draft can be changed: once an edition is published its rows and values never move again, because reports already rest on them. To correct a published edition, clone it into a new draft."
+        actions={<Button onClick={() => setDialog({ kind: 'family' })}>Add family</Button>}
+      />
 
       {packsQuery.isPending && (
         <div aria-label="Loading factor packs" className="flex flex-col gap-3">
@@ -72,102 +70,104 @@ export function AdminFactorPacksPage() {
       )}
 
       {packsQuery.data?.length === 0 && (
-        <GlassCard className="p-10 text-center">
+        <Panel className="p-10 text-center">
           <h2 className="text-lg">No factor pack families yet</h2>
           <p className="mt-1 text-sm text-ink-muted">
             Add a family for the publication you maintain, then create its first edition.
           </p>
-        </GlassCard>
+        </Panel>
       )}
 
-      <div className="flex flex-col gap-4">
-        {families.map((family) => (
-          <GlassCard key={family.packKey} className="p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg">{family.name}</h2>
-                <p className="mt-0.5 text-xs text-ink-muted">
-                  <code>{family.packKey}</code> ·{' '}
+      {families.map((family) => (
+        <Panel key={family.packKey}>
+          <PanelHead
+            title={family.name}
+            description={
+              <>
+                <span className="block">
+                  {family.packKey} ·{' '}
                   {family.kind === 'SOURCE'
                     ? 'A published table'
                     : 'A selection assembled for a sector'}
-                </p>
-                {family.summary && (
-                  <p className="mt-2 max-w-2xl text-sm text-ink-muted">{family.summary}</p>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                className="px-3 py-1.5 text-sm"
-                onClick={() => setDialog({ kind: 'edition', family, cloneFrom: null })}
-              >
-                New edition
-              </Button>
-            </div>
+                </span>
+                {family.summary && <span className="mt-1 block">{family.summary}</span>}
+              </>
+            }
+          >
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setDialog({ kind: 'edition', family, cloneFrom: null })}
+            >
+              New edition
+            </Button>
+          </PanelHead>
 
-            {family.editions.length === 0 ? (
-              <p className="mt-4 text-sm text-ink-muted">No editions yet.</p>
-            ) : (
-              <table className="mt-4 w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                    <th className="px-2 py-2 font-semibold">Edition</th>
-                    <th className="px-2 py-2 font-semibold">Status</th>
-                    <th className="px-2 py-2 font-semibold">Applies from</th>
-                    <th className="px-2 py-2 font-semibold">Rows</th>
-                    <th className="px-2 py-2 font-semibold">Held by</th>
-                    <th className="px-2 py-2" />
+          {family.editions.length === 0 ? (
+            <PanelBody>
+              <p className="text-sm text-ink-muted">No editions yet.</p>
+            </PanelBody>
+          ) : (
+            <Table className="[&_tbody_tr:last-child>td]:border-b-0">
+              <thead>
+                <tr>
+                  <Th>Edition</Th>
+                  <Th>Status</Th>
+                  <Th>Applies from</Th>
+                  <Th align="right">Rows</Th>
+                  <Th>Held by</Th>
+                  <Th align="right">
+                    <span className="sr-only">Actions</span>
+                  </Th>
+                </tr>
+              </thead>
+              <tbody>
+                {family.editions.map((edition) => (
+                  <tr key={edition.editionId}>
+                    <Td>
+                      <TwoLine
+                        primary={
+                          <Link
+                            to={`/admin/factor-packs/${edition.editionId}`}
+                            className="text-link hover:underline"
+                          >
+                            {edition.editionId}
+                          </Link>
+                        }
+                        secondary={edition.name}
+                      />
+                    </Td>
+                    <Td>
+                      <StatusDot tone={tones[edition.status]} title={statusHints[edition.status]}>
+                        {edition.status}
+                      </StatusDot>
+                    </Td>
+                    <Td className="whitespace-nowrap text-ink-muted">
+                      {edition.appliesFrom ?? '-'}
+                    </Td>
+                    <Td align="right">{edition.rowCount.toLocaleString()}</Td>
+                    <Td className="text-ink-muted">
+                      {edition.holderCount === 0
+                        ? 'No organization'
+                        : `${edition.holderCount} organization${edition.holderCount === 1 ? '' : 's'}`}
+                    </Td>
+                    <Td align="right">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label={`Clone ${edition.editionId} into a new draft`}
+                        onClick={() => setDialog({ kind: 'edition', family, cloneFrom: edition })}
+                      >
+                        Clone
+                      </Button>
+                    </Td>
                   </tr>
-                </thead>
-                <tbody>
-                  {family.editions.map((edition) => (
-                    <tr key={edition.editionId} className="border-b border-teal/5 last:border-0">
-                      <td className="px-2 py-2 font-medium">
-                        <Link
-                          to={`/admin/factor-packs/${edition.editionId}`}
-                          className="font-semibold text-link"
-                        >
-                          {edition.editionId}
-                        </Link>
-                        <span className="block text-xs font-normal text-ink-muted">
-                          {edition.name}
-                        </span>
-                      </td>
-                      <td className="px-2 py-2">
-                        <StatusPill
-                          tone={tones[edition.status]}
-                          title={statusHints[edition.status]}
-                        >
-                          {edition.status}
-                        </StatusPill>
-                      </td>
-                      <td className="px-2 py-2 text-ink-muted">{edition.appliesFrom ?? '-'}</td>
-                      <td className="px-2 py-2 text-ink-muted">
-                        {edition.rowCount.toLocaleString()}
-                      </td>
-                      <td className="px-2 py-2 text-ink-muted">
-                        {edition.holderCount === 0
-                          ? 'No organization'
-                          : `${edition.holderCount} organization${edition.holderCount === 1 ? '' : 's'}`}
-                      </td>
-                      <td className="px-2 py-2 text-right whitespace-nowrap">
-                        <Button
-                          variant="ghost"
-                          className="px-2 py-1 text-xs"
-                          aria-label={`Clone ${edition.editionId} into a new draft`}
-                          onClick={() => setDialog({ kind: 'edition', family, cloneFrom: edition })}
-                        >
-                          Clone
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </GlassCard>
-        ))}
-      </div>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </Panel>
+      ))}
 
       {dialog?.kind === 'family' && (
         <FamilyFormModal
@@ -265,7 +265,7 @@ function FamilyFormModal({
           />
         </div>
         {refusal && (
-          <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+          <p role="alert" className="mt-3 text-sm font-medium text-danger">
             {refusal}
           </p>
         )}
@@ -407,7 +407,7 @@ function EditionFormModal({
           />
         </div>
         {refusal && (
-          <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+          <p role="alert" className="mt-3 text-sm font-medium text-danger">
             {refusal}
           </p>
         )}

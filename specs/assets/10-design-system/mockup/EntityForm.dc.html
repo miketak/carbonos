@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add legal entity</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="entities" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Entities.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li><a href="Entities.dc.html">Legal entities</a></li><li aria-current="page">Add legal entity</li></ol></div></div>
+  <div class="page-head">
+    <div style="max-width: 720px">
+      <h1 class="page-title">Add legal entity</h1>
+      <p class="page-sub">A structure the company consolidates. Table 1 of the GHG Protocol turns its relationship and economic interest into an accounting share under each approach.</p>
+    </div>
+  </div>
+  <form style="max-width: 760px; display: flex; flex-direction: column; gap: 24px" onSubmit="{{noop}}">
+    <div class="field"><label for="e-name">Name</label><input id="e-name" type="text" placeholder="Tarkwa Gold JV Ltd"></div>
+    <div class="field"><label for="e-rel">Relationship</label>
+      <select id="e-rel"><option>Group company or subsidiary (financial control)</option><option>Joint venture, partnership or operation (joint financial control)</option><option>Associate or affiliate (significant influence, no control)</option><option>Fixed-asset investment (no significant influence)</option><option>Franchise (consolidated only with equity rights or control)</option></select>
+      <span class="field-hint">Table 1 of the GHG Protocol: the relationship and the approach together set the accounting share.</span></div>
+    <div class="form-grid">
+      <div class="field {{interestClass}}"><label for="e-ei">Economic interest (%)</label><input id="e-ei" type="text" value="{{interest}}" onChange="{{setInterest}}"><span class="field-hint">The share of risks and rewards; what equity share accounts for.</span><sc-if value="{{interestBad}}" hint-placeholder-val="{{false}}"><span class="field-error" role="alert">Economic interest must be between 0 and 100.</span></sc-if></div>
+      <div class="field"><label for="e-lo">Legal ownership (%)</label><input id="e-lo" type="text" value="51"><span class="field-hint">For disclosure; equity share follows economic interest, where substance overrides form.</span></div>
+    </div>
+    <div class="banner banner-warning"><div>Economic interest and legal ownership differ by 9 points. Equity share follows economic interest; a verifier will ask why they differ.</div></div>
+    <label class="check"><input type="checkbox" checked> Operated by the company</label>
+    <div class="field"><label for="e-fc">Financial control</label>
+      <select id="e-fc"><option>Follows the Table 1 row</option><option>Consolidated under financial control (IFRS 10), whatever the holding</option><option>Not financially controlled, whatever the holding</option></select>
+      <span class="field-hint">Chapter 3: control is the ability to direct policies, not a percentage.</span></div>
+    <div class="field"><label for="e-held">Held through</label><select id="e-held"><option>Held directly by the reporting company</option><option>Gye Nyame Camp Services Ltd</option></select><span class="field-hint">The share is this row times the parent's.</span></div>
+    <div class="form-grid">
+      <div class="field"><label for="e-acq">Acquired on (optional)</label><input id="e-acq" type="text" placeholder="2023-01-01"><span class="field-hint">Every inventory's membership window starts here.</span></div>
+      <div class="field"><label for="e-dis">Disposed of on (optional)</label><input id="e-dis" type="text" placeholder=""></div>
+    </div>
+    <div class="field" style="max-width: 300px"><label for="e-jur">Jurisdiction (optional)</label><input id="e-jur" type="text" placeholder="GH"><span class="field-hint">ISO 3166-1 alpha-2 code of the country of incorporation.</span></div>
+    <div class="form-actions">
+      <a class="btn btn-ghost" href="Entities.dc.html">Cancel</a>
+      <button type="button" class="btn btn-primary" onClick="{{submit}}">Add entity</button>
+    </div>
+  </form>
+</main>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    const interest = s.interest === undefined ? '60' : s.interest
+    const n = Number(interest)
+    const bad = !!s.tried && (!(n >= 0 && n <= 100) || interest === '')
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      noop: (e) => { if (e && e.preventDefault) e.preventDefault() },
+      interest, setInterest: (e) => this.setState({ interest: e.target.value }),
+      interestBad: bad, interestClass: bad ? 'invalid' : '',
+      submit: () => { if (!(n >= 0 && n <= 100)) { this.setState({ tried: true }); return } this.setState({ tried: false, toast: 'Tarkwa Gold JV Ltd added.' }); setTimeout(() => this.setState({ toast: null }), 3000) },
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

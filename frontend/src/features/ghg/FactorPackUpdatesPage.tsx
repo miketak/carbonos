@@ -1,18 +1,23 @@
 import { useState } from 'react'
-import { HelpLink } from '../../components/HelpLink'
 import { useParams } from 'react-router-dom'
-import { GlassCard } from '../../components/GlassCard'
+import { Button } from '../../components/Button'
+import { HelpLink } from '../../components/HelpLink'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { StatusDot } from '../../components/StatusDot'
+import type { StatusTone } from '../../components/StatusDot'
+import { Table, Td, Th, TwoLine } from '../../components/Table'
 import { AdoptionDiffDrawer } from './components/AdoptionDiffDrawer'
 import { formatCo2e, formatDateTime } from './format'
 import { useFactorPackNoticesQuery, useOrganizationQuery } from './useGhg'
 import type { FactorPackNotice, FactorPackNoticeStatus } from './api'
 
-const statusStyles: Record<FactorPackNoticeStatus, string> = {
-  OPEN: 'bg-amber-100 text-amber-800',
-  ACCEPTED: 'bg-accent-green/25 text-dark-teal',
-  DECLINED: 'bg-slate-200 text-slate-600',
-  WITHDRAWN: 'bg-slate-200 text-slate-600',
+const statusTones: Record<FactorPackNoticeStatus, StatusTone> = {
+  OPEN: 'warning',
+  ACCEPTED: 'success',
+  DECLINED: 'neutral',
+  WITHDRAWN: 'neutral',
 }
 
 const statusLabels: Record<FactorPackNoticeStatus, string> = {
@@ -48,118 +53,102 @@ export function FactorPackUpdatesPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl">Updates</h1>
-          <HelpLink topic="editionNotice" />
+      <PageHeader
+        back={{ to: `/app/ghg/${organizationId}` }}
+        help={<HelpLink topic="editionNotice" />}
+        title="Updates"
+        subtitle="New editions of the emission factor packs you hold. Publishing one changes none of your numbers: moving to a new factor vintage is your decision, and it is recorded here."
+      />
+
+      {noticesQuery.isPending && (
+        <div aria-label="Loading updates" className="flex flex-col gap-2">
+          <Skeleton className="h-8" />
+          <Skeleton className="h-8" />
         </div>
-        <p className="text-sm text-ink-muted">
-          New editions of the emission factor packs you hold. Publishing one changes none of your
-          numbers: moving to a new factor vintage is your decision, and it is recorded here.
-        </p>
-      </div>
+      )}
 
-      <GlassCard className="animate-fade-up p-6">
-        {noticesQuery.isPending && (
-          <div aria-label="Loading updates" className="flex flex-col gap-2">
-            <Skeleton className="h-8" />
-            <Skeleton className="h-8" />
-          </div>
-        )}
+      {noticesQuery.isSuccess && notices.length === 0 && (
+        <Panel className="p-10 text-center">
+          <h2 className="text-lg font-semibold">No updates waiting</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            When a new edition of a pack you hold is published, it appears here with the per-row
+            diff and the movement it would make.
+          </p>
+        </Panel>
+      )}
 
-        {noticesQuery.isSuccess && notices.length === 0 && (
-          <div className="py-6 text-center">
-            <h2 className="text-lg">No updates waiting</h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              When a new edition of a pack you hold is published, it appears here with the per-row
-              diff and the movement it would make.
-            </p>
-          </div>
-        )}
-
-        {notices.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[44rem] text-left text-sm">
-              <caption className="sr-only">Factor pack updates</caption>
-              <thead className="text-xs text-ink-muted">
-                <tr>
-                  <th scope="col" className="py-2 pr-3 font-medium">
-                    Edition
-                  </th>
-                  <th scope="col" className="py-2 pr-3 font-medium">
-                    Raised
-                  </th>
-                  <th scope="col" className="py-2 pr-3 font-medium">
-                    Rows affected
-                  </th>
-                  <th scope="col" className="py-2 pr-3 font-medium">
-                    Moving over 5%
-                  </th>
-                  <th scope="col" className="py-2 pr-3 font-medium">
-                    Estimated movement
-                  </th>
-                  <th scope="col" className="py-2 pr-3 font-medium">
-                    Status
-                  </th>
-                  <th scope="col" className="py-2 font-medium">
-                    <span className="sr-only">Open</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {notices.map((notice) => (
-                  <tr key={notice.id} className="border-t border-teal/10 align-top">
-                    <th scope="row" className="py-2 pr-3 text-left font-normal">
-                      <span className="font-semibold">{notice.editionName}</span>
-                      <span className="block font-mono text-xs text-ink-muted">
-                        {notice.editionId}
-                        {notice.predecessorEditionId
-                          ? ` · in place of ${notice.predecessorEditionId}`
-                          : ''}
-                      </span>
-                    </th>
-                    <td className="py-2 pr-3 whitespace-nowrap">
-                      {formatDateTime(notice.raisedAt)}
-                    </td>
-                    <td className="py-2 pr-3 tabular-nums">{notice.rowsAffected}</td>
-                    <td className="py-2 pr-3 tabular-nums">{notice.rowsOverThreshold}</td>
-                    <td className="py-2 pr-3 tabular-nums">
-                      {movement(notice.estimatedKgCo2eDelta)}
-                    </td>
-                    <td className="py-2 pr-3">
-                      <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${statusStyles[notice.status]}`}
-                      >
-                        {statusLabels[notice.status]}
-                      </span>
-                      {notice.status === 'WITHDRAWN' && notice.withdrawalReason && (
-                        <span className="mt-1 block text-xs text-ink-muted">
-                          {notice.withdrawalReason}
-                        </span>
-                      )}
-                      {notice.decidedBy && (
-                        <span className="mt-1 block text-xs text-ink-muted">
-                          by {notice.decidedBy}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2">
-                      <button
-                        type="button"
-                        aria-label={`${notice.status === 'OPEN' ? 'Review' : 'View'} ${notice.editionName}`}
-                        onClick={() => setOpenNotice(notice)}
-                        className="rounded-lg px-3 py-1.5 text-sm font-semibold text-link transition-colors duration-150 hover:bg-teal/10 focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none"
-                      >
-                        {notice.status === 'OPEN' ? 'Review' : 'View'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </GlassCard>
+      {notices.length > 0 && (
+        <Table>
+          <caption className="sr-only">Factor pack updates</caption>
+          <thead>
+            <tr>
+              <Th scope="col">Edition</Th>
+              <Th scope="col">Raised</Th>
+              <Th scope="col" align="right">
+                Rows affected
+              </Th>
+              <Th scope="col" align="right">
+                Moving over 5%
+              </Th>
+              <Th scope="col" align="right">
+                Estimated movement
+              </Th>
+              <Th scope="col">Status</Th>
+              <Th scope="col" className="w-28">
+                <span className="sr-only">Open</span>
+              </Th>
+            </tr>
+          </thead>
+          <tbody>
+            {notices.map((notice) => (
+              <tr key={notice.id}>
+                <Td>
+                  <TwoLine
+                    primary={notice.editionName}
+                    secondary={`${notice.editionId}${
+                      notice.predecessorEditionId
+                        ? ` · in place of ${notice.predecessorEditionId}`
+                        : ''
+                    }`}
+                  />
+                </Td>
+                <Td className="whitespace-nowrap">{formatDateTime(notice.raisedAt)}</Td>
+                <Td align="right">{notice.rowsAffected}</Td>
+                <Td align="right">{notice.rowsOverThreshold}</Td>
+                <Td
+                  align="right"
+                  className={notice.estimatedKgCo2eDelta == null ? 'text-ink-muted' : ''}
+                >
+                  {movement(notice.estimatedKgCo2eDelta)}
+                </Td>
+                <Td>
+                  <div className="flex flex-col gap-0.5">
+                    <StatusDot tone={statusTones[notice.status]}>
+                      {statusLabels[notice.status]}
+                    </StatusDot>
+                    {notice.status === 'WITHDRAWN' && notice.withdrawalReason && (
+                      <span className="text-[13px] text-ink-muted">{notice.withdrawalReason}</span>
+                    )}
+                    {notice.decidedBy && (
+                      <span className="text-[13px] text-ink-muted">by {notice.decidedBy}</span>
+                    )}
+                  </div>
+                </Td>
+                <Td align="right">
+                  <Button
+                    variant={notice.status === 'OPEN' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    aria-label={`${notice.status === 'OPEN' ? 'Review' : 'View'} ${notice.editionName}`}
+                    onClick={() => setOpenNotice(notice)}
+                  >
+                    {notice.status === 'OPEN' ? 'Review' : 'View'}
+                  </Button>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
 
       {selected && (
         <AdoptionDiffDrawer

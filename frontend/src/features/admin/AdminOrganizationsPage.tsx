@@ -2,13 +2,15 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { TextAreaField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
 import { Modal } from '../../components/Modal'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { StatusDot } from '../../components/StatusDot'
+import { Table, Td, Th, TwoLine } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
-import { OrganizationName } from '../../components/OrganizationName'
-import { organizationLabel } from '../../lib/organizationLabel'
+import { accountLabel, organizationLabel } from '../../lib/organizationLabel'
 import {
   useAdminOrganizationsQuery,
   useAssumeSupportAccess,
@@ -28,6 +30,8 @@ function formatDateTime(iso: string): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
+const crumbs = [{ label: 'Administration' }, { label: 'Organizations' }]
+
 /**
  * The organizations on the platform, as support staff see them (spec 01.3):
  * owners, member count and whether the administrator holds access. No
@@ -46,16 +50,12 @@ export function AdminOrganizationsPage() {
   const windowHours = windowPhrase(settingsQuery.data?.supportAccessWindowHours)
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl">Organizations</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Client organizations are private to their members. To look inside one for a support case,
-          assume access with a reason: it gives you an owner's rights for {windowHours}, and the
-          organization's owners see who took it and why. It never carries deleting the organization,
-          changing its membership, or adopting a factor pack edition.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        crumbs={crumbs}
+        title="Organizations"
+        subtitle={`Client organizations are private to their members. To look inside one for a support case, assume access with a reason: it gives you an owner's rights for ${windowHours}, and the organization's owners see who took it and why. It never carries deleting the organization, changing its membership, or adopting a factor pack edition.`}
+      />
 
       {organizationsQuery.isPending && (
         <div aria-label="Loading organizations" className="flex flex-col gap-3">
@@ -65,79 +65,96 @@ export function AdminOrganizationsPage() {
       )}
 
       {organizationsQuery.data?.length === 0 && (
-        <GlassCard className="p-10 text-center">
+        <Panel className="p-10 text-center">
           <h2 className="text-lg">No organizations yet</h2>
-        </GlassCard>
+        </Panel>
       )}
 
       {organizations.length > 0 && (
-        <GlassCard className="p-2">
-          <table className="w-full text-left text-sm">
+        <Panel>
+          <Table className="[&_tbody_tr:last-child>td]:border-b-0">
             <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-3 py-2 font-semibold">Organization</th>
-                <th className="px-3 py-2 font-semibold">Owners</th>
-                <th className="px-3 py-2 font-semibold">Members</th>
-                <th className="px-3 py-2 font-semibold">Support access</th>
-                <th className="px-3 py-2" />
+              <tr>
+                <Th>Organization</Th>
+                <Th>Owners</Th>
+                <Th align="right">Members</Th>
+                <Th>Support access</Th>
+                <Th align="right">
+                  <span className="sr-only">Actions</span>
+                </Th>
               </tr>
             </thead>
             <tbody>
               {organizations.map((organization) => (
-                <tr key={organization.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-3 py-2 font-medium">
-                    <OrganizationName name={organization.name} accountNo={organization.accountNo} />
-                  </td>
-                  <td className="px-3 py-2 text-ink-muted">
-                    {organization.ownerEmails.join(', ')}
-                  </td>
-                  <td className="px-3 py-2 text-ink-muted">{organization.memberCount}</td>
-                  <td className="px-3 py-2 text-ink-muted">
-                    {organization.supportAccess
-                      ? `Until ${formatDateTime(organization.supportAccess.expiresAt)}: ${organization.supportAccess.reason}`
-                      : 'None'}
-                  </td>
-                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                <tr key={organization.id}>
+                  <Td>
+                    {/* spec 01.8: the account number stays with the name, here as the meta line */}
+                    <TwoLine
+                      primary={organization.name}
+                      secondary={
+                        organization.accountNo === null
+                          ? undefined
+                          : accountLabel(organization.accountNo)
+                      }
+                    />
+                  </Td>
+                  <Td className="text-ink-muted">{organization.ownerEmails.join(', ')}</Td>
+                  <Td align="right">{organization.memberCount}</Td>
+                  <Td>
                     {organization.supportAccess ? (
-                      <>
-                        <Link
-                          to={`/app/ghg/${organization.id}`}
-                          className="mr-2 text-sm font-semibold text-link"
-                        >
-                          Open
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                          aria-label={`End support access to ${organizationLabel(organization)}`}
-                          onClick={() =>
-                            endAccess.mutate(organization.id, {
-                              onSuccess: () =>
-                                toast(
-                                  `Support access to ${organizationLabel(organization)} ended.`,
-                                ),
-                              onError: (error) => toast(refusalMessage(error), 'error'),
-                            })
-                          }
-                        >
-                          End access
-                        </Button>
-                      </>
+                      <StatusDot tone="warning" className="items-start">
+                        <span className="whitespace-normal">
+                          Until {formatDateTime(organization.supportAccess.expiresAt)}:{' '}
+                          {organization.supportAccess.reason}
+                        </span>
+                      </StatusDot>
                     ) : (
-                      <Button
-                        variant="ghost"
-                        className="px-2 py-1 text-xs"
-                        onClick={() => setAssuming(organization)}
-                      >
-                        Assume access
-                      </Button>
+                      <span className="text-ink-muted">None</span>
                     )}
-                  </td>
+                  </Td>
+                  <Td align="right">
+                    <div className="flex justify-end gap-1">
+                      {organization.supportAccess ? (
+                        <>
+                          <Link
+                            to={`/app/ghg/${organization.id}`}
+                            className="inline-flex min-h-9 items-center px-3 text-sm font-medium text-link hover:underline"
+                          >
+                            Open
+                          </Link>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`End support access to ${organizationLabel(organization)}`}
+                            onClick={() =>
+                              endAccess.mutate(organization.id, {
+                                onSuccess: () =>
+                                  toast(
+                                    `Support access to ${organizationLabel(organization)} ended.`,
+                                  ),
+                                onError: (error) => toast(refusalMessage(error), 'error'),
+                              })
+                            }
+                          >
+                            End access
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setAssuming(organization)}
+                        >
+                          Assume access
+                        </Button>
+                      )}
+                    </div>
+                  </Td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        </GlassCard>
+          </Table>
+        </Panel>
       )}
 
       {assuming && (
@@ -208,7 +225,7 @@ function AssumeAccessDialog({
           />
         </div>
         {error && (
-          <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+          <p role="alert" className="mt-3 text-sm font-medium text-danger">
             {error}
           </p>
         )}

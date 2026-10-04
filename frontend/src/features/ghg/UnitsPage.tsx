@@ -2,9 +2,12 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
+import { Chip } from '../../components/Chip'
 import { InputField, SelectField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel, PanelBody, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { Table, Td, Th, TwoLine } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
 import { RoleButton } from './components/RoleButton'
@@ -22,6 +25,9 @@ import {
 } from './useGhg'
 import type { Organization } from './api'
 
+/** The last row's rule would double the hairline over the add form, so the table drops it. */
+const tableInPanel = '[&_tbody_tr:last-child_td]:border-b-0'
+
 /**
  * The organization's units (spec 02.2): custom units defined as multiples of
  * a registered unit ("1 drum = 200 litre"), and densities that let a record
@@ -35,14 +41,11 @@ export function UnitsPage() {
   const myRole = organizationQuery.data?.myRole ?? null
   return (
     <section className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl">Units and densities</h1>
-        <p className="text-sm text-ink-muted">
-          Records are kept in the unit they arrive in. A custom unit converts like the registered
-          unit it is a multiple of; a density bridges mass and volume. Every run line prints the
-          conversion it applied.
-        </p>
-      </div>
+      <PageHeader
+        back={{ to: `/app/ghg/${organizationId}` }}
+        title="Units and densities"
+        subtitle="Records are kept in the unit they arrive in. A custom unit converts like the registered unit it is a multiple of; a density bridges mass and volume. Every run line prints the conversion it applied."
+      />
       <CustomUnitsCard organizationId={organizationId} myRole={myRole} />
       <DensitiesCard organizationId={organizationId} myRole={myRole} />
     </section>
@@ -84,40 +87,38 @@ function CustomUnitsCard({
   }
 
   return (
-    <GlassCard className="p-6">
-      <h2 className="text-xl">Custom units</h2>
-      <p className="text-sm text-ink-muted">
-        A drum, a bag, a truckload: define it as a multiple of a registered unit and records in it
-        convert like any other.
-      </p>
+    <Panel role="region" aria-label="Custom units">
+      <PanelHead
+        title="Custom units"
+        description="A drum, a bag, a truckload: define it as a multiple of a registered unit and records in it convert like any other."
+      />
       {customUnitsQuery.isPending && (
-        <div aria-label="Loading custom units" className="mt-4">
+        <PanelBody aria-label="Loading custom units">
           <Skeleton className="h-10" />
-        </div>
+        </PanelBody>
       )}
       {customUnitsQuery.data && customUnitsQuery.data.length > 0 && (
-        <table className="mt-4 w-full text-left text-sm">
+        <Table className={tableInPanel}>
           <thead>
-            <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-              <th className="px-3 py-2 font-semibold">Unit</th>
-              <th className="px-3 py-2 font-semibold">Definition</th>
-              <th className="px-3 py-2" />
+            <tr>
+              <Th>Unit</Th>
+              <Th>Definition</Th>
+              <Th className="w-28" />
             </tr>
           </thead>
           <tbody>
             {customUnitsQuery.data.map((unit) => (
-              <tr key={unit.id} className="border-b border-teal/5 last:border-0">
-                <td className="px-3 py-2">
-                  <span className="font-medium">{unit.code}</span>
-                  <span className="block text-xs text-ink-muted">{unit.label}</span>
-                </td>
-                <td className="px-3 py-2 tabular-nums">{unit.definition}</td>
-                <td className="px-3 py-2 text-right">
+              <tr key={unit.id}>
+                <Td>
+                  <TwoLine primary={unit.code} secondary={unit.label} />
+                </Td>
+                <Td>{unit.definition}</Td>
+                <Td align="right">
                   <RoleButton
                     allowed={mayWrite(myRole)}
                     tooltip={WRITE_TOOLTIP}
                     variant="ghost"
-                    className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                    size="sm"
                     onClick={() =>
                       remove.mutate(unit.id, {
                         onSuccess: () => toast(`${unit.code} deleted.`),
@@ -127,14 +128,17 @@ function CustomUnitsCard({
                   >
                     Delete
                   </RoleButton>
-                </td>
+                </Td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       )}
       {mayWrite(myRole) && (
-        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-5 md:items-end">
+        <form
+          onSubmit={submit}
+          className="grid gap-3 border-t border-hairline p-5 md:grid-cols-[1fr_1.4fr_1fr_1.2fr_auto] md:items-end"
+        >
           <InputField
             label="Code"
             placeholder="drum"
@@ -181,20 +185,20 @@ function CustomUnitsCard({
           </SelectField>
           <Button
             type="submit"
-            className="px-4 py-1.5 text-sm"
+            variant="secondary"
             busy={create.isPending}
             disabled={code.trim() === '' || label.trim() === '' || Number(factor) <= 0}
           >
             Define unit
           </Button>
           {generalError && (
-            <p role="alert" className="text-sm font-medium text-red-600 md:col-span-5">
+            <p role="alert" className="text-sm font-medium text-danger md:col-span-5">
               {generalError}
             </p>
           )}
         </form>
       )}
-    </GlassCard>
+    </Panel>
   )
 }
 
@@ -238,71 +242,70 @@ function DensitiesCard({
   }
 
   return (
-    <GlassCard className="p-6">
-      <h2 className="text-xl">Densities</h2>
-      <p className="text-sm text-ink-muted">
-        Fuel is often invoiced by mass and its factor published per litre. A density converts
-        between them; the line prints the arithmetic. Typical values are for planning: the gate
-        warns until the supplier's certificate of analysis replaces them.
-      </p>
+    <Panel role="region" aria-label="Densities">
+      <PanelHead
+        title="Densities"
+        description="Fuel is often invoiced by mass and its factor published per litre. A density converts between them; the line prints the arithmetic. Typical values are for planning: the gate warns until the supplier's certificate of analysis replaces them."
+      />
       {densitiesQuery.isPending && (
-        <div aria-label="Loading densities" className="mt-4">
+        <PanelBody aria-label="Loading densities">
           <Skeleton className="h-10" />
-        </div>
+        </PanelBody>
       )}
       {densitiesQuery.data && densitiesQuery.data.length > 0 && (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-3 py-2 font-semibold">Material</th>
-                <th className="px-3 py-2 font-semibold">kg per litre</th>
-                <th className="px-3 py-2 font-semibold">Source</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {densitiesQuery.data.map((density) => (
-                <tr key={density.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-3 py-2">
+        <Table className={tableInPanel}>
+          <thead>
+            <tr>
+              <Th>Material</Th>
+              <Th align="right">kg per litre</Th>
+              <Th>Source</Th>
+              <Th className="w-28" />
+            </tr>
+          </thead>
+          <tbody>
+            {densitiesQuery.data.map((density) => (
+              <tr key={density.id}>
+                <Td>
+                  <span className="inline-flex flex-wrap items-center gap-2">
                     <span className="font-medium">{density.material}</span>
-                    {density.typical && (
-                      <span className="ml-2 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                        Typical value
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 tabular-nums">{density.kgPerLitre}</td>
-                  <td className="px-3 py-2 text-xs text-ink-muted">
-                    {density.source}
-                    {density.note && <span className="block">{density.note}</span>}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {!density.typical && (
-                      <RoleButton
-                        allowed={mayWrite(myRole)}
-                        tooltip={WRITE_TOOLTIP}
-                        variant="ghost"
-                        className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                        onClick={() =>
-                          remove.mutate(density.id, {
-                            onSuccess: () => toast(`Density of ${density.material} deleted.`),
-                            onError: (error) => toast(refusalMessage(error, myRole), 'error'),
-                          })
-                        }
-                      >
-                        Delete
-                      </RoleButton>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    {density.typical && <Chip>Typical value</Chip>}
+                  </span>
+                </Td>
+                <Td align="right">{density.kgPerLitre}</Td>
+                <Td className={density.typical ? 'text-ink-muted' : ''}>
+                  {density.source}
+                  {density.note && (
+                    <span className="block text-[13px] text-ink-muted">{density.note}</span>
+                  )}
+                </Td>
+                <Td align="right">
+                  {!density.typical && (
+                    <RoleButton
+                      allowed={mayWrite(myRole)}
+                      tooltip={WRITE_TOOLTIP}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        remove.mutate(density.id, {
+                          onSuccess: () => toast(`Density of ${density.material} deleted.`),
+                          onError: (error) => toast(refusalMessage(error, myRole), 'error'),
+                        })
+                      }
+                    >
+                      Delete
+                    </RoleButton>
+                  )}
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
       )}
       {mayWrite(myRole) && (
-        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-5 md:items-end">
+        <form
+          onSubmit={submit}
+          className="grid gap-3 border-t border-hairline p-5 md:grid-cols-[1.4fr_0.8fr_1.6fr_1fr_auto] md:items-end"
+        >
           <InputField
             label="Material"
             placeholder="Diesel (GOIL, 2025 CoA)"
@@ -338,19 +341,19 @@ function DensitiesCard({
           />
           <Button
             type="submit"
-            className="px-4 py-1.5 text-sm"
+            variant="secondary"
             busy={create.isPending}
             disabled={material.trim() === '' || Number(kgPerLitre) <= 0 || source.trim() === ''}
           >
             Record density
           </Button>
           {generalError && (
-            <p role="alert" className="text-sm font-medium text-red-600 md:col-span-5">
+            <p role="alert" className="text-sm font-medium text-danger md:col-span-5">
               {generalError}
             </p>
           )}
         </form>
       )}
-    </GlassCard>
+    </Panel>
   )
 }

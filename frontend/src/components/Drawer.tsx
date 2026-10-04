@@ -45,18 +45,18 @@ export function Drawer({ eyebrow, title, subtitle, footer, onClose, children }: 
     <aside
       role="dialog"
       aria-label={title}
-      className="fixed inset-y-0 right-0 z-40 flex w-full max-w-xl animate-[drawer-in_180ms_ease-out] flex-col border-l border-white/70 bg-white/90 shadow-[-8px_0_32px_rgba(9,168,149,0.16)] backdrop-blur-xl backdrop-saturate-150 md:top-[57px]"
+      className="fixed inset-y-0 right-0 z-40 flex w-full max-w-xl animate-[drawer-in_180ms_ease-out] flex-col border-l border-hairline bg-surface shadow-pop"
     >
-      <header className="flex items-start justify-between gap-3 border-b border-teal/10 px-5 py-4">
+      <header className="flex items-start justify-between gap-3 border-b border-hairline px-6 py-5">
         <div className="min-w-0">
           {eyebrow && (
-            <p className="text-[11px] font-semibold tracking-widest text-ink-muted uppercase">
+            <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
               {eyebrow}
             </p>
           )}
-          <h2 className="truncate text-lg">{title}</h2>
+          <h2 className="mt-1 truncate text-2xl tracking-[-0.01em]">{title}</h2>
           {subtitle && (
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-ink-muted">
               {subtitle}
             </div>
           )}
@@ -65,7 +65,7 @@ export function Drawer({ eyebrow, title, subtitle, footer, onClose, children }: 
           type="button"
           aria-label="Close"
           onClick={onClose}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors duration-150 hover:bg-teal/10 hover:text-dark-teal focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none"
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors duration-150 hover:bg-surface-sunken hover:text-ink focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
         >
           <svg
             viewBox="0 0 24 24"
@@ -74,16 +74,16 @@ export function Drawer({ eyebrow, title, subtitle, footer, onClose, children }: 
             strokeWidth="2"
             strokeLinecap="round"
             aria-hidden="true"
-            className="h-4 w-4"
+            className="size-[18px]"
           >
             <path d="M6 6l12 12M18 6 6 18" />
           </svg>
         </button>
       </header>
-      <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         {children}
       </div>
-      {footer && <footer className="border-t border-teal/10 px-5 py-3">{footer}</footer>}
+      {footer && <footer className="border-t border-hairline px-6 py-3.5">{footer}</footer>}
     </aside>,
     document.body,
   )

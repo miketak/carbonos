@@ -1,10 +1,11 @@
 import { formatCo2e, scopeLabels } from '../format'
 import type { GhgScope, Run } from '../api'
 
-const scopeBarStyles: Record<GhgScope, string> = {
-  SCOPE_1: 'bg-dark-teal',
-  SCOPE_2: 'bg-teal-deep',
-  SCOPE_3: 'bg-accent-green',
+/* one colour, three weights (spec 10): the bars differ by opacity, the label says which scope */
+const scopeOpacity: Record<GhgScope, string> = {
+  SCOPE_1: 'opacity-100',
+  SCOPE_2: 'opacity-70',
+  SCOPE_3: 'opacity-45',
 }
 
 /** A run's scope 1/2/3 split as labelled horizontal bars. */
@@ -16,13 +17,16 @@ export function ScopeBreakdown({ run }: { run: Run }) {
   ]
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
       {scopes.map(({ scope, kg }) => (
-        <div key={scope} className="flex items-center gap-3 text-sm">
-          <span className="w-16 shrink-0 text-ink-muted">{scopeLabels[scope]}</span>
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-teal/10">
+        <div
+          key={scope}
+          className="grid grid-cols-[110px_minmax(0,1fr)_120px] items-center gap-3 text-sm"
+        >
+          <span>{scopeLabels[scope]}</span>
+          <div className="h-2 overflow-hidden rounded-sm bg-surface-sunken">
             <div
-              className={`animate-bar-grow h-full rounded-full ${scopeBarStyles[scope]}`}
+              className={`animate-bar-grow h-full bg-primary ${scopeOpacity[scope]}`}
               style={{
                 width:
                   run.totalKgCo2e > 0
@@ -31,9 +35,7 @@ export function ScopeBreakdown({ run }: { run: Run }) {
               }}
             />
           </div>
-          <span className="w-28 shrink-0 text-right whitespace-nowrap text-ink-muted">
-            {formatCo2e(kg)}
-          </span>
+          <span className="text-right whitespace-nowrap">{formatCo2e(kg)}</span>
         </div>
       ))}
     </div>

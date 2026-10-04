@@ -8,7 +8,7 @@ description: The three ways the GHG Protocol lets a company consolidate its emis
 
 A consolidation approach is the rule an inventory uses to decide which of the company's operations count, and at what share. The Corporate Standard offers three; CarbonOS prints the one you chose on the report's first page.
 
-<!-- sources: specs 03, 03.1 to 03.4; old page concepts/boundaries-and-consolidation-approaches.md (verified 2026-09-24); format.ts (relationshipLabels, approachLabels); EntityFormModal.tsx; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "1 entity dialog", "1 entities after", "5 inventory dialog" -->
+<!-- sources: specs 03, 03.1 to 03.4; old page concepts/boundaries-and-consolidation-approaches.md (verified 2026-09-24); format.ts (relationshipLabels, approachLabels); EntityFormPage.tsx; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "1 entity dialog", "1 entities after", "5 inventory dialog" -->
 
 ## What are the three approaches?
 

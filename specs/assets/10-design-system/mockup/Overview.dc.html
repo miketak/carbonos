@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Overview</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="overview" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Organizations.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li aria-current="page">Overview</li></ol></div><span class="saved">Your role: Owner</span></div>
+  <div class="page-head">
+    <div>
+      <div class="page-title-row"><h1 class="page-title">Gye Nyame Gold</h1><span class="chip">ORG-0001</span></div>
+      <p class="page-sub">Mine and camp in the Ashanti Region<span class="sep">·</span>2 legal entities<span class="sep">·</span>2 facilities</p>
+    </div>
+    <div class="page-actions"><a class="btn btn-secondary" href="Main.dc.html">Record activity</a><a class="btn btn-primary" href="Inventory.dc.html">Open inventory</a></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Latest final run</div><div class="stat-value">86,412 <span class="stat-unit">t CO₂e</span></div><div class="stat-note">FY2025 · Run 001</div></div>
+    <div class="stat"><div class="stat-label">Activity records</div><div class="stat-value">7</div><div class="stat-note">5 ready</div></div>
+    <div class="stat"><div class="stat-label">Needs attention</div><div class="stat-value">2</div><div class="stat-note"><a href="Main.dc.html">Resolve 2 items →</a></div></div>
+    <div class="stat"><div class="stat-label">Updates waiting</div><div class="stat-value">1</div><div class="stat-note"><a href="Updates.dc.html">DESNZ conversion factors 2027</a></div></div>
+  </div>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head">
+        <div><div class="panel-title">FY2025 <span class="chip chip-primary" style="margin-left: 8px">Final</span></div><div class="muted" style="font-size: 13px; margin-top: 2px">Operational control · Run 001 · 2025-01-01 → 2025-12-31</div></div>
+        <a href="Run.dc.html">View report →</a>
+      </div>
+      <div class="panel-body" style="display: flex; flex-direction: column; gap: 18px">
+        <div class="stat-value" style="font-size: 44px">86,412 <span class="stat-unit">t CO₂e</span></div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div class="bar-row"><span>Scope 1</span><div class="bar-track"><div class="bar-fill" style="width: 40%"></div></div><span class="num">34,194 t</span></div>
+          <div class="bar-row"><span>Scope 2</span><div class="bar-track"><div class="bar-fill" style="width: 38%; opacity: 0.7"></div></div><span class="num">32,817 t</span></div>
+          <div class="bar-row"><span>Scope 3</span><div class="bar-track"><div class="bar-fill" style="width: 22%; opacity: 0.45"></div></div><span class="num">19,401 t</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><div class="panel-title">Top facilities by emissions</div><div class="muted" style="font-size: 13px; margin-top: 2px">From the latest run.</div></div></div>
+      <div class="panel-body" style="display: flex; flex-direction: column; gap: 10px">
+        <div class="bar-row"><span>Nyame Pit and Plant</span><div class="bar-track"><div class="bar-fill" style="width: 91%"></div></div><span class="num">78,900 t</span></div>
+        <div class="bar-row"><span>Obuasi Camp</span><div class="bar-track"><div class="bar-fill" style="width: 9%"></div></div><span class="num">7,512 t</span></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><div><div class="panel-title">From facts to a final inventory</div><div class="muted" style="font-size: 13px; margin-top: 2px">Activity data is what happened; an inventory is how it's accounted for; a run is that view calculated.</div></div></div>
+    <div class="panel-body tight">
+      <table class="table">
+        <tbody>
+          <tr><td style="width: 44px"><span class="status status-success"></span></td><td><div class="cell-2"><span class="t">Add your legal entities and facilities</span><span class="s">Which structures you consolidate, and the sites under each. Facts shared by every view.</span></div></td><td class="actions" style="width: 180px; text-align: right"><a class="btn btn-ghost btn-sm" href="Facilities.dc.html">Facilities</a></td></tr>
+          <tr><td><span class="status status-success"></span></td><td><div class="cell-2"><span class="t">Record activity data</span><span class="s">What happened: fuel burned, electricity bought; no accounting treatment yet.</span></div></td><td class="actions" style="text-align: right"><a class="btn btn-ghost btn-sm" href="Main.dc.html">Record activity</a></td></tr>
+          <tr><td><span class="status status-success"></span></td><td><div class="cell-2"><span class="t">Create an inventory</span><span class="s">An accounting view: reporting period, consolidation approach, boundary.</span></div></td><td class="actions" style="text-align: right"><a class="btn btn-ghost btn-sm" href="Inventories.dc.html">Inventories</a></td></tr>
+          <tr><td><span class="status status-info"></span></td><td><div class="cell-2"><span class="t">Clear pre-flight and launch a run</span><span class="s">Review the facts, classify them, pass the gates, calculate.</span></div></td><td class="actions" style="text-align: right"><a class="btn btn-primary btn-sm" href="Inventory.dc.html">Open inventory</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    return { theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }) }
+  }
+}
+</script>
+</body>
+</html>

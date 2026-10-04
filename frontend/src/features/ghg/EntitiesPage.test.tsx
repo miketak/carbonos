@@ -10,7 +10,7 @@ vi.mock('./api', () => import('./testApiMock'))
 // forms with many fields take longer than the 15s default on a loaded machine
 vi.setConfig({ testTimeout: 30000 })
 
-import { createEntity, getOrganization, listEntities } from './api'
+import { getOrganization, listEntities } from './api'
 
 const organization: Organization = {
   id: 'org-1',
@@ -80,7 +80,6 @@ function renderPage() {
 
 beforeEach(() => {
   vi.mocked(listEntities).mockReset()
-  vi.mocked(createEntity).mockReset()
   vi.mocked(getOrganization).mockReset()
   vi.mocked(listEntities).mockResolvedValue([own, jv])
 })
@@ -99,100 +98,38 @@ test('lists entities with the share Table 1 gives under each approach', async ()
   expect(within(jvRow as HTMLElement).getByRole('button', { name: /remove/i })).toBeInTheDocument()
 })
 
-test('the add form submits the Table 1 facts', async () => {
+test('Add entity and Edit lead to their own pages under the list (spec 08)', async () => {
   const user = userEvent.setup()
-  vi.mocked(createEntity).mockResolvedValue({ ...jv, id: 'ent-3', name: 'Takoradi Port Co' })
-  renderPage()
+  renderWithProviders(<EntitiesPage />, {
+    route: '/app/ghg/org-1/entities',
+    path: '/app/ghg/:organizationId/entities',
+    extraRoutes: [
+      { path: '/app/ghg/:organizationId/entities/new', element: <h1>Add legal entity</h1> },
+      {
+        path: '/app/ghg/:organizationId/entities/:entityId/edit',
+        element: <h1>Edit legal entity</h1>,
+      },
+    ],
+  })
 
-  await user.click(await screen.findByRole('button', { name: /add entity/i }))
-  const dialog = await screen.findByRole('dialog', { name: /add legal entity/i })
-  await user.click(screen.getByLabelText('Name'))
-  await user.paste('Takoradi Port Co')
-  await user.selectOptions(screen.getByLabelText('Relationship'), 'ASSOCIATE')
-  await user.clear(screen.getByLabelText('Economic interest (%)'))
-  await user.paste('30')
-  await user.click(screen.getByLabelText('Operated by the company'))
-  await user.click(within(dialog).getByRole('button', { name: /^add entity$/i }))
-
-  await waitFor(() =>
-    expect(createEntity).toHaveBeenCalledWith('org-1', {
-      name: 'Takoradi Port Co',
-      relationshipType: 'ASSOCIATE',
-      economicInterestPercent: 30,
-      legalOwnershipPercent: undefined,
-      operatedByCompany: false,
-      controlledByCompany: undefined,
-      parentEntityId: undefined,
-    }),
-  )
+  const jvRow = (await screen.findByText('Tarkwa Gold JV Ltd')).closest('tr') as HTMLElement
+  await user.click(within(jvRow).getByRole('button', { name: /^edit$/i }))
+  expect(await screen.findByRole('heading', { name: 'Edit legal entity' })).toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
-test('an economic interest above 100 gets an inline message and sends nothing (ticket T-24)', async () => {
+test('Add entity leads to the add page (spec 08)', async () => {
   const user = userEvent.setup()
-  renderPage()
+  renderWithProviders(<EntitiesPage />, {
+    route: '/app/ghg/org-1/entities',
+    path: '/app/ghg/:organizationId/entities',
+    extraRoutes: [
+      { path: '/app/ghg/:organizationId/entities/new', element: <h1>Add legal entity</h1> },
+    ],
+  })
 
   await user.click(await screen.findByRole('button', { name: /add entity/i }))
-  const dialog = await screen.findByRole('dialog', { name: /add legal entity/i })
-  await user.click(screen.getByLabelText('Name'))
-  await user.paste('Takoradi Port Co')
-  const interest = screen.getByLabelText('Economic interest (%)')
-  await user.clear(interest)
-  await user.paste('150')
-  await user.click(within(dialog).getByRole('button', { name: /^add entity$/i }))
-
-  expect(
-    await within(dialog).findByText('Economic interest must be between 0 and 100.'),
-  ).toBeInTheDocument()
-  expect(interest).toHaveAttribute('aria-invalid', 'true')
-  expect(createEntity).not.toHaveBeenCalled()
-  expect(screen.getByRole('dialog', { name: /add legal entity/i })).toBeInTheDocument()
-})
-
-test('a material gap between economic interest and legal ownership shows a note (ticket T-24)', async () => {
-  const user = userEvent.setup()
-  renderPage()
-
-  await user.click(await screen.findByRole('button', { name: /add entity/i }))
-  await screen.findByRole('dialog', { name: /add legal entity/i })
-  await user.clear(screen.getByLabelText('Economic interest (%)'))
-  await user.paste('60')
-  await user.click(screen.getByLabelText('Legal ownership (%)'))
-  await user.paste('20')
-
-  expect(
-    await screen.findByText(/Economic interest and legal ownership differ by 40 points/),
-  ).toBeInTheDocument()
-})
-
-test('the add form submits the dates, the jurisdiction and the control decision (spec 03.4)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(createEntity).mockResolvedValue({ ...jv, id: 'ent-3', name: 'Takoradi Port Co' })
-  renderPage()
-
-  await user.click(await screen.findByRole('button', { name: /add entity/i }))
-  const dialog = await screen.findByRole('dialog', { name: /add legal entity/i })
-  await user.click(within(dialog).getByLabelText('Name'))
-  await user.paste('Takoradi Port Co')
-  await user.selectOptions(within(dialog).getByLabelText('Relationship'), 'ASSOCIATE')
-  await user.selectOptions(within(dialog).getByLabelText('Financial control'), 'true')
-  await user.click(within(dialog).getByLabelText('Basis of the decision'))
-  await user.paste('Board control under the 2023 shareholders agreement')
-  await user.type(within(dialog).getByLabelText('Acquired on (optional)'), '2025-07-01')
-  await user.type(within(dialog).getByLabelText('Jurisdiction (optional)'), 'gh')
-  await user.click(within(dialog).getByRole('button', { name: /^add entity$/i }))
-
-  await waitFor(() =>
-    expect(createEntity).toHaveBeenCalledWith(
-      'org-1',
-      expect.objectContaining({
-        relationshipType: 'ASSOCIATE',
-        financialControlOverride: true,
-        controlNote: 'Board control under the 2023 shareholders agreement',
-        effectiveFrom: '2025-07-01',
-        jurisdiction: 'GH',
-      }),
-    ),
-  )
+  expect(await screen.findByRole('heading', { name: 'Add legal entity' })).toBeInTheDocument()
 })
 
 test('a verifier sees Add entity, Edit and Remove disabled with the role they need (spec 01.4)', async () => {
@@ -219,53 +156,4 @@ test('a preparer can add, edit and remove entities (spec 01.4)', async () => {
   const jvRow = screen.getByText('Tarkwa Gold JV Ltd').closest('tr') as HTMLElement
   expect(within(jvRow).getByRole('button', { name: /^edit$/i })).toBeEnabled()
   expect(within(jvRow).getByRole('button', { name: /^remove$/i })).toBeEnabled()
-})
-
-test('editing the reporting company shows every field, its structure fixed, and the shares Table 1 gives', async () => {
-  const user = userEvent.setup()
-  renderPage()
-
-  const ownRow = (await screen.findByText('Sankofa Gold plc')).closest('tr') as HTMLElement
-  await user.click(within(ownRow).getByRole('button', { name: /^edit$/i }))
-  const dialog = await screen.findByRole('dialog', { name: /edit legal entity/i })
-
-  // every field renders; the reporting company's structure is fixed, so those fields are read-only
-  for (const label of [
-    'Relationship',
-    'Economic interest (%)',
-    'Legal ownership (%)',
-    'Operated by the company',
-    'Financial control',
-    'Held through',
-  ]) {
-    expect(within(dialog).getByLabelText(label)).toBeDisabled()
-  }
-  for (const label of [
-    'Name',
-    'Acquired on (optional)',
-    'Disposed of on (optional)',
-    'Jurisdiction (optional)',
-  ]) {
-    expect(within(dialog).getByLabelText(label)).toBeEnabled()
-  }
-  const shares = within(dialog).getByLabelText('Share under each approach')
-  expect(shares).toHaveTextContent(/Equity share\s*100%/)
-  expect(shares).toHaveTextContent(/Financial control\s*100%/)
-  expect(shares).toHaveTextContent(/Operational control\s*100%/)
-})
-
-test('editing another entity leaves its Table 1 facts editable and shows its shares', async () => {
-  const user = userEvent.setup()
-  renderPage()
-
-  const jvRow = (await screen.findByText('Tarkwa Gold JV Ltd')).closest('tr') as HTMLElement
-  await user.click(within(jvRow).getByRole('button', { name: /^edit$/i }))
-  const dialog = await screen.findByRole('dialog', { name: /edit legal entity/i })
-
-  expect(within(dialog).getByLabelText('Relationship')).toBeEnabled()
-  expect(within(dialog).getByLabelText('Economic interest (%)')).toBeEnabled()
-  expect(within(dialog).getByLabelText('Held through')).toBeEnabled()
-  expect(within(dialog).getByLabelText('Share under each approach')).toHaveTextContent(
-    /Equity share\s*40%.*Financial control\s*40%.*Operational control\s*100%/,
-  )
 })

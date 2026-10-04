@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
 import { Wordmark } from '../../components/Wordmark'
 import { ApiError } from '../../lib/api'
 import { login } from './api'
@@ -51,14 +50,16 @@ export function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <GlassCard className="w-full max-w-md p-8">
-        <div className="mb-8 text-center">
-          <Wordmark size="page" />
-          <h1 className="mt-4 text-xl">Sign in</h1>
-          <p className="mt-1 text-sm text-ink-muted">Measure. Certify. Sustain.</p>
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center gap-5 text-center">
+          <Wordmark size="page" byline={false} />
+          <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.02em]">Sign in</h1>
         </div>
         {state.passwordReset && (
-          <p role="status" className="mb-4 rounded-lg bg-teal/10 px-4 py-2 text-sm">
+          <p
+            role="status"
+            className="mb-4 rounded-lg border border-hairline border-l-[3px] border-l-info bg-surface px-4 py-3 text-sm"
+          >
             Your password is reset. Sign in with your new password.
           </p>
         )}
@@ -82,11 +83,11 @@ export function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
           />
           {errorMessage && (
-            <p role="alert" className="text-sm font-medium text-red-600">
+            <p role="alert" className="text-sm font-medium text-danger">
               {errorMessage}
             </p>
           )}
-          <Button type="submit" busy={signIn.isPending} className="mt-2">
+          <Button type="submit" busy={signIn.isPending} className="mt-2 w-full">
             Sign in
           </Button>
           <Link
@@ -96,7 +97,7 @@ export function LoginPage() {
             Forgot your password?
           </Link>
         </form>
-      </GlassCard>
+      </div>
     </main>
   )
 }

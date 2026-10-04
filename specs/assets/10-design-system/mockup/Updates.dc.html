@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Updates</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="updates" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Overview.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li aria-current="page">Updates</li></ol></div><a href="Overview.dc.html" class="muted">Help</a></div>
+  <div class="page-head">
+    <div style="max-width: 820px">
+      <h1 class="page-title">Updates</h1>
+      <p class="page-sub">New editions of the emission factor packs you hold. Publishing one changes none of your numbers: moving to a new factor vintage is your decision, and it is recorded here.</p>
+    </div>
+  </div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Edition</th><th>Raised</th><th class="num">Rows affected</th><th class="num">Moving over 5%</th><th class="num">Estimated movement</th><th>Status</th><th class="actions" style="width: 110px"></th></tr></thead>
+    <tbody>
+      <tr class="row-link" onClick="{{openDrawer}}"><td><div class="cell-2"><span class="t">DESNZ conversion factors 2027</span><span class="s mono">defra-2027 · in place of defra-2026</span></div></td><td class="mono">2026-09-30</td><td class="num">40</td><td class="num">7</td><td class="num">+1.2 t CO₂e</td><td><span class="status status-warning">Waiting on you</span></td><td class="actions" style="text-align: right"><button type="button" class="btn btn-secondary btn-sm" onClick="{{openDrawer}}">Review</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t">UK Government (DESNZ) GHG conversion factors 2026</span><span class="s mono">defra-2026 · in place of defra-2025</span></div></td><td class="mono">2026-06-10</td><td class="num">55</td><td class="num">9</td><td class="num">+0.8 t CO₂e</td><td><div class="cell-2"><span class="status status-success">Accepted</span><span class="s">by Kofi Mensah</span></div></td><td class="actions" style="text-align: right"><button type="button" class="btn btn-ghost btn-sm">View</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t">Ghana grid factors 2026</span><span class="s mono">ghana-2026 · in place of ghana</span></div></td><td class="mono">2026-03-02</td><td class="num">12</td><td class="num">12</td><td class="num muted">not estimated</td><td><div class="cell-2"><span class="status status-neutral">Declined</span><span class="s">by K. Boateng</span></div></td><td class="actions" style="text-align: right"><button type="button" class="btn btn-ghost btn-sm">View</button></td></tr>
+    </tbody>
+  </table></div>
+</main>
+
+<sc-if value="{{drawerOpen}}" hint-placeholder-val="{{false}}">
+  <aside class="drawer" role="dialog" aria-label="DESNZ conversion factors 2027">
+    <div class="drawer-head">
+      <div style="min-width: 0"><div class="eyebrow">Factor pack update</div><h2 class="drawer-title">DESNZ conversion factors 2027</h2><div class="muted" style="margin-top: 6px; font-size: 14px"><span class="mono">defra-2027</span> · in place of <span class="mono">defra-2026</span> · applies from <span class="mono">2027-01-01</span></div></div>
+      <button type="button" class="icon-btn" aria-label="Close" onClick="{{closeDrawer}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="drawer-body">
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Rows moving</div><div class="stat-value">40</div></div>
+        <div class="stat"><div class="stat-label">Over five percent</div><div class="stat-value">7</div></div>
+        <div class="stat"><div class="stat-label">Estimated movement</div><div class="stat-value">+1.2 <span class="stat-unit">t CO₂e</span></div></div>
+      </div>
+      <p class="muted" style="font-size: 14px">Estimated from the last completed run (Run 001): 0.001% of base-year emissions, under the 5% significance threshold.</p>
+      <div>
+        <div class="section-head"><h3 class="panel-title">What moves (40)</h3></div>
+        <table class="table" style="margin-top: 8px"><thead><tr><th>Factor</th><th class="num">Now</th><th class="num">New</th><th class="num">Change</th></tr></thead><tbody>
+          <tr><td><div class="cell-2"><span class="t">Diesel (average biofuel blend)</span><span class="s mono">fuels.liquid.diesel-blend · per litre</span></div></td><td class="num">2.66</td><td class="num">2.57</td><td class="num" style="color: var(--success)">−3.4%</td></tr>
+          <tr><td><div class="cell-2"><span class="t">LPG</span><span class="s mono">fuels.gaseous.lpg · per litre</span></div></td><td class="num">1.56</td><td class="num">1.61</td><td class="num" style="color: var(--warning)">+3.2%</td></tr>
+          <tr><td><div class="cell-2"><span class="t">Gaseous fuels: Butane</span><span class="s mono">fuels.gaseous.butane · per tonne · Gases changed: CH₄</span></div></td><td class="num">3,033.38</td><td class="num">3,201.10</td><td class="num" style="color: var(--warning)">+5.5%</td></tr>
+        </tbody></table>
+        <p class="muted mono" style="font-size: 12px; margin-top: 8px">Diff hash 3f9a1c…e8b2</p>
+      </div>
+      <fieldset style="border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px">
+        <legend style="font-weight: 500; font-size: 14px; margin-bottom: 6px">How does chapter 5 treat this adoption?</legend>
+        <label class="check"><input type="radio" name="treat"> Vintage progression: the edition applies to the next reporting year forward</label>
+        <label class="check"><input type="radio" name="treat"> Retrospective adoption: the edition is applied to a year already reported</label>
+        <label class="check"><input type="radio" name="treat"> Erratum: the edition corrects a wrong value in a year already reported</label>
+      </fieldset>
+      <div class="field"><label for="u-note">Note (optional)</label><textarea id="u-note"></textarea></div>
+    </div>
+    <div class="drawer-foot"><button type="button" class="btn btn-ghost" onClick="{{decline}}">Decline</button><button type="button" class="btn btn-primary" onClick="{{accept}}">Accept</button></div>
+  </aside>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    const flash = (text) => { this.setState({ toast: text, open: false }); setTimeout(() => this.setState({ toast: null }), 3500) }
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      drawerOpen: !!s.open, openDrawer: () => this.setState({ open: true }), closeDrawer: () => this.setState({ open: false }),
+      accept: () => flash('Adopted defra-2027: 40 versions cut, 2 lineages added.'),
+      decline: () => flash('Declined defra-2027. Nothing changed.'),
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

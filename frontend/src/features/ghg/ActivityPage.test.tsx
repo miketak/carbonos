@@ -207,8 +207,12 @@ test('the register shows each record with its number, stream, period, quantity a
   expect(screen.getAllByText('Mar 2025')).toHaveLength(2)
   expect(screen.getByTitle('All completeness checks passed')).toHaveTextContent('Ready')
   expect(screen.getByText('No stream +1')).toBeInTheDocument()
-  expect(screen.getByText('1 of 2 records ready')).toBeInTheDocument()
-  expect(screen.getByText(', 1 with a document on file')).toBeInTheDocument()
+  expect(screen.getByText('Records ready').closest('div')).toHaveTextContent(
+    /Records ready\s*1\s*of 2/,
+  )
+  expect(screen.getByText('With a document on file').closest('div')).toHaveTextContent(
+    /With a document on file\s*1/,
+  )
   expect(screen.getByRole('progressbar', { name: 'Record completeness' })).toHaveAttribute(
     'aria-valuenow',
     '50',
@@ -272,7 +276,7 @@ test('a row opens the drawer, and a correction needs a reason before it is sent'
   renderPage()
 
   await user.click(await screen.findByRole('button', { name: 'Diesel consumption' }))
-  const drawer = screen.getByRole('dialog', { name: 'Diesel consumption' })
+  const drawer = screen.getByRole('region', { name: 'Diesel consumption' })
   expect(within(drawer).getByText('Edit activity')).toBeInTheDocument()
   expect(within(drawer).getByText('ACT-0001')).toBeInTheDocument()
   expect(within(drawer).getByText('All completeness checks passed.')).toBeInTheDocument()
@@ -313,23 +317,25 @@ test('keys: n adds, / searches, j and Enter open the next row, and nothing fires
   expect(screen.getByLabelText('Search')).toHaveFocus()
   await user.keyboard('j')
   expect(screen.getByLabelText('Search')).toHaveValue('j')
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(screen.queryByRole('region', { name: 'New activity' })).not.toBeInTheDocument()
 
   act(() => (document.activeElement as HTMLElement | null)?.blur())
   await user.keyboard('n')
-  expect(await screen.findByRole('dialog', { name: 'New activity' })).toBeInTheDocument()
+  expect(await screen.findByRole('region', { name: 'New activity' })).toBeInTheDocument()
   await user.keyboard('{Escape}')
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  await waitFor(() =>
+    expect(screen.queryByRole('region', { name: 'New activity' })).not.toBeInTheDocument(),
+  )
 
   await user.keyboard('jj{Enter}')
-  expect(await screen.findByRole('dialog', { name: 'LPG cylinders' })).toBeInTheDocument()
+  expect(await screen.findByRole('region', { name: 'LPG cylinders' })).toBeInTheDocument()
 })
 
 test('the drawer opens from ?record= and its Evidence tab and history read the record', async () => {
   const user = userEvent.setup()
   renderPage('/app/ghg/org-1/activity?record=act-1')
 
-  const drawer = await screen.findByRole('dialog', { name: 'Diesel consumption' })
+  const drawer = await screen.findByRole('region', { name: 'Diesel consumption' })
   await user.click(within(drawer).getByRole('tab', { name: 'Evidence 1' }))
   expect(await within(drawer).findByText('invoice-2938.pdf')).toHaveAttribute(
     'href',
@@ -348,7 +354,7 @@ test('removing a record from the drawer asks for a reason and records it', async
   vi.mocked(deleteActivity).mockResolvedValue(undefined)
   renderPage('/app/ghg/org-1/activity?record=act-1')
 
-  const drawer = await screen.findByRole('dialog', { name: 'Diesel consumption' })
+  const drawer = await screen.findByRole('region', { name: 'Diesel consumption' })
   await user.click(within(drawer).getByRole('button', { name: 'Remove' }))
   const dialog = screen.getByRole('dialog', { name: 'Remove Diesel consumption?' })
   const confirm = within(dialog).getByRole('button', { name: 'Remove' })
@@ -456,7 +462,7 @@ test('a verifier opens a record in a read-only drawer, with no fields and no Sav
   renderPage()
 
   await user.click(await screen.findByRole('button', { name: 'Diesel consumption' }))
-  const drawer = screen.getByRole('dialog', { name: 'Diesel consumption' })
+  const drawer = screen.getByRole('region', { name: 'Diesel consumption' })
   expect(within(drawer).getByText('ACT-0001')).toBeInTheDocument()
   expect(within(drawer).queryByLabelText('Activity type *')).not.toBeInTheDocument()
   expect(within(drawer).queryByRole('button', { name: /^Save/ })).not.toBeInTheDocument()

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
@@ -10,7 +10,7 @@ vi.mock('./api', () => import('./testApiMock'))
 // forms with many fields take longer than the 15s default on a loaded machine
 vi.setConfig({ testTimeout: 30000 })
 
-import { createInventory, getOrganization, listInventories } from './api'
+import { getOrganization, listInventories } from './api'
 
 const draft: Inventory = {
   id: 'inv-1',
@@ -107,96 +107,19 @@ test('every card shows its lifecycle state, so the list shows what can run or ch
   expect(screen.getAllByRole('button', { name: /^delete$/i })).toHaveLength(2)
 })
 
-test('the new-inventory form warns when the period is not twelve months and names a fiscal year', async () => {
+test('New inventory leads to its own page under the list (spec 08)', async () => {
   const user = userEvent.setup()
   renderWithProviders(<InventoriesPage />, {
     route: '/app/ghg/org-1/inventories',
     path: '/app/ghg/:organizationId/inventories',
-  })
-  await user.click(await screen.findByRole('button', { name: /new inventory/i }))
-  const dialog = await screen.findByRole('dialog', { name: /new inventory/i })
-
-  // the default is the calendar year: no warning
-  expect(screen.queryByRole('status')).not.toBeInTheDocument()
-
-  const start = screen.getByLabelText(/period start/i)
-  const end = screen.getByLabelText(/period end/i)
-  await user.clear(start)
-  await user.type(start, '2025-01-01')
-  await user.clear(end)
-  await user.type(end, '2026-06-30')
-  expect(await screen.findByRole('status')).toHaveTextContent(/18 months/)
-
-  await user.clear(start)
-  await user.type(start, '2025-07-01')
-  expect(await screen.findByRole('status')).toHaveTextContent(/FY2025\/26/)
-  expect(dialog).toBeInTheDocument()
-})
-
-test('a new inventory starts with every operation the approach includes, unless unticked (spec 03.4)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(createInventory).mockResolvedValue(draft)
-  renderWithProviders(<InventoriesPage />, {
-    route: '/app/ghg/org-1/inventories',
-    path: '/app/ghg/:organizationId/inventories',
+    extraRoutes: [
+      { path: '/app/ghg/:organizationId/inventories/new', element: <h1>New inventory</h1> },
+    ],
   })
 
   await user.click(await screen.findByRole('button', { name: /new inventory/i }))
-  const dialog = await screen.findByRole('dialog', { name: /new inventory/i })
-  const prefill = within(dialog).getByLabelText(/Start with every operation the approach includes/)
-  expect(prefill).toBeChecked()
-  await user.click(within(dialog).getByRole('button', { name: /^create inventory$/i }))
-
-  await waitFor(() =>
-    expect(createInventory).toHaveBeenCalledWith(
-      'org-1',
-      expect.objectContaining({
-        consolidationApproach: 'OPERATIONAL_CONTROL',
-        prefillBoundary: true,
-      }),
-    ),
-  )
-})
-
-test('a new inventory can copy its view from another, which switches off pre-population (spec 03.4, 05.3)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(createInventory).mockResolvedValue(draft)
-  renderWithProviders(<InventoriesPage />, {
-    route: '/app/ghg/org-1/inventories',
-    path: '/app/ghg/:organizationId/inventories',
-  })
-
-  await user.click(await screen.findByRole('button', { name: /new inventory/i }))
-  const dialog = await screen.findByRole('dialog', { name: /new inventory/i })
-  await user.selectOptions(within(dialog).getByLabelText(/Copy the view from/), draft.id)
-  await user.click(within(dialog).getByRole('button', { name: /^create inventory$/i }))
-
-  await waitFor(() =>
-    expect(createInventory).toHaveBeenCalledWith(
-      'org-1',
-      expect.objectContaining({ copyFromInventoryId: draft.id, prefillBoundary: false }),
-    ),
-  )
-})
-
-test('the form says the boundary is rebuilt when the chosen approach differs from the source (spec 05.4)', async () => {
-  const user = userEvent.setup()
-  renderWithProviders(<InventoriesPage />, {
-    route: '/app/ghg/org-1/inventories',
-    path: '/app/ghg/:organizationId/inventories',
-  })
-
-  await user.click(await screen.findByRole('button', { name: /new inventory/i }))
-  const dialog = await screen.findByRole('dialog', { name: /new inventory/i })
-  // the draft is an operational-control view and the form defaults to operational control: nothing to say
-  await user.selectOptions(within(dialog).getByLabelText(/Copy the view from/), draft.id)
-  expect(within(dialog).queryByText(/boundary is rebuilt from Table 1/)).not.toBeInTheDocument()
-  await user.selectOptions(within(dialog).getByLabelText(/Consolidation approach/), 'EQUITY_SHARE')
-  expect(
-    within(dialog).getByText(
-      /2025 Corporate Inventory is under operational control\. Under equity share the boundary is rebuilt from Table 1/,
-    ),
-  ).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'New inventory' })).toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test('a verifier has no usable New inventory (spec 01.4)', async () => {

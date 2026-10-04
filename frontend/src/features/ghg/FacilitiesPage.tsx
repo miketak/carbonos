@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
-import { GlassCard } from '../../components/GlassCard'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { Stat, StatStrip } from '../../components/StatStrip'
+import { Table, Td, Th, TwoLine } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
-import { FacilityFormModal } from './components/FacilityFormModal'
 import { RemoveDialog } from './components/RemoveDialog'
 import { RoleButton } from './components/RoleButton'
 import { StreamsModal } from './components/StreamsModal'
@@ -20,20 +22,7 @@ import {
 import type { Facility } from './api'
 
 type Dialog =
-  | { kind: 'create' }
-  | { kind: 'edit'; facility: Facility }
-  | { kind: 'streams'; facility: Facility }
-  | { kind: 'remove'; facility: Facility }
-  | null
-
-function StatChip({ label, value }: { label: string; value: string }) {
-  return (
-    <GlassCard className="p-4">
-      <p className="text-xs text-ink-muted">{label}</p>
-      <p className="mt-0.5 text-lg font-bold text-dark-teal">{value}</p>
-    </GlassCard>
-  )
-}
+  { kind: 'streams'; facility: Facility } | { kind: 'remove'; facility: Facility } | null
 
 /** The organization's facilities: sites, each under a legal entity that carries the facts (spec 03.1). */
 export function FacilitiesPage() {
@@ -43,6 +32,7 @@ export function FacilitiesPage() {
   const organizationQuery = useOrganizationQuery(organizationId)
   const deleteFacility = useDeleteFacility(organizationId)
   const toast = useToast()
+  const navigate = useNavigate()
   const [dialog, setDialog] = useState<Dialog>(null)
 
   const facilities = facilitiesQuery.data
@@ -56,97 +46,101 @@ export function FacilitiesPage() {
   const myRole = organizationQuery.data?.myRole ?? null
 
   return (
-    <section>
-      <div className="mb-3 flex items-end justify-between">
-        <div>
-          <h1 className="text-xl">Facilities</h1>
-          <p className="text-sm text-ink-muted">
-            The organization's sites. Each belongs to a legal entity, whose relationship sets the
-            accounting share every inventory starts from.
-          </p>
-        </div>
-        <RoleButton
-          allowed={mayWrite(myRole)}
-          tooltip={WRITE_TOOLTIP}
-          className="px-4 py-1.5 text-sm"
-          onClick={() => setDialog({ kind: 'create' })}
-        >
-          Add facility
-        </RoleButton>
-      </div>
+    <section className="flex flex-col gap-6">
+      <PageHeader
+        back={{ to: `/app/ghg/${organizationId}` }}
+        crumbs={[{ label: 'Facilities' }]}
+        title="Facilities"
+        subtitle="The organization's sites. Each belongs to a legal entity, whose relationship sets the accounting share every inventory starts from."
+        actions={
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
+            onClick={() => navigate('new')}
+          >
+            Add facility
+          </RoleButton>
+        }
+      />
 
       {facilities && facilities.length > 0 && (
-        <div className="mb-4 grid gap-3 sm:grid-cols-3">
-          <StatChip label="Facilities" value={facilities.length.toLocaleString()} />
-          <StatChip
+        <StatStrip label="Facilities at a glance">
+          <Stat label="Facilities" value={facilities.length.toLocaleString()} />
+          <Stat
             label="Legal entities represented"
             value={`${new Set(facilities.map((facility) => facility.entityId)).size} of ${entityCount}`}
           />
-          <StatChip
+          <Stat
             label="Under the company or a subsidiary"
             value={`${facilities.filter((facility) => facility.relationshipType === 'SUBSIDIARY').length} of ${facilities.length}`}
           />
-        </div>
+        </StatStrip>
       )}
 
-      <GlassCard className="animate-fade-up overflow-x-auto">
-        {facilitiesQuery.isPending && (
-          <div aria-label="Loading facilities" className="flex flex-col gap-2 p-4">
-            <Skeleton className="h-8" />
-            <Skeleton className="h-8" />
-          </div>
-        )}
-        {facilities?.length === 0 && (
-          <div className="p-8 text-center">
-            <h2 className="font-semibold">No facilities yet</h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              Add the sites this organization reports on to draw its boundary.
-            </p>
-          </div>
-        )}
-        {facilities && facilities.length > 0 && (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Facility</th>
-                <th className="px-4 py-3 font-semibold">Location</th>
-                <th className="px-4 py-3 font-semibold">Legal entity</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {facilities.map((facility) => (
-                <tr key={facility.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-4 py-3 font-medium">{facility.name}</td>
-                  <td className="px-4 py-3 text-ink-muted">
-                    {facility.location}
+      {facilitiesQuery.isPending && (
+        <div aria-label="Loading facilities" className="flex flex-col gap-2">
+          <Skeleton className="h-12" />
+          <Skeleton className="h-12" />
+        </div>
+      )}
+      {facilities?.length === 0 && (
+        <Panel className="p-10 text-center">
+          <h2 className="font-semibold">No facilities yet</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Add the sites this organization reports on to draw its boundary.
+          </p>
+        </Panel>
+      )}
+      {facilities && facilities.length > 0 && (
+        <Table>
+          <thead>
+            <tr>
+              <Th>Facility</Th>
+              <Th>Location</Th>
+              <Th>Legal entity</Th>
+              <Th className="w-72">
+                <span className="sr-only">Actions</span>
+              </Th>
+            </tr>
+          </thead>
+          <tbody>
+            {facilities.map((facility) => (
+              <tr key={facility.id}>
+                <Td className="font-medium">{facility.name}</Td>
+                <Td>
+                  <div className="flex flex-col gap-0.5">
+                    <span>{facility.location}</span>
                     {(facility.facilityType || facility.effectiveGridRegion) && (
-                      <span className="block text-xs">
+                      <span className="text-[13px] text-ink-muted">
                         {facility.facilityType ? facilityTypeLabels[facility.facilityType] : ''}
                         {facility.facilityType && facility.effectiveGridRegion ? ' · ' : ''}
                         {facility.effectiveGridRegion ? `grid ${facility.effectiveGridRegion}` : ''}
                       </span>
                     )}
                     {facility.leaseType && (
-                      <span className="block text-xs text-amber-700">
+                      <span className="text-[13px] font-medium text-warning">
                         {leaseLabels[facility.leaseType]}
                         {facility.leaseFrom ? ` from ${facility.leaseFrom}` : ''}
                         {facility.leaseTo ? ` until ${facility.leaseTo}` : ''}
                       </span>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {facility.entityName}
-                    <span className="block text-xs text-ink-muted">
-                      {reportingCompanyIds.has(facility.entityId)
+                  </div>
+                </Td>
+                <Td>
+                  <TwoLine
+                    primary={<span className="font-normal">{facility.entityName}</span>}
+                    secondary={
+                      reportingCompanyIds.has(facility.entityId)
                         ? 'Reporting company'
-                        : relationshipShortLabels[facility.relationshipType]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                        : relationshipShortLabels[facility.relationshipType]
+                    }
+                  />
+                </Td>
+                <Td align="right">
+                  <div className="flex justify-end gap-1">
                     <Button
                       variant="ghost"
-                      className="px-2 py-1 text-xs"
+                      size="sm"
                       onClick={() => setDialog({ kind: 'streams', facility })}
                     >
                       Source streams
@@ -155,8 +149,8 @@ export function FacilitiesPage() {
                       allowed={mayWrite(myRole)}
                       tooltip={WRITE_TOOLTIP}
                       variant="ghost"
-                      className="px-2 py-1 text-xs"
-                      onClick={() => setDialog({ kind: 'edit', facility })}
+                      size="sm"
+                      onClick={() => navigate(`${facility.id}/edit`)}
                     >
                       Edit
                     </RoleButton>
@@ -164,29 +158,20 @@ export function FacilitiesPage() {
                       allowed={mayWrite(myRole)}
                       tooltip={WRITE_TOOLTIP}
                       variant="ghost"
-                      className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                      size="sm"
+                      className="text-danger"
                       onClick={() => setDialog({ kind: 'remove', facility })}
                     >
                       Remove
                     </RoleButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </GlassCard>
-
-      {dialog?.kind === 'create' && (
-        <FacilityFormModal
-          organizationId={organizationId}
-          onClose={() => setDialog(null)}
-          onSaved={(message) => {
-            setDialog(null)
-            toast(message)
-          }}
-        />
+                  </div>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
       )}
+
       {dialog?.kind === 'remove' && (
         <RemoveDialog
           title={`Remove ${dialog.facility.name}?`}
@@ -215,17 +200,6 @@ export function FacilitiesPage() {
           organizationId={organizationId}
           facility={dialog.facility}
           onClose={() => setDialog(null)}
-        />
-      )}
-      {dialog?.kind === 'edit' && (
-        <FacilityFormModal
-          organizationId={organizationId}
-          facility={dialog.facility}
-          onClose={() => setDialog(null)}
-          onSaved={(message) => {
-            setDialog(null)
-            toast(message)
-          }}
         />
       )}
     </section>

@@ -7,13 +7,131 @@
   --color-bright-teal: #05cebb;
   --color-accent-green: #82ef6d;
   --color-soft-mint: #f0f9f7;
-  /* Accessible text/interaction tokens (WCAG 2.2 AA on the glass surface).
-     teal stays vibrant for decoration; text and white-on-fill go through these:
-     ink-muted 5.4:1 (secondary text) · link 5.8:1 · teal-deep 5.0:1 white-on-fill. */
-  --color-ink-muted: #47696d;
-  --color-link: #0a6f66;
+  /* teal stays vibrant for decoration; white-on-fill goes through teal-deep (5.0:1).
+     ink-muted and link are workbench tokens now (the @theme inline block below). */
   --color-teal-deep: #0a7d70;
   --font-sans: 'Inter Variable', Inter, system-ui, sans-serif;
+}
+
+/* ===================== Workbench tokens (spec 10, ADR 0009) =====================
+   Semantic tokens, named for their role, as CSS variables with a light and a dark
+   set; the `@theme inline` block below maps each to a Tailwind utility
+   (bg-surface, text-ink-muted, border-hairline). Features use the utilities and the
+   kit; the brand palette above stays for the landing page, the symbol and the splash.
+   Every text token clears WCAG 2.2 AA on the surfaces it is meant for in both sets;
+   src/test/tokens.test.ts holds this table to that, so edit it with the test open. */
+:root {
+  --ground: #f7f8f7;
+  --surface: #ffffff;
+  --surface-sunken: #f2f4f3;
+  --surface-raised: #ffffff;
+  --hairline: #e3e7e5;
+  --hairline-strong: #c9d2cf;
+  --ink: #1a2224;
+  --ink-muted: #5b6e71;
+  --ink-faint: #8a9a9c;
+  --primary: #246169;
+  --primary-hover: #1b4f57;
+  --primary-ink: #ffffff;
+  --link: #0a6f66;
+  --success: #1f7a4d;
+  --success-dot: #2e9e62;
+  --warning: #8f5508;
+  --warning-dot: #e0951e;
+  --danger: #b8322a;
+  --danger-dot: #d9453b;
+  --info: #2a5f9e;
+  --focus: #05cebb;
+  --selected: #eaf4f2;
+  --scrim: rgba(26, 34, 36, 0.32);
+  --shadow-pop: 0 8px 24px rgba(20, 34, 36, 0.14), 0 1px 2px rgba(20, 34, 36, 0.08);
+  /* the rail: deep solid dark teal, light text, bright-teal accent */
+  --sidebar-bg: #11363c;
+  --sidebar-ink: #eef8f6;
+  --sidebar-muted: #9cc0bd;
+  --sidebar-hairline: rgba(255, 255, 255, 0.1);
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active: #1b4a51;
+  --sidebar-accent: #05cebb;
+  --sidebar-field: rgba(255, 255, 255, 0.05);
+  --sidebar-field-border: rgba(255, 255, 255, 0.16);
+}
+
+/* the dark set applies on an explicit choice, or when the system prefers dark and
+   no choice was made (src/lib/theme.ts keeps the choice; index.html applies it
+   before first paint) */
+[data-theme='dark'] {
+  --ground: #0e1113;
+  --surface: #15191b;
+  --surface-sunken: #111416;
+  --surface-raised: #1c2124;
+  --hairline: #272e31;
+  --hairline-strong: #3a4448;
+  --ink: #f1f4f3;
+  --ink-muted: #9aa5a3;
+  --ink-faint: #6f7b79;
+  --primary: #05cebb;
+  --primary-hover: #39dccb;
+  --primary-ink: #0c2b30;
+  --link: #5fd8c9;
+  --success: #5ccf8f;
+  --success-dot: #5ccf8f;
+  --warning: #e0a634;
+  --warning-dot: #e0a634;
+  --danger: #f07167;
+  --danger-dot: #f07167;
+  --info: #7db4f0;
+  --focus: #05cebb;
+  --selected: #1a2325;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sidebar-bg: #0a1e22;
+  --sidebar-ink: #eef8f6;
+  --sidebar-muted: #8fb3b0;
+  --sidebar-hairline: rgba(255, 255, 255, 0.08);
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-active: #15353a;
+  --sidebar-accent: #05cebb;
+  --sidebar-field: rgba(255, 255, 255, 0.04);
+  --sidebar-field-border: rgba(255, 255, 255, 0.14);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-raised: var(--surface-raised);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-link: var(--link);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-ink: var(--primary-ink);
+  --color-success: var(--success);
+  --color-success-dot: var(--success-dot);
+  --color-warning: var(--warning);
+  --color-warning-dot: var(--warning-dot);
+  --color-danger: var(--danger);
+  --color-danger-dot: var(--danger-dot);
+  --color-info: var(--info);
+  --color-focus: var(--focus);
+  --color-selected: var(--selected);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-ink: var(--sidebar-ink);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-hairline: var(--sidebar-hairline);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-field: var(--sidebar-field);
+  --color-sidebar-field-border: var(--sidebar-field-border);
+  --shadow-pop: var(--shadow-pop);
+  --radius-control: 8px;
+  --radius-chip: 6px;
 }
 
 @layer base {
@@ -24,7 +142,7 @@
   }
 
   body {
-    @apply bg-soft-mint font-sans text-dark-teal antialiased;
+    @apply bg-ground font-sans text-ink antialiased;
     margin: 0;
     min-height: 100vh;
   }

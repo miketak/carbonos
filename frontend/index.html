@@ -19,6 +19,20 @@
       content="Boundaries with dates, factor editions with vintages, immutable calculation runs, and a report whose gases tie to the total. Built in Ghana by ECORIV Land Limited."
     />
     <meta name="theme-color" content="#246169" />
+    <!-- the theme choice (spec 10) applied before first paint, from the key src/lib/theme.ts keeps -->
+    <script>
+      ;(function () {
+        try {
+          var choice = localStorage.getItem('carbonos.theme')
+          var dark =
+            choice === 'dark' ||
+            (choice !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light'
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

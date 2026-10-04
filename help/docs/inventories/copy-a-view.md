@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-03
 description: Start a new inventory from an existing one's decisions, to view the same period under another approach or to carry this year's boundary, declaration, rules and instruments into next year.
 role: Preparer
 minutes: 5
@@ -8,9 +8,9 @@ minutes: 5
 
 # Copy a view to another approach or the next year
 
-The same period can be accounted for under different consolidation approaches, and next year's inventory starts best from this year's decisions. **Copy the view from** on the **New inventory** dialog carries them across.
+The same period can be accounted for under different consolidation approaches, and next year's inventory starts best from this year's decisions. **Copy the view from** on the **New inventory** page carries them across.
 
-<!-- sources: specs 03, 04.4 and 05.4 (Appendix F under each approach); the old page tasks/inventories/copy-a-view-to-another-approach.md (verified 2026-09-24 with an equity-share copy); InventoryFormModal.tsx; InventoryDetailPage.tsx ("Where this inventory came from", dropped exclusions); InventoryService.java instrument findings; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 inventory dialog", "6 classified Genset diesel" -->
+<!-- sources: specs 03, 04.4 and 05.4 (Appendix F under each approach); the old page tasks/inventories/copy-a-view-to-another-approach.md (verified 2026-09-24 with an equity-share copy); InventoryFormPage.tsx; InventoryDetailPage.tsx ("Where this inventory came from", dropped exclusions); InventoryService.java instrument findings; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 inventory dialog", "6 classified Genset diesel" -->
 
 ## Before you start
 
@@ -22,9 +22,9 @@ The same period can be accounted for under different consolidation approaches, a
 1. Open **Inventories** and click **New inventory**.
 2. Fill **Name**, **Period start** and **Period end**, and choose the **Consolidation approach** this view uses.
 3. Under **Copy the view from (optional)**, choose the source inventory.
-4. Click **Create inventory**, then **Open**.
+4. Click **Create inventory**.
 
-What you see: the dialog says what comes across: "The boundary, instruments, declaration and every classification and exclusion of that inventory, so a second inventory or next year's starts from its decisions." In the new inventory, **Where this inventory came from** reads "View copied from *source*" with the number of "decisions inherited" and, when the period differs, how many "records of this period the source never decided on". Under another approach it adds "Boundary rebuilt from Table 1 under *approach*".
+What you see: the page says what comes across: "The boundary, instruments, declaration and every classification and exclusion of that inventory, so a second inventory or next year's starts from its decisions." In the new inventory, **Where this inventory came from** reads "View copied from *source*" with the number of "decisions inherited" and, when the period differs, how many "records of this period the source never decided on". Under another approach it adds "Boundary rebuilt from Table 1 under *approach*".
 
 Click **Review activity data** to bring in records added since the source's freeze, then classify, freeze and run as usual.
 

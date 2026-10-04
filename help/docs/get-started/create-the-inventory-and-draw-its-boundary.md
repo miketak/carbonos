@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-03
 description: Create the FY2025 inventory for Gye Nyame Gold, read the workbench and its pre-flight gates, confirm the boundary, and declare which scope 3 categories the report covers.
 role: Owner
 minutes: 10
@@ -24,7 +24,7 @@ An inventory is one accounting view over the facts: a period, a consolidation ap
 1. Open **Inventories** and click **New inventory**.
 2. Fill **Name** `FY2025`, **Period start** `2025-01-01`, **Period end** `2025-12-31`, and **Purpose (optional)** `Corporate reporting`.
 3. Leave the rest as offered: **Records that straddle the period or a membership window** "Pro-rate by days (default)", **Consolidation approach** "Operational control", **GWP set** "AR5 (default)", **Copy the view from (optional)** "Start from scratch", and **Start with every operation the approach includes in the boundary** ticked.
-4. Click **Create inventory**, then **Open** on the FY2025 card.
+4. Click **Create inventory**.
 
 What you see: "FY2025 created." and the inventory workbench. The header reads "FY2025", "Operational control", "DRAFT", and "GWP AR5". The **Inventory lifecycle** card explains the state: "Draft. The boundary and the activity view are editable; runs are blocked until the inventory is frozen, which records a boundary version a verifier can trace every run back to." Under it a banner reads "Launch on hold" because "Reporting boundary is blocking." The tabs are **Records**, **Boundary**, **Method**, **Runs**, and **Report**.
 

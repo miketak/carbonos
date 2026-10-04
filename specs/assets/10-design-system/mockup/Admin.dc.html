@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Administration</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<aside class="sidebar">
+  <a class="sidebar-brand" href="Organizations.dc.html" aria-label="CarbonOS home">
+    <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true" shape-rendering="geometricPrecision"><defs><linearGradient id="cm-admin" gradientUnits="userSpaceOnUse" x1="60" y1="32" x2="4" y2="32"><stop offset="0" stop-color="#00b6aa"/><stop offset="0.15" stop-color="#05b8a7"/><stop offset="0.33" stop-color="#15bfa0"/><stop offset="0.54" stop-color="#2fca93"/><stop offset="0.77" stop-color="#53da82"/><stop offset="1" stop-color="#82ef6d"/></linearGradient></defs><path d="M 51.15 48.07 A 25 25 0 1 1 51.15 15.93" fill="none" stroke="url(#cm-admin)" stroke-width="8" stroke-linecap="round"/><rect x="20" y="18" width="10" height="6" rx="3" fill="url(#cm-admin)"/><rect x="20" y="29" width="17" height="6" rx="3" fill="url(#cm-admin)"/><rect x="20" y="40" width="24" height="6" rx="3" fill="url(#cm-admin)"/></svg><span>Carbon<span class="os">OS</span></span>
+  </a>
+  <div><div class="sidebar-group-label">Area</div><div class="workspace" style="cursor: default"><span class="workspace-name">Administration</span><span class="workspace-no">ADMIN</span></div></div>
+  <nav class="nav" aria-label="Administration sections">
+    <sc-for list="{{items}}" as="item" hint-placeholder-count="7">
+      <sc-if value="{{item.rule}}" hint-placeholder-val="{{false}}"><div class="nav-rule"></div></sc-if>
+      <button type="button" class="nav-item" style="width: 100%; border: 0; cursor: pointer; text-align: left; font: inherit" aria-current="{{item.current}}" onClick="{{item.go}}">
+        <span class="nav-num" aria-hidden="true">{{item.num}}</span>
+        <span>{{item.label}}</span>
+        <sc-if value="{{item.badge}}" hint-placeholder-val="{{false}}"><span class="nav-badge" title="2 access requests waiting">2</span></sc-if>
+      </button>
+    </sc-for>
+  </nav>
+  <div class="sidebar-foot">
+    <a class="nav-item" href="Organizations.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2-10 5 10 5 10-5-10-5M2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span>GHG accounting</span></a>
+    <button type="button" class="account" onClick="{{toggleTheme}}" title="Switch theme"><span class="avatar" aria-hidden="true">AA</span><span class="account-name">Ama Admin<span class="account-role">admin@ecoriv.com</span></span></button>
+  </div>
+</aside>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Organizations.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li>Administration</li><li aria-current="page">{{title}}</li></ol></div></div>
+
+  <sc-if value="{{is.dashboard}}" hint-placeholder-val="{{true}}">
+    <div class="page-head"><div style="max-width: 820px"><h1 class="page-title">Platform overview</h1><p class="page-sub">The accounts, organizations and factor packs this deployment holds. Client inventory data stays inside each organization.</p></div></div>
+    <section class="panel">
+      <div class="panel-head"><div class="panel-title">Needs your attention</div></div>
+      <div class="panel-body tight"><table class="table"><tbody>
+        <tr class="row-link" onClick="{{go.requests}}"><td style="width: 44px"><span class="status status-warning"></span></td><td><div class="cell-2"><span class="t">2 access requests waiting</span><span class="s">Approve one and the account is created at once; the person sets their own password.</span></div></td><td class="actions">›</td></tr>
+        <tr class="row-link" onClick="{{go.packs}}"><td><span class="status status-info"></span></td><td><div class="cell-2"><span class="t">1 draft factor pack edition unpublished</span><span class="s">You may approve 1 of them; the rest you curated yourself.</span></div></td><td class="actions">›</td></tr>
+        <tr class="row-link" onClick="{{go.orgs}}"><td><span class="status status-info"></span></td><td><div class="cell-2"><span class="t">You hold support access to 1 organization</span><span class="s">The next expires 2026-10-04 08:11. End it when the case is closed.</span></div></td><td class="actions">›</td></tr>
+        <tr class="row-link" onClick="{{go.help}}"><td><span class="status status-warning"></span></td><td><div class="cell-2"><span class="t">1 help page under the 80% helpful target</span><span class="s">Each has at least five votes.</span></div></td><td class="actions">›</td></tr>
+      </tbody></table></div>
+    </section>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Users</div><div class="stat-value">14</div><div class="stat-note">12 active, 2 pending</div></div>
+      <div class="stat"><div class="stat-label">Organizations</div><div class="stat-value">3</div><div class="stat-note">1 with support access</div></div>
+      <div class="stat"><div class="stat-label">Factor pack editions</div><div class="stat-value">4</div><div class="stat-note">published; 1 draft, 0 withdrawn</div></div>
+      <div class="stat"><div class="stat-label">Open adoption notices</div><div class="stat-value">1</div><div class="stat-note">each organization decides its own</div></div>
+    </div>
+    <div class="grid-2">
+      <section class="panel"><div class="panel-head"><div class="panel-title">The help</div></div><div class="panel-body"><dl class="kv"><dt>Helpful votes, 30 days</dt><dd>84% <span class="muted">(61 votes; target 80%)</span></dd><dt>Searches with no result, 30 days</dt><dd>3% <span class="muted">of 212 searches; target under 5%</span></dd></dl></div></section>
+      <section class="panel"><div class="panel-head"><div class="panel-title">Support access</div></div><div class="panel-body"><div class="cell-2"><span class="t">admin@ecoriv.com holds support access to Tema Manufacturing (ORG-0003)</span><span class="s">2026-10-03 08:11, expiring 2026-10-04 08:11 (24 hours) · ticket 4512, preparer cannot open the run</span></div></div></section>
+    </div>
+    <p class="muted" style="font-size: 13px">Support access lasts <strong>24 hours</strong>, and <strong>everyone signed in</strong> may create an organization. <button type="button" class="link-btn" onClick="{{go.settings}}">Platform settings</button></p>
+  </sc-if>
+
+  <sc-if value="{{is.requests}}" hint-placeholder-val="{{false}}">
+    <div class="page-head"><div style="max-width: 820px"><h1 class="page-title">Access requests</h1><p class="page-sub">Approving one creates the account at once in the pending state and sends a link to set a password. Nobody signs in until they have set it.</p></div></div>
+    <section class="panel"><div class="panel-head"><div class="panel-title">Waiting for a decision</div></div><div class="panel-body tight"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Requested</th><th class="actions" style="width: 200px"></th></tr></thead><tbody>
+      <tr><td><div class="cell-2"><span class="t">Yaw Darko</span><span class="s">Sankofa Gold plc · Asked about the pilot · "We report under operational control from 2027."</span></div></td><td>yaw@sankofa.test</td><td class="mono">2026-10-01</td><td class="actions" style="text-align: right"><button type="button" class="btn btn-primary btn-sm" onClick="{{approve}}">Approve</button> <button type="button" class="btn btn-ghost btn-sm">Deny</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t">Efua Asante</span><span class="s">Takoradi Port Co · Wants to talk to ECORIV</span></div></td><td>efua@takoradiport.test</td><td class="mono">2026-09-29</td><td class="actions" style="text-align: right"><button type="button" class="btn btn-primary btn-sm" onClick="{{approve}}">Approve</button> <button type="button" class="btn btn-ghost btn-sm">Deny</button></td></tr>
+    </tbody></table></div></section>
+    <section class="panel"><div class="panel-head"><div class="panel-title">Already decided</div></div><div class="panel-body tight"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Outcome</th><th>Decided</th></tr></thead><tbody>
+      <tr><td>Abena Owusu</td><td>abena@client.test</td><td>Gye Nyame Gold</td><td><span class="status status-success">Approved, account active</span></td><td class="mono">2026-01-14</td></tr>
+      <tr><td>Kwesi Nartey</td><td>kwesi@example.test</td><td class="muted">–</td><td><span class="status status-neutral">Denied</span></td><td class="mono">2026-01-10</td></tr>
+    </tbody></table></div></section>
+  </sc-if>
+
+  <sc-if value="{{is.users}}" hint-placeholder-val="{{false}}">
+    <div class="page-head"><div><h1 class="page-title">Users</h1><p class="page-sub">14 team members</p></div><div class="page-actions"><button type="button" class="btn btn-primary" onClick="{{openAddUser}}">Add user</button></div></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Added</th><th class="actions" style="width: 300px"></th></tr></thead><tbody>
+      <tr><td><div class="cell-2"><span class="t">Ama Admin <span class="muted" style="font-weight: 400">(you)</span></span><span class="s">admin@ecoriv.com</span></div></td><td><span class="chip chip-primary">Admin</span></td><td><span class="status status-success">Active</span></td><td class="mono">2025-08-27</td><td class="actions" style="text-align: right"><button type="button" class="btn btn-ghost btn-sm">Edit</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t">Kofi Mensah</span><span class="s">kofi@ecoriv.com</span></div></td><td><span class="chip">Member</span></td><td><span class="status status-success">Active</span></td><td class="mono">2025-09-01</td><td class="actions" style="text-align: right"><button type="button" class="btn btn-ghost btn-sm">Edit</button> <button type="button" class="btn btn-ghost btn-sm">Disable</button> <button type="button" class="btn btn-ghost btn-sm">Reset password</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t">Yaw Darko</span><span class="s">yaw@sankofa.test</span></div></td><td><span class="chip">Member</span></td><td><span class="status status-warning">Pending activation</span></td><td class="mono">2026-10-03</td><td class="actions" style="text-align: right"><button type="button" class="btn btn-ghost btn-sm">Edit</button> <button type="button" class="btn btn-ghost btn-sm">Delete</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t">Kwesi Nartey</span><span class="s">kwesi@example.test</span></div></td><td><span class="chip">Member</span></td><td><span class="status status-neutral">Disabled</span></td><td class="mono">2025-11-02</td><td class="actions" style="text-align: right"><button type="button" class="btn btn-ghost btn-sm">Edit</button> <button type="button" class="btn btn-ghost btn-sm">Enable</button> <button type="button" class="btn btn-ghost btn-sm">Delete</button></td></tr>
+    </tbody></table></div>
+  </sc-if>
+
+  <sc-if value="{{is.orgs}}" hint-placeholder-val="{{false}}">
+    <div class="page-head"><div style="max-width: 820px"><h1 class="page-title">Organizations</h1><p class="page-sub">Client organizations are private to their members. To look inside one for a support case, assume access with a reason: it gives you an owner's rights for 24 hours. It never carries deleting the organization, changing its membership, or adopting a factor pack edition.</p></div></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>Organization</th><th>Owners</th><th class="num">Members</th><th>Support access</th><th class="actions" style="width: 220px"></th></tr></thead><tbody>
+      <tr><td><div class="cell-2"><span class="t">Gye Nyame Gold</span><span class="s mono">ORG-0001</span></div></td><td>kofi@ecoriv.com</td><td class="num">4</td><td class="muted">None</td><td class="actions" style="text-align: right"><button type="button" class="btn btn-secondary btn-sm" onClick="{{openAssume}}">Assume access</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t">Sankofa Gold plc</span><span class="s mono">ORG-0002</span></div></td><td>yaw@sankofa.test</td><td class="num">2</td><td class="muted">None</td><td class="actions" style="text-align: right"><button type="button" class="btn btn-secondary btn-sm" onClick="{{openAssume}}">Assume access</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t">Tema Manufacturing</span><span class="s mono">ORG-0003</span></div></td><td>efua@tema.test</td><td class="num">3</td><td><span class="status status-warning">Until 2026-10-04 08:11: ticket 4512, preparer cannot open the run</span></td><td class="actions" style="text-align: right"><a class="btn btn-secondary btn-sm" href="Overview.dc.html">Open</a> <button type="button" class="btn btn-ghost btn-sm" onClick="{{endAccess}}">End access</button></td></tr>
+    </tbody></table></div>
+  </sc-if>
+
+  <sc-if value="{{is.packs}}" hint-placeholder-val="{{false}}">
+    <div class="page-head"><div style="max-width: 820px"><h1 class="page-title">Factor packs</h1><p class="page-sub">A family is the lineage of one publication; an edition is one dated release of it.</p></div><div class="page-actions"><button type="button" class="btn btn-primary">Add family</button></div></div>
+    <section class="panel"><div class="panel-head"><div><div class="panel-title">UK Government (DESNZ) GHG conversion factors</div><div class="muted" style="font-size: 13px; margin-top: 2px"><span class="mono">defra</span> · A published table</div></div><button type="button" class="btn btn-secondary btn-sm">New edition</button></div>
+    <div class="panel-body tight"><table class="table"><thead><tr><th>Edition</th><th>Status</th><th>Applies from</th><th class="num">Rows</th><th>Held by</th><th class="actions" style="width: 100px"></th></tr></thead><tbody>
+      <tr><td><div class="cell-2"><span class="t mono">defra-2027</span><span class="s">DESNZ conversion factors 2027</span></div></td><td><span class="status status-neutral" title="Invisible to organizations, rows mutable.">Draft</span></td><td class="mono">2027-01-01</td><td class="num">1,874</td><td class="muted">No organization</td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Clone</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t mono">defra-2026</span><span class="s">UK Government (DESNZ) GHG conversion factors 2026</span></div></td><td><span class="status status-success">Published</span></td><td class="mono">2026-01-01</td><td class="num">1,871</td><td>2 organizations</td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Clone</button></td></tr>
+      <tr><td><div class="cell-2"><span class="t mono">defra-2025</span><span class="s">UK Government (DESNZ) GHG conversion factors 2025</span></div></td><td><span class="status status-info">Superseded</span></td><td class="mono">2025-01-01</td><td class="num">1,868</td><td>3 organizations</td><td class="actions"><button type="button" class="btn btn-ghost btn-sm">Clone</button></td></tr>
+    </tbody></table></div></section>
+    <section class="panel"><div class="panel-head"><div><div class="panel-title">Ghana grid factors</div><div class="muted" style="font-size: 13px; margin-top: 2px"><span class="mono">ghana</span> · A selection assembled for a sector</div></div><button type="button" class="btn btn-secondary btn-sm">New edition</button></div>
+    <div class="panel-body tight"><table class="table"><tbody>
+      <tr><td><div class="cell-2"><span class="t mono">ghana-2026</span><span class="s">Ghana grid factors 2026</span></div></td><td><span class="status status-success">Published</span></td><td class="mono">2026-01-01</td><td class="num">12</td><td>1 organization</td><td class="actions" style="width: 100px"><button type="button" class="btn btn-ghost btn-sm">Clone</button></td></tr>
+    </tbody></table></div></section>
+  </sc-if>
+
+  <sc-if value="{{is.help}}" hint-placeholder-val="{{false}}">
+    <div class="page-head"><div style="max-width: 820px"><h1 class="page-title">Help metrics</h1><p class="page-sub">What readers make of the help: each article against the 80% helpful target, the comments they left, and the searches that found nothing.</p></div></div>
+    <section class="panel"><div class="panel-head"><div class="panel-title">Pages</div></div><div class="panel-body tight"><table class="table"><thead><tr><th>Article</th><th class="num">Votes</th><th class="num">Helpful</th><th>Last vote</th></tr></thead><tbody>
+      <tr><td><div class="cell-2"><span class="t">Record an activity</span><span class="s mono">record-activity-data/record-an-activity</span></div></td><td class="num">23</td><td class="num">91%</td><td class="mono">2026-10-02</td></tr>
+      <tr><td><div class="cell-2"><span class="t">Classify a record</span><span class="s mono">build-check-and-run/classify-a-record</span></div></td><td class="num">8</td><td class="num">62% <span class="chip chip-warning" style="margin-left: 6px">Under target</span></td><td class="mono">2026-09-30</td></tr>
+    </tbody></table></div></section>
+    <section class="panel"><div class="panel-head"><div class="panel-title">Searches with no result</div></div><div class="panel-body tight"><table class="table"><thead><tr><th>Query</th><th class="num">Count</th><th>Last seen</th><th class="actions"></th></tr></thead><tbody>
+      <tr><td class="mono">"well to tank"</td><td class="num">4</td><td class="mono">2026-10-01</td><td class="actions"><a href="#search">Open search</a></td></tr>
+    </tbody></table></div></section>
+  </sc-if>
+
+  <sc-if value="{{is.settings}}" hint-placeholder-val="{{false}}">
+    <div class="page-head"><div style="max-width: 820px"><h1 class="page-title">Platform settings</h1><p class="page-sub">Policy for the whole deployment. These settings govern clients' inventories, so every change is kept with its reason.</p></div></div>
+    <section class="panel"><div class="panel-body"><div class="form-grid" style="max-width: 760px">
+      <div class="field"><label for="ps-h">Support access lasts</label><input id="ps-h" type="text" value="24"><span class="field-hint">Hours, between 1 and 72.</span></div>
+      <div class="field"><label for="ps-c">Who may create an organization</label><select id="ps-c"><option>Everyone signed in</option><option>Administrators only</option></select></div>
+      <div class="field span2"><label for="ps-e">Editions inside a published period</label><select id="ps-e"><option>Blocked (default)</option><option>Allowed: published runs keep their factors</option></select></div>
+      <div class="field span2"><label for="ps-r">Reason for this change</label><input id="ps-r" type="text"><span class="field-hint">At least 10 characters.</span></div>
+      <div class="span2" style="display: flex; justify-content: space-between; align-items: center"><span class="muted" style="font-size: 13px">Last changed by admin@ecoriv.com on 2026-08-12</span><button type="button" class="btn btn-primary" onClick="{{saveSettings}}">Save settings</button></div>
+    </div></div></section>
+    <section class="panel"><div class="panel-head"><div class="panel-title">Every change</div></div><div class="panel-body tight"><table class="table"><thead><tr><th>Setting</th><th>From</th><th>To</th><th>Reason</th><th>Who</th><th>When</th></tr></thead><tbody>
+      <tr><td>Support access lasts</td><td class="mono">48</td><td class="mono">24</td><td class="muted">Shorter window agreed with clients</td><td>admin@ecoriv.com</td><td class="mono">2026-08-12 10:02</td></tr>
+    </tbody></table></div></section>
+  </sc-if>
+</main>
+
+<sc-if value="{{addUserOpen}}" hint-placeholder-val="{{false}}">
+  <div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="Add user">
+    <div class="modal-head"><h2 class="modal-title">Add user</h2></div>
+    <div class="modal-body">
+      <div class="field"><label for="au-e">Email</label><input id="au-e" type="email"></div>
+      <div class="field"><label for="au-n">Display name</label><input id="au-n" type="text"></div>
+      <div class="field"><label for="au-r">Role</label><select id="au-r"><option>Member</option><option>Admin</option></select></div>
+      <div class="field"><label for="au-p">Temporary password</label><input id="au-p" type="password"><span class="field-hint">At least 12 characters, with a letter and a digit. Share it with the user out of band.</span></div>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{closeModal}}">Cancel</button><button type="button" class="btn btn-primary" onClick="{{closeModal}}">Add user</button></div>
+  </div></div>
+</sc-if>
+<sc-if value="{{assumeOpen}}" hint-placeholder-val="{{false}}">
+  <div class="scrim"><div class="modal" role="dialog" aria-modal="true" aria-label="Assume access to Gye Nyame Gold (ORG-0001)">
+    <div class="modal-head"><h2 class="modal-title">Assume access to Gye Nyame Gold (ORG-0001)</h2></div>
+    <div class="modal-body"><p class="muted">You get an owner's rights in Gye Nyame Gold for 24 hours, or until you end the access. The owners read the reason.</p><div class="field"><label for="as-r">Reason</label><input id="as-r" type="text"><span class="field-hint">At least 10 characters; the owners read it. For example: ticket 4512, preparer cannot open the run.</span></div></div>
+    <div class="modal-foot"><button type="button" class="btn btn-ghost" onClick="{{closeModal}}">Cancel</button><button type="button" class="btn btn-primary" onClick="{{doAssume}}">Assume access</button></div>
+  </div></div>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    const section = s.section || 'dashboard'
+    const sections = [
+      { key: 'dashboard', label: 'Dashboard', num: '—' },
+      { key: 'requests', label: 'Access requests', rule: true, badge: true, num: '01' },
+      { key: 'users', label: 'Users', num: '02' },
+      { key: 'orgs', label: 'Organizations', num: '03' },
+      { key: 'packs', label: 'Factor packs', num: '04' },
+      { key: 'help', label: 'Help metrics', num: '05' },
+      { key: 'settings', label: 'Platform settings', rule: true, num: '06' },
+    ]
+    const titles = { dashboard: 'Dashboard', requests: 'Access requests', users: 'Users', orgs: 'Organizations', packs: 'Factor packs', help: 'Help metrics', settings: 'Platform settings' }
+    const is = {}; const go = {}
+    sections.forEach((x) => { is[x.key] = section === x.key; go[x.key] = () => this.setState({ section: x.key }) })
+    const flash = (text) => { this.setState({ toast: text, modal: null }); setTimeout(() => this.setState({ toast: null }), 3000) }
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      items: sections.map((x) => ({ ...x, rule: !!x.rule, badge: !!x.badge, current: section === x.key ? 'page' : 'false', go: go[x.key] })),
+      title: titles[section], is, go,
+      addUserOpen: s.modal === 'adduser', assumeOpen: s.modal === 'assume', openAddUser: () => this.setState({ modal: 'adduser' }), openAssume: () => this.setState({ modal: 'assume' }), closeModal: () => this.setState({ modal: null }),
+      approve: () => flash('Yaw Darko approved; setup email sent.'), doAssume: () => flash('Support access to Gye Nyame Gold assumed.'), endAccess: () => flash('Support access to Tema Manufacturing ended.'), saveSettings: () => flash('Platform settings saved.'),
+      toast: s.toast || false,
+    }
+  }
+}
+</script>
+</body>
+</html>

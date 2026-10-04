@@ -4,22 +4,18 @@ import { useLocation } from 'react-router-dom'
 const grain = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")`
 
 /**
- * The fixed ambient layer every page sits on: slow-drifting brand-color blobs
- * that give the glassmorphism surfaces real color to refract, plus grain.
- * DR-06: full on the public/marketing pages, dimmed on authenticated pages so
- * the aurora doesn't compete with data-dense content.
+ * The landing page's ambient layer: slow-drifting brand-color blobs that give
+ * its glass surfaces real color to refract, plus grain. Spec 10 keeps it for
+ * the marketing page alone; every other route sits on the flat ground.
  */
 export function AmbientBackground() {
   const { pathname } = useLocation()
-  const dimmed =
-    pathname.startsWith('/app') || pathname.startsWith('/admin') || pathname.startsWith('/help')
+  if (pathname !== '/') return null
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-soft-mint via-soft-mint to-bright-teal/15" />
-      <div
-        className={`absolute inset-0 transition-opacity duration-500 ${dimmed ? 'opacity-[0.55]' : 'opacity-100'}`}
-      >
+      <div className="absolute inset-0">
         <div
           className="absolute -top-[20%] -left-[10%] h-[55vmax] w-[55vmax] rounded-full bg-teal/25 blur-3xl"
           style={{ animation: 'aurora-a 70s ease-in-out infinite alternate' }}

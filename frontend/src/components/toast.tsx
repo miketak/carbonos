@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { GlassCard } from './GlassCard'
+import { Panel } from './Panel'
 
 interface Toast {
   id: number
@@ -33,15 +33,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col gap-2">
         {toasts.map((t) => (
-          <GlassCard
+          <Panel
             key={t.id}
             role="status"
-            className={`animate-[modal-in_150ms_ease-out] bg-white/85 px-4 py-3 text-sm font-medium ${
-              t.tone === 'error' ? 'text-red-700' : 'text-dark-teal'
+            className={`animate-[modal-in_150ms_ease-out] px-4 py-3 text-sm font-medium shadow-pop ${
+              t.tone === 'error' ? 'text-danger' : 'text-ink'
             }`}
           >
             {t.message}
-          </GlassCard>
+          </Panel>
         ))}
       </div>
     </ToastContext.Provider>

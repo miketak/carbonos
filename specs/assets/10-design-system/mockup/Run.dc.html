@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Run report</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="cos" data-theme="{{theme}}">
+<dc-import name="Sidebar" active="inventories" theme="{{theme}}" on-toggle-theme="{{toggleTheme}}" hint-size="260px,100vh"></dc-import>
+<main class="main">
+  <div class="crumbs"><div style="display: flex; align-items: center; gap: 14px"><a class="back" href="Inventory.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back</a><ol><li><a href="Inventories.dc.html">Inventories</a></li><li><a href="Inventory.dc.html">FY2025</a></li><li aria-current="page">Run 001</li></ol></div><span class="saved">Calculated 2026-02-05 14:31</span></div>
+  <div class="page-head">
+    <div>
+      <div class="page-title-row"><span class="mono muted" style="font-size: 22px">#001</span><h1 class="page-title">Run 001</h1><span class="chip">Operational control</span><span class="chip chip-primary">Final</span></div>
+      <p class="page-sub">Gye Nyame Gold (ORG-0001)<span class="sep">·</span><span class="mono">2025-01-01 → 2025-12-31</span><span class="sep">·</span>14 lines</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-secondary" href="#pdf">PDF report</a>
+      <a class="btn btn-ghost" href="#lines">Lines (CSV)</a>
+      <a class="btn btn-ghost" href="#exclusions">Exclusions (CSV)</a>
+      <a class="btn btn-ghost" href="#frozen">Frozen inputs (JSON)</a>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">00 Report</div></div>
+    <div class="panel-body"><dl class="kv">
+      <dt>Reporting entity</dt><dd>Gye Nyame Gold Ltd, Obuasi, Ghana</dd>
+      <dt>Contact</dt><dd>sustainability@gyenyame.example</dd>
+      <dt>Reporting period</dt><dd class="mono">2025-01-01 → 2025-12-31</dd>
+      <dt>Prepared by</dt><dd>A. Mensah (Preparer)</dd>
+      <dt>Approved by</dt><dd>K. Boateng (Reviewer)</dd>
+      <dt>Published</dt><dd class="muted">not published</dd>
+      <dt>Report version</dt><dd>1</dd>
+      <dt>Final designated</dt><dd>2026-02-10 by K. Boateng</dd>
+      <dt>Assurance</dt><dd>Not verified</dd>
+    </dl></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">01 Company and organizational boundary</div></div>
+    <div class="panel-body">
+      <p>Gye Nyame Gold Ltd · Operational control · Boundary version 3 of 3: the organizational boundary this run computed its accounting shares from.</p>
+      <table class="table" style="margin-top: 12px"><thead><tr><th>Entity</th><th class="num">Economic interest</th><th>Operated</th><th class="num">Accounting share</th></tr></thead><tbody>
+        <tr><td>Gye Nyame Gold Ltd</td><td class="num">100%</td><td>Yes</td><td class="num">100%</td></tr>
+        <tr><td>Gye Nyame Camp Services Ltd</td><td class="num">100%</td><td>Yes</td><td class="num">100%</td></tr>
+        <tr><td class="muted">Tarkwa Gold JV Ltd</td><td class="num muted">60%</td><td class="muted">No</td><td class="num muted">excluded</td></tr>
+      </tbody></table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">04 Emissions by scope</div></div>
+    <div class="panel-body" style="display: flex; flex-direction: column; gap: 20px">
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Total emissions</div><div class="stat-value" style="font-size: 36px">86,412 <span class="stat-unit">t CO₂e</span></div></div>
+        <div class="stat"><div class="stat-label">Scope 1</div><div class="stat-value">34,194.283 <span class="stat-unit">t</span></div></div>
+        <div class="stat"><div class="stat-label">Scope 2, location-based</div><div class="stat-value">32,816.630 <span class="stat-unit">t</span></div><div class="stat-note">market-based 32,816.630 t</div></div>
+        <div class="stat"><div class="stat-label">Scope 3</div><div class="stat-value">19,401.086 <span class="stat-unit">t</span></div></div>
+      </div>
+      <table class="table"><thead><tr><th>By facility</th><th class="num">Scope 1</th><th class="num">Scope 2 (location)</th><th class="num">Scope 2 (market)</th><th class="num">Scope 3</th><th class="num">Total</th></tr></thead><tbody>
+        <tr><td>Nyame Pit and Plant</td><td class="num">31,744.120</td><td class="num">32,816.630</td><td class="num">32,816.630</td><td class="num">14,340.002</td><td class="num" style="font-weight: 600">78,900.752</td></tr>
+        <tr><td>Obuasi Camp</td><td class="num">2,450.163</td><td class="num">0.000</td><td class="num">0.000</td><td class="num">5,061.084</td><td class="num" style="font-weight: 600">7,511.247</td></tr>
+      </tbody></table>
+      <p class="muted" style="font-size: 14px">Intensity: 0.72 t CO₂e per oz of gold produced (120,000 oz).</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">05 Emissions by gas</div></div>
+    <div class="panel-body tight"><table class="table"><thead><tr><th>Gas</th><th class="num">Mass of gas</th><th class="num">GWP</th><th class="num">CO₂e</th></tr></thead><tbody>
+      <tr><td>CO₂</td><td class="num">45,124 t</td><td class="num">×1</td><td class="num">45,124 t</td></tr>
+      <tr><td>CH₄</td><td class="num">147 kg</td><td class="num">×28</td><td class="num">4 t</td></tr>
+      <tr><td>N₂O</td><td class="num">1.751 t</td><td class="num">×265</td><td class="num">464 t</td></tr>
+      <tr><td>CO₂e from factors without a gas split</td><td class="num muted">not separable</td><td class="num muted">–</td><td class="num">40,820 t</td></tr>
+      <tr><td style="font-weight: 600">Total (scope 2 location-based), ties to section 04</td><td></td><td></td><td class="num" style="font-weight: 600">86,412 t</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">08 Methodology</div></div>
+    <div class="panel-body">
+      <p>GWP set: IPCC AR5, 100-year. Scope 2 reported location-based and market-based. Records that straddle the period are pro-rated by days.</p>
+      <table class="table" style="margin-top: 12px"><thead><tr><th>Factor</th><th class="num">kg CO₂e per unit</th><th>Gases (kg per unit)</th><th>Packs</th><th>Source (publication)</th></tr></thead><tbody>
+        <tr><td>Diesel (average biofuel blend)</td><td class="num">2.66 /litre</td><td class="mono" style="font-size: 13px">CO₂ 2.6307 · CH₄ 0.0001 (fossil) · N₂O 0.0001</td><td><span class="chip">defra-2025</span></td><td>DEFRA 2025, data year 2024</td></tr>
+        <tr><td>Grid electricity (Ghana)</td><td class="num">0.4688 /kWh</td><td class="muted">CO₂e only (no gas split published)</td><td><span class="chip">ghana</span></td><td>Ember Yearly Electricity Data</td></tr>
+        <tr><td>Diesel (GOIL CoA)</td><td class="num">2.68 /litre</td><td class="mono" style="font-size: 13px">CO₂ 2.65 · CH₄ 0.0001 · N₂O 0.0001</td><td class="muted">entered by hand, self-approved by Kofi Mensah</td><td>GOIL fuel analysis certificate 2025-03</td></tr>
+      </tbody></table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">10 Snapshot lines</div></div>
+    <div class="panel-body tight"><div class="table-wrap"><table class="table"><thead><tr><th>Facility</th><th>Source</th><th>Scope</th><th class="num">Quantity</th><th class="num">Factor</th><th class="num">Weight</th><th class="num">CO₂e</th></tr></thead><tbody>
+      <tr><td>Nyame Pit and Plant</td><td><div class="cell-2"><span class="t"><span class="mono muted">ACT-0001</span> Haul fleet diesel</span><span class="s">Diesel (average biofuel blend)<span class="sep">·</span>Mobile combustion<span class="sep">·</span>FF-2025<span class="sep">·</span>tier 1</span></div></td><td>Scope 1</td><td class="num"><div class="cell-2" style="align-items: flex-end"><span>11,923,608 litre</span><span class="s mono">2025-01-01 → 2025-12-31</span></div></td><td class="num">2.66 kg/litre</td><td class="num">100%</td><td class="num" style="font-weight: 600">31,716.8 t</td></tr>
+      <tr><td>Nyame Pit and Plant</td><td><div class="cell-2"><span class="t"><span class="mono muted">ACT-0003</span> Plant grid electricity H1</span><span class="s">Grid electricity (Ghana)<span class="sep">·</span>Purchased electricity<span class="sep">·</span>ECG-OBU-2025-H1<span class="sep">·</span>tier 1</span></div></td><td>Scope 2</td><td class="num"><div class="cell-2" style="align-items: flex-end"><span>34,000,000 kWh</span><span class="s mono">2025-01-01 → 2025-06-30</span></div></td><td class="num">0.4688 kg/kWh</td><td class="num">100%</td><td class="num" style="font-weight: 600">15,939.2 t</td></tr>
+      <tr><td>Obuasi Camp</td><td><div class="cell-2"><span class="t"><span class="mono muted">ACT-0007</span> Year-end kitchen LPG</span><span class="s">LPG<span class="sep">·</span>Stationary combustion<span class="sep">·</span>tier 2</span></div></td><td>Scope 1</td><td class="num"><div class="cell-2" style="align-items: flex-end"><span>1,600 litre</span><span class="s mono">2025-12-20 → 2026-01-20</span></div></td><td class="num">1.56 kg/litre</td><td class="num" style="color: var(--warning)">53.13%</td><td class="num" style="font-weight: 600">1.3 t</td></tr>
+      <tr><td>Nyame Pit and Plant</td><td><div class="cell-2"><span class="t"><span class="mono muted">ACT-0001</span> Haul fleet diesel <span class="chip" style="height: 22px; font-size: 12px">Derived line</span></span><span class="s">Diesel (well-to-tank)<span class="sep">·</span>3. Fuel- and energy-related activities</span></div></td><td>Scope 3</td><td class="num"><span>11,923,608 litre</span></td><td class="num">0.61 kg/litre</td><td class="num">100%</td><td class="num" style="font-weight: 600">7,273.4 t</td></tr>
+    </tbody></table></div></div>
+    <div class="tfoot" style="padding: 12px 20px"><span>4 of 14 lines shown</span><a href="#lines">Lines (CSV) →</a></div>
+  </section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}
+    const theme = s.theme || (this.props.dark ? 'dark' : 'light')
+    return { theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }) }
+  }
+}
+</script>
+</body>
+</html>

@@ -19,8 +19,8 @@ sections:
             do: { signIn: { user: ama } }
           - do: { createInventory: { organization: "${org}", name: "${inv}", periodStart: "2025-01-01", periodEnd: "2025-12-31", approach: OPERATIONAL_CONTROL, gwpSet: AR5, straddle: PRO_RATE, prefillBoundary: true } }
             expect:
-              - inventoryListed: { organization: "${org}", name: "${inv}", status: DRAFT }
-                why: '"FY2025 created." appears first'
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: DRAFT }
+                why: '"FY2025 created." appears first, and the workbench of the new inventory opens'
           - do: { openInventory: { organization: "${org}", inventory: "${inv}" } }
             expect:
               - workbenchTabs: { tabs: [Records, Boundary, Method, Runs, Report] }

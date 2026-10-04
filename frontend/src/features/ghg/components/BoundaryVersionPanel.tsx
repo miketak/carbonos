@@ -15,12 +15,12 @@ export function BoundaryVersionPanel({ versionId }: { versionId: string }) {
     )
   }
   if (query.isError) {
-    return <p className="mt-2 text-sm text-red-600">Could not load this boundary version.</p>
+    return <p className="mt-2 text-sm text-danger">Could not load this boundary version.</p>
   }
   const { version, entries, exclusions } = query.data
   return (
-    <div className="mt-2 rounded-xl border border-teal/10 bg-white/40 p-3">
-      <p className="text-xs text-ink-muted">
+    <div className="mt-3 rounded-lg border border-hairline p-4">
+      <p className="text-[13px] text-ink-muted">
         Boundary version {version.versionNo} · {approachLabels[version.consolidationApproach]} ·{' '}
         {describeFreeze(version)} · {version.entityCount}{' '}
         {version.entityCount === 1 ? 'entity' : 'entities'}, {version.facilityCount}{' '}
@@ -30,7 +30,7 @@ export function BoundaryVersionPanel({ versionId }: { versionId: string }) {
       </p>
       <BoundaryVersionEntries entries={entries} />
       {exclusions.length > 0 && (
-        <ul className="mt-2 flex flex-col gap-0.5 text-xs text-ink-muted">
+        <ul className="mt-3 flex flex-col gap-0.5 text-[13px] text-ink-muted">
           {exclusions.map((exclusion) => (
             <li key={`${exclusion.entityId}:${exclusion.facilityId ?? 'entity'}`}>
               Left out: {exclusion.facilityName ?? `${exclusion.entityName} (whole entity)`} ·{' '}

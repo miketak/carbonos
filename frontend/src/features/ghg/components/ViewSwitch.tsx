@@ -1,18 +1,27 @@
 import { NavLink } from 'react-router-dom'
 
-/** Records or the documents behind them: the two views of Activity data (spec 04.6). */
+/**
+ * Records or the documents behind them: the two views of Activity data (spec
+ * 04.6), as a segmented control (spec 10). The open view has the selected fill.
+ */
 export function ViewSwitch({ organizationId }: { organizationId: string }) {
   const base = `/app/ghg/${organizationId}/activity`
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `rounded-full px-3 py-1 text-xs font-semibold transition-colors duration-150 ${
-      isActive ? 'bg-teal-deep text-white' : 'text-ink-muted hover:bg-teal/10 hover:text-dark-teal'
+    `inline-flex min-h-9 items-center px-3.5 text-sm font-medium whitespace-nowrap transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none ${
+      isActive ? 'bg-selected text-ink' : 'bg-surface text-ink-muted hover:text-ink'
     }`
   return (
-    <nav aria-label="Activity data views" className="flex gap-1 rounded-full bg-white/60 p-1">
+    <nav
+      aria-label="Activity data views"
+      className="inline-flex overflow-hidden rounded-lg border border-hairline-strong"
+    >
       <NavLink to={base} end className={linkClass}>
         Records
       </NavLink>
-      <NavLink to={`${base}/documents`} className={linkClass}>
+      <NavLink
+        to={`${base}/documents`}
+        className={(state) => `${linkClass(state)} border-l border-hairline-strong`}
+      >
         Source documents
       </NavLink>
     </nav>

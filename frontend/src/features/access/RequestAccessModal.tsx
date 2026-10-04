@@ -96,7 +96,7 @@ export function RequestAccessModal({
           maxLength={1000}
         />
         {generalError && (
-          <p role="alert" className="text-sm font-medium text-red-600">
+          <p role="alert" className="text-sm font-medium text-danger">
             {generalError}
           </p>
         )}

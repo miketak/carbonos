@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workspace sidebar</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../tokens.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<aside class="sidebar tokens" data-theme="{{theme}}" style="position: relative">
+  <a class="sidebar-brand" href="Overview.dc.html" aria-label="CarbonOS home">
+    <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true" shape-rendering="geometricPrecision"><defs><linearGradient id="cm-sidebar" gradientUnits="userSpaceOnUse" x1="60" y1="32" x2="4" y2="32"><stop offset="0" stop-color="#00b6aa"/><stop offset="0.15" stop-color="#05b8a7"/><stop offset="0.33" stop-color="#15bfa0"/><stop offset="0.54" stop-color="#2fca93"/><stop offset="0.77" stop-color="#53da82"/><stop offset="1" stop-color="#82ef6d"/></linearGradient></defs><path d="M 51.15 48.07 A 25 25 0 1 1 51.15 15.93" fill="none" stroke="url(#cm-sidebar)" stroke-width="8" stroke-linecap="round"/><rect x="20" y="18" width="10" height="6" rx="3" fill="url(#cm-sidebar)"/><rect x="20" y="29" width="17" height="6" rx="3" fill="url(#cm-sidebar)"/><rect x="20" y="40" width="24" height="6" rx="3" fill="url(#cm-sidebar)"/></svg><span>Carbon<span class="os">OS</span></span>
+  </a>
+
+  <div>
+    <div class="sidebar-group-label">Workspace</div>
+    <button type="button" class="workspace" aria-haspopup="menu" aria-expanded="{{orgOpen}}" onClick="{{toggleOrg}}">
+      <span style="display: flex; flex-direction: column; min-width: 0">
+        <span class="workspace-name">Gye Nyame Gold</span>
+        <span class="workspace-no">ORG-0001</span>
+      </span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <sc-if value="{{orgOpen}}" hint-placeholder-val="{{false}}">
+      <div class="menu" role="menu" style="left: 16px; right: 16px; top: 112px">
+        <div class="menu-label">Switch organization</div>
+        <a class="menu-item" role="menuitem" href="Overview.dc.html"><span>Gye Nyame Gold</span><span class="mono muted">ORG-0001</span></a>
+        <a class="menu-item" role="menuitem" href="Overview.dc.html"><span>Sankofa Gold plc</span><span class="mono muted">ORG-0002</span></a>
+        <div class="menu-rule"></div>
+        <a class="menu-item" role="menuitem" href="Organizations.dc.html">All organizations</a>
+      </div>
+    </sc-if>
+  </div>
+
+  <nav class="nav" aria-label="Organization sections">
+    <sc-for list="{{items}}" as="item" hint-placeholder-count="8">
+      <sc-if value="{{item.rule}}" hint-placeholder-val="{{false}}"><div class="nav-rule"></div></sc-if>
+      <a class="nav-item" href="{{item.href}}" aria-current="{{item.current}}">
+        <sc-if value="{{item.hasNum}}" hint-placeholder-val="{{true}}"><span class="nav-num" aria-hidden="true">{{item.num}}</span></sc-if>
+        <span>{{item.label}}</span>
+        <sc-if value="{{item.badge}}" hint-placeholder-val="{{false}}"><span class="nav-badge" title="1 factor pack update waiting">1</span></sc-if>
+      </a>
+    </sc-for>
+  </nav>
+
+  <div class="sidebar-foot">
+    <a class="nav-item" href="Settings.dc.html" aria-current="{{settingsCurrent}}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </a>
+    <a class="nav-item" href="Overview.dc.html" title="Opens the help centre in a new tab">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+      <span>Help</span>
+    </a>
+    <button type="button" class="account" aria-haspopup="menu" aria-expanded="{{menuOpen}}" onClick="{{toggleMenu}}">
+      <span class="avatar" aria-hidden="true">KM</span>
+      <span class="account-name">Kofi Mensah<span class="account-role">Your role: Owner</span></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <sc-if value="{{menuOpen}}" hint-placeholder-val="{{false}}">
+      <div class="menu" role="menu" style="left: 16px; right: 16px; bottom: 76px">
+        <div class="menu-label">kofi@ecoriv.com</div>
+        <div class="menu-rule"></div>
+        <a class="menu-item" role="menuitem" href="Profile.dc.html">Edit profile</a>
+        <a class="menu-item" role="menuitem" href="Overview.dc.html">Help</a>
+        <a class="menu-item" role="menuitem" href="Admin.dc.html">Administration</a>
+        <div class="menu-rule"></div>
+        <button type="button" class="menu-item" role="menuitem" onClick="{{toggleTheme}}"><span>{{themeLabel}}</span><span class="mono muted">{{themeNow}}</span></button>
+        <div class="menu-rule"></div>
+        <a class="menu-item" role="menuitem" href="Login.dc.html">Sign out</a>
+      </div>
+    </sc-if>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","default":"activity","options":["overview","entities","facilities","activity","inventories","factors","updates","units","settings"]},"theme":{"editor":"enum","default":"light","options":["light","dark"]},"onToggleTheme":{"editor":null},"$preview":{"width":260,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const state = this.state || {}
+    const active = this.props.active || 'activity'
+    const theme = this.props.theme || 'light'
+    const cur = (key) => (key === active ? 'page' : 'false')
+    const sections = [
+      { key: 'overview', label: 'Overview', href: 'Overview.dc.html', num: '—' },
+      { key: 'entities', label: 'Legal entities', href: 'Entities.dc.html', rule: true, num: '01' },
+      { key: 'facilities', label: 'Facilities', href: 'Facilities.dc.html', num: '02' },
+      { key: 'activity', label: 'Activity data', href: 'Main.dc.html', num: '03' },
+      { key: 'inventories', label: 'Inventories', href: 'Inventories.dc.html', num: '04' },
+      { key: 'factors', label: 'Emission factors', href: 'Factors.dc.html', rule: true, num: '' },
+      { key: 'updates', label: 'Updates', href: 'Updates.dc.html', badge: true, num: '' },
+      { key: 'units', label: 'Units', href: 'Units.dc.html', num: '' },
+    ]
+    return {
+      theme,
+      items: sections.map((s) => ({ ...s, rule: !!s.rule, badge: !!s.badge, hasNum: !!s.num, current: cur(s.key) })),
+      settingsCurrent: cur('settings'),
+      orgOpen: !!state.orgOpen,
+      menuOpen: !!state.menuOpen,
+      toggleOrg: () => this.setState({ orgOpen: !state.orgOpen, menuOpen: false }),
+      toggleMenu: () => this.setState({ menuOpen: !state.menuOpen, orgOpen: false }),
+      themeLabel: theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
+      themeNow: theme === 'dark' ? 'dark' : 'light',
+      toggleTheme: () => { if (typeof this.props.onToggleTheme === 'function') this.props.onToggleTheme() },
+    }
+  }
+}
+</script>
+</body>
+</html>
