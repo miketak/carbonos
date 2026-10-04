@@ -110,7 +110,7 @@ palette stays on the landing page, the symbol and the splash.
 | primary-ink | `#ffffff` | `#0c2b30` | text on primary |
 | link | `#0a6f66` | `#5fd8c9` | links, row actions |
 | success | `#1f7a4d` | `#5ccf8f` | Ready, Approved, Published |
-| warning | `#a8650a` | `#e0a634` | Needs evidence, Waiting on you |
+| warning | `#8f5508` | `#e0a634` | Needs evidence, Waiting on you |
 | danger | `#b8322a` | `#f07167` | errors, Remove, Void |
 | info | `#2a5f9e` | `#7db4f0` | Frozen, Final |
 | focus | `#05cebb` | `#05cebb` | the focus ring |
