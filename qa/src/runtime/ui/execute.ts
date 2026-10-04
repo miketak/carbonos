@@ -162,7 +162,11 @@ export function dialog(page: Page, title: string): Locator {
   // `[role="dialog"]` or `[aria-label="Add instrument"]`: a region named by a selector rather than a dialog title
   if (title.startsWith('[')) return page.locator(title).first()
   // a form that takes the whole page (New inventory, Add facility: spec 08, form surfaces) carries the same name as a dialog would
-  return page.getByRole('dialog', { name: title, exact: true }).or(page.getByRole('form', { name: title, exact: true }))
+  // the detail of a split register (a record beside its list, spec 10) is a region named as the drawer was
+  return page
+    .getByRole('dialog', { name: title, exact: true })
+    .or(page.getByRole('form', { name: title, exact: true }))
+    .or(page.getByRole('region', { name: title, exact: true }))
 }
 
 /** The row of a table that names the text; else the list item, else the smallest card that does and holds a button. */
@@ -203,7 +207,12 @@ export async function open(page: Page, nav: string): Promise<void> {
   if (!route) throw new Error(`no route for "${nav}"; add it to locators.ts`)
   await dismissDialogs(page)
   const link = page.getByRole('link', { name: nav, exact: true }).first()
-  if ((await link.count()) > 0 && new URL(page.url()).pathname.startsWith(route.startsWith('/admin') ? '/admin' : '/app')) {
+  const path = new URL(page.url()).pathname
+  // already there (an act that lands on the list, say): a click would chase a link the navigation just replaced
+  if (path === route) {
+    // a reload, so the screen shows what an act through the API just changed
+    await page.reload()
+  } else if ((await link.count()) > 0 && path.startsWith(route.startsWith('/admin') ? '/admin' : '/app')) {
     await link.click()
   } else {
     await page.goto(route)
@@ -261,7 +270,8 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       await open(page, op.nav)
       return
     case 'tab':
-      await page.getByRole('tab', { name: op.name }).click()
+      // exact: the detail's Exclude tab sits beside the list's Excluded tab (spec 10)
+      await page.getByRole('tab', { name: op.name, exact: true }).first().click()
       return
     case 'click': {
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page

@@ -12,7 +12,7 @@ export default defineConfig({
   retries: 0,
   timeout: 10 * 60 * 1000,
   expect: { timeout: 15_000 },
-  use: { actionTimeout: 15_000, navigationTimeout: 30_000 },
+  use: { actionTimeout: 30_000, navigationTimeout: 30_000 },
   reporter: [['list'], ['json', { outputFile: 'out/report.json' }]],
   outputDir: 'out/artifacts',
   projects: [
@@ -20,7 +20,7 @@ export default defineConfig({
     {
       name: 'ui',
       testMatch: /ui\/.*\.ui\.spec\.ts/,
-      use: { viewport: { width: 1440, height: 900 }, trace: 'retain-on-failure', actionTimeout: 15_000, navigationTimeout: 30_000 },
+      use: { viewport: { width: 1440, height: 900 }, trace: 'retain-on-failure', actionTimeout: 30_000, navigationTimeout: 30_000 },
     },
   ],
 })

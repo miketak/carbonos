@@ -211,7 +211,7 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
           </p>
         )}
         {historyQuery.data && historyQuery.data.length > 0 && (
-          <Table className="[&_tbody_tr:last-child>td]:border-b-0">
+          <Table aria-label="Every change" className="[&_tbody_tr:last-child>td]:border-b-0">
             <thead>
               <tr>
                 <Th>Setting</Th>

@@ -176,10 +176,10 @@ function Designation({ baseYear }: { baseYear: BaseYear }) {
             </>
           }
         />
+        {/* one text node: the help and the QA pack quote "5% of base-year emissions" whole */}
         <Stat
           label="Significance threshold"
-          value={`${baseYear.thresholdPercent}%`}
-          unit="of base-year emissions"
+          value={`${baseYear.thresholdPercent}% of base-year emissions`}
         />
         <Stat
           label="Mid-year structural changes"

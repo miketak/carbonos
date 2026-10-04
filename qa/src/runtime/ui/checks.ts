@@ -60,7 +60,14 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
       case 'textVisible': {
         const scope = check.within ? page.locator(check.within) : page
         const text = t(check.text)
-        await expect(scope.getByText(wildcard(text) ?? text, { exact: false }).first()).toBeVisible()
+        const target = scope.getByText(wildcard(text) ?? text, { exact: false }).first()
+        // spec 10: the pre-flight sentences sit in the chip's popover; a tester opens the chip to read them
+        const chip = page.locator('button[aria-haspopup="dialog"]').first()
+        if ((await target.isVisible().catch(() => false)) === false && (await chip.count()) > 0) {
+          await target.waitFor({ state: 'visible', timeout: 3_000 }).catch(() => undefined)
+          if (!(await target.isVisible().catch(() => false))) await chip.click()
+        }
+        await expect(target).toBeVisible()
         return { ok: true }
       }
       case 'textAbsent':
@@ -109,7 +116,12 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         // the findings are on the pre-flight panel under Records; the observation opens the workbench fresh
         if (!ctx) return { ok: false, detail: 'no API view to find the inventory' }
         await openInventoryPage(page, ctx, check.organization, check.inventory, 'Records')
-        const gate = page.getByRole('listitem').filter({ has: page.getByText(check.gate, { exact: true }) }).first()
+        // spec 10: the gates sit in the pre-flight popover, opened from the chip in the page header
+        const chip = page.locator('button[aria-haspopup="dialog"]').first()
+        const popover = page.getByRole('dialog', { name: 'Pre-flight checks' })
+        if ((await chip.count()) > 0 && (await popover.count()) === 0) await chip.click()
+        const scope = (await popover.count()) > 0 ? popover : page
+        const gate = scope.getByRole('listitem').filter({ has: page.getByText(check.gate, { exact: true }) }).first()
         await expect(gate).toBeVisible()
         const finding = gate.getByText(t(check.containing), { exact: false })
         if (check.absent) await expect(finding).toHaveCount(0)
@@ -197,18 +209,21 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
   }
 }
 
-/** The number on a dashboard tile, or the rows of the table under a heading. */
+/** The number on a dashboard figure, or the rows of the table named after a heading. */
 export async function readCount(page: Page, label: string): Promise<number> {
   if (label === S.heading.everyChange) {
     const heading = page.getByRole('heading', { name: label, exact: true })
     await expect(heading).toBeVisible()
-    const table = page.locator('h2:has-text("' + label + '") + div table')
-    await expect(table).toBeVisible()
-    return table.locator('tbody tr').count()
+    // the table carries the heading's name (spec 10); before that it followed the heading
+    const table = page.getByRole('table', { name: label, exact: true }).or(page.locator('h2:has-text("' + label + '") + div table'))
+    await expect(table.first()).toBeVisible()
+    return table.first().locator('tbody tr').count()
   }
-  const tile = page.locator('p', { hasText: label }).filter({ hasText: new RegExp(`^${label}$`) }).first()
+  // a figure of the stat strip is a term and its definition (spec 10); the old tiles were two paragraphs
+  const term = page.locator('dt', { hasText: new RegExp(`^${label}$`) }).first()
+  const tile = term.or(page.locator('p', { hasText: label }).filter({ hasText: new RegExp(`^${label}$`) }).first()).first()
   await expect(tile).toBeVisible()
-  const value = tile.locator('xpath=following-sibling::p[1]')
+  const value = tile.locator('xpath=following-sibling::*[self::dd or self::p][1]')
   const text = (await value.textContent()) ?? ''
   const n = Number(text.replace(/[^\d]/g, ''))
   if (Number.isNaN(n)) throw new Error(`the tile ${label} reads "${text}"`)

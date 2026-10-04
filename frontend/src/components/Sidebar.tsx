@@ -43,8 +43,7 @@ export function Sidebar({
 }) {
   // the number is decoration, drawn from data-num by a pseudo-element, so a
   // reader and a test get the label alone and the bare entries sit flush left
-  const numbered =
-    'before:w-5.5 before:shrink-0 before:text-[13px] before:font-semibold before:content-[attr(data-num)]'
+  const numbered = 'rail-num before:w-5.5 before:shrink-0 before:text-[13px] before:font-semibold'
 
   const entry = (section: RailSection) => (
     <Fragment key={section.label}>
