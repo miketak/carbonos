@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../../components/Button'
 import { InputField } from '../../../components/Field'
-import { GlassCard } from '../../../components/GlassCard'
 import { HelpLink } from '../../../components/HelpLink'
 import { Modal } from '../../../components/Modal'
+import { Panel, PanelBody, PanelHead } from '../../../components/Panel'
 import { useToast } from '../../../components/toast'
 import { refusalMessage } from '../../../lib/api'
 import { gateLabels } from '../format'
@@ -32,6 +33,14 @@ const stateCopy: Record<Inventory['status'], string> = {
   PUBLISHED:
     'Published. The report was issued; nothing on this inventory can change. A correction is a new inventory that supersedes this one.',
 }
+
+/** The four states in the order the inventory passes through them (spec 05.1). */
+const states: { status: Inventory['status']; label: string }[] = [
+  { status: 'DRAFT', label: 'Draft' },
+  { status: 'FROZEN', label: 'Frozen' },
+  { status: 'FINAL', label: 'Final' },
+  { status: 'PUBLISHED', label: 'Published' },
+]
 
 /**
  * Why the freeze would be refused, in one sentence (spec 05.5): the common
@@ -71,19 +80,16 @@ function summarizeGate(gate: GateResult): string {
 }
 
 /**
- * The inventory's lifecycle (spec 05.1): one state covering both the boundary
- * and the activity view, with the transitions the state allows. Freezing
- * waits for a clean classification and reopening needs a reason (spec 05.5).
+ * The lifecycle's acts and the dialogs behind them (spec 05.1, 05.5). The
+ * page puts the buttons in its title row beside the pre-flight chip (spec
+ * 10) and renders the dialogs once; the standalone bar below uses the same
+ * hook so a test of the bar alone still has every act in reach.
  */
-export function LifecycleBar({
-  inventory,
-  inBoundaryCount,
-  myRole,
-}: {
-  inventory: Inventory
-  inBoundaryCount: number
-  myRole?: MyRole | null
-}) {
+export function useLifecycleActions(
+  inventory: Inventory,
+  inBoundaryCount: number,
+  myRole?: MyRole | null,
+): { actions: ReactNode; dialogs: ReactNode; versionsCut: number } {
   const inventoryId = inventory.id
   const freeze = useFreezeInventory(inventoryId)
   const reopen = useReopenInventory(inventoryId)
@@ -116,110 +122,79 @@ export function LifecycleBar({
   }
   const fail = (error: unknown) => setMutationError(refusalMessage(error, myRole))
 
-  return (
-    <GlassCard className="p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl">Inventory lifecycle</h2>
-            <HelpLink topic="lifecycle" />
-            {/* spec 05.5: two numberings, two names; this is the boundary version, the report version prints on the report */}
-            {inventory.status !== 'DRAFT' && inventory.currentBoundaryVersionNo !== null && (
-              <span className="rounded-full border border-teal/20 px-2.5 py-0.5 font-mono text-xs font-bold tracking-wider text-ink-muted">
-                Boundary version {inventory.currentBoundaryVersionNo}
-              </span>
-            )}
-            {inventory.status === 'DRAFT' && versionsCut > 0 && (
-              <span className="rounded-full border border-teal/20 px-2.5 py-0.5 font-mono text-xs font-bold tracking-wider text-ink-muted">
-                {versionsCut} boundary version{versionsCut === 1 ? '' : 's'} cut
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-sm text-ink-muted">{stateCopy[inventory.status]}</p>
-          {inventory.finalDesignatedBy && (
-            <p className="mt-1 text-xs text-ink-muted">
-              Final designated by {inventory.finalDesignatedBy}
-              {inventory.finalDesignatedAt
-                ? ` on ${new Date(inventory.finalDesignatedAt).toLocaleDateString()}`
-                : ''}
-              {inventory.finalNote ? `: ${inventory.finalNote}` : ''}
-            </p>
-          )}
-          {inventory.status === 'PUBLISHED' && inventory.publishedAt && (
-            <p className="mt-1 text-xs text-ink-muted">
-              Published {new Date(inventory.publishedAt).toLocaleString()}.
-            </p>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {inventory.status === 'DRAFT' && (
-            <RoleButton
-              allowed={mayWrite(myRole)}
-              tooltip={WRITE_TOOLTIP}
-              className="px-4 py-1.5 text-sm"
-              disabled={inBoundaryCount === 0}
-              title={inBoundaryCount === 0 ? 'Add at least one facility first' : undefined}
-              onClick={() => openDialog('freeze')}
-            >
-              Freeze inventory
-            </RoleButton>
-          )}
-          {inventory.status === 'FROZEN' && (
-            <>
-              <RoleButton
-                allowed={mayWrite(myRole)}
-                tooltip={WRITE_TOOLTIP}
-                variant="ghost"
-                className="px-4 py-1.5 text-sm"
-                onClick={() => {
-                  setReopenReason('')
-                  openDialog('reopen')
-                }}
-              >
-                Reopen as draft
-              </RoleButton>
-              <Button className="px-4 py-1.5 text-sm" disabled title="Designate a final run first">
-                Publish
-              </Button>
-            </>
-          )}
-          {inventory.status === 'FINAL' && (
-            <>
-              <RoleButton
-                allowed={mayApprove(myRole)}
-                tooltip={APPROVE_TOOLTIP}
-                variant="ghost"
-                className="px-4 py-1.5 text-sm"
-                onClick={() => {
-                  setWithdrawReason('')
-                  openDialog('withdraw')
-                }}
-              >
-                Withdraw final designation
-              </RoleButton>
-              <RoleButton
-                allowed={mayApprove(myRole)}
-                tooltip={APPROVE_TOOLTIP}
-                className="px-4 py-1.5 text-sm"
-                onClick={() => openDialog('publish')}
-              >
-                Publish
-              </RoleButton>
-            </>
-          )}
-          {inventory.status === 'PUBLISHED' && !inventory.supersededById && (
-            <RoleButton
-              allowed={mayApprove(myRole)}
-              tooltip={APPROVE_TOOLTIP}
-              className="px-4 py-1.5 text-sm"
-              onClick={() => openDialog('supersede')}
-            >
-              Create correction
-            </RoleButton>
-          )}
-        </div>
-      </div>
+  const actions = (
+    <>
+      {inventory.status === 'DRAFT' && (
+        <RoleButton
+          allowed={mayWrite(myRole)}
+          tooltip={WRITE_TOOLTIP}
+          disabled={inBoundaryCount === 0}
+          title={inBoundaryCount === 0 ? 'Add at least one facility first' : undefined}
+          onClick={() => openDialog('freeze')}
+        >
+          Freeze inventory
+        </RoleButton>
+      )}
+      {inventory.status === 'FROZEN' && (
+        <>
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
+            variant="secondary"
+            onClick={() => {
+              setReopenReason('')
+              openDialog('reopen')
+            }}
+          >
+            Reopen as draft
+          </RoleButton>
+          <Button disabled title="Designate a final run first">
+            Publish
+          </Button>
+        </>
+      )}
+      {inventory.status === 'FINAL' && (
+        <>
+          <RoleButton
+            allowed={mayApprove(myRole)}
+            tooltip={APPROVE_TOOLTIP}
+            variant="secondary"
+            onClick={() => {
+              setWithdrawReason('')
+              openDialog('withdraw')
+            }}
+          >
+            Withdraw final designation
+          </RoleButton>
+          <RoleButton
+            allowed={mayApprove(myRole)}
+            tooltip={APPROVE_TOOLTIP}
+            onClick={() => openDialog('publish')}
+          >
+            Publish
+          </RoleButton>
+        </>
+      )}
+      {inventory.status === 'PUBLISHED' && !inventory.supersededById && (
+        <RoleButton
+          allowed={mayApprove(myRole)}
+          tooltip={APPROVE_TOOLTIP}
+          onClick={() => openDialog('supersede')}
+        >
+          Create correction
+        </RoleButton>
+      )}
+    </>
+  )
 
+  const errorLine = mutationError && (
+    <p role="alert" className="mt-3 text-sm font-medium text-danger">
+      {mutationError}
+    </p>
+  )
+
+  const dialogs = (
+    <>
       {dialog === 'freeze' && (
         <Modal title="Freeze the inventory?" onClose={() => setDialog(null)}>
           {/* spec 05.5: the gate summary first, then the sentence that says what the freeze does */}
@@ -231,9 +206,9 @@ export function LifecycleBar({
                   <span
                     className={
                       gate.findings.some((finding) => finding.severity === 'ERROR')
-                        ? 'text-red-600'
+                        ? 'text-danger'
                         : gate.findings.some((finding) => finding.severity === 'WARNING')
-                          ? 'text-amber-600'
+                          ? 'text-warning'
                           : 'text-ink-muted'
                     }
                   >
@@ -251,7 +226,7 @@ export function LifecycleBar({
             later with a reason; the version is kept.
           </p>
           {freezeRefusal && (
-            <div role="alert" className="mt-3 text-sm text-red-600">
+            <div role="alert" className="mt-3 text-sm text-danger">
               <p className="font-medium">{freezeRefusal}.</p>
               <ul className="mt-1 list-disc pl-5 text-xs">
                 {blockers.slice(0, 5).map((blocker) => (
@@ -264,11 +239,7 @@ export function LifecycleBar({
               </ul>
             </div>
           )}
-          {mutationError && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
-              {mutationError}
-            </p>
-          )}
+          {errorLine}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -312,11 +283,7 @@ export function LifecycleBar({
               required
             />
           </div>
-          {mutationError && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
-              {mutationError}
-            </p>
-          )}
+          {errorLine}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -358,11 +325,7 @@ export function LifecycleBar({
               required
             />
           </div>
-          {mutationError && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
-              {mutationError}
-            </p>
-          )}
+          {errorLine}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -393,11 +356,7 @@ export function LifecycleBar({
             Publishing issues the report; nothing on this inventory can change afterwards. A
             correction is a new inventory that supersedes it.
           </p>
-          {mutationError && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
-              {mutationError}
-            </p>
-          )}
+          {errorLine}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -446,11 +405,7 @@ export function LifecycleBar({
               required
             />
           </div>
-          {mutationError && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-600">
-              {mutationError}
-            </p>
-          )}
+          {errorLine}
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
               Cancel
@@ -478,6 +433,131 @@ export function LifecycleBar({
           </div>
         </Modal>
       )}
-    </GlassCard>
+    </>
+  )
+
+  return { actions, dialogs, versionsCut }
+}
+
+/**
+ * The inventory's lifecycle (spec 05.1) with its own acts and dialogs: the
+ * panel below, fed by `useLifecycleActions`. The workbench calls the hook
+ * itself, puts the acts in its title row (spec 10) and renders the panel.
+ */
+export function LifecycleBar({
+  inventory,
+  inBoundaryCount,
+  myRole,
+}: {
+  inventory: Inventory
+  inBoundaryCount: number
+  myRole?: MyRole | null
+}) {
+  const lifecycle = useLifecycleActions(inventory, inBoundaryCount, myRole)
+  return (
+    <LifecyclePanel
+      inventory={inventory}
+      versionsCut={lifecycle.versionsCut}
+      actions={lifecycle.actions}
+      dialogs={lifecycle.dialogs}
+    />
+  )
+}
+
+/**
+ * One state covering both the boundary and the activity view, drawn as the
+ * four states on a line (spec 10), with the state's copy and the designation
+ * and publication lines under it. Freezing waits for a clean classification
+ * and reopening needs a reason (spec 05.5).
+ */
+export function LifecyclePanel({
+  inventory,
+  versionsCut,
+  actions,
+  dialogs,
+}: {
+  inventory: Inventory
+  versionsCut: number
+  /** the acts, when they render in the panel's head rather than the page's title row */
+  actions?: ReactNode
+  dialogs?: ReactNode
+}) {
+  const current = states.findIndex((state) => state.status === inventory.status)
+
+  return (
+    <Panel>
+      <PanelHead
+        title={
+          <span className="inline-flex items-center gap-2">
+            Inventory lifecycle
+            <HelpLink topic="lifecycle" />
+          </span>
+        }
+      >
+        {/* spec 05.5: two numberings, two names; this is the boundary version, the report version prints on the report */}
+        {inventory.status !== 'DRAFT' && inventory.currentBoundaryVersionNo !== null && (
+          <span className="text-[13px] font-medium tracking-wider text-ink-muted">
+            Boundary version {inventory.currentBoundaryVersionNo}
+          </span>
+        )}
+        {inventory.status === 'DRAFT' && versionsCut > 0 && (
+          <span className="text-[13px] font-medium tracking-wider text-ink-muted">
+            {versionsCut} boundary version{versionsCut === 1 ? '' : 's'} cut
+          </span>
+        )}
+        {actions}
+      </PanelHead>
+      <PanelBody>
+        <ol aria-label="Lifecycle" className="flex items-center py-1">
+          {states.map((state, index) => {
+            const done = index < current
+            const now = index === current
+            return (
+              <li
+                key={state.status}
+                aria-current={now ? 'step' : undefined}
+                className={`flex items-center text-sm whitespace-nowrap ${index > 0 ? 'flex-1' : ''} ${
+                  now ? 'font-semibold text-ink' : done ? 'text-ink' : 'text-ink-muted'
+                }`}
+              >
+                {index > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="mx-2.5 h-px min-w-6 flex-1 bg-hairline-strong"
+                  />
+                )}
+                <span
+                  aria-hidden="true"
+                  className={`mr-2 size-2.5 shrink-0 rounded-full border-2 ${
+                    done
+                      ? 'border-primary bg-primary'
+                      : now
+                        ? 'border-primary bg-surface'
+                        : 'border-hairline-strong bg-surface'
+                  }`}
+                />
+                {state.label}
+              </li>
+            )
+          })}
+        </ol>
+        <p className="mt-2 text-sm text-ink-muted">{stateCopy[inventory.status]}</p>
+        {inventory.finalDesignatedBy && (
+          <p className="mt-2 text-sm">
+            Final designated by {inventory.finalDesignatedBy}
+            {inventory.finalDesignatedAt
+              ? ` on ${new Date(inventory.finalDesignatedAt).toLocaleDateString()}`
+              : ''}
+            {inventory.finalNote ? `: ${inventory.finalNote}` : ''}
+          </p>
+        )}
+        {inventory.status === 'PUBLISHED' && inventory.publishedAt && (
+          <p className="mt-2 text-sm">
+            Published {new Date(inventory.publishedAt).toLocaleString()}.
+          </p>
+        )}
+      </PanelBody>
+      {dialogs}
+    </Panel>
   )
 }

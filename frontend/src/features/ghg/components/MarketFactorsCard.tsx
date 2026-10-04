@@ -2,7 +2,9 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../../../components/Button'
 import { InputField, SelectField } from '../../../components/Field'
-import { GlassCard } from '../../../components/GlassCard'
+import { Panel, PanelBody, PanelHead } from '../../../components/Panel'
+import { StatusDot } from '../../../components/StatusDot'
+import { Table, Td, Th, TwoLine } from '../../../components/Table'
 import { useToast } from '../../../components/toast'
 import { fieldErrors, refusalMessage } from '../../../lib/api'
 import { checkNumber, collectErrors, withoutError } from '../../../lib/validate'
@@ -37,6 +39,10 @@ const answerLabels: Record<'MET' | 'NOT_MET' | 'UNANSWERED', string> = {
   NOT_MET: 'not met',
   UNANSWERED: 'unanswered',
 }
+
+/** A criterion's answer, 36 px tall so the eight of them read as a list rather than a form. */
+const inlineControl =
+  'min-h-9 rounded-lg border border-hairline-strong bg-surface px-2.5 py-1 text-[13px] text-ink focus:border-primary focus:ring-2 focus:ring-focus/40 focus:outline-none disabled:opacity-50'
 
 /**
  * Market-based scope 2 (spec 07.1, 07.2, Scope 2 Guidance): a contractual
@@ -158,51 +164,59 @@ export function MarketFactorsCard({
   }
 
   return (
-    <GlassCard className="p-6">
-      <h2 className="text-xl">Market-based scope 2 instruments</h2>
-      <p className="text-sm text-ink-muted">
-        Every run reports scope 2 location-based and market-based side by side. An instrument
-        applies to the megawatt-hours it covers over its period; the balance, and every facility
-        without an instrument, takes the residual mix, or the grid average when none is published.
-        An instrument that does not meet the Scope 2 Quality Criteria is not applied.
-      </p>
+    <Panel>
+      <PanelHead
+        title="Market-based scope 2 instruments"
+        description="Every run reports scope 2 location-based and market-based side by side. An instrument applies to the megawatt-hours it covers over its period; the balance, and every facility without an instrument, takes the residual mix, or the grid average when none is published. An instrument that does not meet the Scope 2 Quality Criteria is not applied."
+      />
       {factorsQuery.data && factorsQuery.data.length > 0 && (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-3 py-2 font-semibold">Facility</th>
-                <th className="px-3 py-2 font-semibold">Instrument</th>
-                <th className="px-3 py-2 font-semibold">kg CO₂e/kWh</th>
-                <th className="px-3 py-2 font-semibold">Covers</th>
-                <th className="px-3 py-2 font-semibold">Source</th>
-                <th className="px-3 py-2 font-semibold">Quality criteria</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {factorsQuery.data.map((entry) => (
-                <tr key={entry.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-3 py-2 font-medium">{entry.facilityName}</td>
-                  <td className="px-3 py-2">{instrumentLabels[entry.instrumentType]}</td>
-                  <td className="px-3 py-2 tabular-nums">{entry.kgCo2ePerKwh}</td>
-                  <td className="px-3 py-2 text-ink-muted tabular-nums">
-                    {entry.coveredKwh === null
-                      ? 'every kWh'
-                      : `${(entry.coveredKwh / 1000).toLocaleString()} MWh`}
-                    {(entry.periodStart || entry.periodEnd) && (
-                      <span className="block text-xs">
-                        {entry.periodStart ?? inventory.periodStart} →{' '}
-                        {entry.periodEnd ?? inventory.periodEnd}
+        <Table>
+          <thead>
+            <tr>
+              <Th className="pl-5">Facility</Th>
+              <Th>Instrument</Th>
+              <Th align="right">kg CO₂e/kWh</Th>
+              <Th>Covers</Th>
+              <Th>Source</Th>
+              <Th>Quality criteria</Th>
+              <Th className="pr-5">
+                <span className="sr-only">Actions</span>
+              </Th>
+            </tr>
+          </thead>
+          <tbody>
+            {factorsQuery.data.map((entry) => (
+              <tr key={entry.id} className="align-top">
+                <Td className="pl-5 font-medium">{entry.facilityName}</Td>
+                <Td>{instrumentLabels[entry.instrumentType]}</Td>
+                <Td align="right">{entry.kgCo2ePerKwh}</Td>
+                <Td>
+                  <TwoLine
+                    primary={
+                      <span className="font-normal">
+                        {entry.coveredKwh === null
+                          ? 'every kWh'
+                          : `${(entry.coveredKwh / 1000).toLocaleString()} MWh`}
                       </span>
+                    }
+                    secondary={
+                      entry.periodStart || entry.periodEnd
+                        ? `${entry.periodStart ?? inventory.periodStart} → ${entry.periodEnd ?? inventory.periodEnd}`
+                        : undefined
+                    }
+                  />
+                </Td>
+                <Td className="text-ink-muted">{entry.source}</Td>
+                <Td>
+                  <div className="flex flex-col gap-0.5">
+                    {entry.meetsQualityCriteria ? (
+                      <StatusDot tone="success">All eight met</StatusDot>
+                    ) : (
+                      <StatusDot tone="warning">
+                        {`Not applied: ${entry.notMetCount > 0 ? `${entry.notMetCount} not met` : ''}${entry.notMetCount > 0 && entry.unansweredCount > 0 ? ', ' : ''}${entry.unansweredCount > 0 ? `${entry.unansweredCount} unanswered` : ''}`}
+                      </StatusDot>
                     )}
-                  </td>
-                  <td className="px-3 py-2 text-ink-muted">{entry.source}</td>
-                  <td className="px-3 py-2">
-                    {entry.meetsQualityCriteria
-                      ? 'All eight met'
-                      : `Not applied: ${entry.notMetCount > 0 ? `${entry.notMetCount} not met` : ''}${entry.notMetCount > 0 && entry.unansweredCount > 0 ? ', ' : ''}${entry.unansweredCount > 0 ? `${entry.unansweredCount} unanswered` : ''}`}
-                    <span className="block text-xs text-ink-muted">
+                    <span className="text-[13px] text-ink-muted">
                       {entry.criteria
                         .map((criterion, index) => `${index + 1} ${answerLabels[criterion.answer]}`)
                         .join(' · ')}
@@ -211,7 +225,7 @@ export function MarketFactorsCard({
                       entry.registry ||
                       entry.vintage ||
                       entry.retirementDate) && (
-                      <span className="block text-xs text-ink-muted">
+                      <span className="text-[13px] text-ink-muted">
                         {[
                           entry.certificateId,
                           entry.registry,
@@ -223,35 +237,36 @@ export function MarketFactorsCard({
                       </span>
                     )}
                     {entry.qualityNotes && (
-                      <span className="block text-xs text-ink-muted">{entry.qualityNotes}</span>
+                      <span className="text-[13px] text-ink-muted">{entry.qualityNotes}</span>
                     )}
                     <button
                       type="button"
-                      className="block text-xs text-link hover:underline"
+                      className="self-start text-[13px] font-medium text-link hover:underline"
                       onClick={() => setEvidenceFor(entry)}
                     >
                       Evidence
                     </button>
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {editable && (
+                  </div>
+                </Td>
+                <Td align="right" className="pr-5">
+                  {editable && (
+                    <span className="inline-flex gap-1">
                       <RoleButton
                         allowed={mayWrite(myRole)}
                         tooltip={WRITE_TOOLTIP}
                         variant="ghost"
-                        className="px-2 py-1 text-xs"
+                        size="sm"
                         aria-label={`Edit instrument for ${entry.facilityName}`}
                         onClick={() => edit(entry)}
                       >
                         Edit
                       </RoleButton>
-                    )}
-                    {editable && (
                       <RoleButton
                         allowed={mayWrite(myRole)}
                         tooltip={WRITE_TOOLTIP}
                         variant="ghost"
-                        className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                        size="sm"
+                        className="text-danger"
                         aria-label={`Remove instrument for ${entry.facilityName}`}
                         onClick={() =>
                           remove.mutate(entry.facilityId, {
@@ -261,180 +276,184 @@ export function MarketFactorsCard({
                       >
                         Remove
                       </RoleButton>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </span>
+                  )}
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
       )}
       {factorsQuery.data?.length === 0 && (
-        <p className="mt-4 text-sm text-ink-muted">
+        <p className="p-5 text-sm text-ink-muted">
           No instruments recorded: the market-based figure uses the residual mix, or the grid
           average where none is published, and the report says so.
         </p>
       )}
       {writable && facilities.length > 0 && (
-        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-4 md:items-end" noValidate>
-          <SelectField
-            label="Facility"
-            value={chosenFacility}
-            onChange={(event) => setFacilityId(event.target.value)}
-          >
-            {facilities.map((facility) => (
-              <option key={facility.id} value={facility.id}>
-                {facility.name}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="Instrument"
-            value={instrument}
-            onChange={(event) => setInstrument(event.target.value as MarketInstrument)}
-          >
-            {Object.entries(instrumentLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </SelectField>
-          <InputField
-            label="kg CO₂e per kWh"
-            type="number"
-            min="0"
-            step="0.000001"
-            value={factor}
-            onChange={(event) => {
-              setFactor(event.target.value)
-              setClientErrors((current) => withoutError(current, 'kgCo2ePerKwh'))
-            }}
-            error={errors?.kgCo2ePerKwh}
-            required
-          />
-          <InputField
-            label="Source"
-            placeholder="Supplier certificate 2025"
-            value={source}
-            onChange={(event) => setSource(event.target.value)}
-            required
-          />
-          <InputField
-            label="Covered quantity (MWh)"
-            type="number"
-            min="0.001"
-            step="0.001"
-            value={coveredMwh}
-            onChange={(event) => {
-              setCoveredMwh(event.target.value)
-              setClientErrors((current) => withoutError(current, 'coveredKwh'))
-            }}
-            error={errors?.coveredKwh}
-            hint="The megawatt-hours the instrument covers; the balance takes the residual mix or grid average."
-            required
-          />
-          <InputField
-            label="Covers from (optional)"
-            type="date"
-            value={periodStart}
-            onChange={(event) => setPeriodStart(event.target.value)}
-            hint={`Defaults to ${inventory.periodStart}`}
-          />
-          <InputField
-            label="Covers to (optional)"
-            type="date"
-            value={periodEnd}
-            onChange={(event) => setPeriodEnd(event.target.value)}
-            hint={`Defaults to ${inventory.periodEnd}`}
-          />
-          <InputField
-            label="Certificate or contract reference"
-            placeholder="IREC-GH-2025-0417"
-            value={certificateId}
-            onChange={(event) => setCertificateId(event.target.value)}
-          />
-          <InputField
-            label="Registry"
-            placeholder="I-TRACK"
-            value={registry}
-            onChange={(event) => setRegistry(event.target.value)}
-          />
-          <InputField
-            label="Vintage (year)"
-            type="number"
-            min="1990"
-            max="2100"
-            value={vintage}
-            onChange={(event) => {
-              setVintage(event.target.value)
-              setClientErrors((current) => withoutError(current, 'vintage'))
-            }}
-            error={errors?.vintage}
-          />
-          <InputField
-            label="Retirement date"
-            type="date"
-            value={retirementDate}
-            onChange={(event) => setRetirementDate(event.target.value)}
-          />
-          <fieldset className="md:col-span-4">
-            <legend className="text-sm font-medium">Scope 2 Quality Criteria, one at a time</legend>
-            <p className="text-xs text-ink-muted">
-              The instrument is applied only when all eight are met; an unanswered criterion counts
-              as not met until it is answered.
-            </p>
-            <ol className="mt-2 flex flex-col gap-1">
-              {criteriaTitles.map((title, index) => (
-                <li key={title} className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="w-5 font-mono text-xs text-ink-muted">{index + 1}</span>
-                  <select
-                    aria-label={`Criterion ${index + 1}`}
-                    value={criteria[index] === null ? '' : criteria[index] ? 'true' : 'false'}
-                    onChange={(event) =>
-                      setCriteria(
-                        criteria.map((value, i) =>
-                          i === index
-                            ? event.target.value === ''
-                              ? null
-                              : event.target.value === 'true'
-                            : value,
-                        ),
-                      )
-                    }
-                    className="rounded-lg border border-teal/20 bg-white/70 px-2 py-1 text-xs focus:ring-2 focus:ring-teal focus:outline-none"
-                  >
-                    <option value="">Not yet answered</option>
-                    <option value="true">Met</option>
-                    <option value="false">Not met</option>
-                  </select>
-                  <span className="min-w-0 flex-1">{title}</span>
-                </li>
+        <PanelBody className="border-t border-hairline">
+          <form onSubmit={submit} className="grid gap-5 md:grid-cols-4 md:items-end" noValidate>
+            <SelectField
+              label="Facility"
+              value={chosenFacility}
+              onChange={(event) => setFacilityId(event.target.value)}
+            >
+              {facilities.map((facility) => (
+                <option key={facility.id} value={facility.id}>
+                  {facility.name}
+                </option>
               ))}
-            </ol>
-          </fieldset>
-          <div className="md:col-span-2">
+            </SelectField>
+            <SelectField
+              label="Instrument"
+              value={instrument}
+              onChange={(event) => setInstrument(event.target.value as MarketInstrument)}
+            >
+              {Object.entries(instrumentLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </SelectField>
             <InputField
-              label="Quality notes"
-              placeholder="Which criteria are met, and why any are not"
-              value={qualityNotes}
-              onChange={(event) => setQualityNotes(event.target.value)}
-              maxLength={500}
+              label="kg CO₂e per kWh"
+              type="number"
+              min="0"
+              step="0.000001"
+              value={factor}
+              onChange={(event) => {
+                setFactor(event.target.value)
+                setClientErrors((current) => withoutError(current, 'kgCo2ePerKwh'))
+              }}
+              error={errors?.kgCo2ePerKwh}
+              required
             />
-          </div>
-          {generalError && (
-            <p role="alert" className="text-sm font-medium text-red-600 md:col-span-4">
-              {generalError}
-            </p>
-          )}
-          <div className="flex justify-end md:col-span-4">
-            <Button type="submit" className="px-4 py-1.5 text-sm" busy={set.isPending}>
-              {/* one instrument per facility: saving over an existing one is an edit */}
-              {factorsQuery.data?.some((entry) => entry.facilityId === chosenFacility)
-                ? 'Save instrument'
-                : 'Add instrument'}
-            </Button>
-          </div>
-        </form>
+            <InputField
+              label="Source"
+              placeholder="Supplier certificate 2025"
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              required
+            />
+            <InputField
+              label="Covered quantity (MWh)"
+              type="number"
+              min="0.001"
+              step="0.001"
+              value={coveredMwh}
+              onChange={(event) => {
+                setCoveredMwh(event.target.value)
+                setClientErrors((current) => withoutError(current, 'coveredKwh'))
+              }}
+              error={errors?.coveredKwh}
+              hint="The megawatt-hours the instrument covers; the balance takes the residual mix or grid average."
+              required
+            />
+            <InputField
+              label="Covers from (optional)"
+              type="date"
+              value={periodStart}
+              onChange={(event) => setPeriodStart(event.target.value)}
+              hint={`Defaults to ${inventory.periodStart}`}
+            />
+            <InputField
+              label="Covers to (optional)"
+              type="date"
+              value={periodEnd}
+              onChange={(event) => setPeriodEnd(event.target.value)}
+              hint={`Defaults to ${inventory.periodEnd}`}
+            />
+            <InputField
+              label="Certificate or contract reference"
+              placeholder="IREC-GH-2025-0417"
+              value={certificateId}
+              onChange={(event) => setCertificateId(event.target.value)}
+            />
+            <InputField
+              label="Registry"
+              placeholder="I-TRACK"
+              value={registry}
+              onChange={(event) => setRegistry(event.target.value)}
+            />
+            <InputField
+              label="Vintage (year)"
+              type="number"
+              min="1990"
+              max="2100"
+              value={vintage}
+              onChange={(event) => {
+                setVintage(event.target.value)
+                setClientErrors((current) => withoutError(current, 'vintage'))
+              }}
+              error={errors?.vintage}
+            />
+            <InputField
+              label="Retirement date"
+              type="date"
+              value={retirementDate}
+              onChange={(event) => setRetirementDate(event.target.value)}
+            />
+            <fieldset className="md:col-span-4">
+              <legend className="text-[13px] font-medium">
+                Scope 2 Quality Criteria, one at a time
+              </legend>
+              <p className="text-[13px] text-ink-muted">
+                The instrument is applied only when all eight are met; an unanswered criterion
+                counts as not met until it is answered.
+              </p>
+              <ol className="mt-2 flex flex-col divide-y divide-hairline">
+                {criteriaTitles.map((title, index) => (
+                  <li key={title} className="flex flex-wrap items-center gap-3 py-2 text-sm">
+                    <span className="w-5 text-[13px] text-ink-muted">{index + 1}</span>
+                    <select
+                      aria-label={`Criterion ${index + 1}`}
+                      value={criteria[index] === null ? '' : criteria[index] ? 'true' : 'false'}
+                      onChange={(event) =>
+                        setCriteria(
+                          criteria.map((value, i) =>
+                            i === index
+                              ? event.target.value === ''
+                                ? null
+                                : event.target.value === 'true'
+                              : value,
+                          ),
+                        )
+                      }
+                      className={inlineControl}
+                    >
+                      <option value="">Not yet answered</option>
+                      <option value="true">Met</option>
+                      <option value="false">Not met</option>
+                    </select>
+                    <span className="min-w-0 flex-1">{title}</span>
+                  </li>
+                ))}
+              </ol>
+            </fieldset>
+            <div className="md:col-span-2">
+              <InputField
+                label="Quality notes"
+                placeholder="Which criteria are met, and why any are not"
+                value={qualityNotes}
+                onChange={(event) => setQualityNotes(event.target.value)}
+                maxLength={500}
+              />
+            </div>
+            {generalError && (
+              <p role="alert" className="text-sm font-medium text-danger md:col-span-4">
+                {generalError}
+              </p>
+            )}
+            <div className="flex justify-end md:col-span-4">
+              <Button type="submit" busy={set.isPending}>
+                {/* one instrument per facility: saving over an existing one is an edit */}
+                {factorsQuery.data?.some((entry) => entry.facilityId === chosenFacility)
+                  ? 'Save instrument'
+                  : 'Add instrument'}
+              </Button>
+            </div>
+          </form>
+        </PanelBody>
       )}
       <ResidualMix inventory={inventory} editable={editable} myRole={myRole} />
       {evidenceFor && (
@@ -446,7 +465,7 @@ export function MarketFactorsCard({
           onClose={() => setEvidenceFor(null)}
         />
       )}
-    </GlassCard>
+    </Panel>
   )
 }
 
@@ -474,69 +493,73 @@ function ResidualMix({
     set.isError && !fieldErrors(set.error) ? refusalMessage(set.error, myRole) : undefined
 
   return (
-    <form
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (available === '') return
-        const invalid =
-          available === 'true' ? checkNumber(factor, { label: 'Residual mix', min: 0 }) : undefined
-        setFactorError(invalid)
-        if (invalid) return
-        set.mutate(
-          {
-            available: available === 'true',
-            kgCo2ePerKwh: available === 'true' && factor !== '' ? Number(factor) : undefined,
-          },
-          {
-            onSuccess: () => toast('Residual mix recorded.'),
-          },
-        )
-      }}
-      className="mt-4 grid gap-3 border-t border-teal/10 pt-4 md:grid-cols-3 md:items-end"
-    >
-      <SelectField
-        label="Residual mix available"
-        value={available}
-        disabled={!writable}
-        onChange={(event) => setAvailable(event.target.value)}
-        hint="Every run reports market-based, so the Guidance requires this disclosure either way: an absent residual mix may mean double counting between consumers."
-      >
-        <option value="">Not yet stated</option>
-        <option value="true">Yes, an adjusted residual mix is published</option>
-        <option value="false">No residual mix is available</option>
-      </SelectField>
-      <InputField
-        label="Residual mix, kg CO₂e per kWh"
-        type="number"
-        min="0"
-        step="0.000001"
-        value={factor}
-        disabled={!writable || available !== 'true'}
-        onChange={(event) => {
-          setFactor(event.target.value)
-          setFactorError(undefined)
+    <PanelBody className="border-t border-hairline">
+      <form
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (available === '') return
+          const invalid =
+            available === 'true'
+              ? checkNumber(factor, { label: 'Residual mix', min: 0 })
+              : undefined
+          setFactorError(invalid)
+          if (invalid) return
+          set.mutate(
+            {
+              available: available === 'true',
+              kgCo2ePerKwh: available === 'true' && factor !== '' ? Number(factor) : undefined,
+            },
+            {
+              onSuccess: () => toast('Residual mix recorded.'),
+            },
+          )
         }}
-        error={factorError ?? fieldErrors(set.error)?.kgCo2ePerKwh}
-      />
-      {generalError && (
-        <p role="alert" className="text-sm font-medium text-red-600 md:col-span-3">
-          {generalError}
-        </p>
-      )}
-      {editable && (
-        <div className="flex justify-end">
-          <RoleButton
-            allowed={mayWrite(myRole)}
-            tooltip={WRITE_TOOLTIP}
-            type="submit"
-            className="px-4 py-1.5 text-sm"
-            busy={set.isPending}
-          >
-            Save residual mix
-          </RoleButton>
-        </div>
-      )}
-    </form>
+        className="grid gap-5 md:grid-cols-3 md:items-end"
+      >
+        <SelectField
+          label="Residual mix available"
+          value={available}
+          disabled={!writable}
+          onChange={(event) => setAvailable(event.target.value)}
+          hint="Every run reports market-based, so the Guidance requires this disclosure either way: an absent residual mix may mean double counting between consumers."
+        >
+          <option value="">Not yet stated</option>
+          <option value="true">Yes, an adjusted residual mix is published</option>
+          <option value="false">No residual mix is available</option>
+        </SelectField>
+        <InputField
+          label="Residual mix, kg CO₂e per kWh"
+          type="number"
+          min="0"
+          step="0.000001"
+          value={factor}
+          disabled={!writable || available !== 'true'}
+          onChange={(event) => {
+            setFactor(event.target.value)
+            setFactorError(undefined)
+          }}
+          error={factorError ?? fieldErrors(set.error)?.kgCo2ePerKwh}
+        />
+        {generalError && (
+          <p role="alert" className="text-sm font-medium text-danger md:col-span-3">
+            {generalError}
+          </p>
+        )}
+        {editable && (
+          <div className="flex justify-end">
+            <RoleButton
+              allowed={mayWrite(myRole)}
+              tooltip={WRITE_TOOLTIP}
+              type="submit"
+              variant="secondary"
+              busy={set.isPending}
+            >
+              Save residual mix
+            </RoleButton>
+          </div>
+        )}
+      </form>
+    </PanelBody>
   )
 }

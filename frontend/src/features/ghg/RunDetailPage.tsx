@@ -1,13 +1,17 @@
 import { Link, useParams } from 'react-router-dom'
-import type { CSSProperties, ReactNode } from 'react'
-import { GlassCard } from '../../components/GlassCard'
-import { Skeleton } from '../../components/Skeleton'
+import type { ReactNode } from 'react'
+import { Banner } from '../../components/Banner'
+import { Chip } from '../../components/Chip'
+import type { ChipTone } from '../../components/Chip'
 import { OrganizationName } from '../../components/OrganizationName'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel } from '../../components/Panel'
+import { Skeleton } from '../../components/Skeleton'
+import { Table, Td, Th } from '../../components/Table'
 import { accountLabel } from '../../lib/organizationLabel'
 import { AnimatedCo2e } from './components/AnimatedCo2e'
 import { ApproachBadge, InventoryStatusBadge, ScopeBadge } from './components/badges'
 import { BoundaryVersionPanel } from './components/BoundaryVersionPanel'
-import { Breadcrumb } from './components/Breadcrumb'
 import { RunLinesTable } from './components/RunLinesTable'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
 import {
@@ -16,6 +20,7 @@ import {
   conventionLabels,
   exclusionLabels,
   formatCo2e,
+  formatDateTime,
   formatExactKg,
   formatKg,
   formatPeriod,
@@ -39,42 +44,53 @@ import type {
   RunExclusion,
 } from './api'
 
-/** One Chapter 9 element of the report: a numbered small-caps heading over a glass card. */
 /** The sentence under the block of gases outside the scopes (spec 02.4); the PDF prints it too. */
 const OUTSIDE_SCOPES_RULE =
   'Reported separately as optional information under Chapter 4 and Chapter 9; not included in any scope.'
 
+/**
+ * One Chapter 9 element of the report (spec 10): a panel whose head is the
+ * section's numbered eyebrow. The heading sits straight under the panel so a
+ * test can scope a section by the panel the heading is in.
+ */
 function Section({
   number,
   title,
-  stagger,
+  flush = false,
   children,
 }: {
   /** The section number; a string for a lettered section such as "6a" (spec 02.4). */
   number: number | string
   title: string
-  stagger: number
+  /** a section that is one table: the table meets the panel's edges */
+  flush?: boolean
   children: ReactNode
 }) {
   return (
-    <GlassCard className="animate-fade-up p-6" style={{ '--stagger': stagger } as CSSProperties}>
-      <h2 className="flex items-baseline gap-2 text-sm font-semibold tracking-widest text-ink-muted uppercase">
-        <span className="font-mono">
+    <Panel>
+      <h2 className="border-b border-hairline px-5 py-3.5 text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
+        <span className="mr-2">
           {typeof number === 'number' ? String(number).padStart(2, '0') : number}
         </span>
         {title}
       </h2>
-      <div className="mt-3">{children}</div>
-    </GlassCard>
+      <div className={flush ? '' : 'p-5'}>{children}</div>
+    </Panel>
   )
 }
 
-const recalculationStyles: Record<RecalculationStatus, string> = {
-  FLAGGED: 'bg-amber-100 text-amber-800',
-  RECALCULATED: 'bg-accent-green/25 text-dark-teal',
-  DECLINED: 'bg-slate-200 text-slate-600',
-  SUPERSEDED: 'bg-slate-100 text-slate-500',
+const recalculationTones: Record<RecalculationStatus, ChipTone> = {
+  FLAGGED: 'warning',
+  RECALCULATED: 'success',
+  DECLINED: 'neutral',
+  SUPERSEDED: 'neutral',
 }
+
+/** A download styled as the kit's button; a link, since the report is a read with no write control. */
+const downloadLink =
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 text-[15px] font-medium whitespace-nowrap transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none'
+const secondaryLink = `${downloadLink} border-hairline-strong bg-surface text-ink hover:border-ink-muted`
+const ghostLink = `${downloadLink} border-transparent text-ink hover:bg-surface-sunken`
 
 /**
  * One run read as the inventory report, in the order Chapter 9 of the
@@ -86,92 +102,90 @@ export function RunDetailPage() {
   const { organizationId = '', inventoryId = '', runId = '' } = useParams()
   const reportQuery = useReportQuery(runId)
   const report = reportQuery.data
+  const inventoryPath = `/app/ghg/${organizationId}/inventories/${inventoryId}`
+
+  if (reportQuery.isPending) {
+    return (
+      <div aria-label="Loading report" className="flex flex-col gap-4">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-40" />
+      </div>
+    )
+  }
+  if (reportQuery.isError || !report) {
+    return (
+      <Panel className="p-8 text-center">
+        <h1 className="text-lg">Report not found</h1>
+        <p className="mt-1 text-sm text-ink-muted">
+          This run may have been deleted.{' '}
+          <Link to={inventoryPath} className="font-semibold text-link">
+            Head back to the inventory
+          </Link>{' '}
+          to pick another.
+        </p>
+      </Panel>
+    )
+  }
+
+  const downloads: [string, string, string][] = [
+    ['PDF report', `/api/ghg/runs/${runId}/report.pdf`, secondaryLink],
+    ['Lines (CSV)', `/api/ghg/runs/${runId}/lines.csv`, ghostLink],
+    ['Exclusions (CSV)', `/api/ghg/runs/${runId}/exclusions.csv`, ghostLink],
+    ['Frozen inputs (JSON)', `/api/ghg/runs/${runId}/inputs.json`, ghostLink],
+  ]
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Breadcrumb
-          items={[
-            { label: 'Inventories', to: `/app/ghg/${organizationId}/inventories` },
-            {
-              label: report?.period.inventoryName ?? 'Inventory',
-              to: `/app/ghg/${organizationId}/inventories/${inventoryId}`,
-            },
-            { label: report?.run.label ?? 'Run' },
-          ]}
-        />
-
-        {reportQuery.isPending && (
-          <div aria-label="Loading report" className="mt-3 flex flex-col gap-4">
-            <Skeleton className="h-9 w-64" />
-            <Skeleton className="h-40" />
-          </div>
-        )}
-        {reportQuery.isError && (
-          <GlassCard className="mt-4 p-8 text-center">
-            <h1 className="text-lg">Report not found</h1>
-            <p className="mt-1 text-sm text-ink-muted">
-              This run may have been deleted. Head back to the inventory to pick another.
-            </p>
-          </GlassCard>
-        )}
-        {report && (
+      <PageHeader
+        back={{ to: inventoryPath }}
+        crumbs={[
+          { label: 'Inventories', to: `/app/ghg/${organizationId}/inventories` },
+          { label: report.period.inventoryName, to: inventoryPath },
+          { label: report.run.label },
+        ]}
+        status={`Calculated ${formatDateTime(report.run.createdAt)}`}
+        title={
           <>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <span className="font-mono text-sm text-ink-muted">
-                #{String(report.run.runNo).padStart(3, '0')}
-              </span>
-              <h1 className={`text-2xl ${report.run.voided ? 'line-through' : ''}`}>
-                {report.run.label}
-              </h1>
-              <ApproachBadge approach={report.run.consolidationApproach} />
-              {report.run.voided && (
-                <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-600">
-                  VOIDED
-                </span>
-              )}
-              {report.run.isFinal && (
-                <span className="rounded-full bg-accent-green/25 px-2.5 py-0.5 text-xs font-bold text-dark-teal">
-                  FINAL
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-sm text-ink-muted">
-              {report.company.organizationName} (
-              {accountLabel(report.company.organizationAccountNo)}) · {report.period.periodStart} →{' '}
-              {report.period.periodEnd} · {report.run.activityCount} line
-              {report.run.activityCount === 1 ? '' : 's'}
-            </p>
-            <nav aria-label="Downloads" className="mt-2 flex flex-wrap gap-2 text-sm">
-              {[
-                ['PDF report', `/api/ghg/runs/${runId}/report.pdf`],
-                ['Lines (CSV)', `/api/ghg/runs/${runId}/lines.csv`],
-                ['Exclusions (CSV)', `/api/ghg/runs/${runId}/exclusions.csv`],
-                ['Frozen inputs (JSON)', `/api/ghg/runs/${runId}/inputs.json`],
-              ].map(([label, href]) => (
-                <a
-                  key={href}
-                  href={href}
-                  download
-                  className="rounded-lg border border-teal/30 bg-white/60 px-3 py-1 font-semibold text-dark-teal hover:bg-teal/10"
-                >
-                  {label}
-                </a>
-              ))}
-            </nav>
+            {/* the number is visual only; the label already carries it, and the heading's name stays the label */}
+            <span aria-hidden="true" className="mr-3 text-[22px] font-normal text-ink-muted">
+              #{String(report.run.runNo).padStart(3, '0')}
+            </span>
+            <span className={report.run.voided ? 'line-through' : ''}>{report.run.label}</span>
           </>
-        )}
-      </div>
+        }
+        chips={
+          <>
+            <ApproachBadge approach={report.run.consolidationApproach} />
+            {report.run.voided && <Chip tone="warning">VOIDED</Chip>}
+            {report.run.isFinal && <Chip tone="primary">FINAL</Chip>}
+          </>
+        }
+        subtitle={
+          <>
+            {report.company.organizationName} ({accountLabel(report.company.organizationAccountNo)})
+            · {report.period.periodStart} → {report.period.periodEnd} · {report.run.activityCount}{' '}
+            line{report.run.activityCount === 1 ? '' : 's'}
+          </>
+        }
+        actions={
+          <nav aria-label="Downloads" className="flex flex-wrap gap-2">
+            {downloads.map(([label, href, className]) => (
+              <a key={href} href={href} download className={className}>
+                {label}
+              </a>
+            ))}
+          </nav>
+        }
+      />
 
-      {report?.run.voided && (
-        <GlassCard role="alert" className="border border-slate-300 bg-slate-100/70 p-4 text-sm">
-          <span className="font-semibold">This run is voided</span> and must not be relied on.
-          Voided by {report.run.voidedBy ?? 'unknown'}
+      {report.run.voided && (
+        <Banner tone="danger" role="alert" title="This run is voided">
+          It must not be relied on. Voided by {report.run.voidedBy ?? 'unknown'}
           {report.run.voidedAt ? ` on ${new Date(report.run.voidedAt).toLocaleString()}` : ''}:{' '}
           {report.run.voidReason}. The figures are kept on the record as calculated.
-        </GlassCard>
+        </Banner>
       )}
-      {report && <ReportBody report={report} organizationId={organizationId} />}
+      <ReportBody report={report} organizationId={organizationId} />
     </div>
   )
 }
@@ -202,25 +216,26 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
 
   return (
     <>
-      <Section number={0} title="Report" stagger={0}>
+      <Section number={0} title="Report">
         <ReportHeaderBlock header={report.header} />
         {report.correction && (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-sm">
-            <p className="font-semibold">Correction of {report.correction.ofName}</p>
-            <p className="mt-1">{report.correction.reason}</p>
-            <p className="mt-1 text-ink-muted">
-              Against the published run: {report.correction.addedLines} line
-              {report.correction.addedLines === 1 ? '' : 's'} added,{' '}
-              {report.correction.removedLines} removed, {report.correction.changedLines} changed;{' '}
-              {report.correction.deltaKgCo2e >= 0 ? '+' : ''}
-              {formatCo2e(report.correction.deltaKgCo2e)} in total.
-            </p>
+          <div className="mt-4">
+            <Banner tone="warning" title={`Correction of ${report.correction.ofName}`}>
+              <p>{report.correction.reason}</p>
+              <p className="mt-1">
+                Against the published run: {report.correction.addedLines} line
+                {report.correction.addedLines === 1 ? '' : 's'} added,{' '}
+                {report.correction.removedLines} removed, {report.correction.changedLines} changed;{' '}
+                {report.correction.deltaKgCo2e >= 0 ? '+' : ''}
+                {formatCo2e(report.correction.deltaKgCo2e)} in total.
+              </p>
+            </Banner>
           </div>
         )}
         {report.sincePublication && (
-          <div className="mt-3 rounded-lg border border-teal/20 bg-white/40 p-3 text-sm">
+          <div className="mt-4 rounded-lg border border-hairline p-4 text-sm">
             <p className="font-semibold">Since publication</p>
-            <p className="text-xs text-ink-muted">
+            <p className="text-[13px] text-ink-muted">
               The report above reads exactly as it was published. What came after is listed here and
               nowhere else.
             </p>
@@ -259,7 +274,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         )}
       </Section>
 
-      <Section number={1} title="Company and organizational boundary" stagger={1}>
+      <Section number={1} title="Company and organizational boundary">
         <div className="flex flex-wrap items-center gap-3">
           <OrganizationName
             name={company.organizationName}
@@ -289,7 +304,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         )}
       </Section>
 
-      <Section number={2} title="Operational boundary" stagger={2}>
+      <Section number={2} title="Operational boundary">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-ink-muted">Scopes covered:</span>
           {operationalBoundary.scopesCovered.length === 0 && (
@@ -299,52 +314,54 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
             <ScopeBadge key={scope} scope={scope} />
           ))}
         </div>
-        <p className="mt-3 text-sm font-medium">Scope 3 categories declared</p>
+        <p className="mt-4 text-sm font-medium">Scope 3 categories declared</p>
         {report.byScope3Category.length === 0 ? (
           <p className="text-sm text-ink-muted">No scope 3 categories declared or reported.</p>
         ) : (
-          <table aria-label="Scope 3 declaration" className="mt-1 w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="py-1.5 pr-3 font-semibold">Category</th>
-                <th className="py-1.5 pr-3 font-semibold">Declared</th>
-                <th className="py-1.5 pr-3 text-right font-semibold">Lines</th>
-                <th className="py-1.5 text-right font-semibold">t CO₂e</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.byScope3Category.map((row) => (
-                <tr key={row.category} className="border-b border-teal/5 last:border-0">
-                  <td className="py-1.5 pr-3">{categoryLabel(row.category)}</td>
-                  <td className="py-1.5 pr-3 text-ink-muted">
-                    {row.declared ? 'yes' : 'no: reported, not declared'}
-                  </td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums">{row.lineCount}</td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    {row.lineCount === 0
-                      ? `declared, not quantified: ${row.notQuantifiedReason ?? 'no reason recorded'}`
-                      : formatTonnes(row.tCo2e)}
-                  </td>
+          <div className="mt-1">
+            <Table aria-label="Scope 3 declaration">
+              <thead>
+                <tr>
+                  <Th>Category</Th>
+                  <Th>Declared</Th>
+                  <Th align="right">Lines</Th>
+                  <Th align="right">t CO₂e</Th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {report.byScope3Category.map((row) => (
+                  <tr key={row.category}>
+                    <Td>{categoryLabel(row.category)}</Td>
+                    <Td className="text-ink-muted">
+                      {row.declared ? 'yes' : 'no: reported, not declared'}
+                    </Td>
+                    <Td align="right">{row.lineCount}</Td>
+                    <Td align="right" className="whitespace-normal">
+                      {row.lineCount === 0
+                        ? `declared, not quantified: ${row.notQuantifiedReason ?? 'no reason recorded'}`
+                        : formatTonnes(row.tCo2e)}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
         )}
         {undeclared.length > 0 && (
-          <p className="mt-2 text-sm text-amber-700">
+          <p className="mt-3 text-sm text-warning">
             Reported this run but not declared:{' '}
             {undeclared.map((category) => categoryLabel(category)).join(', ')}.
           </p>
         )}
         {operationalBoundary.exclusionsRationale && (
-          <p className="mt-2 text-sm">
+          <p className="mt-3 text-sm">
             <span className="text-ink-muted">Why other categories are excluded: </span>
             {operationalBoundary.exclusionsRationale}
           </p>
         )}
       </Section>
 
-      <Section number={3} title="Reporting period" stagger={3}>
+      <Section number={3} title="Reporting period">
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold">{period.inventoryName}</span>
           <span className="text-sm text-ink-muted">
@@ -364,57 +381,51 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
           </p>
         )}
         {period.supersededById && (
-          <p className="mt-1 text-sm text-amber-700">
+          <p className="mt-1 text-sm text-warning">
             Superseded by a correction: a later inventory restates this period.
           </p>
         )}
       </Section>
 
-      <Section number={4} title="Emissions by scope" stagger={4}>
+      <Section number={4} title="Emissions by scope">
         <p className="text-sm text-ink-muted">Total emissions</p>
         <AnimatedCo2e
           kg={emissions.totalKgCo2e}
-          className="mt-1 block text-3xl font-bold text-dark-teal"
+          className="mt-1 block text-3xl font-semibold tracking-tight"
         />
         <div className="mt-5">
           <ScopeBreakdown run={report.run} />
         </div>
-        <table className="mt-5 w-full text-left text-sm">
-          <tbody>
-            <tr className="border-b border-teal/5">
-              <td className="py-1.5">{scopeLabels.SCOPE_1}</td>
-              <td className="py-1.5 text-right tabular-nums">
-                {formatTonnes(emissions.scope1TCo2e)}
-              </td>
-            </tr>
-            <tr className="border-b border-teal/5">
-              <td className="py-1.5">{scopeLabels.SCOPE_2}, location-based</td>
-              <td className="py-1.5 text-right tabular-nums">
-                {formatTonnes(emissions.scope2LocationBasedTCo2e)}
-              </td>
-            </tr>
-            <tr className="border-b border-teal/5">
-              <td className="py-1.5">{scopeLabels.SCOPE_2}, market-based</td>
-              <td className="py-1.5 text-right tabular-nums">
-                {formatTonnes(emissions.scope2MarketBasedTCo2e)}
-              </td>
-            </tr>
-            <tr className="border-b border-teal/5">
-              <td className="py-1.5">{scopeLabels.SCOPE_3}</td>
-              <td className="py-1.5 text-right tabular-nums">
-                {formatTonnes(emissions.scope3TCo2e)}
-              </td>
-            </tr>
-            <tr className="font-semibold">
-              <td className="py-1.5">Total</td>
-              <td className="py-1.5 text-right tabular-nums">
-                {formatTonnes(emissions.totalTCo2e)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="mt-5">
+          <Table>
+            <tbody>
+              <tr>
+                <Td>{scopeLabels.SCOPE_1}</Td>
+                <Td align="right">{formatTonnes(emissions.scope1TCo2e)}</Td>
+              </tr>
+              <tr>
+                <Td>{scopeLabels.SCOPE_2}, location-based</Td>
+                <Td align="right">{formatTonnes(emissions.scope2LocationBasedTCo2e)}</Td>
+              </tr>
+              <tr>
+                <Td>{scopeLabels.SCOPE_2}, market-based</Td>
+                <Td align="right">{formatTonnes(emissions.scope2MarketBasedTCo2e)}</Td>
+              </tr>
+              <tr>
+                <Td>{scopeLabels.SCOPE_3}</Td>
+                <Td align="right">{formatTonnes(emissions.scope3TCo2e)}</Td>
+              </tr>
+              <tr className="font-semibold">
+                <Td className="border-b-0">Total</Td>
+                <Td align="right" className="border-b-0">
+                  {formatTonnes(emissions.totalTCo2e)}
+                </Td>
+              </tr>
+            </tbody>
+          </Table>
+        </div>
         <BreakdownTables report={report} />
-        <p className="mt-2 text-xs text-ink-muted">
+        <p className="mt-3 text-[13px] text-ink-muted">
           Figures in metric tonnes to three decimals; each line below keeps its kilograms. The total
           uses the location-based scope 2 figure. Market-based basis:{' '}
           {marketBasisLabels[emissions.scope2MarketBasis]}.
@@ -423,13 +434,13 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
           {emissions.baseYearMarketBasedIsProxy === false &&
             ' The base year reports scope 2 both ways.'}
         </p>
-        <div className="mt-3">
+        <div className="mt-4">
           {emissions.marketInstruments.length > 0 && (
             <>
-              <p className="text-xs font-semibold text-ink-muted uppercase">
+              <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
                 Contractual instruments
               </p>
-              <ul className="mt-1 flex flex-col gap-1 text-sm">
+              <ul className="mt-2 flex flex-col gap-3 text-sm">
                 {emissions.marketInstruments.map((instrument) => (
                   <li key={instrument.id}>
                     <span className="font-medium">{instrument.facilityName}</span>
@@ -449,7 +460,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
                         : ` · not applied: ${instrument.notMetCount} criteria not met, ${instrument.unansweredCount} unanswered`}
                       {instrument.qualityNotes ? `: ${instrument.qualityNotes}` : ''}
                     </span>
-                    <span className="block text-xs text-ink-muted">
+                    <span className="block text-[13px] text-ink-muted">
                       {[
                         instrument.certificateId ? `certificate ${instrument.certificateId}` : null,
                         instrument.registry ? `registry ${instrument.registry}` : null,
@@ -461,18 +472,18 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
                     </span>
                     <ol
                       aria-label={`${instrument.facilityName} criteria`}
-                      className="mt-0.5 grid gap-x-3 text-xs text-ink-muted md:grid-cols-2"
+                      className="mt-1 grid gap-x-4 gap-y-0.5 text-[13px] text-ink-muted md:grid-cols-2"
                     >
                       {instrument.criteria.map((criterion, index) => (
                         <li key={criterion.code}>
                           <span
-                            className={
+                            className={`font-medium ${
                               criterion.answer === 'MET'
-                                ? 'text-dark-teal'
+                                ? 'text-success'
                                 : criterion.answer === 'NOT_MET'
-                                  ? 'text-red-600'
-                                  : 'text-amber-700'
-                            }
+                                  ? 'text-danger'
+                                  : 'text-warning'
+                            }`}
                           >
                             {index + 1}.{' '}
                             {criterion.answer === 'MET'
@@ -491,13 +502,13 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
             </>
           )}
           {emissions.marketInstruments.length === 0 && (
-            <p className="text-xs text-ink-muted">
+            <p className="text-[13px] text-ink-muted">
               No contractual instruments were held; the market-based figure is still reported, as
               the Scope 2 Guidance requires of any company in a market with instruments.
             </p>
           )}
           {failingInstruments.length > 0 && (
-            <p className="mt-1 text-xs text-amber-700">
+            <p className="mt-1 text-[13px] text-warning">
               {failingInstruments.length === 1
                 ? 'One instrument'
                 : `${failingInstruments.length} instruments`}{' '}
@@ -505,51 +516,53 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
               applied, as the lines state.
             </p>
           )}
-          <p className="mt-1 text-xs text-ink-muted">{emissions.residualMixDisclosure}</p>
+          <p className="mt-1 text-[13px] text-ink-muted">{emissions.residualMixDisclosure}</p>
         </div>
       </Section>
 
-      <Section number={5} title="Emissions by gas" stagger={5}>
-        <table className="w-full text-left text-sm">
+      <Section number={5} title="Emissions by gas">
+        <Table>
           <thead>
-            <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-              <th className="py-2 font-semibold">Gas</th>
-              <th className="py-2 text-right font-semibold">Mass of gas</th>
-              <th className="py-2 text-right font-semibold">CO₂e</th>
+            <tr>
+              <Th>Gas</Th>
+              <Th align="right">Mass of gas</Th>
+              <Th align="right">CO₂e</Th>
             </tr>
           </thead>
           <tbody>
             {gases.map((gas) => (
-              <tr key={gas.gas} className="border-b border-teal/5 last:border-0">
-                <td className="py-1.5 font-medium">
+              <tr key={gas.gas}>
+                <Td className="font-medium">
                   {gas.gas === 'CO2E_UNSPLIT' ? 'CO₂e from factors without a gas split' : gas.gas}
-                </td>
-                <td className="py-1.5 text-right tabular-nums">
+                </Td>
+                <Td align="right">
                   {gas.kg === null ? (
                     <span className="text-ink-muted">not separable</span>
                   ) : (
                     formatKg(gas.kg)
                   )}
-                </td>
-                <td className="py-1.5 text-right tabular-nums">{formatTonnes(gas.tCo2e)}</td>
+                </Td>
+                <Td align="right">{formatTonnes(gas.tCo2e)}</Td>
               </tr>
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-teal/10 font-semibold">
-              <td className="py-1.5" colSpan={2}>
+            <tr className="font-semibold">
+              <Td className="border-b-0" colSpan={2}>
                 Total (scope 2 location-based), ties to section 04
-              </td>
-              <td className="py-1.5 text-right tabular-nums">{formatTonnes(byGasTotalTCo2e)}</td>
+              </Td>
+              <Td align="right" className="border-b-0">
+                {formatTonnes(byGasTotalTCo2e)}
+              </Td>
             </tr>
           </tfoot>
-        </table>
-        <p className="mt-1 text-xs text-ink-muted">
+        </Table>
+        <p className="mt-2 text-[13px] text-ink-muted">
           The market-based scope 2 figure is not split by gas; its instruments and balance are in
           section 04.
         </p>
         {unsplit && (
-          <p className="mt-2 text-xs text-ink-muted">
+          <p className="mt-2 text-[13px] text-ink-muted">
             <span className="font-semibold">CO₂e from factors without a gas split</span>
             {(unsplit.factors ?? []).length > 0
               ? `: ${(unsplit.factors ?? []).join('; ')}. `
@@ -558,7 +571,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
             separable; the source did not publish them.
           </p>
         )}
-        <p className="mt-2 text-xs text-ink-muted">
+        <p className="mt-2 text-[13px] text-ink-muted">
           Each gas in mass and in CO₂e under IPCC {methodology.gwpSet} 100-year potentials.
           {methodology.gwpSet === 'AR6'
             ? ' Methane of fossil origin is converted at 29.8 and biogenic methane at 27.9.'
@@ -569,11 +582,9 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         </p>
       </Section>
 
-      <Section number={6} title="Biogenic CO₂" stagger={6}>
+      <Section number={6} title="Biogenic CO₂">
         <p className="text-sm">
-          <span className="font-semibold tabular-nums">
-            {formatTonnesOfGas(report.biogenicCo2T)}
-          </span>
+          <span className="font-semibold">{formatTonnesOfGas(report.biogenicCo2T)}</span>
           <span className="text-ink-muted">
             {' '}
             ({formatKg(report.biogenicCo2Kg)}) of biogenic CO₂, reported separately and outside the
@@ -583,47 +594,47 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
       </Section>
 
       {/* spec 02.4: a Montreal Protocol gas is not a Kyoto gas; its mass is disclosed, its CO2e informs only */}
-      <Section number="6a" title="Gases outside the scopes (Montreal Protocol)" stagger={6}>
+      <Section number="6a" title="Gases outside the scopes (Montreal Protocol)">
         {outsideScopes.length === 0 ? (
           <p className="text-sm text-ink-muted">
             No gases outside the scopes were reported. {OUTSIDE_SCOPES_RULE}
           </p>
         ) : (
           <>
-            <table className="w-full text-left text-sm">
+            <Table>
               <thead>
-                <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                  <th className="py-1.5 font-semibold">Gas</th>
-                  <th className="py-1.5 text-right font-semibold">Mass (kg)</th>
-                  <th className="py-1.5 font-semibold">Basis</th>
-                  <th className="py-1.5 font-semibold">CO₂e for information</th>
-                  <th className="py-1.5 font-semibold">Records</th>
+                <tr>
+                  <Th>Gas</Th>
+                  <Th align="right">Mass (kg)</Th>
+                  <Th>Basis</Th>
+                  <Th>CO₂e for information</Th>
+                  <Th>Records</Th>
                 </tr>
               </thead>
               <tbody>
                 {outsideScopes.map((row) => (
-                  <tr key={row.gas} className="border-b border-teal/5 last:border-0">
-                    <td className="py-1.5">{row.gas}</td>
-                    <td className="py-1.5 text-right tabular-nums">{formatExactKg(row.kg)}</td>
-                    <td className="py-1.5 text-xs text-ink-muted">
+                  <tr key={row.gas}>
+                    <Td>{row.gas}</Td>
+                    <Td align="right">{formatExactKg(row.kg)}</Td>
+                    <Td className="text-[13px] text-ink-muted">
                       {outsideScopesBasisLabels[row.basis]}
-                    </td>
-                    <td className="py-1.5 text-xs text-ink-muted">
+                    </Td>
+                    <Td className="text-[13px] text-ink-muted">
                       {row.kgCo2eInformational === null
                         ? 'not quantified'
                         : `${formatExactKg(row.kgCo2eInformational)} CO₂e` +
                           (row.informationalGwpSource
                             ? `, ${row.informationalGwpSource} as published`
                             : '')}
-                    </td>
-                    <td className="py-1.5 text-xs text-ink-muted">{row.recordRefs.join(', ')}</td>
+                    </Td>
+                    <Td className="text-[13px] text-ink-muted">{row.recordRefs.join(', ')}</Td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-            <p className="mt-2 text-xs text-ink-muted">{OUTSIDE_SCOPES_RULE}</p>
+            </Table>
+            <p className="mt-3 text-[13px] text-ink-muted">{OUTSIDE_SCOPES_RULE}</p>
             {publishedBases.length > 0 && (
-              <p className="mt-1 text-xs text-ink-muted">
+              <p className="mt-1 text-[13px] text-ink-muted">
                 {publishedBases.join(' and ')} potentials as published; not restated to{' '}
                 {report.methodology.gwpSet}.
               </p>
@@ -632,7 +643,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         )}
       </Section>
 
-      <Section number={7} title="Base year" stagger={7}>
+      <Section number={7} title="Base year">
         {report.baseYear ? (
           <BaseYearSection baseYear={report.baseYear} path={baseYearPath} />
         ) : (
@@ -646,7 +657,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         )}
       </Section>
 
-      <Section number={8} title="Methodology" stagger={8}>
+      <Section number={8} title="Methodology">
         <p className="text-sm">{methodology.statement}</p>
         <p className="mt-2 text-sm text-ink-muted">
           GWP set: IPCC {methodology.gwpSet}, 100-year. Assessment reports used:{' '}
@@ -654,7 +665,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         </p>
         {/* spec 04.7: the rules that quantified category 3, and how many lines each derived */}
         {methodology.upstreamRules && methodology.upstreamRules.length > 0 && (
-          <div className="mt-3">
+          <div className="mt-4">
             <h3 className="text-sm font-semibold">Upstream rules (category 3)</h3>
             <ul className="mt-1 list-disc pl-5 text-sm text-ink-muted">
               {methodology.upstreamRules.map((rule) => (
@@ -671,13 +682,13 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         <DataQualityBlock dataQuality={report.dataQuality} />
       </Section>
 
-      <Section number={9} title="Exclusions" stagger={9}>
+      <Section number={9} title="Exclusions">
         <BoundaryExclusions exclusions={report.boundaryExclusions} />
         <ExclusionSummaryTable summary={report.exclusionSummary} />
         <Exclusions exclusions={report.exclusions} />
       </Section>
 
-      <Section number={10} title="Snapshot lines" stagger={10}>
+      <Section number={10} title="Snapshot lines" flush={report.lines.length > 0}>
         <RunLinesTable lines={report.lines} />
       </Section>
     </>
@@ -710,7 +721,7 @@ function BaseYearSection({
         {conventionLabels[baseYear.structuralChangeConvention]}
       </p>
       {!baseYear.gwpSetMatches && (
-        <p className="text-amber-700">
+        <p className="text-warning">
           This run and the base year use different GWP sets; the required-gases amendment recommends
           the same set for both.
         </p>
@@ -720,26 +731,22 @@ function BaseYearSection({
           <span className="text-ink-muted">
             Base-year emissions ({baseYear.originalBase.label}):{' '}
           </span>
-          <span className="font-semibold tabular-nums">
-            {formatCo2e(baseYear.originalBase.totalKgCo2e)}
-          </span>
+          <span className="font-semibold">{formatCo2e(baseYear.originalBase.totalKgCo2e)}</span>
         </p>
       ) : (
         <p className="text-ink-muted">The base-year inventory has no final run yet.</p>
       )}
       {baseYear.recalculations.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-ink-muted uppercase">Recalculation history</p>
-          <ul className="mt-1 flex flex-col gap-2">
+          <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
+            Recalculation history
+          </p>
+          <ul className="mt-2 flex flex-col gap-2">
             {baseYear.recalculations.map(({ decision, recalculatedBase }) => (
-              <li key={decision.id} className="rounded-xl border border-teal/10 bg-white/40 p-3">
+              <li key={decision.id} className="rounded-lg border border-hairline p-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${recalculationStyles[decision.status]}`}
-                  >
-                    {decision.status}
-                  </span>
-                  <span className="text-xs text-ink-muted">
+                  <Chip tone={recalculationTones[decision.status]}>{decision.status}</Chip>
+                  <span className="text-[13px] text-ink-muted">
                     {decision.affectedPercent !== null
                       ? `${decision.affectedPercent}% of base-year emissions, ${decision.aboveThreshold ? 'above' : 'below'} the threshold`
                       : ''}
@@ -750,7 +757,7 @@ function BaseYearSection({
                   <p className="text-ink-muted">Decision: {decision.decisionNote}</p>
                 )}
                 {decision.decidedBy && (
-                  <p className="text-xs text-ink-muted">
+                  <p className="text-[13px] text-ink-muted">
                     Decided by {decision.decidedBy}
                     {decision.decidedAt ? `, ${new Date(decision.decidedAt).toLocaleString()}` : ''}
                   </p>
@@ -760,7 +767,7 @@ function BaseYearSection({
                     <span className="text-ink-muted">
                       Recalculated base ({recalculatedBase.label}):{' '}
                     </span>
-                    <span className="font-semibold tabular-nums">
+                    <span className="font-semibold">
                       {formatCo2e(recalculatedBase.totalKgCo2e)}
                     </span>
                   </p>
@@ -772,68 +779,70 @@ function BaseYearSection({
       )}
       {baseYear.profile.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-ink-muted uppercase">
+          <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
             Emissions profile over time
           </p>
-          <table className="mt-1 w-full text-left text-sm">
+          <Table className="mt-1">
             <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="py-1 font-semibold">Year</th>
-                <th className="py-1 font-semibold">Inventory</th>
-                <th className="py-1 text-right font-semibold">Final run</th>
-                <th className="py-1 text-right font-semibold">Recalculated</th>
+              <tr>
+                <Th>Year</Th>
+                <Th>Inventory</Th>
+                <Th align="right">Final run</Th>
+                <Th align="right">Recalculated</Th>
               </tr>
             </thead>
             <tbody>
               {baseYear.profile.map((entry) => (
-                <tr key={entry.inventoryId} className="border-b border-teal/5 last:border-0">
-                  <td className="py-1 tabular-nums">{entry.periodLabel}</td>
-                  <td className="py-1">{entry.name}</td>
-                  <td className="py-1 text-right tabular-nums">
+                <tr key={entry.inventoryId}>
+                  <Td>{entry.periodLabel}</Td>
+                  <Td>{entry.name}</Td>
+                  <Td align="right">
                     {entry.totalKgCo2e === null ? 'not yet final' : formatCo2e(entry.totalKgCo2e)}
-                  </td>
-                  <td className="py-1 text-right tabular-nums">
+                  </Td>
+                  <Td align="right">
                     {entry.recalculatedTotalKgCo2e === null
                       ? ''
                       : formatCo2e(entry.recalculatedTotalKgCo2e)}
-                  </td>
+                  </Td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </div>
       )}
       {(baseYear.otherViews ?? []).length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-ink-muted uppercase">Other views</p>
-          <p className="text-xs text-ink-muted">
+          <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
+            Other views
+          </p>
+          <p className="text-[13px] text-ink-muted">
             Inventories over the same periods under another consolidation approach or GWP set. They
             are not years of the base year&apos;s series and do not compare with it.
           </p>
-          <table className="mt-1 w-full text-left text-sm">
+          <Table className="mt-1">
             <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="py-1 font-semibold">Period</th>
-                <th className="py-1 font-semibold">Inventory</th>
-                <th className="py-1 font-semibold">Approach / GWP</th>
-                <th className="py-1 text-right font-semibold">Final run</th>
+              <tr>
+                <Th>Period</Th>
+                <Th>Inventory</Th>
+                <Th>Approach / GWP</Th>
+                <Th align="right">Final run</Th>
               </tr>
             </thead>
             <tbody>
               {(baseYear.otherViews ?? []).map((entry) => (
-                <tr key={entry.inventoryId} className="border-b border-teal/5 last:border-0">
-                  <td className="py-1 tabular-nums">{entry.periodLabel}</td>
-                  <td className="py-1">{entry.name}</td>
-                  <td className="py-1">
+                <tr key={entry.inventoryId}>
+                  <Td>{entry.periodLabel}</Td>
+                  <Td>{entry.name}</Td>
+                  <Td>
                     {approachLabels[entry.consolidationApproach]} / {entry.gwpSet}
-                  </td>
-                  <td className="py-1 text-right tabular-nums">
+                  </Td>
+                  <Td align="right">
                     {entry.totalKgCo2e === null ? 'not yet final' : formatCo2e(entry.totalKgCo2e)}
-                  </td>
+                  </Td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </div>
       )}
       <Link to={path} className="font-semibold text-link">
@@ -847,32 +856,29 @@ function BaseYearSection({
 function BoundaryExclusions({ exclusions }: { exclusions: BoundaryExclusionEntry[] }) {
   if (exclusions.length === 0) return null
   return (
-    <div className="mb-4">
+    <div className="mb-5">
       <h3 className="text-sm font-semibold">
         Operations excluded from the boundary{' '}
         <span className="font-normal text-ink-muted">
           ({exclusions.length} {exclusions.length === 1 ? 'operation' : 'operations'})
         </span>
       </h3>
-      <table className="mt-1 w-full text-left text-sm">
+      <Table className="mt-1">
         <tbody>
           {exclusions.map((exclusion) => (
-            <tr
-              key={`${exclusion.entityId}:${exclusion.facilityId ?? 'entity'}`}
-              className="border-b border-teal/5 last:border-0"
-            >
-              <td className="py-1.5 pr-3 font-medium">
+            <tr key={`${exclusion.entityId}:${exclusion.facilityId ?? 'entity'}`}>
+              <Td className="font-medium">
                 {exclusion.facilityName ?? `${exclusion.entityName} (whole entity)`}
-              </td>
-              <td className="py-1.5 pr-3 text-ink-muted">
+              </Td>
+              <Td className="text-ink-muted">
                 {exclusion.facilityName ? exclusion.entityName : ''}
-              </td>
-              <td className="py-1.5 pr-3">{exclusionLabels[exclusion.reason]}</td>
-              <td className="py-1.5 text-ink-muted">{exclusion.detail ?? ''}</td>
+              </Td>
+              <Td>{exclusionLabels[exclusion.reason]}</Td>
+              <Td className="text-ink-muted">{exclusion.detail ?? ''}</Td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   )
 }
@@ -880,45 +886,37 @@ function BoundaryExclusions({ exclusions }: { exclusions: BoundaryExclusionEntry
 /** The data-quality table and the uncertainty statement (spec 04.4, ISO 14064-1 section 9.3.1). */
 function DataQualityBlock({ dataQuality }: { dataQuality: Report['dataQuality'] }) {
   return (
-    <div className="mt-4">
+    <div className="mt-5">
       <h3 className="text-sm font-semibold">Data quality and uncertainty</h3>
       <p className="mt-1 text-sm">{dataQuality.statement}</p>
       {dataQuality.uncertaintyStatement && (
         <p className="mt-1 text-sm">{dataQuality.uncertaintyStatement}</p>
       )}
       {dataQuality.byTier.length > 0 && (
-        <div className="mt-2 overflow-x-auto">
-          <table aria-label="Data quality by tier" className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="py-1.5 pr-3 font-semibold">Tier</th>
-                <th className="py-1.5 pr-3 font-semibold">Quality</th>
-                <th className="py-1.5 pr-3 text-right font-semibold">Scope 1</th>
-                <th className="py-1.5 pr-3 text-right font-semibold">Scope 2</th>
-                <th className="py-1.5 pr-3 text-right font-semibold">Scope 3</th>
-                <th className="py-1.5 text-right font-semibold">Share</th>
+        <Table aria-label="Data quality by tier" className="mt-2">
+          <thead>
+            <tr>
+              <Th>Tier</Th>
+              <Th>Quality</Th>
+              <Th align="right">Scope 1</Th>
+              <Th align="right">Scope 2</Th>
+              <Th align="right">Scope 3</Th>
+              <Th align="right">Share</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {dataQuality.byTier.map((row) => (
+              <tr key={row.tier}>
+                <Td>{row.tier}</Td>
+                <Td>{row.label}</Td>
+                <Td align="right">{formatCo2e(row.scope1KgCo2e)}</Td>
+                <Td align="right">{formatCo2e(row.scope2KgCo2e)}</Td>
+                <Td align="right">{formatCo2e(row.scope3KgCo2e)}</Td>
+                <Td align="right">{row.sharePercent}%</Td>
               </tr>
-            </thead>
-            <tbody>
-              {dataQuality.byTier.map((row) => (
-                <tr key={row.tier} className="border-b border-teal/5 last:border-0">
-                  <td className="py-1.5 pr-3 font-mono">{row.tier}</td>
-                  <td className="py-1.5 pr-3">{row.label}</td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums">
-                    {formatCo2e(row.scope1KgCo2e)}
-                  </td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums">
-                    {formatCo2e(row.scope2KgCo2e)}
-                  </td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums">
-                    {formatCo2e(row.scope3KgCo2e)}
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums">{row.sharePercent}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </Table>
       )}
     </div>
   )
@@ -928,23 +926,23 @@ function DataQualityBlock({ dataQuality }: { dataQuality: Report['dataQuality'] 
 function ExclusionSummaryTable({ summary }: { summary: Report['exclusionSummary'] }) {
   if (summary.length === 0) return null
   return (
-    <table aria-label="Exclusions by reason" className="mb-4 w-full text-left text-sm">
+    <Table aria-label="Exclusions by reason" className="mb-5">
       <thead>
-        <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-          <th className="py-1.5 pr-3 font-semibold">Reason</th>
-          <th className="py-1.5 pr-3 text-right font-semibold">Records</th>
-          <th className="py-1.5 text-right font-semibold">Estimated left out</th>
+        <tr>
+          <Th>Reason</Th>
+          <Th align="right">Records</Th>
+          <Th align="right">Estimated left out</Th>
         </tr>
       </thead>
       <tbody>
         {summary.map((row) => (
-          <tr key={row.reason} className="border-b border-teal/5 last:border-0">
-            <td className="py-1.5 pr-3">{exclusionLabels[row.reason]}</td>
-            <td className="py-1.5 pr-3 text-right tabular-nums">{row.recordCount}</td>
+          <tr key={row.reason}>
+            <Td>{exclusionLabels[row.reason]}</Td>
+            <Td align="right">{row.recordCount}</Td>
             {/* spec 04.8: a record nobody sized never prints as a bare 0 */}
-            <td className="py-1.5 text-right tabular-nums">
+            <Td align="right">
               {row.reason === 'OUTSIDE_SCOPES_NON_KYOTO' ? (
-                <span className="text-xs text-ink-muted">
+                <span className="text-[13px] text-ink-muted">
                   see Gases outside the scopes (Montreal Protocol)
                 </span>
               ) : (
@@ -952,34 +950,34 @@ function ExclusionSummaryTable({ summary }: { summary: Report['exclusionSummary'
                   {row.estimatedCount > 0 && (
                     <>
                       {formatCo2e(row.estimatedKgCo2e)}
-                      <span className="block text-xs text-ink-muted">
+                      <span className="block text-[13px] text-ink-muted">
                         estimated over {row.estimatedCount} record
                         {row.estimatedCount === 1 ? '' : 's'}
                       </span>
                     </>
                   )}
                   {row.emitsNothingCount > 0 && (
-                    <span className="block text-xs text-ink-muted">
+                    <span className="block text-[13px] text-ink-muted">
                       {row.emitsNothingCount} emits nothing
                     </span>
                   )}
                   {row.unestimatedCount > 0 && (
-                    <span className="block text-xs text-ink-muted">
+                    <span className="block text-[13px] text-ink-muted">
                       {row.unestimatedCount} not estimated
                     </span>
                   )}
                   {row.estimatedCount === 0 &&
                     row.emitsNothingCount === 0 &&
                     row.unestimatedCount === 0 && (
-                      <span className="text-xs text-ink-muted">not estimated</span>
+                      <span className="text-[13px] text-ink-muted">not estimated</span>
                     )}
                 </>
               )}
-            </td>
+            </Td>
           </tr>
         ))}
       </tbody>
-    </table>
+    </Table>
   )
 }
 
@@ -996,7 +994,7 @@ function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
     ])
   }
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {[...groups.entries()].map(([reason, rows]) => (
         <div key={reason}>
           <h3 className="text-sm font-semibold">
@@ -1005,45 +1003,47 @@ function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
               ({rows.length} record{rows.length === 1 ? '' : 's'})
             </span>
           </h3>
-          <div className="mt-1 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id} className="border-b border-teal/5 last:border-0">
-                    <td className="py-1.5 pr-3 font-medium">{row.activityType}</td>
-                    <td className="py-1.5 pr-3 text-ink-muted">{row.facilityName}</td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap tabular-nums">
-                      {row.quantity.toLocaleString()} {row.unit}
-                    </td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap text-ink-muted">
-                      {formatPeriod(row.periodStart, row.periodEnd)}
-                    </td>
-                    <td className="py-1.5 pr-3 text-ink-muted">
-                      {row.exclusionDetail ?? ''}
-                      {row.exclusionJustification && (
-                        <span className="block">{row.exclusionJustification}</span>
-                      )}
-                    </td>
-                    <td className="py-1.5 text-right whitespace-nowrap text-ink-muted tabular-nums">
-                      {row.estimateState === 'NOT_ESTIMATED' && 'not estimated'}
-                      {row.estimateState === 'EMITS_NOTHING' && 'emits nothing'}
-                      {row.estimateState === 'ESTIMATED' &&
-                        row.estimatedKgCo2e !== null &&
-                        `~${formatCo2e(row.estimatedKgCo2e)}`}
-                      {row.gas !== null && row.gas}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table className="mt-1">
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <Td className="font-medium">{row.activityType}</Td>
+                  <Td className="text-ink-muted">{row.facilityName}</Td>
+                  <Td className="whitespace-nowrap">
+                    {row.quantity.toLocaleString()} {row.unit}
+                  </Td>
+                  <Td className="whitespace-nowrap text-ink-muted">
+                    {formatPeriod(row.periodStart, row.periodEnd)}
+                  </Td>
+                  <Td className="text-ink-muted">
+                    {row.exclusionDetail ?? ''}
+                    {row.exclusionJustification && (
+                      <span className="block">{row.exclusionJustification}</span>
+                    )}
+                  </Td>
+                  <Td align="right" className="text-ink-muted">
+                    {row.estimateState === 'NOT_ESTIMATED' && 'not estimated'}
+                    {row.estimateState === 'EMITS_NOTHING' && 'emits nothing'}
+                    {row.estimateState === 'ESTIMATED' &&
+                      row.estimatedKgCo2e !== null &&
+                      `~${formatCo2e(row.estimatedKgCo2e)}`}
+                    {row.gas !== null && row.gas}
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         </div>
       ))}
     </div>
   )
 }
 
-/** The header block (spec 07.4): the reporting entity, who prepared and approved the report, its version and assurance. */
+/**
+ * The header block (spec 07.4): the reporting entity, who prepared and approved
+ * the report, its version and assurance. A two-column table read as the
+ * mockup's key-value list: labels muted on the left, values on the right.
+ */
 function ReportHeaderBlock({ header }: { header: Report['header'] }) {
   const rows: [string, string][] = [
     [
@@ -1083,14 +1083,17 @@ function ReportHeaderBlock({ header }: { header: Report['header'] }) {
     ],
   ]
   return (
-    <table aria-label="Report header" className="w-full text-left text-sm">
+    <table aria-label="Report header" className="w-full border-collapse text-left text-sm">
       <tbody>
         {rows.map(([label, value]) => (
-          <tr key={label} className="border-b border-teal/5 last:border-0">
-            <th scope="row" className="py-1 pr-3 font-medium whitespace-nowrap text-ink-muted">
+          <tr key={label}>
+            <th
+              scope="row"
+              className="w-44 py-1.5 pr-4 align-top font-normal whitespace-nowrap text-ink-muted"
+            >
               {label}
             </th>
-            <td className="py-1">{value}</td>
+            <td className="py-1.5">{value}</td>
           </tr>
         ))}
       </tbody>
@@ -1101,42 +1104,36 @@ function ReportHeaderBlock({ header }: { header: Report['header'] }) {
 function BreakdownTable({ title, rows }: { title: string; rows: Breakdown[] }) {
   if (rows.length === 0) return null
   return (
-    <div className="mt-4 overflow-x-auto">
-      <p className="text-xs font-semibold text-ink-muted uppercase">{title}</p>
-      <table aria-label={title} className="mt-1 w-full text-left text-sm">
+    <div className="mt-5">
+      <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
+        {title}
+      </p>
+      <Table aria-label={title} className="mt-1">
         <thead>
-          <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-            <th className="py-1 font-semibold">Name</th>
-            <th className="py-1 text-right font-semibold">Scope 1</th>
-            <th className="py-1 text-right font-semibold">Scope 2 (location)</th>
-            <th className="py-1 text-right font-semibold">Scope 2 (market)</th>
-            <th className="py-1 text-right font-semibold">Scope 3</th>
-            <th className="py-1 text-right font-semibold">Total</th>
+          <tr>
+            <Th>Name</Th>
+            <Th align="right">Scope 1</Th>
+            <Th align="right">Scope 2 (location)</Th>
+            <Th align="right">Scope 2 (market)</Th>
+            <Th align="right">Scope 3</Th>
+            <Th align="right">Total</Th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.name} className="border-b border-teal/5 last:border-0">
-              <td className="py-1 pr-2">{row.name}</td>
-              <td className="py-1 text-right tabular-nums">
-                {formatTonnes(row.scope1KgCo2e / 1000)}
-              </td>
-              <td className="py-1 text-right tabular-nums">
-                {formatTonnes(row.scope2KgCo2e / 1000)}
-              </td>
-              <td className="py-1 text-right tabular-nums">
-                {formatTonnes(row.scope2MarketBasedKgCo2e / 1000)}
-              </td>
-              <td className="py-1 text-right tabular-nums">
-                {formatTonnes(row.scope3KgCo2e / 1000)}
-              </td>
-              <td className="py-1 text-right font-semibold tabular-nums">
+            <tr key={row.name}>
+              <Td>{row.name}</Td>
+              <Td align="right">{formatTonnes(row.scope1KgCo2e / 1000)}</Td>
+              <Td align="right">{formatTonnes(row.scope2KgCo2e / 1000)}</Td>
+              <Td align="right">{formatTonnes(row.scope2MarketBasedKgCo2e / 1000)}</Td>
+              <Td align="right">{formatTonnes(row.scope3KgCo2e / 1000)}</Td>
+              <Td align="right" className="font-semibold">
                 {formatTonnes(row.totalTCo2e)}
-              </td>
+              </Td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   )
 }
@@ -1146,29 +1143,33 @@ function BreakdownTables({ report }: { report: Report }) {
   return (
     <>
       {report.byScope3Category.length > 0 && (
-        <div className="mt-4">
-          <p className="text-xs font-semibold text-ink-muted uppercase">Scope 3 by category</p>
-          <table aria-label="Scope 3 by category" className="mt-1 w-full text-left text-sm">
+        <div className="mt-5">
+          <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
+            Scope 3 by category
+          </p>
+          <Table aria-label="Scope 3 by category" className="mt-1">
             <tbody>
               {report.byScope3Category.map((row) => (
-                <tr key={row.category} className="border-b border-teal/5 last:border-0">
-                  <td className="py-1 pr-2">{categoryLabel(row.category)}</td>
-                  <td className="py-1 text-right text-xs text-ink-muted">
+                <tr key={row.category}>
+                  <Td>{categoryLabel(row.category)}</Td>
+                  <Td align="right" className="text-[13px] text-ink-muted">
                     {row.lineCount} line{row.lineCount === 1 ? '' : 's'}
-                  </td>
-                  <td className="py-1 text-right tabular-nums">{formatTonnes(row.tCo2e)}</td>
+                  </Td>
+                  <Td align="right">{formatTonnes(row.tCo2e)}</Td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </div>
       )}
       <BreakdownTable title="By facility" rows={report.byFacility} />
       <BreakdownTable title="By legal entity" rows={report.byEntity} />
       <BreakdownTable title="By country" rows={report.byCountry} />
       {report.intensity.length > 0 && (
-        <div className="mt-4">
-          <p className="text-xs font-semibold text-ink-muted uppercase">Intensity</p>
+        <div className="mt-5">
+          <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
+            Intensity
+          </p>
           <ul className="mt-1 text-sm">
             {report.intensity.map((row) => (
               <li key={row.name}>
@@ -1200,39 +1201,51 @@ function FactorTable({ factors }: { factors: Report['factors'] }) {
       .filter(Boolean)
       .join(' · ')
   return (
-    <div className="mt-3 overflow-x-auto">
-      <p className="text-xs font-semibold text-ink-muted uppercase">Emission factors applied</p>
-      <table aria-label="Emission factors applied" className="mt-1 w-full text-left text-sm">
+    <div className="mt-4">
+      <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
+        Emission factors applied
+      </p>
+      <Table aria-label="Emission factors applied" className="mt-1">
         <thead>
-          <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-            <th className="py-1 font-semibold">Factor</th>
-            <th className="py-1 text-right font-semibold">kg CO₂e per unit</th>
-            <th className="py-1 font-semibold">Gases (kg per unit)</th>
-            <th className="py-1 font-semibold">GWP</th>
-            <th className="py-1 font-semibold">Packs</th>
-            <th className="py-1 font-semibold">Source (publication)</th>
+          <tr>
+            <Th>Factor</Th>
+            <Th align="right">kg CO₂e per unit</Th>
+            <Th>Gases (kg per unit)</Th>
+            <Th>GWP</Th>
+            <Th>Packs</Th>
+            <Th>Source (publication)</Th>
           </tr>
         </thead>
         <tbody>
           {factors.map((f) => (
-            <tr key={f.factorId} className="border-b border-teal/5 last:border-0">
-              <td className="py-1 pr-2 font-medium">{f.name}</td>
-              <td className="py-1 text-right tabular-nums whitespace-nowrap">
+            <tr key={f.factorId} className="align-top">
+              <Td className="align-top font-medium">{f.name}</Td>
+              <Td align="right" className="align-top">
                 {f.kgCo2ePerUnit} / {f.unit}
-              </td>
-              <td className="py-1 pr-2 text-xs text-ink-muted">{gases(f)}</td>
-              <td className="py-1 pr-2 text-xs">
+              </Td>
+              <Td className="align-top text-[13px] text-ink-muted">{gases(f)}</Td>
+              <Td className="align-top text-[13px]">
                 IPCC {f.gwpSet}
                 {/* spec 07.4: a blend published under another set and not re-derived says so */}
                 {f.blendGwpSource && f.blendGwpSource !== f.gwpSet && (
-                  <span className="block text-amber-700">
+                  <span className="block text-warning">
                     CO₂e as published, {f.blendGwpSource}; not rebased
                   </span>
                 )}
-              </td>
+              </Td>
               {/* spec 02.3: the packs that delivered the row, always apart from its publication */}
-              <td className="py-1 pr-2 text-xs text-ink-muted">
-                {f.packs && f.packs.length > 0 ? f.packs.join(', ') : 'entered by hand'}
+              <Td className="align-top text-[13px] text-ink-muted">
+                {f.packs && f.packs.length > 0 ? (
+                  <span className="flex flex-wrap gap-1">
+                    {f.packs.map((pack) => (
+                      <Chip key={pack} className="h-[22px] text-xs">
+                        {pack}
+                      </Chip>
+                    ))}
+                  </span>
+                ) : (
+                  'entered by hand'
+                )}
                 {f.selfApproved && (
                   <span
                     className="block"
@@ -1241,12 +1254,12 @@ function FactorTable({ factors }: { factors: Report['factors'] }) {
                     self-approved{f.approvedBy ? ` by ${f.approvedBy}` : ''}
                   </span>
                 )}
-              </td>
-              <td className="py-1 text-xs text-ink-muted">{publicationLine(f)}</td>
+              </Td>
+              <Td className="align-top text-[13px] text-ink-muted">{publicationLine(f)}</Td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   )
 }

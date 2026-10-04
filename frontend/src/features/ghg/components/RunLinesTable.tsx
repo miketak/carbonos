@@ -1,3 +1,5 @@
+import { Chip } from '../../../components/Chip'
+import { Table, Td, Th } from '../../../components/Table'
 import { categoryLabel, formatCo2e, formatPeriod, leaseLabels } from '../format'
 import { ScopeBadge } from './badges'
 import type { RunLine } from '../api'
@@ -8,113 +10,111 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
     return <p className="text-sm text-ink-muted">No activity fell inside this run's period.</p>
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-            <th className="px-3 py-2 font-semibold">Facility</th>
-            <th className="px-3 py-2 font-semibold">Source</th>
-            <th className="px-3 py-2 font-semibold">Scope</th>
-            <th className="px-3 py-2 font-semibold">Quantity</th>
-            <th className="px-3 py-2 font-semibold">Factor</th>
-            <th className="px-3 py-2 font-semibold">Weight</th>
-            <th className="px-3 py-2 font-semibold">CO₂e</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lines.map((line) => (
-            <tr key={line.id} className="border-b border-teal/5 last:border-0">
-              <td className="px-3 py-2">{line.facilityName}</td>
-              <td className="px-3 py-2">
+    <Table>
+      <thead>
+        <tr>
+          <Th className="pl-5">Facility</Th>
+          <Th>Source</Th>
+          <Th>Scope</Th>
+          <Th align="right">Quantity</Th>
+          <Th align="right">Factor</Th>
+          <Th align="right">Weight</Th>
+          <Th align="right" className="pr-5">
+            CO₂e
+          </Th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((line) => (
+          <tr key={line.id} className="align-top">
+            <Td className="pl-5 align-top">{line.facilityName}</Td>
+            <Td className="align-top">
+              <div className="flex flex-col gap-0.5">
                 {line.activityType && (
-                  <span className="block font-medium">
+                  <span className="font-medium">
                     {line.recordRef ? (
-                      <span className="mr-1 font-mono text-xs text-ink-muted">
-                        {line.recordRef}
-                      </span>
+                      <span className="mr-1.5 font-normal text-ink-muted">{line.recordRef}</span>
                     ) : null}
                     {line.activityType}
                   </span>
                 )}
-                <span className={line.activityType ? 'text-xs text-ink-muted' : 'font-medium'}>
+                <span className={line.activityType ? 'text-[13px] text-ink-muted' : 'font-medium'}>
                   {line.factorName}
                 </span>
-                <span className="block text-xs text-ink-muted">
+                <span className="text-[13px] text-ink-muted">
                   {categoryLabel(line.category)}
                   {line.evidenceRef ? ` · ${line.evidenceRef}` : ''}
                   {line.dataQualityTier !== null ? ` · tier ${line.dataQualityTier}` : ''}
                 </span>
                 {line.evidenceFiles && (
-                  <span className="block text-xs text-ink-muted">
-                    Evidence: {line.evidenceFiles}
-                  </span>
+                  <span className="text-[13px] text-ink-muted">Evidence: {line.evidenceFiles}</span>
                 )}
                 {line.leaseType && (
-                  <span className="block text-xs text-ink-muted">
-                    {leaseLabels[line.leaseType]}
-                  </span>
+                  <span className="text-[13px] text-ink-muted">{leaseLabels[line.leaseType]}</span>
                 )}
                 {/* spec 04.7: a line an upstream rule derived, and the line it rides on */}
                 {line.derivedKind !== null && (
-                  <span className="mt-0.5 block">
-                    <span className="inline-block rounded-full bg-teal/15 px-1.5 text-xs font-semibold text-dark-teal">
-                      Derived line
-                    </span>
+                  <span className="mt-0.5 flex flex-col items-start gap-0.5">
+                    <Chip className="h-[22px] text-xs">Derived line</Chip>
                     {line.derivedNote && (
-                      <span className="block text-xs text-ink-muted">{line.derivedNote}</span>
+                      <span className="text-[13px] text-ink-muted">{line.derivedNote}</span>
                     )}
                   </span>
                 )}
                 {/* spec 02.4: no scope total includes this line; the report discloses it apart */}
                 {line.reportingBasis === 'OUTSIDE_SCOPES_NON_KYOTO' && (
-                  <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
+                  <Chip tone="warning" className="mt-0.5 h-[22px] self-start text-xs">
                     Outside the scopes
-                  </span>
+                  </Chip>
                 )}
-              </td>
-              <td className="px-3 py-2">
-                <ScopeBadge scope={line.scope} />
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap tabular-nums">
-                {line.quantity.toLocaleString()} {line.unit}
-                <span className="block text-xs text-ink-muted">
+              </div>
+            </Td>
+            <Td className="align-top">
+              <ScopeBadge scope={line.scope} />
+            </Td>
+            <Td align="right" className="align-top">
+              <div className="flex flex-col items-end gap-0.5">
+                <span>
+                  {line.quantity.toLocaleString()} {line.unit}
+                </span>
+                <span className="text-[13px] text-ink-muted">
                   {formatPeriod(line.periodStart, line.periodEnd)}
                 </span>
                 {line.unit.toLowerCase() !== line.factorUnit.toLowerCase() && (
-                  <span className="block text-xs text-ink-muted">
+                  <span className="text-[13px] text-ink-muted">
                     →{' '}
                     {line.convertedQuantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}{' '}
                     {line.factorUnit}
                   </span>
                 )}
                 {line.conversionNote && (
-                  <span className="block text-xs text-ink-muted">{line.conversionNote}</span>
+                  <span className="text-[13px] text-ink-muted">{line.conversionNote}</span>
                 )}
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap">
-                {line.kgCo2ePerUnit} kg/{line.factorUnit}
-              </td>
-              <td className="px-3 py-2">
-                {(line.weight * 100).toFixed(0)}%
-                {line.periodNote && (
-                  <span className="block text-xs font-normal text-amber-700">
-                    {line.periodNote}
-                  </span>
-                )}
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap font-medium">
-                {formatCo2e(line.kgCo2e)}
-                {line.marketBasedKgCo2e !== null && (
-                  <span className="block text-xs font-normal text-ink-muted">
-                    market-based: {formatCo2e(line.marketBasedKgCo2e)}
-                    {line.marketNote ? ` (${line.marketNote})` : ''}
-                  </span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              </div>
+            </Td>
+            <Td align="right" className="align-top">
+              {line.kgCo2ePerUnit} kg/{line.factorUnit}
+            </Td>
+            <Td align="right" className="align-top">
+              {(line.weight * 100).toFixed(0)}%
+              {line.periodNote && (
+                <span className="block text-[13px] font-normal text-warning">
+                  {line.periodNote}
+                </span>
+              )}
+            </Td>
+            <Td align="right" className="pr-5 align-top font-semibold">
+              {formatCo2e(line.kgCo2e)}
+              {line.marketBasedKgCo2e !== null && (
+                <span className="block text-[13px] font-normal text-ink-muted">
+                  market-based: {formatCo2e(line.marketBasedKgCo2e)}
+                  {line.marketNote ? ` (${line.marketNote})` : ''}
+                </span>
+              )}
+            </Td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
   )
 }
