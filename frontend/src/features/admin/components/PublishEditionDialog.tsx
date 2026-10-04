@@ -121,7 +121,7 @@ export function PublishEditionDialog({
         {checksum && (
           <p className="mt-2 text-xs text-ink-muted">
             SHA-256{' '}
-            <code data-testid="evidence-checksum" className="font-mono break-all">
+            <code data-testid="evidence-checksum" className="font-sans break-all">
               {checksum}
             </code>
             , computed over the bytes stored.
@@ -170,7 +170,7 @@ export function PublishEditionDialog({
       )}
 
       {refusal && (
-        <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+        <p role="alert" className="mt-3 text-sm font-medium text-danger">
           {refusal}
         </p>
       )}
@@ -223,11 +223,11 @@ export function PublishEditionDialog({
 function GateItem({ met, children }: { met: boolean; children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2">
-      <span aria-hidden="true" className={met ? 'text-bright-teal' : 'text-red-600'}>
+      <span aria-hidden="true" className={met ? 'text-success' : 'text-danger'}>
         {met ? '✓' : '✕'}
       </span>
       <span className="sr-only">{met ? 'Met: ' : 'Not met: '}</span>
-      <span className={met ? 'text-ink-muted' : 'font-medium text-red-600'}>{children}</span>
+      <span className={met ? 'text-ink-muted' : 'font-medium text-danger'}>{children}</span>
     </li>
   )
 }

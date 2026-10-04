@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button } from '../../components/Button'
-import { GlassCard } from '../../components/GlassCard'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel } from '../../components/Panel'
 import { useToast } from '../../components/toast'
 import { problemDetail } from '../../lib/api'
 import { useSession } from '../auth/useSession'
@@ -18,6 +19,8 @@ type Dialog =
   | { kind: 'delete'; user: User }
   | { kind: 'reset'; user: User }
   | null
+
+const crumbs = [{ label: 'Administration' }, { label: 'Users' }]
 
 export function AdminUsersPage() {
   const session = useSession()
@@ -45,20 +48,19 @@ export function AdminUsersPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl">Users</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            {usersQuery.data
-              ? `${usersQuery.data.length} team member${usersQuery.data.length === 1 ? '' : 's'}`
-              : 'Manage who can access CarbonOS'}
-          </p>
-        </div>
-        <Button onClick={() => setDialog({ kind: 'create' })}>Add user</Button>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        crumbs={crumbs}
+        title="Users"
+        subtitle={
+          usersQuery.data
+            ? `${usersQuery.data.length} team member${usersQuery.data.length === 1 ? '' : 's'}`
+            : 'Manage who can access CarbonOS'
+        }
+        actions={<Button onClick={() => setDialog({ kind: 'create' })}>Add user</Button>}
+      />
 
-      <GlassCard>
+      <Panel>
         <UserTable
           users={usersQuery.data}
           isPending={usersQuery.isPending}
@@ -68,7 +70,7 @@ export function AdminUsersPage() {
           onResetPassword={(user) => setDialog({ kind: 'reset', user })}
           onDelete={(user) => setDialog({ kind: 'delete', user })}
         />
-      </GlassCard>
+      </Panel>
 
       {dialog?.kind === 'create' && (
         <UserFormModal

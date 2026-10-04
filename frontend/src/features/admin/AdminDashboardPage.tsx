@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
-import { GlassCard } from '../../components/GlassCard'
-import { Skeleton } from '../../components/Skeleton'
+import type { ReactNode } from 'react'
 import { OrganizationName } from '../../components/OrganizationName'
-import { StatTile } from './components/StatTile'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel, PanelBody, PanelHead } from '../../components/Panel'
+import { Skeleton } from '../../components/Skeleton'
+import { Stat, StatStrip } from '../../components/StatStrip'
 import { usePlatformSettingsQuery } from './useSettings'
 import { useAdminSummaryQuery } from './useSummary'
 import type { SummaryActivity, SummaryGrant } from './api'
@@ -31,33 +33,70 @@ function ranFor(grant: SummaryGrant): string {
   return hours(whole)
 }
 
-/** One line of the work queue: a count, a sentence, and the page that clears it. */
-function QueueRow({ to, headline, detail }: { to: string; headline: string; detail: string }) {
+type QueueTone = 'warning' | 'info'
+
+const queueDots: Record<QueueTone, string> = {
+  warning: 'bg-warning-dot',
+  info: 'bg-info',
+}
+
+/**
+ * One line of the work queue (spec 10): a dot, a headline over its detail, and
+ * a chevron; the whole row is the link to the page that clears it.
+ */
+function QueueRow({
+  to,
+  tone,
+  headline,
+  detail,
+}: {
+  to: string
+  tone: QueueTone
+  headline: string
+  detail: string
+}) {
+  return (
+    <li>
+      <Link
+        to={to}
+        className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-x-1 border-b border-hairline px-3 py-3.5 transition-colors duration-150 hover:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
+      >
+        <span className="flex justify-center">
+          <span aria-hidden="true" className={`size-2 rounded-full ${queueDots[tone]}`} />
+        </span>
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="font-medium">{headline}</span>
+          <span className="text-[13px] text-ink-muted">{detail}</span>
+        </span>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className="size-4 shrink-0 text-ink-muted"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </Link>
+    </li>
+  )
+}
+
+/** One help figure against its target, linking to the metrics page (spec 09). */
+function HelpFigure({ label, value, note }: { label: string; value: string; note: string }) {
   return (
     <Link
-      to={to}
-      className="flex items-center gap-4 border-b border-teal/10 px-5 py-4 transition-colors duration-150 last:border-0 hover:bg-teal/5"
+      to="/admin/help"
+      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-hairline py-3 last:border-b-0 hover:text-link"
     >
-      <span
-        aria-hidden="true"
-        className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-amber-400"
-      />
-      <span className="min-w-0 flex-1">
-        <span className="block font-medium">{headline}</span>
-        <span className="block text-sm text-ink-muted">{detail}</span>
+      <span className="text-ink-muted">{label}</span>
+      <span className="flex items-baseline gap-2">
+        <span className="font-medium">{value}</span>
+        <span className="text-[13px] text-ink-muted">({note})</span>
       </span>
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        className="h-4 w-4 shrink-0 text-ink-muted"
-      >
-        <path d="m9 18 6-6-6-6" />
-      </svg>
     </Link>
   )
 }
@@ -70,7 +109,7 @@ function ActivityLine({ activity }: { activity: SummaryActivity }) {
     EVIDENCE_ATTACHED: 'attached the source document for',
   }
   return (
-    <li className="flex flex-wrap items-baseline gap-x-2 border-b border-teal/5 py-2 text-sm last:border-0">
+    <li className="flex flex-wrap items-baseline gap-x-2 border-b border-hairline py-2.5 text-sm last:border-b-0">
       <span className="text-ink-muted">{when(activity.at)}</span>
       <span className="font-medium">{activity.actor}</span>
       <span className="text-ink-muted">
@@ -84,7 +123,7 @@ function ActivityLine({ activity }: { activity: SummaryActivity }) {
 function GrantLine({ grant }: { grant: SummaryGrant }) {
   const closed = grant.endedAt !== null
   return (
-    <li className="border-b border-teal/5 py-2 text-sm last:border-0">
+    <li className="border-b border-hairline py-2.5 text-sm last:border-b-0">
       <div className="flex flex-wrap items-baseline gap-x-2">
         <span className="font-medium">{grant.adminEmail}</span>
         <span className="text-ink-muted">
@@ -98,10 +137,23 @@ function GrantLine({ grant }: { grant: SummaryGrant }) {
           {when(grant.endedAt ?? grant.expiresAt)} ({ranFor(grant)})
         </span>
       </div>
-      <p className="text-xs text-ink-muted">{grant.reason}</p>
+      <p className="text-[13px] text-ink-muted">{grant.reason}</p>
     </li>
   )
 }
+
+/** A stat's label, linking to the register behind the figure where there is one. */
+function statLabel(label: string, to?: string): ReactNode {
+  return to ? (
+    <Link to={to} className="hover:text-link hover:underline">
+      {label}
+    </Link>
+  ) : (
+    label
+  )
+}
+
+const crumbs = [{ label: 'Administration' }, { label: 'Dashboard' }]
 
 /**
  * Where an administrator lands (spec 01.5): what needs a decision, then what
@@ -129,12 +181,12 @@ export function AdminDashboardPage() {
 
   if (summaryQuery.isError || !summaryQuery.data) {
     return (
-      <GlassCard className="p-10 text-center">
+      <Panel className="p-10 text-center">
         <h1 className="text-lg">The platform summary could not be loaded</h1>
         <p className="mt-1 text-sm text-ink-muted">
           The pages in the sidebar still work. Reload to try the summary again.
         </p>
-      </GlassCard>
+      </Panel>
     )
   }
 
@@ -149,6 +201,7 @@ export function AdminDashboardPage() {
       <QueueRow
         key="requests"
         to="/admin/access-requests"
+        tone="warning"
         headline={`${accounts.accessRequestsPending} access request${accounts.accessRequestsPending === 1 ? '' : 's'} waiting`}
         detail="Approve one and the account is created at once; the person sets their own password."
       />
@@ -157,6 +210,7 @@ export function AdminDashboardPage() {
       <QueueRow
         key="drafts"
         to="/admin/factor-packs"
+        tone="info"
         headline={`${platform.draftEditionCount} draft factor pack edition${platform.draftEditionCount === 1 ? '' : 's'} unpublished`}
         detail={
           approvable === 0
@@ -169,6 +223,7 @@ export function AdminDashboardPage() {
       <QueueRow
         key="grants"
         to="/admin/organizations"
+        tone="info"
         headline={`You hold support access to ${myGrants.length} organization${myGrants.length === 1 ? '' : 's'}`}
         detail={`The next expires ${when(myGrants[0].expiresAt)}. End it when the case is closed.`}
       />
@@ -177,6 +232,7 @@ export function AdminDashboardPage() {
       <QueueRow
         key="help-pages"
         to="/admin/help"
+        tone="warning"
         headline={`${help.pagesBelowTarget.length} help page${help.pagesBelowTarget.length === 1 ? '' : 's'} under the 80% helpful target`}
         detail="Each has at least five votes. The comments say what readers were missing."
       />
@@ -185,113 +241,102 @@ export function AdminDashboardPage() {
       <QueueRow
         key="lone-admin"
         to="/admin/users"
+        tone="warning"
         headline="You are the only active administrator"
         detail="Nobody can publish a factor pack edition you curated, and nobody can cover for you."
       />
     ),
   ].filter(Boolean)
 
+  const helpfulRate =
+    help.feedback.helpfulRate30d === null ? 0 : Math.round(help.feedback.helpfulRate30d * 100)
+
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl">Platform overview</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          The accounts, organizations and factor packs this deployment holds. Client inventory data
-          stays inside each organization.
-        </p>
+      <PageHeader
+        crumbs={crumbs}
+        title="Platform overview"
+        subtitle="The accounts, organizations and factor packs this deployment holds. Client inventory data stays inside each organization."
+      />
+
+      <Panel>
+        <PanelHead title="Needs your attention" />
+        {queue.length > 0 ? (
+          <ul className="[&>li:last-child>a]:border-b-0">{queue}</ul>
+        ) : (
+          <p className="p-10 text-center text-sm text-ink-muted">Nothing is waiting on you.</p>
+        )}
+      </Panel>
+
+      <StatStrip label="The platform">
+        <Stat
+          label={statLabel('Users', '/admin/users')}
+          value={accounts.usersTotal.toLocaleString()}
+          note={`${accounts.usersActive} active, ${accounts.usersPending} pending`}
+        />
+        <Stat
+          label={statLabel('Organizations', '/admin/organizations')}
+          value={platform.organizations.toLocaleString()}
+          note={`${liveGrants.length} with support access`}
+        />
+        <Stat
+          label={statLabel('Factor pack editions', '/admin/factor-packs')}
+          value={platform.publishedEditions.toLocaleString()}
+          note={`published; ${platform.draftEditionCount} draft, ${platform.withdrawnEditions} withdrawn`}
+        />
+        <Stat
+          label="Open adoption notices"
+          value={platform.openNotices.toLocaleString()}
+          note="each organization decides its own"
+        />
+      </StatStrip>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel>
+          <PanelHead title="The help" />
+          <PanelBody className="py-2 text-sm">
+            <HelpFigure
+              label="Helpful votes, 30 days"
+              value={`${helpfulRate}%`}
+              note={
+                help.feedback.helpfulRate30d === null
+                  ? 'no votes yet; target 80%'
+                  : `${help.feedback.votes30d} vote${help.feedback.votes30d === 1 ? '' : 's'}; target 80%`
+              }
+            />
+            <HelpFigure
+              label="Searches with no result, 30 days"
+              value={help.search.misses30d.toLocaleString()}
+              note={
+                help.search.missRate30d === null
+                  ? 'no searches yet; target under 5%'
+                  : `${Math.round(help.search.missRate30d * 100)}% of ${help.search.searches30d} search${help.search.searches30d === 1 ? '' : 'es'}; target under 5%`
+              }
+            />
+          </PanelBody>
+        </Panel>
+
+        <Panel>
+          <PanelHead title="Support access" />
+          <PanelBody className="py-2">
+            {platform.grants.length > 0 ? (
+              <ul>
+                {platform.grants.map((grant) => (
+                  <GrantLine key={`${grant.organizationId}-${grant.grantedAt}`} grant={grant} />
+                ))}
+              </ul>
+            ) : (
+              <p className="py-6 text-center text-sm text-ink-muted">
+                No support access has been taken in the last 30 days.
+              </p>
+            )}
+          </PanelBody>
+        </Panel>
       </div>
 
-      <section>
-        <h2 className="mb-3 text-lg">Needs your attention</h2>
-        <GlassCard>
-          {queue.length > 0 ? (
-            queue
-          ) : (
-            <p className="p-10 text-center text-sm text-ink-muted">Nothing is waiting on you.</p>
-          )}
-        </GlassCard>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-lg">The platform</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatTile
-            label="Users"
-            value={accounts.usersTotal}
-            detail={`${accounts.usersActive} active, ${accounts.usersPending} pending`}
-            to="/admin/users"
-          />
-          <StatTile
-            label="Organizations"
-            value={platform.organizations}
-            detail={`${liveGrants.length} with support access`}
-            to="/admin/organizations"
-          />
-          <StatTile
-            label="Factor pack editions"
-            value={platform.publishedEditions}
-            detail={`published; ${platform.draftEditionCount} draft, ${platform.withdrawnEditions} withdrawn`}
-            to="/admin/factor-packs"
-          />
-          <StatTile
-            label="Open adoption notices"
-            value={platform.openNotices}
-            detail="each organization decides its own"
-          />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-lg">The help</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatTile
-            label="Helpful votes, 30 days"
-            value={
-              help.feedback.helpfulRate30d === null
-                ? 0
-                : Math.round(help.feedback.helpfulRate30d * 100)
-            }
-            suffix="%"
-            detail={
-              help.feedback.helpfulRate30d === null
-                ? 'no votes yet; target 80%'
-                : `${help.feedback.votes30d} vote${help.feedback.votes30d === 1 ? '' : 's'}; target 80%`
-            }
-            to="/admin/help"
-          />
-          <StatTile
-            label="Searches with no result, 30 days"
-            value={help.search.misses30d}
-            detail={
-              help.search.missRate30d === null
-                ? 'no searches yet; target under 5%'
-                : `${Math.round(help.search.missRate30d * 100)}% of ${help.search.searches30d} search${help.search.searches30d === 1 ? '' : 'es'}; target under 5%`
-            }
-            to="/admin/help"
-          />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-lg">Support access</h2>
-        <GlassCard className="px-5 py-2">
-          {platform.grants.length > 0 ? (
-            <ul>
-              {platform.grants.map((grant) => (
-                <GrantLine key={`${grant.organizationId}-${grant.grantedAt}`} grant={grant} />
-              ))}
-            </ul>
-          ) : (
-            <p className="py-8 text-center text-sm text-ink-muted">
-              No support access has been taken in the last 30 days.
-            </p>
-          )}
-        </GlassCard>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-lg">Recent platform activity</h2>
-        <GlassCard className="px-5 py-2">
+      <Panel>
+        <PanelHead title="Recent platform activity" />
+        <PanelBody className="py-2">
           {platform.recentActivity.length > 0 ? (
             <ul>
               {platform.recentActivity.map((activity) => (
@@ -299,13 +344,13 @@ export function AdminDashboardPage() {
               ))}
             </ul>
           ) : (
-            <p className="py-8 text-center text-sm text-ink-muted">Nothing has happened yet.</p>
+            <p className="py-6 text-center text-sm text-ink-muted">Nothing has happened yet.</p>
           )}
-        </GlassCard>
-      </section>
+        </PanelBody>
+      </Panel>
 
       {settings && (
-        <p className="text-sm text-ink-muted">
+        <p className="text-[13px] text-ink-muted">
           Support access lasts{' '}
           <strong className="font-semibold">{hours(settings.supportAccessWindowHours)}</strong>, and{' '}
           <strong className="font-semibold">

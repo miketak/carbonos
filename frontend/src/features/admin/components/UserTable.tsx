@@ -1,5 +1,6 @@
 import { Button } from '../../../components/Button'
 import { Skeleton } from '../../../components/Skeleton'
+import { Table, Td, Th, TwoLine } from '../../../components/Table'
 import { RoleBadge, StatusBadge } from './badges'
 import type { User } from '../api'
 
@@ -30,7 +31,6 @@ export function UserTable({
       <div aria-label="Loading users" className="flex flex-col gap-3 p-6">
         {Array.from({ length: 5 }, (_, i) => (
           <div key={i} className="flex h-12 items-center gap-4">
-            <Skeleton className="size-9 rounded-full" />
             <Skeleton className="h-4 flex-1" />
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-16" />
@@ -52,89 +52,64 @@ export function UserTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-            <th className="px-6 py-3 font-medium">Name</th>
-            <th className="px-6 py-3 font-medium">Role</th>
-            <th className="px-6 py-3 font-medium">Status</th>
-            <th className="px-6 py-3 font-medium">Added</th>
-            <th className="px-6 py-3 text-right font-medium">Actions</th>
+    <Table className="[&_tbody_tr:last-child>td]:border-b-0">
+      <thead>
+        <tr>
+          <Th>Name</Th>
+          <Th>Role</Th>
+          <Th>Status</Th>
+          <Th>Added</Th>
+          <Th align="right">
+            <span className="sr-only">Actions</span>
+          </Th>
+        </tr>
+      </thead>
+      <tbody>
+        {users.map((user) => (
+          <tr key={user.id} className="transition-colors duration-150 hover:bg-surface-sunken">
+            <Td>
+              <TwoLine
+                primary={
+                  <>
+                    {user.displayName}
+                    {user.id === currentUserId && (
+                      <span className="ml-2 text-[13px] font-normal text-ink-muted">(you)</span>
+                    )}
+                  </>
+                }
+                secondary={user.email}
+              />
+            </Td>
+            <Td>
+              <RoleBadge role={user.role} />
+            </Td>
+            <Td>
+              <StatusBadge status={user.status} />
+            </Td>
+            <Td className="whitespace-nowrap text-ink-muted">
+              {dateFormat.format(new Date(user.createdAt))}
+            </Td>
+            <Td align="right">
+              <div className="flex justify-end gap-1">
+                <Button size="sm" variant="ghost" onClick={() => onEdit(user)}>
+                  Edit
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => onToggleStatus(user)}>
+                  {user.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+                </Button>
+                {onResetPassword && user.status === 'ACTIVE' && (
+                  <Button size="sm" variant="ghost" onClick={() => onResetPassword(user)}>
+                    Reset password
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => onDelete(user)}>
+                  Delete
+                </Button>
+              </div>
+            </Td>
           </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr
-              key={user.id}
-              className="h-16 border-b border-teal/5 transition-colors duration-150 last:border-b-0 hover:bg-soft-mint/60"
-            >
-              <td className="px-6 py-3">
-                <div className="flex items-center gap-3">
-                  <span
-                    aria-hidden
-                    className="flex size-9 items-center justify-center rounded-full bg-teal/10 font-semibold text-link"
-                  >
-                    {user.displayName.charAt(0).toUpperCase()}
-                  </span>
-                  <div>
-                    <p className="font-medium">
-                      {user.displayName}
-                      {user.id === currentUserId && (
-                        <span className="ml-2 text-xs text-ink-muted">(you)</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-ink-muted">{user.email}</p>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-3">
-                <RoleBadge role={user.role} />
-              </td>
-              <td className="px-6 py-3">
-                <StatusBadge status={user.status} />
-              </td>
-              <td className="px-6 py-3 text-ink-muted">
-                {dateFormat.format(new Date(user.createdAt))}
-              </td>
-              <td className="px-6 py-3">
-                <div className="flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    className="px-3 py-1.5 text-sm"
-                    onClick={() => onEdit(user)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="px-3 py-1.5 text-sm"
-                    onClick={() => onToggleStatus(user)}
-                  >
-                    {user.status === 'ACTIVE' ? 'Disable' : 'Enable'}
-                  </Button>
-                  {onResetPassword && user.status === 'ACTIVE' && (
-                    <Button
-                      variant="ghost"
-                      className="px-3 py-1.5 text-sm"
-                      onClick={() => onResetPassword(user)}
-                    >
-                      Reset password
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                    onClick={() => onDelete(user)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+        ))}
+      </tbody>
+    </Table>
   )
 }
