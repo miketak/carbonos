@@ -7,8 +7,9 @@ export interface TabItem<T extends string> {
 }
 
 /**
- * A row of tabs that filter one list (a status, a view). Arrow keys move
- * between tabs and select as they go, as the tabs pattern expects.
+ * A row of underline tabs that filter one list (a status, a view). Arrow keys
+ * move between tabs and select as they go, as the tabs pattern expects. A
+ * count is a plain number beside the label (spec 10), never a pill.
  */
 export function Tabs<T extends string>({
   label,
@@ -41,7 +42,7 @@ export function Tabs<T extends string>({
       role="tablist"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className="flex gap-1 overflow-x-auto border-b border-teal/10"
+      className="flex gap-1 overflow-x-auto border-b border-hairline"
     >
       {tabs.map((tab) => {
         const selected = tab.value === value
@@ -54,21 +55,15 @@ export function Tabs<T extends string>({
             aria-label={tab.count !== undefined ? `${tab.label} ${tab.count}` : tab.label}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.value)}
-            className={`-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none ${
+            className={`-mb-px flex min-h-11 items-center gap-2 border-b-2 px-3 text-[15px] font-medium whitespace-nowrap transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none ${
               selected
-                ? 'border-teal-deep text-dark-teal'
-                : 'border-transparent text-ink-muted hover:border-teal/30 hover:text-dark-teal'
+                ? 'border-primary text-ink'
+                : 'border-transparent text-ink-muted hover:text-ink'
             }`}
           >
             {tab.label}
             {tab.count !== undefined && (
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
-                  selected ? 'bg-teal-deep text-white' : 'bg-teal/10 text-ink-muted'
-                }`}
-              >
-                {tab.count.toLocaleString()}
-              </span>
+              <span className="text-xs text-ink-muted">{tab.count.toLocaleString()}</span>
             )}
           </button>
         )

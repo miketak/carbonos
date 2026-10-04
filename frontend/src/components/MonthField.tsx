@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { controlClasses } from './Field'
 
 function shift(value: string, months: number): string {
   const [year, month] = value.split('-').map(Number)
@@ -29,10 +30,10 @@ export function MonthField({
 }) {
   const id = useId()
   const stepClasses =
-    'flex h-9 w-9 items-center justify-center rounded-lg border border-teal/20 bg-white/70 text-dark-teal transition-colors duration-150 hover:bg-teal/10 focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none disabled:opacity-50'
+    'flex size-11 items-center justify-center rounded-lg border border-hairline-strong bg-surface text-ink transition-colors duration-150 hover:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none disabled:opacity-50'
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} className="text-[13px] font-medium">
         {label}
       </label>
       <div className="flex items-center gap-1">
@@ -50,7 +51,7 @@ export function MonthField({
           value={value}
           placeholder={allLabel}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-dark-teal transition-colors duration-150 focus:border-bright-teal focus:ring-2 focus:ring-bright-teal/40 focus:outline-none"
+          className={controlClasses}
         />
         <button
           type="button"

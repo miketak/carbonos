@@ -2,10 +2,13 @@ import { render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { Wordmark } from './Wordmark'
 
-test('says the product name as a word, capitalised by style only', () => {
+test('says the product name as one word to a reader, and draws it two-tone', () => {
   render(<Wordmark />)
-  const word = screen.getByText('CarbonOS')
-  expect(word).toHaveClass('uppercase')
+  expect(screen.getByText('CarbonOS')).toHaveClass('sr-only')
+  const drawn = screen.getByText('Carbon')
+  expect(drawn).toHaveAttribute('aria-hidden', 'true')
+  expect(drawn).not.toHaveClass('uppercase')
+  expect(screen.getByText('OS')).toHaveClass('text-teal-deep')
   expect(screen.getByText('by ECORIV')).toBeInTheDocument()
   expect(document.querySelector('svg')).not.toBeNull()
 })
@@ -18,7 +21,8 @@ test('the byline can be replaced or dropped, and the symbol left out', () => {
   expect(document.querySelector('svg')).toBeNull()
 })
 
-test('a dark surface gets a white wordmark', () => {
+test('a dark surface gets a white wordmark with a bright-teal OS', () => {
   render(<Wordmark surface="dark" size="splash" />)
-  expect(screen.getByText('CarbonOS')).toHaveClass('text-white')
+  expect(screen.getByText('Carbon')).toHaveClass('text-white')
+  expect(screen.getByText('OS')).toHaveClass('text-bright-teal')
 })
