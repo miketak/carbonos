@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: Import the DESNZ 2025 and Ghana factor pack editions to give the organization its 1,935 emission factors, and find the one derived factor that arrives unapproved.
 role: Preparer
 minutes: 5
@@ -11,7 +11,7 @@ screens: [step-3-factor-packs.png]
 
 This third step of the Get started series gives Gye Nyame Gold its baseline of emission factors: two published pack editions, imported in two clicks, and one derived factor that you find but leave unapproved until step 6.
 
-<!-- sources: specs 02.5, 02.6, 02.9 (factor packs, editions and approval); the old tutorial get-started/your-first-inventory.md (verified 2026-09-24); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
+<!-- sources: spec 10 (the factor packs table); specs 02.5, 02.6, 02.9 (factor packs, editions and approval); the old tutorial get-started/your-first-inventory.md (verified 2026-09-24); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
 
 ## Before you start
 
@@ -20,15 +20,15 @@ This third step of the Get started series gives Gye Nyame Gold its baseline of e
 
 ## Import the two editions
 
-1. Open **Emission factors**. The **Factor packs** card lists the editions the platform publishes, each with its row count, source and retrieval date: "UK Government (DESNZ) GHG conversion factors 2025" with "1928 factors", the 2026 edition of the same table, and "Ghana: grid electricity and transmission losses" with "7 factors".
+1. Open **Emission factors**. The **Factor packs** table lists the editions the platform publishes, each with its row count, source and retrieval date: "UK Government (DESNZ) GHG conversion factors 2025" with "1928 factors", the 2026 edition of the same table, and "Ghana: grid electricity and transmission losses" with "7 factors".
 2. On "UK Government (DESNZ) GHG conversion factors 2025" click **Import pack**. Wait for the message "defra-2025, applying from 2025-01-01: 1928 added, 0 versioned, 0 tagged, 0 unchanged."
 3. On "Ghana: grid electricity and transmission losses" click **Import pack**. The message reads "ghana, applying from 2025-01-01: 7 added, 0 versioned, 0 tagged, 0 unchanged."
 
 ![The Emission factors page after both imports, with the two import messages and the count 1,935 factors](../assets/screens/step-3-factor-packs.png)
 
-What you see: **This organization's factors** now reads "1,935 factors", and the **Published category** and **Published activity** filters list the DESNZ taxonomy. Leave the 2026 edition alone: the series reports 2025, and the card explains what a later edition would do: "A later edition never overwrites a figure: it closes the version you hold and cuts a new one from the edition's applies-from date, so a period you have already reported keeps the factors it reported with." Importing the same edition a second time is harmless: every factor is reported as unchanged and nothing is added.
+What you see: **This organization's factors** now reads "1,935 factors", and the **Published category** and **Published activity** filters list the DESNZ taxonomy. Leave the 2026 edition alone: the series reports 2025, and the panel explains what a later edition would do: "A later edition never overwrites a figure: it closes the version you hold and cuts a new one from the edition's applies-from date, so a period you have already reported keeps the factors it reported with." Importing the same edition a second time is harmless: every factor is reported as unchanged and nothing is added.
 
-The DESNZ card also says "UK factors apply to Ghanaian activity by analogy; say so in the report." The Ghana pack supplies the two factors that are not an analogy: the grid intensity and the losses upstream of it.
+The DESNZ rows also say "UK factors apply to Ghanaian activity by analogy; say so in the report." The Ghana pack supplies the two factors that are not an analogy: the grid intensity and the losses upstream of it.
 
 ## Find the unapproved factor
 

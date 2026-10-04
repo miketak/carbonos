@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-03
+last_reviewed: 2026-10-04
 description: Create the FY2025 inventory for Gye Nyame Gold, read the workbench and its pre-flight gates, confirm the boundary, and declare which scope 3 categories the report covers.
 role: Owner
 minutes: 10
@@ -11,7 +11,7 @@ screens: [step-5-declaration.png]
 
 This step produces FY2025, a draft inventory over the facts from steps 1 to 4. You confirm its boundary and declare its scope 3 coverage; steps 6 and 7 classify the records inside it and run it.
 
-<!-- sources: specs 03 and 03.4 (organizational boundary and pre-population), 04 and 04.2 (operational boundary declaration, pro-rating), 05.6 (the workbench) and 07.6 (the scope 3 cross-check); section 5 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
+<!-- sources: specs 03 and 03.4 (organizational boundary and pre-population), 04 and 04.2 (operational boundary declaration, pro-rating), 05.6 (the workbench), 07.6 (the scope 3 cross-check) and 10 (the title row, the pre-flight chip); section 5 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
 
 ## Before you start
 
@@ -26,9 +26,9 @@ An inventory is one accounting view over the facts: a period, a consolidation ap
 3. Leave the rest as offered: **Records that straddle the period or a membership window** "Pro-rate by days (default)", **Consolidation approach** "Operational control", **GWP set** "AR5 (default)", **Copy the view from (optional)** "Start from scratch", and **Start with every operation the approach includes in the boundary** ticked.
 4. Click **Create inventory**.
 
-What you see: "FY2025 created." and the inventory workbench. The header reads "FY2025", "Operational control", "DRAFT", and "GWP AR5". The **Inventory lifecycle** card explains the state: "Draft. The boundary and the activity view are editable; runs are blocked until the inventory is frozen, which records a boundary version a verifier can trace every run back to." Under it a banner reads "Launch on hold" because "Reporting boundary is blocking." The tabs are **Records**, **Boundary**, **Method**, **Runs**, and **Report**.
+What you see: "FY2025 created." and the inventory workbench. The title row reads "FY2025", "Operational control" and "DRAFT", with "GWP AR5" at the right of the breadcrumb row. **Inventory lifecycle** explains the state: "Draft. The boundary and the activity view are editable; runs are blocked until the inventory is frozen, which records a boundary version a verifier can trace every run back to." The tabs are **Records**, **Boundary**, **Method**, **Runs**, and **Report**.
 
-**Pre-flight checks** on the Records tab reads "LAUNCH ON HOLD" and lists five gates. **Reporting boundary** holds: "The inventory is a draft. Freeze it to enable a run." **Activity data completeness** warns that "7 organizational activity records have not been reviewed" and tells you to run **Review activity data**. **Classification** passes, since nothing is under review yet. **Emission factors** warns: "The inventory does not say whether a residual mix is available. Every run reports scope 2 market-based, and the Scope 2 Guidance requires the disclosure either way; until it is recorded, uncovered electricity is priced at the grid average." **Base year** passes. Steps 6 and 7 clear every finding.
+The pre-flight chip beside the title reads "Launch on hold · 1 blocking"; click it, and **Pre-flight checks** lists five gates. **Reporting boundary** holds: "The inventory is a draft. Freeze it to enable a run." **Activity data completeness** warns that "7 organizational activity records have not been reviewed" and tells you to run **Review activity data**. **Classification** passes, since nothing is under review yet. **Emission factors** warns: "The inventory does not say whether a residual mix is available. Every run reports scope 2 market-based, and the Scope 2 Guidance requires the disclosure either way; until it is recorded, uncovered electricity is priced at the grid average." **Base year** passes. Steps 6 and 7 clear every finding.
 
 ## Confirm the boundary
 

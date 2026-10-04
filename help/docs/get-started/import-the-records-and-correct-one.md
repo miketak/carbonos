@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: Import the seven 2025 activity records for Gye Nyame Gold from a CSV file, read the preview, then correct the electricity record whose figure lost a zero.
 role: Preparer
 minutes: 10
@@ -11,7 +11,7 @@ screens: [step-4-import-preview.png]
 
 This fourth step of the Get started series brings in the year's activity data for Gye Nyame Gold from one CSV file and corrects one record in place, keeping its history. Activity data is what happened: fuel burned, electricity bought. It carries no scope and no factor; every inventory decides those separately.
 
-<!-- sources: specs 04.5, 04.6 (activity records, corrections and their history, CSV import); the old tutorial get-started/your-first-inventory.md (verified 2026-09-24); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) with the fixture help/docs/assets/gye-nyame-2025.csv -->
+<!-- sources: specs 04.5, 04.6 (activity records, corrections and their history, CSV import) and 10 (the split register, the completeness strip); the old tutorial get-started/your-first-inventory.md (verified 2026-09-24); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) with the fixture help/docs/assets/gye-nyame-2025.csv -->
 
 ## Before you start
 
@@ -28,18 +28,18 @@ This fourth step of the Get started series brings in the year's activity data fo
 
 ![The import preview for gye-nyame-2025.csv with the control totals by facility and stream and the Worth a look before adding warnings](../assets/screens/step-4-import-preview.png)
 
-What you see: "Checking the file…" then "7 records imported." The register reads "7 of 7 records ready" and "Record completeness 100%". The records are numbered ACT-0001 to ACT-0007 in the order of the file: "Haul fleet diesel" (ACT-0001), "Contract haulage diesel" (ACT-0002), "Plant grid electricity H1" (ACT-0003), "Plant grid electricity H2" (ACT-0004), "Genset diesel" (ACT-0005), "Kitchen LPG" (ACT-0006) and "Year-end kitchen LPG" (ACT-0007). The list sorts by period, so the year-end row comes first. Each row has the data status **Ready** and a "ref" mark, because it cites a document reference and nothing is attached.
+What you see: "Checking the file…" then "7 records imported." The strip above the table reads **Records ready** 7 "of 7" and **Record completeness** 100%. The records are numbered ACT-0001 to ACT-0007 in the order of the file: "Haul fleet diesel" (ACT-0001), "Contract haulage diesel" (ACT-0002), "Plant grid electricity H1" (ACT-0003), "Plant grid electricity H2" (ACT-0004), "Genset diesel" (ACT-0005), "Kitchen LPG" (ACT-0006) and "Year-end kitchen LPG" (ACT-0007). The list sorts by period, so the year-end row comes first. Each row has the data status **Ready** and a "ref" mark, because it cites a document reference and nothing is attached.
 
 ## Correct the electricity record
 
 The file says the plant bought 3,600,000 kWh in the second half of the year. The second ECG statement says 36,000,000 kWh. A record is corrected in place, and CarbonOS keeps both values.
 
-1. Click the row "Plant grid electricity H2" (ACT-0004). The drawer opens with "All completeness checks passed." and the record's fields. Notice the line "Stream default: Scope 2 · Purchased electricity. Scope is confirmed in each inventory's review." and, under **Data quality**, the field **Reason for the correction**, explained as "Recorded with the old and new values in the record's history."
+1. Click the row "Plant grid electricity H2" (ACT-0004). The page splits: the register as a summary list on the left, the record's detail on the right, opening with "All completeness checks passed." and the record's fields. Notice the line "Stream default: Scope 2 · Purchased electricity. Scope is confirmed in each inventory's review." and, under **Data quality**, the field **Reason for the correction**, explained as "Recorded with the old and new values in the record's history."
 2. Change **Activity quantity** to `36000000`.
 3. Fill **Reason for the correction** with `Second ECG statement: the second half was 36,000,000 kWh, not 3,600,000`.
 4. Click **Save**.
 
-What you see: "Record corrected. Past runs are unaffected." and the row now reads 36,000,000 kWh. Open the record again and click **History**: "History of Plant grid electricity H2" lists "Corrected by owner@gyenyame.example" with the moment, your reason, and "Quantity: 3600000 → 36000000". No inventory exists yet, so nothing else changes; the last step of the series shows what a correction does after a report is published.
+What you see: "Record corrected. Past runs are unaffected." and the row now reads 36,000,000 kWh. Open the record again and click **History**: "History of Plant grid electricity H2" lists "Corrected by owner@gyenyame.example" with the moment, your reason, and "Quantity: 3600000 → 36000000". No inventory exists yet, so nothing else changes; step 8 shows what a correction does after publication.
 
 ## What you have
 

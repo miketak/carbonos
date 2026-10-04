@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: Freeze FY2025 to cut boundary version 1, launch Run 001, and read the report it produces section by section against the figures CarbonOS prints for Gye Nyame Gold.
 role: Owner
 minutes: 15
@@ -11,7 +11,7 @@ screens: [step-7-ready-to-launch.png]
 
 This step freezes FY2025, launches Run 001, and reads the report. Step 8 publishes it.
 
-<!-- sources: specs 05.1 and 05.2 (lifecycle, run snapshots, run numbering), 04.7 (derived lines), 07.2, 07.4 and 07.7 (report sections, factor table, by-gas table); sections 7 and 8 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
+<!-- sources: specs 05.1 and 05.2 (lifecycle, run snapshots, run numbering), 04.7 (derived lines), 07.2, 07.4 and 07.7 (report sections, factor table, by-gas table), 10 (the pre-flight chip, the lifecycle acts in the title row); sections 7 and 8 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
 
 ## Before you start
 
@@ -19,19 +19,19 @@ This step freezes FY2025, launches Run 001, and reads the report. Step 8 publish
 
 ## Freeze the inventory
 
-A run can only be launched from a frozen inventory, because a run cites the boundary version the freeze cuts.
+A run launches only from a frozen inventory, because it cites the boundary version the freeze cuts.
 
-1. In the **Inventory lifecycle** card click **Freeze inventory**.
+1. In the title row click **Freeze inventory**.
 2. Read the dialog "Freeze the inventory?". It explains: "This freezes the boundary and the activity view together and cuts boundary version 1: an immutable record of the 2 facilities currently in the boundary with their accounting shares. Calculation runs will cite this version. You can reopen the inventory later with a reason; the version is kept."
 3. Click **Freeze inventory**.
 
-![FY2025 after the freeze: the header reads FROZEN · BOUNDARY v1, the banner "Ready to launch a run", and the message "Inventory frozen as boundary version 1."](../assets/screens/step-7-ready-to-launch.png)
+![FY2025 after the freeze: the status chip reads FROZEN · BOUNDARY v1, the pre-flight chip "Ready to launch · 2 warnings", and the message "Inventory frozen as boundary version 1."](../assets/screens/step-7-ready-to-launch.png)
 
-What you see: "Inventory frozen as boundary version 1." The header reads "FROZEN · BOUNDARY v1", the lifecycle card reads "Frozen. The boundary and the activity view are read-only and runs are allowed. Reopen the inventory as a draft to change either.", and **Pre-flight checks** reads "READY TO LAUNCH": "Every gate passes; 2 carry a warning." The two warnings are the pro-rated LPG bill and the CO2e-only grid factor.
+What you see: "Inventory frozen as boundary version 1." The status chip reads "FROZEN · BOUNDARY v1", **Inventory lifecycle** reads "Frozen. The boundary and the activity view are read-only and runs are allowed. Reopen the inventory as a draft to change either.", and the pre-flight chip reads "Ready to launch · 2 warnings" and its popover "Every gate passes; 2 carry a warning." The two warnings are the pro-rated LPG bill and the CO2e-only grid factor.
 
 ## Launch the run
 
-1. Open the **Runs** tab. The **History** card lists everything you did, from "7 records reviewed, 0 refreshed" to "Inventory frozen".
+1. Open the **Runs** tab. **History** at its foot lists everything you did, from "7 records reviewed, 0 refreshed" to "Inventory frozen".
 2. Click **Launch calculation run**.
 
 What you see: "Calculation complete." and the run's page, "Run 001", headed "Gye Nyame Gold Ltd (ORG-0001) · 2025-01-01 → 2025-12-31 · 11 lines". On the **Runs** tab the run is listed as "#001 Run 001", "11 lines · boundary v1", with **Mark as final** and **Void…**. A run is never edited or deleted, only voided with a reason.

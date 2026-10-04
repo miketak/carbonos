@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: Define a custom unit as a multiple of a registered one, and record a fuel's density from the supplier's certificate so a mass quantity can meet a factor per litre.
 role: Preparer
 minutes: 3
@@ -10,7 +10,7 @@ minutes: 3
 
 Records are kept in the unit they arrive in, and CarbonOS converts within one physical dimension only. You define a custom unit when records arrive in drums or bags, and record a density when fuel is invoiced by mass and its factor is published per litre.
 
-<!-- sources: spec 02.2; old page tasks/organization/define-units-and-densities.md (verified 2026-09-24); UnitsPage.tsx, units.ts, OrganizationLayout.tsx, GhgService.java (createCustomUnit, createDensity), InventoryService.java (the density gate message) -->
+<!-- sources: specs 02.2 and 10 (the split register); old page tasks/organization/define-units-and-densities.md (verified 2026-09-24); UnitsPage.tsx, units.ts, OrganizationLayout.tsx, GhgService.java (createCustomUnit, createDensity), InventoryService.java (the density gate message) -->
 
 ## Before you start
 
@@ -40,4 +40,4 @@ What you see: "Density of Diesel recorded." and a row for your value, with its s
 
 ## What happens next
 
-When a record's unit is a mass and the chosen factor is per litre, the classify drawer asks for the density that converts between them and previews the arithmetic with the density and its source named. A run may use a typical value; a final run may not: the Emission factors gate warns while a typical value is in use, and clears once a recorded density stands in. The run line and the lines export print the density and its source.
+When a record's unit is a mass and the chosen factor is per litre, the record's **Classify** tab in the inventory asks for the density that converts between them and previews the arithmetic with the density and its source named. A run may use a typical value; a final run may not: the Emission factors gate warns while a typical value is in use, and clears once a recorded density stands in. The run line and the lines export print the density and its source.

@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: The order CarbonOS follows from an empty organization to a published report, where each of the eight steps happens, and the states an inventory passes through.
 ---
 
@@ -11,7 +11,7 @@ facts about the organization, then one inventory's decisions about them,
 then a run and a report. The eight Get started steps walk that order
 once.
 
-<!-- sources: concepts/the-workflow.md (verified 2026-09-24); spec 00 "The workflow, in the order a user meets it"; spec 05.1 (lifecycle); lifecycle and pre-flight texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 after freeze", "8 after final", "8 after publish" -->
+<!-- sources: concepts/the-workflow.md (verified 2026-09-24); spec 00 "The workflow, in the order a user meets it"; spec 05.1 (lifecycle); spec 10 (the pre-flight chip); lifecycle and pre-flight texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 after freeze", "8 after final", "8 after publish" -->
 
 ## What happens at each step?
 
@@ -51,8 +51,9 @@ flowchart LR
 | Final | "A run is designated the final result." | Fill the header, then **Publish** or **Withdraw final designation**. |
 | Published | "The report was issued; nothing on this inventory can change." | **Create correction**, a new inventory that supersedes it. |
 
-The pre-flight banner reads "Launch on hold" until the five gates pass,
-then "Ready to launch a run". A warning never holds a run; an error does.
+The pre-flight chip beside the title reads **Launch on hold** until the
+five gates pass, then **Ready to launch**. A warning never holds a run;
+an error does.
 
 ## Where next
 

@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-04
 description: Read a base-year recalculation candidate, record a recalculated base or decline it, raise one by hand for a methodology change or an error, and know the four candidate statuses.
 role: Reviewer
 minutes: 10
@@ -10,7 +10,7 @@ minutes: 10
 
 A candidate is CarbonOS's record of something that may require the base year to be recalculated under chapter 5. You decide it by recording a recalculated base or declining it; until then one above the threshold holds the sign-off of later years.
 
-<!-- sources: specs 06 and 06.1; old pages tasks/base-year/decide-a-recalculation-candidate.md and reference/statuses-and-transitions.md (base-year recalculation candidates), both verified 2026-09-24; frontend/src/features/ghg/BaseYearPage.tsx (candidate cards, the Raise, Decline and Record dialogs, toasts); frontend/src/features/ghg/components/PreflightBanner.tsx; frontend/src/features/ghg/roles.ts (mayWrite); backend/src/main/java/com/carbonos/ghg/internal/BaseYear.java (the candidate's reason and cumulative weight); backend/src/main/java/com/carbonos/ghg/internal/BaseYearService.java (superseded candidates); backend/src/main/java/com/carbonos/ghg/internal/InventoryService.java (refuseWhileARecalculationHolds) -->
+<!-- sources: specs 06 and 06.1; old pages tasks/base-year/decide-a-recalculation-candidate.md and reference/statuses-and-transitions.md (base-year recalculation candidates), both verified 2026-09-24; frontend/src/features/ghg/BaseYearPage.tsx (the candidate table, the Raise, Decline and Record dialogs, toasts); frontend/src/features/ghg/components/PreflightChip.tsx (spec 10); frontend/src/features/ghg/roles.ts (mayWrite); backend/src/main/java/com/carbonos/ghg/internal/BaseYear.java (the candidate's reason and cumulative weight); backend/src/main/java/com/carbonos/ghg/internal/BaseYearService.java (superseded candidates); backend/src/main/java/com/carbonos/ghg/internal/InventoryService.java (refuseWhileARecalculationHolds) -->
 
 ## Before you start
 
@@ -19,18 +19,18 @@ A candidate is CarbonOS's record of something that may require the base year to 
 
 ## Read the candidate
 
-Open **Settings** and the **Baseline and targets** tab. Under **Recalculation history** each candidate card carries its status, weight, who raised it and its reason: "structural change: *facility* removed; *N*% of base-year emissions, above the *T*% threshold, recalculation required".
+Open **Settings** and the **Baseline and targets** tab. Under **Recalculation history** each candidate's row carries its status, weight, who raised it and its reason: "structural change: *facility* removed; *N*% of base-year emissions, above the *T*% threshold, recalculation required".
 
 | Status | Meaning | What leads here |
 | --- | --- | --- |
 | FLAGGED | Awaits a decision. | A freeze that moves the boundary, an accepted factor pack update, or **Raise a candidate**. |
 | RECALCULATED | A run of the base-year inventory is the new base. | **Record recalculated base**. |
 | DECLINED | The base year stands. | **Decline**. |
-| SUPERSEDED | The boundary went back. | A later freeze; the card reads "put back in boundary version *N* as the base year held it". |
+| SUPERSEDED | The boundary went back. | A later freeze; the row reads "put back in boundary version *N* as the base year held it". |
 
 ## What an undecided candidate holds
 
-While a candidate above the threshold is FLAGGED, an inventory that reports against the base year under the same approach can be run but not marked final or published; its pre-flight banner reads "Base year holds the final designation; runs stay available." Another approach gets a warning, not a hold.
+While a candidate above the threshold is FLAGGED, an inventory that reports against the base year under the same approach can be run but not marked final or published; its pre-flight chip stays **Ready to launch** and its popover reads "Base year holds the final designation; runs stay available." Another approach gets a warning, not a hold.
 
 ## Record a recalculated base
 
@@ -39,7 +39,7 @@ While a candidate above the threshold is FLAGGED, an inventory that reports agai
 3. Read the dialog "Record the recalculated base year": "The earlier runs are kept, so both figures stay readable."
 4. Choose **Recalculated base run**, add a **Note (optional)**, and click **Record**.
 
-What you see: "Recalculated base year recorded." The card reads RECALCULATED with "Decided by *email*, *moment* · recalculated base: Run *N*", and the hold is released.
+What you see: "Recalculated base year recorded." The row reads RECALCULATED with "Decided by *email*, *moment* · recalculated base: Run *N*", and the hold is released.
 
 ## Decline
 
@@ -47,7 +47,7 @@ What you see: "Recalculated base year recorded." The card reads RECALCULATED wit
 2. Read the dialog "Decline the recalculation?": "The base year is kept as it stands and the decision is recorded with the reason it was raised: …"
 3. Add a **Note (optional)** and click **Decline**.
 
-What you see: "Recalculation declined." The card reads DECLINED with "Decided by *email*, *moment* · *note*".
+What you see: "Recalculation declined." The row reads DECLINED with "Decided by *email*, *moment* · *note*".
 
 ## Raise a candidate by hand
 

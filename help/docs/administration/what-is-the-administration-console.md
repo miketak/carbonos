@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: What the administration console is, the seven pages it holds, why an administrator stands outside every organization, and what the help metrics page measures.
 ---
 
@@ -8,11 +8,11 @@ description: What the administration console is, the seven pages it holds, why a
 
 The administration console is where the platform is run: accounts, access requests, organizations, the factor pack catalogue, help metrics and the deployment's settings. It shows nothing from inside an organization: "Client inventory data stays inside each organization."
 
-<!-- sources: specs 01.3, 01.5, 01.6, 09; the old page tasks/administration/index.md (verified 2026-09-24); frontend/src/features/admin/AdminLayout.tsx (the sections); AdminDashboardPage.tsx (headings and tiles); AdminHelpMetricsPage.tsx; AdminOrganizationsPage.tsx (what a grant never carries); frontend/src/features/home/LandingRedirect.tsx; frontend/src/components/AccountMenu.tsx -->
+<!-- sources: specs 01.3, 01.5, 01.6, 09; the old page tasks/administration/index.md (verified 2026-09-24); frontend/src/features/admin/AdminLayout.tsx and frontend/src/components/Sidebar.tsx (the rail and its sections; spec 10); AdminDashboardPage.tsx (headings and tiles); AdminHelpMetricsPage.tsx; AdminOrganizationsPage.tsx (what a grant never carries); frontend/src/features/home/LandingRedirect.tsx; frontend/src/components/AccountMenu.tsx -->
 
 ## Where is it?
 
-An account with the Admin platform role lands on the console after signing in. The header reads **Administration**, the sidebar entry **GHG accounting** leads to the organizations you are a member of, and from an organization the account menu's **Administration** leads back.
+An account with the Admin platform role lands on the console after signing in. The rail's **Area** block reads **Administration**, its sections run from **Dashboard** through **01 Access requests** to **06 Platform settings**, the foot link **GHG accounting** leads to the organizations you are a member of, and from an organization the account menu's **Administration** leads back.
 
 ## What are its pages?
 

@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: Fill the report header with the approver and an intensity denominator, mark Run 001 final, publish FY2025, and download the four export files of the report.
 role: Owner
 minutes: 10
@@ -11,7 +11,7 @@ screens: [step-8-published.png]
 
 This last step signs off Run 001 and issues the FY2025 report of Gye Nyame Gold Ltd with its four export files. Afterwards nothing on the inventory can change.
 
-<!-- sources: specs 05.1 and 05.5 (final designation, publication, deliberate lifecycle acts), 05.3 (the published record), 07.4 (report metadata, intensity) and 07.5 (report export); section 9 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
+<!-- sources: specs 05.1 and 05.5 (final designation, publication, deliberate lifecycle acts), 05.3 (the published record), 07.4 (report metadata, intensity), 07.5 (report export) and 10 (the lifecycle acts in the title row); section 9 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
 
 ## Before you start
 
@@ -33,17 +33,17 @@ What you see: "Report header saved." Section 04 of the report gains an intensity
 2. Read the dialog "Mark Run 001 as final?": "Run #001 (86,412 t CO₂e) becomes this inventory's final run: the report and the base year attach to it, and the inventory can be published. The designation, your name and your note are recorded in the history and printed in the report header." Fill **Review note (optional)** with `Reconciled against the fuel farm records and the ECG statements`.
 3. Click **Mark as final**.
 
-What you see: "Run 001 designated final." The header reads "FINAL · BOUNDARY v1", the run's row carries the tag FINAL, and the lifecycle card reads "Final. A run is designated the final result. Withdraw the designation to reopen the inventory, or publish it to issue the report." with your note under it. In a team this is the reviewer's act; here the owner did it, and the history says so.
+What you see: "Run 001 designated final." The status chip reads "FINAL · BOUNDARY v1", the run's row carries the tag FINAL, and **Inventory lifecycle** reads "Final. A run is designated the final result. Withdraw the designation to reopen the inventory, or publish it to issue the report." with your note under it. In a team this is the reviewer's act; here the owner did it, and the history says so.
 
 ## Publish
 
-1. Click **Publish** in the lifecycle card.
+1. Click **Publish** in the title row.
 2. Read the dialog "Publish the inventory?": "Publishing issues the report; nothing on this inventory can change afterwards. A correction is a new inventory that supersedes it."
 3. Click **Publish**.
 
-![FY2025 published: the header reads PUBLISHED · BOUNDARY v1, the lifecycle card offers Create correction, and the message "Inventory published." shows](../assets/screens/step-8-published.png)
+![FY2025 published: the status chip reads PUBLISHED · BOUNDARY v1, the title row offers Create correction, and the message "Inventory published." shows](../assets/screens/step-8-published.png)
 
-What you see: "Inventory published." The header reads "PUBLISHED · BOUNDARY v1"; the lifecycle card reads "Published. The report was issued; nothing on this inventory can change. A correction is a new inventory that supersedes this one." with the moment of publication, and the only action left is **Create correction**.
+What you see: "Inventory published." The status chip reads "PUBLISHED · BOUNDARY v1"; **Inventory lifecycle** reads "Published. The report was issued; nothing on this inventory can change. A correction is a new inventory that supersedes this one." with the moment of publication, and the only action left is **Create correction**.
 
 Open Run 001 again. Section 00 now reads "Approved by Ama Owusu, owner, Gye Nyame Gold Ltd", "Published" with the moment and your email, and "Final designated by owner@gyenyame.example" with your note. A new block, **Since publication**, reads "The report above reads exactly as it was published. What came after is listed here and nowhere else." and, for now, "Nothing has changed since." A later correction is listed there, not in the report.
 
