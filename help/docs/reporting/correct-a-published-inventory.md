@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: Restate a published year by creating a correction inventory that inherits every decision, supersedes the published report, and prints what changed and why.
 role: Reviewer
 minutes: 10
@@ -10,7 +10,7 @@ minutes: 10
 
 A published inventory cannot change. To restate the year you create a correction: a new draft inventory over the same period and approach that inherits every decision, so only what was wrong needs changing, and whose report supersedes the published one.
 
-<!-- sources: specs 05.1, 05.2, 05.3 and 07.4; old page tasks/inventories/correct-a-published-inventory.md (verified 2026-09-24); frontend/src/features/ghg/components/LifecycleBar.tsx ("Create a correction" dialog); frontend/src/features/ghg/components/AssignmentsSection.tsx ("Changed since publication", "Review activity data"); frontend/src/features/ghg/InventoryDetailPage.tsx ("Where this inventory came from", "Superseded by a correction"); frontend/src/features/ghg/RunDetailPage.tsx (section 00: the correction block, "supersedes", the Since publication block); screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "8 after publish", "8 run after publish" -->
+<!-- sources: specs 05.1, 05.2, 05.3, 07.4 and 10 (the title row, the provenance disclosure, the inventories table); old page tasks/inventories/correct-a-published-inventory.md (verified 2026-09-24); frontend/src/features/ghg/components/LifecycleBar.tsx ("Create a correction" dialog); frontend/src/features/ghg/components/AssignmentsSection.tsx ("Changed since publication", "Review activity data"); frontend/src/features/ghg/InventoryDetailPage.tsx ("Where this inventory came from", "Superseded by a correction"); frontend/src/features/ghg/RunDetailPage.tsx (section 00: the correction block, "supersedes", the Since publication block); screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "8 after publish", "8 run after publish" -->
 
 ## Before you start
 
@@ -23,12 +23,12 @@ The published report does not move. Its run page keeps the block **Since publica
 
 ## Create the correction
 
-1. Open the published inventory. In the **Inventory lifecycle** card click **Create correction**.
+1. Open the published inventory and click **Create correction** in the title row.
 2. Read the dialog "Create a correction": "A correction is a new draft inventory over the same period and approach. It inherits this inventory's boundary, instruments, declaration and every classification and exclusion, so only what was wrong needs changing. Chapter 5 wants the reason stated; the correction's report prints it with what changed."
 3. Keep or change **Name**, offered as "FY2025 (correction)", and fill **Reason for the correction** with at least 10 characters.
 4. Click **Create correction**.
 
-What you see: "FY2025 (correction) created as a correction." The new draft's **Where this inventory came from** card reads "Correction of FY2025: *N* decisions inherited. Reason: …", the published inventory's card reads "Superseded by a correction", and every record of the source is on the **Records** tab with the tag "inherited".
+What you see: "FY2025 (correction) created as a correction." The new draft's **Where this inventory came from**, under its title, opens to "Correction of FY2025: *N* decisions inherited. Reason: …"; the published inventory's row on **Inventories** reads "Superseded by a correction"; and every record of the source is on the **Records** tab with the tag "inherited".
 
 ## Restate the year and publish
 

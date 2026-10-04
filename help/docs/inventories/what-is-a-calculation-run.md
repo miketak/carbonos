@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: A run is an immutable, numbered snapshot of the inventory's view; what it copies, how voiding and the final designation work, and what a later correction to a fact does.
 ---
 
@@ -10,7 +10,7 @@ A calculation run is the inventory's view calculated at a moment and
 kept as an immutable snapshot, lines and exclusions alike. A report that
 cites "Run 001" always finds the same numbers.
 
-<!-- sources: concepts/facts-views-and-runs.md, run half (verified 2026-09-24); specs 00, 05, 05.1, 05.2, 05.3; InventoryDetailPage.tsx (runs intro, void dialog); RunDetailPage.tsx ("VOIDED", "Since publication", correction block); AssignmentDrawer.tsx ("Changed since publication"); run page and dialog texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "7 run page", "8 final dialog", "8 after final", "8 run after publish" -->
+<!-- sources: concepts/facts-views-and-runs.md, run half (verified 2026-09-24); specs 00, 05, 05.1, 05.2, 05.3; InventoryDetailPage.tsx (runs intro, void dialog); RunDetailPage.tsx ("VOIDED", "Since publication", correction block); AssignmentsSection.tsx and AssignmentDetail.tsx ("Changed since publication"); run page and dialog texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "7 run page", "8 final dialog", "8 after final", "8 run after publish" -->
 
 ## What does a run hold?
 

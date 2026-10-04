@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-04
 description: Import a published factor pack edition so its factors join the organization with their citations, and read what the four numbers of the import message mean.
 role: Preparer
 minutes: 3
@@ -11,7 +11,7 @@ screens: [step-3-factor-packs.png]
 
 Importing an edition adds its factors to the organization, with their citations, ready to be chosen in a classification. Do it when an organization starts, and again to hold a later edition.
 
-<!-- sources: specs 02.5, 02.6, 02.9; the old page tasks/emission-factors/import-a-factor-pack.md (verified 2026-09-24); frontend/src/features/ghg/EmissionFactorsPage.tsx (packs card, importNote); backend/src/main/java/com/carbonos/ghg/internal/FactorPackImportService.java (locked-period refusal) and EditionLock.java (the published-period setting, spec 02.6 amendment 2026-09-29); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "3 factors page", "3 toasts", "3 after imports" -->
+<!-- sources: specs 02.5, 02.6, 02.9 and 10 (the factor packs table); the old page tasks/emission-factors/import-a-factor-pack.md (verified 2026-09-24); frontend/src/features/ghg/EmissionFactorsPage.tsx (packs card, importNote); backend/src/main/java/com/carbonos/ghg/internal/FactorPackImportService.java (locked-period refusal) and EditionLock.java (the published-period setting, spec 02.6 amendment 2026-09-29); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "3 factors page", "3 toasts", "3 after imports" -->
 
 ## Before you start
 
@@ -20,7 +20,7 @@ Importing an edition adds its factors to the organization, with their citations,
 
 ## Import an edition
 
-1. Open **Emission factors**. The **Factor packs** card lists every published edition with its row count, source, GWP basis and retrieval date.
+1. Open **Emission factors**. The **Factor packs** table lists every published edition with its row count, source, GWP basis and retrieval date.
 2. To read an edition's rows first, click **View factors** on it.
 3. Click **Import pack** on the edition. For Gye Nyame Gold, that is "UK Government (DESNZ) GHG conversion factors 2025", then "Ghana: grid electricity and transmission losses".
 
@@ -44,7 +44,7 @@ The message adds a sentence for lineages the edition drops ("this edition drops,
 ## Check the rows the pack flags
 
 - The Ghana pack's "Grid electricity T&D losses, Ghana (derived)" arrives **Not approved**: "Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure." Tick **Show unapproved** to see it; see [Add and approve a factor](add-and-approve-a-factor.md).
-- The DESNZ cards carry the note "UK factors apply to Ghanaian activity by analogy; say so in the report."
+- The DESNZ rows carry the note "UK factors apply to Ghanaian activity by analogy; say so in the report."
 
 ## What happens next
 

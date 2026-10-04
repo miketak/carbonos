@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-04
 description: Open the approval link, choose a password that meets the rule, sign in with your email, and find where CarbonOS lands you when you belong to no organization yet.
 role: Anyone
 minutes: 3
@@ -10,7 +10,7 @@ minutes: 3
 
 Setting your password turns an approved request into a working account and signs you in at once. Do it when the email "Your CarbonOS access is approved" arrives; afterwards, **Sign in** on the landing page is your way in.
 
-<!-- sources: tasks/account/request-access-and-set-your-password.md (verified 2026-09-27); specs 01.2, 01.6; SetPasswordPage.tsx (labels, hint, refusals); PasswordPolicy.java and AccessRequestService.java (the rule, the single-use 7-day token); LoginPage.tsx ("Invalid email or password."); LandingRedirect.tsx and navigation.ts (where /app resolves); OrganizationsPage.tsx (the empty list); spec 01.9 and LoginPage.tsx ("Forgot your password?") -->
+<!-- sources: tasks/account/request-access-and-set-your-password.md (verified 2026-09-27); specs 01.2, 01.6; SetPasswordPage.tsx (labels, hint, refusals); PasswordPolicy.java and AccessRequestService.java (the rule, the single-use 7-day token); LoginPage.tsx ("Invalid email or password."); LandingRedirect.tsx and navigation.ts (where /app resolves); OrganizationsPage.tsx (the table and the empty list; spec 10); spec 01.9 and LoginPage.tsx ("Forgot your password?") -->
 
 ## Before you start
 
@@ -44,11 +44,11 @@ What you see: you are signed in, and CarbonOS opens where your work starts. The 
 1. On the landing page, click **Sign in**.
 2. Fill **Email** and **Password**, then click **Sign in**.
 
-What you see: a wrong pair is refused with "Invalid email or password."; CarbonOS does not say which half is wrong. If you have forgotten the password, click **Forgot your password?** under **Sign in**; see [Reset a forgotten password](reset-a-forgotten-password.md). On success you land where your work starts: an administrator in the administration console, a member of one organization in that organization's overview, and a member of several on the **GHG accounting** list, one card per organization.
+What you see: a wrong pair is refused with "Invalid email or password."; CarbonOS does not say which half is wrong. If you have forgotten the password, click **Forgot your password?** under **Sign in**; see [Reset a forgotten password](reset-a-forgotten-password.md). On success you land where your work starts: an administrator in the administration console, a member of one organization in that organization's overview, and a member of several on the organizations list, one row per organization with **Open**.
 
 ## Where a member of no organization lands
 
-You land on **GHG accounting** under **No organizations yet**. What the card says depends on the platform's setting for who may create organizations: either "Create your first reporting organization to start the GHG Protocol workflow." with the button **New organization**, or "You are not a member of any organization yet. Ask an owner to add you, or a platform administrator." An owner adds you under the organization's **Settings** by your email; see [Add members and assign roles](../organization/add-members-and-assign-roles.md).
+You land on the organizations list, which reads **No organizations yet**. What it says depends on the platform's setting for who may create organizations: either "Create your first reporting organization to start the GHG Protocol workflow." with the button **New organization**, or "You are not a member of any organization yet. Ask an owner to add you, or a platform administrator." An owner adds you under the organization's **Settings** by your email; see [Add members and assign roles](../organization/add-members-and-assign-roles.md).
 
 ## Change the password later
 

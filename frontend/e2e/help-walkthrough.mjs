@@ -90,9 +90,9 @@ const log = (label, t) => {
   console.log(label, text.replace(/\s+/g, ' ').slice(0, 120))
 }
 // A whole page is captured as a window as tall as the page, not with Playwright's fullPage: the
-// header and sidebar are sticky and the background is sized to the window, so a fullPage capture
-// draws them at the scroll offset and ends the background at 900px. A page too tall to render as
-// one window in time (the full run report) falls back to fullPage, from the top.
+// rail is sized to the window, so a fullPage capture draws it at the scroll offset and ends it
+// at 900px. A page too tall to render as one window in time (the full run report) falls back
+// to fullPage, from the top.
 const TALLEST_WINDOW = 3000
 const shot = async (name, fullPage = false) => {
   const viewport = page.viewportSize()
@@ -110,6 +110,23 @@ const shot = async (name, fullPage = false) => {
 // what a screen, a dialog, a tab strip and a select say and do
 const mainText = async (max = 8000) => (await page.locator('main').innerText()).slice(0, max)
 const dialogText = async () => await page.getByRole('dialog').last().innerText()
+// the record's detail in the split register (spec 10): a region named by the record, not a dialog
+const regionText = async (name) => await page.getByRole('region', { name, exact: true }).innerText()
+// the pre-flight chip in the inventory's title row opens the Pre-flight checks popover (spec 10);
+// the gates are logged with it open, so the log carries them the way the old panel did, and the
+// screenshots are taken with it closed
+const preflightChip = () =>
+  page.getByRole('button', { name: /^(Ready to launch|Launch on hold|Published\.)/ })
+const preflightPopover = () => page.getByRole('dialog', { name: 'Pre-flight checks' })
+const openPreflight = async () => {
+  await preflightChip().click()
+  await preflightPopover().waitFor()
+  await page.waitForTimeout(300)
+}
+const closePreflight = async () => {
+  await preflightPopover().getByRole('button', { name: 'Close' }).click()
+  await page.waitForTimeout(300)
+}
 const tab = async (name) => {
   await page.getByRole('tab', { name: new RegExp('^' + name) }).click()
   await page.waitForTimeout(900)
@@ -158,13 +175,15 @@ await page.waitForLoadState('networkidle')
 await page.waitForTimeout(800)
 log('1 entities', await mainText())
 await page.getByRole('button', { name: 'Add entity' }).click()
-await page.getByLabel('Name').fill('Gye Nyame Camp Services Ltd')
-await page.getByLabel('Economic interest (%)').fill('100')
-await page.getByLabel('Legal ownership (%)').fill('100')
-await page.getByLabel('Jurisdiction (optional)').fill('GH')
-log('1 entity dialog', await dialogText())
+const entityForm = page.getByRole('form', { name: 'Add legal entity' })
+await entityForm.waitFor()
+await entityForm.getByLabel('Name').fill('Gye Nyame Camp Services Ltd')
+await entityForm.getByLabel('Economic interest (%)').fill('100')
+await entityForm.getByLabel('Legal ownership (%)').fill('100')
+await entityForm.getByLabel('Jurisdiction (optional)').fill('GH')
+log('1 entity dialog', await entityForm.innerText())
 await shot('step-1-add-entity')
-await page.getByRole('dialog').getByRole('button', { name: 'Add entity' }).click()
+await entityForm.getByRole('button', { name: 'Add entity' }).click()
 await page.waitForTimeout(1500)
 log('1 entities after', await mainText())
 await shot('step-1-legal-entities')
@@ -176,7 +195,8 @@ await page.waitForTimeout(800)
 log('2 facilities empty', await mainText())
 const addFacility = async (f) => {
   await page.getByRole('button', { name: 'Add facility' }).first().click()
-  const d = page.getByRole('dialog')
+  const d = page.getByRole('form', { name: 'Add facility' })
+  await d.waitFor()
   await d.getByLabel('Name').fill(f.name)
   await d.getByLabel('Location').fill(f.location)
   await d.getByLabel('Country (optional)').fill('GH')
@@ -185,7 +205,7 @@ const addFacility = async (f) => {
   if (f.lease) await d.getByLabel('Lease (optional)').selectOption({ label: f.lease })
   await d.getByLabel('Legal entity').selectOption({ label: f.entity })
   if (f.shot) {
-    log('2 facility dialog', await dialogText())
+    log('2 facility dialog', await d.innerText())
     await shot(f.shot)
   }
   await d.getByRole('button', { name: 'Add facility' }).click()
@@ -255,12 +275,8 @@ for (const pack of [
   'UK Government (DESNZ) GHG conversion factors 2025',
   'Ghana: grid electricity and transmission losses',
 ]) {
-  const card = page
-    .locator('li, article, div', { hasText: pack })
-    .filter({ has: page.getByRole('button', { name: 'Import pack' }) })
-    .last()
   const before = toasts.length
-  await card.getByRole('button', { name: 'Import pack' }).click()
+  await page.getByRole('button', { name: `Import pack ${pack}`, exact: true }).click()
   for (let i = 0; i < 120 && toasts.length === before; i++) await page.waitForTimeout(500)
   await page.waitForTimeout(800)
 }
@@ -296,13 +312,13 @@ log('4 after import', await mainText())
 await shot('step-4-records')
 await page.getByText('Plant grid electricity H2').first().click()
 await page.waitForTimeout(1000)
-log('4 record drawer', await dialogText())
+log('4 record drawer', await regionText('Plant grid electricity H2'))
 await page.getByLabel('Activity quantity *').fill('36000000')
 await page.waitForTimeout(300)
 await page
   .getByLabel('Reason for the correction *')
   .fill('Second ECG statement: the second half was 36,000,000 kWh, not 3,600,000')
-log('4 record edited', await dialogText())
+log('4 record edited', await regionText('Plant grid electricity H2'))
 await shot('step-4-correct-record')
 await page.getByRole('button', { name: 'Save', exact: true }).click()
 await page.waitForTimeout(1500)
@@ -323,22 +339,27 @@ await page.getByRole('link', { name: 'Inventories' }).click()
 await page.waitForLoadState('networkidle')
 await page.waitForTimeout(800)
 await page.getByRole('button', { name: 'New inventory' }).click()
-const inv = page.getByRole('dialog')
+const inv = page.getByRole('form', { name: 'New inventory' })
 await inv.waitFor()
 await inv.getByLabel('Name').fill('FY2025')
 await inv.getByLabel('Period start').fill('2025-01-01')
 await inv.getByLabel('Period end').fill('2025-12-31')
 await inv.getByLabel('Purpose (optional)').fill('Corporate reporting')
-log('5 inventory dialog', await dialogText())
+log('5 inventory dialog', await inv.innerText())
 await shot('step-5-new-inventory')
 await inv.getByRole('button', { name: 'Create inventory' }).click()
-await page.waitForTimeout(1500)
-log('5 inventories', await mainText())
-await page.getByRole('link', { name: 'Open' }).first().click()
-await page.waitForLoadState('networkidle')
+// creating opens the new inventory; the list is read on the way back to it
+await page.waitForURL(/\/inventories\/[^/]+$/, { timeout: 15000 })
 await page.waitForTimeout(1200)
 const inventoryUrl = page.url()
+await page.goto(inventoryUrl.replace(/\/[^/]+$/, ''), { waitUntil: 'networkidle' })
+await page.waitForTimeout(800)
+log('5 inventories', await mainText())
+await page.goto(inventoryUrl, { waitUntil: 'networkidle' })
+await page.waitForTimeout(1200)
+await openPreflight()
 log('5 workbench', await mainText())
+await closePreflight()
 await shot('step-5-workbench')
 await tab('Boundary')
 log('5 boundary', await mainText())
@@ -366,7 +387,9 @@ await page.waitForTimeout(1000)
 await tab('Records')
 await page.getByRole('button', { name: 'Review activity data' }).click()
 await page.waitForTimeout(1500)
+await openPreflight()
 log('6 under review', await mainText(12000))
+await closePreflight()
 await shot('step-6-under-review')
 const classify = async (activity, search, factorText, opts = {}) => {
   await page
@@ -374,8 +397,9 @@ const classify = async (activity, search, factorText, opts = {}) => {
     .first()
     .click()
   await page.waitForTimeout(900)
-  const dr = page.getByRole('dialog').last()
-  log(`6 drawer ${activity}`, await dialogText())
+  const dr = page.getByRole('region', { name: activity, exact: true })
+  await dr.waitFor()
+  log(`6 drawer ${activity}`, await dr.innerText())
   if (opts.suggested) {
     await dr.getByRole('button', { name: /Suggested for this facility's grid/ }).click()
   } else {
@@ -390,7 +414,7 @@ const classify = async (activity, search, factorText, opts = {}) => {
     await list.getByRole('button', { name: factorText }).first().click()
   }
   await page.waitForTimeout(1200)
-  log(`6 classified ${activity}`, await dialogText())
+  log(`6 classified ${activity}`, await dr.innerText())
   if (opts.shot) await shot(opts.shot)
   await page.keyboard.press('Escape')
   await page.waitForTimeout(600)
@@ -419,7 +443,9 @@ await classify('Plant grid electricity H1', '', '', {
   shot: 'step-6-classify-electricity',
 })
 await classify('Plant grid electricity H2', '', '', { suggested: true })
+await openPreflight()
 log('6 records classified', await mainText(12000))
+await closePreflight()
 await shot('step-6-classified')
 await page.getByRole('link', { name: 'Emission factors' }).click()
 await page.waitForLoadState('networkidle')
@@ -464,7 +490,9 @@ await rule(
 log('6 method after rules', await mainText())
 await shot('step-6-rules')
 await tab('Records')
+await openPreflight()
 log('6 records after rules', await mainText(12000))
+await closePreflight()
 
 // 7. freeze and run
 await page.getByRole('button', { name: 'Freeze inventory' }).click()
@@ -473,8 +501,12 @@ log('7 freeze dialog', await dialogText())
 await shot('step-7-freeze-dialog')
 await page.getByRole('dialog').getByRole('button', { name: 'Freeze inventory' }).click()
 await until(/^FROZEN/)
+// the figure shows the chip and its popover at the head of the page, as the article describes them
+await page.evaluate(() => window.scrollTo(0, 0))
+await openPreflight()
 log('7 after freeze', await mainText(12000))
 await shot('step-7-ready-to-launch')
+await closePreflight()
 await tab('Runs')
 log('7 runs tab', await mainText())
 await shot('step-7-runs-tab')

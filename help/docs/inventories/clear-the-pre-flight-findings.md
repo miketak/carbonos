@@ -1,21 +1,21 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
-description: Why the launch is on hold, how the Pre-flight checks panel reads, and every finding of the five gates as CarbonOS prints it, with what clears each one.
+last_reviewed: 2026-10-04
+description: Why the launch is on hold, how the pre-flight chip and its popover read, and every finding of the five gates as CarbonOS prints it, with what clears each one.
 role: Preparer
 ---
 
 # Clear the pre-flight findings
 
-The launch is on hold because a gate other than Base year holds an error, marked ✕. Find the gate that reads **HOLD** and take the action its table gives. Warnings (▲) and information lines (ℹ) never hold a run.
+The launch is on hold because a gate other than Base year holds an error. Click the pre-flight chip beside the title, find the gate that reads **Hold** and take the action its table gives. Warnings and information lines never hold a run.
 
-<!-- sources: InventoryService.java validation findings (validate, excludedWithAShare, leaseDisagreement, PLACEHOLDER_MAGNITUDE; verified by grep 2026-09-28); PreflightPanel.tsx; PreflightBanner.tsx; format.ts gateLabels; the old page reference/pre-flight-gates-and-findings.md (verified 2026-09-24); specs 02.1 to 02.4, 03, 04.2 to 04.8, 05.6, 06.1, 07.2, 07.3 and 07.6; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "6 under review", "6 records after rules" -->
+<!-- sources: InventoryService.java validation findings (validate, excludedWithAShare, leaseDisagreement, PLACEHOLDER_MAGNITUDE; verified by grep 2026-09-28); PreflightChip.tsx (the chip's labels, the popover's summary line, Pass, Warn and Hold, Resolve the findings); spec 10; format.ts gateLabels; the old page reference/pre-flight-gates-and-findings.md (verified 2026-09-24); specs 02.1 to 02.4, 03, 04.2 to 04.8, 05.6, 06.1, 07.2, 07.3 and 07.6; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "6 under review", "6 records after rules" -->
 
-## How the panel reads
+## How the chip reads
 
-**LAUNCH ON HOLD** means an error in Reporting boundary, Activity data completeness, Classification or Emission factors; the banner names the gate, "Reporting boundary is blocking." **READY TO LAUNCH** means none: "Every gate passes", plus a warning count. "Base year holds the final designation; runs stay available." means an error in Base year only, which holds **Mark as final**, not a run. Every draft holds until it is frozen.
+**Launch on hold · 1 blocking** means an error in Reporting boundary, Activity data completeness, Classification or Emission factors; the popover names the gate, "Reporting boundary is blocking.", with **Resolve the findings →**. **Ready to launch** means none: "Every gate passes", plus a warning count. "Base year holds the final designation; runs stay available." means an error in Base year only, which holds **Mark as final**, not a run.
 
-*Italics* stand for what the line prints; "…" for the rest of a line. Freeze refusals: [Freeze the inventory and launch a run](freeze-and-launch-a-run.md).
+*Italics* stand for what the line prints; "…" for the rest. Freeze refusals: [Freeze the inventory and launch a run](freeze-and-launch-a-run.md).
 
 ## Reporting boundary
 
@@ -67,7 +67,7 @@ The launch is on hold because a gate other than Base year holds an error, marked
 | Finding | Level | What clears it |
 | --- | --- | --- |
 | '*Record*' uses '*factor*', which is not approved. … | Error | Someone other than its author approves it. |
-| '*Record*' is recorded in *unit* but its factor '*factor*' is per *unit*: choose the density that converts … | Error | Choose a density in the drawer. |
+| '*Record*' is recorded in *unit* but its factor '*factor*' is per *unit*: choose the density that converts … | Error | Choose a density on **Classify**. |
 | '*Record*' is recorded in *unit* but its factor '*factor*' is per *unit*: no conversion between them. … | Error | A compatible unit, a factor in its unit, or a custom unit under **Units**. |
 | '*Record*' uses '*factor*', a gas outside the scopes, but is classified as *scope*. … | Error | Classify it as scope 1. |
 | '*factor*' publishes CO2e only. … | Warning | None. |
@@ -85,6 +85,6 @@ The launch is on hold because a gate other than Base year holds an error, marked
 
 | Finding | Level | What clears it |
 | --- | --- | --- |
-| Base year flagged for recalculation (…). Record the decision under the organization's base year. | Error if above the threshold and reported against, else Warning | Decide it under **Settings**, **Baseline and targets**. |
+| Base year flagged for recalculation (…). Record the decision under the organization's base year. | Error above the threshold when reported against, else Warning | Decide it under **Settings**, **Baseline and targets**. |
 | This inventory uses IPCC *set* potentials; the *year* base year uses IPCC *set*. … | Warning | Use the same set, or accept. |
 | The recalculated base '*run*' carries a membership window, but the policy accounts structural changes for the whole year. … | Warning | Recalculate the whole year, or change the convention. |

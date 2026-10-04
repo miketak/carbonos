@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: Record the residual mix answer, bring the seven records under review, classify each with an emission factor, approve the loss factor, and add the two upstream rules.
 role: Owner
 minutes: 20
@@ -11,7 +11,7 @@ screens: [step-6-classify-contractor.png]
 
 This step classifies the seven records in FY2025 and adds the rules that derive category 3 from them. Step 7 runs the result.
 
-<!-- sources: specs 04.1 and 04.3 (scope as an accounting decision, stream defaults), 04.7 (derived fuel- and energy-related lines), 05.5 (review at scale), 07.3 (residual mix and dual reporting); section 6 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
+<!-- sources: specs 04.1 and 04.3 (scope as an accounting decision, stream defaults), 04.7 (derived fuel- and energy-related lines), 05.5 (review at scale), 07.3 (residual mix and dual reporting), 10 (the split register, the pre-flight chip); section 6 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
 
 ## Before you start
 
@@ -27,20 +27,20 @@ What you see: "Residual mix recorded." With no instrument and no residual mix, t
 
 ## Bring the records under review
 
-1. Open the **Records** tab. The **Activity view** card reads "Nothing under review yet". Click **Review activity data**.
+1. Open the **Records** tab. **Activity view** reads "Nothing under review yet". Click **Review activity data**.
 
-What you see: "7 new records under review." Each record is listed as **Unclassified**. The **Activity data completeness** gate warns about the year-end LPG bill: "17 of 32 days fall inside the reporting period and the membership window: the run pro-rates it to 53.13%." That is pro-rating by days; it does not hold the run.
+What you see: "7 new records under review." Each record is listed as **Unclassified**. In the pre-flight chip's popover, the **Activity data completeness** gate warns about the year-end LPG bill: "17 of 32 days fall inside the reporting period and the membership window: the run pro-rates it to 53.13%." That is pro-rating by days; it does not hold the run.
 
 ## Classify the seven records
 
 Classifying a record means choosing its emission factor; the scope and category come from its stream.
 
-1. Click **Haul fleet diesel** (ACT-0001), then **Choose factor…**. Type `mineral diesel` and choose **Liquid fuels: Diesel (100% mineral diesel) (/litre)**. The drawer now reads **Included**, **Scope 1**, category "Mobile combustion". There is no save button: choosing the factor recorded the classification.
-2. Repeat for **Contract haulage diesel** (ACT-0002) and **Genset diesel** (ACT-0005). The contractor's diesel lands in **Scope 3**, category "1. Purchased goods and services", with no justification asked: the Corporate Standard puts a contractor's combustion in the customer's scope 3. The genset diesel lands in Scope 1, "Stationary combustion", and its drawer adds "Leased facility: operating lease (leased in) inherited."
+1. Click **Haul fleet diesel** (ACT-0001), then **Choose factor…**. Type `mineral diesel` and choose **Liquid fuels: Diesel (100% mineral diesel) (/litre)**. The record's detail now reads **Scope 1 / Mobile combustion** and **Included**. There is no save button: choosing the factor recorded the classification.
+2. Repeat for **Contract haulage diesel** (ACT-0002) and **Genset diesel** (ACT-0005). The contractor's diesel lands in **Scope 3**, category "1. Purchased goods and services", with no justification asked: the Corporate Standard puts a contractor's combustion in the customer's scope 3. The genset diesel lands in Scope 1, "Stationary combustion", and its detail adds "Leased facility: operating lease (leased in) inherited."
 3. For **Kitchen LPG** (ACT-0006) and **Year-end kitchen LPG** (ACT-0007) type `LPG` and choose **Gaseous fuels: LPG (/litre)**. Both land in Scope 1, "Stationary combustion".
 4. For **Plant grid electricity H1** (ACT-0003) and **Plant grid electricity H2** (ACT-0004) click the shortcut **Suggested for this facility's grid: Grid electricity, Ghana (2024)**. Each lands in **Scope 2**.
 
-![The classify drawer for Contract haulage diesel, reading Included, Scope 3 and the category 1. Purchased goods and services](../assets/screens/step-6-classify-contractor.png)
+![The detail of Contract haulage diesel beside the summary list, reading Scope 3 / 1. Purchased goods and services and Included](../assets/screens/step-6-classify-contractor.png)
 
 What you see: "7 of 7 records", every row **Included** with its scope. The **Classification** gate warns that category 3 is declared but no upstream rule matches a factor yet, and the **Emission factors** gate warns that "'Grid electricity, Ghana (2024)' publishes CO2e only". A warning is a disclosure, not a hold.
 
@@ -50,7 +50,7 @@ A rule can only use an approved factor, and the Ghana loss factor arrived unappr
 
 1. Open **Emission factors**, tick **Show unapproved**, search `losses`, and click **Approve** on "Grid electricity T&D losses, Ghana (derived)".
 
-What you see: the row reads **Approved** "by owner@gyenyame.example" with the moment. CarbonOS asks someone other than the person who typed a factor to approve it; a pack factor was typed by nobody in the organization, so the owner may approve it after checking the loss rate the row describes.
+What you see: the row reads **Approved** "by owner@gyenyame.example" with the moment. CarbonOS asks someone other than the person who typed a factor to approve it; nobody in the organization typed a pack factor, so the owner may approve it after checking the loss rate the row describes.
 
 ## Add the upstream rules
 

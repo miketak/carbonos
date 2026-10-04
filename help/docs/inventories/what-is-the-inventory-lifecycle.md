@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: The four states an inventory passes through, what each one lets you change, why a freeze cuts a boundary version, and how a correction supersedes a published report.
 ---
 
@@ -10,7 +10,7 @@ The inventory lifecycle is the path from an editable draft to a published
 report that never changes; some steps ask for a reason and others are
 refused.
 
-<!-- sources: concepts/the-inventory-lifecycle.md (verified 2026-09-24); specs 05.1, 05.2, 05.3, 05.5, 05.7; LifecycleBar.tsx stateCopy; RunDetailPage.tsx header ("Report version", "supersedes"); badges.tsx ("inherited"); lifecycle card and dialog texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 freeze dialog", "7 after freeze", "8 after final", "8 publish dialog", "8 after publish" -->
+<!-- sources: concepts/the-inventory-lifecycle.md (verified 2026-09-24); specs 05.1, 05.2, 05.3, 05.5, 05.7, 10; LifecycleBar.tsx stateCopy; RunDetailPage.tsx header ("Report version", "supersedes"); badges.tsx ("inherited"); lifecycle panel and dialog texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 freeze dialog", "7 after freeze", "8 after final", "8 publish dialog", "8 after publish" -->
 
 ## Which states does an inventory pass through?
 
@@ -27,7 +27,7 @@ stateDiagram-v2
     Published --> Draft: Create correction, a new inventory
 ```
 
-| State | The lifecycle card says | You can | You cannot |
+| State | **Inventory lifecycle** says | You can | You cannot |
 | --- | --- | --- | --- |
 | Draft | "runs are blocked until the inventory is frozen" | Edit the boundary, the declaration, the rules and every classification. | Launch a run. |
 | Frozen | "The boundary and the activity view are read-only and runs are allowed." | **Launch calculation run**, void a run, **Reopen as draft** with a reason. | Change anything a run reads. |

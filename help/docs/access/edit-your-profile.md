@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-04
 description: Open the account menu, change the display name CarbonOS shows for you, add a profile picture, change your password, and see what the profile page does not change.
 role: Anyone
 minutes: 2
@@ -10,7 +10,7 @@ minutes: 2
 
 Your profile is the display name and picture CarbonOS shows for your account, and the place to change your password. Edit it when your name changes, when you want a picture where your initial is now, or when you replace a password.
 
-<!-- sources: tasks/account/request-access-and-set-your-password.md (verified 2026-09-27); spec 01.6; AccountMenu.tsx (the menu's items); ProfilePage.tsx (labels, hint, toasts); useProfile.ts; GhgService.java (the member list reads the account's current name; OrganizationMember.java keeps the name recorded on a membership); spec 01.9, ChangePasswordSection.tsx (labels, refusals, toast) and PasswordService.java (the other sessions end, the email) -->
+<!-- sources: tasks/account/request-access-and-set-your-password.md (verified 2026-09-27); specs 01.6 and 10 (the account in the rail, the theme switch); AccountMenu.tsx (the menu's items); Sidebar.tsx; ProfilePage.tsx (labels, hint, toasts); useProfile.ts; GhgService.java (the member list reads the account's current name; OrganizationMember.java keeps the name recorded on a membership); spec 01.9, ChangePasswordSection.tsx (labels, refusals, toast) and PasswordService.java (the other sessions end, the email) -->
 
 ## Before you start
 
@@ -18,8 +18,8 @@ Your profile is the display name and picture CarbonOS shows for your account, an
 
 ## Open the account menu
 
-1. Click your initial or picture at the top right of any page. The menu opens with your email at its head.
-2. Read what it offers: **Edit profile**, **Help**, which opens the help centre in a new tab, and **Sign out**. An administrator also sees **Administration**, outside the console.
+1. Click your name with your initial or picture: at the foot of the rail inside an organization or the administration area, at the top right on the organizations list and your profile. The menu opens with your email at its head.
+2. Read what it offers: **Edit profile**, **Help**, which opens the help centre in a new tab, **Switch to dark theme** or **Switch to light theme**, a choice this browser keeps, and **Sign out**. An administrator also sees **Administration**, outside the console.
 3. Click **Edit profile**.
 
 What you see: the page **Edit profile** with your picture or initial, your **Email**, which cannot be edited, **Display name**, and the section **Change password**.

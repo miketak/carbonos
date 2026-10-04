@@ -1,25 +1,25 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-04
 description: Each status an inventory and its runs can show, what it means and what moves it on, with the boundary version the freeze cuts and every run cites.
 role: Anyone
 ---
 
 # Check an inventory or run status
 
-The badge in the workbench header reads the inventory's status and, from the first freeze on, its boundary version: **FROZEN · BOUNDARY v1**, then **FINAL · BOUNDARY v1** and **PUBLISHED · BOUNDARY v1** for Gye Nyame Gold.
+The chip beside the inventory's title reads its status and, from the first freeze on, its boundary version: **FROZEN · BOUNDARY v1**, then **FINAL · BOUNDARY v1** and **PUBLISHED · BOUNDARY v1** for Gye Nyame Gold.
 
-<!-- sources: format.ts statusLabels; LifecycleBar.tsx (stateCopy, the freeze, reopen, withdraw and correction dialogs); InventoryDetailPage.tsx (runs tab, Run label, void dialog); InventoryService.java freezeBlockers; the old page reference/statuses-and-transitions.md (verified 2026-09-24 and 2026-09-26); specs 05.1, 05.2, 05.3 and 05.5; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 after freeze", "7 runs listed", "8 after final", "8 after publish" -->
+<!-- sources: format.ts statusLabels; LifecycleBar.tsx (stateCopy, the freeze, reopen, withdraw and correction dialogs); InventoryDetailPage.tsx (the title row, runs tab, Run label, void dialog); PreflightChip.tsx (the published sentence); spec 10; InventoryService.java freezeBlockers; the old page reference/statuses-and-transitions.md (verified 2026-09-24 and 2026-09-26); specs 05.1, 05.2, 05.3 and 05.5; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 after freeze", "7 runs listed", "8 after final", "8 after publish" -->
 
 ## Inventory statuses
 
-| Status | What it permits | The lifecycle card says |
+| Status | What it permits | **Inventory lifecycle** says |
 | --- | --- | --- |
 | **DRAFT** | Edit the boundary, declaration, instruments, rules, classifications and exclusions. Runs are blocked. | "Draft. The boundary and the activity view are editable; runs are blocked until the inventory is frozen, which records a boundary version a verifier can trace every run back to." |
-| **DRAFT** after a reopen | The same; the card counts the versions, "1 boundary version cut". | The same text. |
+| **DRAFT** after a reopen | The same; the panel counts the versions, "1 boundary version cut". | The same text. |
 | **FROZEN · BOUNDARY v*N*** | Launch runs, void a run with a reason, read everything. | "Frozen. The boundary and the activity view are read-only and runs are allowed. Reopen the inventory as a draft to change either." |
 | **FINAL · BOUNDARY v*N*** | Publish, or withdraw the designation. Runs can still be launched. | "Final. A run is designated the final result. Withdraw the designation to reopen the inventory, or publish it to issue the report." |
-| **PUBLISHED · BOUNDARY v*N*** | Read the report as issued and create a correction. The pre-flight banner reads "Published. The runs are a record; a correction restates the year.", and **Launch calculation run** is disabled with the title "A published inventory cannot be recalculated. Create a correction that supersedes it." | "Published. The report was issued; nothing on this inventory can change. A correction is a new inventory that supersedes this one." |
+| **PUBLISHED · BOUNDARY v*N*** | Read the report as issued and create a correction. The pre-flight chip reads "Published. The runs are a record; a correction restates the year.", and **Launch calculation run** is disabled with the title "A published inventory cannot be recalculated. Create a correction that supersedes it." | "Published. The report was issued; nothing on this inventory can change. A correction is a new inventory that supersedes this one." |
 | **PUBLISHED · SUPERSEDED** | Read only. **Where this inventory came from** links to the correction, "Superseded by a correction". | The published text. |
 
 ## What moves an inventory

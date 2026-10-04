@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-04
 description: Freeze the inventory to cut a boundary version, read what refuses a freeze, launch the run that produces the figures, and reopen the inventory as a draft with a reason.
 role: Preparer
 minutes: 10
@@ -11,22 +11,22 @@ screens: [step-7-freeze-dialog.png]
 
 A run can only be launched from a frozen inventory; the freeze cuts the boundary version every run cites. Freeze once every record is decided.
 
-<!-- sources: specs 05, 05.1, 05.5 and 05.6; the old pages tasks/inventories/freeze-and-launch-a-run.md and reference/pre-flight-gates-and-findings.md (verified 2026-09-24); LifecycleBar.tsx (freeze and reopen dialogs, describeFreezeBlockers); InventoryService.java freezeBlockers and leaseDisagreement; PreflightBanner.tsx; InventoryDetailPage.tsx (Run label, launch, void); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "7 freeze dialog", "7 after freeze", "7 runs tab", "7 run page", "7 runs listed" -->
+<!-- sources: specs 05, 05.1, 05.5, 05.6 and 10 (the pre-flight chip, the lifecycle acts in the title row); the old pages tasks/inventories/freeze-and-launch-a-run.md and reference/pre-flight-gates-and-findings.md (verified 2026-09-24); LifecycleBar.tsx (freeze and reopen dialogs, describeFreezeBlockers); InventoryService.java freezeBlockers and leaseDisagreement; PreflightChip.tsx; InventoryDetailPage.tsx (Run label, launch, void); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "7 freeze dialog", "7 after freeze", "7 runs tab", "7 run page", "7 runs listed" -->
 
 ## Before you start
 
 - Every record is classified or excluded, and you are Preparer, Reviewer or Owner.
-- The **Pre-flight checks** panel holds no error other than "The inventory is a draft."; see [Clear the pre-flight findings](clear-the-pre-flight-findings.md).
+- In the pre-flight popover (click the chip beside the inventory's title) the only gate on **Hold** is Reporting boundary, with "The inventory is a draft."; see [Clear the pre-flight findings](clear-the-pre-flight-findings.md).
 
 ## Freeze the inventory
 
-1. In the **Inventory lifecycle** card click **Freeze inventory**.
+1. In the title row, beside the pre-flight chip, click **Freeze inventory**.
 2. Read the dialog "Freeze the inventory?".
 3. Click **Freeze inventory**.
 
 ![The Freeze the inventory? dialog for FY2025: the five gates summarised, and the sentence that cuts boundary version 1 over 2 facilities](../assets/screens/step-7-freeze-dialog.png)
 
-What you see: "Inventory frozen as boundary version 1." The header reads **FROZEN · BOUNDARY v1**, the lifecycle card offers **Reopen as draft**, and the banner turns to **Ready to launch a run**, "Every gate passes".
+What you see: "Inventory frozen as boundary version 1." The status chip beside the title reads **FROZEN · BOUNDARY v1**, the title row offers **Reopen as draft**, and the pre-flight chip turns to **Ready to launch**, with a warning count when a gate warns; its popover reads "Every gate passes".
 
 ## What blocks a freeze
 
@@ -48,11 +48,11 @@ What you see: "Calculation complete." and the run's page, "Run 001", "Gye Nyame 
 
 ## Reopen as a draft
 
-1. In the lifecycle card click **Reopen as draft**.
+1. In the title row click **Reopen as draft**.
 2. Fill **Reason**, at least 10 characters, and click **Reopen as draft**.
 
 What you see: "Inventory reopened as a draft." and the dialog's promise: "Boundary version 1 stays on the record with your reason, and the next freeze cuts a new boundary version." **Void…** with a **Reason** of at least 5 characters marks a run VOIDED and keeps its number, lines and totals.
 
 ## What happens next
 
-The **History** card on the **Runs** tab records each freeze, launch, reopen and void. Next: [Designate a final run and publish](../reporting/designate-a-final-run-and-publish.md).
+**History**, at the foot of the **Runs** tab, records each freeze, launch, reopen and void. Next: [Designate a final run and publish](../reporting/designate-a-final-run-and-publish.md).
