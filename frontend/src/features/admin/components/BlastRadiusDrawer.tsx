@@ -1,8 +1,10 @@
 import { Button } from '../../../components/Button'
 import { Drawer } from '../../../components/Drawer'
-import { GlassCard } from '../../../components/GlassCard'
-import { Skeleton } from '../../../components/Skeleton'
 import { OrganizationName } from '../../../components/OrganizationName'
+import { Panel } from '../../../components/Panel'
+import { Skeleton } from '../../../components/Skeleton'
+import { Stat, StatStrip } from '../../../components/StatStrip'
+import { Table, Td, Th } from '../../../components/Table'
 import { useFactorPackBlastRadiusQuery } from '../useFactorPacks'
 import type { BlastRadius, BlastRadiusOrganization } from '../api'
 
@@ -60,13 +62,13 @@ export function BlastRadiusDrawer({ editionId, onClose }: BlastRadiusDrawerProps
             so nobody is asked to decide on a withdrawn edition.
           </p>
           {report.organizations.length === 0 && (
-            <GlassCard className="mt-4 p-6 text-center">
+            <Panel className="mt-4 p-6 text-center">
               <h3 className="text-sm font-semibold">Nobody holds one of these lineages</h3>
-              <p className="mt-1 text-xs text-ink-muted">
+              <p className="mt-1 text-[13px] text-ink-muted">
                 No organization carries a row of it and no notice for it is open, so withdrawing
                 changes nothing for anybody.
               </p>
-            </GlassCard>
+            </Panel>
           )}
           {report.organizations.map((organization) => (
             <WithdrawalCard key={organization.organizationId} organization={organization} />
@@ -83,12 +85,14 @@ export function BlastRadiusDrawer({ editionId, onClose }: BlastRadiusDrawerProps
             one.
           </p>
 
-          <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-            <Figure label="Added" value={report.rowsAdded} />
-            <Figure label="Changed" value={report.rowsChanged} />
-            <Figure label="Discontinued" value={report.rowsDiscontinued} />
-            <Figure label="Unchanged" value={report.rowsUnchanged} />
-          </dl>
+          <div className="mt-4">
+            <StatStrip label="Rows the edition moves">
+              <Stat label="Added" value={report.rowsAdded.toLocaleString()} />
+              <Stat label="Changed" value={report.rowsChanged.toLocaleString()} />
+              <Stat label="Discontinued" value={report.rowsDiscontinued.toLocaleString()} />
+              <Stat label="Unchanged" value={report.rowsUnchanged.toLocaleString()} />
+            </StatStrip>
+          </div>
 
           <p className="mt-3 text-sm">
             <strong>{report.rowsOverThreshold}</strong>{' '}
@@ -99,69 +103,73 @@ export function BlastRadiusDrawer({ editionId, onClose }: BlastRadiusDrawerProps
           </p>
 
           {report.rows.some((row) => row.overThreshold) && (
-            <GlassCard className="mt-4 p-3">
-              <h3 className="text-sm font-semibold">Rows moving more than 5 percent</h3>
-              <table className="mt-2 w-full text-left text-xs">
+            <Panel className="mt-4">
+              <h3 className="px-4 pt-4 text-sm font-semibold">Rows moving more than 5 percent</h3>
+              <Table className="mt-2 text-[13px] [&_tbody_tr:last-child>td]:border-b-0">
                 <thead>
-                  <tr className="text-ink-muted uppercase">
-                    <th className="px-2 py-1 font-semibold">Code</th>
-                    <th className="px-2 py-1 font-semibold">Now</th>
-                    <th className="px-2 py-1 font-semibold">Proposed</th>
-                    <th className="px-2 py-1 font-semibold">Change</th>
-                    <th className="px-2 py-1 font-semibold">Holders</th>
+                  <tr>
+                    <Th>Code</Th>
+                    <Th align="right">Now</Th>
+                    <Th align="right">Proposed</Th>
+                    <Th align="right">Change</Th>
+                    <Th align="right">Holders</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.rows
                     .filter((row) => row.overThreshold)
                     .map((row) => (
-                      <tr key={row.code} className="border-t border-teal/5">
-                        <td className="px-2 py-1 font-mono break-all">{row.code}</td>
-                        <td className="px-2 py-1">{row.oldKgCo2e ?? '-'}</td>
-                        <td className="px-2 py-1">{row.newKgCo2e ?? '-'}</td>
-                        <td className="px-2 py-1">
+                      <tr key={row.code}>
+                        <Td className="py-2 break-all">{row.code}</Td>
+                        <Td align="right" className="py-2">
+                          {row.oldKgCo2e ?? '-'}
+                        </Td>
+                        <Td align="right" className="py-2">
+                          {row.newKgCo2e ?? '-'}
+                        </Td>
+                        <Td align="right" className="py-2">
                           {row.percentChange === null ? '-' : `${row.percentChange.toFixed(2)}%`}
-                        </td>
-                        <td className="px-2 py-1">{row.holders}</td>
+                        </Td>
+                        <Td align="right" className="py-2">
+                          {row.holders}
+                        </Td>
                       </tr>
                     ))}
                 </tbody>
-              </table>
-            </GlassCard>
+              </Table>
+            </Panel>
           )}
 
           {report.discontinuedLineages.length > 0 && (
-            <GlassCard className="mt-4 p-3">
+            <Panel className="mt-4 p-4">
               <h3 className="text-sm font-semibold">
                 Lineages this edition drops ({report.discontinuedLineages.length})
               </h3>
-              <p className="mt-1 text-xs text-ink-muted">
+              <p className="mt-1 text-[13px] text-ink-muted">
                 Adopting the edition does not retire them. A retirement is a separate decision.
               </p>
-              <p className="mt-2 font-mono text-xs break-all">
-                {report.discontinuedLineages.join(', ')}
-              </p>
-            </GlassCard>
+              <p className="mt-2 text-[13px] break-all">{report.discontinuedLineages.join(', ')}</p>
+            </Panel>
           )}
 
           {report.unapprovedRows.length > 0 && (
-            <GlassCard className="mt-4 p-3">
+            <Panel className="mt-4 p-4">
               <h3 className="text-sm font-semibold">
                 Rows that are not approved ({report.unapprovedRows.length})
               </h3>
-              <p className="mt-2 font-mono text-xs break-all">
+              <p className="mt-2 text-[13px] break-all">
                 {report.unapprovedRows.slice(0, 20).join(', ')}
               </p>
-            </GlassCard>
+            </Panel>
           )}
 
           {report.organizations.length === 0 && (
-            <GlassCard className="mt-4 p-6 text-center">
+            <Panel className="mt-4 p-6 text-center">
               <h3 className="text-sm font-semibold">Nobody holds one of these lineages</h3>
-              <p className="mt-1 text-xs text-ink-muted">
+              <p className="mt-1 text-[13px] text-ink-muted">
                 Nothing would move, and no notice would be raised.
               </p>
-            </GlassCard>
+            </Panel>
           )}
 
           {report.organizations.map((organization) => (
@@ -178,15 +186,6 @@ function headline(report: BlastRadius) {
   return `${holders === 0 ? 'No organization holds' : holders === 1 ? '1 organization holds' : `${holders} organizations hold`} one of these lineages`
 }
 
-function Figure({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <dt className="text-xs text-ink-muted uppercase">{label}</dt>
-      <dd className="text-lg">{value.toLocaleString()}</dd>
-    </div>
-  )
-}
-
 /**
  * One holder as a withdrawal sees it. No movement, no estimate, no locked
  * period: a withdrawal is the publisher's act and not the client's
@@ -194,33 +193,33 @@ function Figure({ label, value }: { label: string; value: number }) {
  */
 function WithdrawalCard({ organization }: { organization: BlastRadiusOrganization }) {
   return (
-    <GlassCard className="mt-4 p-4">
+    <Panel className="mt-4 p-4">
       <h3 className="text-base">
         <OrganizationName
           name={organization.organizationName}
           accountNo={organization.organizationAccountNo}
         />
       </h3>
-      <p className="mt-0.5 text-xs text-ink-muted">
+      <p className="mt-0.5 text-[13px] text-ink-muted">
         {organization.lineagesHeld === 0
           ? 'Holds no row of this edition; its notice for it is open, and withdrawing closes it.'
           : `Holds ${organization.lineagesHeld} ${organization.lineagesHeld === 1 ? 'lineage' : 'lineages'} of this edition, which stay exactly as they are.`}
       </p>
-    </GlassCard>
+    </Panel>
   )
 }
 
 /** One holder as a publication sees it: what would move if it adopted the edition. */
 function PublicationCard({ organization }: { organization: BlastRadiusOrganization }) {
   return (
-    <GlassCard className="mt-4 p-4">
+    <Panel className="mt-4 p-4">
       <h3 className="text-base">
         <OrganizationName
           name={organization.organizationName}
           accountNo={organization.organizationAccountNo}
         />
       </h3>
-      <p className="mt-0.5 text-xs text-ink-muted">
+      <p className="mt-0.5 text-[13px] text-ink-muted">
         Holds {organization.lineagesHeld} {organization.lineagesHeld === 1 ? 'lineage' : 'lineages'}{' '}
         of this pack; {organization.rowsMoving} would move, {organization.rowsOverThreshold} by more
         than 5 percent.
@@ -258,14 +257,16 @@ function PublicationCard({ organization }: { organization: BlastRadiusOrganizati
       <Group label="Lineages this edition drops">
         {organization.discontinued.length === 0 ? 'None.' : organization.discontinued.join(', ')}
       </Group>
-    </GlassCard>
+    </Panel>
   )
 }
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <p className="mt-2 text-xs">
-      <span className="text-ink-muted uppercase">{label}: </span>
+    <p className="mt-2 text-[13px]">
+      <span className="text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
+        {label}:{' '}
+      </span>
       <span className="break-all">{children}</span>
     </p>
   )

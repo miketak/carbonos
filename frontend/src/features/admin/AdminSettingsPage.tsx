@@ -2,8 +2,10 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../../components/Button'
 import { InputField, SelectField, TextAreaField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel, PanelBody, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { Table, Td, Th } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
 import {
@@ -37,6 +39,8 @@ function when(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+const crumbs = [{ label: 'Administration' }, { label: 'Platform settings' }]
+
 /**
  * The deployment's own policy (specs 01.5 and 02.6).
  *
@@ -52,19 +56,19 @@ export function AdminSettingsPage() {
 
   if (settingsQuery.isPending) {
     return (
-      <div aria-label="Loading the platform settings" className="mx-auto max-w-3xl">
+      <div aria-label="Loading the platform settings" className="flex flex-col gap-4">
         <Skeleton className="h-9 w-64" />
-        <Skeleton className="mt-4 h-56" />
+        <Skeleton className="h-56" />
       </div>
     )
   }
 
   if (!settingsQuery.data) {
     return (
-      <GlassCard className="mx-auto max-w-3xl p-10 text-center">
+      <Panel className="p-10 text-center">
         <h1 className="text-lg">The platform settings could not be loaded</h1>
         <p className="mt-1 text-sm text-ink-muted">Reload to try again.</p>
-      </GlassCard>
+      </Panel>
     )
   }
 
@@ -117,82 +121,85 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-2xl">Platform settings</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Policy for the whole deployment. These settings govern clients' inventories, so every
-          change is kept with its reason.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        crumbs={crumbs}
+        title="Platform settings"
+        subtitle="Policy for the whole deployment. These settings govern clients' inventories, so every change is kept with its reason."
+      />
 
-      <GlassCard className="p-6">
-        {/* noValidate as everywhere else: the server is the authority and its
-            refusal is what the reader sees, rather than a silent browser block */}
-        <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
-          <InputField
-            label="Support access lasts"
-            type="number"
-            min={1}
-            max={72}
-            value={windowHours}
-            onChange={(event) => setWindowHours(event.target.value)}
-            error={errors.supportAccessWindowHours}
-            hint="Hours, between 1 and 72. A grant keeps the window it was taken under, so changing this never moves access that is already live."
-          />
+      <Panel>
+        <PanelBody>
+          {/* noValidate as everywhere else: the server is the authority and its
+              refusal is what the reader sees, rather than a silent browser block */}
+          <form onSubmit={submit} className="grid max-w-3xl gap-5 sm:grid-cols-2" noValidate>
+            <InputField
+              label="Support access lasts"
+              type="number"
+              min={1}
+              max={72}
+              value={windowHours}
+              onChange={(event) => setWindowHours(event.target.value)}
+              error={errors.supportAccessWindowHours}
+              hint="Hours, between 1 and 72. A grant keeps the window it was taken under, so changing this never moves access that is already live."
+            />
 
-          <SelectField
-            label="Who may create an organization"
-            value={creation}
-            onChange={(event) => setCreation(event.target.value as OrganizationCreation)}
-            error={errors.organizationCreation}
-            hint="With administrators only, the form asks for the client account that becomes the owner, and the administrator is not made a member."
-          >
-            <option value="EVERYONE">Everyone signed in</option>
-            <option value="ADMINISTRATORS">Administrators only</option>
-          </SelectField>
+            <SelectField
+              label="Who may create an organization"
+              value={creation}
+              onChange={(event) => setCreation(event.target.value as OrganizationCreation)}
+              error={errors.organizationCreation}
+              hint="With administrators only, the form asks for the client account that becomes the owner, and the administrator is not made a member."
+            >
+              <option value="EVERYONE">Everyone signed in</option>
+              <option value="ADMINISTRATORS">Administrators only</option>
+            </SelectField>
 
-          <SelectField
-            label="Editions inside a published period"
-            value={editions}
-            onChange={(event) => setEditions(event.target.value as EditionsInPublishedPeriods)}
-            error={errors.editionsInPublishedPeriods}
-            hint="Whether an organization may import or accept a factor pack edition that applies from a date inside a published period. Published runs keep the factors they reported with either way. Frozen and final periods always block."
-          >
-            <option value="BLOCKED">Blocked (default)</option>
-            <option value="ALLOWED">Allowed: published runs keep their factors</option>
-          </SelectField>
+            <div className="sm:col-span-2">
+              <SelectField
+                label="Editions inside a published period"
+                value={editions}
+                onChange={(event) => setEditions(event.target.value as EditionsInPublishedPeriods)}
+                error={errors.editionsInPublishedPeriods}
+                hint="Whether an organization may import or accept a factor pack edition that applies from a date inside a published period. Published runs keep the factors they reported with either way. Frozen and final periods always block."
+              >
+                <option value="BLOCKED">Blocked (default)</option>
+                <option value="ALLOWED">Allowed: published runs keep their factors</option>
+              </SelectField>
+            </div>
 
-          <TextAreaField
-            label="Reason for this change"
-            rows={2}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            error={errors.reason}
-            hint="At least 10 characters. It is kept with the change, and a verifier may ask to read it."
-          />
+            <div className="sm:col-span-2">
+              <TextAreaField
+                label="Reason for this change"
+                rows={2}
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                error={errors.reason}
+                hint="At least 10 characters. It is kept with the change, and a verifier may ask to read it."
+              />
+            </div>
 
-          {refusal && (
-            <p role="alert" className="text-sm font-medium text-red-600">
-              {refusal}
-            </p>
-          )}
-
-          <div className="flex items-center gap-4">
-            <Button type="submit" busy={save.isPending}>
-              Save settings
-            </Button>
-            {settings.updatedBy && (
-              <span className="text-xs text-ink-muted">
-                Last changed by {settings.updatedBy} on {when(settings.updatedAt)}
-              </span>
+            {refusal && (
+              <p role="alert" className="text-sm font-medium text-danger sm:col-span-2">
+                {refusal}
+              </p>
             )}
-          </div>
-        </form>
-      </GlassCard>
 
-      <h2 className="mt-8 mb-3 text-lg">Every change</h2>
-      <GlassCard className="overflow-x-auto">
+            <div className="flex flex-wrap items-center justify-between gap-4 sm:col-span-2">
+              <span className="text-[13px] text-ink-muted">
+                {settings.updatedBy &&
+                  `Last changed by ${settings.updatedBy} on ${when(settings.updatedAt)}`}
+              </span>
+              <Button type="submit" busy={save.isPending}>
+                Save settings
+              </Button>
+            </div>
+          </form>
+        </PanelBody>
+      </Panel>
+
+      <Panel>
+        <PanelHead title="Every change" />
         {historyQuery.isPending && (
           <div aria-label="Loading the settings history" className="flex flex-col gap-2 p-4">
             <Skeleton className="h-8" />
@@ -204,39 +211,32 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
           </p>
         )}
         {historyQuery.data && historyQuery.data.length > 0 && (
-          <table className="w-full text-left text-sm">
+          <Table className="[&_tbody_tr:last-child>td]:border-b-0">
             <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Setting</th>
-                <th className="px-4 py-3 font-semibold">From</th>
-                <th className="px-4 py-3 font-semibold">To</th>
-                <th className="px-4 py-3 font-semibold">Reason</th>
-                <th className="px-4 py-3 font-semibold">Who</th>
-                <th className="px-4 py-3 font-semibold">When</th>
+              <tr>
+                <Th>Setting</Th>
+                <Th>From</Th>
+                <Th>To</Th>
+                <Th>Reason</Th>
+                <Th>Who</Th>
+                <Th>When</Th>
               </tr>
             </thead>
             <tbody>
               {historyQuery.data.map((change) => (
-                <tr
-                  key={`${change.changedAt}-${change.setting}`}
-                  className="border-b border-teal/5 last:border-0"
-                >
-                  <td className="px-4 py-3 font-medium">
-                    {settingNames[change.setting] ?? change.setting}
-                  </td>
-                  <td className="px-4 py-3 text-ink-muted">
-                    {valueLabel(change.setting, change.oldValue)}
-                  </td>
-                  <td className="px-4 py-3">{valueLabel(change.setting, change.newValue)}</td>
-                  <td className="px-4 py-3 text-ink-muted">{change.reason}</td>
-                  <td className="px-4 py-3 text-ink-muted">{change.actorEmail}</td>
-                  <td className="px-4 py-3 text-ink-muted">{when(change.changedAt)}</td>
+                <tr key={`${change.changedAt}-${change.setting}`}>
+                  <Td className="font-medium">{settingNames[change.setting] ?? change.setting}</Td>
+                  <Td className="text-ink-muted">{valueLabel(change.setting, change.oldValue)}</Td>
+                  <Td>{valueLabel(change.setting, change.newValue)}</Td>
+                  <Td className="text-ink-muted">{change.reason}</Td>
+                  <Td className="text-ink-muted">{change.actorEmail}</Td>
+                  <Td className="whitespace-nowrap text-ink-muted">{when(change.changedAt)}</Td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
-      </GlassCard>
+      </Panel>
     </div>
   )
 }

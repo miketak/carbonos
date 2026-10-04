@@ -1,5 +1,9 @@
-import { GlassCard } from '../../components/GlassCard'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { StatusDot } from '../../components/StatusDot'
+import type { StatusTone } from '../../components/StatusDot'
+import { Table, Td, Th } from '../../components/Table'
 import { AccessRequestsSection } from './components/AccessRequestsSection'
 import { useAccessRequestsQuery } from './useAccessRequests'
 import type { AccessRequest } from './api'
@@ -14,6 +18,14 @@ const outcome: Record<string, string> = {
   DENIED: 'Denied',
 }
 
+const outcomeTones: Record<string, StatusTone> = {
+  APPROVED: 'warning',
+  COMPLETED: 'success',
+  DENIED: 'neutral',
+}
+
+const crumbs = [{ label: 'Administration' }, { label: 'Access requests' }]
+
 /**
  * The access-request queue and the record behind it (specs 01.1, 01.5).
  *
@@ -26,19 +38,17 @@ export function AdminAccessRequestsPage() {
   const decided = (requestsQuery.data ?? []).filter((request) => request.status !== 'PENDING')
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl">Access requests</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Approving one creates the account at once in the pending state and sends a link to set a
-          password. Nobody signs in until they have set it.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        crumbs={crumbs}
+        title="Access requests"
+        subtitle="Approving one creates the account at once in the pending state and sends a link to set a password. Nobody signs in until they have set it."
+      />
 
       <AccessRequestsSection />
 
-      <h2 className="mt-8 mb-3 text-lg">Already decided</h2>
-      <GlassCard className="overflow-x-auto">
+      <Panel>
+        <PanelHead title="Already decided" />
         {requestsQuery.isPending && (
           <div aria-label="Loading decided requests" className="flex flex-col gap-2 p-4">
             <Skeleton className="h-8" />
@@ -48,30 +58,34 @@ export function AdminAccessRequestsPage() {
           <p className="p-6 text-sm text-ink-muted">Nothing has been decided yet.</p>
         )}
         {decided.length > 0 && (
-          <table className="w-full text-left text-sm">
+          <Table className="[&_tbody_tr:last-child>td]:border-b-0">
             <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Name</th>
-                <th className="px-4 py-3 font-semibold">Email</th>
-                <th className="px-4 py-3 font-semibold">Company</th>
-                <th className="px-4 py-3 font-semibold">Outcome</th>
-                <th className="px-4 py-3 font-semibold">Decided</th>
+              <tr>
+                <Th>Name</Th>
+                <Th>Email</Th>
+                <Th>Company</Th>
+                <Th>Outcome</Th>
+                <Th>Decided</Th>
               </tr>
             </thead>
             <tbody>
               {decided.map((request: AccessRequest) => (
-                <tr key={request.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-4 py-3 font-medium">{request.displayName}</td>
-                  <td className="px-4 py-3 text-ink-muted">{request.email}</td>
-                  <td className="px-4 py-3 text-ink-muted">{request.company ?? ''}</td>
-                  <td className="px-4 py-3">{outcome[request.status] ?? request.status}</td>
-                  <td className="px-4 py-3 text-ink-muted">{when(request.decidedAt)}</td>
+                <tr key={request.id}>
+                  <Td className="font-medium">{request.displayName}</Td>
+                  <Td className="text-ink-muted">{request.email}</Td>
+                  <Td className="text-ink-muted">{request.company ?? ''}</Td>
+                  <Td>
+                    <StatusDot tone={outcomeTones[request.status] ?? 'neutral'}>
+                      {outcome[request.status] ?? request.status}
+                    </StatusDot>
+                  </Td>
+                  <Td className="whitespace-nowrap text-ink-muted">{when(request.decidedAt)}</Td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
-      </GlassCard>
+      </Panel>
     </div>
   )
 }

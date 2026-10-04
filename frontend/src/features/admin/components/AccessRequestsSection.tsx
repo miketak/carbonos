@@ -1,6 +1,7 @@
 import { Button } from '../../../components/Button'
-import { GlassCard } from '../../../components/GlassCard'
+import { Panel, PanelHead } from '../../../components/Panel'
 import { Skeleton } from '../../../components/Skeleton'
+import { Table, Td, Th, TwoLine } from '../../../components/Table'
 import { useToast } from '../../../components/toast'
 import { problemDetail } from '../../../lib/api'
 import {
@@ -20,6 +21,16 @@ const INTENT_LABEL: Record<string, string> = {
   PILOT: 'Asked about the pilot',
   LICENCE: 'Asked for a licence',
   TALK: 'Wants to talk to ECORIV',
+}
+
+/** The company, what the visitor asked for and their own words, on one meta line. */
+function requestMeta(request: AccessRequest): string | undefined {
+  const parts = [
+    request.company,
+    request.intent && request.intent !== 'ACCESS' ? INTENT_LABEL[request.intent] : null,
+    request.message ? `“${request.message}”` : null,
+  ].filter(Boolean)
+  return parts.length > 0 ? parts.join(' · ') : undefined
 }
 
 export function AccessRequestsSection() {
@@ -45,74 +56,62 @@ export function AccessRequestsSection() {
   }
 
   return (
-    <section>
-      <h2 className="mb-3 text-lg">Waiting for a decision</h2>
-
-      <GlassCard className="overflow-x-auto">
-        {requestsQuery.isPending && (
-          <div aria-label="Loading access requests" className="flex flex-col gap-2 p-4">
-            <Skeleton className="h-8" />
-          </div>
-        )}
-        {requestsQuery.data && pending.length === 0 && (
-          <p className="p-6 text-sm text-ink-muted">No pending requests.</p>
-        )}
-        {pending.length > 0 && (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Name</th>
-                <th className="px-4 py-3 font-semibold">Email</th>
-                <th className="px-4 py-3 font-semibold">Requested</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {pending.map((request) => (
-                <tr key={request.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-4 py-3">
-                    <span className="font-medium">{request.displayName}</span>
-                    {request.company && (
-                      <span className="block text-xs text-ink-muted">{request.company}</span>
-                    )}
-                    {request.intent && request.intent !== 'ACCESS' && (
-                      <span className="mt-1 block text-xs font-semibold text-link">
-                        {INTENT_LABEL[request.intent]}
-                      </span>
-                    )}
-                    {request.message && (
-                      <span className="mt-1 block max-w-md text-xs whitespace-pre-line text-ink-muted">
-                        “{request.message}”
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-ink-muted">{request.email}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
-                    {new Date(request.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
+    <Panel>
+      <PanelHead title="Waiting for a decision" />
+      {requestsQuery.isPending && (
+        <div aria-label="Loading access requests" className="flex flex-col gap-2 p-4">
+          <Skeleton className="h-8" />
+        </div>
+      )}
+      {requestsQuery.data && pending.length === 0 && (
+        <p className="p-6 text-sm text-ink-muted">No pending requests.</p>
+      )}
+      {pending.length > 0 && (
+        <Table className="[&_tbody_tr:last-child>td]:border-b-0">
+          <thead>
+            <tr>
+              <Th>Name</Th>
+              <Th>Email</Th>
+              <Th>Requested</Th>
+              <Th align="right">
+                <span className="sr-only">Decision</span>
+              </Th>
+            </tr>
+          </thead>
+          <tbody>
+            {pending.map((request) => (
+              <tr key={request.id}>
+                <Td>
+                  <TwoLine primary={request.displayName} secondary={requestMeta(request)} />
+                </Td>
+                <Td className="text-ink-muted">{request.email}</Td>
+                <Td className="whitespace-nowrap text-ink-muted">
+                  {new Date(request.createdAt).toLocaleDateString()}
+                </Td>
+                <Td align="right">
+                  <div className="flex justify-end gap-1">
                     <Button
-                      className="px-3 py-1 text-xs"
+                      size="sm"
                       onClick={() => decide(request, 'approve')}
                       disabled={approve.isPending || deny.isPending}
                     >
                       Approve
                     </Button>
                     <Button
+                      size="sm"
                       variant="ghost"
-                      className="ml-2 px-3 py-1 text-xs text-red-600 hover:bg-red-50"
                       onClick={() => decide(request, 'deny')}
                       disabled={approve.isPending || deny.isPending}
                     >
                       Deny
                     </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </GlassCard>
-    </section>
+                  </div>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
+    </Panel>
   )
 }
