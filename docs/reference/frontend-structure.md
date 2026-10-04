@@ -78,6 +78,19 @@ Because the view is the URL, a link reopens it. That is the property to
 preserve when editing either screen: a filter moved back into `useState` is a
 link a reviewer can no longer send.
 
+## Form surfaces
+
+Spec 08 fixes which surface a form gets, so the same kind of job meets the
+same kind of surface everywhere. A form that creates or edits a record with
+an identity of its own is a page under the record's list (`InventoryFormPage`
+at `inventories/new` and `inventories/:inventoryId/edit`, `FacilityFormPage`
+at `facilities/new` and `facilities/:facilityId/edit`), with a `Breadcrumb`
+back to the list and the page title as the form's accessible name. A row
+editor of a list-shaped register is a `Drawer` keyed off the URL, as above. A
+one-shot form, a batch operation and a confirmation are a `Modal`. The
+buttons that lead to a form page stay `RoleButton`s that navigate, so a
+verifier meets the disabled control, not a page that refuses.
+
 ## Feature to module
 
 | Feature | Backend module | Pages |

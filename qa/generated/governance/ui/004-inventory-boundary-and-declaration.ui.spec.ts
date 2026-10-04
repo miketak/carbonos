@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/004-inventory-boundary-and-declaration.yaml (sha256 62533740ec225c53c7b123cb0db35ef801b69c6521a4c2caba00b19670dedd4b); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/004-inventory-boundary-and-declaration.yaml (sha256 debe11a308a627030dedf4164e87846ee19d1fb78079f49c65afd8f0666e76a4); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 4, "62533740ec225c53c7b123cb0db35ef801b69c6521a4c2caba00b19670dedd4b")
+const P = procedure("governance", 4, "debe11a308a627030dedf4164e87846ee19d1fb78079f49c65afd8f0666e76a4")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 4: Inventory, boundary and declaration", () => {
@@ -17,7 +17,7 @@ test.describe("Procedure 4: Inventory, boundary and declaration", () => {
     await test.step("4.A1.2", async () => {
       const s = P.step("4.A1.2")
       const out = await s.do("createInventory", {"organization":"Adansi Foods Ltd","name":"FY2025","periodStart":"2025-01-01","periodEnd":"2025-12-31","approach":"OPERATIONAL_CONTROL","gwpSet":"AR5","straddle":"PRO_RATE","prefillBoundary":true})
-      await s.expect(out, [{"outcome":"inventoryListed","args":{"organization":"Adansi Foods Ltd","name":"FY2025","status":"DRAFT"},"why":"\"FY2025 created.\" appears first"}])
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"DRAFT"},"why":"\"FY2025 created.\" appears first, and the workbench of the new inventory opens"}])
     })
     await test.step("4.A1.3", async () => {
       const s = P.step("4.A1.3")

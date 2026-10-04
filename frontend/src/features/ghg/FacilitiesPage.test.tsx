@@ -10,14 +10,7 @@ vi.mock('./api', () => import('./testApiMock'))
 // forms with many fields take longer than the 15s default on a loaded machine
 vi.setConfig({ testTimeout: 30000 })
 
-import {
-  createFacility,
-  createStream,
-  getOrganization,
-  listEntities,
-  listFacilities,
-  listStreams,
-} from './api'
+import { createStream, getOrganization, listEntities, listFacilities, listStreams } from './api'
 
 const organization: Organization = {
   id: 'org-1',
@@ -129,7 +122,6 @@ beforeEach(() => {
   vi.mocked(listStreams).mockReset().mockResolvedValue([])
   vi.mocked(createStream).mockReset()
   vi.mocked(listEntities).mockReset()
-  vi.mocked(createFacility).mockReset()
   vi.mocked(getOrganization).mockReset()
   vi.mocked(listFacilities).mockResolvedValue([pit, plant])
   vi.mocked(listEntities).mockResolvedValue([own, jv])
@@ -156,68 +148,38 @@ test('names the reporting company as such, not as a subsidiary', async () => {
   expect(pitRow).not.toHaveTextContent('Subsidiary')
 })
 
-test('the add form submits the chosen legal entity', async () => {
+test('Edit leads to the facility’s own page under the list (spec 08)', async () => {
   const user = userEvent.setup()
-  vi.mocked(createFacility).mockResolvedValue({
-    ...plant,
-    id: 'fac-3',
-    name: 'Takoradi Port Loadout',
+  renderWithProviders(<FacilitiesPage />, {
+    route: '/app/ghg/org-1/facilities',
+    path: '/app/ghg/:organizationId/facilities',
+    extraRoutes: [
+      { path: '/app/ghg/:organizationId/facilities/new', element: <h1>Add facility</h1> },
+      {
+        path: '/app/ghg/:organizationId/facilities/:facilityId/edit',
+        element: <h1>Edit facility</h1>,
+      },
+    ],
   })
-  renderPage()
 
-  await user.click(await screen.findByRole('button', { name: /add facility/i }))
-  const dialog = await screen.findByRole('dialog', { name: /add facility/i })
-  // paste rather than type: keystroke-by-keystroke typing is slow on a loaded machine
-  await user.click(screen.getByLabelText('Name'))
-  await user.paste('Takoradi Port Loadout')
-  await user.click(screen.getByLabelText('Location'))
-  await user.paste('Takoradi, Ghana')
-  const legalEntity = await screen.findByLabelText('Legal entity')
-  // the company itself is named as such, not by the Table 1 row it is stored under
-  expect(
-    within(legalEntity)
-      .getAllByRole('option')
-      .map((option) => option.textContent),
-  ).toEqual(['Sankofa Gold plc (Reporting company)', 'Tarkwa Gold JV Ltd (Joint venture)'])
-  await user.selectOptions(legalEntity, 'ent-2')
-  await user.click(within(dialog).getByRole('button', { name: /^add facility$/i }))
-
-  await waitFor(() =>
-    expect(createFacility).toHaveBeenCalledWith('org-1', {
-      name: 'Takoradi Port Loadout',
-      location: 'Takoradi, Ghana',
-      entityId: 'ent-2',
-    }),
-  )
+  const plantRow = (await screen.findByText('Tarkwa Processing Plant')).closest('tr') as HTMLElement
+  await user.click(within(plantRow).getByRole('button', { name: /^edit$/i }))
+  expect(await screen.findByRole('heading', { name: 'Edit facility' })).toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
-test('the add form submits the grid region, the type and the lease (spec 03.4)', async () => {
+test('Add facility leads to the add page (spec 08)', async () => {
   const user = userEvent.setup()
-  vi.mocked(createFacility).mockResolvedValue({ ...pit, id: 'fac-3', name: 'Tema Warehouse' })
-  renderPage()
+  renderWithProviders(<FacilitiesPage />, {
+    route: '/app/ghg/org-1/facilities',
+    path: '/app/ghg/:organizationId/facilities',
+    extraRoutes: [
+      { path: '/app/ghg/:organizationId/facilities/new', element: <h1>Add facility</h1> },
+    ],
+  })
 
   await user.click(await screen.findByRole('button', { name: /add facility/i }))
-  const dialog = await screen.findByRole('dialog', { name: /add facility/i })
-  await user.type(within(dialog).getByLabelText('Name'), 'Tema Warehouse')
-  await user.type(within(dialog).getByLabelText('Location'), 'Tema, Ghana')
-  await user.type(within(dialog).getByLabelText('Grid region (optional)'), 'gha')
-  await user.selectOptions(within(dialog).getByLabelText('Facility type (optional)'), 'WAREHOUSE')
-  await user.selectOptions(within(dialog).getByLabelText('Lease (optional)'), 'OPERATING_LEASE_IN')
-  await user.type(within(dialog).getByLabelText('Lease from (optional)'), '2025-07-01')
-  await user.click(within(dialog).getByRole('button', { name: /^add facility$/i }))
-
-  await waitFor(() =>
-    expect(createFacility).toHaveBeenCalledWith(
-      'org-1',
-      expect.objectContaining({
-        name: 'Tema Warehouse',
-        gridRegion: 'GHA',
-        facilityType: 'WAREHOUSE',
-        leaseType: 'OPERATING_LEASE_IN',
-        leaseFrom: '2025-07-01',
-      }),
-    ),
-  )
+  expect(await screen.findByRole('heading', { name: 'Add facility' })).toBeInTheDocument()
 })
 
 test('a verifier sees Add facility, Edit and Remove disabled, but Source streams stays usable (spec 01.4)', async () => {

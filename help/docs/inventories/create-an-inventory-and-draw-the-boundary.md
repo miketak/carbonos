@@ -1,7 +1,7 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
-description: Create an inventory from the New inventory dialog, find your way around its workbench, and decide on the Boundary tab which entities and facilities this view accounts for.
+last_reviewed: 2026-10-03
+description: Create an inventory on the New inventory page, find your way around its workbench, and decide on the Boundary tab which entities and facilities this view accounts for.
 role: Preparer
 minutes: 10
 screens: [step-5-boundary.png]
@@ -11,7 +11,7 @@ screens: [step-5-boundary.png]
 
 An inventory is one accounting view over the organization's records: a period, an approach, a boundary and the decisions the view makes about each record. Create one each reporting year, or a second over the same period under another approach.
 
-<!-- sources: specs 03, 03.3, 04.2, 04.4, 05 and 07.2; the old page tasks/inventories/create-an-inventory-set-the-boundary-and-declare-scope-3.md (verified 2026-09-24); InventoryFormModal.tsx; BoundarySection.tsx (the reason list, "left out without a reason", "Detail for the verifier"); LifecycleBar.tsx (the disabled freeze button); InventoryService.java boundary findings; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 inventory dialog", "5 inventories", "5 workbench", "5 boundary" -->
+<!-- sources: specs 03, 03.3, 04.2, 04.4, 05 and 07.2; the old page tasks/inventories/create-an-inventory-set-the-boundary-and-declare-scope-3.md (verified 2026-09-24); InventoryFormPage.tsx; BoundarySection.tsx (the reason list, "left out without a reason", "Detail for the verifier"); LifecycleBar.tsx (the disabled freeze button); InventoryService.java boundary findings; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 inventory dialog", "5 inventories", "5 workbench", "5 boundary" -->
 
 ## Before you start
 
@@ -28,9 +28,9 @@ An inventory is one accounting view over the organization's records: a period, a
 6. Choose the **GWP set**, **AR5 (default)** or **AR6**.
 7. Leave **Copy the view from (optional)** at **Start from scratch**; see [Copy a view to another approach or the next year](copy-a-view.md).
 8. Leave **Start with every operation the approach includes in the boundary** ticked.
-9. Click **Create inventory**, then **Open** on the new card.
+9. Click **Create inventory**.
 
-What you see: "FY2025 created." and a **DRAFT** card on **GHG inventories**.
+What you see: "FY2025 created." and the workbench of the new inventory, with **DRAFT** in its header. The breadcrumb **Inventories** leads back to the list, where FY2025 has a card.
 
 ## Find your way around the workbench
 

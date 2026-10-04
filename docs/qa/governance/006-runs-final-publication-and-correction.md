@@ -88,7 +88,7 @@
 | 1 | As Yaw Darko in the private window, sign in as "Yaw Darko". | Yaw Darko is signed in. |  |  |
 | 2 | In Solo Ltd, open **Facilities**, then click **Add facility**. Fill in **Name** with `Solo Office`, fill in **Location** with `Accra`, fill in **Country (optional)** with `GH`, set **Legal entity** to Solo Ltd, then click **Add facility**. | Solo Office is listed under Solo Ltd. |  |  |
 | 3 | Add the record "Office generator diesel" at Solo Office: 100 litre, 2025-03-01 to 2025-03-31, source "Fuel receipt". | Office generator diesel is on the register as a fact with the quantity 100 litre. |  |  |
-| 4 | Open **Inventories** and click **New inventory**. Name "Solo FY2025", period 2025-01-01 to 2025-12-31, consolidation approach operational control, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Start with every operation the approach includes in the boundary** ticked. Click **Create inventory**. | The list shows "Solo FY2025" as DRAFT with **Open**. |  |  |
+| 4 | Open **Inventories** and click **New inventory**. Name "Solo FY2025", period 2025-01-01 to 2025-12-31, consolidation approach operational control, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Start with every operation the approach includes in the boundary** ticked. Click **Create inventory**. The inventory opens on its workbench. | The header reads DRAFT. |  |  |
 | 5 | Click **Review activity data**. |  |  |  |
 | 6 | Open Office generator diesel and choose **Diesel (Solo)**. | Office generator diesel reads included, uses **Diesel (Solo)**. |  |  |
 | 7 | Choose **No residual mix is available** and save. | The inventory records that no residual mix is available. |  |  |
@@ -141,7 +141,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Open **Inventories** and click **New inventory**. Name "FY2025 equity view", period 2025-01-01 to 2025-12-31, consolidation approach equity share, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Copy the view from (optional)** FY2025. Click **Create inventory**. | The list shows "FY2025 equity view" as DRAFT with **Open**. |  |  |
+| 1 | Open **Inventories** and click **New inventory**. Name "FY2025 equity view", period 2025-01-01 to 2025-12-31, consolidation approach equity share, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Copy the view from (optional)** FY2025. Click **Create inventory**. The inventory opens on its workbench. | The header reads DRAFT. |  |  |
 | 2 | On the inventory "FY2025 equity view", open **Boundary**. | Coldstore Ghana Ltd is in the boundary; Takoradi Cold Store is in; the economic interest reads 30. |  |  |
 | 3 | Open **Where this inventory came from** at the top of the workbench. | **Where this inventory came from** lists "Coldstore Ghana Ltd: Methodology exclusion dropped, 30% equity share under this approach". |  |  |
 | 4 | Click **Review activity data**. | ACT-0008 is still unclassified: Takoradi Cold Store is in the boundary under this approach; the classifications of the other records are inherited and marked. |  |  |

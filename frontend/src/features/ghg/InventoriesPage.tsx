@@ -1,13 +1,11 @@
-import { useState } from 'react'
 import type { CSSProperties } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
 import { ApproachBadge, InventoryStatusBadge } from './components/badges'
-import { InventoryFormModal } from './components/InventoryFormModal'
 import { RoleButton } from './components/RoleButton'
 import { mayWrite, WRITE_TOOLTIP } from './roles'
 import { useDeleteInventory, useInventoriesQuery, useOrganizationQuery } from './useGhg'
@@ -24,7 +22,7 @@ export function InventoriesPage() {
   const organizationQuery = useOrganizationQuery(organizationId)
   const deleteInventory = useDeleteInventory(organizationId)
   const toast = useToast()
-  const [creating, setCreating] = useState(false)
+  const navigate = useNavigate()
 
   const inventories = inventoriesQuery.data
   const myRole = organizationQuery.data?.myRole ?? null
@@ -43,7 +41,7 @@ export function InventoriesPage() {
           allowed={mayWrite(myRole)}
           tooltip={WRITE_TOOLTIP}
           className="px-4 py-1.5 text-sm"
-          onClick={() => setCreating(true)}
+          onClick={() => navigate('new')}
         >
           New inventory
         </RoleButton>
@@ -81,18 +79,6 @@ export function InventoriesPage() {
           />
         ))}
       </div>
-
-      {creating && (
-        <InventoryFormModal
-          organizationId={organizationId}
-          myRole={myRole}
-          onClose={() => setCreating(false)}
-          onSaved={(message) => {
-            setCreating(false)
-            toast(message)
-          }}
-        />
-      )}
     </section>
   )
 }
