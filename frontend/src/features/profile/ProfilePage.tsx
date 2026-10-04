@@ -3,7 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { AppHeader } from '../../components/AppHeader'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { Panel } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail } from '../../lib/api'
@@ -55,7 +55,7 @@ export function ProfilePage() {
       <AppHeader />
 
       <main className="mx-auto flex max-w-5xl justify-center px-6 py-16">
-        <GlassCard className="w-full max-w-lg p-10">
+        <Panel className="w-full max-w-lg p-8">
           <h1 className="text-2xl">Edit profile</h1>
 
           {profileQuery.isPending && <Skeleton className="mt-6 h-64" />}
@@ -65,7 +65,7 @@ export function ProfilePage() {
               {banner && (
                 <p
                   role="alert"
-                  className="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700"
+                  className="mt-4 rounded-lg border border-hairline border-l-[3px] border-l-danger-dot bg-surface px-4 py-3 text-sm text-danger"
                 >
                   {banner}
                 </p>
@@ -76,20 +76,20 @@ export function ProfilePage() {
                   <img
                     src={avatarUrl}
                     alt="Profile picture"
-                    className="size-20 rounded-full object-cover ring-2 ring-white shadow-[0_2px_12px_rgba(9,168,149,0.28)]"
+                    className="size-20 rounded-full object-cover ring-1 ring-hairline"
                   />
                 ) : (
                   <div
                     aria-hidden
-                    className="flex size-20 items-center justify-center rounded-full bg-teal/15 text-2xl font-bold text-link ring-2 ring-white shadow-[0_2px_12px_rgba(9,168,149,0.28)]"
+                    className="flex size-20 items-center justify-center rounded-full bg-surface-sunken text-2xl font-semibold text-ink ring-1 ring-hairline"
                   >
                     {profile.displayName.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="flex flex-col gap-1.5">
                   <Button
-                    variant="ghost"
-                    className="px-3 py-1.5 text-sm"
+                    variant="secondary"
+                    size="sm"
                     busy={avatarUpload.isPending}
                     onClick={() => avatarInput.current?.click()}
                   >
@@ -97,7 +97,7 @@ export function ProfilePage() {
                   </Button>
                   <p className="text-xs text-ink-muted">PNG, JPEG, or WebP · up to 5 MB</p>
                   {fieldErrors(avatarUpload.error)?.file && (
-                    <p role="alert" className="text-xs font-medium text-red-600">
+                    <p role="alert" className="text-xs font-medium text-danger">
                       {fieldErrors(avatarUpload.error)?.file}
                     </p>
                   )}
@@ -129,7 +129,7 @@ export function ProfilePage() {
               <ChangePasswordSection />
             </>
           )}
-        </GlassCard>
+        </Panel>
       </main>
     </div>
   )
