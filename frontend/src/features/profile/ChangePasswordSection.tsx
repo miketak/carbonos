@@ -51,7 +51,7 @@ export function ChangePasswordSection() {
   return (
     <section
       aria-labelledby="change-password-heading"
-      className="mt-10 border-t border-teal/10 pt-8"
+      className="mt-10 border-t border-hairline pt-8"
     >
       <h2 id="change-password-heading" className="text-lg">
         Change password
@@ -89,7 +89,7 @@ export function ChangePasswordSection() {
           required
         />
         {banner && (
-          <p role="alert" className="text-sm font-medium text-red-600">
+          <p role="alert" className="text-sm font-medium text-danger">
             {banner}
           </p>
         )}

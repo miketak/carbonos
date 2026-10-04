@@ -4,7 +4,6 @@ import { useMutation } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
 import { Wordmark } from '../../components/Wordmark'
 import { ApiError, fieldErrors, problemDetail } from '../../lib/api'
 import { requestPasswordReset } from './passwordApi'
@@ -42,10 +41,12 @@ export function ForgotPasswordPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <GlassCard className="w-full max-w-md p-8">
-        <div className="mb-6 text-center">
-          <Wordmark size="page" />
-          <h1 className="mt-4 text-xl">Reset your password</h1>
+      <div className="w-full max-w-md">
+        <div className="mb-6 flex flex-col items-center gap-5 text-center">
+          <Wordmark size="page" byline={false} />
+          <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.02em]">
+            Reset your password
+          </h1>
         </div>
 
         {send.isSuccess ? (
@@ -74,11 +75,11 @@ export function ForgotPasswordPage() {
               error={missing ? 'Enter your email.' : errors?.email}
             />
             {generalError && (
-              <p role="alert" className="text-sm font-medium text-red-600">
+              <p role="alert" className="text-sm font-medium text-danger">
                 {generalError}
               </p>
             )}
-            <Button type="submit" busy={send.isPending} className="mt-2">
+            <Button type="submit" busy={send.isPending} className="mt-2 w-full">
               Send reset link
             </Button>
             <Link to="/login" className={`${linkClasses} text-center`}>
@@ -86,7 +87,7 @@ export function ForgotPasswordPage() {
             </Link>
           </form>
         )}
-      </GlassCard>
+      </div>
     </main>
   )
 }

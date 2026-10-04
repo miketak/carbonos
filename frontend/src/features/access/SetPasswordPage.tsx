@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
 import { Wordmark } from '../../components/Wordmark'
 import { Skeleton } from '../../components/Skeleton'
 import { fieldErrors, problemDetail } from '../../lib/api'
@@ -60,10 +59,12 @@ export function SetPasswordPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <GlassCard className="w-full max-w-md p-8">
-        <div className="mb-6 text-center">
-          <Wordmark size="page" />
-          <h1 className="mt-4 text-xl">Set your password</h1>
+      <div className="w-full max-w-md">
+        <div className="mb-6 flex flex-col items-center gap-5 text-center">
+          <Wordmark size="page" byline={false} />
+          <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.02em]">
+            Set your password
+          </h1>
         </div>
 
         {token === '' || infoQuery.isError ? (
@@ -74,7 +75,7 @@ export function SetPasswordPage() {
             </p>
             <Link
               to="/"
-              className="mt-6 inline-block rounded-lg bg-teal-deep px-5 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-dark-teal"
+              className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-primary px-5 text-sm font-medium text-primary-ink transition-colors duration-150 hover:bg-primary-hover"
             >
               Back to CarbonOS
             </Link>
@@ -110,16 +111,16 @@ export function SetPasswordPage() {
               required
             />
             {generalError && (
-              <p role="alert" className="text-sm font-medium text-red-600">
+              <p role="alert" className="text-sm font-medium text-danger">
                 {generalError}
               </p>
             )}
-            <Button type="submit" busy={complete.isPending} className="mt-2">
+            <Button type="submit" busy={complete.isPending} className="mt-2 w-full">
               Set password and sign in
             </Button>
           </form>
         )}
-      </GlassCard>
+      </div>
     </main>
   )
 }

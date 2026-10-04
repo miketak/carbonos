@@ -4,7 +4,6 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
 import { Skeleton } from '../../components/Skeleton'
 import { Wordmark } from '../../components/Wordmark'
 import { ApiError, fieldErrors, problemDetail } from '../../lib/api'
@@ -16,7 +15,7 @@ import {
 } from './passwordApi'
 
 const buttonLinkClasses =
-  'mt-6 inline-block rounded-lg bg-teal-deep px-5 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-dark-teal'
+  'mt-6 inline-flex min-h-11 items-center rounded-lg bg-primary px-5 text-sm font-medium text-primary-ink transition-colors duration-150 hover:bg-primary-hover'
 
 /** A refused link: the server's own sentence (used, expired, not valid) and the way to a new one. */
 function linkRefusal(error: unknown): string | undefined {
@@ -75,10 +74,12 @@ export function ResetPasswordPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <GlassCard className="w-full max-w-md p-8">
-        <div className="mb-6 text-center">
-          <Wordmark size="page" />
-          <h1 className="mt-4 text-xl">Choose a new password</h1>
+      <div className="w-full max-w-md">
+        <div className="mb-6 flex flex-col items-center gap-5 text-center">
+          <Wordmark size="page" byline={false} />
+          <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.02em]">
+            Choose a new password
+          </h1>
         </div>
 
         {refusal ? (
@@ -123,16 +124,16 @@ export function ResetPasswordPage() {
               required
             />
             {generalError && (
-              <p role="alert" className="text-sm font-medium text-red-600">
+              <p role="alert" className="text-sm font-medium text-danger">
                 {generalError}
               </p>
             )}
-            <Button type="submit" busy={complete.isPending} className="mt-2">
+            <Button type="submit" busy={complete.isPending} className="mt-2 w-full">
               Set new password
             </Button>
           </form>
         )}
-      </GlassCard>
+      </div>
     </main>
   )
 }
