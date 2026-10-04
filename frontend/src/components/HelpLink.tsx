@@ -23,7 +23,7 @@ export function HelpLink({
       to={helpHref(topic, anchor)}
       target="_blank"
       rel="noopener"
-      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold text-link hover:bg-teal/10 focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none ${className}`}
+      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold text-link hover:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none ${className}`}
     >
       <svg
         width="14"

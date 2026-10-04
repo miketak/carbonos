@@ -4,46 +4,43 @@ export type WordmarkSize = 'nav' | 'page' | 'splash'
 export type WordmarkSurface = 'light' | 'dark'
 
 /*
- * Symbol, CARBONOS, and a small byline underneath. The name is set in the DOM
- * as "CarbonOS" and capitalised by CSS, so screen readers say the word and
- * tests keep finding it. The wordmark is solid, never gradient text: the
- * green end of the brand gradient fails contrast on every surface we use, and
- * the gradient belongs to the symbol alone.
+ * Symbol and CarbonOS, with a small byline underneath (spec 10). The name is
+ * title case, bold, tight against the symbol, and two-tone: "OS" takes the
+ * brand teal that passes on the surface (teal-deep on light, bright teal on
+ * dark). Screen readers get the word once, from a visually hidden span; the
+ * two-tone copy is decoration, so tests and readers find "CarbonOS" whole.
  */
 
-// caps need more air when small, so the tracking eases as the size grows; the
-// `/none` line-height keeps the byline tight under the word (a bare text-lg
-// brings its own 28px line-height and pushes the byline 12px down)
+// the symbol's optical centre sits a hair above the text's; `/none` keeps the byline tight
 const sizes: Record<
   WordmarkSize,
   { gap: string; mark: number; markClass?: string; word: string; byline: string }
 > = {
-  // nav steps down one size on phones so the row keeps room for the button and the menu
   nav: {
-    gap: 'gap-2',
+    gap: 'gap-1',
     mark: 28,
-    markClass: 'size-6 sm:size-7',
-    word: 'text-base/none tracking-[0.08em] sm:text-lg/none',
+    markClass: 'size-6 sm:size-7 -mt-px',
+    word: 'text-lg/none tracking-[-0.01em] sm:text-xl/none',
     byline: 'mt-[3px] text-[10px] tracking-[0.18em] sm:text-[11px]',
   },
   page: {
-    gap: 'gap-2.5',
-    mark: 36,
-    word: 'text-2xl/none tracking-[0.07em]',
+    gap: 'gap-1.5',
+    mark: 40,
+    markClass: '-mt-px',
+    word: 'text-[26px]/none tracking-[-0.01em]',
     byline: 'mt-0.5 text-[12px] tracking-[0.16em]',
   },
   splash: {
-    gap: 'gap-4',
+    gap: 'gap-3',
     mark: 64,
-    word: 'text-5xl/none tracking-[0.06em]',
+    word: 'text-5xl/none tracking-[-0.01em]',
     byline: 'mt-1.5 text-[13px] tracking-[0.18em]',
   },
 }
 
-// dark teal for the byline too: 4.8:1 on the hero's palest band, where ink-muted dips under 4.5
-const surfaces: Record<WordmarkSurface, { word: string; byline: string }> = {
-  light: { word: 'text-dark-teal', byline: 'text-dark-teal' },
-  dark: { word: 'text-white', byline: 'text-white/80' },
+const surfaces: Record<WordmarkSurface, { word: string; os: string; byline: string }> = {
+  light: { word: 'text-ink', os: 'text-teal-deep', byline: 'text-ink-muted' },
+  dark: { word: 'text-white', os: 'text-bright-teal', byline: 'text-white/80' },
 }
 
 interface WordmarkProps {
@@ -69,7 +66,10 @@ export function Wordmark({
     <span className={`inline-flex items-center ${s.gap} ${className}`}>
       {symbol && <CarbonOsMark size={s.mark} className={s.markClass} />}
       <span className="flex flex-col items-start leading-none">
-        <span className={`font-extrabold uppercase ${s.word} ${tone.word}`}>CarbonOS</span>
+        <span className="sr-only">CarbonOS</span>
+        <span aria-hidden="true" className={`font-bold ${s.word} ${tone.word}`}>
+          Carbon<span className={tone.os}>OS</span>
+        </span>
         {byline && (
           <span className={`font-semibold uppercase ${s.byline} ${tone.byline}`}>{byline}</span>
         )}

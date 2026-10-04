@@ -19,9 +19,7 @@ export function OrganizationName({
     <span className={className}>
       {name}
       {accountNo !== null && (
-        <span className="ml-2 font-mono text-xs font-medium tracking-wide text-ink-muted">
-          {accountLabel(accountNo)}
-        </span>
+        <span className="ml-2 text-xs font-medium text-ink-muted">{accountLabel(accountNo)}</span>
       )}
     </span>
   )

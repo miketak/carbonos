@@ -7,11 +7,8 @@
   --color-bright-teal: #05cebb;
   --color-accent-green: #82ef6d;
   --color-soft-mint: #f0f9f7;
-  /* Accessible text/interaction tokens (WCAG 2.2 AA on the glass surface).
-     teal stays vibrant for decoration; text and white-on-fill go through these:
-     ink-muted 5.4:1 (secondary text) · link 5.8:1 · teal-deep 5.0:1 white-on-fill. */
-  --color-ink-muted: #47696d;
-  --color-link: #0a6f66;
+  /* teal stays vibrant for decoration; white-on-fill goes through teal-deep (5.0:1).
+     ink-muted and link are workbench tokens now (the @theme inline block below). */
   --color-teal-deep: #0a7d70;
   --font-sans: 'Inter Variable', Inter, system-ui, sans-serif;
 }
@@ -108,7 +105,9 @@
   --color-hairline: var(--hairline);
   --color-hairline-strong: var(--hairline-strong);
   --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
   --color-ink-faint: var(--ink-faint);
+  --color-link: var(--link);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-ink: var(--primary-ink);
@@ -143,7 +142,7 @@
   }
 
   body {
-    @apply bg-soft-mint font-sans text-dark-teal antialiased;
+    @apply bg-ground font-sans text-ink antialiased;
     margin: 0;
     min-height: 100vh;
   }

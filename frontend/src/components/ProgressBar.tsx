@@ -9,11 +9,11 @@ export function ProgressBar({ label, percent }: { label: string; percent: number
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={value}
-        className="h-1.5 w-32 overflow-hidden rounded-full bg-teal/15"
+        className="h-1.5 w-32 overflow-hidden rounded-full bg-surface-sunken"
       >
-        <div className="h-full rounded-full bg-teal-deep" style={{ width: `${value}%` }} />
+        <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
       </div>
-      <span className="text-xs font-semibold text-dark-teal">{value}%</span>
+      <span className="text-xs font-semibold text-ink">{value}%</span>
     </div>
   )
 }

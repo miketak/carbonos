@@ -6,8 +6,9 @@ import type {
   TextareaHTMLAttributes,
 } from 'react'
 
-const controlClasses =
-  'w-full rounded-lg border border-teal/20 bg-white/70 px-3 py-2 text-dark-teal transition-colors duration-150 placeholder:text-ink-muted focus:border-bright-teal focus:ring-2 focus:ring-bright-teal/40 focus:outline-none disabled:opacity-50'
+/** The 44 px control of the kit (spec 10); exported for the fields that compose it elsewhere. */
+export const controlClasses =
+  'w-full min-h-11 rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-ink transition-colors duration-150 placeholder:text-ink-muted focus:border-primary focus:ring-2 focus:ring-focus/40 focus:outline-none disabled:opacity-50'
 
 interface FieldShellProps {
   label: string
@@ -20,13 +21,13 @@ interface FieldShellProps {
 function FieldShell({ label, error, hint, htmlFor, children }: FieldShellProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-sm font-medium">
+      <label htmlFor={htmlFor} className="text-[13px] font-medium">
         {label}
       </label>
       {children}
-      {hint && !error && <p className="text-xs text-ink-muted">{hint}</p>}
+      {hint && !error && <p className="text-[13px] text-ink-muted">{hint}</p>}
       {error && (
-        <p role="alert" className="text-xs font-medium text-red-600">
+        <p role="alert" className="text-[13px] font-medium text-danger">
           {error}
         </p>
       )}
@@ -81,7 +82,7 @@ export function TextAreaField({ label, error, hint, id, ...props }: TextAreaFiel
     <FieldShell label={label} error={error} hint={hint} htmlFor={fieldId}>
       <textarea
         id={fieldId}
-        className={controlClasses}
+        className={`${controlClasses} min-h-22`}
         aria-invalid={!!error}
         rows={3}
         {...props}
