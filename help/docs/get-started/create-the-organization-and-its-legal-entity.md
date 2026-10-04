@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-03
 description: Create the Gye Nyame Gold Ltd organization, read its account number, and record its camp services subsidiary as a legal entity with its ownership facts.
 role: Owner
 minutes: 5
@@ -34,7 +34,7 @@ What you see: the message "Gye Nyame Gold Ltd (ORG-0001) created." and a card fo
 Gye Nyame Gold Ltd is already listed under **Legal entities** as the reporting company, at 100% under every approach. The company also owns a subsidiary that runs the accommodation camp.
 
 1. Open **Legal entities** and click **Add entity**.
-2. In the **Add legal entity** dialog, fill **Name** with `Gye Nyame Camp Services Ltd`.
+2. On the **Add legal entity** page, fill **Name** with `Gye Nyame Camp Services Ltd`.
 3. Leave **Relationship** as "Group company or subsidiary (financial control)" and **Economic interest (%)** at 100.
 4. Fill **Legal ownership (%)** with `100`.
 5. Leave **Operated by the company** ticked, **Financial control** as "Follows the Table 1 row", **Held through** as "Held directly by the reporting company", and the two dates empty.
