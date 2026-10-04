@@ -1,10 +1,10 @@
 # 10: The workbench design system
 
-- **Status**: Draft
+- **Status**: Approved
 - **Protocol**: none; the product's own surface. Corporate Standard chapter 1
   (credibility and transparency) in that a verifier reads the product's
   calm and legibility as care
-- **Owner**: Michael Takrama (the mockup was approved on 2026-10-03)
+- **Owner**: Michael Takrama (mockup and spec approved on 2026-10-03)
 - **Created**: 2026-10-03
 - **Modules**: frontend `src/index.css`, `src/components`, `src/app`, and
   every feature under `src/features`; `help/docs/assets/screens` (figures);
