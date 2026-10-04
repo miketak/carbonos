@@ -127,7 +127,7 @@ export function OrganizationFormModal({
           />
         )}
         {generalError && (
-          <p role="alert" className="text-sm font-medium text-red-600">
+          <p role="alert" className="text-sm font-medium text-danger">
             {generalError}
           </p>
         )}

@@ -41,7 +41,7 @@ export function ActivityHistoryModal({
       {revisionsQuery.data && revisionsQuery.data.length > 0 && (
         <ul className="flex flex-col gap-3 text-sm">
           {revisionsQuery.data.map((revision) => (
-            <li key={revision.id} className="border-b border-teal/10 pb-3 last:border-0">
+            <li key={revision.id} className="border-b border-hairline pb-3 last:border-0">
               <p>
                 <span className="font-semibold">
                   {revision.kind === 'REMOVED'

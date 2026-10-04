@@ -72,15 +72,15 @@ export function StreamsModal({
         default scope (a contractor's source is scope 3, Corporate Standard chapter 4).
       </p>
       {streams.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-2 text-sm">
+        <ul className="mt-3 flex flex-col text-sm">
           {streams.map((stream) => (
             <li
               key={stream.id}
-              className="flex items-start justify-between gap-2 rounded-xl border border-teal/10 bg-white/40 p-2"
+              className="flex items-start justify-between gap-3 border-b border-hairline py-3 last:border-b-0"
             >
               <div>
                 <span className="font-medium">{stream.name}</span>
-                <span className="block text-xs text-ink-muted">
+                <span className="block text-[13px] text-ink-muted">
                   {streamKindLabels[stream.kind]}
                   {stream.fuel ? ` · ${stream.fuel}` : ''}
                   {stream.meterOrSupplier ? ` · ${stream.meterOrSupplier}` : ''} ·{' '}
@@ -93,7 +93,8 @@ export function StreamsModal({
                 allowed={mayWrite(myRole)}
                 tooltip={WRITE_TOOLTIP}
                 variant="ghost"
-                className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                size="sm"
+                className="text-danger"
                 aria-label={`Remove stream ${stream.name}`}
                 onClick={() =>
                   remove.mutate(stream.id, {
@@ -111,7 +112,7 @@ export function StreamsModal({
         <p className="mt-3 text-sm text-ink-muted">No streams registered yet.</p>
       )}
       {mayWrite(myRole) && (
-        <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-2" noValidate>
+        <form onSubmit={submit} className="mt-5 grid gap-x-6 gap-y-5 md:grid-cols-2" noValidate>
           <InputField
             label="Stream name"
             placeholder="Standby gensets"
@@ -142,21 +143,21 @@ export function StreamsModal({
             value={meterOrSupplier}
             onChange={(event) => setMeterOrSupplier(event.target.value)}
           />
-          <label className="flex items-center gap-2 text-sm md:col-span-2">
+          <label className="flex min-h-11 items-center gap-2.5 text-[15px] md:col-span-2">
             <input
               type="checkbox"
               checked={contractorOperated}
               onChange={(event) => setContractorOperated(event.target.checked)}
-              className="size-4 accent-teal"
+              className="size-[18px] accent-primary"
             />
             Operated by a contractor (its emissions default to scope 3)
           </label>
           {generalError && (
-            <p role="alert" className="text-sm font-medium text-red-600 md:col-span-2">
+            <p role="alert" className="text-sm font-medium text-danger md:col-span-2">
               {generalError}
             </p>
           )}
-          <div className="flex justify-end gap-2 md:col-span-2">
+          <div className="flex justify-end gap-3 border-t border-hairline pt-5 md:col-span-2">
             <Button type="button" variant="ghost" onClick={onClose}>
               Close
             </Button>
@@ -167,7 +168,7 @@ export function StreamsModal({
         </form>
       )}
       {!mayWrite(myRole) && (
-        <div className="mt-4 flex justify-end">
+        <div className="mt-6 flex justify-end border-t border-hairline pt-5">
           <Button type="button" variant="ghost" onClick={onClose}>
             Close
           </Button>

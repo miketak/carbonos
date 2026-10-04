@@ -1,11 +1,11 @@
-import { GlassCard } from '../../../components/GlassCard'
 import { ProgressBar } from '../../../components/ProgressBar'
+import { Stat, StatStrip } from '../../../components/StatStrip'
 import type { ActivityCounts } from '../api'
 
 /**
  * How far the records that match the current view are from review (spec
- * 04.6): completeness, never assurance. "Resolve n items" is the Needs
- * attention tab.
+ * 04.6): completeness, never assurance. A stat strip (spec 10); "Resolve n
+ * items" is the Needs attention tab.
  */
 export function CompletenessBanner({
   counts,
@@ -16,49 +16,46 @@ export function CompletenessBanner({
 }) {
   if (counts.total === 0) return null
   const percent = (counts.ready / counts.total) * 100
-  const allReady = counts.needsAttention === 0
   return (
-    <GlassCard className="mb-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-            allReady ? 'bg-accent-green/40 text-dark-teal' : 'bg-teal/15 text-teal-deep'
-          }`}
-        >
-          {allReady ? '✓' : '◐'}
-        </span>
-        <div>
-          <p className="text-sm font-semibold">
-            {counts.ready.toLocaleString()} of {counts.total.toLocaleString()} records ready
-            {counts.readyWithDocument > 0 && (
-              <span className="font-normal text-ink-muted">
-                , {counts.readyWithDocument.toLocaleString()} with a document on file
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-ink-muted">
-            Complete records make review easier. Ready means the figures, a stream, a source and
-            evidence are present; nothing here has been verified.
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-xs text-ink-muted">
-          <span>Record completeness</span>
-          <ProgressBar label="Record completeness" percent={percent} />
-        </div>
-        {!allReady && (
-          <button
-            type="button"
-            onClick={onResolve}
-            className="text-sm font-semibold text-link hover:underline"
-          >
-            Resolve {counts.needsAttention.toLocaleString()}{' '}
-            {counts.needsAttention === 1 ? 'item' : 'items'} →
-          </button>
-        )}
-      </div>
-    </GlassCard>
+    <StatStrip label="Record completeness">
+      <Stat
+        label="Records ready"
+        value={counts.ready.toLocaleString()}
+        unit={`of ${counts.total.toLocaleString()}`}
+        note={
+          <span className="flex flex-col gap-1.5">
+            <span className="flex items-center gap-2">
+              <span>Record completeness</span>
+              <ProgressBar label="Record completeness" percent={percent} />
+            </span>
+            <span>
+              Complete records make review easier. Ready means the figures, a stream, a source and
+              evidence are present; nothing here has been verified.
+            </span>
+          </span>
+        }
+      />
+      <Stat
+        label="With a document on file"
+        value={counts.readyWithDocument.toLocaleString()}
+        note="Files print on the run's lines and in the calculation file."
+      />
+      <Stat
+        label="Needs attention"
+        value={counts.needsAttention.toLocaleString()}
+        note={
+          counts.needsAttention > 0 ? (
+            <button
+              type="button"
+              onClick={onResolve}
+              className="font-medium text-link hover:underline"
+            >
+              Resolve {counts.needsAttention.toLocaleString()}{' '}
+              {counts.needsAttention === 1 ? 'item' : 'items'} →
+            </button>
+          ) : undefined
+        }
+      />
+    </StatStrip>
   )
 }

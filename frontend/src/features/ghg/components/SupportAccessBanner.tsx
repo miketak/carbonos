@@ -1,3 +1,4 @@
+import { Banner } from '../../../components/Banner'
 import { useSession } from '../../auth/useSession'
 import { formatDateTime } from '../format'
 import type { Organization } from '../api'
@@ -19,13 +20,10 @@ export function SupportAccessBanner({ organization }: { organization: Organizati
   const grant = grants.find((held) => held.adminEmail === email) ?? grants[0]
 
   return (
-    <p
-      role="status"
-      className="mb-6 rounded-lg border border-amber-300/60 bg-amber-50/80 px-4 py-2.5 text-sm font-medium text-dark-teal"
-    >
+    <Banner role="status" tone="warning" className="mb-6 font-medium">
       You are in {organizationLabel(organization)} under support access
       {grant ? ` until ${formatDateTime(grant.expiresAt)}` : ''}. Every act is recorded in this
       organization&rsquo;s history.
-    </p>
+    </Banner>
   )
 }

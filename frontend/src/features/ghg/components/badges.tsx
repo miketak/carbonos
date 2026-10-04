@@ -1,4 +1,6 @@
-import { StatusPill } from '../../../components/StatusPill'
+import { Chip } from '../../../components/Chip'
+import type { ChipTone } from '../../../components/Chip'
+import { StatusDot } from '../../../components/StatusDot'
 import type { Activity, Assignment, ConsolidationApproach, GhgScope, Inventory } from '../api'
 import {
   activityIssueLabels,
@@ -8,38 +10,23 @@ import {
   scopeLabels,
 } from '../format'
 
-const scopeStyles: Record<GhgScope, string> = {
-  SCOPE_1: 'bg-dark-teal text-white',
-  SCOPE_2: 'bg-teal/20 text-dark-teal',
-  SCOPE_3: 'bg-accent-green/25 text-dark-teal',
-}
-
+/** A scope as an outlined chip (spec 10): the word carries it, not a tint. */
 export function ScopeBadge({ scope }: { scope: GhgScope }) {
-  return (
-    <span
-      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${scopeStyles[scope]}`}
-    >
-      {scopeLabels[scope]}
-    </span>
-  )
+  return <Chip>{scopeLabels[scope]}</Chip>
 }
 
 export function ApproachBadge({ approach }: { approach: ConsolidationApproach }) {
-  return (
-    <span className="inline-block rounded-full bg-teal/15 px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-dark-teal">
-      {approachLabels[approach]}
-    </span>
-  )
+  return <Chip>{approachLabels[approach]}</Chip>
 }
 
-const statusStyles: Record<Inventory['status'], string> = {
-  DRAFT: 'border-amber-300 bg-amber-50 text-amber-700',
-  FROZEN: 'border-teal/40 bg-teal/10 text-link',
-  FINAL: 'border-teal/40 bg-accent-green/25 text-dark-teal',
-  PUBLISHED: 'border-dark-teal/40 bg-dark-teal text-white',
+const statusTones: Record<Inventory['status'], ChipTone> = {
+  DRAFT: 'neutral',
+  FROZEN: 'primary',
+  FINAL: 'primary',
+  PUBLISHED: 'success',
 }
 
-/** The inventory's lifecycle state (spec 05.1), in the pre-flight panel's instrument idiom. */
+/** The inventory's lifecycle state (spec 05.1) as a chip; the label text is what the QA procedures read. */
 export function InventoryStatusBadge({
   inventory,
 }: {
@@ -52,11 +39,9 @@ export function InventoryStatusBadge({
         ? 'PUBLISHED · SUPERSEDED'
         : `${inventory.status} · BOUNDARY v${inventory.currentBoundaryVersionNo}`
   return (
-    <span
-      className={`inline-block rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold tracking-widest whitespace-nowrap ${statusStyles[inventory.status]}`}
-    >
+    <Chip tone={statusTones[inventory.status]} className="tracking-wide">
       {label}
-    </span>
+    </Chip>
   )
 }
 
@@ -73,31 +58,31 @@ export function ActivityStatusPill({
   const all = activity.issues.map((issue) => activityIssueLabels[issue]).join(', ')
   if (activity.status === 'READY') {
     return (
-      <StatusPill tone="ready" title={all || 'All completeness checks passed'}>
+      <StatusDot tone="success" title={all || 'All completeness checks passed'}>
         Ready
-      </StatusPill>
+      </StatusDot>
     )
   }
   if (activity.status === 'DRAFT') {
     return (
-      <StatusPill tone="draft" title={all || 'A draft; not yet a fact'}>
+      <StatusDot tone="neutral" title={all || 'A draft; not yet a fact'}>
         Draft
-      </StatusPill>
+      </StatusDot>
     )
   }
   const first = blocking[0]
   return (
-    <StatusPill tone="attention" title={all}>
+    <StatusDot tone="warning" title={all}>
       {first ? activityIssueLabels[first] : 'Needs attention'}
       {blocking.length > 1 ? ` +${blocking.length - 1}` : ''}
-    </StatusPill>
+    </StatusDot>
   )
 }
 
 /**
- * This inventory's decision about one fact, as pill(s). When excluded, the pill
- * is removable: the cross re-includes the fact (DR-03), and an automatic
- * exclusion says why in words (spec 03.2).
+ * This inventory's decision about one fact, as a dot and a word (spec 10).
+ * When excluded, the reason follows the word and the cross re-includes the
+ * fact (DR-03); an automatic exclusion says why in words (spec 03.2).
  */
 export function AssignmentStatusPills({
   assignment,
@@ -110,13 +95,15 @@ export function AssignmentStatusPills({
 }) {
   if (!assignment.included) {
     return (
-      <span className="inline-flex flex-wrap items-center gap-1 rounded-full bg-slate-200 py-0.5 pr-1 pl-2.5 text-xs font-semibold text-slate-600">
-        Excluded · {assignment.exclusionReason ? exclusionLabels[assignment.exclusionReason] : ''}
+      <span className="inline-flex flex-wrap items-center gap-1 text-sm">
+        <StatusDot tone="neutral">
+          Excluded · {assignment.exclusionReason ? exclusionLabels[assignment.exclusionReason] : ''}
+        </StatusDot>
         {assignment.exclusionDetail && (
-          <span className="font-normal text-slate-500">({assignment.exclusionDetail})</span>
+          <span className="text-[13px] text-ink-muted">({assignment.exclusionDetail})</span>
         )}
         {assignment.exclusionJustification && (
-          <span className="font-normal text-slate-500">
+          <span className="text-[13px] text-ink-muted">
             {assignment.exclusionJustification}
             {/* spec 04.8: a record nobody sized reads as "not estimated", never as ~0 */}
             {assignment.gas !== null ? `; ${assignment.gas}, outside the scopes` : ''}
@@ -133,7 +120,7 @@ export function AssignmentStatusPills({
             onClick={onInclude}
             aria-label={`Re-include ${assignment.activityType}`}
             title="Re-include"
-            className="flex size-5 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-300 hover:text-slate-700"
+            className="flex size-6 items-center justify-center rounded-md text-ink-muted transition-colors duration-150 hover:bg-surface-sunken hover:text-ink focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
           >
             ✕
           </button>
@@ -143,25 +130,16 @@ export function AssignmentStatusPills({
   }
   if (assignment.classified) {
     return (
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block rounded-full bg-teal/15 px-2.5 py-0.5 text-xs font-semibold text-dark-teal">
-          Included
-        </span>
+      <span className="inline-flex flex-wrap items-center gap-2">
+        <StatusDot tone="success">Included</StatusDot>
         {assignment.scope && <ScopeBadge scope={assignment.scope} />}
         {assignment.inherited && (
-          <span
-            className="inline-block rounded-full border border-teal/30 px-2 py-0.5 text-xs text-ink-muted"
-            title="Copied from the source inventory's decision about this record (spec 05.3)"
-          >
+          <Chip title="Copied from the source inventory's decision about this record (spec 05.3)">
             inherited
-          </span>
+          </Chip>
         )}
       </span>
     )
   }
-  return (
-    <span className="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-      Unclassified
-    </span>
-  )
+  return <StatusDot tone="warning">Unclassified</StatusDot>
 }

@@ -1,12 +1,18 @@
 import { Link, useParams } from 'react-router-dom'
-import type { CSSProperties } from 'react'
-import { GlassCard } from '../../components/GlassCard'
+import { Chip } from '../../components/Chip'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel, PanelBody, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { Stat, StatStrip } from '../../components/StatStrip'
+import { Table, Td } from '../../components/Table'
+import { accountLabel } from '../../lib/organizationLabel'
 import { AnimatedCo2e } from './components/AnimatedCo2e'
 import { ApproachBadge } from './components/badges'
+import { ButtonLink } from './components/ButtonLink'
 import { ScopeBreakdown } from './components/ScopeBreakdown'
 import { SupportAccessCard } from './components/SupportAccessCard'
 import { TopFacilities } from './components/TopFacilities'
+import { roleShortLabels } from './format'
 import {
   useActivityPageQuery,
   useFacilitiesQuery,
@@ -14,9 +20,13 @@ import {
   useOrganizationQuery,
   useRunsQuery,
 } from './useGhg'
-import type { Inventory } from './api'
+import type { Inventory, Organization } from './api'
 
-/** Workspace landing page: a setup checklist until the first inventory, then a dashboard. */
+/**
+ * Workspace landing page (spec 10): the organization's name and account
+ * number, a stat strip, the headline inventory beside the top facilities,
+ * and the setup checklist as a table until the first final run.
+ */
 export function OverviewPage() {
   const { organizationId = '' } = useParams()
   const organization = useOrganizationQuery(organizationId).data
@@ -35,35 +45,92 @@ export function OverviewPage() {
 
   const facilities = facilitiesQuery.data ?? []
   const activityCount = activitiesQuery.data?.total ?? 0
+  const counts = activitiesQuery.data?.counts
   const inventories = inventoriesQuery.data ?? []
   // the headline inventory: prefer one with a designated final run, else the newest
   const headline = inventories.find((inventory) => inventory.finalRunId) ?? inventories[0]
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl">{organization?.name}</h1>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        back={{ to: '/app/ghg' }}
+        crumbs={[{ label: 'Overview' }]}
+        status={organization && roleLine(organization)}
+        title={organization?.name}
+        chips={organization && <Chip>{accountLabel(organization.accountNo)}</Chip>}
+        subtitle={
+          <>
+            {organization?.address && (
+              <>
+                {organization.address}
+                <Separator />
+              </>
+            )}
+            {facilities.length} facilit{facilities.length === 1 ? 'y' : 'ies'}
+            <Separator />
+            {inventories.length} inventor{inventories.length === 1 ? 'y' : 'ies'}
+          </>
+        }
+        actions={
+          <>
+            <ButtonLink to="activity" variant="secondary">
+              Record activity
+            </ButtonLink>
+            {headline && <ButtonLink to={`inventories/${headline.id}`}>Open inventory</ButtonLink>}
+          </>
+        }
+      />
 
-      <div className="animate-fade-up">
-        <SetupChecklist
-          facilityCount={facilities.length}
-          activityCount={activityCount}
-          inventories={inventories}
+      <StatStrip label="At a glance">
+        {headline?.finalRunId && <LatestRunStat inventory={headline} />}
+        <Stat
+          label="Activity records"
+          value={activityCount.toLocaleString()}
+          note={counts ? `${counts.ready.toLocaleString()} ready` : undefined}
         />
-      </div>
+        {counts && (
+          <Stat
+            label="Needs attention"
+            value={counts.needsAttention.toLocaleString()}
+            note={
+              counts.needsAttention > 0 ? (
+                <Link to="activity?tab=attention" className="text-link hover:underline">
+                  Resolve {counts.needsAttention.toLocaleString()}{' '}
+                  {counts.needsAttention === 1 ? 'item' : 'items'} →
+                </Link>
+              ) : undefined
+            }
+          />
+        )}
+      </StatStrip>
 
-      {headline && (
-        <div className="animate-fade-up" style={{ '--stagger': 2 } as CSSProperties}>
-          <HeadlineInventory inventory={headline} />
-        </div>
-      )}
+      {headline && <HeadlineInventory inventory={headline} />}
 
-      {organization && (
-        <div className="animate-fade-up" style={{ '--stagger': 3 } as CSSProperties}>
-          <SupportAccessCard organization={organization} />
-        </div>
-      )}
+      <SetupChecklist
+        facilityCount={facilities.length}
+        activityCount={activityCount}
+        inventories={inventories}
+      />
+
+      {organization && <SupportAccessCard organization={organization} />}
     </div>
   )
+}
+
+function Separator() {
+  return (
+    <span aria-hidden="true" className="mx-2 text-ink-faint">
+      ·
+    </span>
+  )
+}
+
+/* spec 01.4: the reader's own role, said on the page; a support grant is named as one */
+function roleLine(organization: Organization): string | undefined {
+  if (organization.myRole === null) return undefined
+  return organization.myRole === 'ADMIN'
+    ? 'Support access'
+    : `Your role: ${roleShortLabels[organization.myRole]}`
 }
 
 function SetupChecklist({
@@ -112,38 +179,58 @@ function SetupChecklist({
   }
 
   return (
-    <GlassCard className="p-6">
-      <h2 className="text-lg">From facts to a final inventory</h2>
-      <p className="mt-1 text-sm text-ink-muted">
-        Activity data is what happened; an inventory is how it's accounted for; a run is that view
-        calculated.
-      </p>
-      <ol className="mt-5 flex flex-col gap-4">
-        {steps.map((step, index) => (
-          <li key={step.title} className="flex items-start gap-4">
-            <span
-              className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                step.done ? 'bg-accent-green/25 text-dark-teal' : 'bg-teal/10 text-ink-muted'
-              }`}
-            >
-              {step.done ? '✓' : index + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold">{step.title}</p>
-              <p className="text-sm text-ink-muted">{step.detail}</p>
-            </div>
-            {index === nextIndex && (
-              <Link
-                to={step.to}
-                className="shrink-0 rounded-lg bg-teal-deep px-4 py-1.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-dark-teal"
-              >
-                {step.cta}
-              </Link>
-            )}
-          </li>
-        ))}
-      </ol>
-    </GlassCard>
+    <Panel>
+      <PanelHead
+        title="From facts to a final inventory"
+        description="Activity data is what happened; an inventory is how it's accounted for; a run is that view calculated."
+      />
+      <Table className="[&_tr:last-child_td]:border-b-0">
+        <tbody>
+          {steps.map((step, index) => (
+            <tr key={step.title}>
+              <Td className="w-14 pl-5">
+                <span
+                  aria-hidden="true"
+                  className={`flex size-7 items-center justify-center rounded-full text-sm font-semibold ${
+                    step.done ? 'bg-primary text-primary-ink' : 'bg-surface-sunken text-ink-muted'
+                  }`}
+                >
+                  {step.done ? '✓' : index + 1}
+                </span>
+              </Td>
+              <Td>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-medium">{step.title}</span>
+                  <span className="text-[13px] text-ink-muted">{step.detail}</span>
+                </div>
+              </Td>
+              <Td align="right" className="w-44 pr-5">
+                {index === nextIndex && (
+                  <ButtonLink to={step.to} size="sm">
+                    {step.cta}
+                  </ButtonLink>
+                )}
+              </Td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </Panel>
+  )
+}
+
+/** The latest final run's total, in the stat strip; the headline panel below carries the breakdown. */
+function LatestRunStat({ inventory }: { inventory: Inventory }) {
+  const runsQuery = useRunsQuery(inventory.id)
+  const runs = runsQuery.data ?? []
+  const run = runs.find((candidate) => candidate.id === inventory.finalRunId) ?? runs[0]
+  if (!run) return null
+  return (
+    <Stat
+      label="Latest final run"
+      value={<AnimatedCo2e kg={run.totalKgCo2e} />}
+      note={`${inventory.name} · ${run.label}`}
+    />
   )
 }
 
@@ -162,37 +249,28 @@ function HeadlineInventory({ inventory }: { inventory: Inventory }) {
 
   return (
     <div className="grid items-start gap-6 xl:grid-cols-2">
-      <GlassCard className="p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg">{inventory.name}</h2>
+      <Panel>
+        <PanelHead
+          title={
+            <span className="flex flex-wrap items-center gap-2">
+              {inventory.name}
               <ApproachBadge approach={inventory.consolidationApproach} />
-              {run.isFinal && (
-                <span className="rounded-full bg-accent-green/25 px-2 py-0.5 text-xs font-bold text-dark-teal">
-                  FINAL
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-ink-muted">
-              {run.label} · {run.periodStart} → {run.periodEnd}
-            </p>
-          </div>
+              {run.isFinal && <Chip tone="primary">FINAL</Chip>}
+            </span>
+          }
+          description={`${run.label} · ${run.periodStart} → ${run.periodEnd}`}
+        >
           <Link
             to={`inventories/${inventory.id}/runs/${run.id}`}
-            className="text-sm font-semibold text-link hover:text-link"
+            className="text-sm font-medium text-link hover:underline"
           >
             View report →
           </Link>
-        </div>
-        <AnimatedCo2e
-          kg={run.totalKgCo2e}
-          className="mt-3 block text-3xl font-bold text-dark-teal"
-        />
-        <div className="mt-4">
+        </PanelHead>
+        <PanelBody>
           <ScopeBreakdown run={run} />
-        </div>
-      </GlassCard>
+        </PanelBody>
+      </Panel>
 
       <TopFacilities runId={run.id} />
     </div>

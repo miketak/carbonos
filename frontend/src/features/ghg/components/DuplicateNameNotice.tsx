@@ -1,3 +1,4 @@
+import { Banner } from '../../../components/Banner'
 import { organizationLabel } from '../../../lib/organizationLabel'
 import type { DuplicateOrganization } from '../duplicateName'
 
@@ -17,20 +18,20 @@ export function DuplicateNameNotice({
   proceed: string
 }) {
   return (
-    <div
+    <Banner
       role="alert"
-      className="rounded-lg border border-amber-300/60 bg-amber-50/80 px-4 py-3 text-sm text-dark-teal"
+      tone="warning"
+      title={detail ?? 'An organization with this name already exists.'}
     >
-      <p className="font-medium">{detail ?? 'An organization with this name already exists.'}</p>
-      <ul className="mt-2 list-disc pl-5">
+      <ul className="mt-1 list-disc pl-5 text-ink">
         {duplicates.map((duplicate) => (
           <li key={duplicate.id}>{organizationLabel(duplicate)}</li>
         ))}
       </ul>
-      <p className="mt-2 text-ink-muted">
+      <p className="mt-2">
         Two organizations may share a name; the account number tells them apart. Click{' '}
         <strong>{proceed}</strong> to proceed with this name, or change it.
       </p>
-    </div>
+    </Banner>
   )
 }

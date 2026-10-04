@@ -1,9 +1,9 @@
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Button } from '../../../components/Button'
-import { Drawer } from '../../../components/Drawer'
 import { InputField, SelectField, TextAreaField } from '../../../components/Field'
 import { Skeleton } from '../../../components/Skeleton'
+import { DetailHeader } from '../../../components/SplitView'
 import { Tabs } from '../../../components/Tabs'
 import { fieldErrors, refusalMessage } from '../../../lib/api'
 import { checkNumber, collectErrors, withoutError } from '../../../lib/validate'
@@ -35,13 +35,16 @@ const qualityLabels: Record<DataQuality, string> = {
   CALCULATED: 'Calculated',
 }
 
-type DrawerTab = 'activity' | 'evidence'
+type DetailTab = 'activity' | 'evidence'
 type SaveMode = 'draft' | 'save' | 'next'
+
+const iconButtonClasses =
+  'flex size-9 items-center justify-center rounded-lg text-ink-muted transition-colors duration-150 hover:bg-surface-sunken hover:text-ink focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40'
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3">
-      <h3 className="flex items-baseline justify-between text-[11px] font-semibold tracking-widest text-ink-muted uppercase">
+    <section className="flex flex-col gap-4">
+      <h3 className="flex items-baseline justify-between text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
         {title}
         {hint && <span className="font-normal normal-case tracking-normal">{hint}</span>}
       </h3>
@@ -50,12 +53,26 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   )
 }
 
+/** Esc closes the detail from anywhere on the page, unless a modal above it owns the key. */
+function useEscape(onClose: () => void) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
+      onClose()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+}
+
 /**
- * Edits one record beside the register (spec 04.6): the readiness checks, the
- * fields in three groups, the evidence on its own tab, and a navigator so an
- * engineer moves through a page with Save & next. A draft saves with a facility
- * and an activity type alone; a fact needs a reason to change, and Save says so
- * inline instead of going dead.
+ * One record beside the register it came from (spec 10, the split register):
+ * the detail of the SplitView, under its drawer-era name. The readiness
+ * checks, the fields in three groups, the evidence on its own tab, and
+ * previous and next so an engineer moves through a page with Save & next. A
+ * draft saves with a facility and an activity type alone; a fact needs a
+ * reason to change, and Save says so inline instead of going dead.
  */
 export function ActivityDrawer({
   organizationId,
@@ -90,16 +107,31 @@ export function ActivityDrawer({
   const index = pageItems.findIndex((item) => item.id === activityId)
   const previous = index > 0 ? pageItems[index - 1] : undefined
   const next = index >= 0 && index < pageItems.length - 1 ? pageItems[index + 1] : undefined
+  useEscape(onClose)
 
   if (!isNew && !activity) {
     return (
-      <Drawer eyebrow="Edit activity" title="Loading record" onClose={onClose}>
+      <section aria-label="Loading record" className="flex flex-col gap-5">
+        <DetailHeader
+          eyebrow="Edit activity"
+          title="Loading record"
+          controls={
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className={iconButtonClasses}
+            >
+              <CloseIcon />
+            </button>
+          }
+        />
         {activityQuery.isError ? (
           <p className="text-sm text-ink-muted">This record could not be found.</p>
         ) : (
           <Skeleton className="h-40" />
         )}
-      </Drawer>
+      </section>
     )
   }
 
@@ -157,7 +189,7 @@ function ActivityForm({
   const mutation = activity ? update : create
   const unitsQuery = useUnitsQuery(organizationId)
   const streamsQuery = useStreamsQuery(organizationId)
-  const [tab, setTab] = useState<DrawerTab>('activity')
+  const [tab, setTab] = useState<DetailTab>('activity')
 
   const [facilityId, setFacilityId] = useState(
     activity?.facilityId ?? defaultFacilityId ?? facilities[0]?.id ?? '',
@@ -182,6 +214,15 @@ function ActivityForm({
   const [clientErrors, setClientErrors] = useState<Record<string, string> | undefined>()
   const removeHintId = useId()
   const reasonRef = useRef<HTMLInputElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  // focus lands on the first control of the content, not on the header's arrows,
+  // and goes back to where it was (the row) when the detail closes
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    contentRef.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus()
+    return () => previouslyFocused?.focus()
+  }, [])
 
   const streams = useMemo(
     () => (streamsQuery.data ?? []).filter((stream) => stream.facilityId === facilityId),
@@ -195,6 +236,13 @@ function ActivityForm({
   const isFact = activity !== undefined && !activity.draft
   const reasonMissing = isFact && reason.trim().length < 5
   const today = new Date().toISOString().slice(0, 10)
+  const title = activity?.activityType || activityType || 'New activity'
+  // the eyebrow names the mode the help cites, then the stream's default scope and category
+  // when the record has a stream, or the stream's name while its defaults load
+  const savedStream = (streamsQuery.data ?? []).find((item) => item.id === activity?.streamId)
+  const streamLine = savedStream
+    ? `${scopeLabels[savedStream.defaultScope]} / ${categoryLabel(savedStream.defaultCategory)}`
+    : activity?.streamName
 
   const save = (mode: SaveMode) => {
     const draft = mode === 'draft'
@@ -207,7 +255,7 @@ function ActivityForm({
     })
     setClientErrors(invalid)
     if (invalid) {
-      // the reason sits at the foot of a scrolling drawer, so bring it into view
+      // the reason sits at the foot of a long form, so bring it into view
       if (invalid.reason) reasonRef.current?.focus()
       return
     }
@@ -261,125 +309,99 @@ function ActivityForm({
 
   const issues = activity?.issues ?? []
   const blocking = issues.filter((issue) => issue !== 'EVIDENCE_REFERENCE_ONLY')
-
-  const footer = (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      {position ? (
-        <div className="flex items-center gap-1 text-xs text-ink-muted">
-          <span>
-            {position.index + 1}/{position.total}
-          </span>
-          <button
-            type="button"
-            aria-label="Previous record"
-            disabled={!previousId}
-            onClick={() => previousId && onNavigate(previousId)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-teal/10 disabled:opacity-40"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            aria-label="Next record"
-            disabled={!nextId}
-            onClick={() => nextId && onNavigate(nextId)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-teal/10 disabled:opacity-40"
-          >
-            ›
-          </button>
-        </div>
-      ) : (
-        <span className="text-xs text-ink-muted">New record</span>
-      )}
-      {mayWrite(myRole) && (
-        <div className="flex gap-2">
-          {!isFact && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="px-3 py-1.5 text-sm"
-              busy={mutation.isPending}
-              disabled={activityType.trim() === '' || facilityId === ''}
-              onClick={() => save('draft')}
-            >
-              Save draft
-            </Button>
-          )}
-          {nextId && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="px-3 py-1.5 text-sm"
-              busy={mutation.isPending}
-              disabled={activityType.trim() === '' || facilityId === ''}
-              onClick={() => save('save')}
-            >
-              Save
-            </Button>
-          )}
-          <Button
-            type="submit"
-            form="activity-drawer-form"
-            className="px-4 py-1.5 text-sm"
-            busy={mutation.isPending}
-            disabled={activityType.trim() === '' || facilityId === ''}
-          >
-            {nextId ? 'Save & next →' : 'Save'}
-          </Button>
-        </div>
-      )}
-    </div>
-  )
+  const canSave = activityType.trim() !== '' && facilityId !== ''
 
   return (
-    <Drawer
-      eyebrow={activity ? 'Edit activity' : 'Add activity'}
-      title={activity?.activityType || activityType || 'New activity'}
-      subtitle={
-        activity ? (
-          <>
-            <span className="font-mono text-xs">{activity.recordRef}</span>
-            <ActivityStatusPill activity={activity} />
-            <button
-              type="button"
-              className="text-xs text-link hover:underline"
-              onClick={() => onHistory(activity)}
-            >
-              History{activity.revisionCount > 0 ? ` (${activity.revisionCount})` : ''}
-            </button>
-            {mayWrite(myRole) ? (
+    <section aria-label={title} className="flex flex-col gap-6">
+      <DetailHeader
+        eyebrow={
+          <span className="flex flex-wrap items-center gap-2">
+            <span>{activity ? 'Edit activity' : 'Add activity'}</span>
+            {streamLine && (
+              <>
+                <span aria-hidden="true" className="text-ink-faint">
+                  ·
+                </span>
+                <span>{streamLine}</span>
+              </>
+            )}
+          </span>
+        }
+        title={title}
+        meta={
+          activity ? (
+            <span className="flex flex-wrap items-center gap-3">
+              <span>{activity.recordRef}</span>
+              <ActivityStatusPill activity={activity} />
               <button
                 type="button"
-                className="text-xs text-red-600 hover:underline"
-                onClick={() => onRemove(activity)}
+                className="font-medium text-link hover:underline"
+                onClick={() => onHistory(activity)}
               >
-                Remove
+                History{activity.revisionCount > 0 ? ` (${activity.revisionCount})` : ''}
               </button>
-            ) : (
-              <>
+              {mayWrite(myRole) ? (
                 <button
                   type="button"
-                  className="text-xs text-red-600 opacity-50"
-                  disabled
-                  title={WRITE_TOOLTIP}
-                  aria-describedby={removeHintId}
+                  className="font-medium text-danger hover:underline"
+                  onClick={() => onRemove(activity)}
                 >
                   Remove
                 </button>
-                <span id={removeHintId} className="sr-only">
-                  {WRITE_TOOLTIP}
-                </span>
-              </>
-            )}
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="font-medium text-danger opacity-50"
+                    disabled
+                    title={WRITE_TOOLTIP}
+                    aria-describedby={removeHintId}
+                  >
+                    Remove
+                  </button>
+                  <span id={removeHintId} className="sr-only">
+                    {WRITE_TOOLTIP}
+                  </span>
+                </>
+              )}
+            </span>
+          ) : undefined
+        }
+        controls={
+          <>
+            <button
+              type="button"
+              aria-label="Previous record"
+              disabled={!previousId}
+              onClick={() => previousId && onNavigate(previousId)}
+              className={iconButtonClasses}
+            >
+              <ChevronIcon direction="left" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next record"
+              disabled={!nextId}
+              onClick={() => nextId && onNavigate(nextId)}
+              className={iconButtonClasses}
+            >
+              <ChevronIcon direction="right" />
+            </button>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className={iconButtonClasses}
+            >
+              <CloseIcon />
+            </button>
           </>
-        ) : undefined
-      }
-      footer={footer}
-      onClose={onClose}
-    >
-      {activity && (
-        <div className="mb-4">
-          <Tabs<DrawerTab>
+        }
+      />
+
+      <div ref={contentRef} className="flex flex-col gap-6">
+        {activity && (
+          <Tabs<DetailTab>
             label="Record sections"
             value={tab}
             onChange={setTab}
@@ -388,295 +410,387 @@ function ActivityForm({
               { value: 'evidence', label: 'Evidence', count: activity.evidenceCount },
             ]}
           />
-        </div>
-      )}
+        )}
 
-      {tab === 'evidence' && activity && (
-        <EvidencePanel
-          owner={{ activityId: activity.id }}
-          organizationId={organizationId}
-          editable={mayWrite(myRole)}
-          myRole={myRole}
-        />
-      )}
+        {tab === 'evidence' && activity && (
+          <EvidencePanel
+            owner={{ activityId: activity.id }}
+            organizationId={organizationId}
+            editable={mayWrite(myRole)}
+            myRole={myRole}
+          />
+        )}
 
-      {tab === 'activity' &&
-        (readOnly ? (
-          <ActivityFacts activity={activity} />
-        ) : (
-          <form
-            id="activity-drawer-form"
-            onSubmit={submit}
-            className="flex flex-col gap-6"
-            noValidate
-          >
-            {activity ? (
-              activity.status === 'READY' ? (
-                <div
-                  role="status"
-                  className="rounded-lg border border-teal/30 bg-accent-green/20 px-3 py-2 text-sm"
-                >
-                  <p className="font-semibold">All completeness checks passed.</p>
-                  <p className="text-xs text-ink-muted">
-                    This record is ready for an accountant's review.
-                    {issues.includes('EVIDENCE_REFERENCE_ONLY') &&
-                      ' It cites a reference; nothing is attached yet.'}
-                  </p>
-                </div>
-              ) : (
-                <div
-                  role="status"
-                  className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
-                >
-                  <p className="font-semibold">
-                    {activity.draft ? 'A draft, not yet a fact.' : 'Not ready for review yet.'}
-                  </p>
-                  {blocking.length > 0 && (
-                    <ul className="mt-1 list-disc pl-4 text-xs">
-                      {blocking.map((issue) => (
-                        <li key={issue}>{activityIssueLabels[issue]}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )
-            ) : (
-              <p className="text-xs text-ink-muted">
-                Save a draft with just the activity and the facility, or fill in the figures and
-                save the fact. The checks run on the saved record.
-              </p>
-            )}
-
-            <Section title="Activity details" hint="Required fields *">
-              <InputField
-                label="Activity type *"
-                placeholder="e.g. Diesel consumption"
-                value={activityType}
-                onChange={(event) => setActivityType(event.target.value)}
-                error={errors?.activityType}
-                required
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <SelectField
-                  label="Facility *"
-                  value={facilityId}
-                  onChange={(event) => {
-                    setFacilityId(event.target.value)
-                    setStreamId('')
-                  }}
-                  error={errors?.facilityId}
-                >
-                  {facilities.map((facility) => (
-                    <option key={facility.id} value={facility.id}>
-                      {facility.name}
-                    </option>
-                  ))}
-                </SelectField>
-                <SelectField
-                  label="Stream"
-                  value={streamId}
-                  onChange={(event) => setStreamId(event.target.value)}
-                  error={errors?.streamId}
-                >
-                  <option value="">No stream</option>
-                  {streams.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </SelectField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <InputField
-                  label="Period start *"
-                  type="date"
-                  max={today}
-                  value={periodStart}
-                  onChange={(event) => {
-                    setPeriodStart(event.target.value)
-                    setClientErrors((current) => withoutError(current, 'periodStart'))
-                  }}
-                  error={errors?.periodStart}
-                  hint="The period the quantity covers, not the invoice date."
-                />
-                <InputField
-                  label="Period end"
-                  type="date"
-                  min={periodStart || undefined}
-                  max={today}
-                  value={periodEnd}
-                  onChange={(event) => setPeriodEnd(event.target.value)}
-                  error={errors?.periodEnd}
-                  hint="Same as the start for a single reading."
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <InputField
-                  label="Activity quantity *"
-                  type="number"
-                  value={quantity}
-                  onChange={(event) => {
-                    setQuantity(event.target.value)
-                    setClientErrors((current) => withoutError(current, 'quantity'))
-                  }}
-                  error={errors?.quantity}
-                />
-                <UnitField
-                  value={unit}
-                  onChange={(value) => {
-                    setUnit(value)
-                    setClientErrors((current) => withoutError(current, 'unit'))
-                  }}
-                  error={errors?.unit}
-                  units={unitsQuery.data ?? []}
-                  loading={unitsQuery.isPending}
-                />
-              </div>
-              {stream ? (
-                <p className="rounded-lg bg-teal/5 px-3 py-2 text-xs text-ink-muted">
-                  <span className="font-semibold text-dark-teal">Stream default:</span>{' '}
-                  {scopeLabels[stream.defaultScope]} · {categoryLabel(stream.defaultCategory)}.
-                  Scope is confirmed in each inventory's review.
-                </p>
-              ) : (
-                streams.length === 0 && (
-                  <p className="text-xs text-ink-muted">
-                    This facility has no source streams yet; register them under Facilities so the
-                    factor picker and the coverage matrix know this source.
-                  </p>
+        {tab === 'activity' &&
+          (readOnly ? (
+            <ActivityFacts activity={activity} />
+          ) : (
+            <form
+              id="activity-drawer-form"
+              onSubmit={submit}
+              className="flex flex-col gap-7"
+              noValidate
+            >
+              {activity ? (
+                activity.status === 'READY' ? (
+                  <CompletionNote
+                    tone="ready"
+                    title="All completeness checks passed."
+                    detail={
+                      <>
+                        This record is ready for an accountant's review.
+                        {issues.includes('EVIDENCE_REFERENCE_ONLY') &&
+                          ' It cites a reference; nothing is attached yet.'}
+                      </>
+                    }
+                  />
+                ) : (
+                  <CompletionNote
+                    tone="attention"
+                    title={
+                      activity.draft ? 'A draft, not yet a fact.' : 'Not ready for review yet.'
+                    }
+                    detail={
+                      blocking.length > 0 && (
+                        <ul className="list-disc pl-4">
+                          {blocking.map((issue) => (
+                            <li key={issue}>{activityIssueLabels[issue]}</li>
+                          ))}
+                        </ul>
+                      )
+                    }
+                  />
                 )
-              )}
-            </Section>
-
-            <Section title="Source and traceability">
-              <InputField
-                label="Data source"
-                placeholder="Example: utility invoice, dispensing log, meter reading"
-                value={dataSource}
-                onChange={(event) => setDataSource(event.target.value)}
-                error={errors?.dataSource}
-              />
-              <InputField
-                label="Document reference"
-                placeholder="Example: INV-2938"
-                value={evidenceRef}
-                onChange={(event) => setEvidenceRef(event.target.value)}
-                error={errors?.evidenceRef}
-                hint="Invoice, meter reading or log number as printed on the document."
-              />
-              {stream?.meterOrSupplier && (
-                <p className="text-xs text-ink-muted">
-                  Meter or supplier on the stream: {stream.meterOrSupplier}
+              ) : (
+                <p className="text-[13px] text-ink-muted">
+                  Save a draft with just the activity and the facility, or fill in the figures and
+                  save the fact. The checks run on the saved record.
                 </p>
               )}
-            </Section>
 
-            {activity && (
-              <Section title="Supporting evidence">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-ink-muted">
-                    {activity.evidenceCount > 0
-                      ? `${activity.evidenceCount} attached`
-                      : activity.evidenceRef
-                        ? `Reference ${activity.evidenceRef}, nothing attached`
-                        : 'Nothing attached'}
-                  </span>
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-link hover:underline"
-                    onClick={() => setTab('evidence')}
-                  >
-                    {activity.evidenceCount === 0 ? 'Attach a file or link →' : 'Open evidence →'}
-                  </button>
-                </div>
-              </Section>
-            )}
-
-            <Section title="Notes" hint="Optional">
-              <TextAreaField
-                label="Context for the reviewer"
-                placeholder="Estimation method, allocation, or useful context."
-                value={note}
-                maxLength={255}
-                onChange={(event) => setNote(event.target.value)}
-                error={errors?.note}
-              />
-            </Section>
-
-            <details className="group">
-              <summary className="cursor-pointer text-[11px] font-semibold tracking-widest text-ink-muted uppercase">
-                Data quality
-              </summary>
-              <div className="mt-3 flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <SelectField
-                    label="Method"
-                    value={dataQuality}
-                    onChange={(event) => setDataQuality(event.target.value as DataQuality)}
-                    error={errors?.dataQuality}
-                  >
-                    {Object.entries(qualityLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </SelectField>
-                  <SelectField
-                    label="Quality tier"
-                    value={tier}
-                    onChange={(event) => setTier(event.target.value)}
-                    error={errors?.dataQualityTier}
-                    hint="1 is metered primary data, 5 an assumption. Blank follows the method."
-                  >
-                    <option value="">Follow the method</option>
-                    {Object.entries(tierLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {value}: {label}
-                      </option>
-                    ))}
-                  </SelectField>
-                </div>
+              <Section title="Activity details" hint="Required fields *">
                 <InputField
-                  label="Uncertainty, ± %"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={uncertainty}
-                  onChange={(event) => {
-                    setUncertainty(event.target.value)
-                    setClientErrors((current) => withoutError(current, 'uncertaintyPercent'))
-                  }}
-                  error={errors?.uncertaintyPercent}
-                  hint="The report weights it by emissions into the uncertainty statement."
+                  label="Activity type *"
+                  placeholder="e.g. Diesel consumption"
+                  value={activityType}
+                  onChange={(event) => setActivityType(event.target.value)}
+                  error={errors?.activityType}
+                  required
                 />
-              </div>
-            </details>
+                <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+                  <SelectField
+                    label="Facility *"
+                    value={facilityId}
+                    onChange={(event) => {
+                      setFacilityId(event.target.value)
+                      setStreamId('')
+                    }}
+                    error={errors?.facilityId}
+                  >
+                    {facilities.map((facility) => (
+                      <option key={facility.id} value={facility.id}>
+                        {facility.name}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    label="Stream"
+                    value={streamId}
+                    onChange={(event) => setStreamId(event.target.value)}
+                    error={errors?.streamId}
+                  >
+                    <option value="">No stream</option>
+                    {streams.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <InputField
+                    label="Period start *"
+                    type="date"
+                    max={today}
+                    value={periodStart}
+                    onChange={(event) => {
+                      setPeriodStart(event.target.value)
+                      setClientErrors((current) => withoutError(current, 'periodStart'))
+                    }}
+                    error={errors?.periodStart}
+                    hint="The period the quantity covers, not the invoice date."
+                  />
+                  <InputField
+                    label="Period end"
+                    type="date"
+                    min={periodStart || undefined}
+                    max={today}
+                    value={periodEnd}
+                    onChange={(event) => setPeriodEnd(event.target.value)}
+                    error={errors?.periodEnd}
+                    hint="Same as the start for a single reading."
+                  />
+                </div>
+                <div className="grid gap-x-6 gap-y-5 md:grid-cols-[minmax(0,1fr)_200px]">
+                  <InputField
+                    label="Activity quantity *"
+                    type="number"
+                    value={quantity}
+                    onChange={(event) => {
+                      setQuantity(event.target.value)
+                      setClientErrors((current) => withoutError(current, 'quantity'))
+                    }}
+                    error={errors?.quantity}
+                  />
+                  <UnitField
+                    value={unit}
+                    onChange={(value) => {
+                      setUnit(value)
+                      setClientErrors((current) => withoutError(current, 'unit'))
+                    }}
+                    error={errors?.unit}
+                    units={unitsQuery.data ?? []}
+                    loading={unitsQuery.isPending}
+                  />
+                </div>
+                {stream ? (
+                  <p className="rounded-lg bg-surface-sunken px-3 py-2 text-[13px] text-ink-muted">
+                    <span className="font-semibold text-ink">Stream default:</span>{' '}
+                    {scopeLabels[stream.defaultScope]} · {categoryLabel(stream.defaultCategory)}.
+                    Scope is confirmed in each inventory's review.
+                  </p>
+                ) : (
+                  streams.length === 0 && (
+                    <p className="text-[13px] text-ink-muted">
+                      This facility has no source streams yet; register them under Facilities so the
+                      factor picker and the coverage matrix know this source.
+                    </p>
+                  )
+                )}
+              </Section>
 
-            {isFact && (
-              <InputField
-                ref={reasonRef}
-                label="Reason for the correction *"
-                placeholder="Dispensing log reconciled with the supplier invoice"
-                value={reason}
-                onChange={(event) => {
-                  setReason(event.target.value)
-                  setClientErrors((current) => withoutError(current, 'reason'))
-                }}
-                error={errors?.reason}
-                hint="Recorded with the old and new values in the record's history."
-                minLength={5}
-                maxLength={500}
-                required
-              />
-            )}
-            {generalError && (
-              <p role="alert" className="text-sm font-medium text-red-600">
-                {generalError}
-              </p>
-            )}
-          </form>
-        ))}
-    </Drawer>
+              <Section title="Source and traceability">
+                <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+                  <InputField
+                    label="Data source"
+                    placeholder="Example: utility invoice, dispensing log, meter reading"
+                    value={dataSource}
+                    onChange={(event) => setDataSource(event.target.value)}
+                    error={errors?.dataSource}
+                  />
+                  <InputField
+                    label="Document reference"
+                    placeholder="Example: INV-2938"
+                    value={evidenceRef}
+                    onChange={(event) => setEvidenceRef(event.target.value)}
+                    error={errors?.evidenceRef}
+                    hint="Invoice, meter reading or log number as printed on the document."
+                  />
+                </div>
+                {stream?.meterOrSupplier && (
+                  <p className="text-[13px] text-ink-muted">
+                    Meter or supplier on the stream: {stream.meterOrSupplier}
+                  </p>
+                )}
+              </Section>
+
+              {activity && (
+                <Section title="Supporting evidence">
+                  <div
+                    className={`flex min-h-[52px] items-center justify-between gap-3 rounded-lg border border-hairline px-3.5 text-sm ${
+                      activity.evidenceCount === 0 ? 'border-dashed border-hairline-strong' : ''
+                    }`}
+                  >
+                    <span className={activity.evidenceCount > 0 ? 'font-medium' : 'text-ink-muted'}>
+                      {activity.evidenceCount > 0
+                        ? `${activity.evidenceCount} attached`
+                        : activity.evidenceRef
+                          ? `Reference ${activity.evidenceRef}, nothing attached`
+                          : 'Nothing attached'}
+                    </span>
+                    <button
+                      type="button"
+                      className="font-medium text-link hover:underline"
+                      onClick={() => setTab('evidence')}
+                    >
+                      {activity.evidenceCount === 0 ? 'Attach a file or link →' : 'Open evidence →'}
+                    </button>
+                  </div>
+                </Section>
+              )}
+
+              <Section title="Notes" hint="Optional">
+                <TextAreaField
+                  label="Context for the reviewer"
+                  placeholder="Estimation method, allocation, or useful context."
+                  value={note}
+                  maxLength={255}
+                  onChange={(event) => setNote(event.target.value)}
+                  error={errors?.note}
+                />
+              </Section>
+
+              <details className="group">
+                <summary className="cursor-pointer text-[11px] font-semibold tracking-[0.12em] text-ink-muted uppercase">
+                  Data quality
+                </summary>
+                <div className="mt-4 flex flex-col gap-5">
+                  <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+                    <SelectField
+                      label="Method"
+                      value={dataQuality}
+                      onChange={(event) => setDataQuality(event.target.value as DataQuality)}
+                      error={errors?.dataQuality}
+                    >
+                      {Object.entries(qualityLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </SelectField>
+                    <SelectField
+                      label="Quality tier"
+                      value={tier}
+                      onChange={(event) => setTier(event.target.value)}
+                      error={errors?.dataQualityTier}
+                      hint="1 is metered primary data, 5 an assumption. Blank follows the method."
+                    >
+                      <option value="">Follow the method</option>
+                      {Object.entries(tierLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {value}: {label}
+                        </option>
+                      ))}
+                    </SelectField>
+                  </div>
+                  <InputField
+                    label="Uncertainty, ± %"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={uncertainty}
+                    onChange={(event) => {
+                      setUncertainty(event.target.value)
+                      setClientErrors((current) => withoutError(current, 'uncertaintyPercent'))
+                    }}
+                    error={errors?.uncertaintyPercent}
+                    hint="The report weights it by emissions into the uncertainty statement."
+                  />
+                </div>
+              </details>
+
+              {isFact && (
+                <InputField
+                  ref={reasonRef}
+                  label="Reason for the correction *"
+                  placeholder="Dispensing log reconciled with the supplier invoice"
+                  value={reason}
+                  onChange={(event) => {
+                    setReason(event.target.value)
+                    setClientErrors((current) => withoutError(current, 'reason'))
+                  }}
+                  error={errors?.reason}
+                  hint="Recorded with the old and new values in the record's history."
+                  minLength={5}
+                  maxLength={500}
+                  required
+                />
+              )}
+              {generalError && (
+                <p role="alert" className="text-sm font-medium text-danger">
+                  {generalError}
+                </p>
+              )}
+            </form>
+          ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-5">
+        <span className="text-[13px] text-ink-muted">
+          {position ? `${position.index + 1}/${position.total}` : 'New record'}
+        </span>
+        <div className="flex flex-wrap gap-3">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          {mayWrite(myRole) && (
+            <>
+              {!isFact && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  busy={mutation.isPending}
+                  disabled={!canSave}
+                  onClick={() => save('draft')}
+                >
+                  Save draft
+                </Button>
+              )}
+              {nextId && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  busy={mutation.isPending}
+                  disabled={!canSave}
+                  onClick={() => save('save')}
+                >
+                  Save
+                </Button>
+              )}
+              <Button
+                type="submit"
+                form="activity-drawer-form"
+                busy={mutation.isPending}
+                disabled={!canSave}
+              >
+                {nextId ? 'Save & next →' : 'Save'}
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/** The note under the checks (spec 04.6): a ring with a check or a mark, the verdict and its detail. */
+function CompletionNote({
+  tone,
+  title,
+  detail,
+}: {
+  tone: 'ready' | 'attention'
+  title: string
+  detail: ReactNode
+}) {
+  return (
+    <div role="status" className="flex items-start gap-3.5">
+      <span
+        aria-hidden="true"
+        className={`flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold ${
+          tone === 'ready' ? 'border-primary text-primary' : 'border-warning-dot text-warning'
+        }`}
+      >
+        {tone === 'ready' ? (
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m5 12 5 5 9-10" />
+          </svg>
+        ) : (
+          '!'
+        )}
+      </span>
+      <div className="text-sm">
+        <p className="font-medium">{title}</p>
+        {detail && <div className="mt-0.5 text-[13px] text-ink-muted">{detail}</div>}
+      </div>
+    </div>
   )
 }
 
@@ -689,9 +803,9 @@ function ActivityFacts({ activity }: { activity: Activity | undefined }) {
     return <p className="text-sm text-ink-muted">You do not have permission to add a record.</p>
   }
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
       <Section title="Activity details">
-        <dl className="grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
           <Fact label="Activity type" value={activity.activityType} />
           <Fact label="Facility" value={activity.facilityName} />
           <Fact label="Stream" value={activity.streamName ?? 'No stream'} />
@@ -711,7 +825,7 @@ function ActivityFacts({ activity }: { activity: Activity | undefined }) {
         </dl>
       </Section>
       <Section title="Source and traceability">
-        <dl className="grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
           <Fact label="Data source" value={activity.dataSource ?? '—'} />
           <Fact label="Document reference" value={activity.evidenceRef ?? '—'} />
         </dl>
@@ -726,8 +840,43 @@ function ActivityFacts({ activity }: { activity: Activity | undefined }) {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-ink-muted">{label}</dt>
+      <dt className="text-[13px] text-ink-muted">{label}</dt>
       <dd className="font-medium">{value}</dd>
     </div>
+  )
+}
+
+function ChevronIcon({ direction }: { direction: 'left' | 'right' }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={direction === 'left' ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
   )
 }
