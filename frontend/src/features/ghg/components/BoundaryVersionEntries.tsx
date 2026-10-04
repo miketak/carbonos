@@ -1,3 +1,4 @@
+import { Table, Td, Th } from '../../../components/Table'
 import type { BoundaryVersionEntry } from '../api'
 import { describeWindow, relationshipShortLabels } from '../format'
 
@@ -12,29 +13,29 @@ export function BoundaryVersionEntries({ entries }: { entries: BoundaryVersionEn
     return <p className="mt-2 text-sm text-ink-muted">This version recorded no entities.</p>
   }
   return (
-    <div className="mt-2 overflow-x-auto">
-      <table className="w-full text-left text-sm">
+    <div className="mt-3">
+      <Table>
         <thead>
-          <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-            <th className="px-3 py-2 font-semibold">Entity</th>
-            <th className="px-3 py-2 font-semibold">Economic interest</th>
-            <th className="px-3 py-2 font-semibold">Operated</th>
-            <th className="px-3 py-2 font-semibold">Accounting share</th>
+          <tr>
+            <Th>Entity</Th>
+            <Th align="right">Economic interest</Th>
+            <Th>Operated</Th>
+            <Th align="right">Accounting share</Th>
           </tr>
         </thead>
         <tbody>
           {entries.map((entry) => {
             const window = describeWindow(entry.effectiveFrom, entry.effectiveTo)
             return (
-              <tr key={entry.entityId} className="border-b border-teal/5 align-top last:border-0">
-                <td className="px-3 py-2">
+              <tr key={entry.entityId} className="align-top">
+                <Td className="align-top">
                   <span className="font-medium">{entry.entityName}</span>
-                  <span className="block text-xs text-ink-muted" title={entry.table1Row}>
+                  <span className="block text-[13px] text-ink-muted" title={entry.table1Row}>
                     {relationshipShortLabels[entry.relationshipType]}
                     {window ? ` · ${window}` : ''}
                   </span>
                   {entry.facilities.length > 0 && (
-                    <ul className="mt-1 ml-3 flex flex-col gap-0.5 border-l border-teal/15 pl-2 text-xs">
+                    <ul className="mt-1.5 ml-1 flex flex-col gap-0.5 border-l border-hairline pl-3 text-[13px]">
                       {entry.facilities.map((facility) => (
                         <li key={facility.facilityId}>
                           {facility.facilityName}
@@ -44,17 +45,19 @@ export function BoundaryVersionEntries({ entries }: { entries: BoundaryVersionEn
                     </ul>
                   )}
                   {entry.excluded && entry.exclusionReason && (
-                    <span className="mt-1 block text-xs text-ink-muted">
+                    <span className="mt-1 block text-[13px] text-ink-muted">
                       Excluded: {entry.exclusionReason}
                     </span>
                   )}
-                </td>
-                <td className="px-3 py-2 tabular-nums">{entry.economicInterestPercent}%</td>
-                <td className="px-3 py-2">{entry.operatedByCompany ? 'Yes' : 'No'}</td>
-                <td className="px-3 py-2 font-mono font-semibold">
+                </Td>
+                <Td align="right" className="align-top">
+                  {entry.economicInterestPercent}%
+                </Td>
+                <Td className="align-top">{entry.operatedByCompany ? 'Yes' : 'No'}</Td>
+                <Td align="right" className="align-top font-medium">
                   {entry.excluded ? (
                     <span
-                      className="font-sans font-normal text-ink-muted"
+                      className="font-normal text-ink-muted"
                       title={entry.exclusionReason ?? undefined}
                     >
                       excluded
@@ -62,12 +65,12 @@ export function BoundaryVersionEntries({ entries }: { entries: BoundaryVersionEn
                   ) : (
                     `${Math.round(entry.accountingShare * 100)}%`
                   )}
-                </td>
+                </Td>
               </tr>
             )
           })}
         </tbody>
-      </table>
+      </Table>
     </div>
   )
 }

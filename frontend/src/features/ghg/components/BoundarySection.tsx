@@ -1,21 +1,10 @@
 import { useState } from 'react'
-import { GlassCard } from '../../../components/GlassCard'
+import { Chip } from '../../../components/Chip'
+import { Panel, PanelHead } from '../../../components/Panel'
 import { Skeleton } from '../../../components/Skeleton'
 import { useToast } from '../../../components/toast'
 import { refusalMessage } from '../../../lib/api'
 import { approachLabels, describeFreeze, exclusionLabels, relationshipShortLabels } from '../format'
-
-/**
- * The reasons the system sets on its own (a record outside the period or the
- * boundary, a removed record, a Montreal Protocol gas), never a choice for an
- * entity or a facility left out by hand (spec 07.2).
- */
-const AUTOMATIC_REASONS: ReadonlySet<string> = new Set([
-  'OUTSIDE_PERIOD',
-  'OUTSIDE_BOUNDARY',
-  'RECORD_REMOVED',
-  'OUTSIDE_SCOPES_NON_KYOTO',
-])
 import { mayWrite, WRITE_TOOLTIP } from '../roles'
 import type { MyRole } from '../roles'
 import {
@@ -42,8 +31,21 @@ import type {
   RelationshipType,
 } from '../api'
 
-const dateInputClasses =
-  'rounded-lg border border-teal/20 bg-white/70 px-2 py-1 text-sm focus:ring-2 focus:ring-teal focus:outline-none disabled:opacity-60'
+/**
+ * The reasons the system sets on its own (a record outside the period or the
+ * boundary, a removed record, a Montreal Protocol gas), never a choice for an
+ * entity or a facility left out by hand (spec 07.2).
+ */
+const AUTOMATIC_REASONS: ReadonlySet<string> = new Set([
+  'OUTSIDE_PERIOD',
+  'OUTSIDE_BOUNDARY',
+  'RECORD_REMOVED',
+  'OUTSIDE_SCOPES_NON_KYOTO',
+])
+
+/** An inline control on an entity row (spec 10): the kit's field at 36 px, so a row of them stays a row. */
+const inlineControl =
+  'min-h-9 rounded-lg border border-hairline-strong bg-surface px-2.5 py-1 text-sm text-ink placeholder:text-ink-muted focus:border-primary focus:ring-2 focus:ring-focus/40 focus:outline-none disabled:opacity-50'
 
 /**
  * The organizational boundary by legal entity (spec 03.1): each entity's Table
@@ -97,261 +99,264 @@ export function BoundarySection({
   const entities = boundaryQuery.data ?? []
 
   return (
-    <GlassCard className="p-6">
-      <div>
-        <h2 className="text-xl">Organizational boundary</h2>
-        <p className="text-sm text-ink-muted">
-          Which legal entities and facilities this view accounts for, and the Table 1 share of each
-          under the consolidation approach.
-        </p>
-      </div>
-      {boundaryQuery.isPending && (
-        <div aria-label="Loading boundary" className="mt-4">
-          <Skeleton className="h-16" />
-        </div>
-      )}
-      {boundaryQuery.data && entities.length === 0 && (
-        <p className="mt-4 text-sm text-ink-muted">
-          The organization has no legal entities yet: add facilities under Facilities first.
-        </p>
-      )}
-      <ul className="mt-4 flex flex-col gap-3">
-        {entities.map((entity) => (
-          <li key={entity.entityId} className="rounded-xl border border-teal/10 bg-white/40 p-3">
-            <div className="flex items-center gap-2">
-              <TapCheckbox
-                label={`${entity.entityName} in boundary`}
-                checked={entity.inBoundary}
-                disabled={!writable || (!entity.inBoundary && entity.shareUnderApproach === 0)}
-                onChange={() => toggleEntity(entity)}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">
-                  {entity.entityName}
-                  {entity.reportingCompany && (
-                    <span className="ml-2 text-xs font-normal text-ink-muted">
-                      reporting company
-                    </span>
+    <>
+      <Panel>
+        <PanelHead
+          title="Organizational boundary"
+          description="Which legal entities and facilities this view accounts for, and the Table 1 share of each under the consolidation approach."
+        />
+        {boundaryQuery.isPending && (
+          <div aria-label="Loading boundary" className="p-5">
+            <Skeleton className="h-16" />
+          </div>
+        )}
+        {boundaryQuery.data && entities.length === 0 && (
+          <p className="p-5 text-sm text-ink-muted">
+            The organization has no legal entities yet: add facilities under Facilities first.
+          </p>
+        )}
+        {/* spec 10: the entity blocks sit on hairline rows, not in nested cards */}
+        <ul className="divide-y divide-hairline">
+          {entities.map((entity) => (
+            <li key={entity.entityId} className="px-5 py-4">
+              <div className="flex items-center gap-2">
+                <TapCheckbox
+                  label={`${entity.entityName} in boundary`}
+                  checked={entity.inBoundary}
+                  disabled={!writable || (!entity.inBoundary && entity.shareUnderApproach === 0)}
+                  onChange={() => toggleEntity(entity)}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-2 font-medium">
+                    {entity.entityName}
+                    {entity.reportingCompany && (
+                      <Chip className="h-[22px] text-xs">reporting company</Chip>
+                    )}
+                  </p>
+                  {entity.inBoundary && entity.table1Row && (
+                    <p className="text-[13px] text-ink-muted">{entity.table1Row}</p>
                   )}
-                </p>
-                {entity.inBoundary && entity.table1Row && (
-                  <p className="text-xs text-ink-muted">{entity.table1Row}</p>
+                </div>
+                {entity.inBoundary && (
+                  <span className="text-[13px] text-ink-muted">
+                    share{' '}
+                    <span className="text-[15px] font-semibold text-ink">
+                      {Math.round((entity.accountingShare ?? 0) * 100)}%
+                    </span>
+                  </span>
                 )}
               </div>
-              {entity.inBoundary && (
-                <span className="text-xs text-ink-muted">
-                  share{' '}
-                  <span className="font-mono font-semibold">
-                    {Math.round((entity.accountingShare ?? 0) * 100)}%
-                  </span>
-                </span>
-              )}
-            </div>
 
-            {entity.inBoundary && (
-              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 pl-12 text-sm">
-                <label className="flex items-center gap-2">
-                  <span className="text-ink-muted">Relationship</span>
-                  <select
-                    aria-label={`${entity.entityName} relationship`}
-                    value={entity.relationshipType ?? 'SUBSIDIARY'}
-                    disabled={!writable}
-                    onChange={(event) =>
-                      update(entity, { relationshipType: event.target.value as RelationshipType })
-                    }
-                    className={dateInputClasses}
-                  >
-                    {Object.entries(relationshipShortLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex items-center gap-2">
-                  <span className="text-ink-muted">Economic interest %</span>
-                  <input
-                    key={`${entity.entityId}:${entity.economicInterestPercent}:${revision}`}
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.01"
-                    aria-label={`${entity.entityName} economic interest percent`}
-                    defaultValue={entity.economicInterestPercent ?? 100}
-                    disabled={!writable}
-                    onBlur={(event) =>
-                      update(entity, { economicInterestPercent: Number(event.target.value) })
-                    }
-                    className={`w-20 ${dateInputClasses}`}
-                  />
-                </label>
-                <span className="flex items-center gap-1">
-                  <TapCheckbox
-                    label={`${entity.entityName} operated by the company`}
-                    checked={entity.operatedByCompany ?? false}
-                    disabled={!writable}
-                    onChange={(value) => update(entity, { operatedByCompany: value })}
-                  />
-                  <span className="text-ink-muted">Operated by the company</span>
-                </span>
-                {entity.relationshipType === 'FRANCHISE' && (
+              {entity.inBoundary && (
+                <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 pl-12 text-sm">
+                  <label className="flex items-center gap-2">
+                    <span className="text-ink-muted">Relationship</span>
+                    <select
+                      aria-label={`${entity.entityName} relationship`}
+                      value={entity.relationshipType ?? 'SUBSIDIARY'}
+                      disabled={!writable}
+                      onChange={(event) =>
+                        update(entity, { relationshipType: event.target.value as RelationshipType })
+                      }
+                      className={inlineControl}
+                    >
+                      {Object.entries(relationshipShortLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <span className="text-ink-muted">Economic interest %</span>
+                    <input
+                      key={`${entity.entityId}:${entity.economicInterestPercent}:${revision}`}
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="0.01"
+                      aria-label={`${entity.entityName} economic interest percent`}
+                      defaultValue={entity.economicInterestPercent ?? 100}
+                      disabled={!writable}
+                      onBlur={(event) =>
+                        update(entity, { economicInterestPercent: Number(event.target.value) })
+                      }
+                      className={`w-24 ${inlineControl}`}
+                    />
+                  </label>
                   <span className="flex items-center gap-1">
                     <TapCheckbox
-                      label={`${entity.entityName} financially controlled by the company`}
-                      checked={entity.controlledByCompany ?? false}
+                      label={`${entity.entityName} operated by the company`}
+                      checked={entity.operatedByCompany ?? false}
                       disabled={!writable}
-                      onChange={(value) => update(entity, { controlledByCompany: value })}
+                      onChange={(value) => update(entity, { operatedByCompany: value })}
                     />
-                    <span className="text-ink-muted">Financially controlled</span>
+                    <span className="text-ink-muted">Operated by the company</span>
                   </span>
-                )}
-                {entity.chain.length > 0 && (
-                  <span className="text-xs text-ink-muted">
-                    held through {entity.chain.join(' > ')}:{' '}
-                    {entity.effectiveEconomicInterestPercent}% through the chain
-                  </span>
-                )}
-              </div>
-            )}
-
-            {entity.inBoundary && (
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 pl-12 text-sm">
-                <label className="flex items-center gap-2">
-                  <span className="text-ink-muted">Member from</span>
-                  <input
-                    key={`${entity.entityId}:from:${entity.effectiveFrom}:${revision}`}
-                    type="date"
-                    aria-label={`${entity.entityName} member from`}
-                    defaultValue={entity.effectiveFrom ?? ''}
-                    disabled={!writable}
-                    onBlur={(event) => {
-                      if (event.target.value && event.target.value !== (entity.effectiveFrom ?? ''))
-                        update(entity, { effectiveFrom: event.target.value })
-                    }}
-                    className={dateInputClasses}
-                  />
-                </label>
-                <label className="flex items-center gap-2">
-                  <span className="text-ink-muted">Member until</span>
-                  <input
-                    key={`${entity.entityId}:to:${entity.effectiveTo}:${revision}`}
-                    type="date"
-                    aria-label={`${entity.entityName} member until`}
-                    defaultValue={entity.effectiveTo ?? ''}
-                    disabled={!writable}
-                    onBlur={(event) => {
-                      if (event.target.value && event.target.value !== (entity.effectiveTo ?? ''))
-                        update(entity, { effectiveTo: event.target.value })
-                    }}
-                    className={dateInputClasses}
-                  />
-                </label>
-                {(entity.effectiveFrom || entity.effectiveTo) && editable && (
-                  <RoleButton
-                    allowed={mayWrite(myRole)}
-                    tooltip={WRITE_TOOLTIP}
-                    variant="ghost"
-                    className="px-2 py-1 text-xs"
-                    aria-label={`Clear ${entity.entityName} membership window`}
-                    onClick={() => update(entity, { clearWindow: true })}
-                  >
-                    Clear
-                  </RoleButton>
-                )}
-              </div>
-            )}
-
-            {entity.inBoundary && entity.accountingShare === 0 && (
-              <p className="mt-2 pl-12 text-xs text-amber-700">
-                0% under {approachLabels[inventory.consolidationApproach].toLowerCase()}: outside
-                the boundary under this approach; the version records it as excluded.
-              </p>
-            )}
-
-            {!entity.inBoundary && entity.shareUnderApproach === 0 && (
-              <p className="mt-2 pl-12 text-xs text-ink-muted">
-                Outside the boundary under{' '}
-                {approachLabels[inventory.consolidationApproach].toLowerCase()}: 0% share from its
-                Table 1 row.
-                {entity.exclusion
-                  ? ' The report discloses it with the reason below.'
-                  : ' Record why it is left out so the report says so.'}
-              </p>
-            )}
-
-            {!entity.inBoundary && entity.facilities.length > 0 && (
-              <div className="mt-2 pl-12">
-                <ExclusionControl
-                  label={`${entity.entityName} left out because`}
-                  exclusion={entity.exclusion}
-                  editable={editable}
-                  writable={writable}
-                  onExclude={(input) =>
-                    excludeEntity.mutate(
-                      { entityId: entity.entityId, input },
-                      { onError: onWriteError },
-                    )
-                  }
-                  onClear={() =>
-                    clearEntityExclusion.mutate(entity.entityId, { onError: onWriteError })
-                  }
-                />
-              </div>
-            )}
-
-            {entity.facilities.length > 0 && (
-              <ul className="mt-2 flex flex-col gap-1 pl-8">
-                {entity.facilities.map((facility) => (
-                  <li key={facility.facilityId} className="flex flex-wrap items-center gap-2">
-                    <TapCheckbox
-                      label={`${facility.facilityName} in boundary`}
-                      checked={facility.inBoundary}
-                      disabled={
-                        !writable || (!facility.inBoundary && entity.shareUnderApproach === 0)
-                      }
-                      onChange={() => toggleFacility(facility.facilityId, facility.inBoundary)}
-                    />
-                    <span className="min-w-0 flex-1 text-sm">
-                      {facility.facilityName}
-                      <span className="ml-2 text-xs text-ink-muted">{facility.location}</span>
-                    </span>
-                    {!facility.inBoundary && entity.inBoundary && (
-                      <ExclusionControl
-                        label={`${facility.facilityName} left out because`}
-                        exclusion={facility.exclusion}
-                        editable={editable}
-                        writable={writable}
-                        onExclude={(input) =>
-                          excludeFacility.mutate(
-                            { facilityId: facility.facilityId, input },
-                            { onError: onWriteError },
-                          )
-                        }
-                        onClear={() =>
-                          clearFacilityExclusion.mutate(facility.facilityId, {
-                            onError: onWriteError,
-                          })
-                        }
+                  {entity.relationshipType === 'FRANCHISE' && (
+                    <span className="flex items-center gap-1">
+                      <TapCheckbox
+                        label={`${entity.entityName} financially controlled by the company`}
+                        checked={entity.controlledByCompany ?? false}
+                        disabled={!writable}
+                        onChange={(value) => update(entity, { controlledByCompany: value })}
                       />
-                    )}
-                    {!facility.inBoundary && !entity.inBoundary && entity.exclusion && (
-                      <span className="text-xs text-ink-muted">
-                        left out with the entity: {exclusionLabels[entity.exclusion.reason]}
+                      <span className="text-ink-muted">Financially controlled</span>
+                    </span>
+                  )}
+                  {entity.chain.length > 0 && (
+                    <span className="text-[13px] text-ink-muted">
+                      held through {entity.chain.join(' > ')}:{' '}
+                      {entity.effectiveEconomicInterestPercent}% through the chain
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {entity.inBoundary && (
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 pl-12 text-sm">
+                  <label className="flex items-center gap-2">
+                    <span className="text-ink-muted">Member from</span>
+                    <input
+                      key={`${entity.entityId}:from:${entity.effectiveFrom}:${revision}`}
+                      type="date"
+                      aria-label={`${entity.entityName} member from`}
+                      defaultValue={entity.effectiveFrom ?? ''}
+                      disabled={!writable}
+                      onBlur={(event) => {
+                        if (
+                          event.target.value &&
+                          event.target.value !== (entity.effectiveFrom ?? '')
+                        )
+                          update(entity, { effectiveFrom: event.target.value })
+                      }}
+                      className={inlineControl}
+                    />
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <span className="text-ink-muted">Member until</span>
+                    <input
+                      key={`${entity.entityId}:to:${entity.effectiveTo}:${revision}`}
+                      type="date"
+                      aria-label={`${entity.entityName} member until`}
+                      defaultValue={entity.effectiveTo ?? ''}
+                      disabled={!writable}
+                      onBlur={(event) => {
+                        if (event.target.value && event.target.value !== (entity.effectiveTo ?? ''))
+                          update(entity, { effectiveTo: event.target.value })
+                      }}
+                      className={inlineControl}
+                    />
+                  </label>
+                  {(entity.effectiveFrom || entity.effectiveTo) && editable && (
+                    <RoleButton
+                      allowed={mayWrite(myRole)}
+                      tooltip={WRITE_TOOLTIP}
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Clear ${entity.entityName} membership window`}
+                      onClick={() => update(entity, { clearWindow: true })}
+                    >
+                      Clear
+                    </RoleButton>
+                  )}
+                </div>
+              )}
+
+              {entity.inBoundary && entity.accountingShare === 0 && (
+                <p className="mt-2 pl-12 text-[13px] text-warning">
+                  0% under {approachLabels[inventory.consolidationApproach].toLowerCase()}: outside
+                  the boundary under this approach; the version records it as excluded.
+                </p>
+              )}
+
+              {!entity.inBoundary && entity.shareUnderApproach === 0 && (
+                <p className="mt-2 pl-12 text-[13px] text-ink-muted">
+                  Outside the boundary under{' '}
+                  {approachLabels[inventory.consolidationApproach].toLowerCase()}: 0% share from its
+                  Table 1 row.
+                  {entity.exclusion
+                    ? ' The report discloses it with the reason below.'
+                    : ' Record why it is left out so the report says so.'}
+                </p>
+              )}
+
+              {!entity.inBoundary && entity.facilities.length > 0 && (
+                <div className="mt-2 pl-12">
+                  <ExclusionControl
+                    label={`${entity.entityName} left out because`}
+                    exclusion={entity.exclusion}
+                    editable={editable}
+                    writable={writable}
+                    onExclude={(input) =>
+                      excludeEntity.mutate(
+                        { entityId: entity.entityId, input },
+                        { onError: onWriteError },
+                      )
+                    }
+                    onClear={() =>
+                      clearEntityExclusion.mutate(entity.entityId, { onError: onWriteError })
+                    }
+                  />
+                </div>
+              )}
+
+              {entity.facilities.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-1 pl-8">
+                  {entity.facilities.map((facility) => (
+                    <li key={facility.facilityId} className="flex flex-wrap items-center gap-2">
+                      <TapCheckbox
+                        label={`${facility.facilityName} in boundary`}
+                        checked={facility.inBoundary}
+                        disabled={
+                          !writable || (!facility.inBoundary && entity.shareUnderApproach === 0)
+                        }
+                        onChange={() => toggleFacility(facility.facilityId, facility.inBoundary)}
+                      />
+                      <span className="min-w-0 flex-1 text-sm">
+                        {facility.facilityName}
+                        <span className="ml-2 text-[13px] text-ink-muted">{facility.location}</span>
                       </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {entity.facilities.length === 0 && (
-              <p className="mt-2 pl-12 text-xs text-ink-muted">No facilities under this entity.</p>
-            )}
-          </li>
-        ))}
-      </ul>
+                      {!facility.inBoundary && entity.inBoundary && (
+                        <ExclusionControl
+                          label={`${facility.facilityName} left out because`}
+                          exclusion={facility.exclusion}
+                          editable={editable}
+                          writable={writable}
+                          onExclude={(input) =>
+                            excludeFacility.mutate(
+                              { facilityId: facility.facilityId, input },
+                              { onError: onWriteError },
+                            )
+                          }
+                          onClear={() =>
+                            clearFacilityExclusion.mutate(facility.facilityId, {
+                              onError: onWriteError,
+                            })
+                          }
+                        />
+                      )}
+                      {!facility.inBoundary && !entity.inBoundary && entity.exclusion && (
+                        <span className="text-[13px] text-ink-muted">
+                          left out with the entity: {exclusionLabels[entity.exclusion.reason]}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {entity.facilities.length === 0 && (
+                <p className="mt-2 pl-12 text-[13px] text-ink-muted">
+                  No facilities under this entity.
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Panel>
 
       <BoundaryHistory inventoryId={inventoryId} />
-    </GlassCard>
+    </>
   )
 }
 
@@ -381,17 +386,17 @@ function ExclusionControl({
   const [chosenReason, setChosenReason] = useState<ExclusionReason | ''>(exclusion?.reason ?? '')
   if (exclusion && !editable) {
     return (
-      <span className="text-xs text-ink-muted">
+      <span className="text-[13px] text-ink-muted">
         left out: {exclusionLabels[exclusion.reason]}
         {exclusion.detail ? ` · ${exclusion.detail}` : ''}
       </span>
     )
   }
   if (!editable) {
-    return <span className="text-xs text-amber-700">left out without a reason</span>
+    return <span className="text-[13px] text-warning">left out without a reason</span>
   }
   return (
-    <span className="flex flex-wrap items-center gap-1 text-xs">
+    <span className="flex flex-wrap items-center gap-1.5 text-sm">
       <select
         aria-label={label}
         value={exclusion?.reason ?? ''}
@@ -405,7 +410,7 @@ function ExclusionControl({
               detail: detail.trim() === '' ? undefined : detail,
             })
         }}
-        className={dateInputClasses}
+        className={inlineControl}
       >
         <option value="">{exclusion ? 'Clear the reason' : 'Why is it left out?'}</option>
         {Object.entries(exclusionLabels)
@@ -431,13 +436,13 @@ function ExclusionControl({
               detail: detail.trim() === '' ? undefined : detail,
             })
         }}
-        className={`w-56 ${dateInputClasses}`}
+        className={`w-56 ${inlineControl}`}
       />
     </span>
   )
 }
 
-/** Every version ever frozen, newest first; each expands to the boundary it recorded. */
+/** Every version ever frozen, newest first, as a table-like list (spec 10); each expands to the boundary it recorded. */
 function BoundaryHistory({ inventoryId }: { inventoryId: string }) {
   const versionsQuery = useBoundaryVersionsQuery(inventoryId)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -445,36 +450,39 @@ function BoundaryHistory({ inventoryId }: { inventoryId: string }) {
 
   if (versions.length === 0) return null
   return (
-    <div className="mt-6 border-t border-teal/10 pt-4">
-      <h3 className="text-sm font-semibold">Boundary version history</h3>
-      <p className="text-xs text-ink-muted">
-        One boundary version per freeze (the report version counts corrections, spec 07.4). A
-        version superseded by a reopen says who reopened it and why.
-      </p>
-      <ul className="mt-2 flex flex-col gap-2">
+    <Panel>
+      <PanelHead
+        title="Boundary version history"
+        description="One boundary version per freeze (the report version counts corrections, spec 07.4). A version superseded by a reopen says who reopened it and why."
+      />
+      <ul className="divide-y divide-hairline">
         {versions.map((version) => (
-          <li key={version.id}>
+          <li key={version.id} className="px-2 py-1">
             <button
               type="button"
               aria-expanded={openId === version.id}
               onClick={() => setOpenId(openId === version.id ? null : version.id)}
-              className="w-full rounded-lg px-2 py-1 text-left text-sm text-dark-teal transition-colors hover:bg-teal/10"
+              className="w-full rounded-lg px-3 py-2.5 text-left text-[15px] transition-colors duration-150 hover:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
             >
-              <span className="font-mono font-semibold">Boundary version {version.versionNo}</span>{' '}
-              · {describeFreeze(version)} · {version.entityCount}{' '}
+              <span className="font-medium">Boundary version {version.versionNo}</span> ·{' '}
+              {describeFreeze(version)} · {version.entityCount}{' '}
               {version.entityCount === 1 ? 'entity' : 'entities'}, {version.facilityCount}{' '}
               {version.facilityCount === 1 ? 'facility' : 'facilities'}
             </button>
             {version.reopenedAt && (
-              <p className="px-2 text-xs text-ink-muted">
+              <p className="px-3 pb-2 text-[13px] text-ink-muted">
                 Reopened by {version.reopenedBy ?? 'unknown'} on{' '}
                 {new Date(version.reopenedAt).toLocaleString()}: {version.reopenReason}
               </p>
             )}
-            {openId === version.id && <BoundaryVersionPanel versionId={version.id} />}
+            {openId === version.id && (
+              <div className="px-3 pb-3">
+                <BoundaryVersionPanel versionId={version.id} />
+              </div>
+            )}
           </li>
         ))}
       </ul>
-    </div>
+    </Panel>
   )
 }

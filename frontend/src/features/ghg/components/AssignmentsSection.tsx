@@ -1,9 +1,14 @@
 import { useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Button } from '../../../components/Button'
+import { Chip } from '../../../components/Chip'
 import { InputField, SelectField } from '../../../components/Field'
-import { GlassCard } from '../../../components/GlassCard'
+import { FilterRow, FilterSelect, SearchField } from '../../../components/FilterRow'
 import { Modal } from '../../../components/Modal'
 import { Skeleton } from '../../../components/Skeleton'
+import { SplitView, SummaryRow } from '../../../components/SplitView'
+import { Table, TableFooter, Td, Th, TwoLine } from '../../../components/Table'
+import { Tabs } from '../../../components/Tabs'
 import { useToast } from '../../../components/toast'
 import { refusalMessage } from '../../../lib/api'
 import { useShortcuts } from '../../../lib/useShortcuts'
@@ -11,6 +16,7 @@ import { PAGE_SIZE, useInventoryFilters } from '../inventoryFilters'
 import {
   categories,
   categoriesForScope,
+  categoryLabel,
   exclusionLabels,
   formatPeriod,
   isAutomaticReason,
@@ -35,7 +41,7 @@ import {
   useSyncAssignments,
   useUnitsQuery,
 } from '../useGhg'
-import { AssignmentDrawer } from './AssignmentDrawer'
+import { AssignmentDetail } from './AssignmentDetail'
 import { AssignmentStatusPills } from './badges'
 import { RoleButton } from './RoleButton'
 import { TapCheckbox } from './TapCheckbox'
@@ -56,7 +62,7 @@ type Dialog = { kind: 'bulkExclude'; ids: string[] } | null
 
 function Kbd({ children }: { children: string }) {
   return (
-    <kbd className="ml-1 rounded border border-current/30 px-1 font-mono text-[10px] opacity-70">
+    <kbd className="ml-1 rounded border border-hairline-strong px-1 text-[11px] text-ink-muted">
       {children}
     </kbd>
   )
@@ -64,7 +70,7 @@ function Kbd({ children }: { children: string }) {
 
 /**
  * The classification a row carries, as text (spec 05.5). The editor is in the
- * drawer; the row only has to say what was decided, which means the factor's
+ * detail; the row only has to say what was decided, which means the factor's
  * name, its unit, the packs that deliver it and whether anyone approved it.
  */
 function FactorCell({
@@ -74,35 +80,38 @@ function FactorCell({
   assignment: Assignment
   factor: EmissionFactor | undefined
 }) {
-  if (!assignment.included) return <span className="text-xs text-ink-muted">·</span>
+  if (!assignment.included) return <span className="text-[13px] text-ink-muted">·</span>
   if (!factor)
     return (
-      <span className="text-xs text-amber-700">
+      <span className="text-[13px] text-warning">
         {assignment.suggestedFactorName
           ? `Suggested: ${assignment.suggestedFactorName}`
           : 'No factor chosen'}
       </span>
     )
   return (
-    <>
-      <span className="block">
+    <div className="flex flex-col gap-0.5">
+      <span>
         {factor.name}
         <span className="text-ink-muted"> (/{factor.unit})</span>
       </span>
-      <span className="block text-xs text-ink-muted">
+      <span className="text-[13px] text-ink-muted">
         {factor.packs.join(', ')}
         {assignment.leaseType ? ` · ${leaseLabels[assignment.leaseType].toLowerCase()}` : ''}
         {assignment.proxy ? ' · proxy' : ''}
         {assignment.densityMaterial ? ` · via ${assignment.densityMaterial}` : ''}
       </span>
       {!factor.approved && (
-        <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">
+        <Chip tone="warning" className="self-start">
           not approved
-        </span>
+        </Chip>
       )}
-    </>
+    </div>
   )
 }
+
+/** The summary list's status tabs (spec 10); the same filter the select carries. */
+type StatusTab = AssignmentStatus | ''
 
 /** The activity view: this inventory's accounting decisions about the facts (spec 04, 04.1, 05). */
 export function AssignmentsSection({
@@ -162,7 +171,9 @@ export function AssignmentsSection({
   const factors = factorsQuery.data?.items ?? []
   const densities = densitiesQuery.data ?? []
   const units = unitsQuery.data ?? []
-  const drawerOpen = filters.record !== null
+  // spec 10: a record open in the URL turns the register into the split
+  const recordOpen = filters.record !== null
+  const openAssignment = assignments?.find((assignment) => assignment.id === filters.record)
 
   const onClassify = (assignment: Assignment) => (input: ClassifyInput) =>
     classify.mutate(
@@ -192,7 +203,9 @@ export function AssignmentsSection({
     const index = assignments.findIndex((a) => a.id === effectiveCursorId)
     const next = index < 0 ? (step === 1 ? 0 : assignments.length - 1) : index + step
     if (next < 0 || next >= assignments.length) return
-    setCursorId(assignments[next].id)
+    // with a record open the cursor is the open record, so a step opens the neighbour
+    if (openOnPage) set({ record: assignments[next].id })
+    else setCursorId(assignments[next].id)
     // jsdom has no scrollIntoView; browsers keep the cursor row in view
     document.querySelector<HTMLElement>('[data-cursor]')?.scrollIntoView?.({ block: 'nearest' })
   }
@@ -212,171 +225,226 @@ export function AssignmentsSection({
   const allSelected =
     (assignments?.length ?? 0) > 0 && (assignments ?? []).every((a) => selected.has(a.id))
 
-  return (
-    <section className={drawerOpen ? 'transition-[padding] duration-200 md:pr-[36rem]' : ''}>
-      <GlassCard>
-        <div className="flex flex-wrap items-end justify-between gap-3 px-4 pt-5">
-          <div>
-            <h2 className="text-xl">Activity view</h2>
-            <p className="text-sm text-ink-muted">
-              This inventory's accounting decisions about the facts. The records themselves are
-              never modified.
-            </p>
-          </div>
-          <RoleButton
-            allowed={mayWrite(myRole)}
-            tooltip={WRITE_TOOLTIP}
-            className="px-4 py-1.5 text-sm"
-            busy={sync.isPending}
-            disabled={!editable}
-            title={editable ? undefined : 'Reopen the inventory as a draft to review activity data'}
-            onClick={() =>
-              sync.mutate(undefined, {
-                onSuccess: ({ created, updated }) => {
-                  const parts = []
-                  if (created > 0)
-                    parts.push(`${created} new record${created === 1 ? '' : 's'} under review`)
-                  if (updated > 0)
-                    parts.push(`${updated} stale decision${updated === 1 ? '' : 's'} refreshed`)
-                  toast(
-                    parts.length === 0
-                      ? 'All activity records are already reviewed.'
-                      : parts.join(' · ') + '.',
-                  )
-                },
-                onError: (error) => toast(refusalMessage(error, myRole), 'error'),
-              })
-            }
-          >
-            Review activity data
-          </RoleButton>
+  const emptyState = (
+    <>
+      {assignmentsQuery.isPending && (
+        <div aria-label="Loading assignments" className="flex flex-col gap-2 py-4">
+          <Skeleton className="h-8" />
+          <Skeleton className="h-8" />
         </div>
+      )}
+      {assignments?.length === 0 && filtered && (
+        <div className="py-8 text-center">
+          <h3 className="font-semibold">No records match</h3>
+          <p className="mt-1 text-sm text-ink-muted">
+            Clear the search or the filters to see the rest of the view.
+          </p>
+        </div>
+      )}
+      {assignments?.length === 0 && !filtered && (
+        <div className="py-8 text-center">
+          <h3 className="font-semibold">Nothing under review yet</h3>
+          <p className="mt-1 text-sm text-ink-muted">
+            Hit "Review activity data" to pull in the organization's records.
+          </p>
+        </div>
+      )}
+    </>
+  )
 
-        {counts && counts.included + counts.excluded + counts.unclassified > 0 && (
-          /* wraps rather than squeezes when the drawer takes the right third of the page */
-          <div className="mt-4 flex flex-wrap items-end gap-2 border-b border-teal/10 px-4 pb-3 [&>*]:min-w-[10rem] [&>*]:flex-1">
-            <div className="min-w-[16rem] flex-[3]">
-              <InputField
-                ref={searchRef}
-                label="Search the view"
-                placeholder="Reference, activity, facility, stream, factor, unit, evidence"
-                value={search.value}
-                onChange={(event) => search.onChange(event.target.value)}
-              />
+  const pager = pageCount > 1 && (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={filters.page === 0}
+        onClick={() => set({ page: filters.page - 1 })}
+      >
+        Previous
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={filters.page + 1 >= pageCount}
+        onClick={() => set({ page: filters.page + 1 })}
+      >
+        Next
+      </Button>
+    </>
+  )
+
+  const countLine = (
+    <>
+      {(assignments?.length ?? 0).toLocaleString()} of {total.toLocaleString()} record
+      {total === 1 ? '' : 's'}
+      {pageCount > 1 ? `, page ${filters.page + 1} of ${pageCount}` : ''}
+    </>
+  )
+
+  const statusTabs: { value: StatusTab; label: string; count?: number }[] = counts
+    ? [
+        { value: '', label: 'All', count: counts.included + counts.excluded + counts.unclassified },
+        { value: 'UNCLASSIFIED', label: 'Unclassified', count: counts.unclassified },
+        { value: 'INCLUDED', label: 'Included', count: counts.included },
+        { value: 'EXCLUDED', label: 'Excluded', count: counts.excluded },
+      ]
+    : []
+
+  return (
+    <section>
+      {!recordOpen ? (
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold tracking-[-0.01em]">Activity view</h2>
+              <p className="text-sm text-ink-muted">
+                This inventory's accounting decisions about the facts. The records themselves are
+                never modified.
+              </p>
             </div>
-            <SelectField
-              label="Facility"
-              value={filters.facility}
-              onChange={(event) => set({ facility: event.target.value })}
+            <RoleButton
+              allowed={mayWrite(myRole)}
+              tooltip={WRITE_TOOLTIP}
+              variant="secondary"
+              busy={sync.isPending}
+              disabled={!editable}
+              title={
+                editable ? undefined : 'Reopen the inventory as a draft to review activity data'
+              }
+              onClick={() =>
+                sync.mutate(undefined, {
+                  onSuccess: ({ created, updated }) => {
+                    const parts = []
+                    if (created > 0)
+                      parts.push(`${created} new record${created === 1 ? '' : 's'} under review`)
+                    if (updated > 0)
+                      parts.push(`${updated} stale decision${updated === 1 ? '' : 's'} refreshed`)
+                    toast(
+                      parts.length === 0
+                        ? 'All activity records are already reviewed.'
+                        : parts.join(' · ') + '.',
+                    )
+                  },
+                  onError: (error) => toast(refusalMessage(error, myRole), 'error'),
+                })
+              }
             >
-              <option value="">All facilities</option>
-              {(facilitiesQuery.data ?? []).map((facility) => (
-                <option key={facility.id} value={facility.id}>
-                  {facility.name}
-                </option>
-              ))}
-            </SelectField>
-            <SelectField
-              label="Status"
-              value={filters.status}
-              onChange={(event) => set({ status: event.target.value as AssignmentStatus | '' })}
-            >
-              <option value="">
-                All ({counts.included + counts.excluded + counts.unclassified})
-              </option>
-              <option value="UNCLASSIFIED">Unclassified ({counts.unclassified})</option>
-              <option value="INCLUDED">Included and classified ({counts.included})</option>
-              <option value="EXCLUDED">Excluded ({counts.excluded})</option>
-            </SelectField>
-            <SelectField
-              label="Scope"
-              value={filters.scope}
-              onChange={(event) => {
-                const scope = event.target.value as GhgScope | ''
-                const keepCategory =
-                  filters.category === '' ||
-                  scope === '' ||
-                  categoriesForScope(scope).some((entry) => entry.category === filters.category)
-                set({ scope, ...(keepCategory ? {} : { category: '' }) })
-              }}
-            >
-              <option value="">All scopes</option>
-              {(Object.keys(scopeLabels) as GhgScope[]).map((value) => (
-                <option key={value} value={value}>
-                  {scopeLabels[value]}
-                </option>
-              ))}
-            </SelectField>
-            <SelectField
-              label="Category"
-              value={filters.category}
-              onChange={(event) => set({ category: event.target.value as ActivityCategory | '' })}
-            >
-              <option value="">All categories</option>
-              {(filters.scope === '' ? categories : categoriesForScope(filters.scope)).map(
-                (entry) => (
-                  <option key={entry.category} value={entry.category}>
-                    {entry.label}
-                  </option>
-                ),
-              )}
-            </SelectField>
-            <SelectField
-              label="Stream"
-              value={filters.stream}
-              onChange={(event) => set({ stream: event.target.value })}
-            >
-              <option value="">All streams</option>
-              {(streamsQuery.data ?? []).map((stream) => (
-                <option key={stream.id} value={stream.id}>
-                  {stream.facilityName} · {stream.name}
-                </option>
-              ))}
-            </SelectField>
-            <SelectField
-              label="Lease"
-              value={filters.lease}
-              onChange={(event) => set({ lease: event.target.value as LeaseType | '' })}
-            >
-              <option value="">Any lease treatment</option>
-              {Object.entries(leaseLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </SelectField>
+              Review activity data
+            </RoleButton>
           </div>
-        )}
 
-        <div className="overflow-x-auto">
-          {assignmentsQuery.isPending && (
-            <div aria-label="Loading assignments" className="flex flex-col gap-2 p-4">
-              <Skeleton className="h-8" />
-              <Skeleton className="h-8" />
+          {counts && counts.included + counts.excluded + counts.unclassified > 0 && (
+            <div className="flex flex-col gap-3">
+              <FilterRow
+                search={
+                  <SearchField
+                    ref={searchRef}
+                    label="Search the view"
+                    placeholder="Reference, activity, facility, stream, factor, unit, evidence"
+                    value={search.value}
+                    onChange={(event) => search.onChange(event.target.value)}
+                  />
+                }
+              >
+                <FilterSelect
+                  label="Facility"
+                  value={filters.facility}
+                  onChange={(event) => set({ facility: event.target.value })}
+                >
+                  <option value="">All facilities</option>
+                  {(facilitiesQuery.data ?? []).map((facility) => (
+                    <option key={facility.id} value={facility.id}>
+                      {facility.name}
+                    </option>
+                  ))}
+                </FilterSelect>
+                <FilterSelect
+                  label="Status"
+                  value={filters.status}
+                  onChange={(event) => set({ status: event.target.value as AssignmentStatus | '' })}
+                >
+                  <option value="">
+                    All ({counts.included + counts.excluded + counts.unclassified})
+                  </option>
+                  <option value="UNCLASSIFIED">Unclassified ({counts.unclassified})</option>
+                  <option value="INCLUDED">Included and classified ({counts.included})</option>
+                  <option value="EXCLUDED">Excluded ({counts.excluded})</option>
+                </FilterSelect>
+                <FilterSelect
+                  label="Scope"
+                  value={filters.scope}
+                  onChange={(event) => {
+                    const scope = event.target.value as GhgScope | ''
+                    const keepCategory =
+                      filters.category === '' ||
+                      scope === '' ||
+                      categoriesForScope(scope).some((entry) => entry.category === filters.category)
+                    set({ scope, ...(keepCategory ? {} : { category: '' }) })
+                  }}
+                >
+                  <option value="">All scopes</option>
+                  {(Object.keys(scopeLabels) as GhgScope[]).map((value) => (
+                    <option key={value} value={value}>
+                      {scopeLabels[value]}
+                    </option>
+                  ))}
+                </FilterSelect>
+                <FilterSelect
+                  label="Category"
+                  value={filters.category}
+                  onChange={(event) =>
+                    set({ category: event.target.value as ActivityCategory | '' })
+                  }
+                >
+                  <option value="">All categories</option>
+                  {(filters.scope === '' ? categories : categoriesForScope(filters.scope)).map(
+                    (entry) => (
+                      <option key={entry.category} value={entry.category}>
+                        {entry.label}
+                      </option>
+                    ),
+                  )}
+                </FilterSelect>
+              </FilterRow>
+              {/* the row holds four filters at most (spec 10); the stream and lease filters sit
+                  under the last two, on the same columns */}
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-[minmax(220px,1.6fr)_repeat(4,minmax(0,1fr))]">
+                <div aria-hidden="true" className="hidden lg:col-span-3 lg:block" />
+                <FilterSelect
+                  label="Stream"
+                  value={filters.stream}
+                  onChange={(event) => set({ stream: event.target.value })}
+                >
+                  <option value="">All streams</option>
+                  {(streamsQuery.data ?? []).map((stream) => (
+                    <option key={stream.id} value={stream.id}>
+                      {stream.facilityName} · {stream.name}
+                    </option>
+                  ))}
+                </FilterSelect>
+                <FilterSelect
+                  label="Lease"
+                  value={filters.lease}
+                  onChange={(event) => set({ lease: event.target.value as LeaseType | '' })}
+                >
+                  <option value="">Any lease treatment</option>
+                  {Object.entries(leaseLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </FilterSelect>
+              </div>
             </div>
           )}
-          {assignments?.length === 0 && filtered && (
-            <div className="p-8 text-center">
-              <h3 className="font-semibold">No records match</h3>
-              <p className="mt-1 text-sm text-ink-muted">
-                Clear the search or the filters to see the rest of the view.
-              </p>
-            </div>
-          )}
-          {assignments?.length === 0 && !filtered && (
-            <div className="p-8 text-center">
-              <h3 className="font-semibold">Nothing under review yet</h3>
-              <p className="mt-1 text-sm text-ink-muted">
-                Hit "Review activity data" to pull in the organization's records.
-              </p>
-            </div>
-          )}
+
+          {emptyState}
           {assignments && assignments.length > 0 && (
-            <table className="w-full text-left text-sm">
+            <Table>
               <thead>
-                <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
+                <tr>
                   {writable && (
-                    <th className="w-10 py-2 pl-2">
+                    <Th className="w-10 pr-0">
                       <TapCheckbox
                         label="Select all on this page"
                         checked={allSelected}
@@ -384,31 +452,29 @@ export function AssignmentsSection({
                           setSelected(checked ? new Set(assignments.map((a) => a.id)) : new Set())
                         }
                       />
-                    </th>
+                    </Th>
                   )}
-                  <th className="px-3 py-3 font-semibold">Fact</th>
-                  <th className="px-3 py-3 font-semibold">Facility / period</th>
-                  <th className="px-3 py-3 text-right font-semibold">Quantity</th>
-                  <th className="px-3 py-3 font-semibold">Factor</th>
-                  <th className="px-3 py-3 font-semibold">Status</th>
+                  <Th>Fact</Th>
+                  <Th>Facility / period</Th>
+                  <Th align="right">Quantity</Th>
+                  <Th>Factor</Th>
+                  <Th>Status</Th>
                 </tr>
               </thead>
               <tbody>
                 {assignments.map((assignment) => {
-                  const open = assignment.id === filters.record
                   const cursor = assignment.id === effectiveCursorId
                   return (
                     <tr
                       key={assignment.id}
-                      aria-selected={open}
                       data-cursor={cursor || undefined}
                       onClick={() => set({ record: assignment.id })}
-                      className={`cursor-pointer border-b border-teal/5 transition-colors duration-100 last:border-0 ${
-                        open ? 'bg-teal/10' : cursor ? 'bg-teal/5' : 'hover:bg-teal/5'
+                      className={`cursor-pointer transition-colors duration-100 ${
+                        cursor ? 'bg-selected' : 'hover:bg-surface-sunken'
                       }`}
                     >
                       {writable && (
-                        <td className="py-2 pl-2" onClick={(event) => event.stopPropagation()}>
+                        <Td className="pr-0" onClick={(event) => event.stopPropagation()}>
                           <TapCheckbox
                             label={`Select ${assignment.activityType}`}
                             checked={selected.has(assignment.id)}
@@ -421,145 +487,159 @@ export function AssignmentsSection({
                               })
                             }
                           />
-                        </td>
+                        </Td>
                       )}
-                      <td className="px-3 py-3">
-                        <button
-                          type="button"
-                          className="text-left font-medium text-dark-teal focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            set({ record: assignment.id })
-                          }}
-                        >
-                          {assignment.activityType}
-                        </button>
-                        <span className="ml-2 font-mono text-xs text-ink-muted">
-                          {assignment.recordRef}
-                        </span>
-                        {assignment.changedSincePublication &&
-                          assignment.changedSincePublication.length > 0 && (
-                            <span className="block text-xs text-amber-700">
-                              Changed since publication:{' '}
-                              {assignment.changedSincePublication.join(', ')}
-                            </span>
-                          )}
-                      </td>
-                      <td className="px-3 py-3">
-                        <span className="block">{assignment.facilityName}</span>
-                        <span className="block text-xs text-ink-muted">
-                          {formatPeriod(assignment.periodStart, assignment.periodEnd)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 text-right whitespace-nowrap tabular-nums">
-                        {assignment.quantity.toLocaleString()}
-                        <span className="block text-xs text-ink-muted">{assignment.unit}</span>
-                      </td>
-                      <td className="px-3 py-3">
+                      <Td>
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            className="self-start text-left font-medium focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              set({ record: assignment.id })
+                            }}
+                          >
+                            {assignment.activityType}
+                          </button>
+                          <span className="text-[13px] text-ink-muted">{assignment.recordRef}</span>
+                          {assignment.changedSincePublication &&
+                            assignment.changedSincePublication.length > 0 && (
+                              <span className="text-[13px] text-warning">
+                                Changed since publication:{' '}
+                                {assignment.changedSincePublication.join(', ')}
+                              </span>
+                            )}
+                        </div>
+                      </Td>
+                      <Td>
+                        <TwoLine
+                          primary={<span className="font-normal">{assignment.facilityName}</span>}
+                          secondary={formatPeriod(assignment.periodStart, assignment.periodEnd)}
+                        />
+                      </Td>
+                      <Td align="right">
+                        <TwoLine
+                          align="right"
+                          primary={assignment.quantity.toLocaleString()}
+                          secondary={assignment.unit}
+                        />
+                      </Td>
+                      <Td>
                         <FactorCell
                           assignment={assignment}
                           factor={factors.find(
                             (factor) => factor.id === assignment.emissionFactorId,
                           )}
                         />
-                      </td>
-                      <td className="px-3 py-3">
+                      </Td>
+                      <Td>
                         <AssignmentStatusPills
                           assignment={assignment}
                           editable={writable}
                           onInclude={onInclude(assignment)}
                         />
-                      </td>
+                      </Td>
                     </tr>
                   )
                 })}
               </tbody>
-            </table>
+            </Table>
+          )}
+
+          {total > 0 && (
+            <TableFooter
+              pager={
+                <>
+                  {pager}
+                  {selected.size > 0 ? (
+                    <span className="flex items-center gap-2">
+                      <span>{selected.size} selected</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDialog({ kind: 'bulkExclude', ids: [...selected] })}
+                      >
+                        Exclude {selected.size} selected
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                        Clear
+                      </Button>
+                    </span>
+                  ) : (
+                    <span className="text-ink-faint">
+                      Select a row to classify
+                      <Kbd>j</Kbd>
+                      <Kbd>k</Kbd>
+                      <Kbd>↵</Kbd>
+                    </span>
+                  )}
+                </>
+              }
+            >
+              {countLine}
+            </TableFooter>
           )}
         </div>
-
-        {total > 0 && (
-          <div className="flex items-center justify-between border-t border-teal/10 px-4 py-2 text-xs text-ink-muted">
-            <span>
-              {(assignments?.length ?? 0).toLocaleString()} of {total.toLocaleString()} record
-              {total === 1 ? '' : 's'}
-              {pageCount > 1 ? `, page ${filters.page + 1} of ${pageCount}` : ''}
-            </span>
-            <span className="flex items-center gap-2">
-              {pageCount > 1 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    className="px-2 py-1 text-xs"
-                    disabled={filters.page === 0}
-                    onClick={() => set({ page: filters.page - 1 })}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="px-2 py-1 text-xs"
-                    disabled={filters.page + 1 >= pageCount}
-                    onClick={() => set({ page: filters.page + 1 })}
-                  >
-                    Next
-                  </Button>
-                </>
+      ) : (
+        <SplitView
+          listLabel="Activity view"
+          detailLabel={openAssignment?.activityType ?? 'Not in this view'}
+          list={
+            <>
+              <h2 className="text-xl font-semibold tracking-[-0.01em]">Activity view</h2>
+              {counts && (
+                <Tabs<StatusTab>
+                  label="Status"
+                  value={filters.status}
+                  onChange={(status) => set({ status })}
+                  tabs={statusTabs}
+                />
               )}
-              {selected.size > 0 ? (
-                <span className="flex items-center gap-2">
-                  <span>{selected.size} selected</span>
-                  <Button
-                    variant="ghost"
-                    className="px-2 py-1 text-xs"
-                    onClick={() => setDialog({ kind: 'bulkExclude', ids: [...selected] })}
-                  >
-                    Exclude {selected.size} selected
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="px-2 py-1 text-xs"
-                    onClick={() => setSelected(new Set())}
-                  >
-                    Clear
-                  </Button>
-                </span>
-              ) : (
-                !drawerOpen && (
-                  <span>
-                    Select a row to classify
-                    <Kbd>j</Kbd>
-                    <Kbd>k</Kbd>
-                    <Kbd>↵</Kbd>
-                  </span>
-                )
+              {emptyState}
+              {assignments && assignments.length > 0 && (
+                <div className="flex flex-col">
+                  {assignments.map((assignment) => (
+                    <SummaryRow
+                      key={assignment.id}
+                      title={assignment.activityType}
+                      meta={summaryMeta(assignment)}
+                      issue={
+                        assignment.included && !assignment.classified ? 'Unclassified' : undefined
+                      }
+                      attention={assignment.included && !assignment.classified}
+                      value={`${assignment.quantity.toLocaleString()} ${assignment.unit}`}
+                      selected={assignment.id === filters.record}
+                      onClick={() => set({ record: assignment.id })}
+                    />
+                  ))}
+                </div>
               )}
-            </span>
-          </div>
-        )}
-      </GlassCard>
-
-      <CoverageMatrix rows={coverageQuery.data ?? []} />
-
-      {drawerOpen && (
-        <AssignmentDrawer
-          key={filters.record}
-          organizationId={organizationId}
-          assignmentId={filters.record ?? ''}
-          pageItems={assignments ?? []}
-          factors={factors}
-          units={units}
-          densities={densities}
-          editable={writable}
-          locked={!editable}
-          period={period}
-          onNavigate={(id) => set({ record: id })}
-          onClose={() => set({ record: null })}
-          onClassify={onClassify}
-          onExclude={onExclude}
-          onInclude={onInclude}
+              {total > 0 && <TableFooter pager={pager || undefined}>{countLine}</TableFooter>}
+            </>
+          }
+          detail={
+            <AssignmentDetail
+              key={filters.record}
+              organizationId={organizationId}
+              assignmentId={filters.record ?? ''}
+              pageItems={assignments ?? []}
+              factors={factors}
+              units={units}
+              densities={densities}
+              editable={writable}
+              locked={!editable}
+              period={period}
+              onNavigate={(id) => set({ record: id })}
+              onClose={() => set({ record: null })}
+              onClassify={onClassify}
+              onExclude={onExclude}
+              onInclude={onInclude}
+            />
+          }
         />
       )}
+
+      <CoverageMatrix rows={coverageQuery.data ?? []} />
 
       {dialog?.kind === 'bulkExclude' && (
         <BulkExcludeDialog
@@ -589,6 +669,16 @@ export function AssignmentsSection({
       )}
     </section>
   )
+}
+
+/** The summary row's second line (spec 10): the facility with the scope and category, or with the period until classified. */
+function summaryMeta(assignment: Assignment): ReactNode {
+  if (assignment.included && assignment.classified && assignment.scope) {
+    return `${assignment.facilityName} · ${scopeLabels[assignment.scope]}${
+      assignment.category ? ` · ${categoryLabel(assignment.category)}` : ''
+    }`
+  }
+  return `${assignment.facilityName} · ${formatPeriod(assignment.periodStart, assignment.periodEnd)}`
 }
 
 /**
@@ -650,13 +740,13 @@ function BulkExcludeDialog({
           required
           onChange={(event) => setJustification(event.target.value)}
         />
-        <label className="flex items-center gap-2 text-xs text-ink-muted">
+        <label className="flex items-start gap-2.5 text-[13px] text-ink-muted">
           <input
             type="checkbox"
             aria-label="These records emit nothing"
             checked={emitsNothing}
             onChange={(event) => setEmitsNothing(event.target.checked)}
-            className="h-4 w-4 accent-teal-deep"
+            className="mt-0.5 size-4 accent-primary"
           />
           These records emit nothing. Leave it unticked and each is recorded as not estimated (spec
           04.8), which is the honest answer when nobody has sized them.
@@ -700,38 +790,38 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
   if (rows.length === 0) return null
   const months = rows[0].months
   return (
-    <div className="mt-6 hidden md:block">
-      <h3 className="text-sm font-semibold">Period coverage</h3>
-      <p className="text-xs text-ink-muted">
+    <div className="mt-8 hidden md:block">
+      <h3 className="text-base font-semibold">Period coverage</h3>
+      <p className="text-[13px] text-ink-muted">
         Months of the reporting period with data from included records, per facility and stream. A
         stream with no data at all shows every month empty; a half circle is a draft still to be
         entered.
       </p>
-      <div className="mt-2 overflow-x-auto">
-        <table aria-label="Period coverage" className="w-full text-left text-xs">
+      <div className="mt-3 overflow-x-auto">
+        <table
+          aria-label="Period coverage"
+          className="w-full border-collapse text-left text-[13px]"
+        >
           <thead>
-            <tr className="border-b border-teal/10 text-ink-muted uppercase">
-              <th className="px-2 py-1 font-semibold">Facility · stream</th>
+            <tr>
+              <Th className="px-2 py-2">Facility · stream</Th>
               {months.map((month) => (
-                <th key={month} className="px-1 py-1 text-center font-semibold">
+                <Th key={month} className="px-1 py-2 text-center">
                   {month.slice(5)}
-                </th>
+                </Th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr
-                key={`${row.facilityId}:${row.streamId ?? row.activityType}`}
-                className="border-b border-teal/5"
-              >
-                <td className="px-2 py-1 whitespace-nowrap">
+              <tr key={`${row.facilityId}:${row.streamId ?? row.activityType}`}>
+                <td className="border-b border-hairline px-2 py-1.5 whitespace-nowrap">
                   <span className="text-ink-muted">{row.facilityName}</span> ·{' '}
                   {row.streamName ?? row.activityType}
                   {row.coveredMonths.length === 0 && (
-                    <span className="ml-1 rounded-full bg-red-100 px-1.5 text-red-700">
+                    <Chip tone="warning" className="ml-2 h-[22px] text-xs">
                       no data
-                    </span>
+                    </Chip>
                   )}
                 </td>
                 {months.map((month) => {
@@ -744,8 +834,8 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
                       title={`${row.streamName ?? row.activityType}, ${month}: ${
                         covered ? 'data' : pending ? 'draft on file, data expected' : 'no data'
                       }`}
-                      className={`px-1 py-1 text-center ${
-                        covered ? 'text-dark-teal' : pending ? 'text-amber-600' : 'text-red-500'
+                      className={`border-b border-hairline px-1 py-1.5 text-center ${
+                        covered ? 'text-primary' : pending ? 'text-warning' : 'text-danger'
                       }`}
                     >
                       {covered ? '●' : pending ? '◐' : '○'}

@@ -493,7 +493,8 @@ beforeEach(() => {
   mockEmissionFactors([dieselFactor])
 })
 
-test('the workbench opens on the records, with the gates and the banner (spec 05.6)', async () => {
+test('the workbench opens on the records, with the gates and the pre-flight chip (spec 05.6, spec 10)', async () => {
+  const user = userEvent.setup()
   renderPage()
 
   expect(
@@ -501,17 +502,19 @@ test('the workbench opens on the records, with the gates and the banner (spec 05
   ).toBeInTheDocument()
   expect(screen.getByText('GWP AR5')).toBeInTheDocument()
 
-  // the banner states readiness wherever the reader is standing
-  expect(await screen.findByText('Launch on hold')).toBeInTheDocument()
+  // the chip states readiness wherever the reader is standing
+  const chip = await screen.findByRole('button', { name: 'Launch on hold · 1 blocking' })
 
   // the records are the work surface, so they are what opens
   expect(screen.getAllByText('Diesel consumption')[0]).toBeInTheDocument()
   expect(screen.getAllByText('Unclassified')[0]).toBeInTheDocument()
 
-  // the gates are read beside the records that fail them
-  expect(await screen.findByText('LAUNCH ON HOLD')).toBeInTheDocument()
-  expect(screen.getByText(/'Diesel consumption' is unclassified/)).toBeInTheDocument()
-  expect(screen.getByText('Base year')).toBeInTheDocument()
+  // the gates are read in the popover under the chip, the register still in reach
+  await user.click(chip)
+  const popover = screen.getByRole('dialog', { name: 'Pre-flight checks' })
+  expect(within(popover).getByText('Hold')).toBeInTheDocument()
+  expect(within(popover).getByText(/'Diesel consumption' is unclassified/)).toBeInTheDocument()
+  expect(within(popover).getByText('Base year')).toBeInTheDocument()
 })
 
 test('the boundary tab holds the entities with their Table 1 share', async () => {
@@ -626,8 +629,8 @@ test('launch is enabled when every gate passes', async () => {
   vi.mocked(getValidation).mockResolvedValue(passingReport)
   renderPage('runs')
 
-  // the banner carries readiness to whichever tab the reader is on (spec 05.6)
-  expect(await screen.findByText('Ready to launch a run')).toBeInTheDocument()
+  // the chip carries readiness to whichever tab the reader is on (spec 05.6)
+  expect(await screen.findByRole('button', { name: 'Ready to launch' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeEnabled()
 })
 
@@ -643,11 +646,15 @@ test('a base-year hold keeps the run available and says what it holds (spec 06.1
       },
     ],
   })
+  const user = userEvent.setup()
   renderPage('runs')
 
-  expect(await screen.findByText('Ready to launch a run')).toBeInTheDocument()
+  const chip = await screen.findByRole('button', { name: 'Ready to launch' })
+  await user.click(chip)
   expect(
-    screen.getByText('Base year holds the final designation; runs stay available.'),
+    within(screen.getByRole('dialog', { name: 'Pre-flight checks' })).getByText(
+      'Base year holds the final designation; runs stay available.',
+    ),
   ).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /launch calculation run/i })).toBeEnabled()
 })
@@ -674,9 +681,15 @@ test('a draft inventory is flagged, blocks the run, and freezes after confirming
   renderPage()
 
   expect(await screen.findByText('DRAFT')).toBeInTheDocument()
-  expect(await screen.findByText(/inventory is a draft\. Freeze it/)).toBeInTheDocument()
+  await user.click(await screen.findByRole('button', { name: 'Launch on hold · 1 blocking' }))
+  expect(
+    within(screen.getByRole('dialog', { name: 'Pre-flight checks' })).getByText(
+      /inventory is a draft\. Freeze it/,
+    ),
+  ).toBeInTheDocument()
+  await user.keyboard('{Escape}')
 
-  // the lifecycle bar's button opens a confirm dialog; the dialog's button does the freeze
+  // the title row's button opens a confirm dialog; the dialog's button does the freeze
   await user.click(await screen.findByRole('button', { name: /freeze inventory/i }))
   const dialog = await screen.findByRole('dialog', { name: /freeze the inventory/i })
   expect(within(dialog).getByText(/cuts boundary version 1/)).toBeInTheDocument()
@@ -817,7 +830,7 @@ test('a published inventory cannot launch another run (spec 05.1)', async () => 
   expect(
     await screen.findByText('Published. The runs are a record; a correction restates the year.'),
   ).toBeInTheDocument()
-  expect(screen.queryByText('Ready to launch a run')).toBeNull()
+  expect(screen.queryByRole('button', { name: /ready to launch/i })).toBeNull()
 })
 
 test('a published inventory is a record that offers a correction', async () => {
@@ -1240,7 +1253,7 @@ test('the final inventory prints who designated the run and the note', async () 
   ).toBeInTheDocument()
 })
 
-test('the register reads as one line a row and opens the record in a drawer (spec 05.6)', async () => {
+test('the register reads as one line a row and opens the record beside it (spec 05.6, spec 10)', async () => {
   const user = userEvent.setup()
   vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
   renderPage()
@@ -1250,11 +1263,17 @@ test('the register reads as one line a row and opens the record in a drawer (spe
   // the factor arrives on its own query, keyed by the identifiers the page cites (FU-03)
   await waitFor(() => expect(row).toHaveTextContent('Diesel (/litre)'))
   expect(screen.queryByLabelText('Diesel consumption scope')).not.toBeInTheDocument()
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(screen.queryByRole('region', { name: 'Diesel consumption' })).not.toBeInTheDocument()
 
   await user.click(within(row).getByRole('button', { name: 'Diesel consumption' }))
   // the record is named in the URL, so the view a reviewer is in survives a reload
-  expect(await screen.findByRole('dialog', { name: 'Diesel consumption' })).toBeInTheDocument()
+  expect(await screen.findByRole('region', { name: 'Diesel consumption' })).toBeInTheDocument()
+  // the split: the register becomes a summary list, and Esc brings the table back
+  expect(screen.getByRole('region', { name: 'Activity view' })).toBeInTheDocument()
+  expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  await user.keyboard('{Escape}')
+  expect(await screen.findByRole('table')).toBeInTheDocument()
+  expect(screen.queryByRole('region', { name: 'Diesel consumption' })).not.toBeInTheDocument()
 })
 
 test('a row carries the record reference beside the activity, and the search names it (spec 04.6)', async () => {
