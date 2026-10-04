@@ -639,6 +639,7 @@ function ClassifyPanel({
                     >
                       <span className="flex flex-wrap items-center gap-1.5 text-sm">
                         <span className="font-medium">{factor.name}</span>
+                        {/* a literal space: the QA pack and the help quote "name (/unit)" as one string */}{' '}
                         <span className="text-ink-muted">(/{factor.unit})</span>
                         {!factor.approved && <Chip tone="warning">unapproved</Chip>}
                       </span>

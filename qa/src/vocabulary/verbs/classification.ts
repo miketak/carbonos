@@ -184,7 +184,8 @@ export const excludeRecord = defineVerb({
       ...(a.estimatedKgCo2e !== undefined ? [{ op: 'fill', label: S.cls.field.estimated, value: String(a.estimatedKgCo2e) } as const] : []),
       ...(a.emitsNothing ? [{ op: 'tick', label: S.cls.field.emitsNothing } as const] : []),
       ...(a.notEstimated ? [{ op: 'tick', label: S.cls.field.notEstimated } as const] : []),
-      { op: 'click', button: S.cls.button.exclude, within: '[role="dialog"]' },
+      // the exclusion form carries the record's name (spec 10: the detail is a region, not a dialog)
+      { op: 'click', button: S.cls.button.exclude, within: `[aria-label="Exclude ${type}: justification"]` },
     ]
   },
   postconditions: (a) => [
@@ -219,7 +220,8 @@ export const includeRecord = defineVerb({
   ui: (a) => [
     { op: 'inventoryPage', organization: a.organization, inventory: a.inventory, tab: 'Records' },
     { op: 'openRow', text: a.record },
-    { op: 'click', button: `Re-include ${typeOf(a.organization, a.record)}`, within: '[role="dialog"]' },
+    // the button names the record, so it needs no surface: the detail is a region now (spec 10), not a dialog
+    { op: 'click', button: `Re-include ${typeOf(a.organization, a.record)}` },
   ],
   postconditions: (a) => [{ outcome: 'recordView', args: { organization: a.organization, inventory: a.inventory, record: a.record, included: true } }],
   narrate: (a) => `Re-include ${a.record}.`,

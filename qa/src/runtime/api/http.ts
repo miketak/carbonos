@@ -15,7 +15,8 @@ export class HttpSession implements ApiSession {
   ) {}
 
   private async ctx(): Promise<APIRequestContext> {
-    this.context ??= await request.newContext({ baseURL: this.baseURL })
+    // a reset replays every migration and a pack import writes thousands of rows: longer than Playwright's default
+    this.context ??= await request.newContext({ baseURL: this.baseURL, timeout: 120_000 })
     return this.context
   }
 
