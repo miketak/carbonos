@@ -45,7 +45,7 @@ export function Drawer({ eyebrow, title, subtitle, footer, onClose, children }: 
     <aside
       role="dialog"
       aria-label={title}
-      className="fixed inset-y-0 right-0 z-40 flex w-full max-w-xl animate-[drawer-in_180ms_ease-out] flex-col border-l border-hairline bg-surface shadow-pop md:top-[57px]"
+      className="fixed inset-y-0 right-0 z-40 flex w-full max-w-xl animate-[drawer-in_180ms_ease-out] flex-col border-l border-hairline bg-surface shadow-pop"
     >
       <header className="flex items-start justify-between gap-3 border-b border-hairline px-6 py-5">
         <div className="min-w-0">

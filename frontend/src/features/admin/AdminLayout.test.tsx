@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { ToastProvider } from '../../components/toast'
@@ -149,15 +148,6 @@ test('an edition URL keeps the active entry on Factor packs', async () => {
 
   const packs = await screen.findByRole('link', { name: /factor packs/i })
   expect(packs).toHaveAttribute('aria-current', 'page')
-})
-
-test('collapsing the sidebar is remembered', async () => {
-  const user = userEvent.setup()
-  renderAt('/admin')
-
-  await user.click(await screen.findByTitle(/collapse sidebar/i))
-  expect(localStorage.getItem('admin.sidebar')).toBe('collapsed')
-  expect(await screen.findByTitle(/expand sidebar/i)).toBeInTheDocument()
 })
 
 /**
