@@ -3,11 +3,11 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField, SelectField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail } from '../../lib/api'
-import { Breadcrumb } from './components/Breadcrumb'
 import { facilityTypeLabels, leaseLabels, relationshipShortLabels } from './format'
 import {
   useCreateFacility,
@@ -44,44 +44,44 @@ export function FacilityFormPage() {
     : undefined
   if (facilityId && !facility) {
     return (
-      <GlassCard className="p-8 text-center">
-        <h1 className="text-lg">Facility not found</h1>
+      <Panel className="p-8 text-center">
+        <h1 className="text-lg font-semibold">Facility not found</h1>
         <p className="mt-1 text-sm text-ink-muted">
           It may have been removed.{' '}
-          <Link to={listPath} className="font-semibold text-link">
+          <Link to={listPath} className="font-medium text-link hover:underline">
             Back to facilities
           </Link>
         </p>
-      </GlassCard>
+      </Panel>
     )
   }
 
   const title = facility ? 'Edit facility' : 'Add facility'
 
   return (
-    <div className="animate-fade-up flex flex-col gap-4">
-      <div>
-        <Breadcrumb items={[{ label: 'Facilities', to: listPath }, { label: title }]} />
-        <h1 className="text-2xl">{title}</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {facility
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        size="md"
+        back={{ to: listPath }}
+        crumbs={[{ label: 'Facilities', to: listPath }, { label: title }]}
+        title={title}
+        subtitle={
+          facility
             ? `${facility.name}: a site under one of the organization’s legal entities. Its records keep their history.`
-            : 'A site under one of the organization’s legal entities. The entity’s relationship sets the accounting share every inventory starts from.'}
-        </p>
-      </div>
-      <GlassCard className="max-w-2xl p-6">
-        <FacilityForm
-          key={facility?.id ?? 'new'}
-          title={title}
-          organizationId={organizationId}
-          facility={facility}
-          onCancel={() => navigate(listPath)}
-          onSaved={(message) => {
-            toast(message)
-            navigate(listPath)
-          }}
-        />
-      </GlassCard>
+            : 'A site under one of the organization’s legal entities. The entity’s relationship sets the accounting share every inventory starts from.'
+        }
+      />
+      <FacilityForm
+        key={facility?.id ?? 'new'}
+        title={title}
+        organizationId={organizationId}
+        facility={facility}
+        onCancel={() => navigate(listPath)}
+        onSaved={(message) => {
+          toast(message)
+          navigate(listPath)
+        }}
+      />
     </div>
   )
 }
@@ -146,33 +146,38 @@ function FacilityForm({
   return (
     // noValidate: the backend's "lease ends before it starts" prints under the field instead of a native tooltip;
     // the name lets the QA driver and the tests address the form the way they address a dialog
-    <form aria-label={title} onSubmit={submit} className="flex flex-col gap-4" noValidate>
-      <InputField
-        label="Name"
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        error={errors?.name}
-        placeholder="Accra HQ"
-        required
-      />
-      <InputField
-        label="Location"
-        value={location}
-        onChange={(event) => setLocation(event.target.value)}
-        error={errors?.location}
-        placeholder="Accra, Ghana"
-        required
-      />
-      <InputField
-        label="Country (optional)"
-        placeholder="GH"
-        maxLength={2}
-        value={country}
-        onChange={(event) => setCountry(event.target.value)}
-        error={errors?.country}
-        hint="ISO 3166-1 alpha-2 code, for the report's country breakdown."
-      />
-      <div className="grid grid-cols-2 gap-3">
+    <form
+      aria-label={title}
+      onSubmit={submit}
+      className="flex max-w-[760px] flex-col gap-6"
+      noValidate
+    >
+      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+        <InputField
+          label="Name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          error={errors?.name}
+          placeholder="Accra HQ"
+          required
+        />
+        <InputField
+          label="Location"
+          value={location}
+          onChange={(event) => setLocation(event.target.value)}
+          error={errors?.location}
+          placeholder="Accra, Ghana"
+          required
+        />
+        <InputField
+          label="Country (optional)"
+          placeholder="GH"
+          maxLength={2}
+          value={country}
+          onChange={(event) => setCountry(event.target.value)}
+          error={errors?.country}
+          hint="ISO 3166-1 alpha-2 code, for the report's country breakdown."
+        />
         <InputField
           label="Grid region (optional)"
           placeholder="GHA or US-CAMX"
@@ -195,63 +200,65 @@ function FacilityForm({
             </option>
           ))}
         </SelectField>
-      </div>
-      <SelectField
-        label="Lease (optional)"
-        value={leaseType}
-        onChange={(event) => setLeaseType(event.target.value as LeaseType | '')}
-        error={errors?.leaseType}
-        hint="Records at a leased site inherit the lease; Appendix F sets their scope under each approach."
-      >
-        <option value="">Owned, not leased</option>
-        {Object.entries(leaseLabels).map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </SelectField>
-      {leaseType !== '' && (
-        <div className="grid grid-cols-2 gap-3">
-          <InputField
-            label="Lease from (optional)"
-            type="date"
-            value={leaseFrom}
-            onChange={(event) => setLeaseFrom(event.target.value)}
-            error={errors?.leaseFrom}
-          />
-          <InputField
-            label="Lease until (optional)"
-            type="date"
-            min={leaseFrom || undefined}
-            value={leaseTo}
-            onChange={(event) => setLeaseTo(event.target.value)}
-            error={errors?.leaseTo}
-          />
+        <SelectField
+          label="Lease (optional)"
+          value={leaseType}
+          onChange={(event) => setLeaseType(event.target.value as LeaseType | '')}
+          error={errors?.leaseType}
+          hint="Records at a leased site inherit the lease; Appendix F sets their scope under each approach."
+        >
+          <option value="">Owned, not leased</option>
+          {Object.entries(leaseLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </SelectField>
+        {leaseType !== '' && (
+          <>
+            <InputField
+              label="Lease from (optional)"
+              type="date"
+              value={leaseFrom}
+              onChange={(event) => setLeaseFrom(event.target.value)}
+              error={errors?.leaseFrom}
+            />
+            <InputField
+              label="Lease until (optional)"
+              type="date"
+              min={leaseFrom || undefined}
+              value={leaseTo}
+              onChange={(event) => setLeaseTo(event.target.value)}
+              error={errors?.leaseTo}
+            />
+          </>
+        )}
+        <div className="md:col-span-2">
+          <SelectField
+            label="Legal entity"
+            value={selectedEntityId}
+            onChange={(event) => setEntityId(event.target.value)}
+            error={errors?.entityId}
+            hint="Ownership and control facts live on the entity. Add entities under Legal entities."
+          >
+            {entities.map((entity) => (
+              <option key={entity.id} value={entity.id}>
+                {entity.name} (
+                {entity.reportingCompany
+                  ? 'Reporting company'
+                  : relationshipShortLabels[entity.relationshipType]}
+                )
+              </option>
+            ))}
+          </SelectField>
         </div>
-      )}
-      <SelectField
-        label="Legal entity"
-        value={selectedEntityId}
-        onChange={(event) => setEntityId(event.target.value)}
-        error={errors?.entityId}
-        hint="Ownership and control facts live on the entity. Add entities under Legal entities."
-      >
-        {entities.map((entity) => (
-          <option key={entity.id} value={entity.id}>
-            {entity.name} (
-            {entity.reportingCompany
-              ? 'Reporting company'
-              : relationshipShortLabels[entity.relationshipType]}
-            )
-          </option>
-        ))}
-      </SelectField>
+      </div>
       {generalError && (
-        <p role="alert" className="text-sm font-medium text-red-600">
+        <p role="alert" className="text-sm font-medium text-danger">
           {generalError}
         </p>
       )}
-      <div className="mt-2 flex justify-end gap-2 border-t border-teal/10 pt-4">
+      <div className="flex justify-end gap-3 border-t border-hairline pt-5">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>

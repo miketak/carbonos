@@ -1,13 +1,14 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
-import { InputField, SelectField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { FilterRow, FilterSelect, SearchField } from '../../components/FilterRow'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { Table, TableFooter, Td, Th, TwoLine } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
 import { evidenceDownloadUrl, evidenceIndexUrl, importBatchFileUrl } from './api'
 import type { DocumentFilter, EvidenceDocument, EvidenceQuery } from './api'
-import { Breadcrumb } from './components/Breadcrumb'
 import { formatSize } from './components/EvidencePanel'
 import { ViewSwitch } from './components/ViewSwitch'
 import { formatDateTime, formatRecordPeriod } from './format'
@@ -29,34 +30,15 @@ const filters: { value: DocumentFilter; label: string }[] = [
   { value: 'ORPHANED', label: 'Record removed' },
 ]
 
-function DocumentIcon({ kind }: { kind: EvidenceDocument['kind'] | 'IMPORT' }) {
-  const path =
-    kind === 'LINK'
-      ? 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'
-      : kind === 'IMPORT'
-        ? 'M3 5h18M3 12h18M3 19h18M8 5v14M16 5v14'
-        : 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8'
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className="h-5 w-5"
-    >
-      <path d={path} />
-    </svg>
-  )
-}
+/* the button look on a download link; the kit's Button renders a <button> */
+const secondaryLinkClasses =
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-hairline-strong bg-surface px-4 text-[15px] font-medium whitespace-nowrap text-ink transition-colors duration-150 hover:border-ink-muted focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none'
 
 /**
  * The documents behind the organization's records (spec 04.6): every file
  * and link, newest first, each pointing at its record; the files each import
  * came from; and the evidence index a verifier takes as the pack's table of
- * contents.
+ * contents. A table, not cards (spec 10).
  */
 export function SourceDocumentsPage() {
   const { organizationId = '' } = useParams()
@@ -97,79 +79,81 @@ export function SourceDocumentsPage() {
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const filtered = query.q !== undefined || facilityId !== '' || filter !== 'ALL'
   const batches = batchesQuery.data ?? []
+  const registerPath = `/app/ghg/${organizationId}/activity`
 
   return (
-    <section>
-      <Breadcrumb
-        items={[
+    <section className="flex flex-col gap-6">
+      <PageHeader
+        back={{ to: registerPath }}
+        crumbs={[
           { label: 'Data collection' },
-          { label: 'Activity data', to: `/app/ghg/${organizationId}/activity` },
+          { label: 'Activity data', to: registerPath },
           { label: 'Source documents' },
         ]}
+        title="Source documents"
+        subtitle="The supporting documents behind your activity records."
+        actions={
+          <>
+            <ViewSwitch organizationId={organizationId} />
+            <a href={evidenceIndexUrl(organizationId)} className={secondaryLinkClasses} download>
+              Download evidence index (CSV)
+            </a>
+          </>
+        }
       />
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl">Source documents</h1>
-          <p className="text-sm text-ink-muted">
-            The supporting documents behind your activity records.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <ViewSwitch organizationId={organizationId} />
-          <a
-            href={evidenceIndexUrl(organizationId)}
-            className="text-sm font-semibold text-link hover:underline"
-            download
-          >
-            Download evidence index (CSV)
-          </a>
-        </div>
-      </div>
 
       {batches.length > 0 && (
-        <GlassCard className="mb-3 p-4">
-          <h2 className="text-sm font-semibold">Imported files</h2>
-          <p className="text-xs text-ink-muted">
-            Each CSV import is kept as uploaded, with its digest, so a record traces to its row.
-          </p>
-          <ul className="mt-2 flex flex-col gap-1 text-sm">
-            {batches.map((batch) => (
-              <li key={batch.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                <span className="text-ink-muted">
-                  <DocumentIcon kind="IMPORT" />
-                </span>
-                <a
-                  href={importBatchFileUrl(batch.id)}
-                  className="font-semibold text-link hover:underline"
-                  download
-                >
-                  {batch.fileName}
-                </a>
-                <span className="text-xs text-ink-muted">
-                  {batch.rowCount} row{batch.rowCount === 1 ? '' : 's'}
-                  {batch.firstRecordRef
-                    ? ` (${batch.firstRecordRef}${batch.lastRecordRef !== batch.firstRecordRef ? ` to ${batch.lastRecordRef}` : ''})`
-                    : ''}{' '}
-                  · {formatSize(batch.sizeBytes)} · {batch.importedBy},{' '}
-                  {formatDateTime(batch.importedAt)} · sha256{' '}
-                  <span className="font-mono" title={batch.sha256}>
-                    {batch.sha256.slice(0, 12)}…
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </GlassCard>
+        <Panel>
+          <PanelHead
+            title="Imported files"
+            description="Each CSV import is kept as uploaded, with its digest, so a record traces to its row."
+          />
+          <Table className="[&_tr:last-child_td]:border-b-0">
+            <tbody>
+              {batches.map((batch) => (
+                <tr key={batch.id}>
+                  <Td className="pl-5">
+                    <TwoLine
+                      primary={
+                        <a
+                          href={importBatchFileUrl(batch.id)}
+                          className="text-link hover:underline"
+                          download
+                        >
+                          {batch.fileName}
+                        </a>
+                      }
+                      secondary={
+                        <>
+                          {batch.rowCount} row{batch.rowCount === 1 ? '' : 's'}
+                          {batch.firstRecordRef
+                            ? ` (${batch.firstRecordRef}${batch.lastRecordRef !== batch.firstRecordRef ? ` to ${batch.lastRecordRef}` : ''})`
+                            : ''}{' '}
+                          · {formatSize(batch.sizeBytes)} · {batch.importedBy},{' '}
+                          {formatDateTime(batch.importedAt)} · sha256{' '}
+                          <span title={batch.sha256}>{batch.sha256.slice(0, 12)}…</span>
+                        </>
+                      }
+                    />
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Panel>
       )}
 
-      <div className="mb-3 grid gap-2 md:grid-cols-[2fr_1fr_1fr] md:items-end">
-        <InputField
-          label="Search"
-          placeholder="Document, activity, facility or reference"
-          value={q}
-          onChange={(event) => set({ q: event.target.value })}
-        />
-        <SelectField
+      <FilterRow
+        search={
+          <SearchField
+            label="Search"
+            placeholder="Document, activity, facility or reference"
+            value={q}
+            onChange={(event) => set({ q: event.target.value })}
+          />
+        }
+      >
+        <FilterSelect
           label="Facility"
           value={facilityId}
           onChange={(event) => set({ facility: event.target.value })}
@@ -180,8 +164,8 @@ export function SourceDocumentsPage() {
               {facility.name}
             </option>
           ))}
-        </SelectField>
-        <SelectField
+        </FilterSelect>
+        <FilterSelect
           label="Show"
           value={filter}
           onChange={(event) => set({ filter: event.target.value })}
@@ -191,71 +175,86 @@ export function SourceDocumentsPage() {
               {item.label}
             </option>
           ))}
-        </SelectField>
-      </div>
+        </FilterSelect>
+      </FilterRow>
 
       {documentsQuery.isPending && (
-        <div aria-label="Loading documents" className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
+        <div aria-label="Loading documents" className="flex flex-col gap-2">
+          <Skeleton className="h-12" />
+          <Skeleton className="h-12" />
+          <Skeleton className="h-12" />
         </div>
       )}
       {documents?.length === 0 && (
-        <GlassCard className="p-8 text-center">
+        <Panel className="p-10 text-center">
           <h2 className="font-semibold">{filtered ? 'No documents match' : 'No documents yet'}</h2>
           <p className="mt-1 text-sm text-ink-muted">
             {filtered
               ? 'Clear the search or the filters.'
               : 'Attach an invoice, a meter photo or a register to a record and it appears here.'}
           </p>
-        </GlassCard>
+        </Panel>
       )}
       {documents && documents.length > 0 && (
-        <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {documents.map((item) => (
-            <DocumentCard
-              key={item.id}
-              organizationId={organizationId}
-              item={item}
-              myRole={myRole}
-            />
-          ))}
-        </ul>
+        <Table>
+          <thead>
+            <tr>
+              <Th>Document</Th>
+              <Th>Record</Th>
+              <Th>Facility / period</Th>
+              <Th>Attached by</Th>
+              <Th className="w-40">
+                <span className="sr-only">Actions</span>
+              </Th>
+            </tr>
+          </thead>
+          <tbody>
+            {documents.map((item) => (
+              <DocumentRow
+                key={item.id}
+                organizationId={organizationId}
+                item={item}
+                myRole={myRole}
+              />
+            ))}
+          </tbody>
+        </Table>
       )}
       {total > 0 && (
-        <div className="mt-3 flex items-center justify-between text-xs text-ink-muted">
-          <span>
-            {total.toLocaleString()} document{total === 1 ? '' : 's'}
-            {pageCount > 1 ? `, page ${page + 1} of ${pageCount}` : ''}
-          </span>
-          {pageCount > 1 && (
-            <span className="flex gap-2">
-              <Button
-                variant="ghost"
-                className="px-2 py-1 text-xs"
-                disabled={page === 0}
-                onClick={() => set({ page: String(page - 1) })}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="ghost"
-                className="px-2 py-1 text-xs"
-                disabled={page + 1 >= pageCount}
-                onClick={() => set({ page: String(page + 1) })}
-              >
-                Next
-              </Button>
-            </span>
-          )}
-        </div>
+        <TableFooter
+          pager={
+            pageCount > 1 ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => set({ page: String(page - 1) })}
+                >
+                  Previous
+                </Button>
+                <span aria-hidden="true" className="mx-2 h-5 w-px bg-hairline" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={page + 1 >= pageCount}
+                  onClick={() => set({ page: String(page + 1) })}
+                >
+                  Next
+                </Button>
+              </>
+            ) : undefined
+          }
+        >
+          {total.toLocaleString()} document{total === 1 ? '' : 's'}
+          {pageCount > 1 ? `, page ${page + 1} of ${pageCount}` : ''}
+        </TableFooter>
       )}
     </section>
   )
 }
 
-function DocumentCard({
+function DocumentRow({
   organizationId,
   item,
   myRole,
@@ -267,19 +266,12 @@ function DocumentCard({
   const remove = useDeleteEvidence({ activityId: item.activityId }, organizationId)
   const toast = useToast()
   return (
-    <li>
-      <GlassCard className="flex h-full flex-col gap-2 p-4">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 text-ink-muted">
-            <DocumentIcon kind={item.kind} />
-          </span>
-          <div className="min-w-0 flex-1">
-            {item.kind === 'FILE' ? (
-              <a
-                href={evidenceDownloadUrl(item.id)}
-                className="block truncate font-semibold text-link hover:underline"
-                download
-              >
+    <tr>
+      <Td>
+        <TwoLine
+          primary={
+            item.kind === 'FILE' ? (
+              <a href={evidenceDownloadUrl(item.id)} className="text-link hover:underline" download>
                 {item.name}
               </a>
             ) : (
@@ -287,74 +279,80 @@ function DocumentCard({
                 href={item.url ?? '#'}
                 target="_blank"
                 rel="noreferrer"
-                className="block truncate font-semibold text-link hover:underline"
+                className="text-link hover:underline"
               >
                 {item.name}
               </a>
-            )}
-            <p className="text-xs text-ink-muted">
-              {item.kind === 'FILE' ? `file · ${formatSize(item.sizeBytes)}` : 'link'} ·{' '}
-              {item.facilityName} · {formatRecordPeriod(item.periodStart, item.periodEnd)}
-            </p>
-          </div>
-        </div>
-        <p className="text-sm">
-          {item.recordRemoved ? (
-            <span className="text-ink-muted">
-              <span className="line-through">
-                {item.recordRef} · {item.activityType}
-              </span>{' '}
-              (record removed)
-            </span>
-          ) : (
-            <Link
-              to={`/app/ghg/${organizationId}/activity?record=${item.activityId}`}
-              className="text-link hover:underline"
-            >
-              {item.recordRef} · {item.activityType} →
-            </Link>
-          )}
-        </p>
-        <div className="mt-auto flex items-center justify-between text-xs text-ink-muted">
-          <span>
-            {item.uploadedBy}, {formatDateTime(item.uploadedAt)}
+            )
+          }
+          secondary={item.kind === 'FILE' ? `file · ${formatSize(item.sizeBytes)}` : 'link'}
+        />
+      </Td>
+      <Td>
+        {item.recordRemoved ? (
+          <span className="text-ink-muted">
+            <span className="line-through">
+              {item.recordRef} · {item.activityType}
+            </span>{' '}
+            (record removed)
           </span>
-          {item.calculated ? (
-            <span title="A run has calculated this record; its evidence stays on file so the run remains traceable.">
-              on a calculated run
-            </span>
-          ) : mayWrite(myRole) ? (
+        ) : (
+          <Link
+            to={`/app/ghg/${organizationId}/activity?record=${item.activityId}`}
+            className="text-link hover:underline"
+          >
+            {item.recordRef} · {item.activityType} →
+          </Link>
+        )}
+      </Td>
+      <Td>
+        <TwoLine
+          primary={<span className="font-normal">{item.facilityName}</span>}
+          secondary={formatRecordPeriod(item.periodStart, item.periodEnd)}
+        />
+      </Td>
+      <Td className="text-ink-muted">
+        {item.uploadedBy}, {formatDateTime(item.uploadedAt)}
+      </Td>
+      <Td align="right" className="text-[13px]">
+        {item.calculated ? (
+          <span
+            className="text-ink-muted"
+            title="A run has calculated this record; its evidence stays on file so the run remains traceable."
+          >
+            on a calculated run
+          </span>
+        ) : mayWrite(myRole) ? (
+          <button
+            type="button"
+            aria-label={`Remove ${item.name}`}
+            className="font-medium text-link hover:underline"
+            onClick={() =>
+              remove.mutate(item.id, {
+                onError: (error) => toast(refusalMessage(error, myRole), 'error'),
+              })
+            }
+          >
+            remove
+          </button>
+        ) : (
+          <>
             <button
               type="button"
               aria-label={`Remove ${item.name}`}
-              className="text-red-600 hover:underline"
-              onClick={() =>
-                remove.mutate(item.id, {
-                  onError: (error) => toast(refusalMessage(error, myRole), 'error'),
-                })
-              }
+              className="font-medium text-link opacity-50"
+              disabled
+              title={WRITE_TOOLTIP}
+              aria-describedby={`doc-role-${item.id}`}
             >
               remove
             </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                aria-label={`Remove ${item.name}`}
-                className="text-red-600 opacity-50"
-                disabled
-                title={WRITE_TOOLTIP}
-                aria-describedby={`doc-role-${item.id}`}
-              >
-                remove
-              </button>
-              <span id={`doc-role-${item.id}`} className="sr-only">
-                {WRITE_TOOLTIP}
-              </span>
-            </>
-          )}
-        </div>
-      </GlassCard>
-    </li>
+            <span id={`doc-role-${item.id}`} className="sr-only">
+              {WRITE_TOOLTIP}
+            </span>
+          </>
+        )}
+      </Td>
+    </tr>
   )
 }

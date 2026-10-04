@@ -37,13 +37,13 @@ export function RemoveDialog({
           onChange={(event) => setReason(event.target.value)}
         />
       </div>
-      <div className="mt-4 flex justify-end gap-2">
+      <div className="mt-6 flex justify-end gap-3 border-t border-hairline pt-5">
         <Button type="button" variant="ghost" onClick={onClose}>
           Cancel
         </Button>
         <Button
           type="button"
-          className="bg-red-600 hover:bg-red-700"
+          variant="danger"
           disabled={!valid}
           busy={busy}
           onClick={() => onConfirm(reason.trim())}

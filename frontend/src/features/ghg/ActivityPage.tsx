@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
-import { InputField, SelectField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
-import { MonthField } from '../../components/MonthField'
+import { controlClasses } from '../../components/Field'
+import { FilterRow, FilterSelect, SearchField } from '../../components/FilterRow'
+import { PageHeader } from '../../components/PageHeader'
 import { Skeleton } from '../../components/Skeleton'
+import { SplitView, SummaryRow } from '../../components/SplitView'
+import { TableFooter } from '../../components/Table'
 import { Tabs } from '../../components/Tabs'
 import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
@@ -14,13 +16,13 @@ import type { ActivitySort, ActivityTab } from './activityFilters'
 import { ActivityDrawer } from './components/ActivityDrawer'
 import { ActivityHistoryModal } from './components/ActivityHistoryModal'
 import { ActivityTable } from './components/ActivityTable'
-import { Breadcrumb } from './components/Breadcrumb'
 import { CompletenessBanner } from './components/CompletenessBanner'
 import { ImportActivitiesModal } from './components/ImportActivitiesModal'
 import { RemoveDialog } from './components/RemoveDialog'
 import { useSearchField } from './useSearchField'
 import { RoleButton } from './components/RoleButton'
 import { ViewSwitch } from './components/ViewSwitch'
+import { activityIssueLabels, formatQuantity, formatRecordPeriod } from './format'
 import { mayWrite, WRITE_TOOLTIP } from './roles'
 import {
   useActivityPageQuery,
@@ -49,17 +51,50 @@ const sortOptions: { value: ActivitySort; label: string }[] = [
 
 function Kbd({ children }: { children: string }) {
   return (
-    <kbd className="ml-1 rounded border border-current/30 px-1 font-mono text-[10px] opacity-70">
+    <kbd className="ml-1 rounded border border-hairline-strong px-1 text-[10px] text-ink-muted">
       {children}
     </kbd>
   )
 }
 
 /**
- * The data-collection register (spec 04.6): what happened, how ready each
- * record is for review, and a drawer to work through them without leaving
- * the list. Scope, factors and accounting treatment are decided per
- * inventory, never here (spec 02). Filters live in the URL.
+ * A month on the filter row (spec 10): a native month input with its label
+ * for screen readers, so it sits level with the selects. The kit's
+ * MonthField carries a visible label and step arrows and is built for a form.
+ */
+function MonthFilter({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  const id = useId()
+  return (
+    <div>
+      <label htmlFor={id} className="sr-only">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="month"
+        value={value}
+        placeholder="All periods"
+        onChange={(event) => onChange(event.target.value)}
+        className={controlClasses}
+      />
+    </div>
+  )
+}
+
+/**
+ * The data-collection register (spec 04.6) as the split register of spec 10:
+ * the full table with its stat strip, tabs, filter row and footer, until a
+ * record is opened; then the register as a summary list beside the record's
+ * detail. Scope, factors and accounting treatment are decided per inventory,
+ * never here (spec 02). Filters and the open record live in the URL.
  */
 export function ActivityPage() {
   const { organizationId = '' } = useParams()
@@ -75,6 +110,8 @@ export function ActivityPage() {
   const [cursorId, setCursorId] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [removing, setRemoving] = useState(false)
+  // the record whose row takes the focus back when its detail closes
+  const returnTo = useRef<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const search = useSearchField(filters.q, (q) => set({ q }))
 
@@ -91,7 +128,7 @@ export function ActivityPage() {
   const streams = (streamsQuery.data ?? []).filter(
     (stream) => filters.facility === '' || stream.facilityId === filters.facility,
   )
-  const drawerOpen = filters.record !== null
+  const detailOpen = filters.record !== null
 
   // the keyboard cursor follows the open record, and never points outside the page
   const openOnPage =
@@ -111,6 +148,19 @@ export function ActivityPage() {
     // jsdom has no scrollIntoView; browsers keep the cursor row in view
     document.querySelector<HTMLElement>('[data-cursor]')?.scrollIntoView?.({ block: 'nearest' })
   }
+
+  const closeDetail = () => {
+    returnTo.current = filters.record
+    setCursorId(filters.record)
+    set({ record: null })
+  }
+
+  // the table is back: focus returns to the row of the record that was open
+  useEffect(() => {
+    if (filters.record !== null || returnTo.current === null) return
+    document.querySelector<HTMLElement>(`[data-record="${returnTo.current}"] button`)?.focus()
+    returnTo.current = null
+  }, [filters.record])
 
   useShortcuts(
     {
@@ -134,147 +184,160 @@ export function ActivityPage() {
     tabs.push({ value: 'drafts', label: 'Drafts', count: counts?.drafts })
   }
 
+  const readinessTabs = (
+    <Tabs<ActivityTab>
+      label="Readiness"
+      tabs={tabs}
+      value={filters.tab}
+      onChange={(tab) => set({ tab })}
+    />
+  )
+
+  const countLine = total > 0 && (
+    <>
+      {(activities?.length ?? 0).toLocaleString()} of {total.toLocaleString()} record
+      {total === 1 ? '' : 's'}
+      {pageCount > 1 ? `, page ${filters.page + 1} of ${pageCount}` : ''}
+    </>
+  )
+
+  const emptyState = activities?.length === 0 && (
+    <div className="px-6 py-12 text-center">
+      <h2 className="font-medium">
+        {filtered || filters.tab !== 'all'
+          ? filters.tab === 'attention' && !filtered
+            ? 'Nothing needs attention'
+            : 'No records match'
+          : 'No activity data yet'}
+      </h2>
+      <p className="mt-1 text-sm text-ink-muted">
+        {filtered || filters.tab !== 'all'
+          ? filters.tab === 'attention' && !filtered
+            ? 'Every record has its figures, a stream, a source and evidence.'
+            : 'Clear the search, the filters or the tab.'
+          : facilities.length === 0
+            ? 'Add a facility, then record what happened there.'
+            : 'Record the first fact: fuel burned, electricity bought, kilometres travelled. Or import a spreadsheet.'}
+      </p>
+    </div>
+  )
+
+  const loading = activitiesQuery.isPending && (
+    <div aria-label="Loading activities" className="flex flex-col gap-2">
+      <Skeleton className="h-12" />
+      <Skeleton className="h-12" />
+    </div>
+  )
+
   return (
-    <section className={drawerOpen ? 'transition-[padding] duration-200 md:pr-[36rem]' : ''}>
-      <Breadcrumb items={[{ label: 'Data collection' }, { label: 'Activity data' }]} />
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl">Activity data</h1>
-          <p className="text-sm text-ink-muted">
-            A clear record of what your business consumes and produces. Each inventory decides
-            separately how it is accounted for.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ViewSwitch organizationId={organizationId} />
-          <RoleButton
-            allowed={mayWrite(myRole)}
-            tooltip={WRITE_TOOLTIP}
-            variant="ghost"
-            className="px-4 py-1.5 text-sm"
-            onClick={() => setDialog({ kind: 'import' })}
-            disabled={facilities.length === 0}
-            title={facilities.length === 0 ? 'Add a facility first' : undefined}
-          >
-            Import CSV
-          </RoleButton>
-          <RoleButton
-            allowed={mayWrite(myRole)}
-            tooltip={WRITE_TOOLTIP}
-            className="px-4 py-1.5 text-sm"
-            onClick={() => set({ record: 'new' })}
-            disabled={facilities.length === 0}
-            title={facilities.length === 0 ? 'Add a facility first' : 'Press N'}
-          >
-            + Add activity
-            <Kbd>N</Kbd>
-          </RoleButton>
-        </div>
-      </div>
+    <section className="flex flex-col gap-6">
+      <PageHeader
+        back={{ to: `/app/ghg/${organizationId}` }}
+        crumbs={[{ label: 'Data collection' }, { label: 'Activity data' }]}
+        title="Activity data"
+        subtitle="A clear record of what your business consumes and produces. Each inventory decides separately how it is accounted for."
+        actions={
+          <>
+            <ViewSwitch organizationId={organizationId} />
+            <RoleButton
+              allowed={mayWrite(myRole)}
+              tooltip={WRITE_TOOLTIP}
+              variant="secondary"
+              onClick={() => setDialog({ kind: 'import' })}
+              disabled={facilities.length === 0}
+              title={facilities.length === 0 ? 'Add a facility first' : undefined}
+            >
+              Import CSV
+            </RoleButton>
+            <RoleButton
+              allowed={mayWrite(myRole)}
+              tooltip={WRITE_TOOLTIP}
+              onClick={() => set({ record: 'new' })}
+              disabled={facilities.length === 0}
+              title={facilities.length === 0 ? 'Add a facility first' : 'Press N'}
+            >
+              + Add activity
+              <Kbd>N</Kbd>
+            </RoleButton>
+          </>
+        }
+      />
 
-      {counts && <CompletenessBanner counts={counts} onResolve={() => set({ tab: 'attention' })} />}
-
-      <GlassCard className="animate-fade-up">
-        <div className="px-4 pt-2">
-          <Tabs<ActivityTab>
-            label="Readiness"
-            tabs={tabs}
-            value={filters.tab}
-            onChange={(tab) => set({ tab })}
-          />
-        </div>
-        {/* wraps rather than squeezes when the drawer takes the right third of the page */}
-        <div className="flex flex-wrap items-end gap-2 border-b border-teal/10 px-4 py-3 [&>*]:min-w-[10rem] [&>*]:flex-1">
-          <div className="min-w-[16rem] flex-[3]">
-            <InputField
-              ref={searchRef}
-              label="Search"
-              placeholder="Find an activity, facility, stream, reference or ACT-0001"
-              value={search.value}
-              onChange={(event) => search.onChange(event.target.value)}
+      {!detailOpen && (
+        <>
+          {counts && (
+            <CompletenessBanner counts={counts} onResolve={() => set({ tab: 'attention' })} />
+          )}
+          {readinessTabs}
+          <FilterRow
+            filters={4}
+            search={
+              <SearchField
+                ref={searchRef}
+                label="Search"
+                placeholder="Find an activity, facility, stream, reference or ACT-0001"
+                value={search.value}
+                onChange={(event) => search.onChange(event.target.value)}
+              />
+            }
+          >
+            <FilterSelect
+              label="Facility"
+              value={filters.facility}
+              onChange={(event) => set({ facility: event.target.value, stream: '' })}
+            >
+              <option value="">All facilities</option>
+              {facilities.map((facility) => (
+                <option key={facility.id} value={facility.id}>
+                  {facility.name}
+                </option>
+              ))}
+            </FilterSelect>
+            <FilterSelect
+              label="Stream"
+              value={filters.stream}
+              onChange={(event) => set({ stream: event.target.value })}
+            >
+              <option value="">All streams</option>
+              {streams.map((stream) => (
+                <option key={stream.id} value={stream.id}>
+                  {stream.name}
+                  {filters.facility === '' ? ` (${stream.facilityName})` : ''}
+                </option>
+              ))}
+            </FilterSelect>
+            <MonthFilter
+              label="Period"
+              value={filters.month}
+              onChange={(month) => set({ month })}
             />
-          </div>
-          <SelectField
-            label="Facility"
-            value={filters.facility}
-            onChange={(event) => set({ facility: event.target.value, stream: '' })}
-          >
-            <option value="">All facilities</option>
-            {facilities.map((facility) => (
-              <option key={facility.id} value={facility.id}>
-                {facility.name}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="Stream"
-            value={filters.stream}
-            onChange={(event) => set({ stream: event.target.value })}
-          >
-            <option value="">All streams</option>
-            {streams.map((stream) => (
-              <option key={stream.id} value={stream.id}>
-                {stream.name}
-                {filters.facility === '' ? ` (${stream.facilityName})` : ''}
-              </option>
-            ))}
-          </SelectField>
-          <div className="min-w-[15rem]">
-            <MonthField label="Period" value={filters.month} onChange={(month) => set({ month })} />
-          </div>
-          <SelectField
-            label="Sort by"
-            value={filters.sort}
-            onChange={(event) => set({ sort: event.target.value as ActivitySort })}
-          >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </SelectField>
-          <Button
-            type="button"
-            variant="ghost"
-            className="!min-w-0 !flex-none px-3 py-2 text-sm"
-            aria-label={filters.dir === 'desc' ? 'Sort ascending' : 'Sort descending'}
-            onClick={() => set({ dir: filters.dir === 'desc' ? 'asc' : 'desc' })}
-          >
-            {filters.dir === 'desc' ? '↓' : '↑'}
-          </Button>
-        </div>
+            <div className="flex items-center gap-1">
+              <FilterSelect
+                label="Sort by"
+                className="min-w-0 flex-1"
+                value={filters.sort}
+                onChange={(event) => set({ sort: event.target.value as ActivitySort })}
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </FilterSelect>
+              <Button
+                type="button"
+                variant="ghost"
+                className="shrink-0 px-3"
+                aria-label={filters.dir === 'desc' ? 'Sort ascending' : 'Sort descending'}
+                onClick={() => set({ dir: filters.dir === 'desc' ? 'asc' : 'desc' })}
+              >
+                {filters.dir === 'desc' ? '↓' : '↑'}
+              </Button>
+            </div>
+          </FilterRow>
 
-        <div className="overflow-x-auto">
-          {activitiesQuery.isPending && (
-            <div aria-label="Loading activities" className="flex flex-col gap-2 p-4">
-              <Skeleton className="h-8" />
-              <Skeleton className="h-8" />
-            </div>
-          )}
-          {activities?.length === 0 && (filtered || filters.tab !== 'all') && (
-            <div className="p-8 text-center">
-              <h2 className="font-semibold">
-                {filters.tab === 'attention' && !filtered
-                  ? 'Nothing needs attention'
-                  : 'No records match'}
-              </h2>
-              <p className="mt-1 text-sm text-ink-muted">
-                {filters.tab === 'attention' && !filtered
-                  ? 'Every record has its figures, a stream, a source and evidence.'
-                  : 'Clear the search, the filters or the tab.'}
-              </p>
-            </div>
-          )}
-          {activities?.length === 0 && !filtered && filters.tab === 'all' && (
-            <div className="p-8 text-center">
-              <h2 className="font-semibold">No activity data yet</h2>
-              <p className="mt-1 text-sm text-ink-muted">
-                {facilities.length === 0
-                  ? 'Add a facility, then record what happened there.'
-                  : 'Record the first fact: fuel burned, electricity bought, kilometres travelled. Or import a spreadsheet.'}
-              </p>
-            </div>
-          )}
+          {loading}
+          {emptyState}
           {activities && activities.length > 0 && (
             <ActivityTable
               activities={activities}
@@ -296,88 +359,123 @@ export function ActivityPage() {
               onOpen={(activity) => set({ record: activity.id })}
             />
           )}
-        </div>
-        {total > 0 && (
-          <div className="flex items-center justify-between border-t border-teal/10 px-4 py-2 text-xs text-ink-muted">
-            <span>
-              {(activities?.length ?? 0).toLocaleString()} of {total.toLocaleString()} record
-              {total === 1 ? '' : 's'}
-              {pageCount > 1 ? `, page ${filters.page + 1} of ${pageCount}` : ''}
-            </span>
-            <span className="flex items-center gap-2">
-              {pageCount > 1 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    className="px-2 py-1 text-xs"
-                    disabled={filters.page === 0}
-                    onClick={() => set({ page: filters.page - 1 })}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="px-2 py-1 text-xs"
-                    disabled={filters.page + 1 >= pageCount}
-                    onClick={() => set({ page: filters.page + 1 })}
-                  >
-                    Next
-                  </Button>
-                </>
-              )}
-              {selected.size > 0 ? (
-                <span className="flex items-center gap-2">
-                  <span>{selected.size} selected</span>
-                  <Button
-                    variant="ghost"
-                    className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                    onClick={() => setDialog({ kind: 'bulkRemove', ids: [...selected] })}
-                  >
-                    Remove {selected.size} selected
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="px-2 py-1 text-xs"
-                    onClick={() => setSelected(new Set())}
-                  >
-                    Clear
-                  </Button>
-                </span>
-              ) : (
-                !drawerOpen && (
-                  <span>
+          {total > 0 && (
+            <TableFooter
+              pager={
+                pageCount > 1 ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={filters.page === 0}
+                      onClick={() => set({ page: filters.page - 1 })}
+                    >
+                      Previous
+                    </Button>
+                    <span aria-hidden="true" className="mx-2 h-5 w-px bg-hairline" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={filters.page + 1 >= pageCount}
+                      onClick={() => set({ page: filters.page + 1 })}
+                    >
+                      Next
+                    </Button>
+                  </>
+                ) : undefined
+              }
+            >
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>{countLine}</span>
+                {selected.size > 0 ? (
+                  <span className="flex items-center gap-2">
+                    <span>{selected.size} selected</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-danger"
+                      onClick={() => setDialog({ kind: 'bulkRemove', ids: [...selected] })}
+                    >
+                      Remove {selected.size} selected
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                      Clear
+                    </Button>
+                  </span>
+                ) : (
+                  <span className="text-ink-faint">
                     Select a row to edit
                     <Kbd>j</Kbd>
                     <Kbd>k</Kbd>
                     <Kbd>↵</Kbd>
                   </span>
-                )
+                )}
+              </span>
+            </TableFooter>
+          )}
+        </>
+      )}
+
+      {detailOpen && (
+        <SplitView
+          listLabel="Activity"
+          detailLabel="Record"
+          list={
+            <>
+              {readinessTabs}
+              {loading}
+              {emptyState}
+              {activities && activities.length > 0 && (
+                <div className="flex flex-col">
+                  {activities.map((activity) => {
+                    const blocking = activity.issues.filter(
+                      (issue) => issue !== 'EVIDENCE_REFERENCE_ONLY',
+                    )
+                    const attention = activity.status === 'NEEDS_ATTENTION'
+                    return (
+                      <SummaryRow
+                        key={activity.id}
+                        title={activity.activityType}
+                        meta={`${activity.facilityName} · ${formatRecordPeriod(activity.periodStart, activity.periodEnd)}`}
+                        issue={
+                          attention && blocking[0] ? activityIssueLabels[blocking[0]] : undefined
+                        }
+                        value={`${formatQuantity(activity.quantity)}${activity.unit ? ` ${activity.unit}` : ''}`}
+                        selected={activity.id === filters.record}
+                        attention={attention}
+                        onClick={() => set({ record: activity.id })}
+                      />
+                    )
+                  })}
+                </div>
               )}
-            </span>
-          </div>
-        )}
-      </GlassCard>
-      <div className="mt-2 flex flex-wrap justify-between gap-2 text-xs text-ink-muted">
+              {total > 0 && <p className="text-[13px] text-ink-muted">{countLine}</p>}
+            </>
+          }
+          detail={
+            <ActivityDrawer
+              key={filters.record}
+              organizationId={organizationId}
+              activityId={filters.record ?? 'new'}
+              pageItems={activities ?? []}
+              facilities={facilities}
+              defaultFacilityId={filters.facility || undefined}
+              myRole={myRole}
+              onNavigate={(id) => set({ record: id })}
+              onClose={closeDetail}
+              onSaved={(message) => toast(message)}
+              onHistory={(activity) => setDialog({ kind: 'history', activity })}
+              onRemove={(activity) => setDialog({ kind: 'remove', activity })}
+            />
+          }
+        />
+      )}
+
+      <div className="flex flex-wrap justify-between gap-2 text-[13px] text-ink-muted">
         <span>Activity records can support more than one inventory.</span>
         <span>Review status reflects completeness, not assurance.</span>
       </div>
 
-      {drawerOpen && (
-        <ActivityDrawer
-          key={filters.record}
-          organizationId={organizationId}
-          activityId={filters.record ?? 'new'}
-          pageItems={activities ?? []}
-          facilities={facilities}
-          defaultFacilityId={filters.facility || undefined}
-          myRole={myRole}
-          onNavigate={(id) => set({ record: id })}
-          onClose={() => set({ record: null })}
-          onSaved={(message) => toast(message)}
-          onHistory={(activity) => setDialog({ kind: 'history', activity })}
-          onRemove={(activity) => setDialog({ kind: 'remove', activity })}
-        />
-      )}
       {dialog?.kind === 'import' && (
         <ImportActivitiesModal
           organizationId={organizationId}

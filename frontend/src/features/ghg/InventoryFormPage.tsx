@@ -3,11 +3,11 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField, SelectField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
-import { Breadcrumb } from './components/Breadcrumb'
 import { approachLabels } from './format'
 import type { MyRole } from './roles'
 import {
@@ -59,15 +59,15 @@ export function InventoryFormPage() {
   }
   if (inventoryId && inventoryQuery.isError) {
     return (
-      <GlassCard className="p-8 text-center">
-        <h1 className="text-lg">Inventory not found</h1>
+      <Panel className="p-8 text-center">
+        <h1 className="text-lg font-semibold">Inventory not found</h1>
         <p className="mt-1 text-sm text-ink-muted">
           It may have been deleted.{' '}
-          <Link to={listPath} className="font-semibold text-link">
+          <Link to={listPath} className="font-medium text-link hover:underline">
             Back to inventories
           </Link>
         </p>
-      </GlassCard>
+      </Panel>
     )
   }
 
@@ -76,36 +76,34 @@ export function InventoryFormPage() {
   const back = inventory ? `${listPath}/${inventory.id}` : listPath
 
   return (
-    <div className="animate-fade-up flex flex-col gap-4">
-      <div>
-        <Breadcrumb
-          items={[
-            { label: 'Inventories', to: listPath },
-            ...(inventory ? [{ label: inventory.name, to: back }] : []),
-            { label: title },
-          ]}
-        />
-        <h1 className="text-2xl">{title}</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {inventory
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        size="md"
+        back={{ to: back }}
+        crumbs={[
+          { label: 'Inventories', to: listPath },
+          ...(inventory ? [{ label: inventory.name, to: back }] : []),
+          { label: title },
+        ]}
+        title={title}
+        subtitle={
+          inventory
             ? 'The name, period, purpose, straddle treatment, approach and GWP set of this draft. The boundary and the records are edited on the workbench.'
-            : 'One accounting view over the organization’s facts: a reporting period, a consolidation approach and the decisions this view makes about each record.'}
-        </p>
-      </div>
-      <GlassCard className="max-w-2xl p-6">
-        <InventoryForm
-          key={inventory?.id ?? 'new'}
-          title={title}
-          organizationId={organizationId}
-          inventory={inventory}
-          myRole={myRole}
-          onCancel={() => navigate(back)}
-          onSaved={(saved, message) => {
-            toast(message)
-            navigate(`${listPath}/${saved.id}`)
-          }}
-        />
-      </GlassCard>
+            : 'One accounting view over the organization’s facts: a reporting period, a consolidation approach and the decisions this view makes about each record.'
+        }
+      />
+      <InventoryForm
+        key={inventory?.id ?? 'new'}
+        title={title}
+        organizationId={organizationId}
+        inventory={inventory}
+        myRole={myRole}
+        onCancel={() => navigate(back)}
+        onSaved={(saved, message) => {
+          toast(message)
+          navigate(`${listPath}/${saved.id}`)
+        }}
+      />
     </div>
   )
 }
@@ -185,7 +183,12 @@ function InventoryForm({
 
   return (
     // the name lets the QA driver and the tests address the form the way they address a dialog
-    <form aria-label={title} onSubmit={submit} className="flex flex-col gap-4" noValidate>
+    <form
+      aria-label={title}
+      onSubmit={submit}
+      className="flex max-w-[760px] flex-col gap-6"
+      noValidate
+    >
       <InputField
         label="Name"
         value={name}
@@ -193,7 +196,7 @@ function InventoryForm({
         error={errors?.name}
         required
       />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
         <InputField
           label="Period start"
           type="date"
@@ -212,14 +215,14 @@ function InventoryForm({
         />
       </div>
       {periodMonths !== null && periodMonths !== 12 && (
-        <p role="status" className="text-xs text-amber-700">
+        <p role="status" className="text-[13px] font-medium text-warning">
           This period is{' '}
           {periodMonths === -1 ? 'not a whole number of months' : `${periodMonths} months`}. Chapter
           9 expects an annual inventory; keep it only if the period is deliberate.
         </p>
       )}
       {periodMonths === 12 && periodStart.slice(5) !== '01-01' && (
-        <p role="status" className="text-xs text-ink-muted">
+        <p role="status" className="text-[13px] text-ink-muted">
           A fiscal year: the inventory will be labelled FY{periodStart.slice(0, 4)}/
           {periodEnd.slice(2, 4)}.
         </p>
@@ -240,30 +243,32 @@ function InventoryForm({
         onChange={(event) => setPurpose(event.target.value)}
         error={errors?.purpose}
       />
-      <SelectField
-        label="Consolidation approach"
-        value={approach}
-        onChange={(event) => setApproach(event.target.value as ConsolidationApproach)}
-        error={errors?.consolidationApproach}
-        hint="How facility emissions roll up in this view: by equity share, or all-or-nothing under control."
-      >
-        {Object.entries(approachLabels).map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </SelectField>
-      <SelectField
-        label="GWP set"
-        value={gwpSet}
-        onChange={(event) => setGwpSet(event.target.value as GwpSet)}
-        hint="The IPCC 100-year global warming potentials the report converts each gas with (spec 07.1)."
-      >
-        <option value="AR5">AR5 (default)</option>
-        <option value="AR6">AR6</option>
-      </SelectField>
+      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+        <SelectField
+          label="Consolidation approach"
+          value={approach}
+          onChange={(event) => setApproach(event.target.value as ConsolidationApproach)}
+          error={errors?.consolidationApproach}
+          hint="How facility emissions roll up in this view: by equity share, or all-or-nothing under control."
+        >
+          {Object.entries(approachLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </SelectField>
+        <SelectField
+          label="GWP set"
+          value={gwpSet}
+          onChange={(event) => setGwpSet(event.target.value as GwpSet)}
+          hint="The IPCC 100-year global warming potentials the report converts each gas with (spec 07.1)."
+        >
+          <option value="AR5">AR5 (default)</option>
+          <option value="AR6">AR6</option>
+        </SelectField>
+      </div>
       {generalError && (
-        <p role="alert" className="text-sm font-medium text-red-600">
+        <p role="alert" className="text-sm font-medium text-danger">
           {generalError}
         </p>
       )}
@@ -283,7 +288,7 @@ function InventoryForm({
             ))}
           </SelectField>
           {rebuilds && (
-            <p role="status" className="text-xs text-amber-700">
+            <p role="status" className="text-[13px] font-medium text-warning">
               {source.name} is under {approachLabels[source.consolidationApproach].toLowerCase()}.
               Under {approachLabels[approach].toLowerCase()} the boundary is rebuilt from Table 1:
               every entity with a share joins with its facilities, the source's computed exclusions
@@ -291,18 +296,18 @@ function InventoryForm({
               approach. The decisions themselves are kept.
             </p>
           )}
-          <label className="flex items-start gap-2 text-sm">
+          <label className="flex items-start gap-2.5 text-[15px]">
             <input
               type="checkbox"
               aria-label="Start with every operation the approach includes in the boundary"
               disabled={copyFromInventoryId !== ''}
               checked={copyFromInventoryId === '' ? prefillBoundary : false}
               onChange={(event) => setPrefillBoundary(event.target.checked)}
-              className="mt-0.5 size-4 accent-teal"
+              className="mt-0.5 size-[18px] accent-primary"
             />
             <span>
               Start with every operation the approach includes in the boundary
-              <span className="block text-xs text-ink-muted">
+              <span className="block text-[13px] text-ink-muted">
                 Chapter 3: under a control approach every controlled operation is in by definition.
                 Leaving one out is then an exclusion with a reason.
               </span>
@@ -310,7 +315,7 @@ function InventoryForm({
           </label>
         </>
       )}
-      <div className="mt-2 flex justify-end gap-2 border-t border-teal/10 pt-4">
+      <div className="flex justify-end gap-3 border-t border-hairline pt-5">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>

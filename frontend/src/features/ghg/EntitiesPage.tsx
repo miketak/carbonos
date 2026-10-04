@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { GlassCard } from '../../components/GlassCard'
+import { Chip } from '../../components/Chip'
+import { PageHeader } from '../../components/PageHeader'
 import { Skeleton } from '../../components/Skeleton'
+import { Table, TableFooter, Td, Th, TwoLine } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
 import { RemoveDialog } from './components/RemoveDialog'
@@ -31,146 +33,165 @@ export function EntitiesPage() {
   const myRole = organizationQuery.data?.myRole ?? null
 
   return (
-    <section>
-      <div className="mb-3 flex items-end justify-between">
-        <div>
-          <h1 className="text-xl">Legal entities</h1>
-          <p className="text-sm text-ink-muted">
-            The structures the company consolidates. Each facility belongs to one; Table 1 of the
-            GHG Protocol turns the relationship into an accounting share under each approach.
-          </p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Equity share, financial control and operational control are calculated from each
-            entity&apos;s relationship, economic interest, operation, financial control and parent;
-            edit those facts to change them.
-          </p>
-        </div>
-        <RoleButton
-          allowed={mayWrite(myRole)}
-          tooltip={WRITE_TOOLTIP}
-          className="px-4 py-1.5 text-sm"
-          onClick={() => navigate('new')}
-        >
-          Add entity
-        </RoleButton>
-      </div>
+    <section className="flex flex-col gap-6">
+      <PageHeader
+        back={{ to: `/app/ghg/${organizationId}` }}
+        crumbs={[{ label: 'Legal entities' }]}
+        title="Legal entities"
+        subtitle="The structures the company consolidates. Each facility belongs to one; Table 1 of the GHG Protocol turns the relationship into an accounting share under each approach."
+        actions={
+          <RoleButton
+            allowed={mayWrite(myRole)}
+            tooltip={WRITE_TOOLTIP}
+            onClick={() => navigate('new')}
+          >
+            Add entity
+          </RoleButton>
+        }
+      />
+      <p className="text-[13px] text-ink-muted">
+        Equity share, financial control and operational control are calculated from each
+        entity&apos;s relationship, economic interest, operation, financial control and parent; edit
+        those facts to change them.
+      </p>
 
-      <GlassCard className="animate-fade-up overflow-x-auto">
-        {entitiesQuery.isPending && (
-          <div aria-label="Loading legal entities" className="flex flex-col gap-2 p-4">
-            <Skeleton className="h-8" />
-            <Skeleton className="h-8" />
-          </div>
-        )}
-        {entities && entities.length > 0 && (
-          <table className="w-full text-left text-sm">
+      {entitiesQuery.isPending && (
+        <div aria-label="Loading legal entities" className="flex flex-col gap-2">
+          <Skeleton className="h-12" />
+          <Skeleton className="h-12" />
+        </div>
+      )}
+      {entities && entities.length > 0 && (
+        <div>
+          <Table>
             <thead>
-              <tr className="border-b border-teal/10 text-xs text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Entity</th>
-                <th className="px-4 py-3 font-semibold">Relationship</th>
-                <th className="px-4 py-3 font-semibold">Economic interest</th>
-                <th className="px-4 py-3 font-semibold">Legal ownership</th>
-                <th className="px-4 py-3 font-semibold">Operated</th>
-                <th className="px-4 py-3 font-semibold">Equity share</th>
-                <th className="px-4 py-3 font-semibold">Financial ctrl</th>
-                <th className="px-4 py-3 font-semibold">Operational ctrl</th>
-                <th className="px-4 py-3" />
+              <tr>
+                <Th>Entity</Th>
+                <Th>Relationship</Th>
+                <Th align="right">Economic interest</Th>
+                <Th align="right">Legal ownership</Th>
+                <Th>Operated</Th>
+                <Th align="right">Equity share</Th>
+                <Th align="right">Financial ctrl</Th>
+                <Th align="right">Operational ctrl</Th>
+                <Th className="w-40">
+                  <span className="sr-only">Actions</span>
+                </Th>
               </tr>
             </thead>
             <tbody>
               {entities.map((entity) => (
-                <tr key={entity.id} className="border-b border-teal/5 last:border-0">
-                  <td className="px-4 py-3 font-medium">
-                    {entity.name}
-                    {entity.reportingCompany && (
-                      <span className="ml-2 inline-block rounded-full bg-teal/15 px-2 py-0.5 text-xs font-semibold text-dark-teal">
-                        Reporting company
+                <tr key={entity.id}>
+                  <Td>
+                    <TwoLine
+                      primary={entity.name}
+                      secondary={
+                        entity.reportingCompany ? (
+                          <Chip className="h-[22px] text-xs">Reporting company</Chip>
+                        ) : entity.chain.length > 0 ? (
+                          `held through ${entity.chain.join(' > ')}`
+                        ) : undefined
+                      }
+                    />
+                  </Td>
+                  <Td>
+                    <div className="flex flex-col gap-0.5">
+                      {/* spec 03.1: the company itself holds no Table 1 relationship to itself */}
+                      <span>
+                        {entity.reportingCompany
+                          ? 'Reporting company'
+                          : relationshipShortLabels[entity.relationshipType]}
                       </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-ink-muted">
-                    {/* spec 03.1: the company itself holds no Table 1 relationship to itself */}
-                    {entity.reportingCompany
-                      ? 'Reporting company'
-                      : relationshipShortLabels[entity.relationshipType]}
-                    {entity.jurisdiction && (
-                      <span className="ml-1 text-xs">({entity.jurisdiction})</span>
-                    )}
-                    {entity.chain.length > 0 && (
-                      <span className="block text-xs">held through {entity.chain.join(' > ')}</span>
-                    )}
-                    {(entity.effectiveFrom || entity.effectiveTo) && (
-                      <span className="block text-xs">
-                        {entity.effectiveFrom ? `from ${entity.effectiveFrom}` : ''}
-                        {entity.effectiveTo ? ` until ${entity.effectiveTo}` : ''}
-                      </span>
-                    )}
-                    {entity.financialControlOverride !== null && (
-                      <span className="block text-xs text-amber-700">
-                        {entity.financialControlOverride
-                          ? 'financially controlled by decision'
-                          : 'not financially controlled by decision'}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {entity.economicInterestPercent}%
-                    {entity.chain.length > 0 && (
-                      <span className="block text-xs text-ink-muted">
-                        {entity.effectiveEconomicInterestPercent}% through the chain
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-ink-muted">
+                      {(entity.jurisdiction || entity.effectiveFrom || entity.effectiveTo) && (
+                        <span className="text-[13px] text-ink-muted">
+                          {entity.jurisdiction ? `(${entity.jurisdiction})` : ''}
+                          {entity.jurisdiction && (entity.effectiveFrom || entity.effectiveTo)
+                            ? ' · '
+                            : ''}
+                          {entity.effectiveFrom ? `from ${entity.effectiveFrom}` : ''}
+                          {entity.effectiveTo ? ` until ${entity.effectiveTo}` : ''}
+                        </span>
+                      )}
+                      {entity.financialControlOverride !== null && (
+                        <span className="text-[13px] font-medium text-warning">
+                          {entity.financialControlOverride
+                            ? 'financially controlled by decision'
+                            : 'not financially controlled by decision'}
+                        </span>
+                      )}
+                    </div>
+                  </Td>
+                  <Td align="right">
+                    <TwoLine
+                      align="right"
+                      primary={
+                        <span className="font-normal">{entity.economicInterestPercent}%</span>
+                      }
+                      secondary={
+                        entity.chain.length > 0
+                          ? `${entity.effectiveEconomicInterestPercent}% through the chain`
+                          : undefined
+                      }
+                    />
+                  </Td>
+                  <Td align="right" className="text-ink-muted">
                     {entity.legalOwnershipPercent === null
                       ? 'same'
                       : `${entity.legalOwnershipPercent}%`}
-                  </td>
-                  <td className="px-4 py-3">
-                    {entity.operatedByCompany ? 'Yes' : 'No'}
-                    {entity.relationshipType === 'FRANCHISE' && (
-                      <span className="block text-xs text-ink-muted">
-                        {entity.controlledByCompany ? 'financially controlled' : 'not controlled'}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-mono font-semibold">
+                  </Td>
+                  <Td>
+                    <div className="flex flex-col gap-0.5">
+                      <span>{entity.operatedByCompany ? 'Yes' : 'No'}</span>
+                      {entity.relationshipType === 'FRANCHISE' && (
+                        <span className="text-[13px] text-ink-muted">
+                          {entity.controlledByCompany ? 'financially controlled' : 'not controlled'}
+                        </span>
+                      )}
+                    </div>
+                  </Td>
+                  <Td align="right" className="font-medium">
                     {percent(entity.equityShare)}
-                  </td>
-                  <td className="px-4 py-3 font-mono font-semibold">
+                  </Td>
+                  <Td align="right" className="font-medium">
                     {percent(entity.financialControlShare)}
-                  </td>
-                  <td className="px-4 py-3 font-mono font-semibold">
+                  </Td>
+                  <Td align="right" className="font-medium">
                     {percent(entity.operationalControlShare)}
-                  </td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <RoleButton
-                      allowed={mayWrite(myRole)}
-                      tooltip={WRITE_TOOLTIP}
-                      variant="ghost"
-                      className="px-2 py-1 text-xs"
-                      onClick={() => navigate(`${entity.id}/edit`)}
-                    >
-                      Edit
-                    </RoleButton>
-                    {!entity.reportingCompany && (
+                  </Td>
+                  <Td align="right">
+                    <div className="flex justify-end gap-1">
                       <RoleButton
                         allowed={mayWrite(myRole)}
                         tooltip={WRITE_TOOLTIP}
                         variant="ghost"
-                        className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                        onClick={() => setDialog({ kind: 'remove', entity })}
+                        size="sm"
+                        onClick={() => navigate(`${entity.id}/edit`)}
                       >
-                        Remove
+                        Edit
                       </RoleButton>
-                    )}
-                  </td>
+                      {!entity.reportingCompany && (
+                        <RoleButton
+                          allowed={mayWrite(myRole)}
+                          tooltip={WRITE_TOOLTIP}
+                          variant="ghost"
+                          size="sm"
+                          className="text-danger"
+                          onClick={() => setDialog({ kind: 'remove', entity })}
+                        >
+                          Remove
+                        </RoleButton>
+                      )}
+                    </div>
+                  </Td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        )}
-      </GlassCard>
+          </Table>
+          <TableFooter>
+            {entities.length} entit{entities.length === 1 ? 'y' : 'ies'}
+          </TableFooter>
+        </div>
+      )}
 
       {dialog?.kind === 'remove' && (
         <RemoveDialog

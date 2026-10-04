@@ -135,7 +135,7 @@ test('a new record saves as a draft with only an activity and a facility (spec 0
   vi.mocked(createActivity).mockResolvedValue({ ...draft, id: 'act-9', recordRef: 'ACT-0009' })
   const { onNavigate, onSaved } = renderDrawer('new', [])
 
-  const drawer = screen.getByRole('dialog', { name: 'New activity' })
+  const drawer = screen.getByRole('region', { name: 'New activity' })
   await user.type(within(drawer).getByLabelText('Activity type *'), 'July dispensing')
   await user.click(within(drawer).getByRole('button', { name: 'Save draft' }))
 
@@ -153,7 +153,7 @@ test('a new record saves as a draft with only an activity and a facility (spec 0
 test('saving a fact without its figures is refused on the spot', async () => {
   const user = userEvent.setup()
   renderDrawer('new', [])
-  const drawer = screen.getByRole('dialog', { name: 'New activity' })
+  const drawer = screen.getByRole('region', { name: 'New activity' })
   await user.type(within(drawer).getByLabelText('Activity type *'), 'July dispensing')
   await user.click(within(drawer).getByRole('button', { name: 'Save' }))
 
@@ -168,7 +168,7 @@ test('a draft is entered without a reason, and Save & next moves to the next rec
   vi.mocked(updateActivity).mockResolvedValue({ ...draft, draft: false, status: 'NEEDS_ATTENTION' })
   const { onNavigate, onSaved } = renderDrawer('act-3', [draft, nextRecord])
 
-  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+  const drawer = screen.getByRole('region', { name: 'July dispensing' })
   expect(within(drawer).getByText('A draft, not yet a fact.')).toBeInTheDocument()
   expect(within(drawer).getByText('1/2')).toBeInTheDocument()
   expect(within(drawer).queryByLabelText('Reason for the correction *')).not.toBeInTheDocument()
@@ -201,7 +201,7 @@ test('a server field error lands beside its field', async () => {
     }),
   )
   renderDrawer('act-3', [draft])
-  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+  const drawer = screen.getByRole('region', { name: 'July dispensing' })
   await user.type(within(drawer).getByLabelText('Activity quantity *'), '12500')
   await user.selectOptions(await within(drawer).findByLabelText('Unit'), 'litre')
   await user.click(within(drawer).getByRole('button', { name: 'Save' }))
@@ -221,7 +221,7 @@ test('a 403 on save shows the refusal sentence in the drawer and keeps the typed
     }),
   )
   renderDrawer('act-3', [draft], { myRole: 'PREPARER' })
-  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+  const drawer = screen.getByRole('region', { name: 'July dispensing' })
   await user.type(within(drawer).getByLabelText('Activity quantity *'), '12500')
   await user.selectOptions(await within(drawer).findByLabelText('Unit'), 'litre')
   await user.click(within(drawer).getByRole('button', { name: 'Save' }))
@@ -230,13 +230,13 @@ test('a 403 on save shows the refusal sentence in the drawer and keeps the typed
   expect(alert).toHaveTextContent(
     'This action needs the PREPARER, REVIEWER or OWNER role in the organization.',
   )
-  expect(screen.getByRole('dialog', { name: 'July dispensing' })).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'July dispensing' })).toBeInTheDocument()
   expect(within(drawer).getByLabelText('Activity quantity *')).toHaveValue(12500)
 })
 
 test('a verifier opens a drawer with no fields and no Save (spec 01.4)', async () => {
   renderDrawer('act-3', [draft], { myRole: 'VERIFIER' })
-  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+  const drawer = screen.getByRole('region', { name: 'July dispensing' })
 
   expect(within(drawer).queryByLabelText('Activity type *')).not.toBeInTheDocument()
   expect(within(drawer).queryByLabelText('Activity quantity *')).not.toBeInTheDocument()
@@ -255,7 +255,7 @@ test('naming a stream on a saved fact asks for the reason instead of a dead Save
   })
   const { onSaved } = renderDrawer('act-3', [fact])
 
-  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+  const drawer = screen.getByRole('region', { name: 'July dispensing' })
   await within(drawer).findByRole('option', { name: 'Haul fleet' })
   await user.selectOptions(within(drawer).getByLabelText('Stream'), 'str-1')
   expect(within(drawer).getByText(/Stream default:/)).toBeInTheDocument()
@@ -292,7 +292,7 @@ test('naming a stream on a saved fact asks for the reason instead of a dead Save
 
 test('a document reference with no file reads as a reference, not as nothing (spec 04.6)', async () => {
   renderDrawer('act-3', [{ ...fact, evidenceRef: 'WB-2025-11' }])
-  const drawer = screen.getByRole('dialog', { name: 'July dispensing' })
+  const drawer = screen.getByRole('region', { name: 'July dispensing' })
 
   expect(within(drawer).getByText('Reference WB-2025-11, nothing attached')).toBeInTheDocument()
 })

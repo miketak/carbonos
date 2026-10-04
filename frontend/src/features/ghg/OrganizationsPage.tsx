@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
-import { GlassCard } from '../../components/GlassCard'
+import { Chip } from '../../components/Chip'
+import { Panel } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
+import { Table, Td, Th, TwoLine } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { AppHeader } from '../../components/AppHeader'
-import { OrganizationName } from '../../components/OrganizationName'
+import { accountLabel } from '../../lib/organizationLabel'
+import { ButtonLink } from './components/ButtonLink'
 import { OrganizationFormModal } from './components/OrganizationFormModal'
+import { roleShortLabels } from './format'
 import { useOrganizationCapabilitiesQuery, useOrganizationsQuery } from './useGhg'
 
 /**
@@ -17,7 +20,10 @@ import { useOrganizationCapabilitiesQuery, useOrganizationsQuery } from './useGh
  */
 type Dialog = { kind: 'create' } | null
 
-/** Entry point of the GHG workflow: the reporting organizations. */
+/**
+ * Entry point of the GHG workflow: the reporting organizations. Spec 10 made
+ * the table and the New organization button the whole page: no heading, no lede.
+ */
 export function OrganizationsPage() {
   const organizationsQuery = useOrganizationsQuery()
   const capabilitiesQuery = useOrganizationCapabilitiesQuery()
@@ -33,32 +39,25 @@ export function OrganizationsPage() {
     <div className="min-h-screen">
       <AppHeader />
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <h1 className="text-2xl">GHG accounting</h1>
-            <p className="mt-1 text-sm text-ink-muted">
-              Set up a reporting organization, draw its boundaries, record activity, then run the
-              inventory.
-            </p>
-          </div>
-          {/* spec 01.5: a deployment may reserve creation to administrators, and a
-              control nobody here may use is not offered at all (spec 01.4) */}
-          {mayCreate && (
+      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10">
+        {/* spec 01.5: a deployment may reserve creation to administrators, and a
+            control nobody here may use is not offered at all (spec 01.4) */}
+        {mayCreate && (
+          <div className="flex justify-end">
             <Button onClick={() => setDialog({ kind: 'create' })}>New organization</Button>
-          )}
-        </div>
+          </div>
+        )}
 
         {organizationsQuery.isPending && (
-          <div aria-label="Loading organizations" className="grid gap-4 sm:grid-cols-2">
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
+          <div aria-label="Loading organizations" className="flex flex-col gap-2">
+            <Skeleton className="h-12" />
+            <Skeleton className="h-12" />
           </div>
         )}
 
         {organizations?.length === 0 && (
-          <GlassCard className="p-10 text-center">
-            <h2 className="text-lg">No organizations yet</h2>
+          <Panel className="p-10 text-center">
+            <h2 className="text-lg font-semibold">No organizations yet</h2>
             {/* spec 01.6: this is a landing screen now, and telling a reader to
                 create something the deployment reserves to administrators is
                 the invisible refusal spec 01.4 exists to stop */}
@@ -67,54 +66,69 @@ export function OrganizationsPage() {
                 ? 'Create your first reporting organization to start the GHG Protocol workflow.'
                 : 'You are not a member of any organization yet. Ask an owner to add you, or a platform administrator.'}
             </p>
-          </GlassCard>
+          </Panel>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {organizations?.map((organization, index) => (
-            <GlassCard
-              key={organization.id}
-              className="animate-fade-up hover-lift flex flex-col p-6"
-              style={{ '--stagger': index } as CSSProperties}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <Link
-                  to={`/app/ghg/${organization.id}`}
-                  className="text-lg font-semibold text-dark-teal hover:text-link"
-                >
-                  <OrganizationName name={organization.name} accountNo={organization.accountNo} />
-                </Link>
-              </div>
-              <p className="mt-2 text-sm text-ink-muted">
-                {organization.facilityCount} facilit
-                {organization.facilityCount === 1 ? 'y' : 'ies'} in the boundary
-              </p>
-              {organization.myRole === 'ADMIN' && (
-                <p className="mt-2">
-                  <span className="rounded-full bg-teal/15 px-2 py-0.5 text-xs font-bold tracking-wide text-dark-teal">
-                    Support access
-                  </span>
-                </p>
-              )}
-              <div className="mt-4 flex gap-2">
-                <Link
-                  to={`/app/ghg/${organization.id}`}
-                  className="inline-block rounded-lg bg-teal-deep px-4 py-1.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-dark-teal"
-                >
-                  Open
-                </Link>
-                {organization.myRole === 'OWNER' && (
-                  <Link
-                    to={`/app/ghg/${organization.id}/settings`}
-                    className="inline-block rounded-lg px-3 py-1.5 text-sm font-medium text-link transition-colors duration-150 hover:bg-teal/10"
-                  >
-                    Settings
-                  </Link>
-                )}
-              </div>
-            </GlassCard>
-          ))}
-        </div>
+        {organizations && organizations.length > 0 && (
+          <Table>
+            <thead>
+              <tr>
+                <Th>Organization</Th>
+                <Th align="right">Boundary</Th>
+                <Th>Your role</Th>
+                <Th className="w-52">
+                  <span className="sr-only">Actions</span>
+                </Th>
+              </tr>
+            </thead>
+            <tbody>
+              {organizations.map((organization) => (
+                <tr key={organization.id}>
+                  <Td>
+                    {/* spec 01.8: the account number travels with the name */}
+                    <Link to={`/app/ghg/${organization.id}`} className="block hover:underline">
+                      <TwoLine
+                        primary={organization.name}
+                        secondary={accountLabel(organization.accountNo)}
+                      />
+                    </Link>
+                  </Td>
+                  <Td align="right">
+                    <span className="text-ink-muted">
+                      {organization.facilityCount} facilit
+                      {organization.facilityCount === 1 ? 'y' : 'ies'} in the boundary
+                    </span>
+                  </Td>
+                  <Td>
+                    {organization.myRole === 'ADMIN' ? (
+                      <Chip tone="warning">Support access</Chip>
+                    ) : organization.myRole === null ? (
+                      ''
+                    ) : (
+                      roleShortLabels[organization.myRole]
+                    )}
+                  </Td>
+                  <Td align="right">
+                    <div className="flex justify-end gap-1">
+                      <ButtonLink to={`/app/ghg/${organization.id}`} variant="ghost" size="sm">
+                        Open
+                      </ButtonLink>
+                      {organization.myRole === 'OWNER' && (
+                        <ButtonLink
+                          to={`/app/ghg/${organization.id}/settings`}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          Settings
+                        </ButtonLink>
+                      )}
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
       </main>
 
       {dialog?.kind === 'create' && (

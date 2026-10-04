@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Banner } from '../../components/Banner'
 import { Button } from '../../components/Button'
 import { InputField, SelectField } from '../../components/Field'
-import { GlassCard } from '../../components/GlassCard'
+import { PageHeader } from '../../components/PageHeader'
+import { Panel } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail } from '../../lib/api'
 import { checkNumber, collectErrors, withoutError } from '../../lib/validate'
-import { Breadcrumb } from './components/Breadcrumb'
 import { relationshipLabels } from './format'
 import { useCreateEntity, useEntitiesQuery, useUpdateEntity } from './useGhg'
 import type { Entity, RelationshipType } from './api'
@@ -41,44 +42,44 @@ export function EntityFormPage() {
     : undefined
   if (entityId && !entity) {
     return (
-      <GlassCard className="p-8 text-center">
-        <h1 className="text-lg">Legal entity not found</h1>
+      <Panel className="p-8 text-center">
+        <h1 className="text-lg font-semibold">Legal entity not found</h1>
         <p className="mt-1 text-sm text-ink-muted">
           It may have been removed.{' '}
-          <Link to={listPath} className="font-semibold text-link">
+          <Link to={listPath} className="font-medium text-link hover:underline">
             Back to legal entities
           </Link>
         </p>
-      </GlassCard>
+      </Panel>
     )
   }
 
   const title = entity ? 'Edit legal entity' : 'Add legal entity'
 
   return (
-    <div className="animate-fade-up flex flex-col gap-4">
-      <div>
-        <Breadcrumb items={[{ label: 'Legal entities', to: listPath }, { label: title }]} />
-        <h1 className="text-2xl">{title}</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {entity
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        size="md"
+        back={{ to: listPath }}
+        crumbs={[{ label: 'Legal entities', to: listPath }, { label: title }]}
+        title={title}
+        subtitle={
+          entity
             ? `${entity.name}: its Table 1 facts set its accounting share under each approach for every future boundary. Existing inventories keep their decisions.`
-            : 'A structure the company consolidates. Table 1 of the GHG Protocol turns its relationship and economic interest into an accounting share under each approach.'}
-        </p>
-      </div>
-      <GlassCard className="max-w-2xl p-6">
-        <EntityForm
-          key={entity?.id ?? 'new'}
-          title={title}
-          organizationId={organizationId}
-          entity={entity}
-          onCancel={() => navigate(listPath)}
-          onSaved={(message) => {
-            toast(message)
-            navigate(listPath)
-          }}
-        />
-      </GlassCard>
+            : 'A structure the company consolidates. Table 1 of the GHG Protocol turns its relationship and economic interest into an accounting share under each approach.'
+        }
+      />
+      <EntityForm
+        key={entity?.id ?? 'new'}
+        title={title}
+        organizationId={organizationId}
+        entity={entity}
+        onCancel={() => navigate(listPath)}
+        onSaved={(message) => {
+          toast(message)
+          navigate(listPath)
+        }}
+      />
     </div>
   )
 }
@@ -195,7 +196,12 @@ function EntityForm({
   return (
     // noValidate: the range checks print under the field (spec 08); the name lets the QA driver and the tests
     // address the form the way they address a dialog
-    <form aria-label={title} onSubmit={submit} className="flex flex-col gap-4" noValidate>
+    <form
+      aria-label={title}
+      onSubmit={submit}
+      className="flex max-w-[760px] flex-col gap-6"
+      noValidate
+    >
       <InputField
         label="Name"
         value={name}
@@ -205,7 +211,7 @@ function EntityForm({
         required
       />
       {reportingCompany && (
-        <p className="text-xs text-ink-muted">
+        <p className="text-[13px] text-ink-muted">
           The reporting company is the group&apos;s own wholly owned operation by definition: 100%
           economic interest, operated by the company, held by nobody. Its structure fields are
           fixed; record other structures as separate entities.
@@ -225,7 +231,7 @@ function EntityForm({
           </option>
         ))}
       </SelectField>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
         <InputField
           label="Economic interest (%)"
           type="number"
@@ -259,29 +265,29 @@ function EntityForm({
         />
       </div>
       {interestGap >= 10 && (
-        <p role="status" className="text-xs font-medium text-amber-700">
+        <Banner role="status" tone="warning">
           Economic interest and legal ownership differ by {formatGap(interestGap)} points. Equity
           share follows economic interest; a verifier will ask why they differ, so keep the
           agreement that explains it with the entity&apos;s evidence.
-        </p>
+        </Banner>
       )}
-      <label className="flex items-center gap-2 text-sm">
+      <label className="flex min-h-11 items-center gap-2.5 text-[15px]">
         <input
           type="checkbox"
           checked={operatedByCompany}
           disabled={reportingCompany}
           onChange={(event) => setOperatedByCompany(event.target.checked)}
-          className="size-4 accent-teal"
+          className="size-[18px] accent-primary"
         />
         Operated by the company
       </label>
       {relationshipType === 'FRANCHISE' && (
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex min-h-11 items-center gap-2.5 text-[15px]">
           <input
             type="checkbox"
             checked={controlledByCompany}
             onChange={(event) => setControlledByCompany(event.target.checked)}
-            className="size-4 accent-teal"
+            className="size-[18px] accent-primary"
           />
           Financially controlled by the company
         </label>
@@ -326,32 +332,29 @@ function EntityForm({
         ))}
       </SelectField>
       {entity && (
-        <div
-          aria-label="Share under each approach"
-          className="rounded-lg border border-teal/15 px-3 py-2 text-sm"
-        >
-          <p className="font-semibold text-dark-teal">Share under each approach</p>
-          <dl className="mt-1 grid grid-cols-3 gap-2">
+        <Panel aria-label="Share under each approach" className="px-4 py-3 text-sm">
+          <p className="font-semibold">Share under each approach</p>
+          <dl className="mt-2 grid grid-cols-3 gap-3">
             <div>
-              <dt className="text-xs text-ink-muted">Equity share</dt>
-              <dd className="font-mono">{sharePercent(entity.equityShare)}</dd>
+              <dt className="text-[13px] text-ink-muted">Equity share</dt>
+              <dd className="font-medium">{sharePercent(entity.equityShare)}</dd>
             </div>
             <div>
-              <dt className="text-xs text-ink-muted">Financial control</dt>
-              <dd className="font-mono">{sharePercent(entity.financialControlShare)}</dd>
+              <dt className="text-[13px] text-ink-muted">Financial control</dt>
+              <dd className="font-medium">{sharePercent(entity.financialControlShare)}</dd>
             </div>
             <div>
-              <dt className="text-xs text-ink-muted">Operational control</dt>
-              <dd className="font-mono">{sharePercent(entity.operationalControlShare)}</dd>
+              <dt className="text-[13px] text-ink-muted">Operational control</dt>
+              <dd className="font-medium">{sharePercent(entity.operationalControlShare)}</dd>
             </div>
           </dl>
-          <p className="mt-1 text-xs text-ink-muted">
+          <p className="mt-2 text-[13px] text-ink-muted">
             Calculated by Table 1 from the relationship, economic interest, operation, financial
             control and parent above, as last saved. Change those facts to change a share.
           </p>
-        </div>
+        </Panel>
       )}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
         <InputField
           label="Acquired on (optional)"
           type="date"
@@ -369,21 +372,23 @@ function EntityForm({
           error={errors?.effectiveTo}
         />
       </div>
-      <InputField
-        label="Jurisdiction (optional)"
-        placeholder="GH"
-        maxLength={2}
-        value={jurisdiction}
-        onChange={(event) => setJurisdiction(event.target.value)}
-        error={errors?.jurisdiction}
-        hint="ISO 3166-1 alpha-2 code of the country of incorporation."
-      />
+      <div className="max-w-[300px]">
+        <InputField
+          label="Jurisdiction (optional)"
+          placeholder="GH"
+          maxLength={2}
+          value={jurisdiction}
+          onChange={(event) => setJurisdiction(event.target.value)}
+          error={errors?.jurisdiction}
+          hint="ISO 3166-1 alpha-2 code of the country of incorporation."
+        />
+      </div>
       {generalError && (
-        <p role="alert" className="text-sm font-medium text-red-600">
+        <p role="alert" className="text-sm font-medium text-danger">
           {generalError}
         </p>
       )}
-      <div className="mt-2 flex justify-end gap-2 border-t border-teal/10 pt-4">
+      <div className="flex justify-end gap-3 border-t border-hairline pt-5">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
