@@ -1601,8 +1601,8 @@ public class InventoryService {
 			}
 			if (stream != null && !stream.getKind().categories().contains(chosenCategory)) {
 				throw new GhgRuleViolationException("'" + categoryName(chosenCategory) + "' is not a category a "
-						+ stream.getKind().name().toLowerCase().replace('_', ' ') + " stream ('" + stream.getName()
-						+ "') can be classified into.");
+						+ stream.getKind().name().toLowerCase().replace('_', ' ') + " emission source ('"
+						+ stream.getName() + "') can be classified into.");
 			}
 		}
 		// spec 02.4: a Montreal Protocol gas is not a Kyoto gas; it never sits in scope 2 or scope 3
@@ -2156,7 +2156,7 @@ public class InventoryService {
 			if (departs && assignment.getScopeJustification() == null) {
 				classificationFindings.add(new Finding(Severity.ERROR, "'" + activity.getActivityType()
 						+ "' is classified in " + scopeName(assignment.getScope()) + "; "
-						+ (stream != null ? "its stream '" + stream.getName() + "'" : "'" + factor.getName() + "'")
+						+ (stream != null ? "its emission source '" + stream.getName() + "'" : "'" + factor.getName() + "'")
 						+ " defaults to " + scopeName(defaultScope)
 						+ ". Record why (a justification of at least 10 characters), or classify it in "
 						+ scopeName(defaultScope) + "."));

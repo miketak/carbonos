@@ -50,6 +50,13 @@
       "field": null
     },
     {
+      "id": "ghg.activity.stream-and-new-stream",
+      "module": "ghg",
+      "status": 422,
+      "message": "Choose an existing emission source or describe a new one, not both.",
+      "field": "newStream"
+    },
+    {
       "id": "ghg.adoption.answer-required",
       "module": "ghg",
       "status": 422,
@@ -512,11 +519,39 @@
       "field": null
     },
     {
+      "id": "ghg.stream.has-records",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{name}' has activity records. Move them to another emission source before deleting it.",
+      "field": null
+    },
+    {
       "id": "ghg.stream.name-duplicate",
       "module": "ghg",
       "status": 409,
-      "message": "'{facility}' already has a stream named '{name}'.",
+      "message": "'{facility}' already has an emission source named '{name}'.",
       "field": null
+    },
+    {
+      "id": "ghg.stream.name-similar",
+      "module": "ghg",
+      "status": 409,
+      "message": "'{facility}' has an emission source with a similar name: {candidates}. Use it, or give a reason to create '{name}' as a separate source.",
+      "field": null
+    },
+    {
+      "id": "ghg.stream.other-facility",
+      "module": "ghg",
+      "status": 409,
+      "message": "The emission source '{name}' belongs to '{owner}', not to '{facility}'.",
+      "field": null
+    },
+    {
+      "id": "ghg.stream.similar-reason-too-short",
+      "module": "ghg",
+      "status": 422,
+      "message": "Say in at least 10 characters why this is a different source.",
+      "field": "confirmNewStreamReason"
     },
     {
       "id": "ghg.support-access.already-held",
@@ -680,5 +715,5 @@
       "field": null
     }
   ],
-  "sha256": "91bfb533c8d970cd25f619f42613d98519875f237c7342481c5480d68ce03a92"
+  "sha256": "e7b10c0e555342590ab7d0387498b7bbb3eebf7474b8f575a890cde5dfee5a1c"
 }

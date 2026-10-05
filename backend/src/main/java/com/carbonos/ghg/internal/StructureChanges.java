@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -126,7 +127,29 @@ final class StructureChanges {
 
 	/** "Stream added at Facility: kind". */
 	static String streamAdded(SourceStream stream) {
-		return fit(stream.getName() + " added at " + stream.getFacility().getName() + ": " + kind(stream.getKind()));
+		return streamAdded(stream, List.of(), null);
+	}
+
+	/**
+	 * "Stream added at Facility: kind", then "during data entry" for a source born on
+	 * the activity form, and "beside 'Near name': the reason" when it was created
+	 * next to a similar name with a reason (spec 04.10).
+	 */
+	static String streamAdded(SourceStream stream, List<SourceStream> similar, String reason) {
+		var text = new StringBuilder(stream.getName()).append(" added at ")
+			.append(stream.getFacility().getName())
+			.append(": ")
+			.append(kind(stream.getKind()));
+		if (stream.getOrigin() == SourceStream.Origin.INLINE) {
+			text.append(", during data entry");
+		}
+		if (reason != null && !similar.isEmpty()) {
+			text.append("; beside ")
+				.append(similar.stream().map(s -> "'" + s.getName() + "'").collect(Collectors.joining(", ")))
+				.append(": ")
+				.append(reason);
+		}
+		return fit(text.toString());
 	}
 
 	/** "Stream removed from Facility". */

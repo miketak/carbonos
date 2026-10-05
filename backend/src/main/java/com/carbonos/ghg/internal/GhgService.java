@@ -665,7 +665,7 @@ public class GhgService {
 		}
 	}
 
-	// --- source streams (spec 04.3) ----------------------------------------------
+	// --- emission sources (specs 04.3, 04.10) -----------------------------------
 
 	@Transactional(readOnly = true)
 	public List<SourceStream> listStreams(UUID organizationId) {
@@ -687,14 +687,46 @@ public class GhgService {
 	public SourceStream createStream(UUID facilityId, StreamFacts facts) {
 		var facility = getFacility(facilityId);
 		access.checkWrite(facility.getOrganization());
+		return createStreamAt(facility, facts, SourceStream.Origin.REGISTER, null, false);
+	}
+
+	/** The minimum length of the reason that creates a source beside a similar name (spec 04.10). */
+	static final int SIMILAR_REASON_MIN = 10;
+
+	/**
+	 * Spec 04.10: an emission source is created from the facility's register or
+	 * from the activity form. A name the facility already carries is refused with
+	 * the candidates, so the form can offer the existing source. On the activity
+	 * form a near miss ("Standby genset" beside "Standby gensets") is refused the
+	 * same way unless a reason says why this is a separate source; the reason
+	 * goes into the history row. Nothing is ever matched silently.
+	 */
+	private SourceStream createStreamAt(Facility facility, StreamFacts facts, SourceStream.Origin origin,
+			String similarReason, boolean checkSimilar) {
 		var trimmed = facts.name().trim();
-		if (streams.existsByFacilityIdAndNameIgnoreCase(facilityId, trimmed)) {
-			throw new GhgRuleViolationException(GhgRules.STREAM_NAME_DUPLICATE, facility.getName(), trimmed);
+		var existing = streams.findAllByFacilityIdOrderByNameAsc(facility.getId());
+		var exact = existing.stream().filter(stream -> stream.getName().equalsIgnoreCase(trimmed)).toList();
+		if (!exact.isEmpty()) {
+			throw new SimilarStreamNameException(GhgRules.STREAM_NAME_DUPLICATE, facility, trimmed, exact);
+		}
+		List<SourceStream> similar = List.of();
+		var reason = trimToNull(similarReason);
+		if (checkSimilar) {
+			similar = existing.stream().filter(stream -> SourceNameSimilarity.isClose(stream.getName(), trimmed)).toList();
+			if (!similar.isEmpty()) {
+				if (reason == null) {
+					throw new SimilarStreamNameException(GhgRules.STREAM_NAME_SIMILAR, facility, trimmed, similar);
+				}
+				if (reason.length() < SIMILAR_REASON_MIN) {
+					throw new GhgFieldException(GhgRules.STREAM_SIMILAR_REASON_TOO_SHORT);
+				}
+			}
 		}
 		var stream = streams.save(new SourceStream(facility, trimmed, facts.kind(), trimToNull(facts.fuel()),
-				trimToNull(facts.meterOrSupplier()), facts.contractorOperated(), trimToNull(facts.note())));
+				trimToNull(facts.meterOrSupplier()), facts.contractorOperated(), trimToNull(facts.note()), origin,
+				access.currentUserId()));
 		recordStructure(facility.getOrganization(), GhgAuditEvent.Action.STREAM_ADDED,
-				StructureChanges.streamAdded(stream));
+				StructureChanges.streamAdded(stream, similar, reason));
 		return stream;
 	}
 
@@ -716,8 +748,7 @@ public class GhgService {
 		var stream = getStream(id);
 		access.checkWrite(stream.getFacility().getOrganization());
 		if (activities.existsByStreamIdAndDeletedAtIsNull(id)) {
-			throw new GhgRuleViolationException("'" + stream.getName()
-					+ "' has activity records. Move them to another stream before deleting it.");
+			throw new GhgRuleViolationException(GhgRules.STREAM_HAS_RECORDS, stream.getName());
 		}
 		var reason = StructureChanges.streamRemoved(stream);
 		streams.delete(stream);
@@ -737,10 +768,26 @@ public class GhgService {
 		}
 		var stream = streams.findById(streamId).orElseThrow(() -> GhgNotFoundException.stream(streamId));
 		if (!stream.getFacility().getId().equals(facility.getId())) {
-			throw new GhgRuleViolationException("The stream '" + stream.getName() + "' belongs to '"
-					+ stream.getFacility().getName() + "', not to '" + facility.getName() + "'.");
+			throw new GhgRuleViolationException(GhgRules.STREAM_OTHER_FACILITY, stream.getName(),
+					stream.getFacility().getName(), facility.getName());
 		}
 		return stream;
+	}
+
+	/**
+	 * The source a record names: an existing one of its facility, or one described
+	 * with the record and created in the same transaction (spec 04.10). Both at
+	 * once is a contradiction the form is told about under the new source.
+	 */
+	private SourceStream resolveStream(ActivityFacts facts, Facility facility) {
+		if (facts.newStream() == null) {
+			return requireStreamOfFacility(facts.streamId(), facility);
+		}
+		if (facts.streamId() != null) {
+			throw new GhgFieldException(GhgRules.ACTIVITY_STREAM_AND_NEW_STREAM);
+		}
+		return createStreamAt(facility, facts.newStream(), SourceStream.Origin.INLINE,
+				facts.confirmNewStreamReason(), true);
 	}
 
 	// --- emission factors (spec 02.1) --------------------------------------------
@@ -1257,7 +1304,7 @@ public class GhgService {
 	public record ActivityFacts(boolean draft, UUID facilityId, UUID streamId, String activityType,
 			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
 			String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
-			BigDecimal uncertaintyPercent) {
+			BigDecimal uncertaintyPercent, StreamFacts newStream, String confirmNewStreamReason) {
 
 		String unitOrNull() {
 			return unit == null || unit.isBlank() ? null : unit.trim();
@@ -1274,9 +1321,11 @@ public class GhgService {
 		if (facts.dataQualityTier() != null) {
 			DataQualityTier.require(facts.dataQualityTier());
 		}
+		// a refused source name burns no record number (spec 04.10)
+		var stream = resolveStream(facts, facility);
 		var recordNo = organization.allocateRecordNumbers(1);
-		return activities.save(new ActivityRecord(recordNo, facts.draft(), facility,
-				requireStreamOfFacility(facts.streamId(), facility), facts.activityType().trim(), facts.quantity(),
+		return activities.save(new ActivityRecord(recordNo, facts.draft(), facility, stream,
+				facts.activityType().trim(), facts.quantity(),
 				facts.unitOrNull(), facts.periodStart(), facts.periodEnd(), trimToNull(facts.dataSource()),
 				trimToNull(facts.evidenceRef()), facts.dataQuality(), trimToNull(facts.note()),
 				facts.dataQualityTier(), facts.uncertaintyPercent()));
@@ -1330,7 +1379,7 @@ public class GhgService {
 		requireFactComplete(facts);
 		var tier = facts.dataQualityTier() == null ? activity.getDataQualityTier() : facts.dataQualityTier();
 		DataQualityTier.require(tier);
-		var stream = requireStreamOfFacility(facts.streamId(), facility);
+		var stream = resolveStream(facts, facility);
 		var changes = activity.changesTo(facts.draft(), facility, stream, facts.activityType().trim(),
 				facts.quantity(), facts.unitOrNull(), facts.periodStart(), facts.periodEnd(),
 				trimToNull(facts.dataSource()), trimToNull(facts.evidenceRef()), facts.dataQuality(),

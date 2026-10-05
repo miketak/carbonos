@@ -53,7 +53,7 @@ class GhgNotFoundException extends RuleViolation {
 	}
 
 	static GhgNotFoundException stream(UUID id) {
-		return new GhgNotFoundException("Source stream", id);
+		return new GhgNotFoundException("Emission source", id);
 	}
 
 	static GhgNotFoundException facility(UUID id) {

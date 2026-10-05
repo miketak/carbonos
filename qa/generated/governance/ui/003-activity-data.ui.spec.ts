@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/003-activity-data.yaml (sha256 202991c68884a57bfa9bf1d0edbb28b956004821ebcc9b68efca082571085c4f); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/003-activity-data.yaml (sha256 eea448d0bf3b3e420073e3813b4fc11b46bb88f57bfdea9bd9b83fdb0dc11a0e); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 3, "202991c68884a57bfa9bf1d0edbb28b956004821ebcc9b68efca082571085c4f")
+const P = procedure("governance", 3, "eea448d0bf3b3e420073e3813b4fc11b46bb88f57bfdea9bd9b83fdb0dc11a0e")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 3: Activity data", () => {
@@ -16,7 +16,7 @@ test.describe("Procedure 3: Activity data", () => {
     })
     await test.step("3.A1.2", async () => {
       const s = P.step("3.A1.2")
-      await s.expect(undefined, [{"outcome":"importTemplateHeader","args":{"organization":"Adansi Foods Ltd","header":"facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note"}}])
+      await s.expect(undefined, [{"outcome":"importTemplateHeader","args":{"organization":"Adansi Foods Ltd","header":"facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note"}}])
     })
     await test.step("3.A1.3", async () => {
       const s = P.step("3.A1.3")

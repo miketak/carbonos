@@ -26,6 +26,11 @@ import jakarta.persistence.Table;
 @Table(name = "ghg_source_streams")
 public class SourceStream {
 
+	/** Where the source was created: the facility's register page, or the activity form during data entry. */
+	public enum Origin {
+		REGISTER, INLINE
+	}
+
 	@Id
 	private UUID id;
 
@@ -53,6 +58,14 @@ public class SourceStream {
 	@Column(length = 255)
 	private String note;
 
+	// spec 04.10: how the source was born, so a verifier can sample the ones created during data entry
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 16)
+	private Origin origin;
+
+	@Column(name = "created_by_user_id")
+	private UUID createdByUserId;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -66,7 +79,14 @@ public class SourceStream {
 
 	SourceStream(Facility facility, String name, StreamKind kind, String fuel, String meterOrSupplier,
 			boolean contractorOperated, String note) {
+		this(facility, name, kind, fuel, meterOrSupplier, contractorOperated, note, Origin.REGISTER, null);
+	}
+
+	SourceStream(Facility facility, String name, StreamKind kind, String fuel, String meterOrSupplier,
+			boolean contractorOperated, String note, Origin origin, UUID createdByUserId) {
 		this.id = UUID.randomUUID();
+		this.origin = origin;
+		this.createdByUserId = createdByUserId;
 		this.facility = facility;
 		this.name = name;
 		this.kind = kind;
@@ -110,6 +130,14 @@ public class SourceStream {
 
 	public Instant getCreatedAt() {
 		return createdAt;
+	}
+
+	public Origin getOrigin() {
+		return origin;
+	}
+
+	public UUID getCreatedByUserId() {
+		return createdByUserId;
 	}
 
 	/** The category a record of this stream defaults to. */

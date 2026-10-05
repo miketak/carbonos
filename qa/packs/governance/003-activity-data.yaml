@@ -15,7 +15,7 @@ sections:
           - as: ama
             do: { signIn: { user: ama } }
           - expect:
-              - importTemplateHeader: { organization: "${org}", header: "facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note" }
+              - importTemplateHeader: { organization: "${org}", header: "facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note" }
           - do: { previewImport: { organization: "${org}", file: adansi-2025.csv } }
             expect:
               - importPreview:
