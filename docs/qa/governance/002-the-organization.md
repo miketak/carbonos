@@ -114,7 +114,7 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | In Adansi Foods Ltd, open **Facilities**, then click **Source streams** on the row of Kumasi Plant. Fill in **Stream name** with `Boiler LPG`, set **Kind** to **Stationary combustion**, then click **Add stream**. | Refused: "'Kumasi Plant' already has a stream named 'Boiler LPG'.". |  |  |
+| 1 | In Adansi Foods Ltd, open **Facilities**, then click **Source streams** on the row of Kumasi Plant. Fill in **Stream name** with `Boiler LPG`, set **Kind** to **Stationary combustion**, then click **Add stream**. | Refused: "'Kumasi Plant' already has an emission source named 'Boiler LPG'.". |  |  |
 
 ### D3. The history records the structure, and only real changes
 

@@ -67,7 +67,6 @@ class SourceStreamController {
 	}
 
 	private static GhgService.StreamFacts facts(SourceStreamRequest body) {
-		return new GhgService.StreamFacts(body.name(), body.kind(), body.fuel(), body.meterOrSupplier(),
-				Boolean.TRUE.equals(body.contractorOperated()), body.note());
+		return body.toFacts();
 	}
 }

@@ -7,6 +7,7 @@ import java.util.UUID;
 import com.carbonos.ghg.internal.DataQuality;
 import com.carbonos.ghg.internal.GhgService;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -41,11 +42,16 @@ public record CreateActivityRequest( //
 		@Min(1) @Max(5) Integer dataQualityTier, //
 		@DecimalMin("0") @DecimalMax("1000") @Digits(integer = 4, fraction = 2) BigDecimal uncertaintyPercent, //
 		// why the record is corrected; required on a correction, ignored on creation (spec 04.4)
-		@Size(max = 500) String reason) {
+		@Size(max = 500) String reason, //
+		// an emission source created with the record, instead of streamId (spec 04.10)
+		@Valid SourceStreamRequest newStream, //
+		// why the new source is a separate one when its name is close to an existing source's
+		@Size(max = 500) String confirmNewStreamReason) {
 
 	public GhgService.ActivityFacts toFacts() {
 		return new GhgService.ActivityFacts(Boolean.TRUE.equals(draft), facilityId, streamId, activityType, quantity,
 				unit, periodStart, periodEnd == null ? periodStart : periodEnd, dataSource, evidenceRef, dataQuality,
-				note, dataQualityTier, uncertaintyPercent);
+				note, dataQualityTier, uncertaintyPercent, newStream == null ? null : newStream.toFacts(),
+				confirmNewStreamReason);
 	}
 }

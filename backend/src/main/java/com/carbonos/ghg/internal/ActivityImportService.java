@@ -43,7 +43,7 @@ public class ActivityImportService {
 	static final int MAX_ROWS = 10_000;
 	static final long MAX_BYTES = 5L * 1024 * 1024;
 
-	public static final List<String> COLUMNS = List.of("facility", "stream", "activity_type", "quantity", "unit",
+	public static final List<String> COLUMNS = List.of("facility", "emission_source", "activity_type", "quantity", "unit",
 			"period_start", "period_end", "data_source", "evidence_ref", "data_quality", "data_quality_tier",
 			"uncertainty_percent", "note");
 
@@ -223,11 +223,12 @@ public class ActivityImportService {
 				problems.add("no facility named '" + cells.get("facility") + "'");
 			}
 			SourceStream stream = null;
-			if (!cells.get("stream").isBlank() && facility != null) {
+			var sourceName = cells.source();
+			if (!sourceName.isBlank() && facility != null) {
 				stream = streamsByFacility.getOrDefault(facility.getId(), Map.of())
-					.get(cells.get("stream").toLowerCase(Locale.ROOT));
+					.get(sourceName.toLowerCase(Locale.ROOT));
 				if (stream == null) {
-					problems.add("'" + facility.getName() + "' has no stream named '" + cells.get("stream") + "'");
+					problems.add("'" + facility.getName() + "' has no emission source named '" + sourceName + "'");
 				}
 			}
 			var activityType = cells.get("activity_type");
@@ -385,6 +386,11 @@ public class ActivityImportService {
 		String get(String column) {
 			var index = header.indexOf(column);
 			return index < 0 || index >= values.size() ? "" : values.get(index).trim();
+		}
+
+		/** The emission source column; {@code stream}, the column's old name, is still read (spec 04.10). */
+		String source() {
+			return header.contains("emission_source") ? get("emission_source") : get("stream");
 		}
 	}
 }

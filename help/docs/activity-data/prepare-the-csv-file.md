@@ -26,7 +26,7 @@ The file **Import CSV** accepts on **Activity data**. **Download CSV template** 
 | Column | Required | Accepted values | Rejected when |
 | --- | --- | --- | --- |
 | `facility` | Yes | The name of a facility under **Facilities**, matched without regard to case. | "facility is empty"; "no facility named '*name*'". |
-| `stream` | No | The name of a source stream of that facility, matched without regard to case. | "'*Facility*' has no stream named '*name*'". |
+| `emission_source` | No | The name of an emission source of that facility, matched without regard to case. A file that still heads the column `stream` is read the same way. | "'*Facility*' has no emission source named '*name*'". |
 | `activity_type` | Yes | Free text, up to 120 characters: what the row is. | "activity_type is empty"; "activity_type is longer than 120 characters". |
 | `quantity` | Yes | A number greater than 0, up to 3 decimals and 11 integer digits. Commas are dropped. | "quantity '*value*' is not a number"; "quantity must be greater than 0"; "quantity has more than 3 decimals or more than 11 integer digits". |
 | `unit` | Yes | A unit code, up to 30 characters: a registered code (`litre`, `kWh`, `tonne`, …) or a custom unit defined under **Units**. | "unit is empty"; "unit is longer than 30 characters". |

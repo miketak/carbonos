@@ -9,6 +9,8 @@
 - **Amended**: 2026-10-03, spec 10: the app header leaves the workspace,
   and the activity and classification drawers become the detail of a split
   register
+- **Amended**: 2026-10-04, spec 04.10: the Source streams dialog becomes the
+  Emission sources page of a facility
 
 ## Problem
 
@@ -134,8 +136,12 @@ meets the same kind of surface everywhere in the app:
 
 There is no dirty-form guard on the pages, as on the other full-page forms
 (Edit profile, the organization's Details, the base year policy): a click
-on the sidebar or the breadcrumb leaves the typed input behind. Still to
-move under the same rule: **New organization**, **Source streams**, **Add
+on the sidebar or the breadcrumb leaves the typed input behind. A
+facility's **Emission sources** is a page too since spec 04.10
+(`/app/ghg/<org>/facilities/<id>/sources`, breadcrumb **Facilities ›
+<name> › Emission sources**): a list with an add form that keeps the kind
+and the contractor flag between additions, and a confirmation modal for
+**Remove**. Still to move under the same rule: **New organization**, **Add
 an emission factor** and the instrument **Evidence** panel, which keep
 their dialogs for now.
 

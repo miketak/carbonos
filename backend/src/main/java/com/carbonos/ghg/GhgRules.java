@@ -55,7 +55,24 @@ public class GhgRules implements RuleSource {
 			"The lease ends before it starts.");
 
 	public static final Rule STREAM_NAME_DUPLICATE = Rule.of("ghg.stream.name-duplicate", HttpStatus.CONFLICT,
-			"'{facility}' already has a stream named '{name}'.");
+			"'{facility}' already has an emission source named '{name}'.");
+
+	// emission sources created while a record is entered (spec 04.10)
+	public static final Rule STREAM_NAME_SIMILAR = Rule.of("ghg.stream.name-similar", HttpStatus.CONFLICT,
+			"'{facility}' has an emission source with a similar name: {candidates}. Use it, or give a reason to "
+					+ "create '{name}' as a separate source.");
+
+	public static final Rule STREAM_SIMILAR_REASON_TOO_SHORT = Rule.field("ghg.stream.similar-reason-too-short",
+			"confirmNewStreamReason", "Say in at least 10 characters why this is a different source.");
+
+	public static final Rule STREAM_HAS_RECORDS = Rule.of("ghg.stream.has-records", HttpStatus.CONFLICT,
+			"'{name}' has activity records. Move them to another emission source before deleting it.");
+
+	public static final Rule STREAM_OTHER_FACILITY = Rule.of("ghg.stream.other-facility", HttpStatus.CONFLICT,
+			"The emission source '{name}' belongs to '{owner}', not to '{facility}'.");
+
+	public static final Rule ACTIVITY_STREAM_AND_NEW_STREAM = Rule.field("ghg.activity.stream-and-new-stream",
+			"newStream", "Choose an existing emission source or describe a new one, not both.");
 
 	// units and densities (spec 02.2)
 	public static final Rule UNIT_REGISTERED = Rule.field("ghg.unit.registered", "code",
@@ -291,7 +308,8 @@ public class GhgRules implements RuleSource {
 	private static final List<Rule> ALL = List.of(ROLE_REQUIRED, ORGANIZATION_NAME_DUPLICATE, ACCOUNT_NOT_FOUND,
 			MEMBER_DUPLICATE, LAST_OWNER, ENTITY_DISPOSAL_BEFORE_ACQUISITION, ENTITY_PERCENT_RANGE,
 			ENTITY_NAME_DUPLICATE, ENTITY_PARENT_LOOP, ENTITY_HAS_FACILITIES, LEASE_ENDS_BEFORE_START,
-			STREAM_NAME_DUPLICATE, UNIT_REGISTERED, UNIT_DUPLICATE, DENSITY_DUPLICATE, BLEND_FRACTIONS,
+			STREAM_NAME_DUPLICATE, STREAM_NAME_SIMILAR, STREAM_SIMILAR_REASON_TOO_SHORT, STREAM_HAS_RECORDS,
+			STREAM_OTHER_FACILITY, ACTIVITY_STREAM_AND_NEW_STREAM, UNIT_REGISTERED, UNIT_DUPLICATE, DENSITY_DUPLICATE, BLEND_FRACTIONS,
 			FACTOR_SELF_APPROVAL, REASON_TOO_SHORT, ACTIVITY_REMOVED_CANNOT_CORRECT, ACTIVITY_NO_WAY_BACK_TO_DRAFT,
 			ACTIVITY_ALREADY_REMOVED, FACILITY_HAS_RECORDS, EVIDENCE_UNSUPPORTED_TYPE, EVIDENCE_LINK_SCHEME,
 			BOUNDARY_WINDOW_ENDS_BEFORE_START, BOUNDARY_EMPTY, INVENTORY_ALREADY_FROZEN, INVENTORY_FREEZE_BLOCKED,

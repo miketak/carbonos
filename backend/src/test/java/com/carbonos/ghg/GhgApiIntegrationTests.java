@@ -1102,6 +1102,147 @@ class GhgApiIntegrationTests {
 				.value(org.hamcrest.Matchers.containsString("'Grid electricity (Ghana, Ecoriv 2025)' defaults to scope 2")));
 	}
 
+	/**
+	 * Spec 04.10 (ECO-5): an analyst with an invoice describes the emission source
+	 * on the record itself. Source and record are created together, a name the
+	 * facility already carries is answered with the candidates, and a near miss
+	 * needs a reason before it becomes a separate source.
+	 */
+	@Test
+	void anEmissionSourceIsCreatedWithTheRecordAndANearNameIsReconciled() throws Exception {
+		var orgId = createOrganization("Adansi Gold");
+		var mine = createFacility(orgId, "Nkran Mine");
+		// the first record describes its source; both are saved, and the record is ready
+		var first = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"facilityId": "%s", "activityType": "Diesel consumption, March", "quantity": 12500,
+						 "unit": "litre", "periodStart": "2025-03-01", "periodEnd": "2025-03-31", "dataSource": "Fuel register",
+						 "evidenceRef": "INV-2938", "dataQuality": "MEASURED",
+						 "newStream": {"name": " Standby gensets ", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel",
+						               "meterOrSupplier": "Bulk tank dip", "contractorOperated": false}}""".formatted(mine)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.recordNo").value(1))
+			.andExpect(jsonPath("$.streamName").value("Standby gensets"))
+			.andExpect(jsonPath("$.status").value("READY")));
+		String gensetsId = JsonPath.read(first, "$.streamId");
+		mvc.perform(get("/api/ghg/facilities/" + mine + "/streams").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].id").value(gensetsId))
+			.andExpect(jsonPath("$[0].origin").value("INLINE"))
+			.andExpect(jsonPath("$[0].defaultScope").value("SCOPE_1"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("STREAM_ADDED"))
+			.andExpect(jsonPath("$[0].reason")
+				.value("Standby gensets added at Nkran Mine: stationary combustion, during data entry"));
+		// the same name again, in any case, is answered with the existing source; no reason gets past it
+		var duplicate = """
+				{"facilityId": "%s", "activityType": "Diesel consumption, April", "quantity": 11800, "unit": "litre",
+				 "periodStart": "2025-04-01", "periodEnd": "2025-04-30", "dataQuality": "MEASURED", %s
+				 "newStream": {"name": "standby gensets", "kind": "STATIONARY_COMBUSTION", "contractorOperated": false}}""";
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json").content(duplicate.formatted(mine, "")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.name-duplicate"))
+			.andExpect(jsonPath("$.candidates.length()").value(1))
+			.andExpect(jsonPath("$.candidates[0].id").value(gensetsId))
+			.andExpect(jsonPath("$.candidates[0].name").value("Standby gensets"))
+			.andExpect(jsonPath("$.candidates[0].defaultScope").value("SCOPE_1"))
+			.andExpect(jsonPath("$.candidates[0].defaultCategory").value("STATIONARY_COMBUSTION"));
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content(duplicate.formatted(mine, "\"confirmNewStreamReason\": \"It is the same genset, I insist\",")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.name-duplicate"));
+		// a near miss is answered the same way; a reason of at least 10 characters creates the separate source
+		var near = """
+				{"facilityId": "%s", "activityType": "Diesel consumption, April", "quantity": 11800, "unit": "litre",
+				 "periodStart": "2025-04-01", "periodEnd": "2025-04-30", "dataQuality": "MEASURED", %s
+				 "newStream": {"name": "Standby genset", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel",
+				               "contractorOperated": false}}""";
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json").content(near.formatted(mine, "")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.name-similar"))
+			.andExpect(jsonPath("$.detail").value("'Nkran Mine' has an emission source with a similar name: "
+					+ "'Standby gensets'. Use it, or give a reason to create 'Standby genset' as a separate source."))
+			.andExpect(jsonPath("$.candidates[0].id").value(gensetsId));
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json").content(near.formatted(mine, "\"confirmNewStreamReason\": \"Other\",")))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.similar-reason-too-short"))
+			.andExpect(jsonPath("$.errors.confirmNewStreamReason")
+				.value("Say in at least 10 characters why this is a different source."));
+		var second = body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+				.contentType("application/json")
+				.content(near.formatted(mine, "\"confirmNewStreamReason\": \"Second 500 kVA unit, serial GEN-7781\",")))
+			.andExpect(status().isCreated())
+			// the refusals burned no record number
+			.andExpect(jsonPath("$.recordNo").value(2))
+			.andExpect(jsonPath("$.streamName").value("Standby genset")));
+		String secondGensetId = JsonPath.read(second, "$.streamId");
+		assertThat(secondGensetId).isNotEqualTo(gensetsId);
+		mvc.perform(get("/api/ghg/facilities/" + mine + "/streams").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("STREAM_ADDED"))
+			.andExpect(jsonPath("$[0].reason").value("Standby genset added at Nkran Mine: stationary combustion, "
+					+ "during data entry; beside 'Standby gensets': Second 500 kVA unit, serial GEN-7781"));
+		// naming an existing source and describing a new one at once is a contradiction
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, May", "quantity": 100,
+					 "unit": "litre", "periodStart": "2025-05-01", "periodEnd": "2025-05-31", "dataQuality": "MEASURED",
+					 "newStream": {"name": "Haul trucks", "kind": "MOBILE_COMBUSTION", "contractorOperated": false}}"""
+				.formatted(mine, gensetsId)))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.activity.stream-and-new-stream"))
+			.andExpect(jsonPath("$.errors.newStream").exists());
+		// a draft saved without a source gets one when it is entered; the register page's exact check still applies
+		String draft = JsonPath.read(body(mvc
+			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
+				.contentType("application/json").content("""
+						{"draft": true, "facilityId": "%s", "activityType": "Camp LPG", "dataQuality": "ESTIMATED"}"""
+					.formatted(mine)))
+			.andExpect(status().isCreated())), "$.id");
+		mvc.perform(put("/api/ghg/activities/" + draft).with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"facilityId": "%s", "activityType": "Camp LPG", "quantity": 1200, "unit": "kg",
+					 "periodStart": "2025-06-01", "periodEnd": "2025-06-30", "dataQuality": "ESTIMATED",
+					 "newStream": {"name": "Camp LPG", "kind": "STATIONARY_COMBUSTION", "fuel": "LPG", "contractorOperated": false}}"""
+				.formatted(mine)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.streamName").value("Camp LPG"))
+			.andExpect(jsonPath("$.draft").value(false));
+		mvc.perform(post("/api/ghg/facilities/" + mine + "/streams").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Haul trucks", "kind": "MOBILE_COMBUSTION", "contractorOperated": false}"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.origin").value("REGISTER"));
+		// the register page prompts on the exact name only; "Haul truck" beside "Haul trucks" is its own call
+		mvc.perform(post("/api/ghg/facilities/" + mine + "/streams").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Haul truck", "kind": "MOBILE_COMBUSTION", "contractorOperated": false}"""))
+			.andExpect(status().isCreated());
+		// the import reads the new column name, still reads the old one, and creates no source
+		var csv = ("facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality\r\n"
+				+ "Nkran Mine,Standby gensets,Diesel consumption,9000,litre,2025-07-01,2025-07-31,Fuel register,INV-7,MEASURED\r\n"
+				+ "Nkran Mine,Standby genset 3,Diesel consumption,9000,litre,2025-08-01,2025-08-31,Fuel register,INV-8,MEASURED\r\n")
+			.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import")
+			.file(new org.springframework.mock.web.MockMultipartFile("file", "q3.csv", "text/csv", csv))
+			.with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.imported").value(0))
+			.andExpect(jsonPath("$.rejected[0].row").value(3))
+			.andExpect(jsonPath("$.rejected[0].message")
+				.value(org.hamcrest.Matchers.containsString("'Nkran Mine' has no emission source named 'Standby genset 3'")));
+		mvc.perform(get("/api/ghg/facilities/" + mine + "/streams").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(5));
+	}
+
 	/** Audit findings F10, F26, F27, F30 (T-11): the stream register, the scope choice and proxy factors. */
 	@Test
 	void aStreamDrivesTheDefaultScopeAndAnyDepartureNeedsAJustification() throws Exception {
@@ -1139,14 +1280,20 @@ class GhgApiIntegrationTests {
 		mvc.perform(post("/api/ghg/facilities/" + pit + "/streams").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"name": "standby gensets", "kind": "STATIONARY_COMBUSTION", "contractorOperated": false}"""))
-			.andExpect(status().isConflict());
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.name-duplicate"))
+			.andExpect(jsonPath("$.detail").value("'Obuom Pit' already has an emission source named 'standby gensets'."))
+			.andExpect(jsonPath("$.candidates[0].id").value(gensetsId));
 		var otherSite = createFacility(orgId, "Nkran Camp");
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"facilityId": "%s", "streamId": "%s", "activityType": "Genset diesel", "quantity": 100,
 					 "unit": "litre", "periodStart": "2025-06-30", "periodEnd": "2025-06-30", "dataQuality": "MEASURED"}"""
 				.formatted(otherSite, gensetsId)))
-			.andExpect(status().isConflict());
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.other-facility"))
+			.andExpect(jsonPath("$.detail")
+				.value("The emission source 'Standby gensets' belongs to 'Obuom Pit', not to 'Nkran Camp'."));
 		// records name their stream
 		String gensetDiesel = JsonPath.read(body(mvc
 			.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asMember()).with(csrf())
@@ -1194,7 +1341,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
 			.andExpect(jsonPath("$.gates[2].status").value("BLOCKED"))
 			.andExpect(jsonPath("$.gates[2].findings[0].message")
-				.value(org.hamcrest.Matchers.containsString("its stream 'Camp landfill' defaults to scope 3")));
+				.value(org.hamcrest.Matchers.containsString("its emission source 'Camp landfill' defaults to scope 3")));
 		// a proxy factor needs its justification; with both reasons recorded the gate is silent
 		mvc.perform(put("/api/ghg/assignments/" + wasteAssignment + "/classify").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -1231,7 +1378,9 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.methodology.statement")
 				.value(org.hamcrest.Matchers.containsString("1 line uses a proxy factor")));
 		// a stream with records cannot be deleted; an empty one can
-		mvc.perform(delete("/api/ghg/streams/" + gensetsId).with(asMember()).with(csrf())).andExpect(status().isConflict());
+		mvc.perform(delete("/api/ghg/streams/" + gensetsId).with(asMember()).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.has-records"));
 		String empty = JsonPath.read(body(mvc
 			.perform(post("/api/ghg/facilities/" + pit + "/streams").with(asMember()).with(csrf())
 				.contentType("application/json").content("""
@@ -4523,7 +4672,7 @@ class GhgApiIntegrationTests {
 		// the template downloads with the header and one example row
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/import-template.csv").with(asMember()))
 			.andExpect(status().isOk())
-			.andExpect(content().string(org.hamcrest.Matchers.startsWith("facility,stream,activity_type,quantity,unit,period_start")));
+			.andExpect(content().string(org.hamcrest.Matchers.startsWith("facility,emission_source,activity_type,quantity,unit,period_start")));
 
 		// a file with a bad row imports nothing and names the row and the problem
 		var bad = ("facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality\r\n"
@@ -4546,7 +4695,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.length()").value(0));
 
 		// a clean file imports every row; the same file again is all duplicates
-		var rows = new StringBuilder("facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note\r\n");
+		var rows = new StringBuilder("facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note\r\n");
 		for (int month = 1; month <= 12; month++) {
 			var start = java.time.LocalDate.of(2025, month, 1);
 			rows.append("Nkran Mine,Standby gensets,Diesel consumption,").append(10000 + month * 100).append(",litre,")

@@ -96,7 +96,7 @@ sections:
           - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0001, factor: "${lpg}", scope: SCOPE_3, category: PURCHASED_GOODS_SERVICES } }
             expect:
               - screenReads: { text: "The stream suggests Scope 1." }
-              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, severity: ERROR, containing: "'Boiler LPG' is classified in scope 3; its stream 'Boiler LPG' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1." }
+              - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, severity: ERROR, containing: "'Boiler LPG' is classified in scope 3; its emission source 'Boiler LPG' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1." }
           - do: { classifyRecord: { organization: "${org}", inventory: "${inv}", record: ACT-0001, factor: "${lpg}", scope: SCOPE_1, category: STATIONARY_COMBUSTION } }
             expect:
               - gateFinding: { organization: "${org}", inventory: "${inv}", gate: CLASSIFICATION, containing: "'Boiler LPG' is classified in scope 3", absent: true }

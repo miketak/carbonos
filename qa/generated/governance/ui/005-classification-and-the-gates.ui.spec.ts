@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/005-classification-and-the-gates.yaml (sha256 1538824cf3d81fcafa3f0cc7c70e60ca9eb7d02c9fdf50dbf2f5d2f909879e19); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/005-classification-and-the-gates.yaml (sha256 ba05c60501e3f3a332c75d1e536d6877db09cae68de47cf2089784f78e807bdc); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 5, "1538824cf3d81fcafa3f0cc7c70e60ca9eb7d02c9fdf50dbf2f5d2f909879e19")
+const P = procedure("governance", 5, "ba05c60501e3f3a332c75d1e536d6877db09cae68de47cf2089784f78e807bdc")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 5: Classification and the gates", () => {
@@ -97,7 +97,7 @@ test.describe("Procedure 5: Classification and the gates", () => {
     await test.step("5.B6.1", async () => {
       const s = P.step("5.B6.1")
       const out = await s.do("classifyRecord", {"organization":"Adansi Foods Ltd","inventory":"FY2025","record":"ACT-0001","factor":"Gaseous fuels: LPG (/litre)","scope":"SCOPE_3","category":"PURCHASED_GOODS_SERVICES"})
-      await s.expect(out, [{"outcome":"screenReads","args":{"text":"The stream suggests Scope 1."}},{"outcome":"gateFinding","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","gate":"CLASSIFICATION","severity":"ERROR","containing":"'Boiler LPG' is classified in scope 3; its stream 'Boiler LPG' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1."}}])
+      await s.expect(out, [{"outcome":"screenReads","args":{"text":"The stream suggests Scope 1."}},{"outcome":"gateFinding","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","gate":"CLASSIFICATION","severity":"ERROR","containing":"'Boiler LPG' is classified in scope 3; its emission source 'Boiler LPG' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1."}}])
     })
     await test.step("5.B6.2", async () => {
       const s = P.step("5.B6.2")
