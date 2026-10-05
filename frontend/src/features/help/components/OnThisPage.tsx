@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { HelpHeading } from '../manifest'
-import { useReducedMotion } from '../../home/landing/useReducedMotion'
+import { useReducedMotion } from '../../../lib/useReducedMotion'
 
 /** The rail of H2 and H3 headings; the one in view is marked as the reader scrolls. */
 export function OnThisPage({

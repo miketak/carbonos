@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { AmbientBackground } from '../components/AmbientBackground'
 import { SetPasswordPage } from '../features/access/SetPasswordPage'
 import { AdminAccessRequestsPage } from '../features/admin/AdminAccessRequestsPage'
 import { AdminDashboardPage } from '../features/admin/AdminDashboardPage'
@@ -54,7 +53,6 @@ const AdminHelpMetricsPage = lazy(() =>
 export function App() {
   return (
     <>
-      <AmbientBackground />
       <SplashGate />
       <Routes>
         <Route path="/" element={<HomePage />} />

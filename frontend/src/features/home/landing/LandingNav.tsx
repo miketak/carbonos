@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import type { AccessIntent } from './intent'
 import { Wordmark } from '../../../components/Wordmark'
 
+// three sections a visitor jumps to; the report sits under Product in reading order
 const LINKS = [
   { href: '#product', label: 'Product' },
-  { href: '#inventory', label: 'Inventory' },
   { href: '#pricing', label: 'Pricing' },
   { href: '#faq', label: 'FAQ' },
 ]
@@ -51,7 +51,7 @@ export function LandingNav({ onRequest }: { onRequest: (intent: AccessIntent) =>
             <a
               key={link.href}
               href={link.href}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-dark-teal transition-colors hover:bg-teal/10"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface-sunken"
             >
               {link.label}
             </a>
@@ -62,14 +62,14 @@ export function LandingNav({ onRequest }: { onRequest: (intent: AccessIntent) =>
               and on the narrowest phones (under 375px) Request access does too, since the hero repeats it */}
           <Link
             to="/app"
-            className="hidden rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap text-dark-teal transition-colors hover:bg-teal/10 sm:inline-flex"
+            className="hidden rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap text-ink transition-colors hover:bg-surface-sunken sm:inline-flex"
           >
             Sign in
           </Link>
           <button
             type="button"
             onClick={() => onRequest('access')}
-            className="hidden rounded-lg bg-teal-deep px-2.5 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-[0_4px_16px_rgba(9,168,149,0.35)] transition-all hover:bg-dark-teal hover:shadow-[0_6px_20px_rgba(9,168,149,0.45)] focus-visible:ring-2 focus-visible:ring-bright-teal focus-visible:outline-none min-[375px]:inline-flex sm:px-4"
+            className="landing-btn landing-btn-primary hidden h-10 px-3 text-sm min-[375px]:inline-flex sm:px-4"
           >
             Request access
           </button>
@@ -81,7 +81,7 @@ export function LandingNav({ onRequest }: { onRequest: (intent: AccessIntent) =>
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2.2"
+                strokeWidth="2"
                 strokeLinecap="round"
                 aria-hidden
               >

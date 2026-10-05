@@ -17,103 +17,98 @@ const RUNS = [
   { n: 'Run 4', state: 'final', note: 'Final · approved by K. Boateng · 86,412 tCO₂e' },
 ]
 
+/** The one dark band: four states, four runs, the voided one kept in the list. */
 export function LifecycleSection() {
   return (
     <section className="landing-section landing-section--dark">
-      <div className="landing-container">
-        <Reveal className="landing-head">
-          <p className="landing-eyebrow landing-eyebrow--light">A record a verifier can rely on</p>
-          <h2 className="landing-title landing-title--light">Nothing changes silently.</h2>
-          <p className="landing-lede landing-lede--light">
-            An inventory moves through four states. Runs are numbered, immutable snapshots. A wrong
-            run is voided with a reason and stays listed, so two runs can be compared and a mistake
-            is never hidden.
+      <div className="landing-container flex flex-col gap-12">
+        <Reveal className="flex max-w-2xl flex-col gap-4">
+          <p className="landing-eyebrow text-accent-green">A record a verifier can rely on</p>
+          <h2 className="landing-title">Nothing changes silently.</h2>
+          <p className="landing-lede">
+            An inventory moves through four states. Each one is a decision somebody made, with a
+            reason, on a date.
           </p>
         </Reveal>
 
-        <Reveal className="lifecycle" step={1}>
-          <div className="lifecycle-track" aria-hidden>
-            <span className="lifecycle-track-fill" />
-          </div>
-          <ol className="lifecycle-steps">
+        <Reveal className="relative" step={1}>
+          <div
+            className="absolute top-3 right-3 left-3 hidden h-px bg-hairline md:block"
+            aria-hidden
+          />
+          <ol className="relative grid gap-8 md:grid-cols-4">
             {STATES.map((s, i) => (
-              <li
-                key={s.name}
-                className="lifecycle-step"
-                style={{ '--stagger': i } as React.CSSProperties}
-              >
-                <span className="lifecycle-dot">
-                  <span className="lifecycle-dot-core" />
-                </span>
-                <span className="lifecycle-name">{s.name}</span>
-                <span className="lifecycle-what">{s.what}</span>
+              <li key={s.name} className="flex flex-col gap-3">
+                <span
+                  className={`size-6 rounded-full border-2 border-bright-teal ${
+                    i >= 2
+                      ? i === 3
+                        ? 'border-accent-green bg-accent-green'
+                        : 'bg-bright-teal'
+                      : 'bg-surface-sunken'
+                  }`}
+                  aria-hidden
+                />
+                <strong className="text-base text-ink">{s.name}</strong>
+                <span className="text-ink-muted">{s.what}</span>
               </li>
             ))}
           </ol>
         </Reveal>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <Reveal className="runs" step={2}>
-            <div className="runs-head">
-              <span>Calculation runs</span>
-              <span className="runs-head-note">Gye Nyame Gold</span>
-            </div>
-            <ol className="runs-list">
-              {RUNS.map((r, i) => (
-                <li
-                  key={r.n}
-                  className={`run run--${r.state}`}
-                  style={{ '--stagger': i } as React.CSSProperties}
+        <Reveal className="landing-frame landing-frame--dark text-[13px]" step={2}>
+          <div className="flex items-center justify-between border-b border-hairline px-5 py-3.5">
+            <span className="font-semibold text-ink">Runs</span>
+            <span className="text-ink-muted">FY2025 · 4 runs</span>
+          </div>
+          <ol>
+            {RUNS.map((r) => (
+              <li
+                key={r.n}
+                className={`grid grid-cols-[4.5rem_minmax(0,1fr)_auto] gap-4 border-b border-hairline px-5 py-3 last:border-b-0 ${
+                  r.state === 'voided' ? 'text-ink-faint' : 'text-ink'
+                }`}
+              >
+                <span
+                  className={
+                    r.state === 'final' ? 'font-semibold text-accent-green' : 'text-ink-muted'
+                  }
                 >
-                  <span className="run-n">{r.n}</span>
-                  <span className="run-note">{r.note}</span>
-                  <span className="run-state">{r.state}</span>
-                </li>
-              ))}
-            </ol>
-          </Reveal>
-          <Reveal className="controls" step={3}>
-            {[
-              [
-                'Approval refuses self-approval',
-                'The approver and the date are recorded. While another writer exists, a preparer cannot approve their own run.',
-              ],
-              [
-                'A final run refuses known defects',
-                'An unflagged proxy density, a blend published under another GWP set, a missing Table 1 entity: refused, not flagged.',
-              ],
-              [
-                'Corrections carry reasons',
-                'Exclusions never print a false zero. The original figure stays on the record beside the correction.',
-              ],
-              [
-                'Support access is time-boxed and disclosed',
-                'An organization is invisible to outsiders. A platform administrator needs a stated reason, and the grant expires within 72 hours.',
-              ],
-            ].map(([title, body]) => (
-              <div key={title} className="control">
-                <span className="control-mark" aria-hidden>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
+                  {r.n}
                 </span>
-                <div>
-                  <h3 className="control-title">{title}</h3>
-                  <p className="control-body">{body}</p>
-                </div>
-              </div>
+                <span>
+                  {r.state === 'voided' ? (
+                    <>
+                      <s>Approved by K. Boateng</s> · voided: Site B November diesel double-counted
+                    </>
+                  ) : (
+                    r.note
+                  )}
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 ${r.state === 'final' ? 'font-semibold text-accent-green' : 'text-ink-muted'}`}
+                >
+                  {r.state === 'final' && (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="M5 12.5l4.5 4.5L19 7.5" />
+                    </svg>
+                  )}
+                  {r.state}
+                </span>
+              </li>
             ))}
-          </Reveal>
-        </div>
+          </ol>
+        </Reveal>
       </div>
     </section>
   )

@@ -40,7 +40,7 @@ const sizes: Record<
 
 const surfaces: Record<WordmarkSurface, { word: string; os: string; byline: string }> = {
   light: { word: 'text-ink', os: 'text-teal-deep', byline: 'text-ink-muted' },
-  dark: { word: 'text-white', os: 'text-bright-teal', byline: 'text-white/80' },
+  dark: { word: 'text-white', os: 'text-bright-teal', byline: 'text-soft-mint' },
 }
 
 interface WordmarkProps {

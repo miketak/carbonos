@@ -251,8 +251,9 @@ None.
   shortcuts still work, the pre-flight chip reads from the gates and the
   popover lists them.
 - A lint script fails the frontend build on `backdrop-blur`, a glass tint,
-  a raw palette utility or a hex literal in a feature file; the landing and
-  the style sheet are the only exceptions.
+  a raw palette utility or a hex literal in a feature file; the landing, the
+  splash and the wordmark may use the brand palette utilities, and the style
+  sheet is the only full exception (amended 2026-10-05).
 - A Playwright sweep opens the nine QA procedures' pages in both themes and
   saves screenshots for review.
 - The help figures under `help/docs/assets/screens` are reshot from the
@@ -272,7 +273,8 @@ Done:
    dark sets, Tailwind utilities mapped to them, the theme switch, the
    contrast test. Nothing visible changes.
 3. The kit, with tests. `GlassCard`, `StatusPill` and the app's
-   `AmbientBackground` are removed; the landing keeps its own aurora.
+   `AmbientBackground` are removed (the landing's aurora went with it on
+   2026-10-05).
 4. The shells: the organization and administration layouts move onto the
    rail; the top bar leaves the workspace; spec 08's header rules are
    retired.
@@ -285,9 +287,13 @@ Done:
 
 ## Non-goals and open questions
 
-- The landing page keeps the brand aurora and glass; it is marketing, not
-  the workbench. Its buttons and type adopt the kit when the landing is next
-  touched.
+- The landing page (amended 2026-10-05): it adopts the kit's type scale,
+  spacing, radius and buttons, keeps the brand palette as its accent (teal
+  deep for buttons and links, the teal and bright teal on the mark and the
+  glow, accent green for one moment), and drops the aurora and the glass.
+  It stays light whatever theme the app is in, pinning the light tokens on
+  its root and a dark set on its one dark band. The splash plays about 1.5
+  seconds: the mark settles, the name and the tagline rise, the whole fades.
 - The help centre's prose layout is not redesigned; it adopts the tokens so
   it reads as the same product.
 - No third theme, no per-organization branding, no density setting.
