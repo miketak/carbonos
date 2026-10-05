@@ -60,7 +60,8 @@ any warning, else PASSED; the inventory is ready when no gate is blocked.
 - **COMPLETENESS**: N records not reviewed; an automatic exclusion whose reason
   no longer holds; an included activity dated outside the period (ERROR); an
   included activity with no evidence reference (WARNING); estimated or
-  calculated data (INFO).
+  calculated data (INFO); the documented zeros in the boundary, each with its
+  months, note and data source (INFO, spec 04.12).
 - **CLASSIFICATION**: an included activity with no factor (ERROR); a scope
   incompatible with an inherent-scope factor (ERROR); a scope that departs
   from the factor's default (WARNING) (spec 04.1).
