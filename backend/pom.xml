@@ -86,6 +86,12 @@
 			<artifactId>openpdf</artifactId>
 			<version>2.4.0</version>
 		</dependency>
+		<!-- a workbook beside the CSV import, read as a stream (spec 04.11) -->
+		<dependency>
+			<groupId>org.dhatim</groupId>
+			<artifactId>fastexcel-reader</artifactId>
+			<version>0.19.0</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

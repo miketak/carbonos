@@ -14,4 +14,8 @@ public interface GhgRunLineRepository extends JpaRepository<GhgRunLine, UUID> {
 
 	boolean existsByFactorId(UUID factorId);
 
+	/** The runs that calculated a record, for the refusal that names them (spec 04.11). */
+	@org.springframework.data.jpa.repository.Query("select distinct l.run.runNo from GhgRunLine l where l.activityId = :activityId order by l.run.runNo")
+	java.util.List<Integer> runNumbersOf(UUID activityId);
+
 }

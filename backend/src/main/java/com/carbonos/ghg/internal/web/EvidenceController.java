@@ -122,6 +122,20 @@ class EvidenceController {
 			.body(new InputStreamResource(download.media().content()));
 	}
 
+	/** The table as a workbook was read, kept as CSV beside it (spec 04.11). */
+	@GetMapping("/import-batches/{id}/rendered.csv")
+	ResponseEntity<InputStreamResource> importRendered(@PathVariable UUID id) {
+		var download = evidenceService.openRendered(id);
+		return ResponseEntity.ok()
+			.contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+			.contentLength(download.media().contentLength())
+			.header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+				.filename(download.batch().getFileName().replaceAll("\\.[^.]*$", "") + "-as-read.csv", StandardCharsets.UTF_8)
+				.build()
+				.toString())
+			.body(new InputStreamResource(download.media().content()));
+	}
+
 	/** The file itself, as an attachment. */
 	@GetMapping("/evidence/{id}")
 	ResponseEntity<InputStreamResource> download(@PathVariable UUID id) {

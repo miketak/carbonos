@@ -109,6 +109,10 @@ public class ActivityRecord {
 	@Column(name = "delete_reason", length = 500)
 	private String deleteReason;
 
+	// spec 04.11: a removal made with several records at once names the act
+	@Column(name = "delete_bulk_id")
+	private UUID deleteBulkId;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -269,9 +273,14 @@ public class ActivityRecord {
 
 	/** Leaves the record as a tombstone (spec 04.4): reviews exclude it, nothing reads it as a fact again. */
 	void markRemoved(String by, String reason) {
+		markRemoved(by, reason, null);
+	}
+
+	void markRemoved(String by, String reason, UUID bulkId) {
 		this.deletedAt = Instant.now();
 		this.deletedBy = by;
 		this.deleteReason = reason;
+		this.deleteBulkId = bulkId;
 	}
 
 	/** One field's old and new value in a correction (spec 04.4). */

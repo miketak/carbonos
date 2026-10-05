@@ -106,6 +106,30 @@ public class GhgRules implements RuleSource {
 	public static final Rule ACTIVITY_ALREADY_REMOVED = Rule.of("ghg.activity.already-removed", HttpStatus.CONFLICT,
 			"This record was already removed.");
 
+	public static final Rule ACTIVITY_USED_IN_RUN = Rule.of("ghg.activity.used-in-run", HttpStatus.CONFLICT,
+			"{record} is used in {runs} and cannot be removed. Reported results must stay traceable to their source: "
+					+ "correct the record instead.");
+
+	// several records at once (spec 04.11)
+	public static final Rule ACTIVITY_BULK_EMPTY = Rule.field("ghg.activity.bulk-empty", "ids",
+			"Select at least one record.");
+
+	public static final Rule ACTIVITY_BULK_TOO_MANY = Rule.field("ghg.activity.bulk-too-many", "ids",
+			"Select at most {max} records at once.");
+
+	public static final Rule ACTIVITY_BULK_REFUSED = Rule.of("ghg.activity.bulk-refused", HttpStatus.CONFLICT,
+			"Nothing was changed: {refused} of {selected} records refuse the action.");
+
+	public static final Rule ACTIVITY_HAS_SOURCE = Rule.of("ghg.activity.has-source", HttpStatus.CONFLICT,
+			"{record} already has an emission source; change it on the record.");
+
+	// the import's decisions on unknown source names (spec 04.11)
+	public static final Rule IMPORT_DECISION_UNUSED = Rule.of("ghg.import.decision-unused", HttpStatus.CONFLICT,
+			"The decisions do not match the file. Check the file again.");
+
+	public static final Rule IMPORT_MAP_REASON_REQUIRED = Rule.field("ghg.import.map-reason-required", "decisions",
+			"Say in at least 10 characters why these rows belong to '{name}'.");
+
 	public static final Rule FACILITY_HAS_RECORDS = Rule.of("ghg.facility.has-records", HttpStatus.CONFLICT,
 			"'{facility}' has recorded activity data. Facts are the audit trail: "
 					+ "remove or reassign its activity records before deleting the facility.");
@@ -311,7 +335,9 @@ public class GhgRules implements RuleSource {
 			STREAM_NAME_DUPLICATE, STREAM_NAME_SIMILAR, STREAM_SIMILAR_REASON_TOO_SHORT, STREAM_HAS_RECORDS,
 			STREAM_OTHER_FACILITY, ACTIVITY_STREAM_AND_NEW_STREAM, UNIT_REGISTERED, UNIT_DUPLICATE, DENSITY_DUPLICATE, BLEND_FRACTIONS,
 			FACTOR_SELF_APPROVAL, REASON_TOO_SHORT, ACTIVITY_REMOVED_CANNOT_CORRECT, ACTIVITY_NO_WAY_BACK_TO_DRAFT,
-			ACTIVITY_ALREADY_REMOVED, FACILITY_HAS_RECORDS, EVIDENCE_UNSUPPORTED_TYPE, EVIDENCE_LINK_SCHEME,
+			ACTIVITY_ALREADY_REMOVED, ACTIVITY_USED_IN_RUN, ACTIVITY_BULK_EMPTY, ACTIVITY_BULK_TOO_MANY,
+			ACTIVITY_BULK_REFUSED, ACTIVITY_HAS_SOURCE, IMPORT_DECISION_UNUSED, IMPORT_MAP_REASON_REQUIRED,
+			FACILITY_HAS_RECORDS, EVIDENCE_UNSUPPORTED_TYPE, EVIDENCE_LINK_SCHEME,
 			BOUNDARY_WINDOW_ENDS_BEFORE_START, BOUNDARY_EMPTY, INVENTORY_ALREADY_FROZEN, INVENTORY_FREEZE_BLOCKED,
 			DECLARATION_NOT_SCOPE_3, DECLARATION_NOT_DECLARED, DECLARATION_REASON_TOO_SHORT, PROXY_JUSTIFICATION,
 			EXCLUSION_JUSTIFICATION_TOO_SHORT, UPSTREAM_UNIT_MISMATCH, RESIDUAL_MIX_FACTOR_REQUIRED,

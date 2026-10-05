@@ -30,6 +30,27 @@ public final class CsvTable {
 		return rows;
 	}
 
+	/** Records back to RFC 4180 text, CRLF line endings; an empty record is a blank line, so row numbers survive. */
+	public static String render(List<List<String>> records) {
+		var out = new StringBuilder();
+		for (var record : records) {
+			for (int i = 0; i < record.size(); i++) {
+				if (i > 0) {
+					out.append(',');
+				}
+				var cell = record.get(i) == null ? "" : record.get(i);
+				if (cell.contains(",") || cell.contains("\"") || cell.contains("\n") || cell.contains("\r")) {
+					out.append('"').append(cell.replace("\"", "\"\"")).append('"');
+				}
+				else {
+					out.append(cell);
+				}
+			}
+			out.append("\r\n");
+		}
+		return out.toString();
+	}
+
 	public static CsvTable parse(String text) {
 		var content = text.startsWith("﻿") ? text.substring(1) : text;
 		var records = new ArrayList<List<String>>();

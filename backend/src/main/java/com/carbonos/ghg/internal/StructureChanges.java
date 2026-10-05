@@ -136,12 +136,23 @@ final class StructureChanges {
 	 * next to a similar name with a reason (spec 04.10).
 	 */
 	static String streamAdded(SourceStream stream, List<SourceStream> similar, String reason) {
+		return streamAdded(stream, similar, reason, null);
+	}
+
+	/**
+	 * As above, and "during import of file (sha256 prefix); rows 4, 9, 17" for a source
+	 * born in the import preview (spec 04.11).
+	 */
+	static String streamAdded(SourceStream stream, List<SourceStream> similar, String reason, String importNote) {
 		var text = new StringBuilder(stream.getName()).append(" added at ")
 			.append(stream.getFacility().getName())
 			.append(": ")
 			.append(kind(stream.getKind()));
 		if (stream.getOrigin() == SourceStream.Origin.INLINE) {
 			text.append(", during data entry");
+		}
+		else if (stream.getOrigin() == SourceStream.Origin.IMPORT) {
+			text.append(", during import").append(importNote == null ? "" : " of " + importNote);
 		}
 		if (reason != null && !similar.isEmpty()) {
 			text.append("; beside ")
@@ -150,6 +161,35 @@ final class StructureChanges {
 				.append(reason);
 		}
 		return fit(text.toString());
+	}
+
+	/** "'Standby genset 3' in rows 4, 9, 17 of adansi-2025.xlsx mapped to 'Standby gensets'" (spec 04.11). */
+	static String importSourceMapped(String typedName, List<Integer> rows, String fileName, SourceStream stream,
+			String reason) {
+		var text = "'" + typedName + "' in " + rowsText(rows) + " of " + fileName + " mapped to '" + stream.getName() + "'";
+		return fit(reason == null ? text : text + ": " + reason);
+	}
+
+	/**
+	 * One act over several records (spec 04.11): "Emission source 'Standby gensets' assigned to 12
+	 * records (ACT-0003, ACT-0004, …): the reason".
+	 */
+	static String bulkCorrected(GhgService.BulkAction action, String target, List<String> recordRefs, String reason) {
+		var count = recordRefs.size() + (recordRefs.size() == 1 ? " record" : " records");
+		var head = switch (action) {
+			case ASSIGN_SOURCE -> "Emission source '" + target + "' assigned to " + count;
+			case SET_TIER -> "Data quality tier " + target + " set on " + count;
+			case ADD_EVIDENCE_LINK -> "Evidence link '" + target + "' added to " + count;
+			case REMOVE -> count + " removed";
+		};
+		var listed = recordRefs.stream().limit(10).collect(Collectors.joining(", "))
+				+ (recordRefs.size() > 10 ? ", and " + (recordRefs.size() - 10) + " more" : "");
+		return fit(head + " (" + listed + "): " + reason);
+	}
+
+	/** "rows 4, 9, 17" or "row 4". */
+	static String rowsText(List<Integer> rows) {
+		return (rows.size() == 1 ? "row " : "rows ") + rows.stream().map(String::valueOf).collect(Collectors.joining(", "));
 	}
 
 	/** "Stream removed from Facility". */

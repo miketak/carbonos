@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,17 +25,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.carbonos.ghg.GhgRules;
 import com.carbonos.media.MediaStorage;
 import com.carbonos.media.MediaStorageException;
 
 /**
- * Bulk entry of activity records from a CSV file (spec 04.5). The whole file
- * is validated first and nothing is imported while any row is rejected, so a
- * corrected file can be uploaded again without doubling records. A row that
- * repeats a record already on file, or another row of the file, is rejected
- * as a duplicate. A dry run (spec 04.6) returns the same validation with each
- * row's readiness, control totals and warnings, and saves nothing; a real
- * import keeps the file with its digest so every record traces to its row.
+ * Bulk entry of activity records from a CSV file or a workbook (specs 04.5,
+ * 04.11). The whole file is validated first and nothing is imported while any
+ * row is rejected, so a corrected file can be uploaded again without doubling
+ * records. A row that repeats a record already on file, or another row of the
+ * file, is rejected as a duplicate. A dry run (spec 04.6) returns the same
+ * validation with each row's readiness, control totals and warnings, and saves
+ * nothing; a real import keeps the file with its digest so every record traces
+ * to its row. An emission source the facility does not have is decided in the
+ * preview (spec 04.11): mapped to an existing source or created with the
+ * records, under the reconcile rules of spec 04.10, and every decision is kept
+ * on the batch.
  */
 @Service
 @Transactional
@@ -47,25 +53,42 @@ public class ActivityImportService {
 			"period_start", "period_end", "data_source", "evidence_ref", "data_quality", "data_quality_tier",
 			"uncertainty_percent", "note");
 
+	/** The columns whose cells, when formulas, are worth a second look (spec 04.11). */
+	private static final List<String> FIGURE_COLUMNS = List.of("quantity", "unit", "period_start", "period_end");
+
 	public record Rejection(int row, String message) {
 	}
 
 	/** A row as it would import (spec 04.6): what a reviewer would see, with its readiness. */
 	public record PreviewRow(int row, String facilityName, String streamName, String activityType,
 			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
-			String evidenceRef, DataQuality dataQuality, int dataQualityTier, ActivityReadiness readiness) {
+			String evidenceRef, DataQuality dataQuality, int dataQualityTier, ActivityReadiness readiness,
+			boolean needsDecision) {
 	}
 
 	/** Rows and summed quantity per facility, stream and unit: the totals to check against the sheet's footer. */
 	public record Total(String facilityName, String streamName, String unit, int rows, BigDecimal quantity) {
 	}
 
-	/** Something worth a look before committing, not a reason to reject the row. */
-	public record Warning(int row, String message) {
+	/** Something worth a look before committing, not a reason to reject the row; row is null for the file itself. */
+	public record Warning(Integer row, String message) {
+	}
+
+	/** An emission source name the file has and the facility does not, with the rows it covers and the near names. */
+	public record UnknownSource(UUID facilityId, String facilityName, String name, List<Integer> rows,
+			List<SourceStream> candidates) {
+	}
+
+	/** One decision on an unknown name (spec 04.11): map it to a source of the facility, or create one. */
+	public record Decision(UUID facilityId, String name, UUID mapTo, GhgService.StreamFacts create, String reason) {
+	}
+
+	public record Decisions(String sha256, List<Decision> items) {
 	}
 
 	public record Result(boolean dryRun, UUID batchId, int imported, List<Rejection> rejected, List<PreviewRow> rows,
-			List<Total> totals, List<Warning> warnings) {
+			List<Total> totals, List<Warning> warnings, String sha256, List<UnknownSource> unknownSources,
+			int sourcesCreated) {
 	}
 
 	private final OrganizationRepository organizations;
@@ -73,17 +96,21 @@ public class ActivityImportService {
 	private final SourceStreamRepository streams;
 	private final ActivityRecordRepository activities;
 	private final ImportBatchRepository batches;
+	private final ImportDecisionRepository decisions;
+	private final GhgService ghg;
 	private final MediaStorage media;
 	private final GhgAccess access;
 
 	ActivityImportService(OrganizationRepository organizations, FacilityRepository facilities,
 			SourceStreamRepository streams, ActivityRecordRepository activities, ImportBatchRepository batches,
-			MediaStorage media, GhgAccess access) {
+			ImportDecisionRepository decisions, GhgService ghg, MediaStorage media, GhgAccess access) {
 		this.organizations = organizations;
 		this.facilities = facilities;
 		this.streams = streams;
 		this.activities = activities;
 		this.batches = batches;
+		this.decisions = decisions;
+		this.ghg = ghg;
 		this.media = media;
 		this.access = access;
 	}
@@ -96,28 +123,33 @@ public class ActivityImportService {
 
 	/** Validates the file and reports what would import; saves nothing (spec 04.6). */
 	@Transactional(readOnly = true)
-	public Result preview(UUID organizationId, MultipartFile file) {
+	public Result preview(UUID organizationId, MultipartFile file, Decisions decided) {
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.checkWrite(organization);
-		var parsed = parse(organizationId, read(file));
-		return new Result(true, null, 0, parsed.rejected(), parsed.rows(), parsed.totals(), parsed.warnings());
+		var source = Source.read(file);
+		checkDigest(decided, source.sha256());
+		var parsed = parse(organization, source, decided, true);
+		return new Result(true, null, 0, parsed.rejected(), parsed.rows(), parsed.totals(), parsed.warnings(),
+				source.sha256(), parsed.unknown(), 0);
 	}
 
-	public Result importFile(UUID organizationId, MultipartFile file) {
+	public Result importFile(UUID organizationId, MultipartFile file, Decisions decided) {
 		// row-locked: the records take a block of numbers from the organization's counter (spec 04.6)
 		var organization = organizations.lockById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.checkWrite(organization);
-		var bytes = read(file);
-		var parsed = parse(organizationId, bytes);
+		var source = Source.read(file);
+		checkDigest(decided, source.sha256());
+		var parsed = parse(organization, source, decided, false);
 		if (!parsed.rejected().isEmpty()) {
-			return new Result(false, null, 0, parsed.rejected(), List.of(), parsed.totals(), parsed.warnings());
+			return new Result(false, null, 0, parsed.rejected(), List.of(), parsed.totals(), parsed.warnings(),
+					source.sha256(), List.of(), 0);
 		}
-		var fileName = file.getOriginalFilename() == null || file.getOriginalFilename().isBlank() ? "import.csv"
-				: file.getOriginalFilename().replaceAll("[\\\\/]", "_");
-		var batch = batches.save(new ImportBatch(organizationId, fileName, sha256(bytes), parsed.accepted().size(),
-				bytes.length, access.currentUserEmail()));
+		var created = (int) parsed.decided().stream().filter(d -> d.kind() == ImportDecision.Kind.CREATED).count();
+		var batch = batches.save(new ImportBatch(organizationId, source.fileName(), source.sha256(),
+				parsed.accepted().size(), source.bytes().length, access.currentUserEmail(), source.parser(),
+				source.rendered() != null, created));
 		var first = organization.allocateRecordNumbers(parsed.accepted().size());
 		var records = new ArrayList<ActivityRecord>(parsed.accepted().size());
 		for (var i = 0; i < parsed.accepted().size(); i++) {
@@ -130,35 +162,74 @@ public class ActivityImportService {
 			records.add(record);
 		}
 		activities.saveAll(records);
+		// each decision is kept with the batch, and a mapping gets its own history row (spec 04.11)
+		for (var made : parsed.decided()) {
+			decisions.save(new ImportDecision(batch.getId(), made.unknown().facilityId(), made.unknown().name(),
+					made.kind(), made.stream().getId(), made.unknown().rows(), made.reason(), access.currentUserId(),
+					access.currentUserEmail()));
+			if (made.kind() == ImportDecision.Kind.MAPPED) {
+				ghg.recordImportSourceMapped(organization, StructureChanges.importSourceMapped(made.unknown().name(),
+						made.unknown().rows(), source.fileName(), made.stream(), made.reason()));
+			}
+		}
 		// the file is kept after the rows are fixed: a failed put rolls the import back (ISO 14064-1 section 8.3)
-		media.put(batch.getStorageKey(), new ByteArrayInputStream(bytes), bytes.length, "text/csv");
+		media.put(batch.getStorageKey(), new ByteArrayInputStream(source.bytes()), source.bytes().length,
+				source.contentType());
+		if (source.rendered() != null) {
+			var rendered = source.rendered().getBytes(StandardCharsets.UTF_8);
+			media.put(batch.getRenderedStorageKey(), new ByteArrayInputStream(rendered), rendered.length, "text/csv");
+		}
 		return new Result(false, batch.getId(), records.size(), List.of(), List.of(), parsed.totals(),
-				parsed.warnings());
+				parsed.warnings(), source.sha256(), List.of(), created);
 	}
 
-	/** A row that passed validation, before it is numbered and saved. */
-	private record Accepted(int row, Facility facility, SourceStream stream, String activityType,
-			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
-			String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
-			BigDecimal uncertaintyPercent) {
+	/** The decisions were made on the previewed file; a different file refuses them (spec 04.11). */
+	private static void checkDigest(Decisions decided, String sha256) {
+		if (decided == null || decided.items() == null || decided.items().isEmpty()) {
+			return;
+		}
+		if (decided.sha256() == null || !decided.sha256().equalsIgnoreCase(sha256)) {
+			throw new GhgRuleViolationException(GhgRules.IMPORT_DECISION_UNUSED);
+		}
 	}
 
-	private record Parsed(List<Rejection> rejected, List<Accepted> accepted, List<PreviewRow> rows,
-			List<Total> totals, List<Warning> warnings) {
-	}
+	/** The file as uploaded and as read: its table, digest, which reader, and the rendering kept for a workbook. */
+	private record Source(byte[] bytes, String fileName, String sha256, String contentType, String parser,
+			CsvTable table, String rendered, List<Warning> warnings, Map<Integer, Set<String>> formulaCells) {
 
-	private static byte[] read(MultipartFile file) {
-		if (file.isEmpty()) {
-			throw new GhgFieldException("file", "Choose a CSV file to import.");
+		static Source read(MultipartFile file) {
+			if (file.isEmpty()) {
+				throw new GhgFieldException("file", "Choose a CSV or XLSX file to import.");
+			}
+			if (file.getSize() > MAX_BYTES) {
+				throw new GhgFieldException("file", "The file is larger than 5 MB.");
+			}
+			byte[] bytes;
+			try {
+				bytes = file.getBytes();
+			}
+			catch (IOException ex) {
+				throw new MediaStorageException("Failed to read the uploaded file", ex);
+			}
+			var digest = ActivityImportService.sha256(bytes);
+			if (XlsxTable.isWorkbook(bytes)) {
+				var read = XlsxTable.read(bytes, MAX_ROWS);
+				var warnings = new ArrayList<Warning>();
+				if (read.sheetCount() > 1) {
+					warnings.add(new Warning(null, "The workbook has " + read.sheetCount() + " sheets; only '"
+							+ read.sheetName() + "' was read."));
+				}
+				return new Source(bytes, fileName(file, "import.xlsx"), digest,
+						"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", XlsxTable.PARSER,
+						read.table(), read.rendered(), warnings, read.formulaCells());
+			}
+			return new Source(bytes, fileName(file, "import.csv"), digest, "text/csv", "csv",
+					CsvTable.parse(new String(bytes, StandardCharsets.UTF_8)), null, List.of(), Map.of());
 		}
-		if (file.getSize() > MAX_BYTES) {
-			throw new GhgFieldException("file", "The file is larger than 5 MB.");
-		}
-		try {
-			return file.getBytes();
-		}
-		catch (IOException ex) {
-			throw new MediaStorageException("Failed to read the uploaded file", ex);
+
+		private static String fileName(MultipartFile file, String fallback) {
+			return file.getOriginalFilename() == null || file.getOriginalFilename().isBlank() ? fallback
+					: file.getOriginalFilename().replaceAll("[\\\\/]", "_");
 		}
 	}
 
@@ -171,8 +242,28 @@ public class ActivityImportService {
 		}
 	}
 
-	private Parsed parse(UUID organizationId, byte[] bytes) {
-		var table = CsvTable.parse(new String(bytes, StandardCharsets.UTF_8));
+	/** A row that passed validation, before it is numbered and saved. */
+	private record Accepted(int row, Facility facility, SourceStream stream, String activityType,
+			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
+			String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
+			BigDecimal uncertaintyPercent) {
+	}
+
+	/** A decision resolved against the file: the unknown name, what it became, and the source (saved or transient). */
+	private record Made(UnknownSource unknown, ImportDecision.Kind kind, SourceStream stream, String reason) {
+	}
+
+	private record Parsed(List<Rejection> rejected, List<Accepted> accepted, List<PreviewRow> rows,
+			List<Total> totals, List<Warning> warnings, List<UnknownSource> unknown, List<Made> decided) {
+	}
+
+	private static String unknownKey(UUID facilityId, String name) {
+		return facilityId + "|" + name.trim().toLowerCase(Locale.ROOT);
+	}
+
+	private Parsed parse(Organization organization, Source source, Decisions decided, boolean dryRun) {
+		var organizationId = organization.getId();
+		var table = source.table();
 		if (table.header().isEmpty()) {
 			throw new GhgFieldException("file", "The file is empty. Download the template and fill it in.");
 		}
@@ -192,6 +283,32 @@ public class ActivityImportService {
 			streamsByFacility.computeIfAbsent(stream.getFacility().getId(), k -> new HashMap<>())
 				.put(stream.getName().toLowerCase(Locale.ROOT), stream);
 		}
+		// first pass: the source names the facility does not have, with the rows each covers (spec 04.11)
+		var unknown = new LinkedHashMap<String, UnknownSource>();
+		for (var row : table.rows()) {
+			var cells = new Cells(table.header(), row.cells());
+			var facility = facilitiesByName.get(cells.get("facility").toLowerCase(Locale.ROOT));
+			var sourceName = cells.source();
+			if (facility == null || sourceName.isBlank()
+					|| streamsByFacility.getOrDefault(facility.getId(), Map.of()).containsKey(sourceName.toLowerCase(Locale.ROOT))) {
+				continue;
+			}
+			var key = unknownKey(facility.getId(), sourceName);
+			var seen = unknown.get(key);
+			if (seen == null) {
+				unknown.put(key, new UnknownSource(facility.getId(), facility.getName(), sourceName, new ArrayList<>(),
+						ghg.similarStreams(facility, sourceName)));
+				seen = unknown.get(key);
+			}
+			seen.rows().add(row.number());
+		}
+		var resolved = resolve(unknown, decided, source, dryRun);
+		var undecided = unknown.values()
+			.stream()
+			.filter(u -> !resolved.containsKey(unknownKey(u.facilityId(), u.name())))
+			.map(u -> new UnknownSource(u.facilityId(), u.facilityName(), u.name(), List.copyOf(u.rows()),
+					u.candidates()))
+			.toList();
 		// facts only: a draft is a stub, not something a row could duplicate (spec 04.6)
 		var existing = activities.findAllByOrganizationIdAndDeletedAtIsNullAndDraftFalseOrderByPeriodEndDesc(organizationId)
 			.stream()
@@ -208,7 +325,7 @@ public class ActivityImportService {
 		var rejected = new ArrayList<Rejection>();
 		var accepted = new ArrayList<Accepted>();
 		var previews = new ArrayList<PreviewRow>();
-		var warnings = new ArrayList<Warning>();
+		var warnings = new ArrayList<Warning>(source.warnings());
 		var totals = new LinkedHashMap<String, Total>();
 		var unitsByStream = new HashMap<String, java.util.Set<String>>();
 		var today = LocalDate.now();
@@ -223,12 +340,23 @@ public class ActivityImportService {
 				problems.add("no facility named '" + cells.get("facility") + "'");
 			}
 			SourceStream stream = null;
+			var needsDecision = false;
 			var sourceName = cells.source();
 			if (!sourceName.isBlank() && facility != null) {
 				stream = streamsByFacility.getOrDefault(facility.getId(), Map.of())
 					.get(sourceName.toLowerCase(Locale.ROOT));
 				if (stream == null) {
-					problems.add("'" + facility.getName() + "' has no emission source named '" + sourceName + "'");
+					var made = resolved.get(unknownKey(facility.getId(), sourceName));
+					if (made != null) {
+						stream = made.stream();
+					}
+					else if (dryRun) {
+						// decided in the preview, not rejected (spec 04.11)
+						needsDecision = true;
+					}
+					else {
+						problems.add("'" + facility.getName() + "' has no emission source named '" + sourceName + "'");
+					}
 				}
 			}
 			var activityType = cells.get("activity_type");
@@ -321,16 +449,27 @@ public class ActivityImportService {
 			var item = new Accepted(row.number(), facility, stream, activityType.trim(), quantity, unit.trim(), start,
 					end, blankToNull(cells.get("data_source")), blankToNull(cells.get("evidence_ref")), quality,
 					blankToNull(cells.get("note")), tier, uncertainty);
-			accepted.add(item);
+			if (!needsDecision) {
+				accepted.add(item);
+			}
 			var record = new ActivityRecord(0, false, facility, stream, item.activityType(), quantity, item.unit(),
 					start, end, item.dataSource(), item.evidenceRef(), quality, item.note(), tier, uncertainty);
-			previews.add(new PreviewRow(row.number(), facility.getName(), stream == null ? null : stream.getName(),
-					item.activityType(), quantity, item.unit(), start, end, item.dataSource(), item.evidenceRef(),
-					quality, record.getDataQualityTier(), ActivityReadiness.of(record, false)));
-			var totalKey = facility.getId() + "|" + (stream == null ? "" : stream.getId()) + "|"
-					+ item.unit().toLowerCase(Locale.ROOT);
-			totals.merge(totalKey,
-					new Total(facility.getName(), stream == null ? null : stream.getName(), item.unit(), 1, quantity),
+			var readiness = ActivityReadiness.of(record, false);
+			if (needsDecision) {
+				// the source is pending a decision, so its absence is not a readiness issue
+				readiness = new ActivityReadiness(readiness.status(), readiness.issues()
+					.stream()
+					.filter(issue -> issue != ActivityReadiness.Issue.NO_STREAM)
+					.toList());
+			}
+			var shownName = stream != null ? stream.getName() : needsDecision ? sourceName : null;
+			previews.add(new PreviewRow(row.number(), facility.getName(), shownName, item.activityType(), quantity,
+					item.unit(), start, end, item.dataSource(), item.evidenceRef(), quality, record.getDataQualityTier(),
+					readiness, needsDecision));
+			var totalKey = facility.getId() + "|"
+					+ (stream != null ? stream.getId().toString() : needsDecision ? "?" + sourceName.toLowerCase(Locale.ROOT) : "")
+					+ "|" + item.unit().toLowerCase(Locale.ROOT);
+			totals.merge(totalKey, new Total(facility.getName(), shownName, item.unit(), 1, quantity),
 					(a, b) -> new Total(a.facilityName(), a.streamName(), a.unit(), a.rows() + b.rows(),
 							a.quantity().add(b.quantity())));
 			var draft = drafts.get(facility.getId() + "|" + item.activityType().toLowerCase(Locale.ROOT) + "|" + start
@@ -351,9 +490,82 @@ public class ActivityImportService {
 				warnings.add(new Warning(row.number(), "the period is longer than one month (" + start + " to " + end
 						+ "); monthly rows make the coverage matrix and cut-off checks precise"));
 			}
+			var formulas = source.formulaCells().getOrDefault(row.number(), Set.of())
+				.stream()
+				.filter(FIGURE_COLUMNS::contains)
+				.toList();
+			if (!formulas.isEmpty()) {
+				warnings.add(new Warning(row.number(), String.join(" and ", formulas)
+						+ (formulas.size() == 1 ? " came from a formula; the saved value is the cached result"
+								: " came from formulas; the saved values are the cached results")));
+			}
 		}
 		return new Parsed(List.copyOf(rejected), List.copyOf(accepted), List.copyOf(previews),
-				List.copyOf(totals.values()), List.copyOf(warnings));
+				List.copyOf(totals.values()), List.copyOf(warnings), undecided, List.copyOf(resolved.values()));
+	}
+
+	/**
+	 * Each decision against the unknown names (spec 04.11): a decision for a name
+	 * the file lacks, or a second one for a name, refuses the set. A mapping outside
+	 * the suggested candidates needs a reason; a creation meets the reconcile rules
+	 * of spec 04.10, and in a dry run is checked without being saved.
+	 */
+	private Map<String, Made> resolve(Map<String, UnknownSource> unknown, Decisions decided, Source source,
+			boolean dryRun) {
+		var resolved = new LinkedHashMap<String, Made>();
+		if (decided == null || decided.items() == null) {
+			return resolved;
+		}
+		var digestPrefix = source.sha256().substring(0, 8);
+		for (var i = 0; i < decided.items().size(); i++) {
+			var item = decided.items().get(i);
+			if (item.facilityId() == null || item.name() == null || item.name().isBlank()) {
+				throw new GhgRuleViolationException(GhgRules.IMPORT_DECISION_UNUSED);
+			}
+			var key = unknownKey(item.facilityId(), item.name());
+			var target = unknown.get(key);
+			if (target == null || resolved.containsKey(key)) {
+				throw new GhgRuleViolationException(GhgRules.IMPORT_DECISION_UNUSED);
+			}
+			if ((item.mapTo() == null) == (item.create() == null)) {
+				throw new GhgFieldException("decisions[" + i + "]",
+						"Map '" + target.name() + "' to an existing emission source or create it, one of the two.");
+			}
+			var facility = facilities.findById(target.facilityId())
+				.orElseThrow(() -> GhgNotFoundException.facility(target.facilityId()));
+			var reason = item.reason() == null || item.reason().isBlank() ? null : item.reason().trim();
+			var rows = List.copyOf(target.rows());
+			var fixed = new UnknownSource(target.facilityId(), target.facilityName(), target.name(), rows,
+					target.candidates());
+			if (item.mapTo() != null) {
+				var stream = streams.findById(item.mapTo()).orElseThrow(() -> GhgNotFoundException.stream(item.mapTo()));
+				if (!stream.getFacility().getId().equals(facility.getId())) {
+					throw new GhgRuleViolationException(GhgRules.STREAM_OTHER_FACILITY, stream.getName(),
+							stream.getFacility().getName(), facility.getName());
+				}
+				var suggested = target.candidates().stream().anyMatch(c -> c.getId().equals(stream.getId()));
+				if (!suggested && (reason == null || reason.length() < GhgService.SIMILAR_REASON_MIN)) {
+					throw new GhgFieldException(
+							GhgRules.IMPORT_MAP_REASON_REQUIRED.withField("decisions[" + i + "].reason"), stream.getName());
+				}
+				resolved.put(key, new Made(fixed, ImportDecision.Kind.MAPPED, stream, reason));
+				continue;
+			}
+			var facts = item.create();
+			if (dryRun) {
+				ghg.checkStreamForImport(facility, facts, reason);
+				var transientStream = new SourceStream(facility, facts.name().trim(), facts.kind(), blankToNull(facts.fuel()),
+						blankToNull(facts.meterOrSupplier()), facts.contractorOperated(), blankToNull(facts.note()),
+						SourceStream.Origin.IMPORT, null);
+				resolved.put(key, new Made(fixed, ImportDecision.Kind.CREATED, transientStream, reason));
+			}
+			else {
+				var note = source.fileName() + " (sha256 " + digestPrefix + "); " + StructureChanges.rowsText(rows);
+				var stream = ghg.createStreamForImport(facility, facts, reason, note);
+				resolved.put(key, new Made(fixed, ImportDecision.Kind.CREATED, stream, reason));
+			}
+		}
+		return resolved;
 	}
 
 	private static LocalDate date(String value, String field, List<String> problems) {

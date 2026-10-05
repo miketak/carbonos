@@ -46,12 +46,19 @@ public class EvidenceService {
 	private final OrganizationRepository organizations;
 	private final GhgRunLineRepository runLines;
 	private final ImportBatchRepository batches;
+	private final ImportDecisionRepository decisions;
+	private final SourceStreamRepository streams;
+	private final FacilityRepository facilities;
 	private final MediaStorage media;
 	private final GhgAccess access;
 
 	EvidenceService(EvidenceRepository evidence, ActivityRecordRepository activities,
 			MarketFactorRepository marketFactors, OrganizationRepository organizations, GhgRunLineRepository runLines,
-			ImportBatchRepository batches, MediaStorage media, GhgAccess access) {
+			ImportBatchRepository batches, ImportDecisionRepository decisions, SourceStreamRepository streams,
+			FacilityRepository facilities, MediaStorage media, GhgAccess access) {
+		this.decisions = decisions;
+		this.streams = streams;
+		this.facilities = facilities;
 		this.evidence = evidence;
 		this.activities = activities;
 		this.marketFactors = marketFactors;
@@ -120,8 +127,12 @@ public class EvidenceService {
 		return new DocumentPage(found.getContent(), found.getNumber(), bounded, found.getTotalElements(), calculated);
 	}
 
-	/** An import with the range of record numbers it produced. */
-	public record BatchSummary(ImportBatch batch, Integer firstRecordNo, Integer lastRecordNo) {
+	/** An import with the range of record numbers it produced, and the decisions on unknown source names (spec 04.11). */
+	public record BatchSummary(ImportBatch batch, Integer firstRecordNo, Integer lastRecordNo,
+			List<DecisionSummary> decisions) {
+	}
+
+	public record DecisionSummary(ImportDecision decision, String facilityName, String streamName) {
 	}
 
 	/** The files each import came from (spec 04.6), newest first. */
@@ -133,8 +144,29 @@ public class EvidenceService {
 		return batches.findAllByOrganizationIdOrderByImportedAtDesc(organizationId).stream().map(batch -> {
 			var range = activities.recordRange(batch.getId());
 			var row = range.isEmpty() ? new Object[] { null, null } : range.getFirst();
-			return new BatchSummary(batch, (Integer) row[0], (Integer) row[1]);
+			return new BatchSummary(batch, (Integer) row[0], (Integer) row[1], decisionsOf(batch));
 		}).toList();
+	}
+
+	private List<DecisionSummary> decisionsOf(ImportBatch batch) {
+		return decisions.findAllByBatchIdOrderByDecidedAtAsc(batch.getId()).stream().map(decision -> {
+			var stream = decision.getStreamId() == null ? null : streams.findById(decision.getStreamId()).orElse(null);
+			var facility = facilities.findById(decision.getFacilityId()).orElse(null);
+			return new DecisionSummary(decision, facility == null ? null : facility.getName(),
+					stream == null ? null : stream.getName());
+		}).toList();
+	}
+
+	/** The table as the workbook was read, kept as CSV beside the file (spec 04.11); a CSV import has none (404). */
+	@Transactional(readOnly = true)
+	public ImportDownload openRendered(UUID batchId) {
+		var batch = batches.findById(batchId).orElseThrow(() -> GhgNotFoundException.importBatch(batchId));
+		access.check(organizations.findById(batch.getOrganizationId())
+			.orElseThrow(() -> GhgNotFoundException.organization(batch.getOrganizationId())));
+		if (batch.getRenderedStorageKey() == null) {
+			throw GhgNotFoundException.importBatch(batchId);
+		}
+		return new ImportDownload(batch, media.get(batch.getRenderedStorageKey()));
 	}
 
 	/** The CSV as it was uploaded, for download. */

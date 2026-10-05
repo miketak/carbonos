@@ -26,9 +26,12 @@ import jakarta.persistence.Table;
 @Table(name = "ghg_source_streams")
 public class SourceStream {
 
-	/** Where the source was created: the facility's register page, or the activity form during data entry. */
+	/**
+	 * Where the source was created: the facility's register page, the activity form
+	 * during data entry (spec 04.10), or the import preview (spec 04.11).
+	 */
 	public enum Origin {
-		REGISTER, INLINE
+		REGISTER, INLINE, IMPORT
 	}
 
 	@Id

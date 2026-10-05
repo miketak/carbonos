@@ -1,7 +1,5 @@
 package com.carbonos.ghg.internal;
 
-import com.carbonos.ghg.GhgRules;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,6 +17,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.carbonos.ghg.GhgRules;
+import com.carbonos.shared.web.RuleViolation;
 import com.carbonos.user.UserDirectory;
 
 /**
@@ -703,7 +703,25 @@ public class GhgService {
 	 */
 	private SourceStream createStreamAt(Facility facility, StreamFacts facts, SourceStream.Origin origin,
 			String similarReason, boolean checkSimilar) {
+		return createStreamAt(facility, facts, origin, similarReason, checkSimilar, null);
+	}
+
+	private SourceStream createStreamAt(Facility facility, StreamFacts facts, SourceStream.Origin origin,
+			String similarReason, boolean checkSimilar, String importNote) {
 		var trimmed = facts.name().trim();
+		var similar = checkStreamName(facility, trimmed, similarReason, checkSimilar);
+		var reason = trimToNull(similarReason);
+		var stream = streams.save(new SourceStream(facility, trimmed, facts.kind(), trimToNull(facts.fuel()),
+				trimToNull(facts.meterOrSupplier()), facts.contractorOperated(), trimToNull(facts.note()), origin,
+				access.currentUserId()));
+		recordStructure(facility.getOrganization(), GhgAuditEvent.Action.STREAM_ADDED,
+				StructureChanges.streamAdded(stream, similar, reason, importNote));
+		return stream;
+	}
+
+	/** The name checks of spec 04.10 without the save; returns the near names the source is created beside. */
+	private List<SourceStream> checkStreamName(Facility facility, String trimmed, String similarReason,
+			boolean checkSimilar) {
 		var existing = streams.findAllByFacilityIdOrderByNameAsc(facility.getId());
 		var exact = existing.stream().filter(stream -> stream.getName().equalsIgnoreCase(trimmed)).toList();
 		if (!exact.isEmpty()) {
@@ -722,12 +740,33 @@ public class GhgService {
 				}
 			}
 		}
-		var stream = streams.save(new SourceStream(facility, trimmed, facts.kind(), trimToNull(facts.fuel()),
-				trimToNull(facts.meterOrSupplier()), facts.contractorOperated(), trimToNull(facts.note()), origin,
-				access.currentUserId()));
-		recordStructure(facility.getOrganization(), GhgAuditEvent.Action.STREAM_ADDED,
-				StructureChanges.streamAdded(stream, similar, reason));
-		return stream;
+		return similar;
+	}
+
+	// --- sources born in the import preview (spec 04.11) ---------------------------
+
+	/** The checks a created source would meet, saving nothing: the dry run of {@link #createStreamForImport}. */
+	List<SourceStream> checkStreamForImport(Facility facility, StreamFacts facts, String reason) {
+		return checkStreamName(facility, facts.name().trim(), reason, true);
+	}
+
+	/** A source created from a decision in the import preview, with the origin IMPORT and the file in its history row. */
+	SourceStream createStreamForImport(Facility facility, StreamFacts facts, String reason, String importNote) {
+		return createStreamAt(facility, facts, SourceStream.Origin.IMPORT, reason, true, importNote);
+	}
+
+	/** The sources of a facility whose names are a near miss of the typed one (spec 04.10's rule), for the preview. */
+	@Transactional(readOnly = true)
+	List<SourceStream> similarStreams(Facility facility, String name) {
+		var trimmed = name.trim();
+		return streams.findAllByFacilityIdOrderByNameAsc(facility.getId()).stream()
+			.filter(stream -> SourceNameSimilarity.isClose(stream.getName(), trimmed))
+			.toList();
+	}
+
+	/** "'Standby genset 3' in rows 4, 9, 17 of file mapped to 'Standby gensets'" in the organization's history. */
+	void recordImportSourceMapped(Organization organization, String detail) {
+		recordStructure(organization, GhgAuditEvent.Action.IMPORT_SOURCE_MAPPED, detail);
 	}
 
 	public SourceStream updateStream(UUID id, StreamFacts facts) {
@@ -1361,6 +1400,10 @@ public class GhgService {
 	 * 04.4).
 	 */
 	public ActivityRecord updateActivity(UUID id, ActivityFacts facts, String reason) {
+		return updateActivity(id, facts, reason, null);
+	}
+
+	private ActivityRecord updateActivity(UUID id, ActivityFacts facts, String reason, UUID bulkId) {
 		var activity = getActivity(id);
 		access.checkWrite(activity.getFacility().getOrganization());
 		if (activity.isDeleted()) {
@@ -1395,7 +1438,7 @@ public class GhgService {
 		}
 		else if (!activity.isDraft()) {
 			revisions.save(new ActivityRevision(id, ActivityRevision.Kind.CORRECTED, reason.trim(), changes,
-					access.currentUserId(), access.currentUserEmail()));
+					access.currentUserId(), access.currentUserEmail(), bulkId));
 		}
 		return activity;
 	}
@@ -1413,20 +1456,172 @@ public class GhgService {
 	 * tombstone (spec 04.4); reviews exclude it from every draft inventory.
 	 */
 	public void deleteActivity(UUID id, String reason) {
+		deleteActivity(id, reason, null);
+	}
+
+	private void deleteActivity(UUID id, String reason, UUID bulkId) {
 		var activity = getActivity(id);
 		access.checkWrite(activity.getFacility().getOrganization());
 		if (activity.isDeleted()) {
 			throw new GhgRuleViolationException(GhgRules.ACTIVITY_ALREADY_REMOVED);
 		}
-		if (runLines.existsByActivityId(id)) {
-			throw new GhgRuleViolationException(
-					"This record has been calculated into one or more runs. Reported results must stay "
-							+ "traceable to their source: correct the record instead of deleting it.");
+		var runs = runLines.runNumbersOf(id);
+		if (!runs.isEmpty()) {
+			throw new GhgRuleViolationException(GhgRules.ACTIVITY_USED_IN_RUN, activity.getRecordRef(),
+					(runs.size() == 1 ? "run " : "runs ") + runs.stream().map(String::valueOf).collect(Collectors.joining(", ")));
 		}
 		requireReason(reason, "Removing a record");
-		activity.markRemoved(access.currentUserEmail(), reason.trim());
+		activity.markRemoved(access.currentUserEmail(), reason.trim(), bulkId);
 		revisions.save(new ActivityRevision(id, ActivityRevision.Kind.REMOVED, reason.trim(), List.of(),
-				access.currentUserId(), access.currentUserEmail()));
+				access.currentUserId(), access.currentUserEmail(), bulkId));
+	}
+
+	// --- one act over several records (spec 04.11) ---------------------------------
+
+	public enum BulkAction {
+		REMOVE, ASSIGN_SOURCE, SET_TIER, ADD_EVIDENCE_LINK
+	}
+
+	/** The act as the request states it: the records, the reason, and the one value the action needs. */
+	public record BulkRequest(List<UUID> ids, String reason, BulkAction action, UUID streamId, Integer dataQualityTier,
+			String linkName, String linkUrl) {
+	}
+
+	public record BulkOutcome(UUID bulkId, int applied, List<String> recordRefs) {
+	}
+
+	/** The most records one act may cover. */
+	public static final int BULK_MAX = 500;
+
+	/**
+	 * Applies one action to every selected record in one transaction, or refuses the
+	 * act as a whole naming the records that refuse it (spec 04.11). Each record is
+	 * changed exactly as a single edit changes it; the revisions and tombstones share
+	 * a bulk id and the organization's history gets one row for the act.
+	 */
+	public BulkOutcome bulkActivities(UUID organizationId, BulkRequest request) {
+		var organization = getOrganization(organizationId);
+		access.checkWrite(organization);
+		var ids = request.ids() == null ? List.<UUID>of() : request.ids().stream().distinct().toList();
+		if (ids.isEmpty()) {
+			throw new GhgFieldException(GhgRules.ACTIVITY_BULK_EMPTY);
+		}
+		if (ids.size() > BULK_MAX) {
+			throw new GhgFieldException(GhgRules.ACTIVITY_BULK_TOO_MANY, BULK_MAX);
+		}
+		if (request.action() == null) {
+			throw new GhgFieldException("action", "Choose what to do with the selected records.");
+		}
+		requireReason(request.reason(), "Acting on several records");
+		var reason = request.reason().trim();
+		var byId = new HashMap<UUID, ActivityRecord>();
+		for (var record : activities.findAllById(ids)) {
+			if (record.getOrganizationId().equals(organizationId)) {
+				byId.put(record.getId(), record);
+			}
+		}
+		var records = new ArrayList<ActivityRecord>();
+		for (var id : ids) {
+			var record = byId.get(id);
+			if (record == null) {
+				throw GhgNotFoundException.activity(id);
+			}
+			records.add(record);
+		}
+		// the one value the action needs, checked once
+		SourceStream stream = null;
+		String target = null;
+		switch (request.action()) {
+			case ASSIGN_SOURCE -> {
+				if (request.streamId() == null) {
+					throw new GhgFieldException("streamId", "Choose the emission source to assign.");
+				}
+				stream = getStream(request.streamId());
+				target = stream.getName();
+			}
+			case SET_TIER -> {
+				if (request.dataQualityTier() == null) {
+					throw new GhgFieldException("dataQualityTier", "Choose the data quality tier to set.");
+				}
+				DataQualityTier.require(request.dataQualityTier());
+				target = String.valueOf(request.dataQualityTier());
+			}
+			case ADD_EVIDENCE_LINK -> {
+				var url = request.linkUrl() == null ? "" : request.linkUrl().trim();
+				if (!url.startsWith("https://") && !url.startsWith("http://")) {
+					throw new GhgFieldException(GhgRules.EVIDENCE_LINK_SCHEME);
+				}
+				target = trimToNull(request.linkName()) == null ? url : request.linkName().trim();
+			}
+			case REMOVE -> target = null;
+		}
+		var bulkId = UUID.randomUUID();
+		var refused = new ArrayList<BulkRefusedException.Refused>();
+		var applied = new ArrayList<String>();
+		for (var record : records) {
+			try {
+				if (applyBulk(record, request, stream, reason, bulkId)) {
+					applied.add(record.getRecordRef());
+				}
+			}
+			catch (RuleViolation ex) {
+				refused.add(new BulkRefusedException.Refused(record.getId(), record.getRecordRef(),
+						ex.rule() == null ? null : ex.rule().id(), ex.getBody().getDetail()));
+			}
+		}
+		if (!refused.isEmpty()) {
+			// nothing is applied: the transaction rolls back with the refusal
+			throw new BulkRefusedException(refused, records.size());
+		}
+		recordStructure(organization, GhgAuditEvent.Action.RECORDS_BULK_CORRECTED,
+				StructureChanges.bulkCorrected(request.action(), target, applied, reason));
+		return new BulkOutcome(bulkId, applied.size(), List.copyOf(applied));
+	}
+
+	/** One record of the act; false when there was nothing to change. */
+	private boolean applyBulk(ActivityRecord record, BulkRequest request, SourceStream stream, String reason,
+			UUID bulkId) {
+		switch (request.action()) {
+			case REMOVE -> deleteActivity(record.getId(), reason, bulkId);
+			case ASSIGN_SOURCE -> {
+				if (record.isDeleted()) {
+					throw new GhgRuleViolationException(GhgRules.ACTIVITY_REMOVED_CANNOT_CORRECT);
+				}
+				// fill only: a record that has a source is reclassified on the record, with its own reason (spec 04.11)
+				if (record.getStream() != null) {
+					throw new GhgRuleViolationException(GhgRules.ACTIVITY_HAS_SOURCE, record.getRecordRef());
+				}
+				requireStreamOfFacility(stream.getId(), record.getFacility());
+				updateActivity(record.getId(), factsOf(record, stream.getId(), record.getDataQualityTier()), reason, bulkId);
+			}
+			case SET_TIER -> {
+				if (record.isDeleted()) {
+					throw new GhgRuleViolationException(GhgRules.ACTIVITY_REMOVED_CANNOT_CORRECT);
+				}
+				if (record.getDataQualityTier() == request.dataQualityTier()) {
+					return false;
+				}
+				var streamId = record.getStream() == null ? null : record.getStream().getId();
+				updateActivity(record.getId(), factsOf(record, streamId, request.dataQualityTier()), reason, bulkId);
+			}
+			case ADD_EVIDENCE_LINK -> {
+				if (record.isDeleted()) {
+					throw new GhgRuleViolationException(GhgRules.ACTIVITY_REMOVED_CANNOT_CORRECT);
+				}
+				var url = request.linkUrl().trim();
+				var name = trimToNull(request.linkName()) == null ? url : request.linkName().trim();
+				evidence.save(Evidence.link(record.getId(), null, name, url, access.currentUserEmail()));
+			}
+		}
+		return true;
+	}
+
+	/** The record's facts as they stand, with one field changed, for the single-edit path. */
+	private static ActivityFacts factsOf(ActivityRecord record, UUID streamId, int dataQualityTier) {
+		return new ActivityFacts(record.isDraft(), record.getFacility().getId(), streamId, record.getActivityType(),
+				record.getQuantity(), record.getUnit(), record.getPeriodStart(), record.getPeriodEnd(), record.getDataSource(),
+				record.getEvidenceRef(), record.getDataQuality(), record.getNote(), dataQualityTier,
+				record.getUncertaintyPercent(), null, null);
 	}
 
 	// --- helpers -------------------------------------------------------------
