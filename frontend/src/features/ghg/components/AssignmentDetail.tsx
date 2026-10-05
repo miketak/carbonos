@@ -759,7 +759,7 @@ function ClassifyPanel({
             hint={
               assignment.scope && defaultScope && assignment.scope !== defaultScope ? (
                 <>
-                  {assignment.defaultScope ? 'The stream' : `'${selected.name}'`} suggests{' '}
+                  {assignment.defaultScope ? 'The emission source' : `'${selected.name}'`} suggests{' '}
                   {scopeLabels[defaultScope]}
                   {leased ? ' (leased asset, Appendix F)' : ''}.
                 </>

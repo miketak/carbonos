@@ -41,6 +41,7 @@ export type UiCheck =
   | { check: 'search'; label: string; value: string }
   | { check: 'buttonDisabled'; button: string; tooltip?: string; within?: string }
   | { check: 'rowDialogHas'; row: string; button: string; dialog: string; text: string }
+  | { check: 'rowPageHas'; row: string; button: string; heading: string; text: string }
   | { check: 'textVisible'; text: string; within?: string }
   | { check: 'textAbsent'; text: string }
   | { check: 'toast'; text: string }

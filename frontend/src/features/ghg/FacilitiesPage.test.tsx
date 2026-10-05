@@ -3,14 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
 import { FacilitiesPage } from './FacilitiesPage'
-import type { Entity, Facility, Organization, SourceStream } from './api'
+import type { Entity, Facility, Organization } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
 // forms with many fields take longer than the 15s default on a loaded machine
 vi.setConfig({ testTimeout: 30000 })
 
-import { createStream, getOrganization, listEntities, listFacilities, listStreams } from './api'
+import { getOrganization, listEntities, listFacilities } from './api'
 
 const organization: Organization = {
   id: 'org-1',
@@ -94,22 +94,6 @@ const plant: Facility = {
   relationshipType: 'JOINT_VENTURE',
 }
 
-const gensets: SourceStream = {
-  id: 'str-1',
-  facilityId: pit.id,
-  facilityName: pit.name,
-  name: 'Standby gensets',
-  kind: 'STATIONARY_COMBUSTION',
-  fuel: 'Diesel',
-  meterOrSupplier: 'Tank meter 3',
-  contractorOperated: false,
-  note: null,
-  defaultScope: 'SCOPE_1',
-  defaultCategory: 'STATIONARY_COMBUSTION',
-  allowedCategories: ['STATIONARY_COMBUSTION'],
-  createdAt: '2026-08-01T00:00:00Z',
-}
-
 function renderPage() {
   return renderWithProviders(<FacilitiesPage />, {
     route: '/app/ghg/org-1/facilities',
@@ -119,8 +103,6 @@ function renderPage() {
 
 beforeEach(() => {
   vi.mocked(listFacilities).mockReset()
-  vi.mocked(listStreams).mockReset().mockResolvedValue([])
-  vi.mocked(createStream).mockReset()
   vi.mocked(listEntities).mockReset()
   vi.mocked(getOrganization).mockReset()
   vi.mocked(listFacilities).mockResolvedValue([pit, plant])
@@ -182,7 +164,7 @@ test('Add facility leads to the add page (spec 08)', async () => {
   expect(await screen.findByRole('heading', { name: 'Add facility' })).toBeInTheDocument()
 })
 
-test('a verifier sees Add facility, Edit and Remove disabled, but Source streams stays usable (spec 01.4)', async () => {
+test('a verifier sees Add facility, Edit and Remove disabled, but Emission sources stays usable (spec 01.4)', async () => {
   vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'VERIFIER' })
   renderPage()
 
@@ -194,8 +176,8 @@ test('a verifier sees Add facility, Edit and Remove disabled, but Source streams
   const plantRow = screen.getByText('Tarkwa Processing Plant').closest('tr') as HTMLElement
   expect(within(plantRow).getByRole('button', { name: /^edit$/i })).toBeDisabled()
   expect(within(plantRow).getByRole('button', { name: /^remove$/i })).toBeDisabled()
-  // reading the source stream register stays open to everyone
-  expect(within(plantRow).getByRole('button', { name: /source streams/i })).toBeEnabled()
+  // reading the register of emission sources stays open to everyone (spec 04.10)
+  expect(within(plantRow).getByRole('button', { name: /emission sources/i })).toBeEnabled()
 })
 
 test('a preparer can add, edit and remove facilities (spec 01.4)', async () => {
@@ -210,33 +192,22 @@ test('a preparer can add, edit and remove facilities (spec 01.4)', async () => {
   expect(within(plantRow).getByRole('button', { name: /^remove$/i })).toBeEnabled()
 })
 
-test('a verifier sees the source stream register without the add form and with Remove disabled (spec 01.4)', async () => {
+test("Emission sources opens the facility's register page (spec 04.10)", async () => {
   const user = userEvent.setup()
   vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'VERIFIER' })
-  vi.mocked(listStreams).mockResolvedValue([gensets])
-  renderPage()
+  renderWithProviders(<FacilitiesPage />, {
+    route: '/app/ghg/org-1/facilities',
+    path: '/app/ghg/:organizationId/facilities',
+    extraRoutes: [
+      {
+        path: '/app/ghg/:organizationId/facilities/:facilityId/sources',
+        element: <p>the register of fac-1</p>,
+      },
+    ],
+  })
 
   const pitRow = (await screen.findByText('Obuasi Ridge Open Pit')).closest('tr') as HTMLElement
-  await user.click(within(pitRow).getByRole('button', { name: /source streams/i }))
-  const dialog = await screen.findByRole('dialog', { name: /source streams/i })
+  await user.click(within(pitRow).getByRole('button', { name: /emission sources/i }))
 
-  expect(within(dialog).queryByLabelText('Stream name')).not.toBeInTheDocument()
-  const remove = within(dialog).getByRole('button', { name: /remove stream/i })
-  expect(remove).toBeDisabled()
-  expect(remove).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
-  expect(remove).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
-})
-
-test('a preparer can add and remove a source stream (spec 01.4)', async () => {
-  const user = userEvent.setup()
-  vi.mocked(getOrganization).mockResolvedValue({ ...organization, myRole: 'PREPARER' })
-  vi.mocked(listStreams).mockResolvedValue([gensets])
-  renderPage()
-
-  const pitRow = (await screen.findByText('Obuasi Ridge Open Pit')).closest('tr') as HTMLElement
-  await user.click(within(pitRow).getByRole('button', { name: /source streams/i }))
-  const dialog = await screen.findByRole('dialog', { name: /source streams/i })
-
-  expect(within(dialog).getByLabelText('Stream name')).toBeInTheDocument()
-  expect(within(dialog).getByRole('button', { name: /remove stream/i })).toBeEnabled()
+  expect(await screen.findByText('the register of fac-1')).toBeInTheDocument()
 })

@@ -213,7 +213,7 @@ export function ActivityPage() {
       <p className="mt-1 text-sm text-ink-muted">
         {filtered || filters.tab !== 'all'
           ? filters.tab === 'attention' && !filtered
-            ? 'Every record has its figures, a stream, a source and evidence.'
+            ? 'Every record has its figures, an emission source, a data source and evidence.'
             : 'Clear the search, the filters or the tab.'
           : facilities.length === 0
             ? 'Add a facility, then record what happened there.'
@@ -275,7 +275,7 @@ export function ActivityPage() {
               <SearchField
                 ref={searchRef}
                 label="Search"
-                placeholder="Find an activity, facility, stream, reference or ACT-0001"
+                placeholder="Find an activity, facility, emission source, reference or ACT-0001"
                 value={search.value}
                 onChange={(event) => search.onChange(event.target.value)}
               />
@@ -294,11 +294,11 @@ export function ActivityPage() {
               ))}
             </FilterSelect>
             <FilterSelect
-              label="Stream"
+              label="Emission source"
               value={filters.stream}
               onChange={(event) => set({ stream: event.target.value })}
             >
-              <option value="">All streams</option>
+              <option value="">All emission sources</option>
               {streams.map((stream) => (
                 <option key={stream.id} value={stream.id}>
                   {stream.name}

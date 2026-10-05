@@ -314,8 +314,8 @@ test('the history reads changes to the structure as labelled acts (specs 01.7, 0
     'Facility added',
     'Facility edited',
     'Facility removed',
-    'Source stream added',
-    'Source stream removed',
+    'Emission source added',
+    'Emission source removed',
   ]) {
     expect(await screen.findByText(label)).toBeInTheDocument()
   }

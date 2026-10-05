@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/002-the-organization.yaml (sha256 fc0533a532e19765e1b4fae7c02a3f3464814404f443011c9cf20115100ff09c); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/002-the-organization.yaml (sha256 80869d1970ba72010d49de924d2c02d0ce5ea5029acfb8e284d7dd3311a73a43); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 2, "fc0533a532e19765e1b4fae7c02a3f3464814404f443011c9cf20115100ff09c")
+const P = procedure("governance", 2, "80869d1970ba72010d49de924d2c02d0ce5ea5029acfb8e284d7dd3311a73a43")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 2: The organization", () => {
@@ -208,7 +208,7 @@ test.describe("Procedure 2: The organization", () => {
     })
   })
 
-  test("D1. A stream sets the default classification", async () => {
+  test("D1. An emission source sets the default classification", async () => {
     await test.step("2.D1.1", async () => {
       const s = P.step("2.D1.1")
       const out = await s.do("addStream", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Boiler LPG","kind":"STATIONARY_COMBUSTION","fuel":"LPG"})
@@ -247,6 +247,23 @@ test.describe("Procedure 2: The organization", () => {
     await test.step("2.D3.3", async () => {
       const s = P.step("2.D3.3")
       await s.expect(undefined, [{"outcome":"historyCount","args":{"organization":"Adansi Foods Ltd","action":"ENTITY_UPDATED","count":2}},{"outcome":"historyCount","args":{"organization":"Adansi Foods Ltd","action":"ENTITY_ADDED","count":2}},{"outcome":"historyCount","args":{"organization":"Adansi Foods Ltd","action":"FACILITY_ADDED","count":3}},{"outcome":"historyCount","args":{"organization":"Adansi Foods Ltd","action":"STREAM_ADDED","count":3},"why":"a save that changes nothing writes no row, and a refused act is not an act"}])
+    })
+  })
+
+  test("D4. A source described on a record is reconciled against the register", async () => {
+    await test.step("2.D4.1", async () => {
+      const s = P.step("2.D4.1")
+      const out = await s.do("recordActivity", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","activityType":"Boiler LPG top-up","quantity":400,"unit":"kg","periodStart":"2025-03-01","periodEnd":"2025-03-31","newSource":{"name":"Boiler LPG 2","kind":"STATIONARY_COMBUSTION","fuel":"LPG"}})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.stream.name-similar","with":{"facility":"Kumasi Plant","candidates":"'Boiler LPG'","name":"Boiler LPG 2"}},"why":"a near name is a prompt, never a silent match; the record is not saved and no number is used"}])
+    })
+    await test.step("2.D4.2", async () => {
+      const s = P.step("2.D4.2")
+      const out = await s.do("recordActivity", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","activityType":"Boiler LPG top-up","quantity":400,"unit":"kg","periodStart":"2025-03-01","periodEnd":"2025-03-31","newSource":{"name":"boiler lpg","kind":"STATIONARY_COMBUSTION"}})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.stream.name-duplicate","with":{"facility":"Kumasi Plant","name":"boiler lpg"}},"why":"the exact name is taken, so the notice offers \"Use Boiler LPG\" and no \"anyway\""}])
+    })
+    await test.step("2.D4.3", async () => {
+      const s = P.step("2.D4.3")
+      await s.expect(undefined, [{"outcome":"historyCount","args":{"organization":"Adansi Foods Ltd","action":"STREAM_ADDED","count":3},"why":"a refused source creates nothing, and the record it came with is not written either"}])
     })
   })
 

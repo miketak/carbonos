@@ -70,6 +70,7 @@ const gensets: SourceStream = {
   defaultScope: 'SCOPE_1',
   defaultCategory: 'STATIONARY_COMBUSTION',
   allowedCategories: ['STATIONARY_COMBUSTION'],
+  origin: 'REGISTER',
   createdAt: '2026-08-01T00:00:00Z',
 }
 
@@ -199,14 +200,14 @@ beforeEach(() => {
   })
 })
 
-test('the register shows each record with its number, stream, period, quantity and readiness', async () => {
+test('the register shows each record with its number, emission source, period, quantity and readiness', async () => {
   renderPage()
 
   expect(await screen.findByText('Diesel consumption')).toBeInTheDocument()
   expect(screen.getByText('Standby gensets · ACT-0001')).toBeInTheDocument()
   expect(screen.getAllByText('Mar 2025')).toHaveLength(2)
   expect(screen.getByTitle('All completeness checks passed')).toHaveTextContent('Ready')
-  expect(screen.getByText('No stream +1')).toBeInTheDocument()
+  expect(screen.getByText('No emission source +1')).toBeInTheDocument()
   expect(screen.getByText('Records ready').closest('div')).toHaveTextContent(
     /Records ready\s*1\s*of 2/,
   )
@@ -282,7 +283,7 @@ test('a row opens the drawer, and a correction needs a reason before it is sent'
   expect(within(drawer).getByText('All completeness checks passed.')).toBeInTheDocument()
   expect(
     within(drawer)
-      .getByText(/Stream default:/)
+      .getByText(/Source default:/)
       .closest('p'),
   ).toHaveTextContent(
     "Scope 1 · Stationary combustion. Scope is confirmed in each inventory's review.",

@@ -940,7 +940,7 @@ test('the activity view filters by status and shows the counts (spec 04.5)', asy
   )
 })
 
-test('the coverage matrix names streams and flags one with no data (spec 04.5)', async () => {
+test('the coverage matrix names emission sources and flags one with no data (spec 04.5)', async () => {
   vi.mocked(listCoverage).mockResolvedValue([
     {
       facilityId: 'fac-1',
@@ -1304,7 +1304,7 @@ test('the view search keeps every keystroke and asks the server once the typing 
   expect(queries).not.toContain('lp')
 })
 
-test('the activity view filters by scope, category, stream and lease (spec 05.5)', async () => {
+test('the activity view filters by scope, category, emission source and lease (spec 05.5)', async () => {
   const user = userEvent.setup()
   vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
   vi.mocked(listStreams).mockResolvedValue([
@@ -1321,13 +1321,14 @@ test('the activity view filters by scope, category, stream and lease (spec 05.5)
       defaultScope: 'SCOPE_2',
       defaultCategory: 'PURCHASED_ELECTRICITY',
       allowedCategories: ['PURCHASED_ELECTRICITY'],
+      origin: 'REGISTER',
       createdAt: '2026-08-01T00:00:00Z',
     },
   ])
   renderPage()
 
   await user.selectOptions(await screen.findByLabelText('Scope'), 'SCOPE_2')
-  await user.selectOptions(screen.getByLabelText('Stream'), 'st-1')
+  await user.selectOptions(screen.getByLabelText('Emission source'), 'st-1')
   await user.selectOptions(screen.getByLabelText('Lease'), 'OPERATING_LEASE_IN')
   await waitFor(() =>
     expect(searchAssignments).toHaveBeenLastCalledWith(

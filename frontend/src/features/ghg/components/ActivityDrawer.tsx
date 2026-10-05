@@ -5,9 +5,11 @@ import { InputField, SelectField, TextAreaField } from '../../../components/Fiel
 import { Skeleton } from '../../../components/Skeleton'
 import { DetailHeader } from '../../../components/SplitView'
 import { Tabs } from '../../../components/Tabs'
-import { fieldErrors, refusalMessage } from '../../../lib/api'
+import { fieldErrors, problemDetail, refusalMessage } from '../../../lib/api'
 import { checkNumber, collectErrors, withoutError } from '../../../lib/validate'
 import type { Activity, ActivityInput, DataQuality, Facility } from '../api'
+import { similarSources } from '../similarSources'
+import type { SimilarSource } from '../similarSources'
 import {
   activityIssueLabels,
   categoryLabel,
@@ -26,7 +28,10 @@ import {
   useUpdateActivity,
 } from '../useGhg'
 import { ActivityStatusPill } from './badges'
+import { EmissionSourceField } from './EmissionSourceField'
+import type { NewSourceDraft } from './EmissionSourceField'
 import { EvidencePanel } from './EvidencePanel'
+import { ReconcileSourceNotice } from './ReconcileSourceNotice'
 import { UnitField } from './UnitField'
 
 const qualityLabels: Record<DataQuality, string> = {
@@ -195,6 +200,12 @@ function ActivityForm({
     activity?.facilityId ?? defaultFacilityId ?? facilities[0]?.id ?? '',
   )
   const [streamId, setStreamId] = useState(activity?.streamId ?? '')
+  // spec 04.10: a source described on the form, saved with the record; the candidates the
+  // last save was refused with, and the reason that creates the source beside them anyway
+  const [newSource, setNewSource] = useState<NewSourceDraft | null>(null)
+  const [candidates, setCandidates] = useState<SimilarSource[] | undefined>()
+  const [confirmReason, setConfirmReason] = useState('')
+  const lastMode = useRef<SaveMode>('save')
   const [activityType, setActivityType] = useState(activity?.activityType ?? '')
   const [quantity, setQuantity] = useState(
     activity?.quantity == null ? '' : String(activity.quantity),
@@ -229,9 +240,13 @@ function ActivityForm({
     [streamsQuery.data, facilityId],
   )
   const stream = streams.find((item) => item.id === streamId)
+  const facilityName = facilities.find((item) => item.id === facilityId)?.name
   const errors = clientErrors ?? fieldErrors(mutation.error)
+  const reconciling = candidates !== undefined && newSource !== null
   const generalError =
-    mutation.isError && !errors ? refusalMessage(mutation.error, myRole) : undefined
+    mutation.isError && !errors && similarSources(mutation.error) === undefined
+      ? refusalMessage(mutation.error, myRole)
+      : undefined
   const readOnly = isReadOnly(myRole)
   const isFact = activity !== undefined && !activity.draft
   const reasonMissing = isFact && reason.trim().length < 5
@@ -244,13 +259,21 @@ function ActivityForm({
     ? `${scopeLabels[savedStream.defaultScope]} / ${categoryLabel(savedStream.defaultCategory)}`
     : activity?.streamName
 
-  const save = (mode: SaveMode) => {
+  const save = (
+    mode: SaveMode,
+    // "Use <name>" saves again with the existing source in place of the panel (spec 04.10)
+    override: { streamId?: string; newSource?: NewSourceDraft | null } = {},
+  ) => {
+    lastMode.current = mode
     const draft = mode === 'draft'
+    const chosenStreamId = override.streamId ?? streamId
+    const source = override.newSource === undefined ? newSource : override.newSource
     const invalid = collectErrors({
       quantity: checkNumber(quantity, { label: 'Quantity', positive: true, required: !draft }),
       uncertaintyPercent: checkNumber(uncertainty, { label: 'Uncertainty', min: 0, max: 100 }),
       unit: !draft && unit.trim() === '' ? 'Choose a unit.' : undefined,
       periodStart: !draft && periodStart === '' ? 'Enter the period start.' : undefined,
+      newStreamName: source && source.name.trim() === '' ? "Enter the source's name." : undefined,
       reason: reasonMissing ? 'A correction needs a reason of at least 5 characters.' : undefined,
     })
     setClientErrors(invalid)
@@ -262,7 +285,19 @@ function ActivityForm({
     const input: ActivityInput = {
       draft,
       facilityId,
-      streamId: streamId || undefined,
+      streamId: source ? undefined : chosenStreamId || undefined,
+      newStream: source
+        ? {
+            name: source.name.trim(),
+            kind: source.kind,
+            fuel: source.fuel.trim() === '' ? undefined : source.fuel.trim(),
+            meterOrSupplier:
+              source.meterOrSupplier.trim() === '' ? undefined : source.meterOrSupplier.trim(),
+            contractorOperated: source.contractorOperated,
+          }
+        : undefined,
+      confirmNewStreamReason:
+        source && confirmReason.trim() !== '' ? confirmReason.trim() : undefined,
       activityType: activityType.trim(),
       quantity: quantity.trim() === '' ? undefined : Number(quantity),
       unit: unit.trim() === '' ? undefined : unit.trim(),
@@ -276,10 +311,15 @@ function ActivityForm({
       uncertaintyPercent: uncertainty.trim() === '' ? undefined : Number(uncertainty),
       reason: isFact ? reason.trim() : undefined,
     }
+    const onError = (error: unknown) => {
+      const similar = similarSources(error)
+      if (similar) setCandidates(similar)
+    }
     if (activity) {
       update.mutate(
         { id: activity.id, input },
         {
+          onError,
           onSuccess: () => {
             onSaved(
               draft
@@ -294,6 +334,7 @@ function ActivityForm({
       )
     } else {
       create.mutate(input, {
+        onError,
         onSuccess: (saved) => {
           onSaved(draft ? 'Draft saved.' : 'Activity recorded.')
           onNavigate(saved.id)
@@ -484,6 +525,9 @@ function ActivityForm({
                     onChange={(event) => {
                       setFacilityId(event.target.value)
                       setStreamId('')
+                      setNewSource(null)
+                      setCandidates(undefined)
+                      setConfirmReason('')
                     }}
                     error={errors?.facilityId}
                   >
@@ -493,19 +537,44 @@ function ActivityForm({
                       </option>
                     ))}
                   </SelectField>
-                  <SelectField
-                    label="Stream"
+                  <EmissionSourceField
+                    facilityName={facilityName}
+                    streams={streams}
                     value={streamId}
-                    onChange={(event) => setStreamId(event.target.value)}
-                    error={errors?.streamId}
-                  >
-                    <option value="">No stream</option>
-                    {streams.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </SelectField>
+                    newSource={newSource}
+                    canCreate={mayWrite(myRole)}
+                    error={errors?.streamId ?? errors?.newStream}
+                    nameError={errors?.newStreamName ?? errors?.['newStream.name']}
+                    onChange={setStreamId}
+                    onNewSourceChange={(draft) => {
+                      setNewSource(draft)
+                      setCandidates(undefined)
+                      setClientErrors((current) => withoutError(current, 'newStreamName'))
+                    }}
+                  />
+                  {reconciling && candidates && newSource && (
+                    <div className="md:col-span-2">
+                      <ReconcileSourceNotice
+                        detail={problemDetail(mutation.error)}
+                        facilityName={facilityName}
+                        typedName={newSource.name}
+                        candidates={candidates}
+                        reason={confirmReason}
+                        reasonError={errors?.confirmNewStreamReason}
+                        busy={mutation.isPending}
+                        onReasonChange={setConfirmReason}
+                        onUse={(candidate) => {
+                          setStreamId(candidate.id)
+                          setNewSource(null)
+                          setCandidates(undefined)
+                          setConfirmReason('')
+                          mutation.reset()
+                          save(lastMode.current, { streamId: candidate.id, newSource: null })
+                        }}
+                        onCreateAnyway={() => save(lastMode.current)}
+                      />
+                    </div>
+                  )}
                   <InputField
                     label="Period start *"
                     type="date"
@@ -553,15 +622,16 @@ function ActivityForm({
                 </div>
                 {stream ? (
                   <p className="rounded-lg bg-surface-sunken px-3 py-2 text-[13px] text-ink-muted">
-                    <span className="font-semibold text-ink">Stream default:</span>{' '}
+                    <span className="font-semibold text-ink">Source default:</span>{' '}
                     {scopeLabels[stream.defaultScope]} · {categoryLabel(stream.defaultCategory)}.
                     Scope is confirmed in each inventory's review.
                   </p>
                 ) : (
-                  streams.length === 0 && (
+                  streams.length === 0 &&
+                  !newSource && (
                     <p className="text-[13px] text-ink-muted">
-                      This facility has no source streams yet; register them under Facilities so the
-                      factor picker and the coverage matrix know this source.
+                      This facility has no emission sources yet. Choose New emission source… above,
+                      or register them under Facilities › Emission sources.
                     </p>
                   )
                 )}
@@ -587,7 +657,7 @@ function ActivityForm({
                 </div>
                 {stream?.meterOrSupplier && (
                   <p className="text-[13px] text-ink-muted">
-                    Meter or supplier on the stream: {stream.meterOrSupplier}
+                    Meter or supplier on the source: {stream.meterOrSupplier}
                   </p>
                 )}
               </Section>
@@ -808,7 +878,7 @@ function ActivityFacts({ activity }: { activity: Activity | undefined }) {
         <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
           <Fact label="Activity type" value={activity.activityType} />
           <Fact label="Facility" value={activity.facilityName} />
-          <Fact label="Stream" value={activity.streamName ?? 'No stream'} />
+          <Fact label="Emission source" value={activity.streamName ?? 'No emission source'} />
           <Fact
             label="Period"
             value={formatRecordPeriod(activity.periodStart, activity.periodEnd)}

@@ -188,16 +188,17 @@ export const addStream = defineVerb({
     })
   },
   ui: (a) => {
-    const d = `Source streams: ${a.facility}`
+    // the facility's Emission sources page (spec 04.10): its add form carries the page's name
+    const d = S.org.button.addEmissionSource
     return [
       { op: 'orgPage', organization: a.organization, section: S.org.sections.facilities },
-      { op: 'row', text: a.facility, button: S.org.button.sourceStreams },
-      { op: 'fill', label: S.org.field.streamName, value: a.name, within: d },
+      { op: 'row', text: a.facility, button: S.org.button.emissionSources },
+      { op: 'fill', label: S.org.field.sourceName, value: a.name, within: d },
       { op: 'choose', label: S.org.field.kind, option: S.org.option.kind[a.kind] ?? a.kind, within: d },
       ...(a.fuel ? [{ op: 'fill', label: S.org.field.fuel, value: a.fuel, within: d } as const] : []),
       ...(a.meterOrSupplier ? [{ op: 'fill', label: S.org.field.meterOrSupplier, value: a.meterOrSupplier, within: d } as const] : []),
       ...(a.contractorOperated ? [{ op: 'tick', label: S.org.field.contractorOperated, within: d } as const] : []),
-      { op: 'click', button: S.org.button.addStream, within: d },
+      { op: 'click', button: S.org.button.addEmissionSource, within: d },
     ]
   },
   postconditions: (a) => [{ outcome: 'streamListed', args: { organization: a.organization, facility: a.facility, name: a.name } }],

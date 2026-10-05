@@ -32,7 +32,7 @@ export const importPreview = defineOutcome({
     if (p.rows.length !== a.recordsToAdd) return fail(`${p.rows.length} records to add, expected ${a.recordsToAdd}`)
     for (const total of a.totals ?? []) {
       const hit = p.totals.find((t) => t.facilityName === total.facility && (total.stream === undefined || t.streamName === total.stream) && t.unit === total.unit)
-      if (!hit) return fail(`no control total for ${total.facility} / ${total.stream ?? 'no stream'} / ${total.unit}`)
+      if (!hit) return fail(`no control total for ${total.facility} / ${total.stream ?? 'no emission source'} / ${total.unit}`)
       if (Number(hit.quantity) !== total.quantity) return fail(`${total.facility} ${total.unit} totals ${hit.quantity}, expected ${total.quantity}`)
     }
     if (a.warning && !p.warnings.some((w) => w.row === a.warning!.row && w.message.includes(a.warning!.containing))) return fail(`no warning on row ${a.warning.row} saying "${a.warning.containing}"`)
@@ -52,11 +52,11 @@ export const importPreview = defineOutcome({
   ],
   narrate: (a) => {
     const parts = [`The file is checked at once, and nothing is written.`]
-    if (a.totals) parts.push(`**${S.act.text.controlTotals}** groups the rows by facility, stream and unit: ${a.totals.map((t) => `${t.facility}, ${t.stream ?? 'no stream'}, ${t.quantity.toLocaleString('en-GB')} ${t.unit}`).join('; ')}.`)
+    if (a.totals) parts.push(`**${S.act.text.controlTotals}** groups the rows by facility, emission source and unit: ${a.totals.map((t) => `${t.facility}, ${t.stream ?? 'no emission source'}, ${t.quantity.toLocaleString('en-GB')} ${t.unit}`).join('; ')}.`)
     parts.push(`"${a.recordsToAdd} records to add" lists each row with its facility and period.`)
     if (a.warning) parts.push(`Under **Worth a look before adding**, row ${a.warning.row} is named: "${a.warning.containing}".`)
     if (a.ready) parts.push(`Rows ${a.ready.join(', ')} read **${S.act.text.ready}**.`)
-    if (a.noStream !== undefined) parts.push(`${a.noStream} rows read "${S.act.text.noStream}"${a.noEvidence !== undefined ? ` and ${a.noEvidence} of them "Needs evidence"` : ''}.`)
+    if (a.noStream !== undefined) parts.push(`${a.noStream} rows read "${S.act.text.noSource}"${a.noEvidence !== undefined ? ` and ${a.noEvidence} of them "Needs evidence"` : ''}.`)
     return parts.join(' ')
   },
 })
@@ -164,7 +164,7 @@ export const activityExists = defineOutcome({
 })
 
 function issueLabel(issue: string): string {
-  return { NO_STREAM: 'No stream', NO_EVIDENCE: 'Needs evidence', NO_DATA_SOURCE: 'Missing source', EVIDENCE_REFERENCE_ONLY: 'reference only', MISSING_QUANTITY: 'No quantity', MISSING_UNIT: 'No unit', MISSING_PERIOD: 'No period' }[issue] ?? issue
+  return { NO_STREAM: 'No emission source', NO_EVIDENCE: 'Needs evidence', NO_DATA_SOURCE: 'Missing source', EVIDENCE_REFERENCE_ONLY: 'reference only', MISSING_QUANTITY: 'No quantity', MISSING_UNIT: 'No unit', MISSING_PERIOD: 'No period' }[issue] ?? issue
 }
 
 export const activityRemoved = defineOutcome({

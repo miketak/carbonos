@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/003-activity-data.yaml (sha256 eea448d0bf3b3e420073e3813b4fc11b46bb88f57bfdea9bd9b83fdb0dc11a0e); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/003-activity-data.yaml (sha256 d584067c346d2c4804d31ac1827b019bcd16ebac3e38ab4454c817d53d4757ca); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 3, "eea448d0bf3b3e420073e3813b4fc11b46bb88f57bfdea9bd9b83fdb0dc11a0e")
+const P = procedure("governance", 3, "d584067c346d2c4804d31ac1827b019bcd16ebac3e38ab4454c817d53d4757ca")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 3: Activity data", () => {
@@ -58,7 +58,7 @@ test.describe("Procedure 3: Activity data", () => {
     await test.step("3.C1.3", async () => {
       const s = P.step("3.C1.3")
       const out = await s.do("correctActivity", {"organization":"Adansi Foods Ltd","record":"ACT-0009","evidenceRef":"WB-2025-11","reason":"Weighbridge ticket found"})
-      await s.expect(out, [{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0009","evidenceRef":"WB-2025-11","issues":["NO_STREAM","EVIDENCE_REFERENCE_ONLY"]}},{"outcome":"attentionCount","args":{"organization":"Adansi Foods Ltd","count":7},"why":"\"Needs evidence\" goes and the drawer reads \"Reference WB-2025-11, nothing attached\"; the stream is still missing, and a record leaves the count only when every item on it is resolved"}])
+      await s.expect(out, [{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0009","evidenceRef":"WB-2025-11","issues":["NO_STREAM","EVIDENCE_REFERENCE_ONLY"]}},{"outcome":"attentionCount","args":{"organization":"Adansi Foods Ltd","count":7},"why":"\"Needs evidence\" goes and the drawer reads \"Reference WB-2025-11, nothing attached\"; the emission source is still missing, and a record leaves the count only when every item on it is resolved"}])
     })
   })
 

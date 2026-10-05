@@ -776,7 +776,11 @@ export function useCreateActivity(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ActivityInput) => createActivity(orgId, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
+      // the record may have brought a new emission source with it (spec 04.10)
+      void queryClient.invalidateQueries({ queryKey: streamsKey(orgId) })
+    },
   })
 }
 
@@ -788,6 +792,7 @@ export function useUpdateActivity(orgId: string) {
       void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
       void queryClient.invalidateQueries({ queryKey: activityKey(id) })
       void queryClient.invalidateQueries({ queryKey: revisionsKey(id) })
+      void queryClient.invalidateQueries({ queryKey: streamsKey(orgId) })
     },
   })
 }
