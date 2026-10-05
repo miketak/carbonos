@@ -57,6 +57,14 @@ export async function runCheck(page: Page, windows: Windows, check: UiCheck, cha
         await page.keyboard.press('Escape')
         return { ok: true }
       }
+      case 'rowPageHas': {
+        // a row's button that opens a page of its own (Emission sources, spec 04.10); the way back is the browser's
+        await (await rowButton(await row(page, t(check.row)), t(check.button))).click()
+        await expect(page.getByRole('heading', { name: t(check.heading), exact: true }).first()).toBeVisible()
+        await expect(page.getByText(t(check.text), { exact: false }).first()).toBeVisible()
+        await page.goBack()
+        return { ok: true }
+      }
       case 'textVisible': {
         const scope = check.within ? page.locator(check.within) : page
         const text = t(check.text)

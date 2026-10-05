@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/008-base-year-and-the-record.yaml (sha256 86d8a9e976c94708772deb086bcdf3060df4b21a919b72dc6e0164452231502a); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/008-base-year-and-the-record.yaml (sha256 3e19ad37381fdc52e9b228f036c9dab3ee44a4a589c636e024bbd5b6bb9e2774); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 8, "86d8a9e976c94708772deb086bcdf3060df4b21a919b72dc6e0164452231502a")
+const P = procedure("governance", 8, "3e19ad37381fdc52e9b228f036c9dab3ee44a4a589c636e024bbd5b6bb9e2774")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 8: Base year and the organization's record", () => {
@@ -196,7 +196,7 @@ test.describe("Procedure 8: Base year and the organization's record", () => {
     })
     await test.step("8.F1.4", async () => {
       const s = P.step("8.F1.4")
-      await s.expect(undefined, [{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"ADMIN_ACCESS_ASSUMED","actor":"adminB"}},{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"FACTOR_PACK_ADOPTED","actor":"kofi"}},{"outcome":"observe","args":{"text":"History lists the members added, the entities, facilities and streams of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label."}}])
+      await s.expect(undefined, [{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"ADMIN_ACCESS_ASSUMED","actor":"adminB"}},{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"FACTOR_PACK_ADOPTED","actor":"kofi"}},{"outcome":"observe","args":{"text":"History lists the members added, the entities, facilities and emission sources of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label."}}])
     })
   })
 

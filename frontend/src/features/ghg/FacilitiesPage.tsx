@@ -10,7 +10,6 @@ import { useToast } from '../../components/toast'
 import { refusalMessage } from '../../lib/api'
 import { RemoveDialog } from './components/RemoveDialog'
 import { RoleButton } from './components/RoleButton'
-import { StreamsModal } from './components/StreamsModal'
 import { facilityTypeLabels, leaseLabels, relationshipShortLabels } from './format'
 import { mayWrite, WRITE_TOOLTIP } from './roles'
 import {
@@ -21,8 +20,7 @@ import {
 } from './useGhg'
 import type { Facility } from './api'
 
-type Dialog =
-  { kind: 'streams'; facility: Facility } | { kind: 'remove'; facility: Facility } | null
+type Dialog = { kind: 'remove'; facility: Facility } | null
 
 /** The organization's facilities: sites, each under a legal entity that carries the facts (spec 03.1). */
 export function FacilitiesPage() {
@@ -141,9 +139,9 @@ export function FacilitiesPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDialog({ kind: 'streams', facility })}
+                      onClick={() => navigate(`${facility.id}/sources`)}
                     >
-                      Source streams
+                      Emission sources
                     </Button>
                     <RoleButton
                       allowed={mayWrite(myRole)}
@@ -193,13 +191,6 @@ export function FacilitiesPage() {
               },
             )
           }
-        />
-      )}
-      {dialog?.kind === 'streams' && (
-        <StreamsModal
-          organizationId={organizationId}
-          facility={dialog.facility}
-          onClose={() => setDialog(null)}
         />
       )}
     </section>

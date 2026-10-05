@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { ApiError } from '../../../lib/api'
 import { renderWithProviders } from '../../../test/utils'
 import { ActivityDrawer } from './ActivityDrawer'
 import type { Activity, Facility, SourceStream } from '../api'
@@ -85,13 +86,17 @@ const haulFleet: SourceStream = {
   defaultScope: 'SCOPE_1',
   defaultCategory: 'MOBILE_COMBUSTION',
   allowedCategories: ['MOBILE_COMBUSTION'],
+  origin: 'REGISTER',
   createdAt: '2026-09-01T00:00:00Z',
 }
 
 function renderDrawer(
   activityId: string,
   pageItems: Activity[],
-  options: { myRole?: 'PREPARER' | 'REVIEWER' | 'OWNER' | 'VERIFIER' | 'ADMIN' } = {},
+  options: {
+    myRole?: 'PREPARER' | 'REVIEWER' | 'OWNER' | 'VERIFIER' | 'ADMIN'
+    facilities?: Facility[]
+  } = {},
 ) {
   const onNavigate = vi.fn()
   const onSaved = vi.fn()
@@ -100,7 +105,7 @@ function renderDrawer(
       organizationId="org-1"
       activityId={activityId}
       pageItems={pageItems}
-      facilities={[facility]}
+      facilities={options.facilities ?? [facility]}
       myRole={options.myRole}
       onNavigate={onNavigate}
       onClose={vi.fn()}
@@ -245,7 +250,7 @@ test('a verifier opens a drawer with no fields and no Save (spec 01.4)', async (
   expect(within(drawer).getByText('ACT-0003')).toBeInTheDocument()
 })
 
-test('naming a stream on a saved fact asks for the reason instead of a dead Save button', async () => {
+test('naming an emission source on a saved fact asks for the reason instead of a dead Save button', async () => {
   const user = userEvent.setup()
   vi.mocked(listStreams).mockResolvedValue([haulFleet])
   vi.mocked(updateActivity).mockResolvedValue({
@@ -257,8 +262,8 @@ test('naming a stream on a saved fact asks for the reason instead of a dead Save
 
   const drawer = screen.getByRole('region', { name: 'July dispensing' })
   await within(drawer).findByRole('option', { name: 'Haul fleet' })
-  await user.selectOptions(within(drawer).getByLabelText('Stream'), 'str-1')
-  expect(within(drawer).getByText(/Stream default:/)).toBeInTheDocument()
+  await user.selectOptions(within(drawer).getByLabelText('Emission source'), 'str-1')
+  expect(within(drawer).getByText(/Source default:/)).toBeInTheDocument()
 
   const save = within(drawer).getByRole('button', { name: 'Save' })
   expect(save).toBeEnabled()
@@ -295,4 +300,172 @@ test('a document reference with no file reads as a reference, not as nothing (sp
   const drawer = screen.getByRole('region', { name: 'July dispensing' })
 
   expect(within(drawer).getByText('Reference WB-2025-11, nothing attached')).toBeInTheDocument()
+})
+
+// --- an emission source described on the record (spec 04.10) ---------------------
+
+const similarRefusal = new ApiError(409, {
+  rule: 'ghg.stream.name-similar',
+  detail:
+    "'Nkran Mine' has an emission source with a similar name: 'Haul fleet'. Use it, or give a reason to create 'Haul fleets' as a separate source.",
+  candidates: [
+    {
+      id: 'str-1',
+      name: 'Haul fleet',
+      kind: 'MOBILE_COMBUSTION',
+      defaultScope: 'SCOPE_1',
+      defaultCategory: 'MOBILE_COMBUSTION',
+    },
+  ],
+})
+
+async function describeNewSource(
+  user: ReturnType<typeof userEvent.setup>,
+  drawer: HTMLElement,
+  name: string,
+) {
+  await user.type(within(drawer).getByLabelText('Activity type *'), 'Haul fleet diesel')
+  await user.selectOptions(within(drawer).getByLabelText('Emission source'), 'New emission source…')
+  const panel = within(drawer).getByRole('group', { name: 'New emission source' })
+  await user.type(within(panel).getByLabelText('Source name *'), name)
+  return panel
+}
+
+test('a new record describes its emission source, which is saved with it (spec 04.10)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(createActivity).mockResolvedValue({ ...draft, id: 'act-9', recordRef: 'ACT-0009' })
+  renderDrawer('new', [])
+  const drawer = screen.getByRole('region', { name: 'New activity' })
+  expect(within(drawer).getByText(/no emission sources yet/)).toBeInTheDocument()
+
+  const panel = await describeNewSource(user, drawer, 'Haul fleet')
+  expect(
+    within(panel).getByText(/Added to Nkran Mine when the record is saved/),
+  ).toBeInTheDocument()
+  await user.selectOptions(within(panel).getByLabelText('Kind'), 'MOBILE_COMBUSTION')
+  await user.type(within(panel).getByLabelText('Fuel or material (optional)'), 'Diesel')
+  await user.click(within(drawer).getByRole('button', { name: 'Save draft' }))
+
+  await waitFor(() => expect(createActivity).toHaveBeenCalled())
+  const input = vi.mocked(createActivity).mock.calls[0][1]
+  expect(input.streamId).toBeUndefined()
+  expect(input.confirmNewStreamReason).toBeUndefined()
+  expect(input.newStream).toEqual({
+    name: 'Haul fleet',
+    kind: 'MOBILE_COMBUSTION',
+    fuel: 'Diesel',
+    meterOrSupplier: undefined,
+    contractorOperated: false,
+  })
+})
+
+test('a source without a name is refused on the spot, and choosing a facility closes the panel', async () => {
+  const user = userEvent.setup()
+  const camp: Facility = { ...facility, id: 'fac-2', name: 'Nkran Camp' }
+  renderDrawer('new', [], { facilities: [facility, camp] })
+  const drawer = screen.getByRole('region', { name: 'New activity' })
+  await user.type(within(drawer).getByLabelText('Activity type *'), 'Camp LPG')
+  await user.selectOptions(within(drawer).getByLabelText('Emission source'), 'New emission source…')
+  await user.click(within(drawer).getByRole('button', { name: 'Save draft' }))
+
+  expect(await within(drawer).findByText("Enter the source's name.")).toBeInTheDocument()
+  expect(createActivity).not.toHaveBeenCalled()
+
+  await user.selectOptions(within(drawer).getByLabelText('Facility *'), 'fac-2')
+  expect(
+    within(drawer).queryByRole('group', { name: 'New emission source' }),
+  ).not.toBeInTheDocument()
+  expect(within(drawer).getByLabelText('Emission source')).toHaveValue('')
+})
+
+test('a near name is answered with the candidates, and Use attaches the existing source with one click', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listStreams).mockResolvedValue([haulFleet])
+  vi.mocked(createActivity)
+    .mockRejectedValueOnce(similarRefusal)
+    .mockResolvedValueOnce({ ...draft, id: 'act-9', streamId: 'str-1', streamName: 'Haul fleet' })
+  const { onSaved } = renderDrawer('new', [])
+  const drawer = screen.getByRole('region', { name: 'New activity' })
+
+  await describeNewSource(user, drawer, 'Haul fleets')
+  await user.click(within(drawer).getByRole('button', { name: 'Save draft' }))
+
+  const notice = await within(drawer).findByRole('alert')
+  expect(notice).toHaveTextContent(
+    "'Nkran Mine' has an emission source with a similar name: 'Haul fleet'.",
+  )
+  expect(notice).toHaveTextContent(
+    'Haul fleet · Mobile combustion · defaults to Scope 1, Mobile combustion',
+  )
+  expect(within(notice).getByRole('button', { name: "Create 'Haul fleets' anyway" })).toBeDisabled()
+  await user.click(within(notice).getByRole('button', { name: 'Use Haul fleet' }))
+
+  await waitFor(() => expect(createActivity).toHaveBeenCalledTimes(2))
+  const retry = vi.mocked(createActivity).mock.calls[1][1]
+  expect(retry.streamId).toBe('str-1')
+  expect(retry.newStream).toBeUndefined()
+  await waitFor(() => expect(onSaved).toHaveBeenCalledWith('Draft saved.'))
+  expect(within(drawer).queryByRole('alert')).not.toBeInTheDocument()
+})
+
+test('Create anyway needs a reason of 10 characters, which goes with the request', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listStreams).mockResolvedValue([haulFleet])
+  vi.mocked(createActivity)
+    .mockRejectedValueOnce(similarRefusal)
+    .mockResolvedValueOnce({ ...draft, id: 'act-9', streamId: 'str-2', streamName: 'Haul fleets' })
+  renderDrawer('new', [])
+  const drawer = screen.getByRole('region', { name: 'New activity' })
+
+  await describeNewSource(user, drawer, 'Haul fleets')
+  await user.click(within(drawer).getByRole('button', { name: 'Save draft' }))
+  const notice = await within(drawer).findByRole('alert')
+  const anyway = within(notice).getByRole('button', { name: "Create 'Haul fleets' anyway" })
+  await user.type(within(notice).getByLabelText('Why is this a different source?'), 'Too short')
+  expect(anyway).toBeDisabled()
+  await user.type(
+    within(notice).getByLabelText('Why is this a different source?'),
+    ', the contractor fleet',
+  )
+  expect(anyway).toBeEnabled()
+  await user.click(anyway)
+
+  await waitFor(() => expect(createActivity).toHaveBeenCalledTimes(2))
+  const retry = vi.mocked(createActivity).mock.calls[1][1]
+  expect(retry.newStream?.name).toBe('Haul fleets')
+  expect(retry.confirmNewStreamReason).toBe('Too short, the contractor fleet')
+})
+
+test('the exact name is taken: the notice offers the existing source and no "anyway"', async () => {
+  const user = userEvent.setup()
+  vi.mocked(listStreams).mockResolvedValue([haulFleet])
+  vi.mocked(createActivity).mockRejectedValueOnce(
+    new ApiError(409, {
+      rule: 'ghg.stream.name-duplicate',
+      detail: "'Nkran Mine' already has an emission source named 'haul fleet'.",
+      candidates: [
+        {
+          id: 'str-1',
+          name: 'Haul fleet',
+          kind: 'MOBILE_COMBUSTION',
+          defaultScope: 'SCOPE_1',
+          defaultCategory: 'MOBILE_COMBUSTION',
+        },
+      ],
+    }),
+  )
+  renderDrawer('new', [])
+  const drawer = screen.getByRole('region', { name: 'New activity' })
+
+  await describeNewSource(user, drawer, 'haul fleet')
+  await user.click(within(drawer).getByRole('button', { name: 'Save draft' }))
+
+  const notice = await within(drawer).findByRole('alert')
+  expect(notice).toHaveTextContent(
+    "'Nkran Mine' already has an emission source named 'haul fleet'.",
+  )
+  expect(notice).toHaveTextContent('The name is taken: use it, or change the name.')
+  expect(within(notice).getByRole('button', { name: 'Use Haul fleet' })).toBeEnabled()
+  expect(within(notice).queryByLabelText('Why is this a different source?')).not.toBeInTheDocument()
+  expect(within(notice).queryByRole('button', { name: /anyway/ })).not.toBeInTheDocument()
 })

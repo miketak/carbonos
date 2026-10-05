@@ -97,7 +97,7 @@
 | 1 | On **Emission factors**, click **Delete** on "R-410A (composition)". | "R-410A (composition)" is deleted: no classification and no run ever applied it. |  |  |
 | 2 | On **Emission factors**, click **Delete** on "Long-haul flights (supplier)". | Refused: "'Long-haul flights (supplier)' was applied by a calculation run. Set its validity end to retire it instead of deleting it.": set its validity end to retire it instead. |  |  |
 | 3 | Open **Settings**, and under **Danger zone** click **Delete organization**. | The dialog lists "FY2025: Published" and refuses: "Publish records are kept: withdraw the final designation or supersede the published inventory first.". |  |  |
-| 4 | In Adansi Foods Ltd, open **Settings**. | **History** holds an admin access assumed entry, with the Admin B alias and the moment. **History** holds a factor pack adopted entry, with the Kofi alias and the moment. History lists the members added, the entities, facilities and streams of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label. |  |  |
+| 4 | In Adansi Foods Ltd, open **Settings**. | **History** holds an admin access assumed entry, with the Admin B alias and the moment. **History** holds a factor pack adopted entry, with the Kofi alias and the moment. History lists the members added, the entities, facilities and emission sources of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label. |  |  |
 
 ### F2. A scratch organization is deleted with its name typed
 

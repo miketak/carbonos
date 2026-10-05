@@ -6,7 +6,7 @@ import type { Activity } from '../api'
 
 const fieldLabels: Record<string, string> = {
   facility: 'Facility',
-  stream: 'Stream',
+  stream: 'Emission source',
   activityType: 'Activity',
   quantity: 'Quantity',
   unit: 'Unit',

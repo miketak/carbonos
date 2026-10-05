@@ -93,7 +93,10 @@ export type StreamKind =
   | 'PURCHASED_GOODS'
   | 'OTHER'
 
-/** One source of emissions at a facility, and the classification its records default to (spec 04.3). */
+/** Where an emission source was created (spec 04.10): the facility's register page, or the activity form. */
+export type SourceOrigin = 'REGISTER' | 'INLINE'
+
+/** One emission source at a facility, and the classification its records default to (specs 04.3, 04.10). */
 export interface SourceStream {
   id: string
   facilityId: string
@@ -107,6 +110,7 @@ export interface SourceStream {
   defaultScope: GhgScope
   defaultCategory: ActivityCategory
   allowedCategories: ActivityCategory[]
+  origin: SourceOrigin
   createdAt: string
 }
 
@@ -768,6 +772,10 @@ export interface ActivityInput {
   uncertaintyPercent?: number
   /** Why the record is corrected; required on a correction (spec 04.4). */
   reason?: string
+  /** An emission source created with the record, instead of streamId (spec 04.10). */
+  newStream?: SourceStreamInput
+  /** Why the new source is a separate one when its name is close to an existing source's. */
+  confirmNewStreamReason?: string
 }
 
 /** A record exclusion (spec 04.4): a manual reason needs a justification and an estimated magnitude. */
@@ -2029,7 +2037,7 @@ export function deleteFacility(id: string, reason: string): Promise<void> {
   })
 }
 
-// --- source streams (spec 04.3) ---------------------------------------------------
+// --- emission sources (specs 04.3, 04.10) ------------------------------------------
 
 export function listStreams(organizationId: string): Promise<SourceStream[]> {
   return api<SourceStream[]>(`/api/ghg/organizations/${organizationId}/streams`)

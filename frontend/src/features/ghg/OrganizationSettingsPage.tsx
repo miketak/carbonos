@@ -182,7 +182,7 @@ function Settings({ organization }: { organization: Organization }) {
           <PanelBody>
             <p className="text-sm text-ink-muted">
               Nothing has happened to the organization itself yet. Membership, support access,
-              changes to legal entities, facilities and source streams, and deletion are recorded
+              changes to legal entities, facilities and emission sources, and deletion are recorded
               here; what happens inside an inventory is in its own history.
             </p>
           </PanelBody>

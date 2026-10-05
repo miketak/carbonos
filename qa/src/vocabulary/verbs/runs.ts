@@ -235,6 +235,17 @@ export const recordActivity = defineVerb({
       periodStart: z.string(),
       periodEnd: z.string(),
       dataSource: z.string().optional(),
+      // spec 04.10: an emission source described on the record, and the reason that creates it beside a similar name
+      newSource: z
+        .object({
+          name: z.string(),
+          kind: z.enum(['STATIONARY_COMBUSTION', 'MOBILE_COMBUSTION', 'PURCHASED_ELECTRICITY', 'PROCESS', 'FUGITIVE']),
+          fuel: z.string().optional(),
+          contractorOperated: z.boolean().default(false),
+        })
+        .strict()
+        .optional(),
+      reason: z.string().optional(),
     })
     .strict(),
   api: async (ctx, a) => {
@@ -250,6 +261,10 @@ export const recordActivity = defineVerb({
       periodEnd: a.periodEnd,
       dataSource: a.dataSource ?? null,
       dataQuality: 'MEASURED',
+      ...(a.newSource
+        ? { newStream: { name: a.newSource.name, kind: a.newSource.kind, fuel: a.newSource.fuel ?? null, contractorOperated: a.newSource.contractorOperated } }
+        : {}),
+      ...(a.reason ? { confirmNewStreamReason: a.reason } : {}),
     })
   },
   ui: (a) => [
@@ -262,7 +277,23 @@ export const recordActivity = defineVerb({
     { op: 'fill', label: S.act.field.periodStart, value: a.periodStart },
     { op: 'fill', label: S.act.field.periodEnd, value: a.periodEnd },
     ...(a.dataSource ? [{ op: 'fill', label: S.run.field.dataSource, value: a.dataSource } as const] : []),
+    ...(a.newSource
+      ? [
+          { op: 'choose', label: S.act.field.emissionSource, option: S.act.option.newEmissionSource } as const,
+          { op: 'fill', label: S.act.field.newSourceName, value: a.newSource.name } as const,
+          { op: 'choose', label: S.org.field.kind, option: S.org.option.kind[a.newSource.kind] ?? a.newSource.kind } as const,
+          ...(a.newSource.fuel ? [{ op: 'fill', label: S.org.field.fuel, value: a.newSource.fuel } as const] : []),
+          ...(a.newSource.contractorOperated ? [{ op: 'tick', label: S.org.field.contractorOperated } as const] : []),
+        ]
+      : []),
     { op: 'click', button: S.act.button.save },
+    // the reconcile prompt (spec 04.10): the reason, then "Create '<name>' anyway" in the notice
+    ...(a.newSource && a.reason
+      ? [
+          { op: 'fill', label: S.act.field.whyDifferentSource, value: a.reason } as const,
+          { op: 'click', button: `Create '${a.newSource.name}' anyway` } as const,
+        ]
+      : []),
   ],
   postconditions: (a) => [{ outcome: 'activityExists', args: { organization: a.organization, record: a.activityType, draft: false, quantity: a.quantity, unit: a.unit } }],
   narrate: (a) =>

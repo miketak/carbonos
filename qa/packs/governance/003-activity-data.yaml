@@ -76,7 +76,7 @@ sections:
             expect:
               - activityExists: { organization: "${org}", record: ACT-0009, evidenceRef: WB-2025-11, issues: [NO_STREAM, EVIDENCE_REFERENCE_ONLY] }
               - attentionCount: { organization: "${org}", count: 7 }
-                why: '"Needs evidence" goes and the drawer reads "Reference WB-2025-11, nothing attached"; the stream is still missing, and a record leaves the count only when every item on it is resolved'
+                why: '"Needs evidence" goes and the drawer reads "Reference WB-2025-11, nothing attached"; the emission source is still missing, and a record leaves the count only when every item on it is resolved'
 
   - id: D
     title: Drafts
@@ -181,7 +181,7 @@ docs:
   coversText: Spec 08 for the inline rules.
   runNote: Procedure 4 onwards works on the ten records it imports.
   prerequisitesText:
-    - "Adansi Foods Ltd as procedure 2 leaves it: three facilities, three streams."
+    - "Adansi Foods Ltd as procedure 2 leaves it: three facilities, three emission sources."
     - The fixture files `adansi-2025.csv`, `adansi-2025-rejected.csv`, `adansi-2026.csv`, `source-document.txt` and `not-evidence.zip`.
     - Ama in the normal window.
   knownNonGoals: >-
