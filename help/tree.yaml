@@ -179,15 +179,15 @@ groups:
         from: tasks/activity-data/enter-correct-and-evidence-a-record.md
         title: Correct or remove a record and attach evidence
         disposition: split
-      - slug: import-records-from-a-csv-file
+      - slug: import-records-from-a-spreadsheet
         kind: task
         from: tasks/activity-data/import-records-from-csv.md
-        title: Import records from a CSV file
+        title: Import records from a spreadsheet
         disposition: keep
       - slug: prepare-the-csv-file
         kind: reference
         from: reference/csv-import-template.md
-        title: Prepare the CSV file
+        title: Prepare the spreadsheet
         disposition: keep
       - slug: what-is-an-activity-record
         kind: what-is
@@ -457,7 +457,8 @@ legacy:
   /help/tasks/: ''
   /help/tasks/account/request-access-and-set-your-password/: access/request-access
   /help/tasks/activity-data/enter-correct-and-evidence-a-record/: activity-data/enter-a-record
-  /help/tasks/activity-data/import-records-from-csv/: activity-data/import-records-from-a-csv-file
+  /help/tasks/activity-data/import-records-from-csv/: activity-data/import-records-from-a-spreadsheet
+  /help/activity-data/import-records-from-a-csv-file/: activity-data/import-records-from-a-spreadsheet
   /help/tasks/administration/: administration/what-is-the-administration-console
   /help/tasks/administration/approve-access-requests-and-manage-users/: administration/approve-access-requests-and-manage-users
   /help/tasks/administration/assume-support-access/: administration/assume-support-access

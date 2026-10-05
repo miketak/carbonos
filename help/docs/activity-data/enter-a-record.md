@@ -9,7 +9,7 @@ screens: [step-4-records.png, enter-a-record-new-source.png]
 
 # Enter a record
 
-Enter one record when an invoice, meter reading or log arrives; for a spreadsheet of rows, [import a CSV file](import-records-from-a-csv-file.md) instead.
+Enter one record when an invoice, meter reading or log arrives; for a spreadsheet of rows, [import a spreadsheet](import-records-from-a-spreadsheet.md) instead.
 
 <!-- sources: tasks/activity-data/enter-correct-and-evidence-a-record.md (verified 2026-09-24); specs 04.2, 04.5, 04.6, 04.10 and 10 (the split register, the completeness strip, the inline source and the reconcile prompt); QA governance 002 D4; ActivityDrawer.tsx (the record's detail: eyebrow, tabs, labels, hints, toasts), EmissionSourceField.tsx, ReconcileSourceNotice.tsx, GhgRules.java (ghg.stream.name-similar, ghg.stream.name-duplicate), badges.tsx and format.ts (pills and missing items), CompletenessBanner.tsx, InventoryFormModal.tsx (straddle setting); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "4 activity empty", "4 after import", "4 record drawer", "5 inventory dialog", "6 under review", "7 run page", and the local walkthrough of 2026-10-04 on the ECO-5 branch -->
 

@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
+last_reviewed: 2026-10-05
 description: Correct a figure with a reason the history keeps, attach the invoice or a link to it, and remove a record that should never have been entered.
 role: Preparer
 minutes: 6
@@ -11,7 +11,7 @@ screens: [step-4-correct-record.png]
 
 A correction keeps the old and new values and your reason in the record's history; evidence keeps the document with the figure it supports.
 
-<!-- sources: tasks/activity-data/enter-correct-and-evidence-a-record.md (verified 2026-09-24); specs 04.4, 04.5 and 10 (the split register); ActivityDrawer.tsx (the record's detail: reason field, toasts), ActivityHistoryModal.tsx, EvidencePanel.tsx, ActivityPage.tsx and RemoveDialog.tsx (removal dialog and toast), SourceDocumentsPage.tsx (filters, evidence index), RunDetailPage.tsx ("Since publication"), AssignmentsSection.tsx and AssignmentDetail.tsx ("Changed since publication"), ReportLabels.java ("Record removed"); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "4 record drawer", "4 record edited", "4 after save", "4 history" -->
+<!-- sources: tasks/activity-data/enter-correct-and-evidence-a-record.md (verified 2026-09-24); specs 04.4, 04.5, 04.11 (several records at once) and 10 (the split register); QA procedure 3 cases G1 and J2; BulkActionDialogs.tsx; ActivityDrawer.tsx (the record's detail: reason field, toasts), ActivityHistoryModal.tsx, EvidencePanel.tsx, ActivityPage.tsx and RemoveDialog.tsx (removal dialog and toast), SourceDocumentsPage.tsx (filters, evidence index), RunDetailPage.tsx ("Since publication"), AssignmentsSection.tsx and AssignmentDetail.tsx ("Changed since publication"), ReportLabels.java ("Record removed"); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "4 record drawer", "4 record edited", "4 after save", "4 history" -->
 
 ## Before you start
 
@@ -48,7 +48,17 @@ A record entered by mistake is removed, not deleted: "The record stays on file a
 1. Open the record and click **Remove** under its title.
 2. Fill **Reason**, at least 5 characters, and click **Remove**.
 
-What you see: "Activity removed." The row leaves the register; its documents stay under **Source documents** with the **Record removed** filter. Removing several rows at once asks for one reason.
+What you see: "Activity removed." The row leaves the register; its documents stay under **Source documents** with the **Record removed** filter.
+
+## Act on several records at once
+
+Tick the rows on **Activity data**. The footer offers **Assign emission source**, **Set data quality tier**, **Add evidence link** and **Remove *N* selected**. Each opens a dialog with the one value it needs and a **Reason** of at least 5 characters, and reads "Applies to *N* records." The act is one request: either every record changes, or none does and the dialog lists the records that refuse it by number, for example "ACT-0007 is used in run 1 and cannot be removed." Deselect them and try again.
+
+- **Assign emission source** fills a gap: it is offered when every ticked record is at one facility and has no emission source ("Select records at one facility with no emission source."). Changing a record's source is a correction of that record, because the source sets its default scope.
+- **Set data quality tier** leaves a record already at that tier as it is, and warns when the records are of more than one kind of source.
+- **Add evidence link** attaches the same link to each record: one invoice, many lines.
+
+What you see: "Emission source assigned to *N* records.", "Data quality tier set on *N* records.", "Evidence link added to *N* records." or "*N* records removed." Each record's history carries the reason; the organization's **History** names the act once.
 
 ## What happens next
 
