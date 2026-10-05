@@ -60,4 +60,4 @@ The organization's history records adding, editing and removing a facility, with
 
 ## What happens next
 
-Records name the facility and the source, matched by name on import; one classified under its source's default needs no justification.
+Records name the facility and the source, matched by name on import (a name the facility lacks is decided in the import's preview); one classified under its source's default needs no justification.

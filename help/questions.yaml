@@ -77,7 +77,7 @@ questions:
   persona: site-data-provider
   scenario: You have a spreadsheet of this year's diesel deliveries to the pit. You want to load it without
     typing each line by hand.
-  answer: activity-data/import-records-from-a-csv-file
+  answer: activity-data/import-records-from-a-spreadsheet
   also:
   - activity-data/prepare-the-csv-file
 - id: q12
@@ -86,7 +86,7 @@ questions:
     column must contain.
   answer: activity-data/prepare-the-csv-file#columns
   also:
-  - activity-data/import-records-from-a-csv-file
+  - activity-data/import-records-from-a-spreadsheet
 - id: q13
   persona: site-data-provider
   scenario: You typed 6,000 litres instead of 60,000 and saved. You need to put the right figure in.
