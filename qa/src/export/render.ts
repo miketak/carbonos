@@ -24,13 +24,66 @@ export function narrationContext(pack: Pack): NarrationContext {
       const actor = resolveActor(pack, key)
       return actor.account?.name ?? 'the visitor'
     },
-    actorAlias: (key) => {
-      const actor = resolveActor(pack, key)
-      const name = actor.account?.name ?? key
-      // "the Kofi alias", but "the Admin B alias": the README names the administrators in full
-      return `the ${name.startsWith('Admin') ? name : name.split(' ')[0]} alias`
-    },
+    actorAlias: (key) => addressOf(pack, key),
   }
+}
+
+/**
+ * The address a step types or reads, so a tester never leaves the page to
+ * look it up: the README's placeholder `you+kofi@…` (an alias of the mailbox
+ * the tester reads) with the account's tag beside it as the fallback
+ * reference ("the Kofi alias", but "the Admin B alias": the README names the
+ * administrators in full), or, for the seeded administrator whose account the
+ * engineering team made for the tester's own address, words.
+ */
+export function addressOf(pack: Pack, key: string): string {
+  const actor = resolveActor(pack, key)
+  if (!actor.account) return 'the visitor'
+  const name = actor.account.name
+  const tag = `the ${name.startsWith('Admin') ? name : name.split(' ')[0]} alias`
+  if (actor.account.seeded) return `your administrator address (${tag})`
+  return `\`you+${actor.account.alias}@…\` (${tag})`
+}
+
+/** The password a step types: the pack's, or, for the seeded administrator, the one the team sent. */
+export function passwordOf(pack: Pack, key: string): string {
+  const actor = resolveActor(pack, key)
+  if (actor.account?.seeded) return 'the password the engineering team sent you'
+  return `\`${actor.account?.password ?? ''}\``
+}
+
+/**
+ * The accounts a procedure signs in with or names, as prerequisite lines, so
+ * each document and each workbook sheet carries its own addresses, passwords
+ * and windows (the README's table is the source; this is its projection).
+ */
+export function accountLines(pack: Pack, procedure: Procedure): string[] {
+  const keys = new Set<string>()
+  const visit = (value: unknown): void => {
+    if (typeof value === 'string') {
+      if (value in pack.actors) keys.add(value)
+      for (const m of value.matchAll(/\{(?:email|name|password|role|roleLabel):([a-zA-Z0-9]+)\}/g)) keys.add(m[1]!)
+    } else if (Array.isArray(value)) value.forEach(visit)
+    else if (value && typeof value === 'object') Object.values(value).forEach(visit)
+  }
+  for (const section of procedure.sections)
+    for (const c of section.cases)
+      for (const step of c.steps) {
+        if (step.as) keys.add(step.as)
+        visit(step.do?.args)
+        visit(step.expect.map((e) => e.args))
+      }
+  const seen = new Set<string>()
+  const lines: string[] = []
+  for (const key of keys) {
+    const actor = resolveActor(pack, key)
+    if (!actor.account || seen.has(actor.account.key)) continue
+    seen.add(actor.account.key)
+    const window = actor.window === 'private' ? 'the private window' : 'the normal window'
+    lines.push(`${actor.account.name} signs in with ${addressOf(pack, key)} and ${passwordOf(pack, key)}, in ${window}.`)
+  }
+  if (lines.length > 0) lines.unshift('Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):')
+  return lines
 }
 
 /** Resolves the typed tokens of plans and narration into words for the reader. */
@@ -39,7 +92,7 @@ export function wordsFor(pack: Pack, text: string): string {
   return text
     .replace(/\{email:([a-zA-Z0-9]+)\}/g, (_, k: string) => n.actorAlias(k))
     .replace(/\{name:([a-zA-Z0-9]+)\}/g, (_, k: string) => `"${n.actorName(k)}"`)
-    .replace(/\{password:([a-zA-Z0-9]+)\}/g, (_, k: string) => `\`${resolveActor(pack, k).account?.password ?? ''}\``)
+    .replace(/\{password:([a-zA-Z0-9]+)\}/g, (_, k: string) => passwordOf(pack, k))
     .replace(/\{role:([a-zA-Z0-9]+)\}/g, (_, k: string) => S.option.role[resolveActor(pack, k).account?.platformRole ?? 'MEMBER'] ?? '')
     .replace(/\{roleLabel:([a-zA-Z0-9]+)\}/g, (_, k: string) => S.option.role[resolveActor(pack, k).account?.platformRole ?? 'MEMBER'] ?? '')
     .replace(/\{setting:([a-zA-Z]+)=([^}]+)\}/g, (_, key: string, value: string) => settingValueLabel(key, value))
@@ -84,6 +137,7 @@ export function renderProcedure(pack: Pack, procedure: Procedure, results?: Map<
   out.push('## Prerequisites')
   out.push('')
   for (const line of procedure.docs.prerequisitesText) out.push(`- ${line}`)
+  for (const line of accountLines(pack, procedure)) out.push(`- ${line}`)
   let actor: string | undefined
   for (const section of procedure.sections) {
     out.push('')

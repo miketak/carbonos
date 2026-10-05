@@ -16,6 +16,12 @@
 - Adansi Foods Ltd holding the `ghana` edition (procedure 2) with FY2025 published and its correction frozen (procedure 6).
 - Admin A in the normal window; Admin B, Ama, Esi and Kofi in the private window as the cases name them.
 - `fixtures/source-document.txt` and `fixtures/adansi-2026.csv`.
+- Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):
+- Admin signs in with your administrator address (the Admin alias) and the password the engineering team sent you, in the normal window.
+- Admin B signs in with `you+adminb@…` (the Admin B alias) and `AdminB-pass-2026`, in the private window.
+- Ama Owusu signs in with `you+ama@…` (the Ama alias) and `Ama-pass-2026`, in the private window.
+- Esi Boateng signs in with `you+esi@…` (the Esi alias) and `Esi-pass-2026`, in the private window.
+- Kofi Mensah signs in with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`, in the private window.
 
 ## A. The draft
 
@@ -23,7 +29,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin in the normal window, sign in as "Admin". | Admin is signed in. |  |  |
+| 1 | As Admin in the normal window, sign in as "Admin" with your administrator address (the Admin alias) and the password the engineering team sent you. | Admin is signed in. |  |  |
 | 2 | Open **Administration**, then **Factor packs**. | `defra-2025` is listed as PUBLISHED held by "1 organization". `defra-2026` is listed as PUBLISHED held by "1 organization". `ghana` is listed as PUBLISHED with 7 rows held by "1 organization": two families, defra with two PUBLISHED editions (2025 and 2026) and ghana with one, each edition with its applies-from date, its row count and how many organizations hold it: all three read "1 organization". |  |  |
 | 3 | Look. | Click Clone on the ghana edition: the dialog "Clone ghana" says the draft starts with the 7 rows of ghana, copied, with the name, source, URL, year and GWP basis filled in. |  |  |
 | 4 | Click **Clone** on `ghana`, type the identifier `ghana` and click **Create draft**. | Refused: "An edition named 'ghana' already exists. An edition identifier is the citation a report prints, so it is never reused.". |  |  |
@@ -51,11 +57,11 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin B in the private window, sign in as "Admin B". | Admin B is signed in. |  |  |
+| 1 | As Admin B in the private window, sign in as "Admin B" with `you+adminb@…` (the Admin B alias) and `AdminB-pass-2026`. | Admin B is signed in. |  |  |
 | 2 | Open `ghana-2027-gov` and click **Blast radius**. | A drawer says publishing changes no organization's data. One row changed, `GHANA:grid:GHA:2024` from 0.468809 to 0.44, -6.15%. "1 organization holds one of these lineages". Adansi Foods Ltd's card names the estimated movement, about -3,486 kg CO₂e from its last completed run (Run 001) and lists the lineage inside a locked period (FY2025): the correction's Run 001 priced 121,000 kWh; (0.44 - 0.468809) × 121,000 is about -3,486 kg CO₂e. |  |  |
 | 3 | Click **Publish** on `ghana-2027-gov`, clear **Applies from**, and click **Publish** in the dialog. | The screen reads "Give the date the edition applies from. It is the vintage boundary an adoption is run from.". **Publish** stays disabled: "Give the date the edition applies from. It is the vintage boundary an adoption is run from.". |  |  |
 | 4 | Click **Publish** on `ghana-2027-gov`, set **Applies from** to 2026-01-01, type "Gas supplier delivery note, March 2025 (test source)" as **Source document as cited**, and click **Publish** in the dialog. | `ghana-2027-gov` is listed as PUBLISHED, applying from 2026-01-01 superseding `ghana`. `ghana` is listed as SUPERSEDED. The **Metadata** tab names Admin as curator and Admin B as approver: "ghana-2027-gov was published."; ghana reads SUPERSEDED because the new edition applies after it; the Metadata tab prints the provenance review and the evidence checksum, not the publication moment, which the edition's events carry. |  |  |
-| 5 | As Ama Owusu in the private window, sign in as "Ama Owusu". | Ama Owusu is signed in. |  |  |
+| 5 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
 | 6 | In Adansi Foods Ltd, open **Emission factors**. | "Grid electricity, Ghana (2024)" is listed with one version, ghana. Run 005 is listed with its total 120,373.32 kg CO₂e: 0.468809 and 120,373.32 kg: publishing moved nothing. |  |  |
 
 ## C. The organization decides
@@ -73,14 +79,14 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Esi Boateng in the private window, sign in as "Esi Boateng". | Esi Boateng is signed in. |  |  |
+| 1 | As Esi Boateng in the private window, sign in as "Esi Boateng" with `you+esi@…` (the Esi alias) and `Esi-pass-2026`. | Esi Boateng is signed in. |  |  |
 | 2 | Open the drawer of `ghana-2027-gov`, answer "Vintage progression: the edition applies to the next reporting year forward" and click **Accept**. | **Accept** is disabled, with the tooltip "Needs the Reviewer or Owner role.": a preparer's refusals are disabled controls, not dialogs. **Decline** is disabled, with the tooltip "Needs the Reviewer or Owner role.": a preparer's refusals are disabled controls, not dialogs: fully readable. |  |  |
 
 ### C3. Support access reads everything and cannot decide
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin B in the private window, sign in as "Admin B". | Admin B is signed in. |  |  |
+| 1 | As Admin B in the private window, sign in as "Admin B" with `you+adminb@…` (the Admin B alias) and `AdminB-pass-2026`. | Admin B is signed in. |  |  |
 | 2 | Open **GHG accounting**. | Adansi Foods Ltd is not listed under **GHG accounting**: an administrator is an outsider. |  |  |
 | 3 | Open **Administration**, **Organizations**, click **Assume access** on Adansi Foods Ltd, type the reason "short" and confirm. | **Assume access** stays disabled: "Give a reason of at least 10 characters.". |  |  |
 | 4 | Open **Administration**, **Organizations**, click **Assume access** on Adansi Foods Ltd, type the reason "Ticket 118: the owner asked what the notice means" and confirm. | The row shows the expiry and **End access**. "Support access to Adansi Foods Ltd assumed.". |  |  |
@@ -88,19 +94,19 @@
 | 6 | Open the drawer of `ghana-2027-gov`, answer "Vintage progression: the edition applies to the next reporting year forward" and click **Accept**. | Refused: "Support access cannot adopt an edition for an organization. That is the organization's own decision, so a reviewer or an owner of the organization has to make it.". |  |  |
 | 7 | Open the drawer of `ghana-2027-gov` and click **Decline**. | Refused: "Support access cannot decline an edition for an organization. That is the organization's own decision, so a reviewer or an owner of the organization has to make it.". |  |  |
 | 8 | On **Organizations**, click **End access** on Adansi Foods Ltd. | Adansi Foods Ltd is not listed under **GHG accounting**: the organization leaves the administrator's list. |  |  |
-| 9 | As Ama Owusu in the private window, sign in as "Ama Owusu". | Ama Owusu is signed in. |  |  |
-| 10 | In Adansi Foods Ltd, open **Settings**. | **History** holds an admin access assumed entry reading "Ticket 118: the owner asked what the notice means", with the Admin B alias and the moment. **History** holds an admin access ended entry, with the Admin B alias and the moment: each with Admin B's email, the moment and the reason. |  |  |
+| 9 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
+| 10 | In Adansi Foods Ltd, open **Settings**. | **History** holds an admin access assumed entry reading "Ticket 118: the owner asked what the notice means", with `you+adminb@…` (the Admin B alias) and the moment. **History** holds an admin access ended entry, with `you+adminb@…` (the Admin B alias) and the moment: each with Admin B's email, the moment and the reason. |  |  |
 
 ### C4. The reviewer answers the question and accepts
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Kofi Mensah in the private window, sign in as "Kofi Mensah". | Kofi Mensah is signed in. |  |  |
+| 1 | As Kofi Mensah in the private window, sign in as "Kofi Mensah" with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`. | Kofi Mensah is signed in. |  |  |
 | 2 | Open the drawer of `ghana-2027-gov` and click **Accept** without answering. | The three answers under **How does chapter 5 treat this adoption?** are "Vintage progression: the edition applies to the next reporting year forward", "Retrospective adoption: the edition is applied to a year already reported", "Erratum: the edition corrects a wrong value in a year already reported". **Accept** stays disabled: "Say how chapter 5 treats this adoption: VINTAGE_PROGRESSION, RETROSPECTIVE_ADOPTION, or ERRATUM_ON_REPORTED_YEAR.". |  |  |
-| 3 | Open the drawer of `ghana-2027-gov`, answer "Vintage progression: the edition applies to the next reporting year forward" and click **Accept**. | One row: `ghana-2027-gov`, status "Accepted", with the Kofi alias's email. The badge on **Updates** is gone: "Adopted ghana-2027-gov: 1 version cut, 0 lineages added.". |  |  |
+| 3 | Open the drawer of `ghana-2027-gov`, answer "Vintage progression: the edition applies to the next reporting year forward" and click **Accept**. | One row: `ghana-2027-gov`, status "Accepted", with `you+kofi@…` (the Kofi alias)'s email. The badge on **Updates** is gone: "Adopted ghana-2027-gov: 1 version cut, 0 lineages added.". |  |  |
 | 4 | In Adansi Foods Ltd, open **Emission factors**. | "Grid electricity, Ghana (2024)" is listed with 2 versions: ghana and ghana-2027-gov: the old version until 2025-12-31 at 0.468809, the live one from 2026-01-01 at 0.44; nothing rewrote a past value. |  |  |
-| 5 | As Ama Owusu in the private window, sign in as "Ama Owusu". | Ama Owusu is signed in. |  |  |
-| 6 | In Adansi Foods Ltd, open **Settings**. | **History** holds a factor pack adopted entry reading "as a vintage progression", with the Kofi alias and the moment: Settings is the owner's; Overview carries no event list, History is the organization's record. |  |  |
+| 5 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
+| 6 | In Adansi Foods Ltd, open **Settings**. | **History** holds a factor pack adopted entry reading "as a vintage progression", with `you+kofi@…` (the Kofi alias) and the moment: Settings is the owner's; Overview carries no event list, History is the organization's record. |  |  |
 | 7 | Look. | Open Settings and the Baseline and targets tab: no base year is designated yet, so no candidate was raised. The answer lives on the notice. |  |  |
 
 ## D. The next run cites the new vintage
@@ -127,13 +133,13 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin B in the private window, sign in as "Admin B". | Admin B is signed in. |  |  |
+| 1 | As Admin B in the private window, sign in as "Admin B" with `you+adminb@…` (the Admin B alias) and `AdminB-pass-2026`. | Admin B is signed in. |  |  |
 | 2 | Click **Clone** on `ghana-2027-gov`, type the identifier `ghana-2027-gov.r2` and click **Create draft**. | `ghana-2027-gov.r2` is listed as DRAFT. |  |  |
 | 3 | On `ghana-2027-gov.r2`, click **Edit** on `GHANA:grid:GHA:2024`, change its kg CO₂e per unit to 0.45 and click **Save row**. | On `ghana-2027-gov.r2`, `GHANA:grid:GHA:2024` reads 0.45. |  |  |
 | 4 | Click **Publish** on `ghana-2027-gov.r2` and choose `source-document.txt` under **Source document**. | `ghana-2027-gov.r2` is listed with its source document on file. |  |  |
-| 5 | As Admin in the normal window, sign in as "Admin". | Admin is signed in. |  |  |
+| 5 | As Admin in the normal window, sign in as "Admin" with your administrator address (the Admin alias) and the password the engineering team sent you. | Admin is signed in. |  |  |
 | 6 | Click **Publish** on `ghana-2027-gov.r2`, set **Applies from** to 2025-06-01, type "Gas supplier delivery note, March 2025 (test source)" as **Source document as cited**, and click **Publish** in the dialog. | `ghana-2027-gov.r2` is listed as PUBLISHED, applying from 2025-06-01. `ghana-2027-gov` is listed as PUBLISHED. The **Metadata** tab names Admin B as curator and Admin as approver: an edition that applies from an earlier date than the one standing is not its successor, so it supersedes nothing (spec 02.5); the roles swap with the curator. |  |  |
-| 7 | As Kofi Mensah in the private window, sign in as "Kofi Mensah". | Kofi Mensah is signed in. |  |  |
+| 7 | As Kofi Mensah in the private window, sign in as "Kofi Mensah" with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`. | Kofi Mensah is signed in. |  |  |
 | 8 | In Adansi Foods Ltd, open **Overview**. | **Updates** carries the badge 1, titled "1 factor pack update waiting". |  |  |
 | 9 | On **Updates**, click **Review** on `ghana-2027-gov.r2`. | The drawer names the block above what moves: "falls inside FY2025" and "Declining stays available.": "2025-06-01 falls inside FY2025 (2025-01-01 → 2025-12-31), which is published. A reported period keeps the factors it reported with, so this edition cannot be accepted while the platform blocks editions inside a published period. Declining stays available.". |  |  |
 | 10 | Open the drawer of `ghana-2027-gov.r2`, answer "Erratum: the edition corrects a wrong value in a year already reported" and click **Accept**. | Refused: "'ghana-2027-gov.r2' applies from 2025-06-01, which falls inside 'FY2025' (2025-01-01 to 2025-12-31), which is PUBLISHED. A reported period keeps the factors it reported with. The edition cannot be imported while that period is on record and the platform setting Editions inside a published period is Blocked; choose an edition that applies from a later date, or ask a platform administrator about the setting.": the refusal names the platform setting. |  |  |
@@ -145,13 +151,13 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin in the normal window, sign in as "Admin". | Admin is signed in. |  |  |
+| 1 | As Admin in the normal window, sign in as "Admin" with your administrator address (the Admin alias) and the password the engineering team sent you. | Admin is signed in. |  |  |
 | 2 | Open `ghana-2027-gov.r2`, click **Withdraw**, type "short" and confirm with **Withdraw edition**. | Refused inline: "Say why the edition is withdrawn, in at least 10 characters. It is the record a verifier reads beside the figures that rest on it.". |  |  |
 | 3 | Open `ghana-2027-gov.r2`, click **Withdraw**, type "Published against the wrong period; retracted" and confirm with **Withdraw edition**. | `ghana-2027-gov.r2` is listed as WITHDRAWN: "ghana-2027-gov.r2 was withdrawn."; the reason reaches the organizations, on the Updates row of case F1.4; the edition page itself prints the status, not the reason. |  |  |
 | 4 | Click **Clone** on `ghana`, type the identifier `ghana-scratch` and click **Create draft**. | `ghana-scratch` is listed as DRAFT. |  |  |
 | 5 | Open `ghana-scratch`. | Only **Delete draft** is offered: no **Withdraw**: a draft offers no Withdraw: no organization can see it, so there is nothing to retract. |  |  |
 | 6 | On `ghana-scratch`, click **Delete draft** and confirm. | `ghana-scratch` is gone from the list. |  |  |
-| 7 | As Kofi Mensah in the private window, sign in as "Kofi Mensah". | Kofi Mensah is signed in. |  |  |
+| 7 | As Kofi Mensah in the private window, sign in as "Kofi Mensah" with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`. | Kofi Mensah is signed in. |  |  |
 | 8 | Open **Updates**. | One row: `ghana-2027-gov.r2`, status "Withdrawn by the publisher", with the reason "Published against the wrong period; retracted". The badge on **Updates** is gone. |  |  |
 | 9 | On **Updates**, click **Review** on `ghana-2027-gov.r2`. | The screen reads "The publisher withdrew this edition, so there is nothing to decide.". |  |  |
 | 10 | In Adansi Foods Ltd, open **Emission factors**. | "Grid electricity, Ghana (2024)" is listed with 2 versions: ghana and ghana-2027-gov. Run 005 is listed with its total 120,373.32 kg CO₂e: two versions, 120,373.32 kg: a withdrawal is the publisher's act. |  |  |

@@ -15,6 +15,11 @@
 
 - The six accounts of procedure 1.
 - Ama in the normal window; the private window for Kofi and Yaw.
+- Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):
+- Ama Owusu signs in with `you+ama@…` (the Ama alias) and `Ama-pass-2026`, in the private window.
+- Kofi Mensah signs in with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`, in the private window.
+- Esi Boateng signs in with `you+esi@…` (the Esi alias) and `Esi-pass-2026`, in the private window.
+- Yaw Darko signs in with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`, in the private window.
 
 ## A. The organization and its members
 
@@ -22,23 +27,23 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu". | Ama Owusu is signed in. |  |  |
+| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
 | 2 | Open **GHG accounting**, then click **New organization**. Fill in **Name** with `Adansi Foods Ltd`, then click **Create organization**. | "Adansi Foods Ltd (ORG-<NNNN>) created." The list shows the organization with its account number. Note the account number, case A3 uses it. |  |  |
 | 3 | Open Adansi Foods Ltd. | The **Overview** opens, and the foot of the sidebar reads "Your role: Owner". |  |  |
-| 4 | Under **Members**, add the Kofi alias as **Reviewer (approves and publishes)**. | Kofi Mensah appears with the role **Reviewer (approves and publishes)**. |  |  |
-| 5 | Under **Members**, add the Esi alias as **Preparer (records, classifies, runs)**. | Esi Boateng appears with the role **Preparer (records, classifies, runs)**. |  |  |
-| 6 | Under **Members**, add the Yaw alias as **Verifier (read-only)**. | Yaw Darko appears with the role **Verifier (read-only)**. The card says reviewers also designate final runs, publish and create corrections, and verifiers read only. |  |  |
+| 4 | Under **Members**, add `you+kofi@…` (the Kofi alias) as **Reviewer (approves and publishes)**. | Kofi Mensah appears with the role **Reviewer (approves and publishes)**. |  |  |
+| 5 | Under **Members**, add `you+esi@…` (the Esi alias) as **Preparer (records, classifies, runs)**. | Esi Boateng appears with the role **Preparer (records, classifies, runs)**. |  |  |
+| 6 | Under **Members**, add `you+yaw@…` (the Yaw alias) as **Verifier (read-only)**. | Yaw Darko appears with the role **Verifier (read-only)**. The card says reviewers also designate final runs, publish and create corrections, and verifiers read only. |  |  |
 | 7 | Under **Members**, add `nobody@example.test` as **Preparer (records, classifies, runs)**. | Refused: "No account with that email.": membership is granted to an existing account, a newcomer requests access first. |  |  |
-| 8 | Under **Members**, add the Kofi alias as **Reviewer (approves and publishes)**. | Refused: "the Kofi alias is already a member of 'Adansi Foods Ltd'.". |  |  |
+| 8 | Under **Members**, add `you+kofi@…` (the Kofi alias) as **Reviewer (approves and publishes)**. | Refused: "`you+kofi@…` (the Kofi alias) is already a member of 'Adansi Foods Ltd'.". |  |  |
 | 9 | Change the role of "Ama Owusu" to **Preparer (records, classifies, runs)**. | Refused: "'Adansi Foods Ltd' needs at least one owner.". |  |  |
 | 10 | Click **Remove** on the row of "Ama Owusu". | Refused: "'Adansi Foods Ltd' needs at least one owner.". |  |  |
-| 11 | Look. | **History** holds 3 member added entries. **History** holds a member added entry reading "the Kofi alias added as REVIEWER", with the Ama alias and the moment: it updated as you added them, without a reload; structure changes join the same card from section B on. |  |  |
+| 11 | Look. | **History** holds 3 member added entries. **History** holds a member added entry reading "`you+kofi@…` (the Kofi alias) added as REVIEWER", with `you+ama@…` (the Ama alias) and the moment: it updated as you added them, without a reload; structure changes join the same card from section B on. |  |  |
 
 ### A2. A verifier reads everything and changes nothing
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko". | Yaw Darko is signed in. |  |  |
+| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`. | Yaw Darko is signed in. |  |  |
 | 2 | Open Adansi Foods Ltd. | Adansi Foods Ltd opens for Yaw Darko. Every page carries the banner "Your role in this organization is Verifier (read-only).", and the foot of the sidebar reads "Your role: Verifier". |  |  |
 | 3 | In Adansi Foods Ltd, open **Legal entities**. | On **Legal entities**, **Facilities** and **Emission factors** every button that would write is disabled, with the tooltip "Needs the Preparer, Reviewer or Owner role.". Nothing is hidden: a verifier sees the record, not a blank page. |  |  |
 | 4 | Sign out. | Yaw Darko's session has ended: the sign-in page. |  |  |
@@ -121,7 +126,7 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Open the edit form of Adansi Logistics Ltd and save without changing anything. |  |  |  |
-| 2 | In Adansi Foods Ltd, open **Settings**. | **History** holds an entity added entry reading "Adansi Logistics Ltd added", with the Ama alias and the moment. **History** holds an entity added entry reading "Coldstore Ghana Ltd added", with the Ama alias and the moment. **History** holds an entity updated entry reading "Coldstore Ghana Ltd", with the Ama alias and the moment. **History** holds a facility added entry reading "Kumasi Plant added under Adansi Foods Ltd", with the Ama alias and the moment. **History** holds a stream added entry reading "Boiler LPG added at Kumasi Plant", with the Ama alias and the moment. |  |  |
+| 2 | In Adansi Foods Ltd, open **Settings**. | **History** holds an entity added entry reading "Adansi Logistics Ltd added", with `you+ama@…` (the Ama alias) and the moment. **History** holds an entity added entry reading "Coldstore Ghana Ltd added", with `you+ama@…` (the Ama alias) and the moment. **History** holds an entity updated entry reading "Coldstore Ghana Ltd", with `you+ama@…` (the Ama alias) and the moment. **History** holds a facility added entry reading "Kumasi Plant added under Adansi Foods Ltd", with `you+ama@…` (the Ama alias) and the moment. **History** holds a stream added entry reading "Boiler LPG added at Kumasi Plant", with `you+ama@…` (the Ama alias) and the moment. |  |  |
 | 3 | Look. | **History** holds 2 entity updated entries. **History** holds 2 entity added entries. **History** holds 3 facility added entries. **History** holds 3 stream added entries: a save that changes nothing writes no row, and a refused act is not an act. |  |  |
 
 ### D4. A source described on a record is reconciled against the register
@@ -181,8 +186,8 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Click **Approve** on "Long-haul flights (supplier)". | Refused: "You entered 'Long-haul flights (supplier)'. A factor is checked by someone other than the person who typed it (Corporate Standard chapter 7): ask Kofi Mensah to approve it.". |  |  |
-| 2 | As Kofi Mensah in the private window, sign in as "Kofi Mensah". | Kofi Mensah is signed in. |  |  |
-| 3 | Click **Approve** on "Long-haul flights (supplier)". | "Long-haul flights (supplier)" is listed as **Approved** "by the Kofi alias" with the date. |  |  |
+| 2 | As Kofi Mensah in the private window, sign in as "Kofi Mensah" with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`. | Kofi Mensah is signed in. |  |  |
+| 3 | Click **Approve** on "Long-haul flights (supplier)". | "Long-haul flights (supplier)" is listed as **Approved** "by `you+kofi@…` (the Kofi alias)" with the date. |  |  |
 | 4 | In Adansi Foods Ltd, open **Emission factors**. | "R-410A (composition)" is listed as **Not approved**: leave it unapproved, procedure 5 reads the gate refusing it. |  |  |
 
 ## G. A self-approval is recorded where nobody else could check
@@ -191,10 +196,10 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko". | Yaw Darko is signed in. |  |  |
+| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`. | Yaw Darko is signed in. |  |  |
 | 2 | Open **GHG accounting**, then click **New organization**. Fill in **Name** with `Solo Ltd`, then click **Create organization**. | The **Overview** opens, and the foot of the sidebar reads "Your role: Owner": a verifier elsewhere is an owner here, roles are per organization. |  |  |
 | 3 | In Solo Ltd, open **Emission factors**, then click **Add factor**. Fill in **Name** with `Diesel (Solo)`, set **Suggested scope** to **SCOPE_1**, set **Category** to **STATIONARY_COMBUSTION**, fill in **Unit** with `litre`, fill in **kg CO₂e per unit** with `2.66`, fill in **Source (publication, table, data year)** with `Own transcription of DESNZ 2025`, then click **Add factor**. | "Diesel (Solo)" is listed as **Not approved**. |  |  |
-| 4 | Click **Approve** on "Diesel (Solo)". | "Diesel (Solo)" is listed as **Approved** "by the Yaw alias" with the date and "(self-approved: nobody else could check it)": nobody else is a member, so the refusal of case F4 does not apply, and the record says so; procedure 6 reads the sentence on a report. |  |  |
+| 4 | Click **Approve** on "Diesel (Solo)". | "Diesel (Solo)" is listed as **Approved** "by `you+yaw@…` (the Yaw alias)" with the date and "(self-approved: nobody else could check it)": nobody else is a member, so the refusal of case F4 does not apply, and the record says so; procedure 6 reads the sentence on a report. |  |  |
 | 5 | Sign out. | Yaw Darko's session has ended: the sign-in page. |  |  |
 
 ## Sign-off
