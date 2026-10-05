@@ -93,16 +93,25 @@ class ActivityController {
 		return BulkActivityResponse.from(ghgService.bulkActivities(organizationId, body.toRequest()));
 	}
 
+	/** The template with its example row; with a facility and a month, one row per emission source (spec 04.12). */
 	@GetMapping(value = "/organizations/{organizationId}/activities/import-template.csv", produces = "text/csv")
-	ResponseEntity<byte[]> template(@PathVariable UUID organizationId) {
+	ResponseEntity<byte[]> template(@PathVariable UUID organizationId, @RequestParam(required = false) UUID facilityId,
+			@RequestParam(required = false) String month) {
 		ghgService.getOrganization(organizationId);
+		var fileName = "activity-import-template.csv";
+		var body = ActivityImportService.template();
+		if (facilityId != null || month != null) {
+			var monthly = imports.monthlyTemplate(facilityId, month);
+			fileName = monthly.fileName();
+			body = monthly.body();
+		}
 		return ResponseEntity.ok()
 			.contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
 			.header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
-				.filename("activity-import-template.csv", StandardCharsets.UTF_8)
+				.filename(fileName, StandardCharsets.UTF_8)
 				.build()
 				.toString())
-			.body(ActivityImportService.template().getBytes(StandardCharsets.UTF_8));
+			.body(body.getBytes(StandardCharsets.UTF_8));
 	}
 
 	@PostMapping("/organizations/{organizationId}/activities")

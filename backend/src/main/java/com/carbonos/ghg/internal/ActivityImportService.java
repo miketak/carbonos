@@ -50,7 +50,7 @@ public class ActivityImportService {
 	static final long MAX_BYTES = 5L * 1024 * 1024;
 
 	public static final List<String> COLUMNS = List.of("facility", "emission_source", "activity_type", "quantity", "unit",
-			"period_start", "period_end", "data_source", "evidence_ref", "data_quality", "data_quality_tier",
+			"period_start", "period_end", "data_source", "supplier", "evidence_ref", "data_quality", "data_quality_tier",
 			"uncertainty_percent", "note");
 
 	/** The columns whose cells, when formulas, are worth a second look (spec 04.11). */
@@ -118,7 +118,48 @@ public class ActivityImportService {
 	/** The header and one example row, for the download. */
 	public static String template() {
 		return String.join(",", COLUMNS) + "\r\n"
-				+ "Nkran Mine,Standby gensets,Diesel consumption,12500,litre,2025-03-01,2025-03-31,Fuel register,INV-2938,MEASURED,1,2,March dispensing\r\n";
+				+ "Nkran Mine,Standby gensets,Diesel consumption,12500,litre,2025-03-01,2025-03-31,Fuel register,GOIL Obuasi depot,INV-2938,MEASURED,1,2,March dispensing\r\n";
+	}
+
+	/**
+	 * The monthly meter-read template (spec 04.12): one row per emission source of
+	 * the facility with the period filled and the figures blank. Data quality stays
+	 * blank on purpose: a zero typed from memory is an estimate, not a measurement.
+	 */
+	/** A template file: its name and its text. */
+	public record TemplateFile(String fileName, String body) {
+	}
+
+	/** The monthly template for a facility the caller may read; the month reads as 2025-09 (spec 04.12). */
+	@Transactional(readOnly = true)
+	public TemplateFile monthlyTemplate(UUID facilityId, String month) {
+		if (facilityId == null) {
+			throw new GhgFieldException("facilityId", "Choose the facility the template is for.");
+		}
+		java.time.YearMonth parsed;
+		try {
+			parsed = java.time.YearMonth.parse(month == null ? "" : month.trim());
+		}
+		catch (java.time.format.DateTimeParseException ex) {
+			throw new GhgFieldException("month", "Give the month as 2025-09.");
+		}
+		var facility = facilities.findById(facilityId)
+			.filter(found -> !found.isDeleted())
+			.orElseThrow(() -> GhgNotFoundException.facility(facilityId));
+		access.check(facility.getOrganization());
+		var slug = facility.getName().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+		return new TemplateFile("activity-" + slug + "-" + parsed + ".csv",
+				monthlyTemplate(facility.getName(), streams.findAllByFacilityIdOrderByNameAsc(facilityId), parsed));
+	}
+
+	static String monthlyTemplate(String facilityName, List<SourceStream> sources, java.time.YearMonth month) {
+		var records = new ArrayList<List<String>>();
+		records.add(COLUMNS);
+		for (var source : sources) {
+			records.add(List.of(facilityName, source.getName(), source.getName(), "", "", month.atDay(1).toString(),
+					month.atEndOfMonth().toString(), "", "", "", "", "", "", ""));
+		}
+		return CsvTable.render(records);
 	}
 
 	/** Validates the file and reports what would import; saves nothing (spec 04.6). */
@@ -156,7 +197,7 @@ public class ActivityImportService {
 			var accepted = parsed.accepted().get(i);
 			var record = new ActivityRecord(first + i, false, accepted.facility(), accepted.stream(),
 					accepted.activityType(), accepted.quantity(), accepted.unit(), accepted.periodStart(),
-					accepted.periodEnd(), accepted.dataSource(), accepted.evidenceRef(), accepted.dataQuality(),
+					accepted.periodEnd(), accepted.dataSource(), accepted.supplier(), accepted.evidenceRef(), accepted.dataQuality(),
 					accepted.note(), accepted.dataQualityTier(), accepted.uncertaintyPercent());
 			record.fromImport(batch.getId(), accepted.row());
 			records.add(record);
@@ -245,7 +286,7 @@ public class ActivityImportService {
 	/** A row that passed validation, before it is numbered and saved. */
 	private record Accepted(int row, Facility facility, SourceStream stream, String activityType,
 			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
-			String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
+			String supplier, String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
 			BigDecimal uncertaintyPercent) {
 	}
 
@@ -310,11 +351,20 @@ public class ActivityImportService {
 					u.candidates()))
 			.toList();
 		// facts only: a draft is a stub, not something a row could duplicate (spec 04.6)
-		var existing = activities.findAllByOrganizationIdAndDeletedAtIsNullAndDraftFalseOrderByPeriodEndDesc(organizationId)
-			.stream()
+		var facts = activities.findAllByOrganizationIdAndDeletedAtIsNullAndDraftFalseOrderByPeriodEndDesc(organizationId);
+		var existing = facts.stream()
 			.map(a -> key(a.getFacility().getId(), a.getActivityType(), a.getQuantity(), a.getUnit(), a.getPeriodStart(),
 					a.getPeriodEnd()))
 			.collect(Collectors.toCollection(HashSet::new));
+		// spec 04.12: a zero after a month that recorded something is worth a look
+		var nonZeroByStream = new HashMap<UUID, List<ActivityRecord>>();
+		for (var fact : facts) {
+			if (fact.getStream() != null && fact.getQuantity() != null && fact.getQuantity().signum() > 0
+					&& fact.period() != null) {
+				nonZeroByStream.computeIfAbsent(fact.getStream().getId(), k -> new ArrayList<>()).add(fact);
+			}
+		}
+		var zeroNotes = new LinkedHashMap<String, List<Integer>>();
 		// a draft the row may be completing: same facility, activity and period (spec 04.6)
 		var drafts = new HashMap<String, ActivityRecord>();
 		for (var draft : activities
@@ -369,8 +419,8 @@ public class ActivityImportService {
 			BigDecimal quantity = null;
 			try {
 				quantity = new BigDecimal(cells.get("quantity").replace(",", ""));
-				if (quantity.signum() <= 0) {
-					problems.add("quantity must be greater than 0");
+				if (quantity.signum() < 0) {
+					problems.add("quantity must be 0 or more");
 				}
 				else if (quantity.scale() > 3 || quantity.precision() - quantity.scale() > 11) {
 					problems.add("quantity has more than 3 decimals or more than 11 integer digits");
@@ -430,11 +480,15 @@ public class ActivityImportService {
 					problems.add("uncertainty_percent is not a number");
 				}
 			}
-			for (var field : List.of("data_source", "evidence_ref", "note")) {
-				var limit = field.equals("data_source") ? 120 : field.equals("evidence_ref") ? 150 : 255;
+			for (var field : List.of("data_source", "supplier", "evidence_ref", "note")) {
+				var limit = field.equals("evidence_ref") ? 150 : field.equals("note") ? 255 : 120;
 				if (cells.get(field).length() > limit) {
 					problems.add(field + " is longer than " + limit + " characters");
 				}
+			}
+			// spec 04.12: a documented zero says what showed that nothing was consumed
+			if (quantity != null && quantity.signum() == 0 && cells.get("note").trim().length() < GhgService.ZERO_NOTE_MIN) {
+				problems.add("quantity is 0: say in the note what showed that nothing was consumed");
 			}
 			if (problems.isEmpty() && facility != null) {
 				var k = key(facility.getId(), activityType, quantity, unit, start, end);
@@ -447,13 +501,13 @@ public class ActivityImportService {
 				continue;
 			}
 			var item = new Accepted(row.number(), facility, stream, activityType.trim(), quantity, unit.trim(), start,
-					end, blankToNull(cells.get("data_source")), blankToNull(cells.get("evidence_ref")), quality,
-					blankToNull(cells.get("note")), tier, uncertainty);
+					end, blankToNull(cells.get("data_source")), blankToNull(cells.get("supplier")),
+					blankToNull(cells.get("evidence_ref")), quality, blankToNull(cells.get("note")), tier, uncertainty);
 			if (!needsDecision) {
 				accepted.add(item);
 			}
 			var record = new ActivityRecord(0, false, facility, stream, item.activityType(), quantity, item.unit(),
-					start, end, item.dataSource(), item.evidenceRef(), quality, item.note(), tier, uncertainty);
+					start, end, item.dataSource(), item.supplier(), item.evidenceRef(), quality, item.note(), tier, uncertainty);
 			var readiness = ActivityReadiness.of(record, false);
 			if (needsDecision) {
 				// the source is pending a decision, so its absence is not a readiness issue
@@ -490,6 +544,26 @@ public class ActivityImportService {
 				warnings.add(new Warning(row.number(), "the period is longer than one month (" + start + " to " + end
 						+ "); monthly rows make the coverage matrix and cut-off checks precise"));
 			}
+			if (quantity.signum() == 0) {
+				zeroNotes.computeIfAbsent(item.note().trim().toLowerCase(Locale.ROOT), k -> new ArrayList<>()).add(row.number());
+				if (stream != null) {
+					var before = java.time.YearMonth.from(start).minusMonths(1);
+					var previous = nonZeroByStream.getOrDefault(stream.getId(), List.of())
+						.stream()
+						.filter(fact -> fact.period().overlaps(before.atDay(1), before.atEndOfMonth()))
+						.findFirst();
+					if (previous.isPresent()) {
+						warnings.add(new Warning(row.number(), "quantity is 0 but '" + stream.getName() + "' recorded "
+								+ previous.get().getQuantity().stripTrailingZeros().toPlainString() + " "
+								+ previous.get().getUnit() + " the month before"));
+					}
+				}
+			}
+			if (stream != null && item.supplier() != null && stream.getMeterOrSupplier() != null
+					&& !stream.getMeterOrSupplier().equalsIgnoreCase(item.supplier())) {
+				warnings.add(new Warning(row.number(), "'" + stream.getName() + "' is recorded with the supplier '"
+						+ stream.getMeterOrSupplier() + "'; this row names '" + item.supplier() + "'"));
+			}
 			var formulas = source.formulaCells().getOrDefault(row.number(), Set.of())
 				.stream()
 				.filter(FIGURE_COLUMNS::contains)
@@ -498,6 +572,12 @@ public class ActivityImportService {
 				warnings.add(new Warning(row.number(), String.join(" and ", formulas)
 						+ (formulas.size() == 1 ? " came from a formula; the saved value is the cached result"
 								: " came from formulas; the saved values are the cached results")));
+			}
+		}
+		for (var entry : zeroNotes.entrySet()) {
+			if (entry.getValue().size() > 1) {
+				warnings.add(new Warning(entry.getValue().getFirst(), "the same note appears on " + entry.getValue().size()
+						+ " zero rows: say per source what showed nothing was consumed"));
 			}
 		}
 		return new Parsed(List.copyOf(rejected), List.copyOf(accepted), List.copyOf(previews),

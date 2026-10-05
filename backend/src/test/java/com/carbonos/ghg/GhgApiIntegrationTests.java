@@ -6982,4 +6982,208 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$[0].action").value("RECORDS_BULK_CORRECTED"))
 			.andExpect(jsonPath("$[0].reason").value("2 records removed (ACT-0002, ACT-0003): Duplicates of the March file"));
 	}
+
+	// --- spec 04.12: the documented zero, the supplier, the monthly template ---
+
+	@Test
+	void aDocumentedZeroIsAFactWithANote() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		var gensets = createStream(mine, "Standby gensets", "Diesel");
+		// a zero without the note is refused under the field, and burns no record number
+		postActivity(orgId, """
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, August", "quantity": 0,
+				 "unit": "litre", "periodStart": "2025-08-01", "periodEnd": "2025-08-31", "dataQuality": "MEASURED",
+				 "dataSource": "Hour meter", "evidenceRef": "LOG-8", "note": "off"}""".formatted(mine, gensets))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.activity.zero-needs-note"))
+			.andExpect(jsonPath("$.errors.note")
+				.value("A zero needs a note of at least 10 characters: what showed that nothing was consumed."));
+		// with the note, a data source and a reference it is a fact, Ready, and labelled
+		var zero = JsonPath.<String>read(body(postActivity(orgId, """
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, August", "quantity": 0,
+				 "unit": "litre", "periodStart": "2025-08-01", "periodEnd": "2025-08-31", "dataQuality": "MEASURED",
+				 "dataSource": "Hour meter", "evidenceRef": "LOG-8", "note": "Genset off for overhaul; hour meter unchanged"}"""
+			.formatted(mine, gensets))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.recordRef").value("ACT-0001"))
+			.andExpect(jsonPath("$.status").value("READY"))
+			.andExpect(jsonPath("$.issues").value(org.hamcrest.Matchers.containsInAnyOrder("EVIDENCE_REFERENCE_ONLY", "DOCUMENTED_ZERO")))), "$.id");
+		// a draft may hold a zero without the note until it is entered
+		var draft = JsonPath.<String>read(body(postActivity(orgId, """
+				{"draft": true, "facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, September",
+				 "quantity": 0, "unit": "litre", "periodStart": "2025-09-01", "periodEnd": "2025-09-30", "dataQuality": "MEASURED"}"""
+			.formatted(mine, gensets)).andExpect(status().isCreated())), "$.id");
+		mvc.perform(put("/api/ghg/activities/" + draft).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, September", "quantity": 0,
+				 "unit": "litre", "periodStart": "2025-09-01", "periodEnd": "2025-09-30", "dataQuality": "MEASURED",
+				 "dataSource": "Hour meter", "evidenceRef": "LOG-9"}""".formatted(mine, gensets)))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.activity.zero-needs-note"));
+		mvc.perform(put("/api/ghg/activities/" + draft).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, September", "quantity": 0,
+				 "unit": "litre", "periodStart": "2025-09-01", "periodEnd": "2025-09-30", "dataQuality": "MEASURED",
+				 "dataSource": "Hour meter", "evidenceRef": "LOG-9", "note": "Still off for overhaul; meter unchanged"}"""
+			.formatted(mine, gensets)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.draft").value(false))
+			.andExpect(jsonPath("$.issues").value(org.hamcrest.Matchers.hasItem("DOCUMENTED_ZERO")));
+		// a correction from the zero, and back to it, each with its reason and its revision
+		mvc.perform(put("/api/ghg/activities/" + zero).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, August", "quantity": 500,
+				 "unit": "litre", "periodStart": "2025-08-01", "periodEnd": "2025-08-31", "dataQuality": "MEASURED",
+				 "dataSource": "Hour meter", "evidenceRef": "LOG-8", "note": "Genset off for overhaul; hour meter unchanged",
+				 "reason": "The overhaul ended on the 20th; the log shows 500 litres after"}""".formatted(mine, gensets)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.issues").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("DOCUMENTED_ZERO"))));
+		mvc.perform(put("/api/ghg/activities/" + zero).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, August", "quantity": 0,
+				 "unit": "litre", "periodStart": "2025-08-01", "periodEnd": "2025-08-31", "dataQuality": "MEASURED",
+				 "dataSource": "Hour meter", "evidenceRef": "LOG-8", "note": "short", "reason": "Re-read the log: nothing after all"}"""
+			.formatted(mine, gensets)))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.activity.zero-needs-note"));
+		mvc.perform(put("/api/ghg/activities/" + zero).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, August", "quantity": 0,
+				 "unit": "litre", "periodStart": "2025-08-01", "periodEnd": "2025-08-31", "dataQuality": "MEASURED",
+				 "dataSource": "Hour meter", "evidenceRef": "LOG-8", "note": "Genset off for overhaul; hour meter unchanged",
+				 "reason": "Re-read the log: nothing after all"}""".formatted(mine, gensets)))
+			.andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/activities/" + zero + "/revisions").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2))
+			.andExpect(jsonPath("$[0].changes[?(@.field == 'quantity')].before").value(org.hamcrest.Matchers.contains("500")))
+			.andExpect(jsonPath("$[0].changes[?(@.field == 'quantity')].after").value(org.hamcrest.Matchers.contains("0")))
+			.andExpect(jsonPath("$[1].changes[?(@.field == 'quantity')].before").value(org.hamcrest.Matchers.contains("0")));
+		// coverage: a non-zero month is covered, a zero month is its own state; the gate lists the zeros
+		var july = JsonPath.<String>read(body(postActivity(orgId, """
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, July", "quantity": 9000,
+				 "unit": "litre", "periodStart": "2025-07-01", "periodEnd": "2025-07-31", "dataQuality": "MEASURED",
+				 "dataSource": "Fuel register", "evidenceRef": "INV-7"}""".formatted(mine, gensets)).andExpect(status().isCreated())), "$.id");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, mine);
+		var factor = diesel(orgId);
+		classify(syncAndGetAssignmentId(inventoryId, zero), factor);
+		classify(syncAndGetAssignmentId(inventoryId, draft), factor);
+		classify(syncAndGetAssignmentId(inventoryId, july), factor);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/coverage").with(asMember()))
+			.andExpect(jsonPath("$[?(@.streamName == 'Standby gensets')].coveredMonths").value(org.hamcrest.Matchers.contains(java.util.List.of("2025-07"))))
+			.andExpect(jsonPath("$[?(@.streamName == 'Standby gensets')].zeroMonths").value(org.hamcrest.Matchers.contains(java.util.List.of("2025-08", "2025-09"))));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/validation").with(asMember()))
+			.andExpect(jsonPath("$.gates[?(@.gate == 'COMPLETENESS')].findings[*].message").value(org.hamcrest.Matchers.hasItem(
+					"2 records state a documented zero: ACT-0001 (Standby gensets, 2025-08-01 to 2025-08-31: 'Genset off for "
+							+ "overhaul; hour meter unchanged', Hour meter); ACT-0002 (Standby gensets, 2025-09-01 to 2025-09-30: "
+							+ "'Still off for overhaul; meter unchanged', Hour meter).")));
+		// the run keeps the zero lines, and the report counts the source-months that report a zero
+		freeze(inventoryId);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.dataQuality.statement").value(org.hamcrest.Matchers.endsWith("2 source-months report a documented zero.")));
+	}
+
+	@Test
+	void theImportAcceptsAZeroWithANoteAndWarnsOnThePattern() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		var gensets = createStream(mine, "Standby gensets", "Diesel");
+		postActivity(orgId, """
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption", "quantity": 9000,
+				 "unit": "litre", "periodStart": "2025-07-01", "periodEnd": "2025-07-31", "dataQuality": "MEASURED",
+				 "dataSource": "Fuel register", "evidenceRef": "INV-7"}""".formatted(mine, gensets)).andExpect(status().isCreated());
+		var header = "facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,supplier,evidence_ref,data_quality,note\r\n";
+		// a zero with no note, and a negative quantity, are rejected by row
+		var bad = (header
+				+ "Nkran Mine,Standby gensets,Diesel consumption,0,litre,2025-08-01,2025-08-31,Hour meter,,LOG-8,MEASURED,\r\n"
+				+ "Nkran Mine,Standby gensets,Diesel consumption,-5,litre,2025-09-01,2025-09-30,Hour meter,,LOG-9,MEASURED,Meter read\r\n")
+			.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		mvc.perform(importRequest(orgId, new org.springframework.mock.web.MockMultipartFile("file", "zeros.csv", "text/csv", bad), null)
+			.param("dryRun", "true"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.rejected[0].row").value(2))
+			.andExpect(jsonPath("$.rejected[0].message").value("quantity is 0: say in the note what showed that nothing was consumed"))
+			.andExpect(jsonPath("$.rejected[1].message").value(org.hamcrest.Matchers.containsString("quantity must be 0 or more")));
+		// zeros with notes import, and the preview says what is worth a look
+		var csv = (header
+				+ "Nkran Mine,Standby gensets,Diesel consumption,0,litre,2025-08-01,2025-08-31,Hour meter,,LOG-8,MEASURED,Genset off for overhaul all month\r\n"
+				+ "Nkran Mine,Standby gensets,Diesel consumption,0,litre,2025-09-01,2025-09-30,Hour meter,,LOG-9,MEASURED,Genset off for overhaul all month\r\n"
+				+ "Nkran Mine,Standby gensets,Diesel consumption,0,litre,2025-10-01,2025-10-31,Hour meter,,LOG-10,MEASURED,Genset off for overhaul all month\r\n"
+				+ "Nkran Mine,Standby gensets,Diesel consumption,700,litre,2025-11-01,2025-11-30,Fuel register,Total Energies,INV-11,MEASURED,\r\n")
+			.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		var file = new org.springframework.mock.web.MockMultipartFile("file", "zeros.csv", "text/csv", csv);
+		mvc.perform(importRequest(orgId, file, null).param("dryRun", "true"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.rejected").isEmpty())
+			.andExpect(jsonPath("$.rows[0].issues").value(org.hamcrest.Matchers.hasItem("DOCUMENTED_ZERO")))
+			.andExpect(jsonPath("$.rows[0].status").value("READY"))
+			.andExpect(jsonPath("$.warnings[?(@.row == 2)].message").value(org.hamcrest.Matchers.hasItem(
+					"quantity is 0 but 'Standby gensets' recorded 9000 litre the month before")))
+			.andExpect(jsonPath("$.warnings[?(@.row == 3)].message").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(
+					org.hamcrest.Matchers.containsString("the month before")))))
+			.andExpect(jsonPath("$.warnings[*].message").value(org.hamcrest.Matchers.hasItem(
+					"the same note appears on 3 zero rows: say per source what showed nothing was consumed")))
+			.andExpect(jsonPath("$.warnings[?(@.row == 5)].message").value(org.hamcrest.Matchers.hasItem(
+					"'Standby gensets' is recorded with the supplier 'Tank meter 3'; this row names 'Total Energies'")));
+		mvc.perform(importRequest(orgId, file, null)).andExpect(status().isOk()).andExpect(jsonPath("$.imported").value(4));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("q", "total energies"))
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].supplier").value("Total Energies"))
+			.andExpect(jsonPath("$.items[0].quantity").value(700));
+	}
+
+	@Test
+	void aSupplierIsRecordedDiffedAndSearched() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		var id = JsonPath.<String>read(body(postActivity(orgId, """
+				{"facilityId": "%s", "activityType": "Diesel consumption", "quantity": 1000, "unit": "litre",
+				 "periodStart": "2025-03-01", "periodEnd": "2025-03-31", "dataQuality": "MEASURED",
+				 "dataSource": "Fuel invoice", "supplier": "GOIL Obuasi depot", "evidenceRef": "INV-2938"}""".formatted(mine))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.supplier").value("GOIL Obuasi depot"))), "$.id");
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("q", "goil"))
+			.andExpect(jsonPath("$.total").value(1));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("q", "vivo"))
+			.andExpect(jsonPath("$.total").value(0));
+		mvc.perform(put("/api/ghg/activities/" + id).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"facilityId": "%s", "activityType": "Diesel consumption", "quantity": 1000, "unit": "litre",
+				 "periodStart": "2025-03-01", "periodEnd": "2025-03-31", "dataQuality": "MEASURED",
+				 "dataSource": "Fuel invoice", "supplier": "Vivo Energy Ghana", "evidenceRef": "INV-2938",
+				 "reason": "The invoice is Vivo's, not GOIL's"}""".formatted(mine)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.supplier").value("Vivo Energy Ghana"));
+		mvc.perform(get("/api/ghg/activities/" + id + "/revisions").with(asMember()))
+			.andExpect(jsonPath("$[0].changes[?(@.field == 'supplier')].before").value(org.hamcrest.Matchers.contains("GOIL Obuasi depot")))
+			.andExpect(jsonPath("$[0].changes[?(@.field == 'supplier')].after").value(org.hamcrest.Matchers.contains("Vivo Energy Ghana")));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("q", "vivo"))
+			.andExpect(jsonPath("$.total").value(1));
+	}
+
+	@Test
+	void aMonthlyTemplateListsTheFacilitysSources() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		createStream(mine, "Standby gensets", "Diesel");
+		createStream(mine, "Boiler LPG", "LPG");
+		var header = "facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,supplier,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note\r\n";
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/import-template.csv").with(asMember())
+			.param("facilityId", mine).param("month", "2025-09"))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("activity-nkran-mine-2025-09.csv")))
+			.andExpect(content().string(header
+					+ "Nkran Mine,Boiler LPG,Boiler LPG,,,2025-09-01,2025-09-30,,,,,,,\r\n"
+					+ "Nkran Mine,Standby gensets,Standby gensets,,,2025-09-01,2025-09-30,,,,,,,\r\n"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/import-template.csv").with(asMember())
+			.param("facilityId", mine).param("month", "2025-9"))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.month").value("Give the month as 2025-09."));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/import-template.csv").with(asMember())
+			.param("facilityId", UUID.randomUUID().toString()).param("month", "2025-09"))
+			.andExpect(status().isNotFound());
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/import-template.csv").with(asOutsider())
+			.param("facilityId", mine).param("month", "2025-09"))
+			.andExpect(status().isNotFound());
+		// without parameters, the template of spec 04.5 with its example row, now with a supplier
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/import-template.csv").with(asMember()))
+			.andExpect(content().string(org.hamcrest.Matchers.startsWith(header + "Nkran Mine,Standby gensets,Diesel consumption,12500,litre,2025-03-01,2025-03-31,Fuel register,GOIL Obuasi depot,INV-2938")));
+	}
 }

@@ -81,6 +81,10 @@ public class ActivityRecord {
 	@Column(name = "data_source", length = 120)
 	private String dataSource;
 
+	// who sold or billed it (spec 04.12); the data source is what showed the figure
+	@Column(length = 120)
+	private String supplier;
+
 	@Column(name = "evidence_ref", length = 150)
 	private String evidenceRef;
 
@@ -122,9 +126,10 @@ public class ActivityRecord {
 
 	ActivityRecord(int recordNo, boolean draft, Facility facility, SourceStream stream, String activityType,
 			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
-			String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
+			String supplier, String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
 			BigDecimal uncertaintyPercent) {
 		this.id = UUID.randomUUID();
+		this.supplier = supplier;
 		this.organizationId = facility.getOrganization().getId();
 		this.recordNo = recordNo;
 		this.draft = draft;
@@ -231,6 +236,10 @@ public class ActivityRecord {
 		return dataSource;
 	}
 
+	public String getSupplier() {
+		return supplier;
+	}
+
 	public String getEvidenceRef() {
 		return evidenceRef;
 	}
@@ -290,7 +299,7 @@ public class ActivityRecord {
 	/** The fields a correction would change, before it is applied, for the revision history. */
 	List<Change> changesTo(boolean draft, Facility facility, SourceStream stream, String activityType,
 			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
-			String evidenceRef, DataQuality dataQuality, String note, int dataQualityTier,
+			String supplier, String evidenceRef, DataQuality dataQuality, String note, int dataQualityTier,
 			BigDecimal uncertaintyPercent) {
 		var changes = new ArrayList<Change>();
 		diff(changes, "draft", String.valueOf(this.draft), String.valueOf(draft));
@@ -302,6 +311,7 @@ public class ActivityRecord {
 		diff(changes, "periodStart", text(this.periodStart), text(periodStart));
 		diff(changes, "periodEnd", text(this.periodEnd), text(periodEnd));
 		diff(changes, "dataSource", this.dataSource, dataSource);
+		diff(changes, "supplier", this.supplier, supplier);
 		diff(changes, "evidenceRef", this.evidenceRef, evidenceRef);
 		diff(changes, "dataQuality", this.dataQuality.name(), dataQuality.name());
 		diff(changes, "dataQualityTier", String.valueOf(this.dataQualityTier), String.valueOf(dataQualityTier));
@@ -335,6 +345,7 @@ public class ActivityRecord {
 		diff(changes, "periodStart", null, text(this.periodStart));
 		diff(changes, "periodEnd", null, text(this.periodEnd));
 		diff(changes, "dataSource", null, this.dataSource);
+		diff(changes, "supplier", null, this.supplier);
 		diff(changes, "evidenceRef", null, this.evidenceRef);
 		diff(changes, "dataQuality", null, this.dataQuality.name());
 		diff(changes, "dataQualityTier", null, String.valueOf(this.dataQualityTier));
@@ -345,9 +356,11 @@ public class ActivityRecord {
 
 	/** In-place correction (CORRECT-01); runs snapshot, so history is unaffected. */
 	void update(boolean draft, Facility facility, SourceStream stream, String activityType, BigDecimal quantity,
-			String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource, String evidenceRef,
-			DataQuality dataQuality, String note, int dataQualityTier, BigDecimal uncertaintyPercent) {
+			String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource, String supplier,
+			String evidenceRef, DataQuality dataQuality, String note, int dataQualityTier,
+			BigDecimal uncertaintyPercent) {
 		this.draft = draft;
+		this.supplier = supplier;
 		this.dataQualityTier = dataQualityTier;
 		this.uncertaintyPercent = uncertaintyPercent;
 		this.facility = facility;

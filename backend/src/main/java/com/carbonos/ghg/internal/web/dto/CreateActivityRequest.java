@@ -16,7 +16,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -29,12 +29,15 @@ public record CreateActivityRequest( //
 		@NotNull UUID facilityId, //
 		UUID streamId, //
 		@NotBlank @Size(max = 120) String activityType, //
-		@Positive @Digits(integer = 11, fraction = 3) BigDecimal quantity, //
+		// 0 is a documented zero: a fact with a note of 10+ characters (spec 04.12)
+		@PositiveOrZero @Digits(integer = 11, fraction = 3) BigDecimal quantity, //
 		@Size(max = 30) String unit, //
 		// the period the quantity was consumed or emitted over (spec 04.2); a reading is a one-day period
 		@PastOrPresent(message = "The period start cannot be after today.") LocalDate periodStart, //
 		@PastOrPresent(message = "The period end cannot be after today.") LocalDate periodEnd, //
 		@Size(max = 120) String dataSource, //
+		// who sold or billed it; the data source is what showed the figure (spec 04.12)
+		@Size(max = 120) String supplier, //
 		@Size(max = 150) String evidenceRef, //
 		@NotNull DataQuality dataQuality, //
 		@Size(max = 255) String note, //
@@ -50,7 +53,7 @@ public record CreateActivityRequest( //
 
 	public GhgService.ActivityFacts toFacts() {
 		return new GhgService.ActivityFacts(Boolean.TRUE.equals(draft), facilityId, streamId, activityType, quantity,
-				unit, periodStart, periodEnd == null ? periodStart : periodEnd, dataSource, evidenceRef, dataQuality,
+				unit, periodStart, periodEnd == null ? periodStart : periodEnd, dataSource, supplier, evidenceRef, dataQuality,
 				note, dataQualityTier, uncertaintyPercent, newStream == null ? null : newStream.toFacts(),
 				confirmNewStreamReason);
 	}
