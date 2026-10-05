@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
+last_reviewed: 2026-10-05
 description: Enter one activity record beside the register, describe a new emission source on it when the invoice arrives first, and read what Ready and Needs attention mean.
 role: Preparer
 minutes: 5
@@ -25,7 +25,7 @@ Enter one record when an invoice, meter reading or log arrives; for a spreadshee
 3. Choose the **Emission source**, or **New emission source…** to describe one (next section). The detail prints the default a source carries, for example "Source default: Scope 2 · Purchased electricity."
 4. Fill **Period start ***: "The period the quantity covers, not the invoice date." Fill **Period end**, or leave it: "Same as the start for a single reading."
 5. Fill **Activity quantity *** and choose the unit. **Unregistered unit…** takes a code the list lacks.
-6. Fill **Data source** and **Document reference**: "Invoice, meter reading or log number as printed on the document."
+6. Fill **Data source** and **Document reference**: "Invoice, meter reading or log number as printed on the document." **Supplier or counterparty (optional)** is who sold or billed it; the search box finds a record by it.
 7. Under **Notes**, add **Context for the reviewer** when the figure needs explaining.
 8. Under **Data quality**, keep **Method** as **Measured** for metered or invoiced figures, or choose **Estimated** or **Calculated**.
 9. Set **Quality tier** if the source justifies one; blank follows the method. Add **Uncertainty, ± %** where the source states it.
@@ -58,6 +58,12 @@ The strip above the table counts the checks: **Records ready**, 7 "of 7" for Gye
 ## A period that straddles the year end
 
 Enter the record whole, as ACT-0007 was: `1600` litre, **Period start** `2025-12-15`, **Period end** `2026-01-15`; do not split the quantity by hand. Each inventory's setting **Records that straddle the period or a membership window** decides: **Pro-rate by days (default)** warns before the run, "17 of 32 days fall inside the reporting period and the membership window: the run pro-rates it to 53.13%", and **Block the run until the record is split** waits for one record per period.
+
+## A month with nothing to report
+
+A source that ran nothing is recorded as a fact, not left empty and not drafted. Type `0` as the quantity: the field reads "A zero needs a note: what showed that nothing was consumed. A meter or log reading is measured; 'the site said so' is estimated." and **Notes** reads "Required for a zero". Give the data source and the document reference as for any record (the meter index unchanged, the register page with no issue), and write at least 10 characters under **Context for the reviewer**, or **Save** is refused: "A zero needs a note of at least 10 characters: what showed that nothing was consumed."
+
+The register prints the row as "0 litre · documented zero" and the status follows the usual rules. In an inventory, the coverage matrix draws the month as a crossed circle, "documented zero", and the pre-flight lists every zero with its months, note and data source. The report counts the source-months that report a documented zero, so a reader can tell a zero from an exclusion.
 
 ## What happens next
 

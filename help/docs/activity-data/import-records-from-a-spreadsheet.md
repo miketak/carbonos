@@ -22,7 +22,7 @@ An import brings several source records into the register at once, after a previ
 ## Import the file
 
 1. Open **Activity data** and click **Import**. The page **Import activity data** opens, under the breadcrumb **Activity data › Import**.
-2. Starting from scratch, click **Download CSV template** under **Use the activity template**. **What each column must contain** opens the column reference.
+2. Starting from scratch, click **Download CSV template** under **Use the activity template**. **What each column must contain** opens the column reference. For a month's meter reads, choose the facility and the month under **Download a monthly template**: one row per emission source, the period filled, so a source that ran nothing is recorded as 0 with a note, not deleted.
 3. Under **Select your completed spreadsheet**, click **Choose a CSV or XLSX file**, or drop the file on the page. The page reads "Uploading…" with the percentage, then "Checking *N* rows…" (for a workbook, "Checking the workbook…").
 4. Check **Control totals** against the spreadsheet's footer: rows and summed quantity per facility and emission source.
 5. Read **Worth a look before adding**. These warnings do not stop the import.
