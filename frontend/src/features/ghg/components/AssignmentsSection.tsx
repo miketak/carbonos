@@ -795,7 +795,7 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
       <p className="text-[13px] text-ink-muted">
         Months of the reporting period with data from included records, per facility and emission
         source. A source with no data at all shows every month empty; a half circle is a draft still
-        to be entered.
+        to be entered; a crossed circle is a documented zero.
       </p>
       <div className="mt-3 overflow-x-auto">
         <table
@@ -818,7 +818,7 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
                 <td className="border-b border-hairline px-2 py-1.5 whitespace-nowrap">
                   <span className="text-ink-muted">{row.facilityName}</span> ·{' '}
                   {row.streamName ?? row.activityType}
-                  {row.coveredMonths.length === 0 && (
+                  {row.coveredMonths.length === 0 && row.zeroMonths.length === 0 && (
                     <Chip tone="warning" className="ml-2 h-[22px] text-xs">
                       no data
                     </Chip>
@@ -827,18 +827,32 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
                 {months.map((month) => {
                   const covered = row.coveredMonths.includes(month)
                   // spec 04.6: a draft's month is pending, data expected but not received
-                  const pending = !covered && row.pendingMonths.includes(month)
+                  // spec 04.12: a month whose records are all documented zeros is its own state
+                  const zero = !covered && row.zeroMonths.includes(month)
+                  const pending = !covered && !zero && row.pendingMonths.includes(month)
                   return (
                     <td
                       key={month}
                       title={`${row.streamName ?? row.activityType}, ${month}: ${
-                        covered ? 'data' : pending ? 'draft on file, data expected' : 'no data'
+                        covered
+                          ? 'data'
+                          : zero
+                            ? 'documented zero'
+                            : pending
+                              ? 'draft on file, data expected'
+                              : 'no data'
                       }`}
                       className={`border-b border-hairline px-1 py-1.5 text-center ${
-                        covered ? 'text-primary' : pending ? 'text-warning' : 'text-danger'
+                        covered
+                          ? 'text-primary'
+                          : zero
+                            ? 'text-ink-muted'
+                            : pending
+                              ? 'text-warning'
+                              : 'text-danger'
                       }`}
                     >
-                      {covered ? '●' : pending ? '◐' : '○'}
+                      {covered ? '●' : zero ? '⊘' : pending ? '◐' : '○'}
                     </td>
                   )
                 })}

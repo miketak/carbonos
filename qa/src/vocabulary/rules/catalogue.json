@@ -92,6 +92,13 @@
       "field": null
     },
     {
+      "id": "ghg.activity.zero-needs-note",
+      "module": "ghg",
+      "status": 422,
+      "message": "A zero needs a note of at least 10 characters: what showed that nothing was consumed.",
+      "field": "note"
+    },
+    {
       "id": "ghg.adoption.answer-required",
       "module": "ghg",
       "status": 422,
@@ -764,5 +771,5 @@
       "field": null
     }
   ],
-  "sha256": "a9b976d1c1b161c2e7228303111a428a87be7bae778630a870faa8a9856eceaa"
+  "sha256": "481fe2a01dd5e67de2db24ca822da8cc91fcad536ca440169f711ae720b53c3e"
 }

@@ -270,8 +270,8 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       await open(page, op.nav)
       return
     case 'tab':
-      // exact: the detail's Exclude tab sits beside the list's Excluded tab (spec 10)
-      await page.getByRole('tab', { name: op.name, exact: true }).first().click()
+      // exact, or the caption followed by its count ("Evidence 0"): the detail's Exclude tab sits beside the list's Excluded tab (spec 10)
+      await page.getByRole('tab', { name: new RegExp(`^${escapeRegExp(op.name)}( \\d+)?$`) }).first().click()
       return
     case 'click': {
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page

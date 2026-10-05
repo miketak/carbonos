@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/003-activity-data.yaml (sha256 e275a38618b7dd11492ff1466d2c48873dcfc30151680eada7ae8ead9238a029); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/003-activity-data.yaml (sha256 634e185ed66b0db2a7fa7001c7615920065f90a71eb625d635337f22145a26b0); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 3, "e275a38618b7dd11492ff1466d2c48873dcfc30151680eada7ae8ead9238a029")
+const P = procedure("governance", 3, "634e185ed66b0db2a7fa7001c7615920065f90a71eb625d635337f22145a26b0")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 3: Activity data", () => {
@@ -16,7 +16,7 @@ test.describe("Procedure 3: Activity data", () => {
     })
     await test.step("3.A1.2", async () => {
       const s = P.step("3.A1.2")
-      await s.expect(undefined, [{"outcome":"importTemplateHeader","args":{"organization":"Adansi Foods Ltd","header":"facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note"}}])
+      await s.expect(undefined, [{"outcome":"importTemplateHeader","args":{"organization":"Adansi Foods Ltd","header":"facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,supplier,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note"}}])
     })
     await test.step("3.A1.3", async () => {
       const s = P.step("3.A1.3")
@@ -59,6 +59,11 @@ test.describe("Procedure 3: Activity data", () => {
       const s = P.step("3.C1.3")
       const out = await s.do("correctActivity", {"organization":"Adansi Foods Ltd","record":"ACT-0009","evidenceRef":"WB-2025-11","reason":"Weighbridge ticket found"})
       await s.expect(out, [{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0009","evidenceRef":"WB-2025-11","issues":["NO_STREAM","EVIDENCE_REFERENCE_ONLY"]}},{"outcome":"attentionCount","args":{"organization":"Adansi Foods Ltd","count":7},"why":"\"Needs evidence\" goes and the drawer reads \"Reference WB-2025-11, nothing attached\"; the emission source is still missing, and a record leaves the count only when every item on it is resolved"}])
+    })
+    await test.step("3.C1.4", async () => {
+      const s = P.step("3.C1.4")
+      const out = await s.do("resolveAttention", {"organization":"Adansi Foods Ltd"})
+      await s.expect(out, [{"outcome":"attentionListed","args":{"organization":"Adansi Foods Ltd","count":7},"why":"the register lists exactly the seven after the correction, with the tab in the address; a stale list of ten was seen once in the walkthrough of 2026-09-24 (P3 C1.2)"}])
     })
   })
 
@@ -201,6 +206,30 @@ test.describe("Procedure 3: Activity data", () => {
       const s = P.step("3.J2.4")
       const out = await s.do("removeStream", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Chiller units"})
       await s.expect(out, [{"outcome":"streamAbsent","args":{"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Chiller units"},"why":"with its records removed the source can go; Kumasi Plant is back to the two sources procedure 2 gave it, and the history keeps the import, the mapping and the removals"}])
+    })
+  })
+
+  test("K1. A month with nothing to report is a fact", async () => {
+    await test.step("3.K1.1", async () => {
+      const s = P.step("3.K1.1").as("ama")
+      await s.expect(undefined, [{"outcome":"observe","args":{"text":"Click **+ Add activity**, choose Kumasi Plant and Boiler LPG, type 0 as the quantity: the field reads \"A zero needs a note: what showed that nothing was consumed. A meter or log reading is measured; 'the site said so' is estimated.\" and **Notes** reads \"Required for a zero\". Click **Save** with the note empty: \"A zero needs a note of at least 10 characters: what showed that nothing was consumed.\" prints under **Context for the reviewer** and nothing is saved."}}])
+    })
+    await test.step("3.K1.2", async () => {
+      const s = P.step("3.K1.2")
+      const out = await s.do("addActivity", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","source":"Boiler LPG","activityType":"Boiler LPG, February","quantity":0,"unit":"litre","periodStart":"2025-02-01","periodEnd":"2025-02-28","dataSource":"Gas supplier delivery note","evidenceRef":"LPG-2025-02","supplier":"Ghana Gas","note":"Boiler off for relining; no delivery in February"})
+      await s.expect(out, [{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0017","quantity":0,"unit":"litre","issues":["DOCUMENTED_ZERO","EVIDENCE_REFERENCE_ONLY"],"supplier":"Ghana Gas"},"why":"a zero with its note, a data source and a reference is Ready and labelled \"documented zero\"; the supplier is who billed it, the data source what showed the figure"}])
+    })
+    await test.step("3.K1.3", async () => {
+      const s = P.step("3.K1.3")
+      const out = await s.do("removeActivity", {"organization":"Adansi Foods Ltd","record":"ACT-0017","reason":"Scratch record for the documented-zero case"})
+      await s.expect(out, [{"outcome":"activityCount","args":{"organization":"Adansi Foods Ltd","count":10}}])
+    })
+  })
+
+  test("K2. The monthly template", async () => {
+    await test.step("3.K2.1", async () => {
+      const s = P.step("3.K2.1").as("ama")
+      await s.expect(undefined, [{"outcome":"monthlyTemplateRows","args":{"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","month":"2025-09","sources":["Boiler LPG","Plant grid supply"]},"why":"a source that ran nothing is recorded as 0 with a note and its reading, not deleted; data quality is left blank because a zero typed from memory is an estimate"}])
     })
   })
 })

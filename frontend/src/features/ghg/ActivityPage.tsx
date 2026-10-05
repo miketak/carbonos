@@ -263,6 +263,13 @@ export function ActivityPage() {
     </div>
   )
 
+  // spec 04.12: while a tab or page switch fetches, the previous rows are not the answer; a failure is said
+  const busy = activitiesQuery.isPlaceholderData && activitiesQuery.isFetching
+  const failed = activitiesQuery.isError && (
+    <p role="alert" className="text-sm font-medium text-danger">
+      {refusalMessage(activitiesQuery.error, myRole)}
+    </p>
+  )
   const loading = activitiesQuery.isPending && (
     <div aria-label="Loading activities" className="flex flex-col gap-2">
       <Skeleton className="h-12" />
@@ -378,27 +385,30 @@ export function ActivityPage() {
           </FilterRow>
 
           {loading}
+          {failed}
           {emptyState}
           {activities && activities.length > 0 && (
-            <ActivityTable
-              activities={activities}
-              openId={filters.record}
-              cursorId={effectiveCursorId}
-              selected={selected}
-              selectable={mayWrite(myRole)}
-              onToggle={(id, checked) =>
-                setSelected((current) => {
-                  const next = new Set(current)
-                  if (checked) next.add(id)
-                  else next.delete(id)
-                  return next
-                })
-              }
-              onToggleAll={(checked) =>
-                setSelected(checked ? new Set(activities.map((a) => a.id)) : new Set())
-              }
-              onOpen={(activity) => set({ record: activity.id })}
-            />
+            <div aria-busy={busy} className={busy ? 'opacity-60 transition-opacity' : undefined}>
+              <ActivityTable
+                activities={activities}
+                openId={filters.record}
+                cursorId={effectiveCursorId}
+                selected={selected}
+                selectable={mayWrite(myRole)}
+                onToggle={(id, checked) =>
+                  setSelected((current) => {
+                    const next = new Set(current)
+                    if (checked) next.add(id)
+                    else next.delete(id)
+                    return next
+                  })
+                }
+                onToggleAll={(checked) =>
+                  setSelected(checked ? new Set(activities.map((a) => a.id)) : new Set())
+                }
+                onOpen={(activity) => set({ record: activity.id })}
+              />
+            </div>
           )}
           {total > 0 && (
             <TableFooter
@@ -492,9 +502,13 @@ export function ActivityPage() {
             <>
               {readinessTabs}
               {loading}
+              {failed}
               {emptyState}
               {activities && activities.length > 0 && (
-                <div className="flex flex-col">
+                <div
+                  className={`flex flex-col ${busy ? 'opacity-60 transition-opacity' : ''}`}
+                  aria-busy={busy}
+                >
                   {activities.map((activity) => {
                     const blocking = activity.issues.filter(
                       (issue) => issue !== 'EVIDENCE_REFERENCE_ONLY',
@@ -508,7 +522,7 @@ export function ActivityPage() {
                         issue={
                           attention && blocking[0] ? activityIssueLabels[blocking[0]] : undefined
                         }
-                        value={`${formatQuantity(activity.quantity)}${activity.unit ? ` ${activity.unit}` : ''}`}
+                        value={`${formatQuantity(activity.quantity)}${activity.unit ? ` ${activity.unit}` : ''}${activity.quantity === 0 ? ' · documented zero' : ''}`}
                         selected={activity.id === filters.record}
                         attention={attention}
                         onClick={() => set({ record: activity.id })}

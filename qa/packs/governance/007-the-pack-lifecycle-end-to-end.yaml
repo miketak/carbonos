@@ -188,7 +188,7 @@ sections:
         steps:
           - do: { importActivities: { organization: "${org}", file: adansi-2026.csv } }
             expect:
-              - activityExists: { organization: "${org}", record: ACT-0017, quantity: 2100, unit: litre }
+              - activityExists: { organization: "${org}", record: ACT-0018, quantity: 2100, unit: litre }
               - activityExists: { organization: "${org}", record: ACT-0015, quantity: 110, unit: MWh }
                 why: "\"2 records imported.\"; the two rows removed in procedure 3 do not count as duplicates"
           - do: { createInventory: { organization: "${org}", name: FY2026, periodStart: "2026-01-01", periodEnd: "2026-12-31", approach: OPERATIONAL_CONTROL, gwpSet: AR5, straddle: PRO_RATE, prefillBoundary: true } }

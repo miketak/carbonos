@@ -687,6 +687,8 @@ export type ReadinessIssue =
   | 'NO_DATA_SOURCE'
   | 'NO_EVIDENCE'
   | 'EVIDENCE_REFERENCE_ONLY'
+  /** A quantity of 0 with its note (spec 04.12): informational, the status stands. */
+  | 'DOCUMENTED_ZERO'
 
 /** An organizational fact: no scope, category, or factor (spec 05). */
 export interface Activity {
@@ -711,6 +713,8 @@ export interface Activity {
   periodStart: string | null
   periodEnd: string | null
   dataSource: string | null
+  /** Who sold or billed it (spec 04.12); the data source is what showed the figure. */
+  supplier: string | null
   evidenceRef: string | null
   dataQuality: DataQuality
   note: string | null
@@ -767,6 +771,7 @@ export interface ActivityInput {
   periodStart?: string
   periodEnd?: string
   dataSource?: string
+  supplier?: string
   evidenceRef?: string
   dataQuality: DataQuality
   note?: string
@@ -1348,6 +1353,8 @@ export interface CoverageRow {
   coveredMonths: string[]
   /** Months a draft's period touches: data expected, not received (spec 04.6). */
   pendingMonths: string[]
+  /** Months whose included records are all documented zeros (spec 04.12). */
+  zeroMonths: string[]
 }
 
 /** One page of a register (spec 04.5). */
@@ -2416,8 +2423,15 @@ export function importBatchFileUrl(batchId: string): string {
   return `/api/ghg/import-batches/${batchId}/file`
 }
 
-export function activityImportTemplateUrl(organizationId: string): string {
-  return `/api/ghg/organizations/${organizationId}/activities/import-template.csv`
+/** The template with its example row, or with a facility and a month, one row per emission source (spec 04.12). */
+export function activityImportTemplateUrl(
+  organizationId: string,
+  monthly?: { facilityId: string; month: string },
+): string {
+  const base = `/api/ghg/organizations/${organizationId}/activities/import-template.csv`
+  if (!monthly) return base
+  const params = new URLSearchParams({ facilityId: monthly.facilityId, month: monthly.month })
+  return `${base}?${params.toString()}`
 }
 
 export function createActivity(organizationId: string, input: ActivityInput): Promise<Activity> {

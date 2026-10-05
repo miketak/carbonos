@@ -215,6 +215,8 @@ export const S = {
         STATIONARY_COMBUSTION: 'Stationary combustion',
         MOBILE_COMBUSTION: 'Mobile combustion',
         PURCHASED_ELECTRICITY: 'Purchased electricity',
+        PROCESS: 'Process',
+        FUGITIVE: 'Fugitive',
       } as Record<string, string>,
     },
     text: {
@@ -237,6 +239,7 @@ export const S = {
       assign: 'Assign',
       setTier: 'Set data quality tier',
       addEvidenceLink: 'Add evidence link',
+      downloadMonthly: 'Download the monthly template',
       downloadTemplate: 'Download CSV template',
       addActivity: '+ Add activity',
       save: 'Save',
@@ -247,6 +250,12 @@ export const S = {
     },
     field: {
       spreadsheetFile: 'Spreadsheet file',
+      templateFacility: 'Facility',
+      month: 'Month',
+      unit: 'Unit',
+      dataSource: 'Data source',
+      supplier: 'Supplier or counterparty (optional)',
+      note: 'Context for the reviewer',
       whyThisSource: 'Why this source?',
       kind: 'Kind',
       activityType: 'Activity type *',
@@ -266,6 +275,7 @@ export const S = {
     },
     dialog: {
       import: 'Import activity data',
+      newActivity: 'New activity',
     },
     option: {
       newEmissionSource: 'New emission source…',
@@ -281,6 +291,8 @@ export const S = {
       decideUnknown: 'Decide',
       addedDuringImport: 'added during import',
       removeSourceDialog: 'Remove emission source?',
+      documentedZero: 'documented zero',
+      requiredForZero: 'Required for a zero',
       supportingEvidence: 'Supporting evidence',
       resolve: 'Resolve',
       noSource: 'No emission source',

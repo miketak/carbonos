@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
@@ -7,7 +7,7 @@ import type { ActivityImportResult, SourceStream } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
 
-import { getOrganization, importActivities, listStreams } from './api'
+import { getOrganization, importActivities, listFacilities, listStreams } from './api'
 
 const gensets: SourceStream = {
   id: 'str-1',
@@ -144,6 +144,26 @@ function renderPage() {
 beforeEach(() => {
   vi.mocked(importActivities).mockReset()
   vi.mocked(listStreams).mockReset().mockResolvedValue([gensets, boiler])
+  vi.mocked(listFacilities)
+    .mockReset()
+    .mockResolvedValue([
+      {
+        id: 'fac-1',
+        name: 'Nkran Mine',
+        location: 'Obuasi, Ghana',
+        country: 'GH',
+        gridRegion: null,
+        effectiveGridRegion: null,
+        facilityType: null,
+        leaseType: null,
+        leaseFrom: null,
+        leaseTo: null,
+        entityId: 'ent-1',
+        entityName: 'Asante Gold Resources',
+        relationshipType: 'SUBSIDIARY',
+        createdAt: '2026-08-01T00:00:00Z',
+      },
+    ])
   vi.mocked(getOrganization).mockReset().mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
@@ -323,4 +343,20 @@ test('a rejected row keeps Add records disabled and names the row', async () => 
   expect(await within(form).findByText(/Nothing will import: 1 row rejected/)).toBeInTheDocument()
   expect(within(form).getByText("quantity 'abc' is not a number")).toBeInTheDocument()
   expect(within(form).getByRole('button', { name: 'Add records' })).toBeDisabled()
+})
+
+test('a facility and a month give the monthly template link (spec 04.12)', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  const form = screen.getByRole('form', { name: 'Import activity data' })
+  expect(within(form).getByText('Choose the facility and the month.')).toBeInTheDocument()
+  await within(form).findByRole('option', { name: 'Nkran Mine' })
+  await user.selectOptions(within(form).getByLabelText('Facility'), 'fac-1')
+  fireEvent.change(within(form).getByLabelText('Month'), { target: { value: '2025-09' } })
+  expect(
+    await within(form).findByRole('link', { name: 'Download the monthly template' }),
+  ).toHaveAttribute(
+    'href',
+    '/api/ghg/organizations/org-1/activities/import-template.csv?facilityId=fac-1&month=2025-09',
+  )
 })

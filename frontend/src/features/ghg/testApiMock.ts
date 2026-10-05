@@ -55,7 +55,10 @@ export const importBatchRenderedUrl = vi.fn(
   (id: string) => `/api/ghg/import-batches/${id}/rendered.csv`,
 )
 export const activityImportTemplateUrl = vi.fn(
-  (orgId: string) => `/api/ghg/organizations/${orgId}/activities/import-template.csv`,
+  (id: string, monthly?: { facilityId: string; month: string }) =>
+    monthly
+      ? `/api/ghg/organizations/${id}/activities/import-template.csv?facilityId=${monthly.facilityId}&month=${monthly.month}`
+      : `/api/ghg/organizations/${id}/activities/import-template.csv`,
 )
 export const getActivity = vi.fn()
 export const createActivity = vi.fn()

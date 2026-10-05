@@ -93,6 +93,7 @@ const diesel: Activity = {
   periodStart: '2025-03-01',
   periodEnd: '2025-03-31',
   dataSource: 'Fuel invoice',
+  supplier: null,
   evidenceRef: 'INV-2938',
   dataQuality: 'MEASURED',
   note: null,
@@ -598,4 +599,13 @@ test('a verifier opens a record in a read-only drawer, with no fields and no Sav
   expect(within(drawer).getByText('ACT-0001')).toBeInTheDocument()
   expect(within(drawer).queryByLabelText('Activity type *')).not.toBeInTheDocument()
   expect(within(drawer).queryByRole('button', { name: /^Save/ })).not.toBeInTheDocument()
+})
+
+test('a failed fetch says so where the table would be, instead of a blank page (spec 04.12)', async () => {
+  vi.mocked(searchActivities).mockRejectedValue(new Error('down'))
+  renderPage()
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'CarbonOS could not reach the server. Try again.',
+  )
+  expect(screen.queryByText('Diesel consumption')).not.toBeInTheDocument()
 })

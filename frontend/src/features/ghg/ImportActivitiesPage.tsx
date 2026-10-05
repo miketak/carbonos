@@ -22,7 +22,14 @@ import { decisionComplete, ImportDecisionCard } from './components/ImportDecisio
 import type { DecisionDraft } from './components/ImportDecisionCard'
 import { activityIssueLabels, formatRecordPeriod } from './format'
 import { similarSources } from './similarSources'
-import { useImportActivities, useOrganizationQuery, useStreamsQuery } from './useGhg'
+import {
+  useFacilitiesQuery,
+  useImportActivities,
+  useOrganizationQuery,
+  useStreamsQuery,
+} from './useGhg'
+import { MonthField } from '../../components/MonthField'
+import { SelectField } from '../../components/Field'
 
 const PREVIEW_ROWS = 20
 
@@ -99,7 +106,11 @@ export function ImportActivitiesPage() {
   const organizationQuery = useOrganizationQuery(organizationId)
   const myRole = organizationQuery.data?.myRole
   const streamsQuery = useStreamsQuery(organizationId)
+  const facilitiesQuery = useFacilitiesQuery(organizationId)
   const importActivities = useImportActivities(organizationId)
+  // spec 04.12: the monthly template, one row per emission source of a facility
+  const [templateFacility, setTemplateFacility] = useState('')
+  const [templateMonth, setTemplateMonth] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [rowCount, setRowCount] = useState<number | null>(null)
   const [preview, setPreview] = useState<ActivityImportResult | null>(null)
@@ -230,6 +241,49 @@ export function ImportActivitiesPage() {
               label="What each column must contain"
               className="mt-1 ml-3"
             />
+            <div className="mt-4 flex flex-col gap-3 rounded-lg border border-hairline bg-surface-sunken p-4">
+              <div>
+                <h4 className="text-sm font-semibold">Download a monthly template</h4>
+                <p className="text-[13px] text-ink-muted">
+                  One row per emission source of the facility for the month. A source that ran
+                  nothing is recorded as 0 with a note and its reading, not deleted.
+                </p>
+              </div>
+              <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+                <SelectField
+                  label="Facility"
+                  value={templateFacility}
+                  onChange={(event) => setTemplateFacility(event.target.value)}
+                >
+                  <option value="">Choose a facility</option>
+                  {(facilitiesQuery.data ?? []).map((facility) => (
+                    <option key={facility.id} value={facility.id}>
+                      {facility.name}
+                    </option>
+                  ))}
+                </SelectField>
+                <MonthField
+                  label="Month"
+                  value={templateMonth}
+                  onChange={setTemplateMonth}
+                  allLabel="Choose a month"
+                />
+              </div>
+              {templateFacility !== '' && templateMonth !== '' ? (
+                <a
+                  href={activityImportTemplateUrl(organizationId, {
+                    facilityId: templateFacility,
+                    month: templateMonth,
+                  })}
+                  className="self-start text-sm font-medium text-link hover:underline"
+                  download
+                >
+                  Download the monthly template
+                </a>
+              ) : (
+                <p className="text-[13px] text-ink-muted">Choose the facility and the month.</p>
+              )}
+            </div>
           </Step>
           <Step number={2} title="Select your completed spreadsheet">
             <label
