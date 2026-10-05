@@ -17,7 +17,7 @@
 - The fixture files `adansi-2025.csv`, `adansi-2025-rejected.csv`, `adansi-2026.csv`, `source-document.txt` and `not-evidence.zip`.
 - Ama in the normal window.
 - Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):
-- Ama Owusu signs in with `you+ama@…` and `Ama-pass-2026`, in the private window.
+- Ama Owusu signs in with `you+ama@…` (the Ama alias) and `Ama-pass-2026`, in the private window.
 
 ## A. The clean file
 
@@ -25,7 +25,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
+| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
 | 2 | Look. | **Download CSV template** gives a file whose header is `facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note`, the same as the fixture's. |  |  |
 | 3 | Click **Import CSV** and choose `adansi-2025.csv`. | The file is checked at once, and nothing is written. **Control totals** groups the rows by facility, emission source and unit: Kumasi Plant, Boiler LPG, 2,400 litre; Kumasi Plant, Plant grid supply, 120 MWh; Tema Depot, Delivery fleet, 5,000 litre. "10 records to add" lists each row with its facility and period. Under **Worth a look before adding**, row 7 is named: "the period is longer than one month (2025-12-15 to 2026-01-15)". Rows 2, 3, 4 read **Ready**. 7 rows read "No emission source" and 2 of them "Needs evidence": "Missing source" appears nowhere, every row names its data source. |  |  |
 

@@ -31,14 +31,18 @@ export function narrationContext(pack: Pack): NarrationContext {
 /**
  * The address a step types or reads, so a tester never leaves the page to
  * look it up: the README's placeholder `you+kofi@…` (an alias of the mailbox
- * the tester reads), or, for the seeded administrator whose account the
+ * the tester reads) with the account's tag beside it as the fallback
+ * reference ("the Kofi alias", but "the Admin B alias": the README names the
+ * administrators in full), or, for the seeded administrator whose account the
  * engineering team made for the tester's own address, words.
  */
 export function addressOf(pack: Pack, key: string): string {
   const actor = resolveActor(pack, key)
   if (!actor.account) return 'the visitor'
-  if (actor.account.seeded) return 'your administrator address'
-  return `\`you+${actor.account.alias}@…\``
+  const name = actor.account.name
+  const tag = `the ${name.startsWith('Admin') ? name : name.split(' ')[0]} alias`
+  if (actor.account.seeded) return `your administrator address (${tag})`
+  return `\`you+${actor.account.alias}@…\` (${tag})`
 }
 
 /** The password a step types: the pack's, or, for the seeded administrator, the one the team sent. */

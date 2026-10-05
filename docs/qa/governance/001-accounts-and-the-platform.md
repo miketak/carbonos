@@ -17,12 +17,12 @@
 - The mailbox the aliases in the README point at.
 - A normal window for Admin A and a private window for everyone else.
 - Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):
-- Admin signs in with your administrator address and the password the engineering team sent you, in the normal window.
-- Admin B signs in with `you+adminb@…` and `AdminB-pass-2026`, in the private window.
-- Kofi Mensah signs in with `you+kofi@…` and `Kofi-pass-2026`, in the private window.
-- Esi Boateng signs in with `you+esi@…` and `Esi-pass-2026`, in the private window.
-- Yaw Darko signs in with `you+yaw@…` and `Yaw-pass-2026`, in the private window.
-- Ama Owusu signs in with `you+ama@…` and `Ama-pass-2026`, in the private window.
+- Admin signs in with your administrator address (the Admin alias) and the password the engineering team sent you, in the normal window.
+- Admin B signs in with `you+adminb@…` (the Admin B alias) and `AdminB-pass-2026`, in the private window.
+- Kofi Mensah signs in with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`, in the private window.
+- Esi Boateng signs in with `you+esi@…` (the Esi alias) and `Esi-pass-2026`, in the private window.
+- Yaw Darko signs in with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`, in the private window.
+- Ama Owusu signs in with `you+ama@…` (the Ama alias) and `Ama-pass-2026`, in the private window.
 
 ## A. Your administrator account
 
@@ -30,7 +30,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin in the normal window, sign in as "Admin" with your administrator address and the password the engineering team sent you. | **Organizations** reads 0; **Factor pack editions** counts the three shipped editions; **Open adoption notices** reads 0. No tile carries a client's emissions figure. No access request is waiting. Note the number on **Users**. |  |  |
+| 1 | As Admin in the normal window, sign in as "Admin" with your administrator address (the Admin alias) and the password the engineering team sent you. | **Organizations** reads 0; **Factor pack editions** counts the three shipped editions; **Open adoption notices** reads 0. No tile carries a client's emissions figure. No access request is waiting. Note the number on **Users**. |  |  |
 | 2 | Open **Users**. | Admin is listed as Admin, Active. |  |  |
 
 ## B. Accounts created by an administrator
@@ -39,17 +39,17 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Add user**. Fill in `you+adminb@…`, the display name "Admin B", the role **Admin** and the temporary password `short1`. Submit. | Refused inline: "At least 12 characters, with a letter and a digit.". Admin B is not listed; nothing was created. |  |  |
-| 2 | Click **Add user**. Fill in `you+adminb@…`, the display name "Admin B", the role **Admin** and the temporary password `AdminB-pass-2026`. Submit. | Admin B is listed as Admin, Active. |  |  |
+| 1 | Click **Add user**. Fill in `you+adminb@…` (the Admin B alias), the display name "Admin B", the role **Admin** and the temporary password `short1`. Submit. | Refused inline: "At least 12 characters, with a letter and a digit.". Admin B is not listed; nothing was created. |  |  |
+| 2 | Click **Add user**. Fill in `you+adminb@…` (the Admin B alias), the display name "Admin B", the role **Admin** and the temporary password `AdminB-pass-2026`. Submit. | Admin B is listed as Admin, Active. |  |  |
 
 ### B2. Three member accounts, and a duplicate is refused
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Add user**. Fill in `you+kofi@…`, the display name "Kofi Mensah", the role **Member** and the temporary password `Kofi-pass-2026`. Submit. | Kofi Mensah is listed as Member, Active. |  |  |
-| 2 | Click **Add user**. Fill in `you+esi@…`, the display name "Esi Boateng", the role **Member** and the temporary password `Esi-pass-2026`. Submit. | Esi Boateng is listed as Member, Active. |  |  |
-| 3 | Click **Add user**. Fill in `you+yaw@…`, the display name "Yaw Darko", the role **Member** and the temporary password `Yaw-pass-2026`. Submit. | **Users** reads four more than in case A1. |  |  |
-| 4 | Click **Add user**. Fill in `you+kofi@…`, the display name "Kofi Mensah", the role **Member** and the temporary password `Kofi-pass-2026`. Submit. | Refused: "A user with email '`you+kofi@…`' already exists.". **Users** reads four more than in case A1: an administrator may learn that an account exists, a visitor may not (case C1 says less on purpose). |  |  |
+| 1 | Click **Add user**. Fill in `you+kofi@…` (the Kofi alias), the display name "Kofi Mensah", the role **Member** and the temporary password `Kofi-pass-2026`. Submit. | Kofi Mensah is listed as Member, Active. |  |  |
+| 2 | Click **Add user**. Fill in `you+esi@…` (the Esi alias), the display name "Esi Boateng", the role **Member** and the temporary password `Esi-pass-2026`. Submit. | Esi Boateng is listed as Member, Active. |  |  |
+| 3 | Click **Add user**. Fill in `you+yaw@…` (the Yaw alias), the display name "Yaw Darko", the role **Member** and the temporary password `Yaw-pass-2026`. Submit. | **Users** reads four more than in case A1. |  |  |
+| 4 | Click **Add user**. Fill in `you+kofi@…` (the Kofi alias), the display name "Kofi Mensah", the role **Member** and the temporary password `Kofi-pass-2026`. Submit. | Refused: "A user with email '`you+kofi@…` (the Kofi alias)' already exists.". **Users** reads four more than in case A1: an administrator may learn that an account exists, a visitor may not (case C1 says less on purpose). |  |  |
 | 5 | Open **Dashboard**. | No access request is waiting. **Users** reads four more than in case A1. |  |  |
 
 ## C. An account requested by email
@@ -58,10 +58,10 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Signed out, in the private window, open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Ama Owusu", fill in **Work email** with `you+ama@…`, fill in **Company (optional)** with `Adansi Foods Ltd`, then click **Request access**. | The dialog thanks Ama by name and says the request is with the team. |  |  |
-| 2 | Open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Ama Owusu", fill in **Work email** with `you+ama@…`, fill in **Company (optional)** with `Adansi Foods Ltd`, then click **Request access**. | Refused: "An account or pending request already exists for '`you+ama@…`'.". |  |  |
-| 3 | Open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Kofi Mensah", fill in **Work email** with `you+kofi@…`, then click **Request access**. | Refused: "An account or pending request already exists for '`you+kofi@…`'.": the message does not say whether the address holds an account or a request. |  |  |
-| 4 | Try to sign in as "Ama Owusu" (`you+ama@…`) with any password. | Refused: "Invalid email or password.": a request is not an account. |  |  |
+| 1 | Signed out, in the private window, open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Ama Owusu", fill in **Work email** with `you+ama@…` (the Ama alias), fill in **Company (optional)** with `Adansi Foods Ltd`, then click **Request access**. | The dialog thanks Ama by name and says the request is with the team. |  |  |
+| 2 | Open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Ama Owusu", fill in **Work email** with `you+ama@…` (the Ama alias), fill in **Company (optional)** with `Adansi Foods Ltd`, then click **Request access**. | Refused: "An account or pending request already exists for '`you+ama@…` (the Ama alias)'.". |  |  |
+| 3 | Open `/` in the address bar, then click **Request access**. Fill in **Full name** with "Kofi Mensah", fill in **Work email** with `you+kofi@…` (the Kofi alias), then click **Request access**. | Refused: "An account or pending request already exists for '`you+kofi@…` (the Kofi alias)'.": the message does not say whether the address holds an account or a request. |  |  |
+| 4 | Try to sign in as "Ama Owusu" (`you+ama@…` (the Ama alias)) with any password. | Refused: "Invalid email or password.": a request is not an account. |  |  |
 
 ### C2. The administrator approves
 
@@ -96,7 +96,7 @@ Settings are on the qa environment for every tester. Cases D2 and D3 put each va
 | 3 | Open **Platform settings**, fill in **Support access lasts** with `100`, fill in **Reason for this change** with `Governance pack: a window of a hundred`, then click **Save settings**. | Refused inline: "Support access lasts between 1 and 72 hours.". |  |  |
 | 4 | Open **Platform settings**, fill in **Support access lasts** with `24`, fill in **Reason for this change** with `Governance pack: the same value again`, then click **Save settings**. | Refused inline: "Nothing changed, so there is nothing to record.". |  |  |
 | 5 | Open **Platform settings**, fill in **Support access lasts** with `2`, fill in **Reason for this change** with `short`, then click **Save settings**. | Refused inline: "Give a reason of at least 10 characters.". |  |  |
-| 6 | Open **Platform settings**, fill in **Support access lasts** with `2`, fill in **Reason for this change** with `Governance pack: a shorter support window`, then click **Save settings**. | Under **Every change** an entry reads "Support access window" from "24 hours" to "2 hours", with the reason "Governance pack: a shorter support window", your administrator address and the moment. |  |  |
+| 6 | Open **Platform settings**, fill in **Support access lasts** with `2`, fill in **Reason for this change** with `Governance pack: a shorter support window`, then click **Save settings**. | Under **Every change** an entry reads "Support access window" from "24 hours" to "2 hours", with the reason "Governance pack: a shorter support window", your administrator address (the Admin alias) and the moment. |  |  |
 | 7 | Open **Dashboard**. | The dashboard's **Support access** section reads "Support access lasts 2 hours". |  |  |
 
 ### D2. Reserving organization creation takes effect at once
@@ -125,7 +125,7 @@ What the setting does to an import is in the mining pack, procedure 10 case E5: 
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Admin B in the private window, sign in as "Admin B" with `you+adminb@…` and `AdminB-pass-2026`. | Admin B is signed in. |  |  |
+| 1 | As Admin B in the private window, sign in as "Admin B" with `you+adminb@…` (the Admin B alias) and `AdminB-pass-2026`. | Admin B is signed in. |  |  |
 | 2 | Open **Users**, then click **Edit** on the row of "Admin B". Set **Role** to **Member**, then click **Save changes**. | Refused: "You cannot demote or disable your own account.". |  |  |
 | 3 | Open **Users**, then click **Disable** on the row of "Admin B". | Refused: "You cannot demote or disable your own account.". |  |  |
 | 4 | Open **Users**, then click **Delete** on the row of "Admin B". Confirm "Delete "Admin B"?" with **Delete user**. | Refused: "You cannot delete your own account.". |  |  |
@@ -136,9 +136,9 @@ What the setting does to an import is in the mining pack, procedure 10 case E5: 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Admin in the normal window, open **Users**, then click **Disable** on the row of "Yaw Darko". | Yaw Darko is listed as Disabled. |  |  |
-| 2 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` and `Yaw-pass-2026`. | Refused: "Invalid email or password.". |  |  |
+| 2 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`. | Refused: "Invalid email or password.". |  |  |
 | 3 | As Admin in the normal window, open **Users**, then click **Enable** on the row of "Yaw Darko". | Yaw Darko is listed as Active. |  |  |
-| 4 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` and `Yaw-pass-2026`. | Yaw Darko lands on **GHG accounting** with no organizations. |  |  |
+| 4 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`. | Yaw Darko lands on **GHG accounting** with no organizations. |  |  |
 | 5 | Sign out. | Yaw Darko's session has ended: the sign-in page. |  |  |
 
 ## F. The account menu
@@ -159,8 +159,8 @@ What the setting does to an import is in the mining pack, procedure 10 case E5: 
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` and `Yaw-pass-2026`. | Yaw Darko is signed in. |  |  |
-| 2 | As Yaw Darko in the normal window, sign in as "Yaw Darko" with `you+yaw@…` and `Yaw-pass-2026`. | Yaw Darko is signed in. Two sessions of one account. |  |  |
+| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`. | Yaw Darko is signed in. |  |  |
+| 2 | As Yaw Darko in the normal window, sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`. | Yaw Darko is signed in. Two sessions of one account. |  |  |
 | 3 | Open the account menu and choose **Edit profile**, fill in **Current password** with a wrong password, fill in **New password** with `Yaw-pass-2027`, fill in **Confirm new password** with `Yaw-pass-2027`, then click **Change password**. | Refused inline: "The current password is not correct.". |  |  |
 | 4 | Open the account menu and choose **Edit profile**, fill in **Current password** with `Yaw-pass-2026`, fill in **New password** with `Yaw-pass-2026`, fill in **Confirm new password** with `Yaw-pass-2026`, then click **Change password**. | Refused inline: "Choose a password different from your current one.". |  |  |
 | 5 | Open the account menu and choose **Edit profile**, fill in **Current password** with `Yaw-pass-2026`, fill in **New password** with `Yaw-pass-2027`, fill in **Confirm new password** with `Yaw-pass-2027`, then click **Change password**. | The toast reads "Password changed. Your other sessions are signed out.". This window stays signed in; every other session of the account is signed out. The mailbox receives "Your CarbonOS password was changed". |  |  |
@@ -171,11 +171,11 @@ What the setting does to an import is in the mining pack, procedure 10 case E5: 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Signed out, in the private window, open `/login` in the address bar, then click **Forgot your password?**. On the page headed "Reset your password", fill in **Email** with `nobody@example.test`, then click **Send reset link**. | No email "Reset your CarbonOS password" reaches nobody@example.test. |  |  |
-| 2 | Open `/login` in the address bar, then click **Forgot your password?**. On the page headed "Reset your password", fill in **Email** with `you+yaw@…`, then click **Send reset link**. | The mailbox receives "Reset your CarbonOS password", saying "Somebody, probably you, asked to reset your password", with a link to `/reset-password?token=...` on this environment's address: both answers on the page read the same, and do not say which address holds an account. |  |  |
+| 2 | Open `/login` in the address bar, then click **Forgot your password?**. On the page headed "Reset your password", fill in **Email** with `you+yaw@…` (the Yaw alias), then click **Send reset link**. | The mailbox receives "Reset your CarbonOS password", saying "Somebody, probably you, asked to reset your password", with a link to `/reset-password?token=...` on this environment's address: both answers on the page read the same, and do not say which address holds an account. |  |  |
 | 3 | Open the link of the email "Reset your CarbonOS password" in the mailbox, fill in **New password** with `Yaw-pass-2026`, fill in **Confirm password** with `Yaw-pass-2025`, then click **Set new password**. | Refused inline: "Passwords do not match.". |  |  |
 | 4 | Open the link of the email "Reset your CarbonOS password" in the mailbox, fill in **New password** with `Yaw-pass-2026`, fill in **Confirm password** with `Yaw-pass-2026`, then click **Set new password**. | The sign-in page reads "Your password is reset. Sign in with your new password.". Every session of the account has ended. |  |  |
-| 5 | Sign in as "Yaw Darko" with `you+yaw@…` and `Yaw-pass-2027`. | Refused: "Invalid email or password.". |  |  |
-| 6 | Sign in as "Yaw Darko" with `you+yaw@…` and `Yaw-pass-2026`. | Yaw Darko is signed in. The pack's password for Yaw holds again. |  |  |
+| 5 | Sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2027`. | Refused: "Invalid email or password.". |  |  |
+| 6 | Sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`. | Yaw Darko is signed in. The pack's password for Yaw holds again. |  |  |
 | 7 | Open the link of the email "Reset your CarbonOS password" in the mailbox. | Refused: "This reset link has already been used.". |  |  |
 | 8 | Open `/reset-password?token=` followed by 64 zeros. | Refused: "This reset link is not valid.". |  |  |
 
@@ -184,7 +184,7 @@ What the setting does to an import is in the mining pack, procedure 10 case E5: 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Admin in the normal window, open **Users**, then click **Reset password** on the row of "Esi Boateng". Confirm "Reset the password of "Esi Boateng"?" with **Send reset link**. | The mailbox receives "Reset your CarbonOS password", saying "A CarbonOS administrator sent you this link", with a link to `/reset-password?token=...` on this environment's address. |  |  |
-| 2 | As Esi Boateng in the private window, sign in as "Esi Boateng" with `you+esi@…` and `Esi-pass-2026`. | Esi Boateng is signed in. |  |  |
+| 2 | As Esi Boateng in the private window, sign in as "Esi Boateng" with `you+esi@…` (the Esi alias) and `Esi-pass-2026`. | Esi Boateng is signed in. |  |  |
 | 3 | Sign out. | Esi Boateng's session has ended: the sign-in page. Leave the link unused, it expires in an hour and Esi's password stands. |  |  |
 
 ## Sign-off

@@ -17,11 +17,11 @@
 - Ama in the normal window; Yaw in the private window for case F2.
 - This share holds if every record was classified as procedure 5 lists: Tema Depot's only line in Run 005 is the delivery fleet diesel, 13,307.75 kg of 120,373.32 kg, 11.06%.
 - Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):
-- Ama Owusu signs in with `you+ama@…` and `Ama-pass-2026`, in the private window.
-- Admin B signs in with `you+adminb@…` and `AdminB-pass-2026`, in the private window.
-- Kofi Mensah signs in with `you+kofi@…` and `Kofi-pass-2026`, in the private window.
-- Yaw Darko signs in with `you+yaw@…` and `Yaw-pass-2026`, in the private window.
-- Admin signs in with your administrator address and the password the engineering team sent you, in the normal window.
+- Ama Owusu signs in with `you+ama@…` (the Ama alias) and `Ama-pass-2026`, in the private window.
+- Admin B signs in with `you+adminb@…` (the Admin B alias) and `AdminB-pass-2026`, in the private window.
+- Kofi Mensah signs in with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`, in the private window.
+- Yaw Darko signs in with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`, in the private window.
+- Admin signs in with your administrator address (the Admin alias) and the password the engineering team sent you, in the normal window.
 
 ## A. A later year drops a facility before the designation
 
@@ -29,7 +29,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
+| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
 | 2 | Click **Reopen as draft**, type "Depot sold in January 2026" and confirm. |  |  |  |
 | 3 | On **Boundary**, untick **Tema Depot in boundary**. | Adansi Logistics Ltd is out of the boundary; its row asks "Why is it left out?": E1 leaves the boundary with its only facility; the reason control appears on E1's row. |  |  |
 | 4 | On Adansi Logistics Ltd's row, choose **Not applicable** with the detail "Depot sold on 2026-01-31; no operation in the period". | The row reads left out: **Not applicable**. |  |  |
@@ -70,7 +70,7 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | On the flagged candidate click **Record recalculated base** and read the list under **Recalculated base run**. | Only the base-year inventory's runs are offered, each with its total (Run 002, Run 003, Run 004, Run 005), and not Run 001: a voided run must not be relied on, so it cannot be the recalculated base. |  |  |
-| 2 | Pick "Run 002" under **Recalculated base run** and confirm with **Record**. | A RECALCULATED candidate reads "structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required" with `you+ama@…` and "recalculated base: Run 002". No error remains on the pre-flight. |  |  |
+| 2 | Pick "Run 002" under **Recalculated base run** and confirm with **Record**. | A RECALCULATED candidate reads "structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required" with `you+ama@…` (the Ama alias) and "recalculated base: Run 002". No error remains on the pre-flight. |  |  |
 
 ### D2. Manual candidates need a share or a comparison run
 
@@ -78,7 +78,7 @@
 | --- | --- | --- | --- | --- |
 | 1 | Click **Raise a candidate**: trigger **Significant error corrected**, what changed "Scratch: reading the refusal", no share, no comparison run. Submit. | Refused inline: "Give the affected share of base-year emissions, or name a comparison run of the base-year inventory.". |  |  |
 | 2 | Click **Raise a candidate**: trigger **Methodology change**, what changed "Grid factor vintage moved to ghana-2027-gov", affected share 2.87, no comparison run. Submit. | A FLAGGED candidate reads "2.87% of base-year emissions, below the 5% threshold, recalculation optional": the running sum restarted at the recalculation of case D1, so the 11.06% is not added to it. |  |  |
-| 3 | Click **Decline** on it with the note "Below the 5% threshold; the notice records the answer" and confirm. | A DECLINED candidate reads "2.87% of base-year emissions" with `you+ama@…` and the note "Below the 5% threshold; the notice records the answer": had this candidate been raised before case D1's recalculation, the next structural change would have read "11.06% of base-year emissions on its own, 13.93% together with 1 earlier change since the 2025 base year": the running sum counts every candidate since the base or the last recalculation, declined ones included. |  |  |
+| 3 | Click **Decline** on it with the note "Below the 5% threshold; the notice records the answer" and confirm. | A DECLINED candidate reads "2.87% of base-year emissions" with `you+ama@…` (the Ama alias) and the note "Below the 5% threshold; the notice records the answer": had this candidate been raised before case D1's recalculation, the next structural change would have read "11.06% of base-year emissions on its own, 13.93% together with 1 earlier change since the 2025 base year": the running sum counts every candidate since the base or the last recalculation, declined ones included. |  |  |
 
 ## E. A different GWP set is flagged
 
@@ -103,16 +103,16 @@
 | 1 | On **Emission factors**, click **Delete** on "R-410A (composition)". | "R-410A (composition)" is deleted: no classification and no run ever applied it. |  |  |
 | 2 | On **Emission factors**, click **Delete** on "Long-haul flights (supplier)". | Refused: "'Long-haul flights (supplier)' was applied by a calculation run. Set its validity end to retire it instead of deleting it.": set its validity end to retire it instead. |  |  |
 | 3 | Open **Settings**, and under **Danger zone** click **Delete organization**. | The dialog lists "FY2025: Published" and refuses: "Publish records are kept: withdraw the final designation or supersede the published inventory first.". |  |  |
-| 4 | In Adansi Foods Ltd, open **Settings**. | **History** holds an admin access assumed entry, with `you+adminb@…` and the moment. **History** holds a factor pack adopted entry, with `you+kofi@…` and the moment. History lists the members added, the entities, facilities and emission sources of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label. |  |  |
+| 4 | In Adansi Foods Ltd, open **Settings**. | **History** holds an admin access assumed entry, with `you+adminb@…` (the Admin B alias) and the moment. **History** holds a factor pack adopted entry, with `you+kofi@…` (the Kofi alias) and the moment. History lists the members added, the entities, facilities and emission sources of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label. |  |  |
 
 ### F2. A scratch organization is deleted with its name typed
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` and `Yaw-pass-2026`. | Yaw Darko is signed in. |  |  |
+| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`. | Yaw Darko is signed in. |  |  |
 | 2 | In Solo Ltd, open **Settings**, then click **Delete organization**. Fill in **Type Solo Ltd to confirm** with `solo ltd`, fill in **Reason** with `Scratch organization of the governance pack`, then click **Delete**. | **Delete** stays disabled: "Type the organization's name exactly to confirm.": the name must match exactly. |  |  |
 | 3 | In Solo Ltd, open **Settings**, then click **Delete organization**. Fill in **Type Solo Ltd to confirm** with `Solo Ltd`, fill in **Reason** with `Scratch organization of the governance pack`, then click **Delete**. | Solo Ltd leaves the list and its URL is not found. The dialog said the record of who removed it, when and why is kept. |  |  |
-| 4 | As Admin in the normal window, sign in as "Admin" with your administrator address and the password the engineering team sent you. | Admin is signed in. |  |  |
+| 4 | As Admin in the normal window, sign in as "Admin" with your administrator address (the Admin alias) and the password the engineering team sent you. | Admin is signed in. |  |  |
 | 5 | Open **Dashboard**. | **Organizations** reads 1. No tile carries a client's emissions figure: Organizations counts Adansi Foods Ltd alone. |  |  |
 
 ## Sign-off
