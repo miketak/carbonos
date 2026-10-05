@@ -17,12 +17,16 @@ import jakarta.persistence.criteria.Root;
  */
 public record ActivityReadiness(ActivityStatus status, List<Issue> issues) {
 
-	/** What a record still lacks. {@link #EVIDENCE_REFERENCE_ONLY} is informational and leaves the status alone. */
+	/**
+	 * What a record still lacks. {@link #EVIDENCE_REFERENCE_ONLY} and {@link #DOCUMENTED_ZERO} (spec 04.12: a
+	 * quantity of 0 with its note) are informational and leave the status alone.
+	 */
 	public enum Issue {
-		MISSING_QUANTITY, MISSING_UNIT, MISSING_PERIOD, NO_STREAM, NO_DATA_SOURCE, NO_EVIDENCE, EVIDENCE_REFERENCE_ONLY;
+		MISSING_QUANTITY, MISSING_UNIT, MISSING_PERIOD, NO_STREAM, NO_DATA_SOURCE, NO_EVIDENCE, EVIDENCE_REFERENCE_ONLY,
+		DOCUMENTED_ZERO;
 
 		public boolean blocksReadiness() {
-			return this != EVIDENCE_REFERENCE_ONLY;
+			return this != EVIDENCE_REFERENCE_ONLY && this != DOCUMENTED_ZERO;
 		}
 	}
 
@@ -30,6 +34,9 @@ public record ActivityReadiness(ActivityStatus status, List<Issue> issues) {
 		var issues = new ArrayList<Issue>();
 		if (record.getQuantity() == null) {
 			issues.add(Issue.MISSING_QUANTITY);
+		}
+		else if (record.getQuantity().signum() == 0) {
+			issues.add(Issue.DOCUMENTED_ZERO);
 		}
 		if (record.getUnit() == null || record.getUnit().isBlank()) {
 			issues.add(Issue.MISSING_UNIT);

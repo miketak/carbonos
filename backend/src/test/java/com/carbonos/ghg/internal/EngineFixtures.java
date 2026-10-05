@@ -80,7 +80,7 @@ final class EngineFixtures {
 	ActivityRecord activity(Record spec) {
 		return new ActivityRecord(spec.ref(), false, facility(spec.facility()), null, spec.activityType(),
 				new BigDecimal(spec.quantity()), spec.unit(), date(spec.period().start()), date(spec.period().end()),
-				"Test vectors", "REF-" + spec.ref(), DataQuality.MEASURED, null, null, null);
+				"Test vectors", null, "REF-" + spec.ref(), DataQuality.MEASURED, null, null, null);
 	}
 
 	Density density(EngineVectors.Density spec) {

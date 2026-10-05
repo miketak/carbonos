@@ -20,7 +20,7 @@ import com.carbonos.ghg.internal.GhgService;
 public record ActivityResponse(UUID id, int recordNo, String recordRef, boolean draft, ActivityStatus status,
 		List<ActivityReadiness.Issue> issues, UUID facilityId, String facilityName, UUID streamId, String streamName,
 		String activityType, BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd,
-		String dataSource, String evidenceRef, DataQuality dataQuality, String note, int dataQualityTier,
+		String dataSource, String supplier, String evidenceRef, DataQuality dataQuality, String note, int dataQualityTier,
 		String dataQualityTierLabel, BigDecimal uncertaintyPercent, boolean removed, Instant removedAt,
 		String removedBy, String removeReason, long evidenceCount, long revisionCount, UUID importBatchId,
 		Integer importRow, Instant createdAt) {
@@ -37,7 +37,7 @@ public record ActivityResponse(UUID id, int recordNo, String recordRef, boolean 
 				activity.getFacility().getName(), stream == null ? null : stream.getId(),
 				stream == null ? null : stream.getName(), activity.getActivityType(), activity.getQuantity(),
 				activity.getUnit(), activity.getPeriodStart(), activity.getPeriodEnd(), activity.getDataSource(),
-				activity.getEvidenceRef(), activity.getDataQuality(), activity.getNote(), activity.getDataQualityTier(),
+				activity.getSupplier(), activity.getEvidenceRef(), activity.getDataQuality(), activity.getNote(), activity.getDataQualityTier(),
 				DataQualityTier.label(activity.getDataQualityTier()), activity.getUncertaintyPercent(),
 				activity.isDeleted(), activity.getDeletedAt(), activity.getDeletedBy(), activity.getDeleteReason(),
 				evidenceCount, revisionCount, activity.getImportBatchId(), activity.getImportRow(),

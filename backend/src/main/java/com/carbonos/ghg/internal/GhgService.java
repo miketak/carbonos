@@ -1233,6 +1233,7 @@ public class GhgService {
 				var text = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>(List.of(
 						cb.like(cb.lower(root.get("activityType")), like), cb.like(cb.lower(facility.get("name")), like),
 						cb.like(cb.lower(cb.coalesce(root.get("dataSource"), "")), like),
+						cb.like(cb.lower(cb.coalesce(root.get("supplier"), "")), like),
 						cb.like(cb.lower(cb.coalesce(root.get("evidenceRef"), "")), like),
 						cb.like(cb.lower(cb.coalesce(root.get("note"), "")), like),
 						cb.like(cb.lower(cb.coalesce(stream.get("name"), "")), like),
@@ -1342,7 +1343,7 @@ public class GhgService {
 	 */
 	public record ActivityFacts(boolean draft, UUID facilityId, UUID streamId, String activityType,
 			BigDecimal quantity, String unit, LocalDate periodStart, LocalDate periodEnd, String dataSource,
-			String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
+			String supplier, String evidenceRef, DataQuality dataQuality, String note, Integer dataQualityTier,
 			BigDecimal uncertaintyPercent, StreamFacts newStream, String confirmNewStreamReason) {
 
 		String unitOrNull() {
@@ -1366,9 +1367,12 @@ public class GhgService {
 		return activities.save(new ActivityRecord(recordNo, facts.draft(), facility, stream,
 				facts.activityType().trim(), facts.quantity(),
 				facts.unitOrNull(), facts.periodStart(), facts.periodEnd(), trimToNull(facts.dataSource()),
-				trimToNull(facts.evidenceRef()), facts.dataQuality(), trimToNull(facts.note()),
+				trimToNull(facts.supplier()), trimToNull(facts.evidenceRef()), facts.dataQuality(), trimToNull(facts.note()),
 				facts.dataQualityTier(), facts.uncertaintyPercent()));
 	}
+
+	/** The least a documented zero's note may say (spec 04.12). */
+	static final int ZERO_NOTE_MIN = 10;
 
 	/** A fact carries quantity, unit and period; only a draft may leave them out (spec 04.6). */
 	private static void requireFactComplete(ActivityFacts facts) {
@@ -1382,6 +1386,11 @@ public class GhgService {
 			if (facts.periodStart() == null) {
 				throw new GhgFieldException("periodStart",
 						"A period is required unless the record is saved as a draft.");
+			}
+			// spec 04.12: a documented zero says what showed that nothing was consumed
+			if (facts.quantity().signum() == 0
+					&& (facts.note() == null || facts.note().trim().length() < ZERO_NOTE_MIN)) {
+				throw new GhgFieldException(GhgRules.ACTIVITY_ZERO_NEEDS_NOTE);
 			}
 		}
 		if (facts.periodStart() != null && facts.periodEnd() != null) {
@@ -1425,12 +1434,12 @@ public class GhgService {
 		var stream = resolveStream(facts, facility);
 		var changes = activity.changesTo(facts.draft(), facility, stream, facts.activityType().trim(),
 				facts.quantity(), facts.unitOrNull(), facts.periodStart(), facts.periodEnd(),
-				trimToNull(facts.dataSource()), trimToNull(facts.evidenceRef()), facts.dataQuality(),
-				trimToNull(facts.note()), tier, facts.uncertaintyPercent());
+				trimToNull(facts.dataSource()), trimToNull(facts.supplier()), trimToNull(facts.evidenceRef()),
+				facts.dataQuality(), trimToNull(facts.note()), tier, facts.uncertaintyPercent());
 		activity.update(facts.draft(), facility, stream, facts.activityType().trim(), facts.quantity(),
 				facts.unitOrNull(), facts.periodStart(), facts.periodEnd(), trimToNull(facts.dataSource()),
-				trimToNull(facts.evidenceRef()), facts.dataQuality(), trimToNull(facts.note()), tier,
-				facts.uncertaintyPercent());
+				trimToNull(facts.supplier()), trimToNull(facts.evidenceRef()), facts.dataQuality(),
+				trimToNull(facts.note()), tier, facts.uncertaintyPercent());
 		if (promoting) {
 			// the audit trail names who entered the figures, not who opened the stub
 			revisions.save(new ActivityRevision(id, ActivityRevision.Kind.ENTERED, "Entered from a draft.",
@@ -1620,7 +1629,7 @@ public class GhgService {
 	private static ActivityFacts factsOf(ActivityRecord record, UUID streamId, int dataQualityTier) {
 		return new ActivityFacts(record.isDraft(), record.getFacility().getId(), streamId, record.getActivityType(),
 				record.getQuantity(), record.getUnit(), record.getPeriodStart(), record.getPeriodEnd(), record.getDataSource(),
-				record.getEvidenceRef(), record.getDataQuality(), record.getNote(), dataQualityTier,
+				record.getSupplier(), record.getEvidenceRef(), record.getDataQuality(), record.getNote(), dataQualityTier,
 				record.getUncertaintyPercent(), null, null);
 	}
 

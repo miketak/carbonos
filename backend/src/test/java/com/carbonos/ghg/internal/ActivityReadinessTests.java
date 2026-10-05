@@ -23,7 +23,7 @@ class ActivityReadinessTests {
 	private ActivityRecord record(boolean draft, SourceStream stream, BigDecimal quantity, String unit,
 			LocalDate start, String dataSource, String evidenceRef) {
 		return new ActivityRecord(1, draft, mine, stream, "Diesel consumption", quantity, unit, start, start,
-				dataSource, evidenceRef, DataQuality.MEASURED, null, null, null);
+				dataSource, null, evidenceRef, DataQuality.MEASURED, null, null, null);
 	}
 
 	@Test

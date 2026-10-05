@@ -661,6 +661,22 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		}).toList();
 		var weightedUncertainty = weightedBase.signum() == 0 ? null
 				: weighted.divide(weightedBase, 1, java.math.RoundingMode.HALF_UP);
+		// spec 04.12: the source-months that report a documented zero, so a reader can tell a zero from an exclusion
+		var zeroSourceMonths = new java.util.TreeSet<String>();
+		for (var line : run.scopedLines()) {
+			if (line.isDerived() || line.getQuantity() == null || line.getQuantity().signum() != 0
+					|| line.getPeriodStart() == null || line.getPeriodEnd() == null) {
+				continue;
+			}
+			var source = line.getFacilityId() + "|" + (line.getStreamName() != null ? line.getStreamName() : line.getActivityType());
+			for (var month = java.time.YearMonth.from(line.getPeriodStart()); !month
+				.isAfter(java.time.YearMonth.from(line.getPeriodEnd())); month = month.plusMonths(1)) {
+				zeroSourceMonths.add(source + "|" + month);
+			}
+		}
+		var zeroSentence = zeroSourceMonths.isEmpty() ? ""
+				: " " + zeroSourceMonths.size() + " source-month" + (zeroSourceMonths.size() == 1 ? " reports" : "s report")
+						+ " a documented zero.";
 		var parts = new ArrayList<String>();
 		for (var row : rows) {
 			parts.add(row.sharePercent().stripTrailingZeros().toPlainString() + "% of the total rests on tier "
@@ -674,7 +690,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 								? " No line records a quantitative uncertainty; the statement below is qualitative."
 								: " " + withUncertainty + " of " + run.scopedLines().size()
 										+ " lines record a quantitative uncertainty; weighted by emissions it is ±"
-										+ weightedUncertainty.stripTrailingZeros().toPlainString() + "% for those lines.");
+										+ weightedUncertainty.stripTrailingZeros().toPlainString() + "% for those lines.")
+						+ zeroSentence;
 		return new DataQualitySection(rows, weightedUncertainty, withUncertainty, run.scopedLines().size(), statement,
 				uncertaintyStatement);
 	}

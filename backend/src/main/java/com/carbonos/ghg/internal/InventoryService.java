@@ -2053,6 +2053,7 @@ public class InventoryService {
 						+ "that would report it as a calculated line ('" + candidate.get().getName() + "')."));
 			}
 		}
+		var documentedZeros = new java.util.TreeMap<Integer, String>();
 		var attachedEvidence = evidence
 			.findAllByActivityIdIn(included.stream().map(a -> a.getActivity().getId()).toList())
 			.stream()
@@ -2119,6 +2120,13 @@ public class InventoryService {
 			}
 			// spec 04.6: the gate and the register judge evidence the same way, through ActivityReadiness
 			var readiness = ActivityReadiness.of(activity, attachedEvidence.contains(activity.getId()));
+			// spec 04.12: every documented zero, with what showed it, in one screen
+			if (activity.getQuantity() != null && activity.getQuantity().signum() == 0) {
+				documentedZeros.put(activity.getRecordNo(), activity.getRecordRef() + " ("
+						+ (activity.getStream() != null ? activity.getStream().getName() : activity.getActivityType()) + ", "
+						+ activity.period().describe() + ": '" + activity.getNote() + "'"
+						+ (activity.getDataSource() == null ? "" : ", " + activity.getDataSource()) + ")");
+			}
 			if (readiness.issues().contains(ActivityReadiness.Issue.NO_EVIDENCE)) {
 				completenessFindings.add(new Finding(Severity.WARNING, "'" + activity.getActivityType() + "' ("
 						+ activity.period().describe() + ") has no evidence: no reference and nothing attached."));
@@ -2138,6 +2146,11 @@ public class InventoryService {
 			}
 		}
 
+		if (!documentedZeros.isEmpty()) {
+			completenessFindings.add(new Finding(Severity.INFO, documentedZeros.size() + " record"
+					+ (documentedZeros.size() == 1 ? " states" : "s state") + " a documented zero: "
+					+ String.join("; ", documentedZeros.values()) + "."));
+		}
 		var classificationFindings = new ArrayList<Finding>();
 		for (var assignment : included) {
 			var activity = assignment.getActivity();
@@ -2545,7 +2558,8 @@ public class InventoryService {
 	 * at all shows as empty months.
 	 */
 	public record CoverageRow(UUID facilityId, String facilityName, UUID streamId, String streamName,
-			String activityType, List<String> months, List<String> coveredMonths, List<String> pendingMonths) {
+			String activityType, List<String> months, List<String> coveredMonths, List<String> pendingMonths,
+			List<String> zeroMonths) {
 	}
 
 	@Transactional(readOnly = true)
@@ -2568,12 +2582,14 @@ public class InventoryService {
 			if (boundaryFacilityIds.contains(stream.getFacility().getId())) {
 				var key = stream.getFacility().getId() + "|stream|" + stream.getId();
 				rows.put(key, new CoverageRow(stream.getFacility().getId(), stream.getFacility().getName(),
-						stream.getId(), stream.getName(), null, labels, List.of(), List.of()));
+						stream.getId(), stream.getName(), null, labels, List.of(), List.of(), List.of()));
 				covered.put(key, new java.util.TreeSet<>());
 			}
 		}
 		// spec 04.6: a draft with a period marks its months as pending (data expected, not received)
 		var pending = new java.util.LinkedHashMap<String, java.util.TreeSet<String>>();
+		// spec 04.12: a month whose included records are all documented zeros is its own state
+		var zeros = new java.util.LinkedHashMap<String, java.util.TreeSet<String>>();
 		for (var draft : activities
 			.findAllByOrganizationIdAndDeletedAtIsNullAndDraftTrueOrderByCreatedAtAsc(inventory.getOrganization().getId())) {
 			if (draft.period() == null || !boundaryFacilityIds.contains(draft.getFacility().getId())) {
@@ -2585,7 +2601,7 @@ public class InventoryService {
 			rows.computeIfAbsent(key, k -> new CoverageRow(draft.getFacility().getId(),
 					draft.getFacility().getName(), stream == null ? null : stream.getId(),
 					stream == null ? null : stream.getName(), stream == null ? draft.getActivityType() : null, labels,
-					List.of(), List.of()));
+					List.of(), List.of(), List.of()));
 			var set = pending.computeIfAbsent(key, k -> new java.util.TreeSet<>());
 			for (var month : months) {
 				if (draft.period().overlaps(month.atDay(1), month.atEndOfMonth())) {
@@ -2604,8 +2620,9 @@ public class InventoryService {
 			rows.computeIfAbsent(key, k -> new CoverageRow(activity.getFacility().getId(),
 					activity.getFacility().getName(), stream == null ? null : stream.getId(),
 					stream == null ? null : stream.getName(), stream == null ? activity.getActivityType() : null, labels,
-					List.of(), List.of()));
-			var set = covered.computeIfAbsent(key, k -> new java.util.TreeSet<>());
+					List.of(), List.of(), List.of()));
+			var zero = activity.getQuantity() != null && activity.getQuantity().signum() == 0;
+			var set = (zero ? zeros : covered).computeIfAbsent(key, k -> new java.util.TreeSet<>());
 			for (var month : months) {
 				if (activity.period().overlaps(month.atDay(1), month.atEndOfMonth())) {
 					set.add(month.toString());
@@ -2614,10 +2631,15 @@ public class InventoryService {
 		}
 		return rows.entrySet()
 			.stream()
-			.map(entry -> new CoverageRow(entry.getValue().facilityId(), entry.getValue().facilityName(),
-					entry.getValue().streamId(), entry.getValue().streamName(), entry.getValue().activityType(), labels,
-					List.copyOf(covered.getOrDefault(entry.getKey(), new java.util.TreeSet<>())),
-					List.copyOf(pending.getOrDefault(entry.getKey(), new java.util.TreeSet<>()))))
+			.map(entry -> {
+				var coveredMonths = covered.getOrDefault(entry.getKey(), new java.util.TreeSet<>());
+				var zeroMonths = new java.util.TreeSet<>(zeros.getOrDefault(entry.getKey(), new java.util.TreeSet<>()));
+				zeroMonths.removeAll(coveredMonths);
+				return new CoverageRow(entry.getValue().facilityId(), entry.getValue().facilityName(),
+						entry.getValue().streamId(), entry.getValue().streamName(), entry.getValue().activityType(), labels,
+						List.copyOf(coveredMonths),
+						List.copyOf(pending.getOrDefault(entry.getKey(), new java.util.TreeSet<>())), List.copyOf(zeroMonths));
+			})
 			.sorted(java.util.Comparator.comparing(CoverageRow::facilityName)
 				.thenComparing(row -> row.streamName() != null ? row.streamName() : row.activityType(),
 						String.CASE_INSENSITIVE_ORDER))
