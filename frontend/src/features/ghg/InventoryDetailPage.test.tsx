@@ -909,12 +909,17 @@ test('shows which months of the period have data per facility and activity', asy
       months: ['2025-01', '2025-02', '2025-03'],
       coveredMonths: ['2025-03'],
       pendingMonths: [],
+      zeroMonths: ['2025-02'],
     },
   ])
   renderPage()
 
   const matrix = await screen.findByRole('table', { name: 'Period coverage' })
   expect(within(matrix).getByTitle('Diesel consumption, 2025-03: data')).toHaveTextContent('●')
+  // spec 04.12: a documented zero month is its own state
+  expect(
+    within(matrix).getByTitle('Diesel consumption, 2025-02: documented zero'),
+  ).toHaveTextContent('⊘')
   expect(within(matrix).getByTitle('Diesel consumption, 2025-01: no data')).toHaveTextContent('○')
 })
 
@@ -951,6 +956,7 @@ test('the coverage matrix names emission sources and flags one with no data (spe
       months: ['2025-01', '2025-02'],
       coveredMonths: ['2025-01'],
       pendingMonths: [],
+      zeroMonths: [],
     },
     {
       facilityId: 'fac-1',
@@ -961,6 +967,7 @@ test('the coverage matrix names emission sources and flags one with no data (spe
       months: ['2025-01', '2025-02'],
       coveredMonths: [],
       pendingMonths: [],
+      zeroMonths: [],
     },
   ])
   renderPage()

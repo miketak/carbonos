@@ -202,6 +202,7 @@ export interface ActivityRow {
   removed: boolean
   evidenceCount: number
   revisionCount: number
+  supplier: string | null
 }
 
 export const activities = (session: ApiSession, orgId: string) => list<ActivityRow>(session, `/api/ghg/organizations/${orgId}/activities`)

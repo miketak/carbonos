@@ -136,7 +136,9 @@ export function ActivityTable({
                     </span>
                   }
                   secondary={
-                    activity.unit ?? (activity.quantity === null ? undefined : 'Unit needed')
+                    activity.quantity === 0
+                      ? `${activity.unit ?? 'Unit needed'} · documented zero`
+                      : (activity.unit ?? (activity.quantity === null ? undefined : 'Unit needed'))
                   }
                 />
               </Td>

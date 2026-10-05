@@ -115,7 +115,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Import**, choose `adansi-2026.csv` and click **Add records**. | ACT-0017 is on the register with the quantity 2100 litre. ACT-0015 is on the register with the quantity 110 MWh: "2 records imported."; the two rows removed in procedure 3 do not count as duplicates. |  |  |
+| 1 | Click **Import**, choose `adansi-2026.csv` and click **Add records**. | ACT-0018 is on the register with the quantity 2100 litre. ACT-0015 is on the register with the quantity 110 MWh: "2 records imported."; the two rows removed in procedure 3 do not count as duplicates. |  |  |
 | 2 | Open **Inventories** and click **New inventory**. Name "FY2026", period 2026-01-01 to 2026-12-31, consolidation approach operational control, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Start with every operation the approach includes in the boundary** ticked. Click **Create inventory**. The inventory opens on its workbench. | The header reads DRAFT. |  |  |
 | 3 | Click **Review activity data**. | ACT-0014 is still unclassified. ACT-0015 is still unclassified. ACT-0006 is still unclassified. ACT-0001 reads "Excluded · Outside reporting period". A warning on the **Activity data completeness** gate: "15 of 32 days": three records are included: the two January rows and ACT-0006, the year-end LPG, whose 2025-12-15 to 2026-01-15 period reaches 15 days into 2026; every 2025 record is excluded as outside the period; the run pro-rates ACT-0006 to 46.88%. |  |  |
 | 4 | Open ACT-0014 and choose **Gaseous fuels: LPG (/litre)**. | ACT-0014 reads included, uses **Gaseous fuels: LPG**. |  |  |

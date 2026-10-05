@@ -34,6 +34,14 @@ import { EvidencePanel } from './EvidencePanel'
 import { ReconcileSourceNotice } from './ReconcileSourceNotice'
 import { UnitField } from './UnitField'
 
+/** The least a documented zero's note may say (spec 04.12). */
+const ZERO_NOTE_MIN = 10
+
+/** Whether the typed quantity is a zero (spec 04.12). */
+function isZero(quantity: string): boolean {
+  return quantity.trim() !== '' && Number(quantity) === 0
+}
+
 const qualityLabels: Record<DataQuality, string> = {
   MEASURED: 'Measured',
   ESTIMATED: 'Estimated',
@@ -214,6 +222,7 @@ function ActivityForm({
   const [periodStart, setPeriodStart] = useState(activity?.periodStart ?? '')
   const [periodEnd, setPeriodEnd] = useState(activity?.periodEnd ?? '')
   const [dataSource, setDataSource] = useState(activity?.dataSource ?? '')
+  const [supplier, setSupplier] = useState(activity?.supplier ?? '')
   const [evidenceRef, setEvidenceRef] = useState(activity?.evidenceRef ?? '')
   const [dataQuality, setDataQuality] = useState<DataQuality>(activity?.dataQuality ?? 'MEASURED')
   const [tier, setTier] = useState(activity ? String(activity.dataQualityTier) : '')
@@ -269,7 +278,12 @@ function ActivityForm({
     const chosenStreamId = override.streamId ?? streamId
     const source = override.newSource === undefined ? newSource : override.newSource
     const invalid = collectErrors({
-      quantity: checkNumber(quantity, { label: 'Quantity', positive: true, required: !draft }),
+      quantity: checkNumber(quantity, { label: 'Quantity', min: 0, required: !draft }),
+      // spec 04.12: a documented zero says what showed that nothing was consumed
+      note:
+        !draft && isZero(quantity) && note.trim().length < ZERO_NOTE_MIN
+          ? 'A zero needs a note of at least 10 characters: what showed that nothing was consumed.'
+          : undefined,
       uncertaintyPercent: checkNumber(uncertainty, { label: 'Uncertainty', min: 0, max: 100 }),
       unit: !draft && unit.trim() === '' ? 'Choose a unit.' : undefined,
       periodStart: !draft && periodStart === '' ? 'Enter the period start.' : undefined,
@@ -304,6 +318,7 @@ function ActivityForm({
       periodStart: periodStart || undefined,
       periodEnd: periodEnd || periodStart || undefined,
       dataSource: dataSource.trim() === '' ? undefined : dataSource.trim(),
+      supplier: supplier.trim() === '' ? undefined : supplier.trim(),
       evidenceRef: evidenceRef.trim() === '' ? undefined : evidenceRef.trim(),
       dataQuality,
       note: note.trim() === '' ? undefined : note.trim(),
@@ -608,6 +623,11 @@ function ActivityForm({
                       setClientErrors((current) => withoutError(current, 'quantity'))
                     }}
                     error={errors?.quantity}
+                    hint={
+                      isZero(quantity)
+                        ? "A zero needs a note: what showed that nothing was consumed. A meter or log reading is measured; 'the site said so' is estimated."
+                        : undefined
+                    }
                   />
                   <UnitField
                     value={unit}
@@ -654,6 +674,15 @@ function ActivityForm({
                     error={errors?.evidenceRef}
                     hint="Invoice, meter reading or log number as printed on the document."
                   />
+                  <InputField
+                    label="Supplier or counterparty (optional)"
+                    placeholder="Example: GOIL, ECG, the haulage contractor"
+                    value={supplier}
+                    maxLength={120}
+                    onChange={(event) => setSupplier(event.target.value)}
+                    error={errors?.supplier}
+                    hint="Who sold or billed it. Data source is what showed the figure."
+                  />
                 </div>
                 {stream?.meterOrSupplier && (
                   <p className="text-[13px] text-ink-muted">
@@ -687,13 +716,20 @@ function ActivityForm({
                 </Section>
               )}
 
-              <Section title="Notes" hint="Optional">
+              <Section title="Notes" hint={isZero(quantity) ? 'Required for a zero' : 'Optional'}>
                 <TextAreaField
                   label="Context for the reviewer"
-                  placeholder="Estimation method, allocation, or useful context."
+                  placeholder={
+                    isZero(quantity)
+                      ? 'What showed that nothing was consumed: the meter index unchanged, the log at 0 hours.'
+                      : 'Estimation method, allocation, or useful context.'
+                  }
                   value={note}
                   maxLength={255}
-                  onChange={(event) => setNote(event.target.value)}
+                  onChange={(event) => {
+                    setNote(event.target.value)
+                    setClientErrors((current) => withoutError(current, 'note'))
+                  }}
                   error={errors?.note}
                 />
               </Section>
@@ -898,6 +934,7 @@ function ActivityFacts({ activity }: { activity: Activity | undefined }) {
         <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
           <Fact label="Data source" value={activity.dataSource ?? '—'} />
           <Fact label="Document reference" value={activity.evidenceRef ?? '—'} />
+          <Fact label="Supplier or counterparty" value={activity.supplier ?? '—'} />
         </dl>
       </Section>
       <Section title="Notes">

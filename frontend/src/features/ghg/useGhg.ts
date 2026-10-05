@@ -570,8 +570,7 @@ export function useImportActivities(orgId: string) {
     }) => importActivities(orgId, file, { dryRun, decisions, onProgress }),
     onSuccess: (result) => {
       if (result.dryRun) return
-      void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
-      void queryClient.invalidateQueries({ queryKey: ['ghg', 'evidence-page', orgId] })
+      invalidateActivityReaders(queryClient, orgId)
       void queryClient.invalidateQueries({ queryKey: importBatchesKey(orgId) })
       // the import may have created emission sources (spec 04.11)
       if (result.sourcesCreated > 0) {
@@ -586,11 +585,7 @@ export function useBulkActivities(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: BulkActivityInput) => bulkActivities(orgId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
-      void queryClient.invalidateQueries({ queryKey: ['ghg', 'activity'] })
-      void queryClient.invalidateQueries({ queryKey: ['ghg', 'evidence-page', orgId] })
-    },
+    onSuccess: () => invalidateActivityReaders(queryClient, orgId),
   })
 }
 
@@ -801,12 +796,25 @@ export function useDeleteFacility(orgId: string) {
 
 // --- activity facts ----------------------------------------------------------
 
+/**
+ * Everything that reads the records (spec 04.12): the register, the open record, the documents, and the
+ * inventory pages' coverage, review list and validation, which read the same records and were left stale.
+ */
+function invalidateActivityReaders(queryClient: ReturnType<typeof useQueryClient>, orgId: string) {
+  void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
+  void queryClient.invalidateQueries({ queryKey: ['ghg', 'activity'] })
+  void queryClient.invalidateQueries({ queryKey: ['ghg', 'evidence-page', orgId] })
+  void queryClient.invalidateQueries({ queryKey: ['ghg', 'coverage'] })
+  void queryClient.invalidateQueries({ queryKey: ['ghg', 'assignments'] })
+  void queryClient.invalidateQueries({ queryKey: ['ghg', 'validation'] })
+}
+
 export function useCreateActivity(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ActivityInput) => createActivity(orgId, input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
+      invalidateActivityReaders(queryClient, orgId)
       // the record may have brought a new emission source with it (spec 04.10)
       void queryClient.invalidateQueries({ queryKey: streamsKey(orgId) })
     },
@@ -818,8 +826,7 @@ export function useUpdateActivity(orgId: string) {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: ActivityInput }) => updateActivity(id, input),
     onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
-      void queryClient.invalidateQueries({ queryKey: activityKey(id) })
+      invalidateActivityReaders(queryClient, orgId)
       void queryClient.invalidateQueries({ queryKey: revisionsKey(id) })
       void queryClient.invalidateQueries({ queryKey: streamsKey(orgId) })
     },
@@ -830,7 +837,7 @@ export function useDeleteActivity(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => deleteActivity(id, reason),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) }),
+    onSuccess: () => invalidateActivityReaders(queryClient, orgId),
   })
 }
 

@@ -270,6 +270,7 @@ export const activityIssueLabels: Record<ReadinessIssue, string> = {
   NO_DATA_SOURCE: 'Missing source',
   NO_EVIDENCE: 'Needs evidence',
   EVIDENCE_REFERENCE_ONLY: 'Reference only, nothing attached',
+  DOCUMENTED_ZERO: 'Documented zero',
 }
 
 const monthNames = [

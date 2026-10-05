@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { defineOutcome, fail, pass } from '../contract.ts'
-import { activities, activity, facilities, orgArg, organization } from '../organizations.ts'
+import { activities, activity, facilities, facility, orgArg, organization } from '../organizations.ts'
 import { S } from '../ui/surface.ts'
 
 /** Statements about the activity register, its imports, its evidence and its history (specs 04.4 to 04.6). */
@@ -130,8 +130,9 @@ export const importResolved = defineOutcome({
     if (p.rows.length !== a.recordsToAdd) return fail(`${p.rows.length} records to add, expected ${a.recordsToAdd}`)
     return pass()
   },
-  ui: (a) => [{ check: 'textAbsent', text: S.act.text.needsDecision }, { check: 'textVisible', text: `${a.recordsToAdd} records to add` }],
-  narrate: (a) => `No row reads **${S.act.text.needsDecision}** any more; "${a.recordsToAdd} records to add" and **${S.act.button.addRecords}** is enabled.`,
+  // the page keeps the rows' pills until the records are added; what changes on screen is the button
+  ui: (a) => [{ check: 'textVisible', text: `${a.recordsToAdd} records to add` }],
+  narrate: (a) => `Every name is decided: "${a.recordsToAdd} records to add" stands and **${S.act.button.addRecords}** is enabled.`,
 })
 
 export const activityHasSource = defineOutcome({
@@ -144,6 +145,41 @@ export const activityHasSource = defineOutcome({
   },
   ui: (a) => [{ check: 'atOrg', organization: a.organization, section: S.org.sections.activity }, { check: 'rowHas', text: a.record, cells: [a.source] }],
   narrate: (a) => `${a.record} names the emission source ${a.source}.`,
+})
+
+/** After Resolve, the register lists exactly the records that need attention (spec 04.12). */
+export const attentionListed = defineOutcome({
+  name: 'attentionListed',
+  args: z.object({ organization: orgArg, count: z.number().int() }).strict(),
+  api: async (_ctx, a, last) => {
+    if (!last?.ok) return fail(`the register was refused with ${last?.status}`)
+    const total = (last.body as { total: number }).total
+    return total === a.count ? pass(String(total)) : fail(`${total} records listed, expected ${a.count}`)
+  },
+  ui: (a) => [{ check: 'textVisible', text: `${a.count} of ${a.count} records` }],
+  narrate: (a) => `The register lists the ${a.count} records, and the foot reads "${a.count} of ${a.count} records".`,
+})
+
+/** The monthly template (spec 04.12): one row per emission source of the facility, the period filled, the figures blank. */
+export const monthlyTemplateRows = defineOutcome({
+  name: 'monthlyTemplateRows',
+  args: z.object({ organization: orgArg, facility: z.string(), month: z.string(), sources: z.array(z.string()) }).strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    const site = await facility(ctx.session(), org.id, a.facility)
+    const out = await ctx.session().get(`/api/ghg/organizations/${org.id}/activities/import-template.csv?facilityId=${site.id}&month=${a.month}`)
+    if (!out.ok) return fail(`the template was refused with ${out.status}`)
+    const lines = String(out.body).split(/\r?\n/).filter((line) => line.trim() !== '')
+    const header = lines[0]!.split(',')
+    const column = (name: string) => header.indexOf(name)
+    const rows = lines.slice(1).map((line) => line.split(','))
+    const names = rows.map((row) => row[column('emission_source')])
+    if (names.join('|') !== a.sources.join('|')) return fail(`the rows name ${names.join(', ') || 'nothing'}, expected ${a.sources.join(', ')}`)
+    const bad = rows.find((row) => !row[column('period_start')]!.startsWith(a.month) || row[column('quantity')] !== '' || row[column('data_quality')] !== '')
+    return bad ? fail(`a row is not a blank month: ${bad.join(',')}`) : pass(`${rows.length} rows`)
+  },
+  ui: () => [{ check: 'na', why: 'the download is read from the file, not from the screen' }],
+  narrate: (a) => `**${S.act.button.downloadMonthly}** for ${a.facility}, ${a.month} gives one row per emission source (${a.sources.join(', ')}), the period filled, the quantity and data quality blank.`,
 })
 
 export const activityCount = defineOutcome({
@@ -193,6 +229,7 @@ export const activityExists = defineOutcome({
       unit: z.string().optional(),
       evidenceRef: z.string().optional(),
       issues: z.array(z.string()).optional(),
+      supplier: z.string().optional(),
     })
     .strict(),
   api: async (ctx, a) => {
@@ -206,6 +243,7 @@ export const activityExists = defineOutcome({
       const got = [...row.issues].sort().join(',')
       if (got !== [...a.issues].sort().join(',')) return fail(`${a.record} issues are ${got || 'none'}`)
     }
+    if (a.supplier !== undefined && row.supplier !== a.supplier) return fail(`${a.record} names the supplier ${row.supplier ?? 'nobody'}`)
     return pass()
   },
   ui: (a) => [{ check: 'atOrg', organization: a.organization, section: S.org.sections.activity }, { check: 'textVisible', text: a.record }],
@@ -359,4 +397,4 @@ export const facilityAbsent = defineOutcome({
   narrate: (a) => `${a.name} is no longer listed.`,
 })
 
-export const activityOutcomes = [importPreview, importRejected, importUnknownSources, importResolved, activityHasSource, activityCount, activityRefs, activityOrder, activityExists, activityRemoved, activityHistoryHas, attentionCount, evidenceListed, sourceDocumentListed, importBatchListed, evidenceIndexHeader, importTemplateHeader, facilityAbsent]
+export const activityOutcomes = [importPreview, importRejected, importUnknownSources, importResolved, activityHasSource, activityCount, activityRefs, activityOrder, activityExists, activityRemoved, activityHistoryHas, attentionCount, evidenceListed, sourceDocumentListed, importBatchListed, evidenceIndexHeader, importTemplateHeader, facilityAbsent, attentionListed, monthlyTemplateRows]

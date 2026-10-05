@@ -159,6 +159,87 @@ export const importActivities = defineVerb({
   narrate: (a) => `Click **${S.act.button.import}**, choose \`${a.file}\` and click **${S.act.button.addRecords}**.`,
 })
 
+/** A record entered on the form (spec 04.6), with a zero and a supplier where the case needs them (spec 04.12). */
+export const addActivity = defineVerb({
+  name: 'addActivity',
+  args: z
+    .object({
+      organization: orgArg,
+      facility: z.string(),
+      source: z.string().optional(),
+      activityType: z.string(),
+      quantity: z.number(),
+      unit: z.string(),
+      periodStart: z.string(),
+      periodEnd: z.string().optional(),
+      dataSource: z.string().optional(),
+      evidenceRef: z.string().optional(),
+      supplier: z.string().optional(),
+      note: z.string().optional(),
+    })
+    .strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    const site = await facility(ctx.session(), org.id, a.facility)
+    const stream = a.source ? (await streamsOf(ctx.session(), site.id)).find((s) => s.name === a.source) : undefined
+    if (a.source && !stream) throw new Error(`no source '${a.source}' at ${a.facility}`)
+    return ctx.session().post(`/api/ghg/organizations/${org.id}/activities`, {
+      facilityId: site.id,
+      streamId: stream?.id,
+      activityType: a.activityType,
+      quantity: a.quantity,
+      unit: a.unit,
+      periodStart: a.periodStart,
+      periodEnd: a.periodEnd ?? a.periodStart,
+      dataQuality: 'MEASURED',
+      dataSource: a.dataSource,
+      evidenceRef: a.evidenceRef,
+      supplier: a.supplier,
+      note: a.note,
+    })
+  },
+  ui: (a): UiOp[] => {
+    const d = S.act.dialog.newActivity
+    return [
+      { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
+      { op: 'click', button: S.act.button.addActivity },
+      // the detail takes the typed activity type as its name, so the type goes in last and Save is addressed by it
+      { op: 'choose', label: S.act.field.facility, option: a.facility, within: d },
+      ...(a.source ? [{ op: 'choose', label: S.act.field.emissionSource, option: a.source, within: d } as const] : []),
+      { op: 'fill', label: S.act.field.periodStart, value: a.periodStart, within: d },
+      ...(a.periodEnd ? [{ op: 'fill', label: S.act.field.periodEnd, value: a.periodEnd, within: d } as const] : []),
+      { op: 'fill', label: S.act.field.quantity, value: String(a.quantity), within: d },
+      { op: 'choose', label: S.act.field.unit, option: a.unit, within: d, byValue: true },
+      ...(a.dataSource ? [{ op: 'fill', label: S.act.field.dataSource, value: a.dataSource, within: d } as const] : []),
+      ...(a.evidenceRef ? [{ op: 'fill', label: S.act.field.documentReference, value: a.evidenceRef, within: d } as const] : []),
+      ...(a.supplier ? [{ op: 'fill', label: S.act.field.supplier, value: a.supplier, within: d } as const] : []),
+      ...(a.note ? [{ op: 'fill', label: S.act.field.note, value: a.note, within: d } as const] : []),
+      { op: 'fill', label: S.act.field.activityType, value: a.activityType, within: d },
+      { op: 'click', button: S.act.button.save, within: a.activityType },
+    ]
+  },
+  postconditions: (a) => [{ outcome: 'activityExists', args: { organization: a.organization, record: a.activityType, draft: false, quantity: a.quantity, unit: a.unit } }],
+  narrate: (a) =>
+    `Click **${S.act.button.addActivity}** and enter ${a.activityType} at ${a.facility}${a.source ? ` (${a.source})` : ''}: ${a.quantity} ${a.unit}, ${a.periodStart}${a.periodEnd ? ` to ${a.periodEnd}` : ''}${a.supplier ? `, supplier ${a.supplier}` : ''}${a.note ? `, with the note "${a.note}"` : ''}. Click **${S.act.button.save}**.`,
+})
+
+/** The banner's link to the records that need attention (spec 04.6); the register must list exactly them (spec 04.12). */
+export const resolveAttention = defineVerb({
+  name: 'resolveAttention',
+  args: z.object({ organization: orgArg }).strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    return ctx.session().get(`/api/ghg/organizations/${org.id}/activities/page?status=NEEDS_ATTENTION&size=50`)
+  },
+  ui: (a) => [
+    { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
+    // the banner's button reads "Resolve 7 items →": matched by the word it starts with
+    { op: 'clickContaining', text: S.act.text.resolve },
+  ],
+  postconditions: () => [],
+  narrate: () => `Click **${S.act.text.resolve} n items** on the banner.`,
+})
+
 export const addActivityDraft = defineVerb({
   name: 'addActivityDraft',
   args: z.object({ organization: orgArg, facility: z.string(), activityType: z.string() }).strict(),
@@ -374,4 +455,4 @@ export const removeFacility = defineVerb({
   postconditions: (a) => [{ outcome: 'facilityAbsent', args: { organization: a.organization, name: a.facility } }],
 })
 
-export const activityVerbs = [previewImport, importActivities, addActivityDraft, enterActivity, correctActivity, attachFile, attachLink, removeActivity, removeActivities, removeFacility, decideImport, importDecided, assignSourceToActivities]
+export const activityVerbs = [previewImport, importActivities, addActivityDraft, enterActivity, correctActivity, attachFile, attachLink, removeActivity, removeActivities, removeFacility, decideImport, importDecided, assignSourceToActivities, addActivity, resolveAttention]

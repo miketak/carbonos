@@ -3,11 +3,11 @@
 
 **Objective.** Confirm that a clean file previews with control totals and imports once, that a file with a bad row imports nothing and names each row by number, and that a record is drafted, entered, corrected, evidenced and removed with the reasons the record keeps.
 
-**Covers** [spec 04](../../../specs/04-operational-boundary-and-classification.md), [spec 04.4](../../../specs/04.4-activity-data-quality-evidence-and-corrections.md), [spec 04.5](../../../specs/04.5-bulk-import-and-activity-register.md), [spec 04.6](../../../specs/04.6-activity-register-drafts-readiness-and-source-documents.md), [spec 04.10](../../../specs/04.10-emission-sources-inline-creation-and-the-reconcile-prompt.md), [spec 04.11](../../../specs/04.11-import-round-two.md) and [spec 08](../../../specs/08-form-validation-and-ui-polish.md). Spec 08 for the inline rules.
+**Covers** [spec 04](../../../specs/04-operational-boundary-and-classification.md), [spec 04.4](../../../specs/04.4-activity-data-quality-evidence-and-corrections.md), [spec 04.5](../../../specs/04.5-bulk-import-and-activity-register.md), [spec 04.6](../../../specs/04.6-activity-register-drafts-readiness-and-source-documents.md), [spec 04.10](../../../specs/04.10-emission-sources-inline-creation-and-the-reconcile-prompt.md), [spec 04.11](../../../specs/04.11-import-round-two.md), [spec 04.12](../../../specs/04.12-the-activity-register-round-two.md) and [spec 08](../../../specs/08-form-validation-and-ui-polish.md). Spec 08 for the inline rules.
 
-**Estimated time:** 36 minutes.
+**Estimated time:** 40 minutes.
 
-**Procedure version:** 4 (2026-10-05). The change notes are at the foot.
+**Procedure version:** 5 (2026-10-05). The change notes are at the foot.
 
 **Run this procedure** after procedure 2. Procedure 4 onwards works on the ten records it imports.
 
@@ -26,7 +26,7 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
-| 2 | Look. | **Download CSV template** gives a file whose header is `facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note`, the same as the fixture's. |  |  |
+| 2 | Look. | **Download CSV template** gives a file whose header is `facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,supplier,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note`, the same as the fixture's. |  |  |
 | 3 | Click **Import** and choose `adansi-2025.csv`. | The file is checked at once, and nothing is written. **Control totals** groups the rows by facility, emission source and unit: Kumasi Plant, Boiler LPG, 2,400 litre; Kumasi Plant, Plant grid supply, 120 MWh; Tema Depot, Delivery fleet, 5,000 litre. "10 records to add" lists each row with its facility and period. Under **Worth a look before adding**, row 7 is named: "the period is longer than one month (2025-12-15 to 2026-01-15)". Rows 2, 3, 4 read **Ready**. 7 rows read "No emission source" and 2 of them "Needs evidence": "Missing source" appears nowhere, every row names its data source. |  |  |
 
 ### A2. The import, and the same file again
@@ -53,6 +53,7 @@
 | 1 | In Adansi Foods Ltd, open **Activity data**. | The banner above the register counts 7 records that need attention and offers **Resolve 7 items**: ACT-0004 to ACT-0010; the wording is about completeness, not assurance. |  |  |
 | 2 | In Adansi Foods Ltd, open **Activity data**. | ACT-0009 is on the register reading "No emission source" and "Needs evidence": its tier is not missing, a blank tier follows the method, ESTIMATED to tier 4. |  |  |
 | 3 | Open ACT-0009, type the document reference "WB-2025-11", and give the reason "Weighbridge ticket found". Save. | ACT-0009 is on the register with the reference WB-2025-11 reading "No emission source" and "reference only". The banner above the register counts 7 records that need attention and offers **Resolve 7 items**: "Needs evidence" goes and the drawer reads "Reference WB-2025-11, nothing attached"; the emission source is still missing, and a record leaves the count only when every item on it is resolved. |  |  |
+| 4 | Click **Resolve n items** on the banner. | The register lists the 7 records, and the foot reads "7 of 7 records": the register lists exactly the seven after the correction, with the tab in the address; a stale list of ten was seen once in the walkthrough of 2026-09-24 (P3 C1.2). |  |  |
 
 ## D. Drafts
 
@@ -125,8 +126,8 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Click **Import** and choose `adansi-2025-new-sources.csv`. | Nothing is rejected. Under **Decide 2 unknown emission sources**, a card per name: 'Boiler LPG 2' at Kumasi Plant offers **Use Boiler LPG**; 'Chiller units' at Kumasi Plant offers no near name. Their rows read **Needs a decision** and **Add records** stays disabled: nothing is rejected and nothing is matched silently; "Boiler LPG 2" is a near miss of Boiler LPG, so it is offered; "Chiller units" is near nothing; the third row names no source and waits on nothing. |  |  |
-| 2 | Click **Import**, choose `adansi-2025-new-sources.csv` and, under **Decide**, decide each name: for 'Boiler LPG 2' tick **Use Boiler LPG**; for 'Chiller units' tick **Create 'Chiller units'** and choose the kind FUGITIVE. | No row reads **Needs a decision** any more; "3 records to add" and **Add records** is enabled: a suggested near name needs no reason; a name near nothing is created without one. |  |  |
-| 3 | With the decisions made (for 'Boiler LPG 2' tick **Use Boiler LPG**; for 'Chiller units' tick **Create 'Chiller units'** and choose the kind FUGITIVE), click **Add records**. | The screen reads "3 records imported. 1 emission source added during import.". The register holds 13 records. ACT-0014 names the emission source Boiler LPG. ACT-0015 names the emission source Chiller units. Chiller units is listed at Kumasi Plant with its kind, FUGITIVE and "added during import". **History** holds an import source mapped entry reading "'Boiler LPG 2' in row 2 of adansi-2025-new-sources.csv mapped to 'Boiler LPG'". **History** holds a stream added entry reading "Chiller units added at Kumasi Plant: fugitive, during import of adansi-2025-new-sources.csv": the mapping and the creation each leave a row a verifier reads without opening the file; the created source is marked "added during import" on the facility's Emission sources page. |  |  |
+| 2 | Click **Import**, choose `adansi-2025-new-sources.csv` and, under **Decide**, decide each name: for 'Boiler LPG 2' tick **Use Boiler LPG**; for 'Chiller units' tick **Create 'Chiller units'** and choose the kind Fugitive. | Every name is decided: "3 records to add" stands and **Add records** is enabled: a suggested near name needs no reason; a name near nothing is created without one. |  |  |
+| 3 | With the decisions made (for 'Boiler LPG 2' tick **Use Boiler LPG**; for 'Chiller units' tick **Create 'Chiller units'** and choose the kind Fugitive), click **Add records**. | The screen reads "3 records imported. 1 emission source added during import.". The register holds 13 records. ACT-0014 names the emission source Boiler LPG. ACT-0015 names the emission source Chiller units. Chiller units is listed at Kumasi Plant with its kind, Fugitive and "added during import". **History** holds an import source mapped entry reading "'Boiler LPG 2' in row 2 of adansi-2025-new-sources.csv mapped to 'Boiler LPG'". **History** holds a stream added entry reading "Chiller units added at Kumasi Plant: fugitive, during import of adansi-2025-new-sources.csv": the mapping and the creation each leave a row a verifier reads without opening the file; the created source is marked "added during import" on the facility's Emission sources page. |  |  |
 
 ### J2. One source for several records, one reason, one act
 
@@ -136,6 +137,22 @@
 | 2 | Look. | Tick ACT-0001 (which has a source) together with ACT-0016: **Assign emission source** is disabled with "Select records at one facility with no emission source." The act fills a gap; it never moves a record from one source to another, because the source sets the default scope. A move is a correction of the one record, with its own reason. |  |  |
 | 3 | Tick ACT-0014 and ACT-0015 and ACT-0016, click **Remove 3 selected** and give the reason "Scratch rows for the unknown-source case". | The register holds 10 records. **History** holds a records bulk corrected entry reading "3 records removed (ACT-0014, ACT-0015, ACT-0016): Scratch rows for the unknown-source case": the three go under one reason in one request; the register is back to the ten records procedure 4 works on. |  |  |
 | 4 | On Kumasi Plant's **Emission sources** page, click **Remove** beside Chiller units and confirm. | Chiller units is no longer listed at Kumasi Plant: with its records removed the source can go; Kumasi Plant is back to the two sources procedure 2 gave it, and the history keeps the import, the mapping and the removals. |  |  |
+
+## K. The documented zero, the supplier and the monthly template
+
+### K1. A month with nothing to report is a fact
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Look. | Click **+ Add activity**, choose Kumasi Plant and Boiler LPG, type 0 as the quantity: the field reads "A zero needs a note: what showed that nothing was consumed. A meter or log reading is measured; 'the site said so' is estimated." and **Notes** reads "Required for a zero". Click **Save** with the note empty: "A zero needs a note of at least 10 characters: what showed that nothing was consumed." prints under **Context for the reviewer** and nothing is saved. |  |  |
+| 2 | Click **+ Add activity** and enter Boiler LPG, February at Kumasi Plant (Boiler LPG): 0 litre, 2025-02-01 to 2025-02-28, supplier Ghana Gas, with the note "Boiler off for relining; no delivery in February". Click **Save**. | ACT-0017 is on the register with the quantity 0 litre reading "DOCUMENTED_ZERO" and "reference only": a zero with its note, a data source and a reference is Ready and labelled "documented zero"; the supplier is who billed it, the data source what showed the figure. |  |  |
+| 3 | Open the "ACT-0017" record, click **Remove**, give "Scratch record for the documented-zero case" and confirm. | The register holds 10 records. |  |  |
+
+### K2. The monthly template
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Look. | **Download the monthly template** for Kumasi Plant, 2025-09 gives one row per emission source (Boiler LPG, Plant grid supply), the period filled, the quantity and data quality blank: a source that ran nothing is recorded as 0 with a note and its reading, not deleted; data quality is left blank because a zero typed from memory is an estimate. |  |  |
 
 ## Sign-off
 
@@ -153,3 +170,4 @@
 - **Version 2, 2026-09-29.** C1 step 3 quotes the drawer's evidence line, which now names the reference (the walkthrough fix of 2026-09-29).
 - **Version 3, 2026-10-02.** Transliterated to the QA scenario DSL. The dialog's title and eyebrow, the readiness pills' wording and the register's keyboard handling are observed by hand (case I1) or described in the drivers' projections; the import outcomes are checked against the server's preview figures.
 - **Version 4, 2026-10-05.** Spec 04.11: the import is a page reached by Import, the file field is "Spreadsheet file", and section J decides two unknown emission source names in the preview, assigns a source to several records in one act and removes them in one request. Procedure 7's re-import now lands on ACT-0017.
+- **Version 5, 2026-10-05.** Spec 04.12: the template header gains supplier; C1 clicks Resolve and reads the seven rows; section K enters a documented zero with its supplier and removes it, and reads the monthly template. Procedure 7's re-import now lands on ACT-0018.

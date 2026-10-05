@@ -44,6 +44,7 @@ const draft: Activity = {
   periodStart: '2025-07-01',
   periodEnd: '2025-07-31',
   dataSource: null,
+  supplier: null,
   evidenceRef: null,
   dataQuality: 'MEASURED',
   note: null,
@@ -468,4 +469,45 @@ test('the exact name is taken: the notice offers the existing source and no "any
   expect(within(notice).getByRole('button', { name: 'Use Haul fleet' })).toBeEnabled()
   expect(within(notice).queryByLabelText('Why is this a different source?')).not.toBeInTheDocument()
   expect(within(notice).queryByRole('button', { name: /anyway/ })).not.toBeInTheDocument()
+})
+
+test('a zero needs a note of ten characters, and the supplier goes with the request (spec 04.12)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(createActivity).mockResolvedValue({ ...draft, id: 'act-9', recordRef: 'ACT-0009' })
+  renderDrawer('new', [])
+  const drawer = screen.getByRole('region', { name: 'New activity' })
+  await user.type(within(drawer).getByLabelText('Activity type *'), 'Diesel consumption, August')
+  await user.type(within(drawer).getByLabelText('Activity quantity *'), '0')
+  expect(
+    within(drawer).getByText(/A zero needs a note: what showed that nothing was consumed/),
+  ).toBeInTheDocument()
+  expect(within(drawer).getByText('Required for a zero')).toBeInTheDocument()
+  await user.selectOptions(await within(drawer).findByLabelText('Unit'), 'litre')
+  await user.type(within(drawer).getByLabelText('Period start *'), '2025-08-01')
+  await user.type(
+    within(drawer).getByLabelText('Supplier or counterparty (optional)'),
+    'GOIL Obuasi depot',
+  )
+  await user.click(within(drawer).getByRole('button', { name: 'Save' }))
+
+  expect(
+    await within(drawer).findByText(
+      'A zero needs a note of at least 10 characters: what showed that nothing was consumed.',
+    ),
+  ).toBeInTheDocument()
+  expect(createActivity).not.toHaveBeenCalled()
+
+  await user.type(
+    within(drawer).getByLabelText('Context for the reviewer'),
+    'Genset off for overhaul; hour meter unchanged',
+  )
+  await user.click(within(drawer).getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(createActivity).toHaveBeenCalled())
+  expect(vi.mocked(createActivity).mock.calls[0][1]).toMatchObject({
+    draft: false,
+    quantity: 0,
+    unit: 'litre',
+    supplier: 'GOIL Obuasi depot',
+    note: 'Genset off for overhaul; hour meter unchanged',
+  })
 })
