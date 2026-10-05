@@ -1,12 +1,14 @@
 ---
-status: proposed
+status: superseded by ADR-0010
 date: 2026-09-10
 decision-makers: miketak
 owner: miketak
-last_reviewed: 2026-09-10
+last_reviewed: 2026-10-05
 ---
 
 # 0002: Export the QA procedures to Google Docs with pandoc, by hand
+
+Superseded on 2026-10-05 by [ADR 0010](0010-the-verdict-workbook-is-the-only-qa-export.md): the verdict workbook is the only export, and the pandoc pipeline is gone.
 
 ## Context and problem statement
 

@@ -30,7 +30,7 @@ does the same.
 | `help-serve` | Runs the Vite dev server, which compiles the help from `help/docs` on change and serves it at http://localhost:5173/help (ADR 0006). The same as `frontend`, named for help authors. | Node 22 |
 | `help-check` | The help compiler's checks (`cd frontend && npm run help:check`: every page in `help/tree.yaml`, links and anchors, word budgets, em-dashes, diagrams), then `vale`. The Definition of Done for a help change (ADR 0006). | Node 22, Vale (optional) |
 | `vale [BASE=<ref>]` | Runs Vale on the Markdown changed against `BASE` (default `origin/main`), including untracked files. Skips when Vale is not installed. | Vale |
-| `qa-docs` | Exports a persona's QA procedures (governance by default, `PERSONA=mining` for the other) as DOCX under `build/qa-docs/`, with the verdict workbook (`XLSX=0` skips it) and the persona's `fixtures/` folder beside them, ready to upload to the QA team's Drive folder. | uv, pandoc |
+| `qa-workbook` | Builds a persona's QA verdict workbook (governance by default, `PERSONA=mining` for the other) under `build/qa-workbook/`, the only export of the procedures (ADR 0010), with the persona's `fixtures/` folder beside it, ready to upload to the QA team's Drive folder. | uv |
 | `qa-sheets-check` | Parses the governance procedures and builds the verdict workbook in memory, writing nothing: the guard that the Markdown still has the shape `scripts/qa_sheets.py` reads. Part of `docs-check`. | uv |
 
 Targets that need an argument refuse to run without it and print their

@@ -44,7 +44,7 @@ form.
 | Number | Title | Status | Date |
 | --- | --- | --- | --- |
 | [0001](0001-use-material-for-mkdocs-with-uv.md) | Use Material for MkDocs, managed by uv, for the engineering docs | accepted | 2026-09-09 |
-| [0002](0002-publish-qa-procedures-to-google-docs-with-pandoc.md) | Publish the QA procedures to Google Docs with pandoc and the Drive API | proposed | 2026-09-10 |
+| [0002](0002-publish-qa-procedures-to-google-docs-with-pandoc.md) | Publish the QA procedures to Google Docs with pandoc and the Drive API | superseded by ADR-0010 | 2026-09-10 |
 | [0003](0003-promote-releases-through-qa-staging-and-production.md) | Promote one tagged commit through qa, staging and production | accepted | 2026-09-11 |
 | [0004](0004-a-platform-module-for-deployment-policy.md) | A platform module for deployment policy | accepted | 2026-09-14 |
 | [0005](0005-a-separate-mkdocs-site-for-end-user-help.md) | Publish end-user help as a second MkDocs site under help/, sharing the uv toolchain | superseded by ADR-0006 | 2026-09-24 |
@@ -52,3 +52,4 @@ form.
 | [0007](0007-qa-procedures-as-pure-scenarios-with-generated-projections.md) | Write QA procedures as pure domain scenarios and generate their projections | proposed | 2026-10-02 |
 | [0008](0008-a-qa-module-for-local-test-hooks.md) | A `qa` module for the local stack's test hooks | proposed | 2026-10-02 |
 | [0009](0009-semantic-design-tokens-with-two-themes.md) | Semantic design tokens as CSS variables, with two themes | accepted | 2026-10-03 |
+| [0010](0010-the-verdict-workbook-is-the-only-qa-export.md) | The verdict workbook is the only export of the QA procedures | accepted | 2026-10-05 |

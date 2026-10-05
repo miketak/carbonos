@@ -78,7 +78,7 @@ row 1.
 
 ## The fixture files
 
-The files are in the `fixtures` folder that comes with these documents. Do
+The files are in the `fixtures` folder that comes with the workbook. Do
 not edit them: the procedures name their row numbers and totals.
 
 | File | Rows | Used in |
@@ -112,16 +112,16 @@ as such; a refusal it makes with a message is quoted. Where an expected result q
 with a value in it, the value is the one this scenario produces; a
 different value is a failure worth a note. At the end, fill in the
 sign-off table and file one issue per failed case with the **QA failure**
-template at https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml. The same steps come as a
-workbook beside the documents, one sheet per procedure and one row per
-step, where the Pass/Fail cell offers PASS, FAIL and N/A and the Summary
-tab tallies the cases and carries the sign-off; record there if you prefer
-a sheet to a document. The workbook stands on its own: its Accounts tab
-carries this page's "Before you start", the accounts table and the fixture
-files, and derives every alias address from the mailbox you type in its
-yellow cell. The line under the document's title
-("Version v0.6.0 (5b27661), built ...") is the value for "Procedure and
-version tested"; add the procedure version beside it.
+template at https://github.com/miketak/carbonos/issues/new?template=qa-failure.yml. The steps come to you as
+a workbook, one sheet per procedure and one row per step, where the
+Pass/Fail cell offers PASS, FAIL and N/A and the Summary tab tallies the
+cases and carries the sign-off. The workbook stands on its own: its Accounts
+tab carries this page's "Before you start", the accounts table and the
+fixture files, and derives every alias address from the mailbox you type in
+its yellow cell; the steps on every sheet then print your real addresses in
+place of `you+…@…`. The version line on its Read me sheet ("Version v0.9.0
+(5b27661), built ...") is the value for "Procedure and version tested"; add
+the procedure version beside it.
 
 A procedure changed after it was first written carries a **Procedure
 version** line under its estimated time and dated **Change notes** at its

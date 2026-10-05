@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify vectors-check dev-up dev-down docs docs-serve docs-check help-serve help-check vale qa-docs qa-sheets-check qa-lint qa-export qa-export-check qa-compile qa-compile-check qa-schema qa-rules qa-doctor qa-reset qa-run-api qa-run-ui qa-record
+.PHONY: help db-up db-down db-reset db-wipe env-copy purge-resumes backend frontend admin verify vectors-check dev-up dev-down docs docs-serve docs-check help-serve help-check vale qa-workbook qa-sheets-check qa-lint qa-export qa-export-check qa-compile qa-compile-check qa-schema qa-rules qa-doctor qa-reset qa-run-api qa-run-ui qa-record
 
 # git ref the docs checks diff against
 BASE ?= origin/main
@@ -78,11 +78,11 @@ vale:             ## Vale (advisory) on markdown changed against $(BASE); skips 
 	  files=$$( { git diff --name-only --diff-filter=ACMR "$$(git merge-base $(BASE) HEAD)" -- '*.md'; git ls-files --others --exclude-standard -- '*.md'; } | sort -u); \
 	  if [ -n "$$files" ]; then vale --no-exit $$files; else echo "no markdown changed against $(BASE)"; fi
 
-qa-docs:          ## export a persona's QA procedures as DOCX plus the verdict workbook under build/qa-docs: make qa-docs [PERSONA=governance] [XLSX=0] (needs pandoc)
-	uv run --locked --group qa-docs python scripts/publish_qa_docs.py --out build/qa-docs --persona $(or $(PERSONA),governance) $(if $(filter 0,$(XLSX)),--no-xlsx,)
+qa-workbook:      ## build the QA verdict workbook (the only export of the procedures) and its fixtures under build/qa-workbook: make qa-workbook [PERSONA=governance]
+	uv run --locked --group qa-workbook python scripts/qa_sheets.py --out build/qa-workbook --persona $(or $(PERSONA),governance)
 
 qa-sheets-check:  ## the verdict workbook still builds from the governance procedures (parses, builds in memory, writes nothing)
-	uv run --locked --group qa-docs python scripts/qa_sheets.py --check --persona governance
+	uv run --locked --group qa-workbook python scripts/qa_sheets.py --check --persona governance
 
 # The QA scenario DSL (qa/): procedures as domain steps, projected to Markdown, an API driver and a UI driver.
 QA_PERSONA ?= governance
