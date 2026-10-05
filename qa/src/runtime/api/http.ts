@@ -67,13 +67,18 @@ export class HttpSession implements ApiSession {
   }
 
   /** A multipart POST: the file under `file`, the other fields as form parts; `query` goes on the URL. */
-  async upload(path: string, file: { name: string; buffer: Buffer; mimeType: string }, query: Record<string, string> = {}): Promise<ApiOutcome> {
+  /** A multipart post: the file, and any further parts (a JSON `decisions` part beside the import file, spec 04.11). */
+  async upload(path: string, file: { name: string; buffer: Buffer; mimeType: string }, query: Record<string, string> = {}, parts: Record<string, unknown> = {}): Promise<ApiOutcome> {
     const ctx = await this.ctx()
     const headers: Record<string, string> = {}
     const token = await this.csrf()
     if (token) headers['X-XSRF-TOKEN'] = token
     const search = new URLSearchParams(query).toString()
-    const response = await ctx.post(search ? `${path}?${search}` : path, { headers, multipart: { file } })
+    const multipart: Record<string, { name: string; buffer: Buffer; mimeType: string }> = { file }
+    for (const [name, value] of Object.entries(parts)) {
+      multipart[name] = { name: `${name}.json`, buffer: Buffer.from(JSON.stringify(value), 'utf8'), mimeType: 'application/json' }
+    }
+    const response = await ctx.post(search ? `${path}?${search}` : path, { headers, multipart })
     const text = await response.text()
     let parsed: unknown
     try {

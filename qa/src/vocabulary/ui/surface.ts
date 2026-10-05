@@ -231,8 +231,12 @@ export const S = {
   },
   act: {
     button: {
-      importCsv: 'Import CSV',
+      import: 'Import',
       addRecords: 'Add records',
+      assignSource: 'Assign emission source',
+      assign: 'Assign',
+      setTier: 'Set data quality tier',
+      addEvidenceLink: 'Add evidence link',
       downloadTemplate: 'Download CSV template',
       addActivity: '+ Add activity',
       save: 'Save',
@@ -242,7 +246,9 @@ export const S = {
       downloadIndex: 'Download evidence index (CSV)',
     },
     field: {
-      csvFile: 'CSV file',
+      spreadsheetFile: 'Spreadsheet file',
+      whyThisSource: 'Why this source?',
+      kind: 'Kind',
       activityType: 'Activity type *',
       facility: 'Facility *',
       quantity: 'Activity quantity *',
@@ -271,6 +277,10 @@ export const S = {
     text: {
       controlTotals: 'Control totals',
       recordsToAdd: 'Records to add',
+      needsDecision: 'Needs a decision',
+      decideUnknown: 'Decide',
+      addedDuringImport: 'added during import',
+      removeSourceDialog: 'Remove emission source?',
       supportingEvidence: 'Supporting evidence',
       resolve: 'Resolve',
       noSource: 'No emission source',

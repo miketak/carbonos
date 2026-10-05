@@ -36,6 +36,34 @@
       "field": null
     },
     {
+      "id": "ghg.activity.bulk-empty",
+      "module": "ghg",
+      "status": 422,
+      "message": "Select at least one record.",
+      "field": "ids"
+    },
+    {
+      "id": "ghg.activity.bulk-refused",
+      "module": "ghg",
+      "status": 409,
+      "message": "Nothing was changed: {refused} of {selected} records refuse the action.",
+      "field": null
+    },
+    {
+      "id": "ghg.activity.bulk-too-many",
+      "module": "ghg",
+      "status": 422,
+      "message": "Select at most {max} records at once.",
+      "field": "ids"
+    },
+    {
+      "id": "ghg.activity.has-source",
+      "module": "ghg",
+      "status": 409,
+      "message": "{record} already has an emission source; change it on the record.",
+      "field": null
+    },
+    {
       "id": "ghg.activity.no-way-back-to-draft",
       "module": "ghg",
       "status": 409,
@@ -55,6 +83,13 @@
       "status": 422,
       "message": "Choose an existing emission source or describe a new one, not both.",
       "field": "newStream"
+    },
+    {
+      "id": "ghg.activity.used-in-run",
+      "module": "ghg",
+      "status": 409,
+      "message": "{record} is used in {runs} and cannot be removed. Reported results must stay traceable to their source: correct the record instead.",
+      "field": null
     },
     {
       "id": "ghg.adoption.answer-required",
@@ -300,6 +335,20 @@
       "status": 409,
       "message": "You entered '{name}'. A factor is checked by someone other than the person who typed it (Corporate Standard chapter 7): ask {checker} to approve it.",
       "field": null
+    },
+    {
+      "id": "ghg.import.decision-unused",
+      "module": "ghg",
+      "status": 409,
+      "message": "The decisions do not match the file. Check the file again.",
+      "field": null
+    },
+    {
+      "id": "ghg.import.map-reason-required",
+      "module": "ghg",
+      "status": 422,
+      "message": "Say in at least 10 characters why these rows belong to '{name}'.",
+      "field": "decisions"
     },
     {
       "id": "ghg.inventory.already-draft",
@@ -715,5 +764,5 @@
       "field": null
     }
   ],
-  "sha256": "e7b10c0e555342590ab7d0387498b7bbb3eebf7474b8f575a890cde5dfee5a1c"
+  "sha256": "a9b976d1c1b161c2e7228303111a428a87be7bae778630a870faa8a9856eceaa"
 }

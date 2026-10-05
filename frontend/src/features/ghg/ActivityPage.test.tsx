@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { renderWithProviders } from '../../test/utils'
+import { ApiError } from '../../lib/api'
 import { ActivityPage } from './ActivityPage'
 import type {
   Activity,
@@ -16,6 +17,7 @@ vi.mock('./api', () => import('./testApiMock'))
 vi.setConfig({ testTimeout: 30000 })
 
 import {
+  bulkActivities,
   deleteActivity,
   getActivity,
   getOrganization,
@@ -183,10 +185,12 @@ beforeEach(() => {
         changes: [{ field: 'quantity', before: '900', after: '1000' }],
         changedBy: 'kojo@ecoriv.test',
         changedAt: '2026-09-02T09:00:00Z',
+        bulkId: null,
       },
     ])
   vi.mocked(updateActivity).mockReset()
   vi.mocked(deleteActivity).mockReset()
+  vi.mocked(bulkActivities).mockReset()
   vi.mocked(getOrganization).mockReset().mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
@@ -368,9 +372,13 @@ test('removing a record from the drawer asks for a reason and records it', async
   )
 })
 
-test('ticking rows offers a bulk removal with one reason for all of them', async () => {
+test('ticking rows offers a bulk removal with one reason for all of them, in one request', async () => {
   const user = userEvent.setup()
-  vi.mocked(deleteActivity).mockResolvedValue(undefined)
+  vi.mocked(bulkActivities).mockResolvedValue({
+    bulkId: 'bulk-1',
+    applied: 2,
+    records: ['ACT-0001', 'ACT-0002'],
+  })
   renderPage()
   await screen.findByText('Diesel consumption')
 
@@ -381,26 +389,149 @@ test('ticking rows offers a bulk removal with one reason for all of them', async
   await user.type(within(dialog).getByLabelText('Reason'), 'entered twice from the same log')
   await user.click(within(dialog).getByRole('button', { name: 'Remove' }))
 
-  await waitFor(() => expect(deleteActivity).toHaveBeenCalledTimes(2))
-  expect(deleteActivity).toHaveBeenCalledWith('act-1', 'entered twice from the same log')
-  expect(deleteActivity).toHaveBeenCalledWith('act-2', 'entered twice from the same log')
+  await waitFor(() =>
+    expect(bulkActivities).toHaveBeenCalledWith('org-1', {
+      ids: ['act-1', 'act-2'],
+      action: 'REMOVE',
+      reason: 'entered twice from the same log',
+    }),
+  )
+  expect(deleteActivity).not.toHaveBeenCalled()
   expect(await screen.findByText('2 records removed.')).toBeInTheDocument()
 })
 
-test('Import CSV opens the bulk entry dialog with the template link', async () => {
+test('a refused bulk act names the records in the dialog and changes nothing (spec 04.11)', async () => {
   const user = userEvent.setup()
-  renderPage()
-
-  await user.click(await screen.findByRole('button', { name: 'Import CSV' }))
-  const dialog = screen.getByRole('dialog', { name: 'Import activity data' })
-  expect(within(dialog).getByRole('link', { name: 'Download CSV template' })).toHaveAttribute(
-    'href',
-    '/api/ghg/organizations/org-1/activities/import-template.csv',
+  vi.mocked(bulkActivities).mockRejectedValue(
+    new ApiError(409, {
+      rule: 'ghg.activity.bulk-refused',
+      detail: 'Nothing was changed: 1 of 2 records refuse the action.',
+      refused: [
+        {
+          id: 'act-1',
+          recordRef: 'ACT-0001',
+          rule: 'ghg.activity.used-in-run',
+          message: 'ACT-0001 is used in run 1 and cannot be removed.',
+        },
+      ],
+    }),
   )
-  expect(within(dialog).getByRole('button', { name: 'Add records' })).toBeDisabled()
+  renderPage()
+  await screen.findByText('Diesel consumption')
+  await user.click(screen.getByLabelText('Select ACT-0001'))
+  await user.click(screen.getByLabelText('Select ACT-0002'))
+  await user.click(screen.getByRole('button', { name: 'Remove 2 selected' }))
+  const dialog = screen.getByRole('dialog', { name: 'Remove 2 records?' })
+  await user.type(within(dialog).getByLabelText('Reason'), 'entered twice from the same log')
+  await user.click(within(dialog).getByRole('button', { name: 'Remove' }))
+
+  expect(
+    await within(dialog).findByText('Nothing was changed: 1 of 2 records refuse the action.'),
+  ).toBeInTheDocument()
+  expect(within(dialog).getByText('ACT-0001:')).toBeInTheDocument()
+  expect(within(dialog).getByText(/is used in run 1/)).toBeInTheDocument()
+  // the dialog stays, with the typed reason
+  expect(within(dialog).getByLabelText('Reason')).toHaveValue('entered twice from the same log')
 })
 
-test('a verifier sees Import CSV and + Add activity disabled with the role it needs (spec 01.4)', async () => {
+test('an emission source is assigned only to records at one facility that have none (spec 04.11)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(bulkActivities).mockResolvedValue({
+    bulkId: 'bulk-2',
+    applied: 1,
+    records: ['ACT-0002'],
+  })
+  renderPage()
+  await screen.findByText('Diesel consumption')
+
+  // ACT-0001 has a source: with it selected the fill is withheld, by name
+  await user.click(screen.getByLabelText('Select ACT-0001'))
+  await user.click(screen.getByLabelText('Select ACT-0002'))
+  const assign = screen.getByRole('button', { name: 'Assign emission source' })
+  expect(assign).toBeDisabled()
+  expect(assign).toHaveAttribute('title', 'Select records at one facility with no emission source.')
+  await user.click(screen.getByLabelText('Select ACT-0001'))
+  expect(assign).toBeEnabled()
+
+  await user.click(assign)
+  const dialog = screen.getByRole('dialog', { name: 'Assign an emission source to 1 record' })
+  const confirm = within(dialog).getByRole('button', { name: 'Assign' })
+  expect(confirm).toBeDisabled()
+  await user.selectOptions(within(dialog).getByLabelText('Emission source'), 'str-1')
+  await user.type(within(dialog).getByLabelText('Reason'), 'The cylinders feed the standby gensets')
+  expect(within(dialog).getByText('Applies to 1 record.')).toBeInTheDocument()
+  await user.click(confirm)
+
+  await waitFor(() =>
+    expect(bulkActivities).toHaveBeenCalledWith('org-1', {
+      ids: ['act-2'],
+      action: 'ASSIGN_SOURCE',
+      streamId: 'str-1',
+      reason: 'The cylinders feed the standby gensets',
+    }),
+  )
+  expect(await screen.findByText('Emission source assigned to 1 record.')).toBeInTheDocument()
+})
+
+test('a tier is set on the selection with one reason, and an evidence link lands on each record', async () => {
+  const user = userEvent.setup()
+  vi.mocked(bulkActivities).mockResolvedValue({
+    bulkId: 'bulk-3',
+    applied: 2,
+    records: ['ACT-0001', 'ACT-0002'],
+  })
+  renderPage()
+  await screen.findByText('Diesel consumption')
+  await user.click(screen.getByLabelText('Select all on this page'))
+
+  await user.click(screen.getByRole('button', { name: 'Set data quality tier' }))
+  const tierDialog = screen.getByRole('dialog', { name: 'Set the data quality tier on 2 records' })
+  await user.selectOptions(within(tierDialog).getByLabelText('Data quality tier'), '3')
+  await user.type(within(tierDialog).getByLabelText('Reason'), 'Estimated from the tank dip')
+  await user.click(within(tierDialog).getByRole('button', { name: 'Set tier' }))
+  await waitFor(() =>
+    expect(bulkActivities).toHaveBeenCalledWith('org-1', {
+      ids: ['act-1', 'act-2'],
+      action: 'SET_TIER',
+      dataQualityTier: 3,
+      reason: 'Estimated from the tank dip',
+    }),
+  )
+  expect(await screen.findByText('Data quality tier set on 2 records.')).toBeInTheDocument()
+
+  await user.click(screen.getByLabelText('Select all on this page'))
+  await user.click(screen.getByRole('button', { name: 'Add evidence link' }))
+  const linkDialog = screen.getByRole('dialog', { name: 'Add an evidence link to 2 records' })
+  await user.type(within(linkDialog).getByLabelText('Link name'), 'INV-7')
+  await user.type(within(linkDialog).getByLabelText('URL'), 'https://drive.example/inv-7')
+  await user.type(within(linkDialog).getByLabelText('Reason'), 'The March invoice covers both')
+  await user.click(within(linkDialog).getByRole('button', { name: 'Add link' }))
+  await waitFor(() =>
+    expect(bulkActivities).toHaveBeenLastCalledWith('org-1', {
+      ids: ['act-1', 'act-2'],
+      action: 'ADD_EVIDENCE_LINK',
+      link: { name: 'INV-7', url: 'https://drive.example/inv-7' },
+      reason: 'The March invoice covers both',
+    }),
+  )
+  expect(await screen.findByText('Evidence link added to 2 records.')).toBeInTheDocument()
+})
+
+test('Import leads to the import page (spec 04.11)', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<ActivityPage />, {
+    route: '/app/ghg/org-1/activity',
+    path: '/app/ghg/:organizationId/activity',
+    extraRoutes: [
+      { path: '/app/ghg/:organizationId/activity/import', element: <h1>Import activity data</h1> },
+    ],
+  })
+
+  await user.click(await screen.findByRole('button', { name: 'Import' }))
+  expect(await screen.findByRole('heading', { name: 'Import activity data' })).toBeInTheDocument()
+})
+
+test('a verifier sees Import and + Add activity disabled with the role it needs (spec 01.4)', async () => {
   vi.mocked(getOrganization).mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
@@ -414,7 +545,7 @@ test('a verifier sees Import CSV and + Add activity disabled with the role it ne
   })
   renderPage()
 
-  const importButton = await screen.findByRole('button', { name: 'Import CSV' })
+  const importButton = await screen.findByRole('button', { name: 'Import' })
   const addButton = screen.getByRole('button', { name: /\+ Add activity/ })
   await waitFor(() => expect(importButton).toBeDisabled())
   expect(importButton).toHaveAttribute('title', 'Needs the Preparer, Reviewer or Owner role.')
@@ -427,7 +558,7 @@ test('a verifier sees Import CSV and + Add activity disabled with the role it ne
   expect(screen.queryByLabelText('Select all on this page')).not.toBeInTheDocument()
 })
 
-test('a preparer sees Import CSV and + Add activity enabled', async () => {
+test('a preparer sees Import and + Add activity enabled', async () => {
   vi.mocked(getOrganization).mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
@@ -441,7 +572,7 @@ test('a preparer sees Import CSV and + Add activity enabled', async () => {
   })
   renderPage()
 
-  const importButton = await screen.findByRole('button', { name: 'Import CSV' })
+  const importButton = await screen.findByRole('button', { name: 'Import' })
   const addButton = screen.getByRole('button', { name: /\+ Add activity/ })
   await waitFor(() => expect(importButton).toBeEnabled())
   expect(addButton).toBeEnabled()

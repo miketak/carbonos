@@ -16,6 +16,7 @@ import { RequireAuth } from '../features/auth/RequireAuth'
 import { SplashGate } from '../features/auth/SplashScreen'
 import { HomePage } from '../features/home/HomePage'
 import { ActivityPage } from '../features/ghg/ActivityPage'
+import { ImportActivitiesPage } from '../features/ghg/ImportActivitiesPage'
 import { SourceDocumentsPage } from '../features/ghg/SourceDocumentsPage'
 import { BaseYearPage } from '../features/ghg/BaseYearPage'
 import { SettingsLayout } from '../features/ghg/SettingsLayout'
@@ -101,6 +102,7 @@ export function App() {
           <Route path="facilities/:facilityId/edit" element={<FacilityFormPage />} />
           <Route path="facilities/:facilityId/sources" element={<EmissionSourcesPage />} />
           <Route path="activity" element={<ActivityPage />} />
+          <Route path="activity/import" element={<ImportActivitiesPage />} />
           <Route path="activity/documents" element={<SourceDocumentsPage />} />
           <Route path="inventories" element={<InventoriesPage />} />
           <Route path="inventories/new" element={<InventoryFormPage />} />

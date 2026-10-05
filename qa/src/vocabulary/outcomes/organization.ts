@@ -248,22 +248,36 @@ export const facilityListed = defineOutcome({
 
 export const streamListed = defineOutcome({
   name: 'streamListed',
-  args: z.object({ organization: orgArg, facility: z.string(), name: z.string(), kind: z.string().optional(), contractorOperated: z.boolean().optional() }).strict(),
+  args: z.object({ organization: orgArg, facility: z.string(), name: z.string(), kind: z.string().optional(), contractorOperated: z.boolean().optional(), origin: z.enum(['REGISTER', 'INLINE', 'IMPORT']).optional() }).strict(),
   api: async (ctx, a) => {
     const org = await organization(ctx, a.organization)
     const site = await facility(ctx.session(), org.id, a.facility)
     const row = (await streamsOf(ctx.session(), site.id)).find((s) => s.name === a.name)
     if (!row) return fail(`no stream '${a.name}' at ${a.facility}`)
     if (a.kind && row.kind !== a.kind) return fail(`${a.name} is ${row.kind}`)
+    if (a.origin && row.origin !== a.origin) return fail(`${a.name} was born ${row.origin}`)
     if (a.contractorOperated !== undefined && row.contractorOperated !== a.contractorOperated) return fail(`${a.name} contractorOperated is ${row.contractorOperated}`)
     return pass()
   },
   ui: (a) => [
     { check: 'atOrg', organization: a.organization, section: S.org.sections.facilities },
     { check: 'rowPageHas', row: a.facility, button: S.org.button.emissionSources, heading: S.org.button.emissionSources, text: a.name },
+    ...(a.origin === 'IMPORT' ? [{ check: 'rowPageHas', row: a.facility, button: S.org.button.emissionSources, heading: S.org.button.emissionSources, text: S.act.text.addedDuringImport } as const] : []),
   ],
   narrate: (a) =>
-    `${a.name} is listed at ${a.facility}${a.contractorOperated ? ' as "contractor-operated"' : a.contractorOperated === false ? ' as "owned or controlled"' : ''}${a.kind ? ` with its kind, ${S.org.option.kind[a.kind] ?? a.kind}` : ''}.`,
+    `${a.name} is listed at ${a.facility}${a.contractorOperated ? ' as "contractor-operated"' : a.contractorOperated === false ? ' as "owned or controlled"' : ''}${a.kind ? ` with its kind, ${S.org.option.kind[a.kind] ?? a.kind}` : ''}${a.origin === 'IMPORT' ? ` and "${S.act.text.addedDuringImport}"` : ''}.`,
+})
+
+export const streamAbsent = defineOutcome({
+  name: 'streamAbsent',
+  args: z.object({ organization: orgArg, facility: z.string(), name: z.string() }).strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    const site = await facility(ctx.session(), org.id, a.facility)
+    return (await streamsOf(ctx.session(), site.id)).some((s) => s.name === a.name) ? fail(`'${a.name}' is still listed at ${a.facility}`) : pass()
+  },
+  ui: () => [{ check: 'na', why: 'the absence of a row is read from the API; the page lists what remains' }],
+  narrate: (a) => `${a.name} is no longer listed at ${a.facility}.`,
 })
 
 export const customUnitListed = defineOutcome({
@@ -408,4 +422,5 @@ export const organizationOutcomes = [
   factorListed,
   factorsEmpty,
   importResult,
+  streamAbsent,
 ]

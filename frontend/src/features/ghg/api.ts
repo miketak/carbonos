@@ -1,4 +1,4 @@
-import { api } from '../../lib/api'
+import { api, apiUpload } from '../../lib/api'
 
 export type ConsolidationApproach = 'EQUITY_SHARE' | 'FINANCIAL_CONTROL' | 'OPERATIONAL_CONTROL'
 export type GhgScope = 'SCOPE_1' | 'SCOPE_2' | 'SCOPE_3'
@@ -93,8 +93,8 @@ export type StreamKind =
   | 'PURCHASED_GOODS'
   | 'OTHER'
 
-/** Where an emission source was created (spec 04.10): the facility's register page, or the activity form. */
-export type SourceOrigin = 'REGISTER' | 'INLINE'
+/** Where an emission source was created: the facility's register page, the activity form (spec 04.10), or the import preview (spec 04.11). */
+export type SourceOrigin = 'REGISTER' | 'INLINE' | 'IMPORT'
 
 /** One emission source at a facility, and the classification its records default to (specs 04.3, 04.10). */
 export interface SourceStream {
@@ -752,6 +752,8 @@ export interface ActivityRevision {
   changes: { field: string; before: string | null; after: string | null }[]
   changedBy: string
   changedAt: string
+  /** The act over several records this revision was part of (spec 04.11), or null. */
+  bulkId: string | null
 }
 
 export interface ActivityInput {
@@ -1391,7 +1393,7 @@ export interface ActivityPage extends Page<Activity> {
   counts: ActivityCounts
 }
 
-/** A row of a CSV as it would import, with its readiness (spec 04.6). */
+/** A row of the file as it would import, with its readiness (spec 04.6); NEEDS_DECISION while its source is undecided (spec 04.11). */
 export interface ImportPreviewRow {
   row: number
   facilityName: string
@@ -1405,8 +1407,42 @@ export interface ImportPreviewRow {
   evidenceRef: string | null
   dataQuality: DataQuality
   dataQualityTier: number
-  status: ActivityStatus
+  status: ActivityStatus | 'NEEDS_DECISION'
   issues: ReadinessIssue[]
+}
+
+/** A source of the facility whose name is a near miss of the typed one (spec 04.10's rule), offered by the preview. */
+export interface ImportSourceCandidate {
+  id: string
+  name: string
+  kind: StreamKind
+  defaultScope: GhgScope
+  defaultCategory: ActivityCategory
+}
+
+/** An emission source name the file has and the facility does not (spec 04.11), with the rows it covers. */
+export interface UnknownImportSource {
+  facilityId: string
+  facility: string
+  name: string
+  rows: number[]
+  candidates: ImportSourceCandidate[]
+}
+
+/** What to do with one unknown name: map it to a source of the facility, or create it (spec 04.11). */
+export interface ImportDecisionInput {
+  facilityId: string
+  name: string
+  mapTo?: string
+  create?: SourceStreamInput
+  /** Required when the source is not among the candidates, or a created name is near an existing one. */
+  reason?: string
+}
+
+export interface ImportDecisionsInput {
+  /** The preview's digest of the file, so the decisions cannot be committed against another file. */
+  sha256: string
+  items: ImportDecisionInput[]
 }
 
 /**
@@ -1427,7 +1463,11 @@ export interface ActivityImportResult {
     rows: number
     quantity: number
   }[]
-  warnings: { row: number; message: string }[]
+  /** row is null for a warning about the file itself (a workbook with several sheets). */
+  warnings: { row: number | null; message: string }[]
+  sha256: string
+  unknownSources: UnknownImportSource[]
+  sourcesCreated: number
 }
 
 /** A source document with the record it stands behind (spec 04.6). */
@@ -1469,6 +1509,50 @@ export interface ImportBatch {
   /** The records the import produced, ACT-0092 to ACT-0093; empty when none. */
   firstRecordRef: string
   lastRecordRef: string
+  /** Which reader parsed the file (spec 04.11): 'csv', or the workbook reader and its version. */
+  parser: string
+  /** A workbook's table as read is kept as CSV beside it. */
+  renderedAvailable: boolean
+  sourcesCreated: number
+  decisions: ImportBatchDecision[]
+}
+
+/** One decision an import made on an unknown source name (spec 04.11). */
+export interface ImportBatchDecision {
+  name: string
+  facility: string | null
+  kind: 'MAPPED' | 'CREATED'
+  streamName: string | null
+  rows: number[]
+  reason: string | null
+  decidedBy: string
+  decidedAt: string
+}
+
+/** One act over several records (spec 04.11). */
+export type BulkActivityAction = 'REMOVE' | 'ASSIGN_SOURCE' | 'SET_TIER' | 'ADD_EVIDENCE_LINK'
+
+export interface BulkActivityInput {
+  ids: string[]
+  reason: string
+  action: BulkActivityAction
+  streamId?: string
+  dataQualityTier?: number
+  link?: { name?: string; url: string }
+}
+
+export interface BulkActivityResult {
+  bulkId: string
+  applied: number
+  records: string[]
+}
+
+/** A record that refused a bulk act, from the 409's `refused` (spec 04.11). */
+export interface BulkRefusedRecord {
+  id: string
+  recordRef: string
+  rule: string | null
+  message: string
 }
 
 export type AssignmentStatus = 'INCLUDED' | 'EXCLUDED' | 'UNCLASSIFIED'
@@ -2280,18 +2364,48 @@ export function getActivity(id: string): Promise<Activity> {
   return api<Activity>(`/api/ghg/activities/${id}`)
 }
 
-/** Bulk entry from a CSV file: all rows or none (spec 04.5); a dry run previews without saving (spec 04.6). */
+/**
+ * Bulk entry from a CSV file or a workbook: all rows or none (specs 04.5, 04.11); a dry
+ * run previews without saving (spec 04.6). The decisions on unknown source names travel
+ * as a JSON part beside the file; the upload reports its progress.
+ */
 export function importActivities(
   organizationId: string,
   file: File,
-  options: { dryRun?: boolean } = {},
+  options: {
+    dryRun?: boolean
+    decisions?: ImportDecisionsInput
+    onProgress?: (percent: number) => void
+  } = {},
 ): Promise<ActivityImportResult> {
   const body = new FormData()
   body.append('file', file)
-  return api<ActivityImportResult>(
+  if (options.decisions && options.decisions.items.length > 0) {
+    body.append(
+      'decisions',
+      new Blob([JSON.stringify(options.decisions)], { type: 'application/json' }),
+    )
+  }
+  return apiUpload<ActivityImportResult>(
     `/api/ghg/organizations/${organizationId}/activities/import${options.dryRun ? '?dryRun=true' : ''}`,
-    { method: 'POST', body },
+    body,
+    { onProgress: options.onProgress },
   )
+}
+
+/** One act over several records, all or nothing (spec 04.11). */
+export function bulkActivities(
+  organizationId: string,
+  input: BulkActivityInput,
+): Promise<BulkActivityResult> {
+  return api<BulkActivityResult>(`/api/ghg/organizations/${organizationId}/activities/bulk`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function importBatchRenderedUrl(batchId: string): string {
+  return `/api/ghg/import-batches/${batchId}/rendered.csv`
 }
 
 export function listImportBatches(organizationId: string): Promise<ImportBatch[]> {

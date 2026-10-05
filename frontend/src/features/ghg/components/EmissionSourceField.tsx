@@ -1,25 +1,12 @@
-import { InputField, SelectField } from '../../../components/Field'
-import { streamKindLabels } from '../format'
-import type { SourceStream, StreamKind } from '../api'
+import { SelectField } from '../../../components/Field'
+import type { SourceStream } from '../api'
+import { emptyNewSource, NewSourceFields } from './NewSourceFields'
+import type { NewSourceDraft } from './NewSourceFields'
+
+export { emptyNewSource }
+export type { NewSourceDraft }
 
 const NEW_SOURCE = '__new__'
-
-/** The emission source the form is about to create with the record (spec 04.10), as typed. */
-export interface NewSourceDraft {
-  name: string
-  kind: StreamKind
-  fuel: string
-  meterOrSupplier: string
-  contractorOperated: boolean
-}
-
-export const emptyNewSource: NewSourceDraft = {
-  name: '',
-  kind: 'STATIONARY_COMBUSTION',
-  fuel: '',
-  meterOrSupplier: '',
-  contractorOperated: false,
-}
 
 /**
  * The record's emission source (spec 04.10): the facility's sources, or
@@ -50,9 +37,6 @@ export function EmissionSourceField({
   onChange: (streamId: string) => void
   onNewSourceChange: (draft: NewSourceDraft | null) => void
 }) {
-  const patch = (changes: Partial<NewSourceDraft>) =>
-    onNewSourceChange({ ...(newSource ?? emptyNewSource), ...changes })
-
   return (
     <>
       <SelectField
@@ -86,48 +70,7 @@ export function EmissionSourceField({
             categories its records can be classified into; the emission factor is chosen in each
             inventory's review.
           </p>
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
-            <InputField
-              label="Source name *"
-              placeholder="Standby gensets"
-              value={newSource.name}
-              onChange={(event) => patch({ name: event.target.value })}
-              error={nameError}
-              required
-            />
-            <SelectField
-              label="Kind"
-              value={newSource.kind}
-              onChange={(event) => patch({ kind: event.target.value as StreamKind })}
-            >
-              {Object.entries(streamKindLabels).map(([kind, label]) => (
-                <option key={kind} value={kind}>
-                  {label}
-                </option>
-              ))}
-            </SelectField>
-            <InputField
-              label="Fuel or material (optional)"
-              placeholder="Diesel"
-              value={newSource.fuel}
-              onChange={(event) => patch({ fuel: event.target.value })}
-            />
-            <InputField
-              label="Meter or supplier (optional)"
-              placeholder="Bulk tank dip, ECG account 1234"
-              value={newSource.meterOrSupplier}
-              onChange={(event) => patch({ meterOrSupplier: event.target.value })}
-            />
-          </div>
-          <label className="flex min-h-11 items-center gap-2.5 text-[15px]">
-            <input
-              type="checkbox"
-              checked={newSource.contractorOperated}
-              onChange={(event) => patch({ contractorOperated: event.target.checked })}
-              className="size-[18px] accent-primary"
-            />
-            Operated by a contractor (its emissions default to scope 3)
-          </label>
+          <NewSourceFields draft={newSource} nameError={nameError} onChange={onNewSourceChange} />
         </fieldset>
       )}
     </>
