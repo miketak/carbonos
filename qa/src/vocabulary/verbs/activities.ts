@@ -6,6 +6,7 @@ import { defineVerb } from '../contract.ts'
 import { activity, facility, orgArg, organization, streamsOf } from '../organizations.ts'
 import type { ApiContext } from '../contract.ts'
 import { S } from '../ui/surface.ts'
+import type { UiOp } from '../ui/ops.ts'
 
 /** Activity data: the CSV import, drafts, corrections, evidence and removals (specs 04.4, 04.5, 04.6). */
 
@@ -73,23 +74,24 @@ async function resolveDecisions(ctx: ApiContext, orgId: string, file: string, de
 }
 
 /** The clicks that decide each name on the import page (spec 04.11): the radios carry the name, so no scope is needed. */
-function decisionOps(decisions: Decision[]) {
-  return decisions.flatMap((d) => {
-    if (d.use) return [{ op: 'tick', label: `Use ${d.use}`, prefix: true } as const]
+function decisionOps(decisions: Decision[]): UiOp[] {
+  return decisions.flatMap((d): UiOp[] => {
+    if (d.use) return [{ op: 'tick', label: `Use ${d.use}`, prefix: true }]
     if (d.other) {
       return [
-        { op: 'tick', label: `Use another source of ${d.facility}`, prefix: true } as const,
-        { op: 'choose', label: S.act.field.emissionSource, option: d.other.source } as const,
-        { op: 'fill', label: S.act.field.whyThisSource, value: d.other.reason } as const,
+        { op: 'tick', label: `Use another source of ${d.facility}`, prefix: true },
+        { op: 'choose', label: S.act.field.emissionSource, option: d.other.source },
+        { op: 'fill', label: S.act.field.whyThisSource, value: d.other.reason },
       ]
     }
     const create = d.create!
-    return [
-      { op: 'tick', label: `Create '${d.name}'`, prefix: true } as const,
-      { op: 'choose', label: S.act.field.kind, option: S.org.option.kind[create.kind] ?? create.kind } as const,
-      ...(create.fuel ? [{ op: 'fill', label: S.org.field.fuel, value: create.fuel } as const] : []),
-      ...(create.reason ? [{ op: 'fill', label: S.act.field.whyDifferentSource, value: create.reason } as const] : []),
+    const ops: UiOp[] = [
+      { op: 'tick', label: `Create '${d.name}'`, prefix: true },
+      { op: 'choose', label: S.act.field.kind, option: S.org.option.kind[create.kind] ?? create.kind },
     ]
+    if (create.fuel) ops.push({ op: 'fill', label: S.org.field.fuel, value: create.fuel })
+    if (create.reason) ops.push({ op: 'fill', label: S.act.field.whyDifferentSource, value: create.reason })
+    return ops
   })
 }
 
@@ -111,7 +113,7 @@ export const decideImport = defineVerb({
     const decisions = await resolveDecisions(ctx, org.id, a.file, a.decisions)
     return ctx.session().upload(`/api/ghg/organizations/${org.id}/activities/import`, fixture(a.file), { dryRun: 'true' }, { decisions })
   },
-  ui: (a) => [
+  ui: (a): UiOp[] => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
     { op: 'click', button: S.act.button.import },
     { op: 'upload', label: S.act.field.spreadsheetFile, fixture: a.file, within: S.act.dialog.import },
@@ -129,7 +131,7 @@ export const importDecided = defineVerb({
     const decisions = await resolveDecisions(ctx, org.id, a.file, a.decisions)
     return ctx.session().upload(`/api/ghg/organizations/${org.id}/activities/import`, fixture(a.file), {}, { decisions })
   },
-  ui: (a) => [
+  ui: (a): UiOp[] => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
     { op: 'click', button: S.act.button.import },
     { op: 'upload', label: S.act.field.spreadsheetFile, fixture: a.file, within: S.act.dialog.import },

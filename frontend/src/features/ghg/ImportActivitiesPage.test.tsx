@@ -237,7 +237,9 @@ test('an unknown emission source holds Add records until it is decided; the deci
   await user.click(within(genset).getByRole('radio', { name: /^Use Standby gensets/ }))
   expect(add).toBeDisabled()
   const kiln = within(form).getByRole('group', { name: "'Kiln 1' at Nkran Mine" })
-  expect(within(kiln).queryByRole('radio', { name: /^Use Standby gensets/ })).not.toBeInTheDocument()
+  expect(
+    within(kiln).queryByRole('radio', { name: /^Use Standby gensets/ }),
+  ).not.toBeInTheDocument()
   await user.click(within(kiln).getByRole('radio', { name: /^Create 'Kiln 1'/ }))
   expect(within(kiln).getByLabelText('Source name *')).toHaveValue('Kiln 1')
   await user.selectOptions(within(kiln).getByLabelText('Kind'), 'PROCESS')
