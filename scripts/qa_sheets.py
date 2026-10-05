@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Build the verdict workbook of one persona's QA procedures: one row per step.
 
-Reads docs/qa/<persona>/NNN-*.md, the same Markdown `make qa-docs` turns into
-DOCX, and writes build/qa-docs/<persona>-qa-procedures.xlsx: a Read me sheet,
+The workbook is the only export of the QA procedures (ADR 0010): the testers
+work in the sheet, and the Markdown under docs/qa stays the source. Reads
+docs/qa/<persona>/README.md and NNN-*.md and writes
+build/qa-workbook/<persona>-qa-procedures.xlsx: a Read me sheet,
 an Accounts sheet (the persona's README "Before you start", its accounts
 table with each alias's address derived from the mailbox the tester types
 once, and the fixture files), a Summary sheet that tallies the verdicts per
@@ -12,8 +14,8 @@ Pass/Fail cells take PASS, FAIL or N/A from a list; a step with no expected
 result is setup and takes no verdict. The workbook stands on its own: a
 tester needs nothing from the documents to know which account a step means.
 
-    uv run --locked --group qa-docs python scripts/qa_sheets.py --persona governance
-    uv run --locked --group qa-docs python scripts/qa_sheets.py --check --persona governance
+    uv run --locked --group qa-workbook python scripts/qa_sheets.py --persona governance
+    uv run --locked --group qa-workbook python scripts/qa_sheets.py --check --persona governance
 
 `--check` parses the procedures, builds the workbook in memory and reads it
 back, without writing a file; it is the guard that the Markdown still has the
@@ -23,13 +25,93 @@ shape this parser reads. See docs/how-to/publish-qa-procedures.md.
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import io
+import os
 import re
+import shutil
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from publish_qa_docs import REPO_ROOT, REPO_URL, BuildInfo, _display, doc_name, source_files
+REPO_ROOT = Path(__file__).resolve().parent.parent
+QA_ROOT = REPO_ROOT / "docs" / "qa"
+REPO_URL = "https://github.com/miketak/carbonos"
+DEFAULT_PERSONA = "governance"
+
+
+@dataclass(frozen=True)
+class BuildInfo:
+    """The git ref the workbook is built from, for the subtitle and the source link."""
+
+    ref: str
+    sha: str
+    date: str
+
+    @property
+    def subtitle(self) -> str:
+        return f"Version {self.ref} ({self.sha}), built {self.date}"
+
+    @staticmethod
+    def detect() -> "BuildInfo":
+        today = dt.date.today().isoformat()
+        ref = os.environ.get("GITHUB_REF_NAME")
+        sha = os.environ.get("GITHUB_SHA", "")[:7]
+        if ref and sha:
+            return BuildInfo(ref, sha, today)
+        describe = _git("describe", "--tags", "--always", "--dirty")
+        branch = _git("rev-parse", "--abbrev-ref", "HEAD")
+        short = _git("rev-parse", "--short", "HEAD")
+        return BuildInfo(describe if branch == "HEAD" else branch, short, today)
+
+
+def _display(path: Path) -> str:
+    """The path relative to the repository when it is inside it, else as given."""
+    try:
+        return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def _git(*args: str) -> str:
+    try:
+        return subprocess.run(["git", *args], cwd=REPO_ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return "unknown"
+
+
+def source_files(persona: str = DEFAULT_PERSONA) -> list[Path]:
+    """The persona's README (the accounts and the scenario) and its numbered procedures."""
+    qa_dir = QA_ROOT / persona
+    if not (qa_dir / "README.md").is_file():
+        personas = sorted(p.name for p in QA_ROOT.iterdir() if (p / "README.md").is_file())
+        raise SystemExit(f"No QA persona named '{persona}' under docs/qa; found: {', '.join(personas) or 'none'}")
+    return [qa_dir / "README.md", *sorted(qa_dir.glob("[0-9][0-9][0-9]-*.md"))]
+
+
+def doc_name(source: Path) -> str:
+    """'NN <title>' for a procedure: the sheet's name before it is cut to Excel's limit."""
+    number = int(source.name[:3])
+    heading = next((line for line in source.read_text(encoding="utf-8").splitlines() if line.startswith("# ")), source.stem)
+    title = re.sub(r"^#\s*Procedure\s+\d+:\s*", "", heading).strip()
+    return f"{number:02d} {title}"
+
+
+def copy_fixtures(out_dir: Path, persona: str = DEFAULT_PERSONA) -> int:
+    """Copies docs/qa/<persona>/fixtures to <out_dir>/fixtures, replacing an earlier copy.
+
+    The steps name the files as `fixtures/<file>`, so the folder travels with the
+    workbook. Returns the number of files copied; 0 when the persona has no fixtures.
+    """
+    source = QA_ROOT / persona / "fixtures"
+    target = out_dir / "fixtures"
+    if target.exists():
+        shutil.rmtree(target)
+    if not source.is_dir():
+        return 0
+    shutil.copytree(source, target)
+    return sum(1 for path in target.rglob("*") if path.is_file())
 
 STEP_HEADER = ["Step", "Action", "Expected result", "Pass/Fail", "Notes"]
 COLUMNS = ["Section", "Case", "Step", "Step id", "Action", "Expected result", "Pass/Fail", "Notes"]
@@ -342,10 +424,7 @@ def parse_readme(source: Path) -> Setup:
                 elif paragraph:
                     setup.accounts_note = " ".join(paragraph)
                     paragraph = []
-    if not setup.accounts:
-        raise ParseError(source, 0, 'no "## The accounts" table')
-    if not setup.before:
-        raise ParseError(source, 0, 'no "## Before you start" bullets')
+    # a persona without the tables (the mining pack, until ECO-42) still builds; the Accounts sheet says so
     return setup
 
 
@@ -370,6 +449,36 @@ def quoted(name: str) -> str:
 
 
 MAILBOX_CELL = "B4"  # the Accounts sheet: the mailbox the tester reads, typed once
+MAILBOX_REF = f"Accounts!${MAILBOX_CELL[0]}${MAILBOX_CELL[1:]}"
+_PLACEHOLDER = re.compile(r"you\+([a-z0-9]+)@…")
+EXCEL_FORMULA_LIMIT = 8192
+
+
+def address_formula(alias: str) -> str:
+    """The alias's address once the mailbox is typed, else the README's placeholder."""
+    return f'IF({MAILBOX_REF}="","you+{alias}@…",SUBSTITUTE({MAILBOX_REF},"@","+{alias}@"))'
+
+
+def hydrated(text: str | None) -> str | None:
+    """
+    A cell that names an alias (`you+kofi@…`) becomes a formula that prints the
+    real address once the tester types their mailbox on the Accounts sheet, so a
+    step reads "tester+kofi@gmail.com (the Kofi alias)" instead of the
+    placeholder. Text without an alias is written as it is.
+    """
+    if not text:
+        return text
+    aliases = list(dict.fromkeys(_PLACEHOLDER.findall(text)))
+    if not aliases:
+        return text
+    literal = "&CHAR(10)&".join('"' + part.replace('"', '""') + '"' for part in text.split("\n"))
+    expr = literal
+    for alias in aliases:
+        expr = f'SUBSTITUTE({expr},"you+{alias}@…",{address_formula(alias)})'
+    formula = "=" + expr
+    if len(formula) > EXCEL_FORMULA_LIMIT:
+        raise SystemExit(f"a cell naming {aliases} is too long to hydrate as a formula ({len(formula)} characters)")
+    return formula
 
 
 def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, setup: Setup | None = None):
@@ -418,7 +527,7 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, s
         ]
         for row, (label, value) in enumerate(head, start=1):
             ws.cell(row=row, column=1, value=label).font = title_font if row == 1 else bold
-            ws.cell(row=row, column=2, value=value).alignment = wrap
+            ws.cell(row=row, column=2, value=hydrated(value)).alignment = wrap
             ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=len(COLUMNS))
         ws.row_dimensions[7].height = max(15, 15 * len(procedure.prerequisites))
         for col, header in enumerate(COLUMNS, start=1):
@@ -439,7 +548,7 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, s
             ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=len(COLUMNS))
             row += 1
             if section.intro:
-                ws.cell(row=row, column=1, value=section.intro).font = italic
+                ws.cell(row=row, column=1, value=hydrated(section.intro)).font = italic
                 ws.cell(row=row, column=1).alignment = wrap
                 ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=len(COLUMNS))
                 row += 1
@@ -449,14 +558,14 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, s
                 ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=len(COLUMNS))
                 row += 1
                 if case.rationale:
-                    ws.cell(row=row, column=1, value=case.rationale).font = italic
+                    ws.cell(row=row, column=1, value=hydrated(case.rationale)).font = italic
                     ws.cell(row=row, column=1).alignment = wrap
                     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=len(COLUMNS))
                     row += 1
                 first = row
                 for step in case.steps:
                     values = [section.letter, case.id, step.number, step_id(procedure, case, step),
-                              step.action, step.expected, None, None]
+                              hydrated(step.action), hydrated(step.expected), None, None]
                     for col, value in enumerate(values, start=1):
                         cell = ws.cell(row=row, column=col, value=value)
                         cell.alignment = wrap if col in (5, 6, 8) else top
@@ -470,13 +579,13 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, s
 
         row += 1
         ws.cell(row=row, column=1, value="Known non-goals").font = bold
-        ws.cell(row=row, column=2, value=procedure.known_non_goals).alignment = wrap
+        ws.cell(row=row, column=2, value=hydrated(procedure.known_non_goals)).alignment = wrap
         ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=len(COLUMNS))
         row += 1
         if procedure.change_notes:
             ws.cell(row=row, column=1, value="Change notes").font = bold
             for note in procedure.change_notes:
-                ws.cell(row=row, column=2, value=note).alignment = wrap
+                ws.cell(row=row, column=2, value=hydrated(note)).alignment = wrap
                 ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=len(COLUMNS))
                 row += 1
 
@@ -558,6 +667,9 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, s
         accounts.row_dimensions[row].height = 15 * max(1, len(bullet) // 110 + 1)
     row += 2
     accounts.cell(row=row, column=1, value="The accounts").font = bold
+    if not setup.accounts:
+        row += 1
+        accounts.cell(row=row, column=1, value="This persona's README has no accounts table; its procedures name the accounts themselves.").font = italic
     row += 1
     # the README's columns: Account first, a password column somewhere, the rest carried over as they are
     password_col = next((i for i, h in enumerate(setup.accounts_header) if h.lower().startswith("password")), None)
@@ -573,9 +685,8 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, s
         name = _ALIAS.split(label)[0].rstrip(", `").strip() if alias else label
         password = account[password_col] if password_col is not None else ""
         if alias:
-            # =IF($B$4="","you+ama@…",SUBSTITUTE($B$4,"@","+ama@")): the placeholder until the mailbox is typed
-            email = (f'=IF(${MAILBOX_CELL[0]}${MAILBOX_CELL[1:]}="","you+{alias}@…",'
-                     f'SUBSTITUTE(${MAILBOX_CELL[0]}${MAILBOX_CELL[1:]},"@","+{alias}@"))')
+            # the placeholder until the mailbox is typed, then the real address
+            email = "=" + address_formula(alias)
         else:
             email = "the address you gave the engineering team"
         values = [name, email, password, *(account[i] for i in rest)]
@@ -615,8 +726,9 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, s
         (info.subtitle, None),
         ("", None),
         ("How to use this workbook", bold),
-        ("Start on the Accounts sheet: type the mailbox you read in its yellow cell, and every account's address, "
-         "password and window is there. A step that says \"as Ama\" or \"sign in as Admin\" means that row.", None),
+        ("Start on the Accounts sheet: type the mailbox you read in its yellow cell. Every account's address, "
+         "password and window is there, and every step that names an alias then prints your real address "
+         "(\"tester+kofi@gmail.com (the Kofi alias)\") instead of the placeholder.", None),
         ("Each procedure is a sheet, run them in order. Each row is one step: do the Action, check the Expected result, "
          "then pick PASS, FAIL or N/A in the Pass/Fail column.", None),
         ("A grey row is setup: it has no expected result and takes no verdict.", None),
@@ -627,9 +739,9 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, s
          f"{REPO_URL}/issues/new?template=qa-failure.yml", None),
         ("", None),
         ("Where things are", bold),
-        (f"The procedures as documents, with the same steps: the {DRIVE_FOLDER} folder in Drive, in this version's subfolder, "
-         "beside the fixture files the steps name.", None),
-        (f"The source of this workbook: {REPO_URL}/tree/{info.ref}/docs/qa/{persona}", None),
+        (f"The fixture files the steps name: the fixtures folder beside this workbook in {DRIVE_FOLDER}, "
+         "in this version's subfolder (the Accounts sheet lists them).", None),
+        (f"The source of this workbook, the Markdown it is built from: {REPO_URL}/tree/{info.ref}/docs/qa/{persona}", None),
         ("", None),
         ("Procedures in this workbook", bold),
     ]
@@ -653,7 +765,7 @@ def counts_line(target: str, procedures: list[Procedure]) -> str:
 
 
 def build(out_dir: Path, persona: str, info: BuildInfo | None = None) -> Path:
-    """Writes build/qa-docs/<persona>-qa-procedures.xlsx and returns its path."""
+    """Writes build/qa-workbook/<persona>-qa-procedures.xlsx, copies the fixtures beside it, and returns its path."""
     info = info or BuildInfo.detect()
     procedures = parse_persona(persona)
     setup = parse_readme(readme_path(persona))
@@ -661,6 +773,9 @@ def build(out_dir: Path, persona: str, info: BuildInfo | None = None) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     build_workbook(procedures, persona, info, setup).save(target)
     print(f"built {counts_line(_display(target), procedures)}")
+    fixtures = copy_fixtures(target.parent, persona)
+    if fixtures:
+        print(f"copied {fixtures} fixture file(s) to {_display(target.parent / 'fixtures')}")
     return target
 
 
@@ -681,8 +796,16 @@ def check(persona: str) -> None:
     emails = [c.value for row in wb["Accounts"].iter_rows(min_col=2, max_col=2) for c in row
               if isinstance(c.value, str) and c.value.startswith("=IF(")]
     aliases = [a for a in (alias_of(account[0]) for account in setup.accounts) if a]
+    if not setup.accounts or not setup.before:
+        raise SystemExit(f'docs/qa/{persona}/README.md lacks the "The accounts" table or the "Before you start" bullets')
     if len(emails) != len(aliases):
         raise SystemExit(f"the Accounts sheet derives {len(emails)} addresses, expected one per alias ({len(aliases)})")
+    # every step cell that names an alias hydrates it from the mailbox cell
+    naming = sum(1 for p in procedures for step in p.steps for text in (step.action, step.expected) if _PLACEHOLDER.search(text))
+    hydrating = sum(1 for name in wb.sheetnames[3:] for row in wb[name].iter_rows(min_col=5, max_col=6) for c in row
+                    if isinstance(c.value, str) and c.value.startswith("=SUBSTITUTE("))
+    if naming != hydrating:
+        raise SystemExit(f"{naming} step cells name an alias but {hydrating} hydrate it")
     summary = wb["Summary"]
     formulas = [c.value for row in summary.iter_rows() for c in row if isinstance(c.value, str) and c.value.startswith("=COUNTIF(")]
     if len(formulas) != 3 * sum(len(p.cases) for p in procedures):
@@ -692,8 +815,8 @@ def check(persona: str) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--out", type=Path, default=REPO_ROOT / "build" / "qa-docs", help="where the workbook goes")
-    parser.add_argument("--persona", default="governance", help="the folder under docs/qa to export (default: governance)")
+    parser.add_argument("--out", type=Path, default=REPO_ROOT / "build" / "qa-workbook", help="where the workbook goes")
+    parser.add_argument("--persona", default=DEFAULT_PERSONA, help="the folder under docs/qa to export (default: governance)")
     parser.add_argument("--check", action="store_true", help="parse and build in memory only; write nothing")
     args = parser.parse_args(argv)
     if args.check:
