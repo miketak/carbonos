@@ -14,9 +14,20 @@ test('leads with the one-liner and the wordmark', () => {
   expect(document.title).toMatch(/CarbonOS/)
 })
 
-test('falls back to the static illustration without WebGL', () => {
+test('shows the product itself in the hero: the published FY2025 inventory', () => {
   renderWithProviders(<HomePage />)
-  expect(screen.getByRole('img', { name: /scope 1, scope 2 and scope 3/i })).toBeInTheDocument()
+  const picture = screen.getByRole('img', { name: /FY2025 inventory of Gye Nyame Gold/ })
+  expect(picture).toHaveAttribute('src', '/landing/inventory-fy2025.png')
+})
+
+test('the nav jumps to Product, Pricing and FAQ, and nothing else', () => {
+  renderWithProviders(<HomePage />)
+  const nav = screen.getAllByRole('navigation', { name: 'Page sections' })[0]
+  expect(
+    within(nav)
+      .getAllByRole('link')
+      .map((a) => a.textContent),
+  ).toEqual(['Product', 'Pricing', 'FAQ'])
 })
 
 test('publishes every tier with its cedi price', () => {
@@ -27,11 +38,11 @@ test('publishes every tier with its cedi price', () => {
   }
 })
 
-test('the gas table ties to the total', async () => {
+test('the gas table ties to the total', () => {
   renderWithProviders(<HomePage />)
-  await userEvent.click(screen.getByRole('button', { name: 'Table view' }))
   const total = screen.getByRole('row', { name: /^Total/ })
   expect(within(total).getByText('86,412')).toBeInTheDocument()
+  expect(screen.getByText('Ties to the total')).toBeInTheDocument()
 })
 
 test('the hero button opens the form titled for the pilot', async () => {

@@ -1,6 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
 import { Reveal } from './Reveal'
-import { useReducedMotion } from './useReducedMotion'
 
 const QUESTIONS = [
   'Which legal entities were in the boundary on 1 March, and under which consolidation approach?',
@@ -12,146 +10,99 @@ const QUESTIONS = [
 
 const LEDGER = [
   {
-    time: '09:12',
-    who: 'A. Mensah (Preparer)',
-    what: 'Adopted DESNZ 2025 edition · reason: annual factor update',
+    who: 'A. Mensah',
+    role: 'Preparer',
+    what: 'Adopted the DESNZ 2025 edition',
+    why: 'reason: annual factor update',
   },
   {
-    time: '11:40',
-    who: 'K. Boateng (Reviewer)',
-    what: 'Approved run 3 · self-approval refused for the preparer',
+    who: 'K. Boateng',
+    role: 'Reviewer',
+    what: 'Approved run 3',
+    why: 'self-approval refused for the preparer',
   },
   {
-    time: '14:05',
-    who: 'A. Mensah (Preparer)',
-    what: 'Voided run 3 · reason: Site B November diesel double-counted',
+    who: 'A. Mensah',
+    role: 'Preparer',
+    what: 'Voided run 3',
+    why: 'reason: Site B November diesel double-counted',
   },
   {
-    time: '14:31',
-    who: 'System',
-    what: 'Run 4 · final run refused: unflagged proxy density on LPG',
+    who: 'Pre-flight',
+    role: '',
+    what: 'Run 4 refused as final',
+    why: 'unflagged proxy density on LPG',
+    warn: true,
   },
   {
-    time: '15:02',
-    who: 'A. Mensah (Preparer)',
-    what: 'Flagged density as proxy · run 4 passed · frozen: boundary version 3',
+    who: 'A. Mensah',
+    role: 'Preparer',
+    what: 'Flagged the density as a proxy · run 4 passed',
+    why: 'frozen: boundary version 3',
   },
 ]
 
-/**
- * The verifier's questions rotate once through the list while the card is on
- * screen, then rest on the last one; the ledger fills once and stays filled.
- * Nothing here loops forever and nothing is announced to a screen reader.
- */
+/** The verifier's questions beside the history that answers them. */
 export function ProblemSection() {
-  const reduced = useReducedMotion()
-  const ref = useRef<HTMLElement>(null)
-  const [onScreen, setOnScreen] = useState(false)
-  const [q, setQ] = useState(reduced ? QUESTIONS.length - 1 : 0)
-  const [rows, setRows] = useState(reduced ? LEDGER.length : 1)
-
-  useEffect(() => {
-    const node = ref.current
-    if (!node || typeof IntersectionObserver === 'undefined') {
-      setOnScreen(true)
-      return
-    }
-    const observer = new IntersectionObserver((entries) =>
-      setOnScreen(entries.some((entry) => entry.isIntersecting)),
-    )
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
-    if (reduced || !onScreen || q >= QUESTIONS.length - 1) return
-    const id = setTimeout(() => setQ((n) => n + 1), 3600)
-    return () => clearTimeout(id)
-  }, [reduced, onScreen, q])
-
-  useEffect(() => {
-    if (reduced || !onScreen || rows >= LEDGER.length) return
-    const id = setTimeout(() => setRows((n) => n + 1), 1500)
-    return () => clearTimeout(id)
-  }, [reduced, onScreen, rows])
-
   return (
-    <section id="product" className="landing-section" ref={ref}>
-      <div className="landing-container">
-        <Reveal className="landing-head">
-          <p className="landing-eyebrow">The problem</p>
+    <section id="product" className="landing-section landing-section--alt">
+      <div className="landing-container grid items-center gap-14 lg:grid-cols-2">
+        <Reveal className="flex flex-col gap-5">
+          <p className="landing-eyebrow">The record</p>
           <h2 className="landing-title">The problem is not the arithmetic. It is the record.</h2>
           <p className="landing-lede">
-            A verifier does not start with your total. They start with your boundary, then each
-            source and why it sits in its scope, then the factor behind every figure, then who
-            approved what and why anything changed. In a spreadsheet that record lives in file
-            names, email threads and memory.
+            A verifier does not ask for the total. A verifier asks these, and a spreadsheet cannot
+            answer them after the fact.
           </p>
+          <ul className="mt-2 flex flex-col gap-3 text-ink">
+            {QUESTIONS.map((q) => (
+              <li key={q} className="flex gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                  className="mt-0.5 shrink-0 text-link"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+                </svg>
+                <span>{q}</span>
+              </li>
+            ))}
+          </ul>
         </Reveal>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-2">
-          <Reveal className="problem-card problem-card--sheet" step={1}>
-            <div className="problem-card-head">
-              <span className="problem-card-title">The spreadsheet</span>
-              <span className="problem-pill problem-pill--warn">inventory_FINAL_v7 (2).xlsx</span>
-            </div>
-            <div className="sheet">
-              <div className="sheet-row sheet-row--head">
-                <span>Source</span>
-                <span>Factor</span>
-                <span>tCO₂e</span>
-              </div>
-              <div className="sheet-row">
-                <span>Grid electricity</span>
-                <span className="sheet-cell--overwritten">0.4034 (2024)</span>
-                <span>38,320</span>
-              </div>
-              <div className="sheet-row">
-                <span>Fleet diesel</span>
-                <span>2.68</span>
-                <span className="sheet-cell--overwritten">34,194</span>
-              </div>
-              <div className="sheet-row sheet-row--ghost">
-                <span>Contractor haulage</span>
-                <span>?</span>
-                <span>0</span>
-              </div>
-            </div>
-            <div className="problem-verifier">
-              <span className="problem-verifier-label">
-                The verifier asks ({q + 1} of {QUESTIONS.length})
-              </span>
-              <p key={q} className="problem-verifier-q">
-                “{QUESTIONS[q]}”
-              </p>
-              <p className="problem-verifier-a">
-                The team reconstructs it. The verification stalls.
-              </p>
-            </div>
-          </Reveal>
-
-          <Reveal className="problem-card problem-card--ledger" step={2}>
-            <div className="problem-card-head">
-              <span className="problem-card-title">The CarbonOS record</span>
-              <span className="problem-pill problem-pill--ok">Written as you work</span>
-            </div>
-            <ol className="ledger" aria-label="Organization history">
-              {LEDGER.slice(0, rows).map((row, i) => (
-                <li key={row.time} className="ledger-row" data-latest={i === rows - 1}>
-                  <span className="ledger-time">{row.time}</span>
-                  <span className="ledger-body">
-                    <span className="ledger-who">{row.who}</span>
-                    <span className="ledger-what">{row.what}</span>
+        <Reveal as="div" className="landing-frame" step={1}>
+          <div className="flex items-center justify-between gap-3 border-b border-hairline px-5 py-4 text-[13px]">
+            <span className="font-semibold text-ink">History</span>
+            <span className="text-ink-muted">Gye Nyame Gold · FY2025</span>
+          </div>
+          <ol className="text-[13px]" aria-label="Organization history">
+            {LEDGER.map((row) => (
+              <li
+                key={row.what}
+                className="grid grid-cols-[7rem_minmax(0,1fr)] gap-4 border-b border-hairline px-5 py-3.5 last:border-b-0"
+              >
+                <span className="text-ink-muted">
+                  {row.who}
+                  {row.role && <span className="block text-[11px]">{row.role}</span>}
+                </span>
+                <span className="text-ink">
+                  {row.what}
+                  <span className={`block ${row.warn ? 'text-warning' : 'text-ink-muted'}`}>
+                    {row.why}
                   </span>
-                </li>
-              ))}
-            </ol>
-            <p className="ledger-foot">
-              Every boundary change, factor edition, run, approval and correction is written down by
-              the product, with a reason, at the moment it happens. Nothing changes silently.
-            </p>
-          </Reveal>
-        </div>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Reveal>
       </div>
     </section>
   )

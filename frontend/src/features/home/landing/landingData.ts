@@ -150,10 +150,10 @@ export const PERSONA = {
     { name: 'Scope 3', value: 19401, note: 'Contract haulage; well-to-tank and T&D losses' },
   ],
   gases: [
-    { gas: 'CO₂', mass: '45,124 t', gwp: 1, co2e: 45124, color: '#0b9a8a' },
-    { gas: 'CH₄', mass: '147 kg', gwp: 28, co2e: 4, color: '#1f5fa8' },
-    { gas: 'N₂O', mass: '1.751 t', gwp: 265, co2e: 464, color: '#56a11e' },
-    { gas: 'No gas split', mass: 'Not separable', gwp: null, co2e: 40820, color: '#7a8c8a' },
+    { gas: 'CO₂', mass: '45,124 t', gwp: 1, co2e: 45124 },
+    { gas: 'CH₄', mass: '147 kg', gwp: 28, co2e: 4 },
+    { gas: 'N₂O', mass: '1.751 t', gwp: 265, co2e: 464 },
+    { gas: 'No gas split', mass: 'Not separable', gwp: null, co2e: 40820 },
   ],
   scope2: {
     location: 32817,

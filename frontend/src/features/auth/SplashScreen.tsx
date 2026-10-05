@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { CarbonOsMark } from '../../components/CarbonOsMark'
 import { Wordmark } from '../../components/Wordmark'
 
 const WORDMARK = 'CarbonOS'
 const TAGLINE = 'Measure. Certify. Sustain.'
-const EXIT_MS = 4650
-const DONE_MS = 5000
-const SKIP_EXIT_MS = 300
-
-/* the loader is theater: everything is already loaded underneath, so it claims nothing (ticket T-25) */
-const PROGRESS_START_MS = 2000
-const PROGRESS_MS = 2300
-
+// short and quiet (spec 10, as amended 2026-10-05): the mark settles, the name and the line
+// follow, and the app is there under a second and a half later; any key or pointer skips it
+const EXIT_MS = 1300
+const DONE_MS = 1600
+const SKIP_EXIT_MS = 200
 const EXPO_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
 let splashListener: (() => void) | null = null
@@ -23,14 +21,12 @@ export function triggerSplash() {
 /** Mounted once in App: overlays the splash above whatever route is loading beneath it. */
 export function SplashGate() {
   const [playing, setPlaying] = useState(false)
-
   useEffect(() => {
     splashListener = () => setPlaying(true)
     return () => {
       splashListener = null
     }
   }, [])
-
   if (!playing) {
     return null
   }
@@ -38,15 +34,15 @@ export function SplashGate() {
 }
 
 /**
- * "Core power-up": two arcs rotate in and lock into an instrument ring, the
- * core ignites with one bloom, and the solid gradient wordmark wipes in below.
- * Pure DOM + CSS animations; the global reduced-motion rule collapses every
- * phase to the finished lockup instantly.
+ * The lockup on the brand's dark teal: the mark settles in, the wordmark and
+ * the tagline rise under it, the whole fades to the app. Pure CSS animations;
+ * the global reduced-motion rule collapses every phase to the finished lockup
+ * at once. It claims nothing (ticket T-25): everything is already loaded
+ * beneath it.
  */
 export function SplashScreen({ onDone }: { onDone: () => void }) {
   const [exiting, setExiting] = useState(false)
   const onDoneRef = useRef(onDone)
-
   useEffect(() => {
     onDoneRef.current = onDone
   })
@@ -55,7 +51,6 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
     const exitTimer = setTimeout(() => setExiting(true), EXIT_MS)
     const doneTimer = setTimeout(() => onDoneRef.current(), DONE_MS)
     let skipTimer: ReturnType<typeof setTimeout> | undefined
-
     const skip = () => {
       clearTimeout(exitTimer)
       clearTimeout(doneTimer)
@@ -77,126 +72,28 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
     <div
       role="status"
       aria-label={`${WORDMARK}: ${TAGLINE}`}
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-dark-teal via-[#17444b] to-[#0c2b30] transition-opacity duration-300 ease-in ${
+      className={`splash fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ease-in ${
         exiting ? 'opacity-0' : 'opacity-100'
       }`}
     >
       <div
-        className={`flex flex-col items-center gap-6 transition-transform duration-300 ease-in ${
-          exiting ? '-translate-y-2' : ''
+        className={`flex flex-col items-center gap-7 transition-transform duration-300 ease-in ${
+          exiting ? '-translate-y-1' : ''
         }`}
       >
-        <CoreEmblem />
-
-        {/* the emblem above is the mark of this moment, so the lockup goes without its symbol */}
-        <div style={{ animation: `splash-wipe 500ms ${EXPO_OUT} 1050ms both` }}>
-          <Wordmark size="splash" surface="dark" symbol={false} />
+        <div style={{ animation: `splash-settle 600ms ${EXPO_OUT} both` }}>
+          <CarbonOsMark size={96} />
         </div>
-
-        <div
-          className="h-px w-72 bg-gradient-to-r from-transparent via-bright-teal/70 to-transparent"
-          style={{ animation: `splash-rule 400ms ${EXPO_OUT} 1300ms both` }}
-        />
-
+        <div style={{ animation: `splash-rise 450ms ${EXPO_OUT} 350ms both` }}>
+          <Wordmark size="splash" surface="dark" symbol={false} byline={false} />
+        </div>
         <p
-          className="text-sm tracking-[0.18em] text-white/70 uppercase"
-          style={{ animation: 'splash-rise 400ms ease-out 1500ms both' }}
+          className="splash-tagline text-sm font-medium tracking-[0.08em] uppercase"
+          style={{ animation: `splash-rise 450ms ${EXPO_OUT} 550ms both` }}
         >
           {TAGLINE}
         </p>
-
-        <Progress />
       </div>
-    </div>
-  )
-}
-
-/**
- * A plain progress bar. Earlier builds listed staged "verifying" and "calibrating"
- * lines here; nothing was verified, and a verifier would ask what was, so the loader
- * now shows progress and nothing else.
- */
-function Progress() {
-  return (
-    <div
-      className="mt-2 flex w-80 flex-col gap-2"
-      style={{ animation: `splash-rise 400ms ease-out ${PROGRESS_START_MS - 200}ms both` }}
-    >
-      <div
-        className="h-0.5 overflow-hidden rounded-full bg-white/10"
-        role="progressbar"
-        aria-label="Loading"
-      >
-        <div
-          className="h-full origin-left rounded-full bg-gradient-to-r from-teal to-accent-green"
-          style={{
-            animation: `splash-progress ${PROGRESS_MS}ms cubic-bezier(0.4, 0, 0.2, 1) ${PROGRESS_START_MS}ms both`,
-          }}
-        />
-      </div>
-      <p className="text-center font-mono text-[11px] tracking-wide text-white/50">
-        Loading your workspace. Click or press any key to skip.
-      </p>
-    </div>
-  )
-}
-
-/** The instrument ring: two arcs rotating into lock, cardinal ticks, igniting core. */
-function CoreEmblem() {
-  return (
-    <div className="relative" style={{ animation: 'splash-lock 200ms ease-out 700ms both' }}>
-      {/* ignition bloom */}
-      <div
-        className="absolute -inset-6 rounded-full"
-        style={{
-          background: 'radial-gradient(circle, rgba(5, 206, 187, 0.85), transparent 60%)',
-          animation: 'splash-bloom 420ms ease-out 820ms both',
-        }}
-      />
-      <svg viewBox="0 0 120 120" aria-hidden="true" className="relative h-24 w-24">
-        {/* two 120° arcs rotating in from opposite directions */}
-        <path
-          d="M 18.43 36 A 48 48 0 0 1 101.57 36"
-          fill="none"
-          stroke="#09a895"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          className="splash-arc"
-          style={{ animation: `splash-arc-cw 700ms ${EXPO_OUT} both` }}
-        />
-        <path
-          d="M 101.57 84 A 48 48 0 0 1 18.43 84"
-          fill="none"
-          stroke="#05cebb"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          className="splash-arc"
-          style={{ animation: `splash-arc-ccw 700ms ${EXPO_OUT} both` }}
-        />
-        {/* cardinal ticks appear at the lock */}
-        {[
-          [60, 6],
-          [114, 60],
-          [60, 114],
-          [6, 60],
-        ].map(([cx, cy]) => (
-          <circle
-            key={`${cx}-${cy}`}
-            cx={cx}
-            cy={cy}
-            r="1.6"
-            fill="rgba(255, 255, 255, 0.45)"
-            style={{ animation: 'splash-tick 200ms ease-out 550ms both' }}
-          />
-        ))}
-        {/* the core ignites accent-green at the bloom */}
-        <circle
-          cx="60"
-          cy="60"
-          r="5"
-          style={{ animation: 'splash-core 300ms ease-out 820ms both' }}
-        />
-      </svg>
     </div>
   )
 }

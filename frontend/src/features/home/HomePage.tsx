@@ -7,9 +7,9 @@ import { Hero } from './landing/Hero'
 import { InventorySection } from './landing/InventorySection'
 import { LandingNav } from './landing/LandingNav'
 import { LifecycleSection } from './landing/LifecycleSection'
+import { Pillars } from './landing/Pillars'
 import { PricingSection } from './landing/PricingSection'
 import { ProblemSection } from './landing/ProblemSection'
-import { TrustSection } from './landing/TrustSection'
 
 const TITLE = 'CarbonOS · The GHG inventory that survives verification'
 
@@ -17,7 +17,10 @@ const TITLE = 'CarbonOS · The GHG inventory that survives verification'
  * The public landing page at `/`. Signed-in readers use `/app`, which
  * resolves to where their work is (spec 01.6); this page is for everybody
  * else: the sustainability lead, the finance director and the verifier
- * deciding whether to ask for access.
+ * deciding whether to ask for access. Eight screens in the kit's type and
+ * spacing (spec 10, as amended 2026-10-05): the hero with the product, three
+ * pillars, the record, the lifecycle, the report, pricing, the questions,
+ * the close.
  */
 export function HomePage() {
   const [intent, setIntent] = useState<AccessIntent | null>(null)
@@ -41,11 +44,11 @@ export function HomePage() {
       <LandingNav onRequest={setIntent} />
       <main id="main">
         <Hero onRequest={setIntent} />
+        <Pillars />
         <ProblemSection />
         <LifecycleSection />
         <InventorySection />
         <PricingSection onRequest={setIntent} />
-        <TrustSection />
         <FaqSection />
         <ClosingSection onRequest={setIntent} />
       </main>

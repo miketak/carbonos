@@ -12,12 +12,12 @@ test('plays after triggerSplash and unmounts when finished', () => {
     expect(screen.getByRole('status')).toBeInTheDocument()
     expect(screen.getByText('CarbonOS')).toBeInTheDocument()
     expect(screen.getByText('Measure. Certify. Sustain.')).toBeInTheDocument()
-    // the loader claims nothing: no "verifying" or "calibrating" lines (ticket T-25)
-    expect(screen.getByRole('progressbar', { name: 'Loading' })).toBeInTheDocument()
-    expect(screen.queryByText(/verif|calibrat/i)).not.toBeInTheDocument()
+    // the splash claims nothing: no progress bar, no "verifying" or "calibrating" lines (ticket T-25)
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(screen.queryByText(/verif|calibrat|loading/i)).not.toBeInTheDocument()
 
-    // five seconds in all: still up just before, gone at the mark
-    act(() => vi.advanceTimersByTime(4900))
+    // a second and a half in all (spec 10, amended 2026-10-05): still up just before, gone at the mark
+    act(() => vi.advanceTimersByTime(1500))
     expect(screen.getByRole('status')).toBeInTheDocument()
     act(() => vi.advanceTimersByTime(100))
     expect(screen.queryByRole('status')).not.toBeInTheDocument()

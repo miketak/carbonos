@@ -3,8 +3,10 @@ import type { CSSProperties, HTMLAttributes } from 'react'
 
 interface RevealProps extends HTMLAttributes<HTMLElement> {
   as?: 'div' | 'article' | 'details' | 'section'
-  /** Stagger index: each step delays the entrance by 80 ms. */
+  /** Stagger index: each step delays the entrance by 70 ms. */
   step?: number
+  /** For a `details`: open at first paint. */
+  open?: boolean
 }
 
 /**

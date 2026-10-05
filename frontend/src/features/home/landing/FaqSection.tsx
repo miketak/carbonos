@@ -3,15 +3,15 @@ import { Reveal } from './Reveal'
 
 export function FaqSection() {
   return (
-    <section id="faq" className="landing-section landing-section--alt">
-      <div className="landing-container landing-container--narrow">
-        <Reveal className="landing-head">
+    <section id="faq" className="landing-section">
+      <div className="landing-container landing-container--narrow flex flex-col gap-8">
+        <Reveal className="flex flex-col gap-4">
           <p className="landing-eyebrow">Honest answers</p>
           <h2 className="landing-title">Questions a finance lead asks first.</h2>
         </Reveal>
-        <div className="mt-8 flex flex-col gap-3">
+        <div className="flex flex-col border-t border-hairline">
           {FAQ.map((item, i) => (
-            <Reveal key={item.q} as="details" className="faq" step={i}>
+            <Reveal key={item.q} as="details" className="faq" step={i} open={i === 0}>
               <summary className="faq-q">
                 {item.q}
                 <span className="faq-chevron" aria-hidden>
@@ -21,7 +21,7 @@ export function FaqSection() {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2.5"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >

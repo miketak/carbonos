@@ -3,24 +3,30 @@
  * The design-token guard (spec 10, ADR 0009): a feature file uses the kit and
  * the token utilities, never the brand palette, a tint of it, a Tailwind
  * colour scale, a blur, a monospace face or a hex literal. The landing page
- * (src/features/home) keeps its own look and the style sheet defines the
- * tokens, so both are exempt. Run as part of `npm run lint`; exit 1 on any hit.
+ * (src/features/home), the splash and the wordmark may use the brand palette
+ * utilities (spec 10, as amended 2026-10-05), and nothing else on the list;
+ * the style sheet defines the tokens and is exempt. Run as part of
+ * `npm run lint`; exit 1 on any hit.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 const root = new URL('../src/', import.meta.url).pathname
-// the brand palette stays on the landing page, the symbol and the splash (spec 10);
-// the style sheet defines the tokens; the tests assert class names
+// the style sheet defines the tokens; the mark's geometry is numbers; the tests assert class names
 const exempt = [
-  join(root, 'features/home'),
-  join(root, 'features/auth/SplashScreen.tsx'),
-  join(root, 'components/AmbientBackground.tsx'),
   join(root, 'components/carbonOsMarkGeometry.ts'),
-  join(root, 'components/Wordmark.tsx'),
   join(root, 'index.css'),
   join(root, 'test'),
 ]
+// the brand palette stays on the landing page, the symbol and the splash (spec 10): these may
+// use the brand utilities, and every other rule still applies to them
+const brandAllowed = [
+  join(root, 'features/home'),
+  join(root, 'features/auth/SplashScreen.tsx'),
+  join(root, 'components/Wordmark.tsx'),
+  join(root, 'components/CarbonOsMark.tsx'),
+]
+const within = (list, path) => list.some((e) => path === e || path.startsWith(e + '/'))
 
 const rules = [
   [
@@ -43,7 +49,7 @@ const rules = [
 function* files(dir) {
   for (const name of readdirSync(dir)) {
     const path = join(dir, name)
-    if (exempt.some((e) => path === e || path.startsWith(e + '/'))) continue
+    if (within(exempt, path)) continue
     if (statSync(path).isDirectory()) yield* files(path)
     else if (/\.(tsx|ts|css)$/.test(name) && !/\.test\.tsx?$/.test(name)) yield path
   }
@@ -52,8 +58,10 @@ function* files(dir) {
 const hits = []
 for (const path of files(root)) {
   const lines = readFileSync(path, 'utf8').split('\n')
+  const allowBrand = within(brandAllowed, path)
   lines.forEach((line, i) => {
     for (const [pattern, why] of rules) {
+      if (allowBrand && why === 'brand palette utility') continue
       const match = line.match(pattern)
       if (match) hits.push(`${relative(root, path)}:${i + 1}: ${why}: ${match[0]}`)
     }
