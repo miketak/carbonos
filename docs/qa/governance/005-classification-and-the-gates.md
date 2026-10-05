@@ -15,6 +15,9 @@
 
 - FY2025 as procedure 4 leaves it: a draft, reviewed, Tema Depot in the boundary, Coldstore Ghana Ltd excluded on method, Investments declared and not quantified.
 - Ama in the normal window; Kofi in the private window for case B7.
+- Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):
+- Ama Owusu signs in with `you+ama@…` and `Ama-pass-2026`, in the private window.
+- Kofi Mensah signs in with `you+kofi@…` and `Kofi-pass-2026`, in the private window.
 
 ## A. Review
 
@@ -22,7 +25,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu". | Ama Owusu is signed in. |  |  |
+| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
 | 2 | On the inventory "FY2025", open **Records**. | 10 records; 8 are unclassified; 2 are excluded. ACT-0007 reads "Excluded · Outside boundary" with "member from 2025-07-01": E1 joined on 2025-07-01 and the record is earlier. ACT-0008 reads "Excluded · Outside boundary": the facility is not in the boundary. |  |  |
 | 3 | Look. | Open ACT-0007's drawer: an excluded record's drawer has no tabs; the chip reads the computed reason and its detail, "Excluded · Outside boundary (Adansi Logistics Ltd: member from 2025-07-01)", and no justification was asked. |  |  |
 
@@ -79,8 +82,8 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Open ACT-0005, tick **Show unapproved** and choose **R-410A (composition)**. | An error on the **Emission factors** gate: "'Chiller refrigerant top-up' uses 'R-410A (composition)', which is not approved. Approve it under Emission factors, or choose another.". |  |  |
-| 2 | As Kofi Mensah in the private window, sign in as "Kofi Mensah". | Kofi Mensah is signed in. |  |  |
-| 3 | Click **Approve** on "R-410A (composition)". | "R-410A (composition)" is listed as **Approved** "by the Kofi alias" with the date. |  |  |
+| 2 | As Kofi Mensah in the private window, sign in as "Kofi Mensah" with `you+kofi@…` and `Kofi-pass-2026`. | Kofi Mensah is signed in. |  |  |
+| 3 | Click **Approve** on "R-410A (composition)". | "R-410A (composition)" is listed as **Approved** "by `you+kofi@…`" with the date. |  |  |
 | 4 | As Ama Owusu in the private window, read the **Emission factors** gate on the pre-flight panel under **Records**. | The **Emission factors** gate no longer says "which is not approved". |  |  |
 | 5 | Open ACT-0005 and choose **Blends: R407C, Emissions including only Kyoto products (/kg)**. | ACT-0005 reads included, uses **Blends: R407C, Emissions including only Kyoto products**. The composition blend is now unused; procedure 8 deletes it. |  |  |
 

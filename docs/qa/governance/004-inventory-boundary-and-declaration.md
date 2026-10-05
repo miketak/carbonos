@@ -15,6 +15,8 @@
 
 - Adansi Foods Ltd as procedure 3 leaves it: ten records, ACT-0001 to ACT-0010.
 - Ama in the normal window.
+- Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):
+- Ama Owusu signs in with `you+ama@…` and `Ama-pass-2026`, in the private window.
 
 ## A. Creating the inventory
 
@@ -22,7 +24,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu". | Ama Owusu is signed in. |  |  |
+| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
 | 2 | Open **Inventories** and click **New inventory**. Name "FY2025", period 2025-01-01 to 2025-12-31, consolidation approach operational control, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Start with every operation the approach includes in the boundary** ticked. Click **Create inventory**. The inventory opens on its workbench. | The header reads DRAFT: "FY2025 created." appears first, and the workbench of the new inventory opens. |  |  |
 | 3 | Open the inventory "FY2025" (**Open**). | The workbench opens on **Records** with 5 tabs: **Records**, **Boundary**, **Method**, **Runs**, **Report**. The header reads DRAFT. |  |  |
 | 4 | On the inventory "FY2025", open **Boundary**. | Adansi Foods Ltd is in the boundary; Kumasi Plant is in. Adansi Logistics Ltd is in the boundary; Tema Depot is in. Coldstore Ghana Ltd is out of the boundary; it reads "Outside the boundary under operational control" at 0% from its Table 1 row; its checkbox is disabled; its row asks "Why is it left out?": its 0% comes from its Table 1 row, an associate under operational control. |  |  |

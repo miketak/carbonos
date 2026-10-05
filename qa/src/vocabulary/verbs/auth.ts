@@ -17,12 +17,13 @@ export const signIn = defineVerb({
   },
   ui: ({ user, password }) => [{ op: 'signIn', email: tok.email(user), password: tok.password(user, password) }],
   postconditions: ({ user }) => [{ outcome: 'signedIn', args: { user } }],
+  // the address and the password are on the step, so a tester never looks them up elsewhere
   narrate: ({ user, password }) =>
     password === '{wrong}'
-      ? `Try to sign in as ${tok.name(user)} with any password.`
+      ? `Try to sign in as ${tok.name(user)} (${tok.email(user)}) with any password.`
       : password
-        ? `Sign in as ${tok.name(user)} with \`${password}\`.`
-        : `Sign in as ${tok.name(user)}.`,
+        ? `Sign in as ${tok.name(user)} with ${tok.email(user)} and \`${password}\`.`
+        : `Sign in as ${tok.name(user)} with ${tok.email(user)} and ${tok.password(user)}.`,
 })
 
 export const signOut = defineVerb({

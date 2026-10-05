@@ -16,6 +16,11 @@
 - FY2025 as procedure 5 leaves it: frozen at boundary version 2, every record decided, no gate error.
 - Ama in the normal window; Kofi, Esi and Yaw in the private window as the cases name them.
 - These figures hold if every record was classified as procedure 5 lists. Run 001 rests on the supplier density (3 tonne of diesel at 0.8325 kg/litre is 3,603.6036 litre); the final run rests on the typical one (0.84 kg/litre, 3,571.4286 litre) flagged as a proxy. The product numbers every freeze and every run by act, so a step driven twice shifts them by one, and the verdict reads the state, not the number.
+- Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):
+- Ama Owusu signs in with `you+ama@…` and `Ama-pass-2026`, in the private window.
+- Yaw Darko signs in with `you+yaw@…` and `Yaw-pass-2026`, in the private window.
+- Esi Boateng signs in with `you+esi@…` and `Esi-pass-2026`, in the private window.
+- Kofi Mensah signs in with `you+kofi@…` and `Kofi-pass-2026`, in the private window.
 
 ## A. Runs
 
@@ -23,7 +28,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu". | Ama Owusu is signed in. |  |  |
+| 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
 | 2 | On **Runs**, click **Launch calculation run**. | Run 001 is listed with its total 120,458.96 kg CO₂e and "boundary v2". |  |  |
 | 3 | Open Run 001. | The line of ACT-0004 reads 9,591.17 kg CO₂e and "3 tonne = 3000 kg ÷ 0.8325 kg/litre = 3603.603604 litre (density of Diesel (Adansi CoA))". The line of ACT-0006 reads 661.78 kg CO₂e and 17 covered days of 32. The derived line of ACT-0001 reads 445.22 kg CO₂e. The derived line of ACT-0006 reads 78.84 kg CO₂e: one line per included record as the table in the preamble lists them, plus two derived well-to-tank lines, each naming the LPG line it derives from. |  |  |
 | 4 | Open Run 001 of "FY2025". | The exclusions are ACT-0007 (outside boundary, member from 2025-07-01), ACT-0008 (outside boundary), ACT-0009 (methodology, not estimated), each with its reason and detail. |  |  |
@@ -85,7 +90,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko". | Yaw Darko is signed in. |  |  |
+| 1 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` and `Yaw-pass-2026`. | Yaw Darko is signed in. |  |  |
 | 2 | In Solo Ltd, open **Facilities**, then click **Add facility**. Fill in **Name** with `Solo Office`, fill in **Location** with `Accra`, fill in **Country (optional)** with `GH`, set **Legal entity** to Solo Ltd, then click **Add facility**. | Solo Office is listed under Solo Ltd. |  |  |
 | 3 | Add the record "Office generator diesel" at Solo Office: 100 litre, 2025-03-01 to 2025-03-31, source "Fuel receipt". | Office generator diesel is on the register as a fact with the quantity 100 litre. |  |  |
 | 4 | Open **Inventories** and click **New inventory**. Name "Solo FY2025", period 2025-01-01 to 2025-12-31, consolidation approach operational control, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Start with every operation the approach includes in the boundary** ticked. Click **Create inventory**. The inventory opens on its workbench. | The header reads DRAFT. |  |  |
@@ -102,12 +107,12 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | As Esi Boateng in the private window, sign in as "Esi Boateng". | Esi Boateng is signed in. |  |  |
+| 1 | As Esi Boateng in the private window, sign in as "Esi Boateng" with `you+esi@…` and `Esi-pass-2026`. | Esi Boateng is signed in. |  |  |
 | 2 | Click **Mark as final** on Run 005 and confirm. | **Mark as final** is disabled, with the tooltip "Needs the Reviewer or Owner role.": a preparer's refusals are disabled controls, not dialogs. |  |  |
-| 3 | As Kofi Mensah in the private window, sign in as "Kofi Mensah". | Kofi Mensah is signed in. |  |  |
+| 3 | As Kofi Mensah in the private window, sign in as "Kofi Mensah" with `you+kofi@…` and `Kofi-pass-2026`. | Kofi Mensah is signed in. |  |  |
 | 4 | Open **Emission factors** and click **Unapprove** on "Long-haul flights (supplier)". | "Long-haul flights (supplier)" is listed as **Not approved**. |  |  |
 | 5 | Click **Mark as final** on Run 005 and confirm. | Refused: "Run 5 cannot be designated final. <holds>": "'Staff flights' uses 'Long-haul flights (supplier)', which is not approved. Approve it under Emission factors, or choose another.": approval is checked again at the designation, not only at the run. |  |  |
-| 6 | Click **Approve** on "Long-haul flights (supplier)". | "Long-haul flights (supplier)" is listed as **Approved** "by the Kofi alias" with the date: approved by Kofi, who did not enter it. |  |  |
+| 6 | Click **Approve** on "Long-haul flights (supplier)". | "Long-haul flights (supplier)" is listed as **Approved** "by `you+kofi@…`" with the date: approved by Kofi, who did not enter it. |  |  |
 | 7 | Click **Mark as final** on Run 005, type the review note "Reconciled against the March and June invoices" and confirm. | The header reads FINAL. . no **Reopen as draft**: the lifecycle bar reads "Final designated by <the Kofi alias> on <date>: Reconciled against the March and June invoices". |  |  |
 | 8 | Click **Withdraw final designation** with no reason and confirm. | **Withdraw designation** stays disabled: "{what} needs a reason of at least 5 characters.". |  |  |
 | 9 | Click **Withdraw final designation**, give "Checking the withdrawal" and confirm. | The header reads FROZEN: the history records the withdrawal with Kofi's email. |  |  |
