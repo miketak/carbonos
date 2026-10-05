@@ -15,7 +15,7 @@ This third step of the Get started series gives Gye Nyame Gold its baseline of e
 
 ## Before you start
 
-- The organization and its two facilities exist, from [Record the facilities and source streams](record-the-facilities-and-source-streams.md).
+- The organization and its two facilities exist, from [Record the facilities and emission sources](record-the-facilities-and-emission-sources.md).
 - Nothing else. An organization starts with no factors: **Emission factors** reads "0 factors" and "None yet. Import a pack or add a supplier-specific factor."
 
 ## Import the two editions

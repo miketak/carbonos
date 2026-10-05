@@ -11,7 +11,7 @@ screens: [step-6-classify-contractor.png]
 
 This step classifies the seven records in FY2025 and adds the rules that derive category 3 from them. Step 7 runs the result.
 
-<!-- sources: specs 04.1 and 04.3 (scope as an accounting decision, stream defaults), 04.7 (derived fuel- and energy-related lines), 05.5 (review at scale), 07.3 (residual mix and dual reporting), 10 (the split register, the pre-flight chip); section 6 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
+<!-- sources: specs 04.1 and 04.3 (scope as an accounting decision, source defaults), 04.7 (derived fuel- and energy-related lines), 05.5 (review at scale), 07.3 (residual mix and dual reporting), 10 (the split register, the pre-flight chip); section 6 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
 
 ## Before you start
 
@@ -33,7 +33,7 @@ What you see: "7 new records under review." Each record is listed as **Unclassif
 
 ## Classify the seven records
 
-Classifying a record means choosing its emission factor; the scope and category come from its stream.
+Classifying a record means choosing its emission factor; the scope and category come from its emission source.
 
 1. Click **Haul fleet diesel** (ACT-0001), then **Choose factor…**. Type `mineral diesel` and choose **Liquid fuels: Diesel (100% mineral diesel) (/litre)**. The record's detail now reads **Scope 1 / Mobile combustion** and **Included**. There is no save button: choosing the factor recorded the classification.
 2. Repeat for **Contract haulage diesel** (ACT-0002) and **Genset diesel** (ACT-0005). The contractor's diesel lands in **Scope 3**, category "1. Purchased goods and services", with no justification asked: the Corporate Standard puts a contractor's combustion in the customer's scope 3. The genset diesel lands in Scope 1, "Stationary combustion", and its detail adds "Leased facility: operating lease (leased in) inherited."

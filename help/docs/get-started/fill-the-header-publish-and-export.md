@@ -62,7 +62,7 @@ A verifier can rebuild every figure from the lines file and check every factor a
 
 ## What you have
 
-- An organization with two legal entities, two facilities, and five source streams, with their shares under each approach.
+- An organization with two legal entities, two facilities, and five emission sources, with their shares under each approach.
 - Seven activity records, one of them corrected with its history kept.
 - Two factor pack editions, and one derived factor you approved.
 - FY2025: an operational-control inventory with a declared scope 3, boundary version 1, two upstream rules, seven classifications, one run of 86,412 t CO₂e designated final, and a published report with its exports.

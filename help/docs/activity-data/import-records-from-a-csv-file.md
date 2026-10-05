@@ -15,7 +15,7 @@ An import brings several source records into the register at once, after a previ
 
 ## Before you start
 
-- The facilities and source streams the rows name exist; the import matches the `facility` and `stream` columns by name.
+- The facilities and emission sources the rows name exist; the import matches the `facility` and `emission_source` columns by name (a file that still heads the column `stream` is read the same way). The import creates no source: register one under **Facilities › Emission sources** or on a record first.
 - The file follows [Prepare the CSV file](prepare-the-csv-file.md): one row per record, a CSV of up to 5 MB.
 - You are a Preparer, Reviewer or Owner of the organization.
 
@@ -24,12 +24,12 @@ An import brings several source records into the register at once, after a previ
 1. Open **Activity data** and click **Import CSV**. The dialog **Import activity data** opens.
 2. Starting from scratch, click **Download CSV template** under **Use the activity template**. **What each column must contain** opens the column reference.
 3. Under **Select your completed CSV**, click **Choose a CSV file**, or drop the file on the dialog.
-4. Check **Control totals** against the spreadsheet's footer: rows and summed quantity per facility and stream.
+4. Check **Control totals** against the spreadsheet's footer: rows and summed quantity per facility and emission source.
 5. Read **Worth a look before adding**. These warnings do not stop the import.
 6. Read the list of records to add, for example "7 records to add".
 7. Click **Add records**.
 
-![The import preview for gye-nyame-2025.csv: control totals per facility and stream, the reference-only count, and the warnings on long periods](../assets/screens/step-4-import-preview.png)
+![The import preview for gye-nyame-2025.csv: control totals per facility and emission source, the reference-only count, and the warnings on long periods](../assets/screens/step-4-import-preview.png)
 
 What you see: "7 records imported." and one row per record in the register, numbered in the order of the file (ACT-0001 to ACT-0007 for Gye Nyame Gold). Rows the preview counted as "7 rows: reference only, nothing attached" carry "ref" in the attachments column. Row numbers in the preview count the header as row 1, as the spreadsheet does.
 
@@ -37,7 +37,7 @@ What you see: "7 records imported." and one row per record in the register, numb
 
 - "Row 8: the period is longer than one month (2025-12-15 to 2026-01-15); monthly rows make the coverage matrix and cut-off checks precise": the row imports as it is.
 - "matches draft *ACT-NNNN* (same facility, activity and period): the draft stays on file, complete or remove it": the row adds a new record next to the draft. Complete or remove the draft, so the register does not hold both.
-- "'*Stream*' mixes units in this file:" followed by the units: allowed, but worth checking.
+- "'*Source*' mixes units in this file:" followed by the units: allowed, but worth checking.
 
 ## If the file is rejected
 

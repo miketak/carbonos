@@ -29,7 +29,7 @@ What you see: "7 new records under review." for Gye Nyame Gold. Each record gets
 1. Click the row, or move with `j` and `k` and press Enter. The **Records** tab splits: the records as a summary list on the left, under the tabs **All**, **Unclassified**, **Included** and **Excluded**; the record's detail on the right, with the tabs **Classify** and **Exclude**.
 2. Click **Choose factor…** and type to narrow the list. Tick **Show unapproved** to see the rest.
 3. Click the factor, or for electricity the shortcut "Suggested for this facility's grid: Grid electricity, Ghana (2024)".
-4. Check the scope and category filled from the record's stream, then use ‹ and › to reach the next record.
+4. Check the scope and category filled from the record's emission source, then use ‹ and › to reach the next record.
 
 ![The detail of Haul fleet diesel beside the summary list after the factor is chosen: Scope 1 / Mobile combustion, Included, with the factor and Change factor… beside it](../assets/screens/step-6-classify-diesel.png)
 
@@ -37,7 +37,7 @@ What you see: the detail's eyebrow reads the decision and its status **Included*
 
 ## Justify a departure
 
-- **Another scope than the stream's default.** Fill "Why the scope departs from the default (at least 10 characters)", or the record stops the freeze.
+- **Another scope than the source's default.** Fill "Why the scope departs from the default (at least 10 characters)", or the record stops the freeze.
 - **A proxy factor.** Tick **Proxy factor: stands in for one that is not published or not yet approved** and fill "What the factor stands in for (at least 5 characters)".
 - **A mass meeting a factor per litre.** Choose the density that converts between them; see [Define units and densities](../organization/define-units-and-densities.md).
 

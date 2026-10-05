@@ -66,7 +66,7 @@ do what a user does, with the QA procedures as your script.
    three invariants: facts, views, and computations.
 2. Open [QA procedure 2, Organization setup](../reference/qa/mining/002-organization-setup.md)
    and run it on your local instance. It creates Sankofa Gold plc, a
-   Ghanaian gold miner, with its entities, facilities, source streams and
+   Ghanaian gold miner, with its entities, facilities, emission sources and
    units.
 
     Every case has an expected result. When yours differs, note it; you

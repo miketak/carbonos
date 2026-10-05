@@ -1,7 +1,7 @@
 ---
 owner: miketak
 last_reviewed: 2026-09-28
-description: The worked example every Get started step builds, a gold mine near Obuasi, with its two entities, two facilities, five streams, seven records and the figures of its first run.
+description: The worked example every Get started step builds, a gold mine near Obuasi, with two entities, two facilities, five emission sources, seven records and its first run's figures.
 ---
 
 # Meet Gye Nyame Gold
@@ -21,7 +21,7 @@ straddle the year end.
 ```mermaid
 flowchart TD
     accTitle: The structure of Gye Nyame Gold Ltd
-    accDescr: Gye Nyame Gold Ltd, the reporting company, owns Nyame Pit and Plant, a mine with three source streams: Haul fleet, Contract ore haulage and Plant grid supply. Its wholly owned subsidiary Gye Nyame Camp Services Ltd leases in Obuasi Camp, a camp with two source streams: Camp gensets and Camp kitchens.
+    accDescr: Gye Nyame Gold Ltd, the reporting company, owns Nyame Pit and Plant, a mine with three emission sources: Haul fleet, Contract ore haulage and Plant grid supply. Its wholly owned subsidiary Gye Nyame Camp Services Ltd leases in Obuasi Camp, a camp with two emission sources: Camp gensets and Camp kitchens.
     E0["Gye Nyame Gold Ltd<br/>the reporting company"] --> S1["Nyame Pit and Plant<br/>mine, owned, grid region GHA"]
     E0 --> E1["Gye Nyame Camp Services Ltd<br/>subsidiary, 100%, operated by the company"]
     E1 --> S2["Obuasi Camp<br/>camp, operating lease (leased in)"]
@@ -55,7 +55,7 @@ Seven records for 2025, from
 | Record | Quantity | The twist |
 | --- | --- | --- |
 | ACT-0001 Haul fleet diesel | 11,923,608 litre | None. |
-| ACT-0002 Contract haulage diesel | 1,200,000 litre | A contractor's stream: scope 3. |
+| ACT-0002 Contract haulage diesel | 1,200,000 litre | A contractor's source: scope 3. |
 | ACT-0003 Plant grid electricity H1 | 34,000,000 kWh | None. |
 | ACT-0004 Plant grid electricity H2 | 3,600,000 kWh in the file, corrected to 36,000,000 | Both values and the reason stay in history. |
 | ACT-0005 Genset diesel | 900,000 litre | Inherits the camp's lease. |

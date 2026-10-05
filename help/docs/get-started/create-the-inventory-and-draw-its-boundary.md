@@ -15,7 +15,7 @@ This step produces FY2025, a draft inventory over the facts from steps 1 to 4. Y
 
 ## Before you start
 
-- Steps 1 to 4 are done: Gye Nyame Gold Ltd has two legal entities, two facilities with five source streams, two imported factor packs, and seven activity records, one of them corrected.
+- Steps 1 to 4 are done: Gye Nyame Gold Ltd has two legal entities, two facilities with five emission sources, two imported factor packs, and seven activity records, one of them corrected.
 
 ## Create the inventory
 

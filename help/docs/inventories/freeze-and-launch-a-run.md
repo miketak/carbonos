@@ -35,7 +35,7 @@ Only records refuse a freeze; the dialog lists them by reference, name and facil
 | The record | What clears it |
 | --- | --- |
 | "is not classified" | Choose a factor or exclude it: [Review and classify records](review-and-classify-records.md). |
-| "is classified in *scope* without a justification" | Fill the scope justification, or take the stream's default scope. |
+| "is classified in *scope* without a justification" | Fill the scope justification, or take the source's default scope. |
 | "is a leased asset (…) stored in *scope*, but Appendix F under *approach* puts it in *scope* (…)" | Choose the factor again to re-derive it. |
 | "is a draft with data outstanding" | Complete or remove the draft under **Activity data**. |
 

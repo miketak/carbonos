@@ -58,7 +58,7 @@ answers with where one is printed.
 
 | Rule | Value |
 | --- | --- |
-| Scope justification | At least 10 characters when the scope departs from the stream's default. |
+| Scope justification | At least 10 characters when the scope departs from the emission source's default. |
 | Exclusion justification | At least 10 characters, up to 500. Gas name for a Montreal Protocol exclusion: up to 60. |
 | Proxy justification | Required before the classification is saved. |
 | Declaration | "Why other categories are excluded" up to 1,000 characters; a per-category reason up to 500. |

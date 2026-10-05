@@ -51,4 +51,4 @@ An entity held through another takes the parent's share times its own, and a cha
 
 ## What happens next
 
-The entity can now be a facility's **Legal entity**; see [Record facilities and source streams](record-facilities-and-source-streams.md). Its share under each approach is explained in [What is a consolidation approach?](what-is-a-consolidation-approach.md).
+The entity can now be a facility's **Legal entity**; see [Record facilities and emission sources](record-facilities-and-emission-sources.md). Its share under each approach is explained in [What is a consolidation approach?](what-is-a-consolidation-approach.md).

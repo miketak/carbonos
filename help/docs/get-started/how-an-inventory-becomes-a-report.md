@@ -18,7 +18,7 @@ once.
 | Step | Where | What it leaves behind |
 | --- | --- | --- |
 | 1. [Create the organization and its legal entity](create-the-organization-and-its-legal-entity.md) | **Legal entities** | The reporting company and the entities it consolidates, with Table 1 facts. |
-| 2. [Record the facilities and source streams](record-the-facilities-and-source-streams.md) | **Facilities** | The sites, each under one entity, and their streams, which set default scopes. |
+| 2. [Record the facilities and emission sources](record-the-facilities-and-emission-sources.md) | **Facilities** | The sites, each under one entity, and their emission sources, which set default scopes. |
 | 3. [Import the factor packs](import-the-factor-packs.md) | **Emission factors** | The factors with citations; a derived one waits as "Not approved". |
 | 4. [Import the records and correct one](import-the-records-and-correct-one.md) | **Activity data** | What happened, with period, source and evidence; no scope yet. |
 | 5. [Create the inventory and draw its boundary](create-the-inventory-and-draw-its-boundary.md) | **Inventories**, **Boundary** tab | A draft view: period, approach, GWP set, boundary, declaration. |
