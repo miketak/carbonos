@@ -47,10 +47,25 @@ public class ImportBatch {
 	@Column(name = "imported_at", nullable = false, updatable = false)
 	private Instant importedAt;
 
+	// spec 04.11: which reader parsed the file, and for a workbook the table as it was read, kept as CSV
+	@Column(nullable = false, length = 60)
+	private String parser;
+
+	@Column(name = "rendered_storage_key", length = 255)
+	private String renderedStorageKey;
+
+	@Column(name = "sources_created", nullable = false)
+	private int sourcesCreated;
+
 	protected ImportBatch() {
 	}
 
 	ImportBatch(UUID organizationId, String fileName, String sha256, int rowCount, long sizeBytes, String importedBy) {
+		this(organizationId, fileName, sha256, rowCount, sizeBytes, importedBy, "csv", false, 0);
+	}
+
+	ImportBatch(UUID organizationId, String fileName, String sha256, int rowCount, long sizeBytes, String importedBy,
+			String parser, boolean rendered, int sourcesCreated) {
 		this.id = UUID.randomUUID();
 		this.organizationId = organizationId;
 		this.fileName = fileName;
@@ -59,6 +74,9 @@ public class ImportBatch {
 		this.sizeBytes = sizeBytes;
 		this.storageKey = "ghg/imports/" + this.id;
 		this.importedBy = importedBy;
+		this.parser = parser;
+		this.renderedStorageKey = rendered ? "ghg/imports/" + this.id + "/rendered.csv" : null;
+		this.sourcesCreated = sourcesCreated;
 	}
 
 	public UUID getId() {
@@ -95,5 +113,18 @@ public class ImportBatch {
 
 	public Instant getImportedAt() {
 		return importedAt;
+	}
+
+	public String getParser() {
+		return parser;
+	}
+
+	/** Where the table as read is kept, for a workbook; null for a CSV, which is its own rendering. */
+	public String getRenderedStorageKey() {
+		return renderedStorageKey;
+	}
+
+	public int getSourcesCreated() {
+		return sourcesCreated;
 	}
 }

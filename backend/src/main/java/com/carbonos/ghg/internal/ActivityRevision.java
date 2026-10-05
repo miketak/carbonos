@@ -55,12 +55,22 @@ public class ActivityRevision {
 	@Column(name = "changed_at", nullable = false, updatable = false)
 	private Instant changedAt;
 
+	// spec 04.11: the revisions of one act over several records share an id
+	@Column(name = "bulk_id")
+	private UUID bulkId;
+
 	protected ActivityRevision() {
 	}
 
 	ActivityRevision(UUID activityId, Kind kind, String reason, List<ActivityRecord.Change> changes,
 			UUID changedByUserId, String changedBy) {
+		this(activityId, kind, reason, changes, changedByUserId, changedBy, null);
+	}
+
+	ActivityRevision(UUID activityId, Kind kind, String reason, List<ActivityRecord.Change> changes,
+			UUID changedByUserId, String changedBy, UUID bulkId) {
 		this.id = UUID.randomUUID();
+		this.bulkId = bulkId;
 		this.activityId = activityId;
 		this.kind = kind;
 		this.reason = reason;
@@ -70,6 +80,10 @@ public class ActivityRevision {
 			.orElse("");
 		this.changedByUserId = changedByUserId;
 		this.changedBy = changedBy;
+	}
+
+	public UUID getBulkId() {
+		return bulkId;
 	}
 
 	private static String escape(String value) {

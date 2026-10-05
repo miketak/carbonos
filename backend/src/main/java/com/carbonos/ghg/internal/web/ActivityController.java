@@ -32,7 +32,10 @@ import com.carbonos.ghg.internal.web.dto.ActivityImportResponse;
 import com.carbonos.ghg.internal.web.dto.ActivityPageResponse;
 import com.carbonos.ghg.internal.web.dto.ActivityResponse;
 import com.carbonos.ghg.internal.web.dto.ActivityRevisionResponse;
+import com.carbonos.ghg.internal.web.dto.BulkActivityRequest;
+import com.carbonos.ghg.internal.web.dto.BulkActivityResponse;
 import com.carbonos.ghg.internal.web.dto.CreateActivityRequest;
+import com.carbonos.ghg.internal.web.dto.ImportDecisionsRequest;
 
 import jakarta.validation.Valid;
 
@@ -70,12 +73,24 @@ class ActivityController {
 		return ActivityResponse.from(ghgService.summary(id));
 	}
 
-	/** Bulk entry from a CSV file: all rows or none (spec 04.5); a dry run previews without saving (spec 04.6). */
+	/**
+	 * Bulk entry from a CSV file or a workbook: all rows or none (specs 04.5, 04.11); a
+	 * dry run previews without saving (spec 04.6). The optional {@code decisions} part
+	 * (JSON) says what to do with each emission source name the facility does not have.
+	 */
 	@PostMapping(path = "/organizations/{organizationId}/activities/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	ActivityImportResponse importFile(@PathVariable UUID organizationId, @RequestPart("file") MultipartFile file,
+			@RequestPart(value = "decisions", required = false) @Valid ImportDecisionsRequest decisions,
 			@RequestParam(defaultValue = "false") boolean dryRun) {
-		return ActivityImportResponse
-			.from(dryRun ? imports.preview(organizationId, file) : imports.importFile(organizationId, file));
+		var decided = decisions == null ? null : decisions.toDecisions();
+		return ActivityImportResponse.from(dryRun ? imports.preview(organizationId, file, decided)
+				: imports.importFile(organizationId, file, decided));
+	}
+
+	/** One act over several records, all or nothing (spec 04.11). */
+	@PostMapping("/organizations/{organizationId}/activities/bulk")
+	BulkActivityResponse bulk(@PathVariable UUID organizationId, @Valid @RequestBody BulkActivityRequest body) {
+		return BulkActivityResponse.from(ghgService.bulkActivities(organizationId, body.toRequest()));
 	}
 
 	@GetMapping(value = "/organizations/{organizationId}/activities/import-template.csv", produces = "text/csv")

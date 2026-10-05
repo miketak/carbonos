@@ -6615,4 +6615,371 @@ class GhgApiIntegrationTests {
 							+ "date, or ask a platform administrator about the setting."),
 					org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Reopen")))));
 	}
+
+	// --- spec 04.11: a workbook, sources decided in the preview, several records at once ---
+
+	private static final String IMPORT_HEADER = "facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality\r\n";
+
+	private org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder importRequest(
+			String orgId, org.springframework.mock.web.MockMultipartFile file, String decisionsJson) {
+		var request = org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import")
+			.file(file);
+		if (decisionsJson != null) {
+			request.file(new org.springframework.mock.web.MockMultipartFile("decisions", "", "application/json",
+					decisionsJson.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+		}
+		request.with(asMember()).with(csrf());
+		return request;
+	}
+
+	@Test
+	void aWorkbookImportsLikeACsvAndKeepsBothArtifacts() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		createStream(mine, "Standby gensets", "Diesel");
+		var workbook = com.carbonos.ghg.internal.XlsxFixture.workbook(java.util.Arrays.asList(
+				com.carbonos.ghg.internal.XlsxFixture.row("facility", "emission_source", "activity_type", "quantity", "unit",
+						"period_start", "period_end", "data_source", "evidence_ref"),
+				List.of(com.carbonos.ghg.internal.XlsxFixture.text("Nkran Mine"),
+						com.carbonos.ghg.internal.XlsxFixture.text("Standby gensets"),
+						com.carbonos.ghg.internal.XlsxFixture.text("Diesel consumption"),
+						com.carbonos.ghg.internal.XlsxFixture.number("12500"), com.carbonos.ghg.internal.XlsxFixture.text("litre"),
+						com.carbonos.ghg.internal.XlsxFixture.date(java.time.LocalDate.of(2025, 3, 1)),
+						com.carbonos.ghg.internal.XlsxFixture.date(java.time.LocalDate.of(2025, 3, 31)),
+						com.carbonos.ghg.internal.XlsxFixture.text("Fuel register"),
+						com.carbonos.ghg.internal.XlsxFixture.text("INV-3")),
+				List.of(com.carbonos.ghg.internal.XlsxFixture.text("Nkran Mine"),
+						com.carbonos.ghg.internal.XlsxFixture.text("Standby gensets"),
+						com.carbonos.ghg.internal.XlsxFixture.text("Diesel consumption"),
+						com.carbonos.ghg.internal.XlsxFixture.formula("D2*2", "25000"),
+						com.carbonos.ghg.internal.XlsxFixture.text("litre"),
+						com.carbonos.ghg.internal.XlsxFixture.date(java.time.LocalDate.of(2025, 4, 1)),
+						com.carbonos.ghg.internal.XlsxFixture.date(java.time.LocalDate.of(2025, 4, 30)),
+						com.carbonos.ghg.internal.XlsxFixture.text("Fuel register"),
+						com.carbonos.ghg.internal.XlsxFixture.text("INV-4"))),
+				"Notes");
+		var file = new org.springframework.mock.web.MockMultipartFile("file", "q1-dispensing.xlsx",
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", workbook);
+
+		// the dry run reads the first sheet, warns about the second and about the formula, and names the digest
+		var digest = java.util.HexFormat.of()
+			.formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(workbook));
+		mvc.perform(importRequest(orgId, file, null).param("dryRun", "true"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.sha256").value(digest))
+			.andExpect(jsonPath("$.rejected").isEmpty())
+			.andExpect(jsonPath("$.rows.length()").value(2))
+			.andExpect(jsonPath("$.rows[0].quantity").value(12500))
+			.andExpect(jsonPath("$.rows[0].periodStart").value("2025-03-01"))
+			.andExpect(jsonPath("$.rows[1].quantity").value(25000))
+			.andExpect(jsonPath("$.unknownSources").isEmpty())
+			.andExpect(jsonPath("$.warnings[?(@.row == null)].message")
+				.value(org.hamcrest.Matchers.contains("The workbook has 2 sheets; only 'Sheet1' was read.")))
+			.andExpect(jsonPath("$.warnings[?(@.row == 3)].message").value(org.hamcrest.Matchers
+				.contains("quantity came from a formula; the saved value is the cached result")));
+
+		// the commit keeps the workbook as uploaded and the table as read, and names the reader
+		var batchId = JsonPath.<String>read(body(mvc.perform(importRequest(orgId, file, null))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.imported").value(2))
+			.andExpect(jsonPath("$.sourcesCreated").value(0))), "$.batchId");
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/import-batches").with(asMember()))
+			.andExpect(jsonPath("$[0].id").value(batchId))
+			.andExpect(jsonPath("$[0].fileName").value("q1-dispensing.xlsx"))
+			.andExpect(jsonPath("$[0].sha256").value(digest))
+			.andExpect(jsonPath("$[0].parser").value("fastexcel-reader 0.19.0"))
+			.andExpect(jsonPath("$[0].renderedAvailable").value(true))
+			.andExpect(jsonPath("$[0].sourcesCreated").value(0))
+			.andExpect(jsonPath("$[0].decisions").isEmpty());
+		mvc.perform(get("/api/ghg/import-batches/" + batchId + "/file").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Type",
+					org.hamcrest.Matchers.startsWith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")))
+			.andExpect(content().bytes(workbook));
+		mvc.perform(get("/api/ghg/import-batches/" + batchId + "/rendered.csv").with(asMember()))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("q1-dispensing-as-read.csv")))
+			.andExpect(content().string(org.hamcrest.Matchers.containsString(
+					"Nkran Mine,Standby gensets,Diesel consumption,12500,litre,2025-03-01,2025-03-31,Fuel register,INV-3")))
+			.andExpect(content().string(org.hamcrest.Matchers.containsString(",25000,litre,2025-04-01,")));
+		mvc.perform(get("/api/ghg/import-batches/" + batchId + "/rendered.csv").with(asOutsider()))
+			.andExpect(status().isNotFound());
+
+		// a CSV is its own rendering
+		var csv = (IMPORT_HEADER
+				+ "Nkran Mine,Standby gensets,Diesel consumption,900,litre,2025-05-01,2025-05-31,Fuel register,INV-5,MEASURED\r\n")
+			.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		var csvBatch = JsonPath.<String>read(body(mvc
+			.perform(importRequest(orgId, new org.springframework.mock.web.MockMultipartFile("file", "may.csv", "text/csv", csv), null))
+			.andExpect(status().isOk())), "$.batchId");
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/import-batches").with(asMember()))
+			.andExpect(jsonPath("$[0].id").value(csvBatch))
+			.andExpect(jsonPath("$[0].parser").value("csv"))
+			.andExpect(jsonPath("$[0].renderedAvailable").value(false));
+		mvc.perform(get("/api/ghg/import-batches/" + csvBatch + "/rendered.csv").with(asMember()))
+			.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void anUnknownSourceIsDecidedInThePreview() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		var gensets = createStream(mine, "Standby gensets", "Diesel");
+		var boiler = createStream(mine, "Boiler LPG", "LPG");
+		var csv = (IMPORT_HEADER
+				+ "Nkran Mine,Standby gensets,Diesel consumption,9000,litre,2025-07-01,2025-07-31,Fuel register,INV-7,MEASURED\r\n"
+				+ "Nkran Mine,Standby genset 3,Diesel consumption,9100,litre,2025-08-01,2025-08-31,Fuel register,INV-8,MEASURED\r\n"
+				+ "Nkran Mine,Standby genset 3,Diesel consumption,9200,litre,2025-09-01,2025-09-30,Fuel register,INV-9,MEASURED\r\n"
+				+ "Nkran Mine,Haul trucks fleet,Diesel consumption,30000,litre,2025-07-01,2025-07-31,Fuel register,INV-10,MEASURED\r\n"
+				+ "Nkran Mine,Kiln 1,Lime calcination,400,tonne,2025-07-01,2025-07-31,Production log,PL-7,MEASURED\r\n")
+			.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		var file = new org.springframework.mock.web.MockMultipartFile("file", "q3.csv", "text/csv", csv);
+		var digest = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(csv));
+
+		// the preview lists each unknown name with its rows and the near names; nothing is rejected yet
+		mvc.perform(importRequest(orgId, file, null).param("dryRun", "true"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.rejected").isEmpty())
+			.andExpect(jsonPath("$.rows.length()").value(5))
+			.andExpect(jsonPath("$.rows[0].status").value("READY"))
+			.andExpect(jsonPath("$.rows[1].status").value("NEEDS_DECISION"))
+			.andExpect(jsonPath("$.rows[1].streamName").value("Standby genset 3"))
+			.andExpect(jsonPath("$.rows[1].issues").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("NO_STREAM"))))
+			.andExpect(jsonPath("$.unknownSources.length()").value(3))
+			.andExpect(jsonPath("$.unknownSources[0].name").value("Standby genset 3"))
+			.andExpect(jsonPath("$.unknownSources[0].facility").value("Nkran Mine"))
+			.andExpect(jsonPath("$.unknownSources[0].rows").value(org.hamcrest.Matchers.contains(3, 4)))
+			.andExpect(jsonPath("$.unknownSources[0].candidates[0].id").value(gensets))
+			.andExpect(jsonPath("$.unknownSources[0].candidates[0].name").value("Standby gensets"))
+			.andExpect(jsonPath("$.unknownSources[1].name").value("Haul trucks fleet"))
+			.andExpect(jsonPath("$.unknownSources[1].candidates").isEmpty())
+			.andExpect(jsonPath("$.unknownSources[2].name").value("Kiln 1"))
+			.andExpect(jsonPath("$.totals[?(@.streamName == 'Standby genset 3')].rows").value(org.hamcrest.Matchers.contains(2)));
+
+		// a commit with no decisions rejects the rows as before: all or nothing
+		mvc.perform(importRequest(orgId, file, null))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.imported").value(0))
+			.andExpect(jsonPath("$.rejected.length()").value(4))
+			.andExpect(jsonPath("$.rejected[0].row").value(3))
+			.andExpect(jsonPath("$.rejected[0].message")
+				.value(org.hamcrest.Matchers.containsString("'Nkran Mine' has no emission source named 'Standby genset 3'")));
+
+		// decisions made on another file, on a name the file lacks, or twice for one name, refuse the set
+		var mapGenset = """
+				{"facilityId": "%s", "name": "Standby genset 3", "mapTo": "%s"}""".formatted(mine, gensets);
+		mvc.perform(importRequest(orgId, file, """
+				{"sha256": "0000", "items": [%s]}""".formatted(mapGenset)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.import.decision-unused"));
+		mvc.perform(importRequest(orgId, file, """
+				{"sha256": "%s", "items": [{"facilityId": "%s", "name": "Nowhere", "mapTo": "%s"}]}""".formatted(digest, mine, gensets)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.import.decision-unused"));
+		mvc.perform(importRequest(orgId, file, """
+				{"sha256": "%s", "items": [%s, %s]}""".formatted(digest, mapGenset, mapGenset)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.import.decision-unused"));
+
+		// a mapping outside the suggested candidates needs a reason; a creation beside a near name needs one too
+		mvc.perform(importRequest(orgId, file, """
+				{"sha256": "%s", "items": [{"facilityId": "%s", "name": "Haul trucks fleet", "mapTo": "%s"}]}""".formatted(digest, mine, boiler)))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.import.map-reason-required"))
+			.andExpect(jsonPath("$.errors['decisions[0].reason']")
+				.value("Say in at least 10 characters why these rows belong to 'Boiler LPG'."));
+		mvc.perform(importRequest(orgId, file, """
+				{"sha256": "%s", "items": [{"facilityId": "%s", "name": "Standby genset 3",
+				 "create": {"name": "Standby genset 3", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel", "contractorOperated": false}}]}"""
+			.formatted(digest, mine)).param("dryRun", "true"))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.name-similar"))
+			.andExpect(jsonPath("$.candidates[0].name").value("Standby gensets"));
+
+		// the full decision set: use the candidate, use another source with a reason, create one
+		var decisions = """
+				{"sha256": "%s", "items": [
+				  %s,
+				  {"facilityId": "%s", "name": "Haul trucks fleet", "mapTo": "%s", "reason": "Fleet diesel is dispensed from the boiler yard tank"},
+				  {"facilityId": "%s", "name": "Kiln 1", "create": {"name": "Kiln 1", "kind": "STATIONARY_COMBUSTION", "fuel": "Limestone", "contractorOperated": false}}
+				]}""".formatted(digest, mapGenset, mine, boiler, mine);
+		// a dry run with the decisions resolves every row and creates nothing
+		mvc.perform(importRequest(orgId, file, decisions).param("dryRun", "true"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.unknownSources").isEmpty())
+			.andExpect(jsonPath("$.rows[?(@.status == 'NEEDS_DECISION')]").isEmpty())
+			.andExpect(jsonPath("$.rows[4].streamName").value("Kiln 1"))
+			.andExpect(jsonPath("$.rows[3].streamName").value("Boiler LPG"));
+		mvc.perform(get("/api/ghg/facilities/" + mine + "/streams").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(2));
+
+		var batchId = JsonPath.<String>read(body(mvc.perform(importRequest(orgId, file, decisions))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.imported").value(5))
+			.andExpect(jsonPath("$.sourcesCreated").value(1))), "$.batchId");
+		var streams = body(mvc.perform(get("/api/ghg/facilities/" + mine + "/streams").with(asMember()))
+			.andExpect(jsonPath("$.length()").value(3))
+			.andExpect(jsonPath("$[?(@.name == 'Kiln 1')].origin").value(org.hamcrest.Matchers.contains("IMPORT"))));
+		String kilnId = JsonPath.<List<String>>read(streams, "$[?(@.name == 'Kiln 1')].id").getFirst();
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("streamId", kilnId))
+			.andExpect(jsonPath("$.total").value(1));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember()).param("streamId", gensets))
+			.andExpect(jsonPath("$.total").value(3));
+		// the history: the creation names the file and its rows; the mapping has a row of its own
+		var events = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember())));
+		assertThat(JsonPath.<List<String>>read(events, "$[?(@.action == 'STREAM_ADDED')].reason")).anySatisfy(
+				reason -> assertThat(reason).isEqualTo("Kiln 1 added at Nkran Mine: stationary combustion, during import of q3.csv (sha256 "
+						+ digest.substring(0, 8) + "); row 6"));
+		assertThat(JsonPath.<List<String>>read(events, "$[?(@.action == 'IMPORT_SOURCE_MAPPED')].reason")).containsExactlyInAnyOrder(
+				"'Standby genset 3' in rows 3, 4 of q3.csv mapped to 'Standby gensets'",
+				"'Haul trucks fleet' in row 5 of q3.csv mapped to 'Boiler LPG': Fleet diesel is dispensed from the boiler yard tank");
+		// the decisions stay with the batch
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/import-batches").with(asMember()))
+			.andExpect(jsonPath("$[0].id").value(batchId))
+			.andExpect(jsonPath("$[0].sourcesCreated").value(1))
+			.andExpect(jsonPath("$[0].decisions.length()").value(3))
+			.andExpect(jsonPath("$[0].decisions[0].name").value("Standby genset 3"))
+			.andExpect(jsonPath("$[0].decisions[0].kind").value("MAPPED"))
+			.andExpect(jsonPath("$[0].decisions[0].streamName").value("Standby gensets"))
+			.andExpect(jsonPath("$[0].decisions[0].rows").value(org.hamcrest.Matchers.contains(3, 4)))
+			.andExpect(jsonPath("$[0].decisions[1].reason").value("Fleet diesel is dispensed from the boiler yard tank"))
+			.andExpect(jsonPath("$[0].decisions[2].kind").value("CREATED"))
+			.andExpect(jsonPath("$[0].decisions[2].streamName").value("Kiln 1"))
+			.andExpect(jsonPath("$[0].decisions[2].decidedBy").value("kojo@ecoriv.com"));
+	}
+
+	@Test
+	void aBulkActIsOneTransaction() throws Exception {
+		var orgId = createOrganization("Asante Gold Resources");
+		var mine = createFacility(orgId, "Nkran Mine");
+		var pit = createFacility(orgId, "Obuom Pit");
+		var gensets = createStream(mine, "Standby gensets", "Diesel");
+		var pitGensets = createStream(pit, "Pit gensets", "Diesel");
+		var a = createActivity(orgId, mine, "Diesel consumption, March", "1000", "litre", "2025-03-15");
+		var b = createActivity(orgId, mine, "Diesel consumption, April", "1100", "litre", "2025-04-15");
+		var c = createActivity(orgId, mine, "Diesel consumption, May", "1200", "litre", "2025-05-15");
+		var d = JsonPath.<String>read(body(postActivity(orgId, """
+				{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption, June", "quantity": 1300,
+				 "unit": "litre", "periodStart": "2025-06-01", "periodEnd": "2025-06-30", "dataQuality": "MEASURED"}"""
+			.formatted(mine, gensets)).andExpect(status().isCreated())), "$.id");
+		var bulkUrl = "/api/ghg/organizations/" + orgId + "/activities/bulk";
+
+		// an empty or oversized selection, and a missing reason, are refused before anything is read
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": [], "action": "REMOVE", "reason": "Duplicates of the March file"}"""))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.activity.bulk-empty"));
+		var many = java.util.stream.IntStream.range(0, 501).mapToObj(i -> "\"" + UUID.randomUUID() + "\"")
+			.collect(java.util.stream.Collectors.joining(","));
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": [%s], "action": "REMOVE", "reason": "Duplicates of the March file"}""".formatted(many)))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.activity.bulk-too-many"))
+			.andExpect(jsonPath("$.errors.ids").value("Select at most 500 records at once."));
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s"], "action": "SET_TIER", "dataQualityTier": 3, "reason": "ok"}""".formatted(a)))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.reason-too-short"));
+
+		// assign a source to the three records without one: one act, one history row, one bulk id
+		var assigned = body(mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s", "%s", "%s"], "action": "ASSIGN_SOURCE", "streamId": "%s", "reason": "Invoices name the standby unit"}"""
+			.formatted(a, b, c, gensets)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.applied").value(3))
+			.andExpect(jsonPath("$.records").value(org.hamcrest.Matchers.contains("ACT-0001", "ACT-0002", "ACT-0003"))));
+		String bulkId = JsonPath.read(assigned, "$.bulkId");
+		mvc.perform(get("/api/ghg/activities/" + a).with(asMember()))
+			.andExpect(jsonPath("$.streamName").value("Standby gensets"))
+			.andExpect(jsonPath("$.revisionCount").value(1));
+		mvc.perform(get("/api/ghg/activities/" + a + "/revisions").with(asMember()))
+			.andExpect(jsonPath("$[0].kind").value("CORRECTED"))
+			.andExpect(jsonPath("$[0].reason").value("Invoices name the standby unit"))
+			.andExpect(jsonPath("$[0].bulkId").value(bulkId))
+			.andExpect(jsonPath("$[0].changes[0].field").value("stream"))
+			.andExpect(jsonPath("$[0].changes[0].after").value("Standby gensets"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("RECORDS_BULK_CORRECTED"))
+			.andExpect(jsonPath("$[0].reason").value(
+					"Emission source 'Standby gensets' assigned to 3 records (ACT-0001, ACT-0002, ACT-0003): Invoices name the standby unit"));
+
+		// fill only: a record with a source refuses the act for everyone, and a source of another facility too
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s", "%s"], "action": "ASSIGN_SOURCE", "streamId": "%s", "reason": "Invoices name the standby unit"}"""
+			.formatted(d, a, gensets)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.activity.bulk-refused"))
+			.andExpect(jsonPath("$.detail").value("Nothing was changed: 2 of 2 records refuse the action."))
+			.andExpect(jsonPath("$.refused.length()").value(2))
+			.andExpect(jsonPath("$.refused[0].recordRef").value("ACT-0004"))
+			.andExpect(jsonPath("$.refused[0].rule").value("ghg.activity.has-source"))
+			.andExpect(jsonPath("$.refused[0].message").value("ACT-0004 already has an emission source; change it on the record."));
+		var e = createActivity(orgId, mine, "Diesel consumption, July", "1400", "litre", "2025-07-15");
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s"], "action": "ASSIGN_SOURCE", "streamId": "%s", "reason": "Invoices name the pit unit"}"""
+			.formatted(e, pitGensets)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.refused[0].rule").value("ghg.stream.other-facility"));
+
+		// a tier set twice changes nothing the second time; an evidence link lands on each record
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s", "%s"], "action": "SET_TIER", "dataQualityTier": 3, "reason": "Estimated from the tank dip, not metered"}"""
+			.formatted(b, c)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.applied").value(2));
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s", "%s"], "action": "SET_TIER", "dataQualityTier": 3, "reason": "Estimated from the tank dip, not metered"}"""
+			.formatted(b, c)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.applied").value(0));
+		mvc.perform(get("/api/ghg/activities/" + b).with(asMember()))
+			.andExpect(jsonPath("$.dataQualityTier").value(3))
+			.andExpect(jsonPath("$.revisionCount").value(2));
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s", "%s"], "action": "ADD_EVIDENCE_LINK", "link": {"url": "ftp://drive/inv-7"}, "reason": "The April and May invoices"}"""
+			.formatted(b, c)))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.evidence.link-scheme"));
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s", "%s"], "action": "ADD_EVIDENCE_LINK", "link": {"name": "INV-7", "url": "https://drive.example/inv-7"}, "reason": "The April and May invoices"}"""
+			.formatted(b, c)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.applied").value(2));
+		mvc.perform(get("/api/ghg/activities/" + c).with(asMember()))
+			.andExpect(jsonPath("$.evidenceCount").value(1));
+
+		// a record a run has read refuses the removal by rule, and the other record stays
+		var associate = createEntity(orgId, "Tema Associates Ltd", "ASSOCIATE", "40", false);
+		var tema = createFacility(orgId, "Tema Plant", associate);
+		var calculated = createActivity(orgId, tema, "Diesel consumption, Tema", "500", "litre", "2025-03-15");
+		var inventoryId = createInventory(orgId, "2025 Equity View", "EQUITY_SHARE");
+		putBoundary(inventoryId, tema);
+		excludeFacility(inventoryId, mine, "NOT_APPLICABLE", "Reported under the operational view");
+		excludeFacility(inventoryId, pit, "NOT_APPLICABLE", "Reported under the operational view");
+		prepare(inventoryId, calculated, diesel(orgId));
+		runAndGetId(inventoryId, "Run 001");
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s", "%s"], "action": "REMOVE", "reason": "Duplicates of the March file"}""".formatted(calculated, b)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.activity.bulk-refused"))
+			.andExpect(jsonPath("$.refused.length()").value(1))
+			.andExpect(jsonPath("$.refused[0].recordRef").value("ACT-0006"))
+			.andExpect(jsonPath("$.refused[0].rule").value("ghg.activity.used-in-run"))
+			.andExpect(jsonPath("$.refused[0].message").value(org.hamcrest.Matchers.startsWith("ACT-0006 is used in run 1 and cannot be removed.")));
+		mvc.perform(get("/api/ghg/activities/" + b).with(asMember())).andExpect(jsonPath("$.removed").value(false));
+		mvc.perform(delete("/api/ghg/activities/" + calculated).with(asMember()).with(csrf()).param("reason", "Duplicate"))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.activity.used-in-run"));
+		mvc.perform(post(bulkUrl).with(asMember()).with(csrf()).contentType("application/json").content("""
+				{"ids": ["%s", "%s"], "action": "REMOVE", "reason": "Duplicates of the March file"}""".formatted(b, c)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.applied").value(2));
+		mvc.perform(get("/api/ghg/activities/" + b).with(asMember()))
+			.andExpect(jsonPath("$.removed").value(true))
+			.andExpect(jsonPath("$.removeReason").value("Duplicates of the March file"));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[0].action").value("RECORDS_BULK_CORRECTED"))
+			.andExpect(jsonPath("$[0].reason").value("2 records removed (ACT-0002, ACT-0003): Duplicates of the March file"));
+	}
 }

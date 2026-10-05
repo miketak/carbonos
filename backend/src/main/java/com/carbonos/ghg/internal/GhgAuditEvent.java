@@ -40,7 +40,9 @@ public class GhgAuditEvent {
 		ENTITY_ADDED, ENTITY_UPDATED, ENTITY_REMOVED, FACILITY_ADDED, FACILITY_UPDATED, FACILITY_REMOVED,
 		STREAM_ADDED, STREAM_REMOVED,
 		// spec 04.7: a rule that derives category 3 lines is a method decision, not a review
-		UPSTREAM_RULE_ADDED, UPSTREAM_RULE_REMOVED
+		UPSTREAM_RULE_ADDED, UPSTREAM_RULE_REMOVED,
+		// spec 04.11: an unknown source name mapped during an import, and one act over several records
+		IMPORT_SOURCE_MAPPED, RECORDS_BULK_CORRECTED
 	}
 
 	@Id
