@@ -11,6 +11,7 @@
   register
 - **Amended**: 2026-10-04, spec 04.10: the Source streams dialog becomes the
   Emission sources page of a facility
+- **Amended**: 2026-10-05, spec 04.11: the activity import becomes a page
 
 ## Problem
 
@@ -131,8 +132,12 @@ meets the same kind of surface everywhere in the app:
   right, keyed off the URL as the drawer was (spec 10; the pattern spec
   04.6 established as a drawer).
 - A one-shot form (a removal reason, a correction, a candidate, the
-  recalculated base), a batch operation (the CSV import) and every
-  confirmation are **modals**.
+  recalculated base), a batch operation over records already on the
+  screen (the register's bulk actions) and every confirmation are
+  **modals**. A batch operation whose preview is a document of its own is
+  a **page**: the activity import, at `/app/ghg/<org>/activity/import`
+  with the breadcrumb **Activity data › Import**, since spec 04.11 (it was
+  the one modal batch operation until then).
 
 There is no dirty-form guard on the pages, as on the other full-page forms
 (Edit profile, the organization's Details, the base year policy): a click
