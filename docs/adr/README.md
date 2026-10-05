@@ -53,3 +53,4 @@ form.
 | [0008](0008-a-qa-module-for-local-test-hooks.md) | A `qa` module for the local stack's test hooks | proposed | 2026-10-02 |
 | [0009](0009-semantic-design-tokens-with-two-themes.md) | Semantic design tokens as CSS variables, with two themes | accepted | 2026-10-03 |
 | [0010](0010-the-verdict-workbook-is-the-only-qa-export.md) | The verdict workbook is the only export of the QA procedures | accepted | 2026-10-05 |
+| [0011](0011-the-import-template-is-the-contract.md) | The import template is the contract; CarbonOS does not map a company's own spreadsheet | accepted | 2026-10-05 |
