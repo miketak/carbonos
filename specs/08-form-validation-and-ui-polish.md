@@ -186,7 +186,7 @@ None.
 
 - The scroll-padding fix addresses the one interception the audit
   reproduced. The follow-up audit's real-mouse retest of "Create correction"
-  (todo.md, follow-up list) stays on the list; no automated browser runs in
+  (Linear ECO-39) stays on the list; no automated browser runs in
   this repository's CI.
 - The facility form has no numeric fields; date-order checks stay with the
   backend.

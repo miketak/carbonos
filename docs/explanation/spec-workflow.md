@@ -54,7 +54,7 @@ is worse than none, because a verifier reads it.
 flowchart LR
     accTitle: Where a spec sits
     accDescr: An audit finding becomes a backlog ticket, the ticket becomes a spec, the spec drives code, tests and a QA procedure, and the docs site links all of them.
-    audit["Audit or review\n(docs/reviews)"] --> ticket["Ticket in todo.md"]
+    audit["Audit or review\n(docs/reviews)"] --> ticket["Ticket in Linear"]
     ticket --> spec["Spec in specs/"]
     spec --> code["Code and tests"]
     spec --> qa["QA procedure\n(docs/qa)"]
@@ -66,9 +66,11 @@ flowchart LR
 - **Audits and reviews** under `docs/reviews/` are where findings come
   from: an external GHG officer walked the product and wrote down 51 of
   them.
-- **Tickets** in `todo.md` turn findings into work with a priority, the
-  Standard's requirement, and a "done when" written the way the officer
-  would retest it. A ticket names its spec once one exists.
+- **Tickets** in the Linear backlog (team Ecoriv) turn findings into work:
+  a problem, a scope, what is out of scope, and an acceptance written the
+  way the officer would retest it. A ticket names its spec once one exists.
+  The first two audit backlogs lived in `todo.md`; that file is kept empty
+  since 2026-10-05, and its git history holds their text.
 - **Specs** describe the behavior. One spec often closes several tickets,
   and a chapter's sub-specs (05.1, 05.2, 05.3) refine its parent as the
   product grows.

@@ -80,12 +80,14 @@ audit of 2026-09-11 (01.3, 01.4, 02.3, 02.4, 04.7, 04.8, 05.4, 05.5, 07.7 and
 07.8) were implemented on 2026-09-12. Sub-specs 03.3, 06.1 and
 07.2 come from a conformance review of the set against the Standard on
 2026-09-08; the conformance table in spec 00 records what each closed.
-Sub-specs from 07.3 onward close tickets of the GHG officer audit backlog in
-`todo.md` (each ticket names its spec).
+Sub-specs from 07.3 onward close tickets of the GHG officer audit backlog
+(each ticket named its spec; the backlog's text is in the git history of
+`todo.md`).
 Sub-specs 01.3, 01.4, 02.3, 02.4, 04.7, 04.8, 05.4, 05.5, 07.7, and 07.8 come
 from the second audit of 2026-09-11
 (`docs/reviews/2026-09-11-ghg-officer-ui-audit.md`); its Top 10 to spec
-table is in `todo.md`.
+table is in the git history of `todo.md`. Open work lives in the Linear
+backlog (team Ecoriv) since 2026-10-05; `todo.md` is kept empty.
 Chapters 8 (reductions) and 11 (targets) of the Standard have no spec yet.
 
 ## Lifecycle
