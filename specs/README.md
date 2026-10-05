@@ -49,7 +49,8 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 04.7 | [Derived fuel- and energy-related lines, and the scope select unlocked](04.7-derived-fuel-and-energy-related-lines.md) | Scope 3 Standard cat. 3, Ch. 4, App. F | Implemented |
 | 04.8 | [Exclusions without a false zero, and gases outside the scopes](04.8-exclusions-without-a-false-zero-and-gases-outside-the-scopes.md) | Ch. 4, 9, Scope 3 Standard Ch. 11 | Implemented |
 | 04.9 | [A correction's reason, where reliance begins](04.9-a-corrections-reason-where-reliance-begins.md) | Ch. 5, 7, 9, ISO 14064-1, ISO 14064-3 | Draft |
-| 04.10 | [Emission sources, inline creation and the reconcile prompt](04.10-emission-sources-inline-creation-and-the-reconcile-prompt.md) | Ch. 4, 7, ISO 14064-1 9.3.3 | Approved |
+| 04.10 | [Emission sources, inline creation and the reconcile prompt](04.10-emission-sources-inline-creation-and-the-reconcile-prompt.md) | Ch. 4, 7, ISO 14064-1 9.3.3 | Implemented |
+| 04.11 | [Import, round two: spreadsheets, sources decided in the preview, and acting on several records at once](04.11-import-round-two.md) | Ch. 7, 9, ISO 14064-1 8.2, 9.3.3, ISO 14064-3 | Approved |
 | 05 | [Inventories and calculation](05-inventories-and-calculation.md) | Ch. 6, 7 | Implemented |
 | 05.1 | [Inventory lifecycle and run snapshots](05.1-inventory-lifecycle-and-run-snapshots.md) | Ch. 7, 9 | Implemented |
 | 05.2 | [Run numbering and voiding](05.2-run-numbering-and-voiding.md) | Ch. 7, 9 | Implemented |
