@@ -63,6 +63,12 @@ does not recognise (a step table with other columns, a case with no steps, a
 case id used twice). It carries:
 
 - **Read me**, the build version and how to fill the workbook in.
+- **Accounts**, so the workbook stands on its own: the README's "Before you
+  start" bullets, its accounts table with a **Sign in as** column (the name
+  the steps use), an **Email** column derived by formula from the mailbox
+  the tester types once in the yellow cell, the password and the window,
+  and the fixture files table. The parser refuses a README without the
+  "Before you start" bullets or "The accounts" table.
 - **Summary**, a sign-off block per procedure (the version string prefilled,
   Tester, Date and Issues filed to type) and one row per case that counts the
   PASS, FAIL and N/A verdicts on the procedure's sheet by `COUNTIF`, with the

@@ -3,10 +3,14 @@
 
 Reads docs/qa/<persona>/NNN-*.md, the same Markdown `make qa-docs` turns into
 DOCX, and writes build/qa-docs/<persona>-qa-procedures.xlsx: a Read me sheet,
-a Summary sheet that tallies the verdicts per case by formula, and one sheet
-per procedure with a row per step (Section, Case, Step, Step id, Action,
-Expected result, Pass/Fail, Notes). The Pass/Fail cells take PASS, FAIL or
-N/A from a list; a step with no expected result is setup and takes no verdict.
+an Accounts sheet (the persona's README "Before you start", its accounts
+table with each alias's address derived from the mailbox the tester types
+once, and the fixture files), a Summary sheet that tallies the verdicts per
+case by formula, and one sheet per procedure with a row per step (Section,
+Case, Step, Step id, Action, Expected result, Pass/Fail, Notes). The
+Pass/Fail cells take PASS, FAIL or N/A from a list; a step with no expected
+result is setup and takes no verdict. The workbook stands on its own: a
+tester needs nothing from the documents to know which account a step means.
 
     uv run --locked --group qa-docs python scripts/qa_sheets.py --persona governance
     uv run --locked --group qa-docs python scripts/qa_sheets.py --check --persona governance
@@ -278,6 +282,77 @@ def parse_persona(persona: str) -> list[Procedure]:
     return [parse_procedure(path) for path in source_files(persona) if path.name != "README.md"]
 
 
+# --- the persona's README: what a tester needs before the first step ---------------------
+
+
+@dataclass
+class Setup:
+    """The parts of docs/qa/<persona>/README.md a tester needs beside the steps."""
+
+    before: list[str] = field(default_factory=list)  # the "Before you start" bullets
+    accounts_header: list[str] = field(default_factory=list)
+    accounts: list[list[str]] = field(default_factory=list)  # the rows of "The accounts"
+    accounts_note: str = ""  # the paragraph under the table ("Replace you+…@… with ...")
+    fixtures_header: list[str] = field(default_factory=list)
+    fixtures: list[list[str]] = field(default_factory=list)
+
+
+_ALIAS = re.compile(r"you\+([a-z0-9]+)@")
+
+
+def alias_of(account_cell: str) -> str | None:
+    """'Ama Owusu, `you+ama@…`' -> 'ama'; None for an account with no alias (Admin A)."""
+    hit = _ALIAS.search(account_cell)
+    return hit.group(1) if hit else None
+
+
+def parse_readme(source: Path) -> Setup:
+    """The README's "Before you start" bullets and its accounts and fixture tables, as the workbook prints them."""
+    setup = Setup()
+    section = None
+    paragraph: list[str] = []
+    for index, raw in enumerate(source.read_text(encoding="utf-8").splitlines(), start=1):
+        line = raw.rstrip()
+        if line.startswith("## "):
+            section = line[3:].strip()
+            paragraph = []
+            continue
+        if section == "Before you start":
+            if line.startswith("- "):
+                setup.before.append(strip_markdown(line[2:]))
+            elif line.startswith("  ") and setup.before:
+                setup.before[-1] += " " + strip_markdown(line)
+            continue
+        if section in ("The accounts", "The fixture files"):
+            header = setup.accounts_header if section == "The accounts" else setup.fixtures_header
+            rows = setup.accounts if section == "The accounts" else setup.fixtures
+            if line.startswith("|"):
+                cells = split_row(line)
+                if all(set(cell) <= {"-", ":", " "} and cell for cell in cells):
+                    continue
+                if not header:
+                    header.extend(strip_markdown(cell) for cell in cells)
+                elif len(cells) != len(header):
+                    raise ParseError(source, index, f"a row with {len(cells)} cells under a {len(header)}-column table")
+                else:
+                    rows.append([strip_markdown(cell) for cell in cells])
+            elif section == "The accounts" and setup.accounts:
+                if line.strip():
+                    paragraph.append(strip_markdown(line))
+                elif paragraph:
+                    setup.accounts_note = " ".join(paragraph)
+                    paragraph = []
+    if not setup.accounts:
+        raise ParseError(source, 0, 'no "## The accounts" table')
+    if not setup.before:
+        raise ParseError(source, 0, 'no "## Before you start" bullets')
+    return setup
+
+
+def readme_path(persona: str) -> Path:
+    return next(path for path in source_files(persona) if path.name == "README.md")
+
+
 # --- the workbook --------------------------------------------------------------------------
 
 
@@ -294,7 +369,10 @@ def quoted(name: str) -> str:
     return "'" + name.replace("'", "''") + "'"
 
 
-def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo):
+MAILBOX_CELL = "B4"  # the Accounts sheet: the mailbox the tester reads, typed once
+
+
+def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo, setup: Setup | None = None):
     from openpyxl import Workbook
     from openpyxl.formatting.rule import CellIsRule
     from openpyxl.styles import Alignment, Font, PatternFill
@@ -318,6 +396,7 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo):
     wb = Workbook()
     readme = wb.active
     readme.title = "Read me"
+    accounts = wb.create_sheet("Accounts")
     summary = wb.create_sheet("Summary")
 
     # one sheet per procedure; remember each case's verdict rows for the Summary formulas
@@ -460,12 +539,84 @@ def build_workbook(procedures: list[Procedure], persona: str, info: BuildInfo):
         summary.column_dimensions[get_column_letter(col)].width = width
     summary.freeze_panes = f"A{first_tally}"
 
+    # Accounts: what the README says before the first step, with the alias addresses derived from one cell
+    setup = setup or Setup()
+    accounts.cell(row=1, column=1, value="Accounts, windows and files").font = title_font
+    accounts.cell(row=2, column=1, value=info.subtitle)
+    accounts.cell(row=4, column=1, value="The mailbox you read").font = bold
+    mailbox = accounts[MAILBOX_CELL]
+    mailbox.fill = PatternFill("solid", fgColor="FFF2CC")
+    accounts.cell(row=4, column=3, value="Type it once, for example tester@gmail.com. Every alias address below "
+                  "follows from it; plus-aliases of one Gmail address arrive in the base inbox.").alignment = wrap
+    accounts.merge_cells(start_row=4, start_column=3, end_row=4, end_column=7)
+    row = 6
+    accounts.cell(row=row, column=1, value="Before you start").font = bold
+    for bullet in setup.before:
+        row += 1
+        accounts.cell(row=row, column=1, value=f"- {bullet}").alignment = wrap
+        accounts.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
+        accounts.row_dimensions[row].height = 15 * max(1, len(bullet) // 110 + 1)
+    row += 2
+    accounts.cell(row=row, column=1, value="The accounts").font = bold
+    row += 1
+    # the README's columns: Account first, a password column somewhere, the rest carried over as they are
+    password_col = next((i for i, h in enumerate(setup.accounts_header) if h.lower().startswith("password")), None)
+    rest = [i for i in range(1, len(setup.accounts_header)) if i != password_col]
+    account_header = ["Sign in as", "Email", "Password", *(setup.accounts_header[i] for i in rest)]
+    for col, header in enumerate(account_header, start=1):
+        cell = accounts.cell(row=row, column=col, value=header)
+        cell.font, cell.fill = bold, header_fill
+    for account in setup.accounts:
+        row += 1
+        label = account[0]
+        alias = alias_of(label)
+        name = _ALIAS.split(label)[0].rstrip(", `").strip() if alias else label
+        password = account[password_col] if password_col is not None else ""
+        if alias:
+            # =IF($B$4="","you+ama@…",SUBSTITUTE($B$4,"@","+ama@")): the placeholder until the mailbox is typed
+            email = (f'=IF(${MAILBOX_CELL[0]}${MAILBOX_CELL[1:]}="","you+{alias}@…",'
+                     f'SUBSTITUTE(${MAILBOX_CELL[0]}${MAILBOX_CELL[1:]},"@","+{alias}@"))')
+        else:
+            email = "the address you gave the engineering team"
+        values = [name, email, password, *(account[i] for i in rest)]
+        for col, value in enumerate(values, start=1):
+            cell = accounts.cell(row=row, column=col, value=value)
+            cell.alignment = wrap
+    if setup.accounts_note:
+        row += 1
+        accounts.cell(row=row, column=1, value=setup.accounts_note).font = italic
+        accounts.cell(row=row, column=1).alignment = wrap
+        accounts.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
+    row += 1
+    accounts.cell(row=row, column=1, value='Where a step says "as Ama" or "sign in as Admin", use that row\'s email and '
+                  "password in the window the step names; the windows keep an administrator and a member apart.").alignment = wrap
+    accounts.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
+    if setup.fixtures:
+        row += 2
+        accounts.cell(row=row, column=1, value="The fixture files").font = bold
+        row += 1
+        for col, header in enumerate(setup.fixtures_header, start=1):
+            cell = accounts.cell(row=row, column=col, value=header)
+            cell.font, cell.fill = bold, header_fill
+        for fixture in setup.fixtures:
+            row += 1
+            for col, value in enumerate(fixture, start=1):
+                accounts.cell(row=row, column=col, value=value).alignment = wrap
+        row += 1
+        accounts.cell(row=row, column=1, value=f"The files are in the fixtures folder beside this workbook in {DRIVE_FOLDER}. "
+                      "Do not edit them: the procedures name their row numbers and totals.").alignment = wrap
+        accounts.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
+    for col, width in enumerate([24, 34, 20, 34, 12, 60, 14], start=1):
+        accounts.column_dimensions[get_column_letter(col)].width = width
+
     # Read me
     lines = [
         (f"QA procedures: {persona}", title_font),
         (info.subtitle, None),
         ("", None),
         ("How to use this workbook", bold),
+        ("Start on the Accounts sheet: type the mailbox you read in its yellow cell, and every account's address, "
+         "password and window is there. A step that says \"as Ama\" or \"sign in as Admin\" means that row.", None),
         ("Each procedure is a sheet, run them in order. Each row is one step: do the Action, check the Expected result, "
          "then pick PASS, FAIL or N/A in the Pass/Fail column.", None),
         ("A grey row is setup: it has no expected result and takes no verdict.", None),
@@ -505,9 +656,10 @@ def build(out_dir: Path, persona: str, info: BuildInfo | None = None) -> Path:
     """Writes build/qa-docs/<persona>-qa-procedures.xlsx and returns its path."""
     info = info or BuildInfo.detect()
     procedures = parse_persona(persona)
+    setup = parse_readme(readme_path(persona))
     target = out_dir.resolve() / f"{persona}-qa-procedures.xlsx"
     target.parent.mkdir(parents=True, exist_ok=True)
-    build_workbook(procedures, persona, info).save(target)
+    build_workbook(procedures, persona, info, setup).save(target)
     print(f"built {counts_line(_display(target), procedures)}")
     return target
 
@@ -517,13 +669,20 @@ def check(persona: str) -> None:
     from openpyxl import load_workbook
 
     procedures = parse_persona(persona)
+    setup = parse_readme(readme_path(persona))
     buffer = io.BytesIO()
-    build_workbook(procedures, persona, BuildInfo("check", "0000000", "1970-01-01")).save(buffer)
+    build_workbook(procedures, persona, BuildInfo("check", "0000000", "1970-01-01"), setup).save(buffer)
     buffer.seek(0)
     wb = load_workbook(buffer)
-    expected_sheets = len(procedures) + 2
+    expected_sheets = len(procedures) + 3
     if len(wb.sheetnames) != expected_sheets:
         raise SystemExit(f"the workbook has {len(wb.sheetnames)} sheets, expected {expected_sheets}")
+    # every alias account resolves its address from the mailbox cell; the seeded administrator has none to derive
+    emails = [c.value for row in wb["Accounts"].iter_rows(min_col=2, max_col=2) for c in row
+              if isinstance(c.value, str) and c.value.startswith("=IF(")]
+    aliases = [a for a in (alias_of(account[0]) for account in setup.accounts) if a]
+    if len(emails) != len(aliases):
+        raise SystemExit(f"the Accounts sheet derives {len(emails)} addresses, expected one per alias ({len(aliases)})")
     summary = wb["Summary"]
     formulas = [c.value for row in summary.iter_rows() for c in row if isinstance(c.value, str) and c.value.startswith("=COUNTIF(")]
     if len(formulas) != 3 * sum(len(p.cases) for p in procedures):
