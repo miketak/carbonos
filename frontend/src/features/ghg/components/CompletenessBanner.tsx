@@ -29,8 +29,8 @@ export function CompletenessBanner({
               <ProgressBar label="Record completeness" percent={percent} />
             </span>
             <span>
-              Complete records make review easier. Ready means the figures, a stream, a source and
-              evidence are present; nothing here has been verified.
+              Complete records make review easier. Ready means the figures, an emission source, a
+              data source and evidence are present; nothing here has been verified.
             </span>
           </span>
         }

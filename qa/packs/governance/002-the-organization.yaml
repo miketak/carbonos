@@ -144,10 +144,10 @@ sections:
               - refused: { rule: ghg.entity.has-facilities, with: { entity: Coldstore Ghana Ltd } }
 
   - id: D
-    title: Source streams
+    title: Emission sources
     cases:
       - id: D1
-        title: A stream sets the default classification
+        title: An emission source sets the default classification
         steps:
           - do: { addStream: { organization: "${org}", facility: Kumasi Plant, name: Boiler LPG, kind: STATIONARY_COMBUSTION, fuel: LPG } }
             expect:
@@ -179,6 +179,20 @@ sections:
               - historyCount: { organization: "${org}", action: FACILITY_ADDED, count: 3 }
               - historyCount: { organization: "${org}", action: STREAM_ADDED, count: 3 }
                 why: a save that changes nothing writes no row, and a refused act is not an act
+      - id: D4
+        title: A source described on a record is reconciled against the register
+        steps:
+          - do: { recordActivity: { organization: "${org}", facility: Kumasi Plant, activityType: Boiler LPG top-up, quantity: 400, unit: kg, periodStart: "2025-03-01", periodEnd: "2025-03-31", newSource: { name: Boiler LPG 2, kind: STATIONARY_COMBUSTION, fuel: LPG } } }
+            expect:
+              - refused: { rule: ghg.stream.name-similar, with: { facility: Kumasi Plant, candidates: "'Boiler LPG'", name: Boiler LPG 2 } }
+                why: a near name is a prompt, never a silent match; the record is not saved and no number is used
+          - do: { recordActivity: { organization: "${org}", facility: Kumasi Plant, activityType: Boiler LPG top-up, quantity: 400, unit: kg, periodStart: "2025-03-01", periodEnd: "2025-03-31", newSource: { name: boiler lpg, kind: STATIONARY_COMBUSTION } } }
+            expect:
+              - refused: { rule: ghg.stream.name-duplicate, with: { facility: Kumasi Plant, name: boiler lpg } }
+                why: the exact name is taken, so the notice offers "Use Boiler LPG" and no "anyway"
+          - expect:
+              - historyCount: { organization: "${org}", action: STREAM_ADDED, count: 3 }
+                why: a refused source creates nothing, and the record it came with is not written either
 
   - id: E
     title: Units and densities

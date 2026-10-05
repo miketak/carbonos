@@ -100,21 +100,21 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 | --- | --- | --- | --- | --- |
 | 1 | In Adansi Foods Ltd, open **Legal entities**, then click **Remove** on the row of Coldstore Ghana Ltd. Fill in **Reason** with `walkthrough: trying to remove an entity with a site`, then click **Remove**. | Refused: "'Coldstore Ghana Ltd' still has facilities. Move them to another entity before deleting it.". |  |  |
 
-## D. Source streams
+## D. Emission sources
 
-### D1. A stream sets the default classification
+### D1. An emission source sets the default classification
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | In Adansi Foods Ltd, open **Facilities**, then click **Source streams** on the row of Kumasi Plant. Fill in **Stream name** with `Boiler LPG`, set **Kind** to **Stationary combustion**, fill in **Fuel or material (optional)** with `LPG`, then click **Add stream**. | Boiler LPG is listed at Kumasi Plant as "owned or controlled" with its kind, Stationary combustion. |  |  |
-| 2 | In Adansi Foods Ltd, open **Facilities**, then click **Source streams** on the row of Kumasi Plant. Fill in **Stream name** with `Plant grid supply`, set **Kind** to **Purchased electricity**, fill in **Meter or supplier (optional)** with `ECG-KSI-01`, then click **Add stream**. | Plant grid supply is listed at Kumasi Plant. |  |  |
-| 3 | In Adansi Foods Ltd, open **Facilities**, then click **Source streams** on the row of Tema Depot. Fill in **Stream name** with `Delivery fleet`, set **Kind** to **Mobile combustion**, fill in **Fuel or material (optional)** with `Diesel`, tick **Operated by a contractor (its emissions default to scope 3)**, then click **Add stream**. | Delivery fleet is listed at Tema Depot as "contractor-operated": the form says a contractor's source is scope 3 under chapter 4. |  |  |
+| 1 | In Adansi Foods Ltd, open **Facilities**, then click **Emission sources** on the row of Kumasi Plant. Fill in **Source name** with `Boiler LPG`, set **Kind** to **Stationary combustion**, fill in **Fuel or material (optional)** with `LPG`, then click **Add emission source**. | Boiler LPG is listed at Kumasi Plant as "owned or controlled" with its kind, Stationary combustion. |  |  |
+| 2 | In Adansi Foods Ltd, open **Facilities**, then click **Emission sources** on the row of Kumasi Plant. Fill in **Source name** with `Plant grid supply`, set **Kind** to **Purchased electricity**, fill in **Meter or supplier (optional)** with `ECG-KSI-01`, then click **Add emission source**. | Plant grid supply is listed at Kumasi Plant. |  |  |
+| 3 | In Adansi Foods Ltd, open **Facilities**, then click **Emission sources** on the row of Tema Depot. Fill in **Source name** with `Delivery fleet`, set **Kind** to **Mobile combustion**, fill in **Fuel or material (optional)** with `Diesel`, tick **Operated by a contractor (its emissions default to scope 3)**, then click **Add emission source**. | Delivery fleet is listed at Tema Depot as "contractor-operated": the form says a contractor's source is scope 3 under chapter 4. |  |  |
 
 ### D2. Names are unique per facility
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | In Adansi Foods Ltd, open **Facilities**, then click **Source streams** on the row of Kumasi Plant. Fill in **Stream name** with `Boiler LPG`, set **Kind** to **Stationary combustion**, then click **Add stream**. | Refused: "'Kumasi Plant' already has an emission source named 'Boiler LPG'.". |  |  |
+| 1 | In Adansi Foods Ltd, open **Facilities**, then click **Emission sources** on the row of Kumasi Plant. Fill in **Source name** with `Boiler LPG`, set **Kind** to **Stationary combustion**, then click **Add emission source**. | Refused: "'Kumasi Plant' already has an emission source named 'Boiler LPG'.". |  |  |
 
 ### D3. The history records the structure, and only real changes
 
@@ -123,6 +123,14 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 | 1 | Open the edit form of Adansi Logistics Ltd and save without changing anything. |  |  |  |
 | 2 | In Adansi Foods Ltd, open **Settings**. | **History** holds an entity added entry reading "Adansi Logistics Ltd added", with the Ama alias and the moment. **History** holds an entity added entry reading "Coldstore Ghana Ltd added", with the Ama alias and the moment. **History** holds an entity updated entry reading "Coldstore Ghana Ltd", with the Ama alias and the moment. **History** holds a facility added entry reading "Kumasi Plant added under Adansi Foods Ltd", with the Ama alias and the moment. **History** holds a stream added entry reading "Boiler LPG added at Kumasi Plant", with the Ama alias and the moment. |  |  |
 | 3 | Look. | **History** holds 2 entity updated entries. **History** holds 2 entity added entries. **History** holds 3 facility added entries. **History** holds 3 stream added entries: a save that changes nothing writes no row, and a refused act is not an act. |  |  |
+
+### D4. A source described on a record is reconciled against the register
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Add the record "Boiler LPG top-up" at Kumasi Plant: 400 kg, 2025-03-01 to 2025-03-31. | Refused: "'Kumasi Plant' has an emission source with a similar name: 'Boiler LPG'. Use it, or give a reason to create 'Boiler LPG 2' as a separate source.": a near name is a prompt, never a silent match; the record is not saved and no number is used. |  |  |
+| 2 | Add the record "Boiler LPG top-up" at Kumasi Plant: 400 kg, 2025-03-01 to 2025-03-31. | Refused: "'Kumasi Plant' already has an emission source named 'boiler lpg'.": the exact name is taken, so the notice offers "Use Boiler LPG" and no "anyway". |  |  |
+| 3 | Look. | **History** holds 3 stream added entries: a refused source creates nothing, and the record it came with is not written either. |  |  |
 
 ## E. Units and densities
 

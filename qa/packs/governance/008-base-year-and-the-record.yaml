@@ -139,7 +139,7 @@ sections:
           - expect:
               - historyHas: { organization: "${org}", action: ADMIN_ACCESS_ASSUMED, actor: adminB }
               - historyHas: { organization: "${org}", action: FACTOR_PACK_ADOPTED, actor: kofi }
-              - observe: { text: "History lists the members added, the entities, facilities and streams of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label." }
+              - observe: { text: "History lists the members added, the entities, facilities and emission sources of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label." }
       - id: F2
         title: A scratch organization is deleted with its name typed
         steps:

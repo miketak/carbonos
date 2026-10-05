@@ -102,8 +102,8 @@ export function ImportActivitiesModal({
       <div className="mt-5 flex flex-col gap-5">
         <Step number={1} title="Use the activity template">
           <p className="text-[13px] text-ink-muted">
-            Facility, stream, activity type, quantity, unit, period, source and document reference;
-            dates read as 2025-03-31 and period end defaults to the start.
+            Facility, emission source, activity type, quantity, unit, period, source and document
+            reference; dates read as 2025-03-31 and period end defaults to the start.
           </p>
           <a
             href={activityImportTemplateUrl(organizationId)}
@@ -201,7 +201,7 @@ export function ImportActivitiesModal({
                 <thead>
                   <tr>
                     <Th>Facility</Th>
-                    <Th>Stream</Th>
+                    <Th>Emission source</Th>
                     <Th align="right">Rows</Th>
                     <Th align="right">Total</Th>
                   </tr>
@@ -210,7 +210,7 @@ export function ImportActivitiesModal({
                   {preview.totals.map((total) => (
                     <tr key={`${total.facilityName}|${total.streamName ?? ''}|${total.unit}`}>
                       <Td className="py-2">{total.facilityName}</Td>
-                      <Td className="py-2">{total.streamName ?? 'No stream'}</Td>
+                      <Td className="py-2">{total.streamName ?? 'No emission source'}</Td>
                       <Td align="right" className="py-2">
                         {total.rows}
                       </Td>

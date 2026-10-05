@@ -3,3 +3,4 @@ node_modules/
 package-lock.json
 src/features/help/generated/
 public/help-assets/
+e2e/out/

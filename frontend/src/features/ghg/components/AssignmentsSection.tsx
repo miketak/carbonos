@@ -340,7 +340,7 @@ export function AssignmentsSection({
                   <SearchField
                     ref={searchRef}
                     label="Search the view"
-                    placeholder="Reference, activity, facility, stream, factor, unit, evidence"
+                    placeholder="Reference, activity, facility, emission source, factor, unit, evidence"
                     value={search.value}
                     onChange={(event) => search.onChange(event.target.value)}
                   />
@@ -411,11 +411,11 @@ export function AssignmentsSection({
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-[minmax(220px,1.6fr)_repeat(4,minmax(0,1fr))]">
                 <div aria-hidden="true" className="hidden lg:col-span-3 lg:block" />
                 <FilterSelect
-                  label="Stream"
+                  label="Emission source"
                   value={filters.stream}
                   onChange={(event) => set({ stream: event.target.value })}
                 >
-                  <option value="">All streams</option>
+                  <option value="">All emission sources</option>
                   {(streamsQuery.data ?? []).map((stream) => (
                     <option key={stream.id} value={stream.id}>
                       {stream.facilityName} · {stream.name}
@@ -793,9 +793,9 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
     <div className="mt-8 hidden md:block">
       <h3 className="text-base font-semibold">Period coverage</h3>
       <p className="text-[13px] text-ink-muted">
-        Months of the reporting period with data from included records, per facility and stream. A
-        stream with no data at all shows every month empty; a half circle is a draft still to be
-        entered.
+        Months of the reporting period with data from included records, per facility and emission
+        source. A source with no data at all shows every month empty; a half circle is a draft still
+        to be entered.
       </p>
       <div className="mt-3 overflow-x-auto">
         <table
@@ -804,7 +804,7 @@ function CoverageMatrix({ rows }: { rows: CoverageRow[] }) {
         >
           <thead>
             <tr>
-              <Th className="px-2 py-2">Facility · stream</Th>
+              <Th className="px-2 py-2">Facility · emission source</Th>
               {months.map((month) => (
                 <Th key={month} className="px-1 py-2 text-center">
                   {month.slice(5)}
