@@ -9,7 +9,7 @@ Product behaviour we know about, have decided not to change yet, and mean
 to come back to. An entry here is a deliberate deferral, not a forgotten
 bug: each one says what a user sees, why it is deferred, and what closing
 it would take. Open defects that are being worked on belong in a pull
-request or `todo.md`, not here.
+request or the Linear backlog (team Ecoriv), not here.
 
 ## How to use this page
 

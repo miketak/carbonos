@@ -123,9 +123,9 @@ do what a user does, with the QA procedures as your script.
 1. Read [The spec workflow](../explanation/spec-workflow.md). Every
    non-trivial feature starts as a spec, and a spec has to be approved
    before anyone implements it.
-2. Open `todo.md` at the repository root. The ticked items are done; the
-   "Keep" list names behavior that needs a regression test, and the
-   follow-up audit list names what the last review could not exercise.
+2. Open the Linear backlog (team Ecoriv). Each ticket cites the spec or
+   the audit finding it comes from; ECO-44 names what the last officer
+   review could not exercise.
 3. Choose one item, and write down in a sentence what "done" looks like
    for it. Bring that sentence to your first planning conversation.
 
