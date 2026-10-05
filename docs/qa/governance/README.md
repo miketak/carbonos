@@ -31,17 +31,18 @@ activity data arrives from two fixture files uploaded once each.
 
 ## The accounts
 
-| Account | Made by | Password used in the pack | What it proves |
-| --- | --- | --- | --- |
-| Admin A | the engineering team, at your request | the one they send you | curates the pack edition; platform settings; support access |
-| Admin B, `you+adminb@…` | procedure 1, **Add user**, role ADMIN | `AdminB-pass-2026` | publishes the edition (the approver is not the curator); the last-administrator refusals |
-| Ama Owusu, `you+ama@…` | procedure 1, **Request access** and the approval email | `Ama-pass-2026` | the email path; owns Adansi Foods Ltd; enters the records and the factors |
-| Kofi Mensah, `you+kofi@…` | procedure 1, **Add user** | `Kofi-pass-2026` | Reviewer: approves factors, designates the final run, publishes, decides adoptions |
-| Esi Boateng, `you+esi@…` | procedure 1, **Add user** | `Esi-pass-2026` | Preparer: every "needs the Reviewer or Owner role" refusal |
-| Yaw Darko, `you+yaw@…` | procedure 1, **Add user** | `Yaw-pass-2026` | Verifier: read-only; owns the scratch organization **Solo Ltd**, where a self-approval is recorded |
+| Account | Made by | Password used in the pack | Window | What it proves |
+| --- | --- | --- | --- | --- |
+| Admin A | the engineering team, at your request | the one they send you | normal | curates the pack edition; platform settings; support access |
+| Admin B, `you+adminb@…` | procedure 1, **Add user**, role ADMIN | `AdminB-pass-2026` | private | publishes the edition (the approver is not the curator); the last-administrator refusals |
+| Ama Owusu, `you+ama@…` | procedure 1, **Request access** and the approval email | `Ama-pass-2026` | private | the email path; owns Adansi Foods Ltd; enters the records and the factors |
+| Kofi Mensah, `you+kofi@…` | procedure 1, **Add user** | `Kofi-pass-2026` | private | Reviewer: approves factors, designates the final run, publishes, decides adoptions |
+| Esi Boateng, `you+esi@…` | procedure 1, **Add user** | `Esi-pass-2026` | private | Preparer: every "needs the Reviewer or Owner role" refusal |
+| Yaw Darko, `you+yaw@…` | procedure 1, **Add user** | `Yaw-pass-2026` | private (normal in procedure 1, G1) | Verifier: read-only; owns the scratch organization **Solo Ltd**, where a self-approval is recorded |
 
 Replace `you+…@…` with aliases of the mailbox you read. Where a procedure
-says "as Ama", sign in with that account in the window it names.
+says "as Ama", sign in with that account in the window it names; the
+Window column is the one it uses unless a step says otherwise.
 
 ## The scenario
 
@@ -115,7 +116,10 @@ template at https://github.com/miketak/carbonos/issues/new?template=qa-failure.y
 workbook beside the documents, one sheet per procedure and one row per
 step, where the Pass/Fail cell offers PASS, FAIL and N/A and the Summary
 tab tallies the cases and carries the sign-off; record there if you prefer
-a sheet to a document. The line under the document's title
+a sheet to a document. The workbook stands on its own: its Accounts tab
+carries this page's "Before you start", the accounts table and the fixture
+files, and derives every alias address from the mailbox you type in its
+yellow cell. The line under the document's title
 ("Version v0.6.0 (5b27661), built ...") is the value for "Procedure and
 version tested"; add the procedure version beside it.
 
