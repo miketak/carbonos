@@ -89,6 +89,63 @@ export const importRejected = defineOutcome({
   },
 })
 
+/** The names the file has and the facility does not, each with the near names the preview offers (spec 04.11). */
+export const importUnknownSources = defineOutcome({
+  name: 'importUnknownSources',
+  args: z.object({ sources: z.array(z.object({ name: z.string(), facility: z.string(), candidates: z.array(z.string()) }).strict()).min(1) }).strict(),
+  api: async (_ctx, a, last) => {
+    if (!last?.ok) return fail(`the preview was refused with ${last?.status}`)
+    const p = last.body as Preview & { unknownSources: Array<{ facility: string; name: string; rows: number[]; candidates: Array<{ name: string }> }> }
+    if (p.rejected.length > 0) return fail(`${p.rejected.length} rows rejected: ${p.rejected.map((r) => `${r.row}: ${r.message}`).join('; ')}`)
+    if (p.unknownSources.length !== a.sources.length) return fail(`${p.unknownSources.length} unknown names: ${p.unknownSources.map((u) => u.name).join(', ')}`)
+    for (const s of a.sources) {
+      const hit = p.unknownSources.find((u) => u.name === s.name && u.facility === s.facility)
+      if (!hit) return fail(`'${s.name}' at ${s.facility} is not listed as unknown`)
+      const offered = hit.candidates.map((c) => c.name).sort().join(',')
+      if (offered !== [...s.candidates].sort().join(',')) return fail(`'${s.name}' offers ${offered || 'nothing'}, expected ${s.candidates.join(', ') || 'nothing'}`)
+    }
+    const pending = p.rows.filter((r) => r.status === 'NEEDS_DECISION').length
+    return pending > 0 ? pass(`${pending} rows wait`) : fail('no row reads NEEDS_DECISION')
+  },
+  ui: (a) => [
+    { check: 'textVisible', text: `${S.act.text.decideUnknown} ${a.sources.length} unknown emission source${a.sources.length === 1 ? '' : 's'}` },
+    ...a.sources.map((s) => ({ check: 'textVisible', text: `'${s.name}' at ${s.facility}` }) as const),
+    { check: 'textVisible', text: S.act.text.needsDecision },
+  ],
+  narrate: (a) =>
+    `Nothing is rejected. Under **${S.act.text.decideUnknown} ${a.sources.length} unknown emission source${a.sources.length === 1 ? '' : 's'}**, a card per name: ${a.sources
+      .map((s) => `'${s.name}' at ${s.facility}${s.candidates.length ? ` offers **Use ${s.candidates.join('**, **Use ')}**` : ' offers no near name'}`)
+      .join('; ')}. Their rows read **${S.act.text.needsDecision}** and **${S.act.button.addRecords}** stays disabled.`,
+})
+
+/** After the decisions, every row has its source and nothing waits (spec 04.11). */
+export const importResolved = defineOutcome({
+  name: 'importResolved',
+  args: z.object({ recordsToAdd: z.number().int() }).strict(),
+  api: async (_ctx, a, last) => {
+    if (!last?.ok) return fail(`the preview was refused with ${last?.status}`)
+    const p = last.body as Preview & { unknownSources: unknown[] }
+    if (p.unknownSources.length > 0) return fail(`${p.unknownSources.length} names still unknown`)
+    if (p.rows.some((r) => r.status === 'NEEDS_DECISION')) return fail('a row still reads NEEDS_DECISION')
+    if (p.rows.length !== a.recordsToAdd) return fail(`${p.rows.length} records to add, expected ${a.recordsToAdd}`)
+    return pass()
+  },
+  ui: (a) => [{ check: 'textAbsent', text: S.act.text.needsDecision }, { check: 'textVisible', text: `${a.recordsToAdd} records to add` }],
+  narrate: (a) => `No row reads **${S.act.text.needsDecision}** any more; "${a.recordsToAdd} records to add" and **${S.act.button.addRecords}** is enabled.`,
+})
+
+export const activityHasSource = defineOutcome({
+  name: 'activityHasSource',
+  args: z.object({ organization: orgArg, record: z.string(), source: z.string() }).strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    const row = await activity(ctx.session(), org.id, a.record)
+    return row.streamName === a.source ? pass() : fail(`${a.record} names ${row.streamName ?? 'no emission source'}`)
+  },
+  ui: (a) => [{ check: 'atOrg', organization: a.organization, section: S.org.sections.activity }, { check: 'rowHas', text: a.record, cells: [a.source] }],
+  narrate: (a) => `${a.record} names the emission source ${a.source}.`,
+})
+
 export const activityCount = defineOutcome({
   name: 'activityCount',
   args: z.object({ organization: orgArg, count: z.number().int() }).strict(),
@@ -302,4 +359,4 @@ export const facilityAbsent = defineOutcome({
   narrate: (a) => `${a.name} is no longer listed.`,
 })
 
-export const activityOutcomes = [importPreview, importRejected, activityCount, activityRefs, activityOrder, activityExists, activityRemoved, activityHistoryHas, attentionCount, evidenceListed, sourceDocumentListed, importBatchListed, evidenceIndexHeader, importTemplateHeader, facilityAbsent]
+export const activityOutcomes = [importPreview, importRejected, importUnknownSources, importResolved, activityHasSource, activityCount, activityRefs, activityOrder, activityExists, activityRemoved, activityHistoryHas, attentionCount, evidenceListed, sourceDocumentListed, importBatchListed, evidenceIndexHeader, importTemplateHeader, facilityAbsent]

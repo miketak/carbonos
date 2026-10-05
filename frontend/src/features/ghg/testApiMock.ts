@@ -50,6 +50,10 @@ export const deleteDensity = vi.fn()
 export const listActivities = vi.fn()
 export const searchActivities = vi.fn()
 export const importActivities = vi.fn()
+export const bulkActivities = vi.fn()
+export const importBatchRenderedUrl = vi.fn(
+  (id: string) => `/api/ghg/import-batches/${id}/rendered.csv`,
+)
 export const activityImportTemplateUrl = vi.fn(
   (orgId: string) => `/api/ghg/organizations/${orgId}/activities/import-template.csv`,
 )

@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { z } from 'zod'
 import { REPO_ROOT } from '../../load.ts'
 import { defineVerb } from '../contract.ts'
-import { activity, facility, orgArg, organization } from '../organizations.ts'
+import { activity, facility, orgArg, organization, streamsOf } from '../organizations.ts'
+import type { ApiContext } from '../contract.ts'
 import { S } from '../ui/surface.ts'
 
 /** Activity data: the CSV import, drafts, corrections, evidence and removals (specs 04.4, 04.5, 04.6). */
@@ -23,11 +24,120 @@ export const previewImport = defineVerb({
   },
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
-    { op: 'click', button: S.act.button.importCsv },
-    { op: 'upload', label: S.act.field.csvFile, fixture: a.file, within: S.act.dialog.import },
+    { op: 'click', button: S.act.button.import },
+    { op: 'upload', label: S.act.field.spreadsheetFile, fixture: a.file, within: S.act.dialog.import },
   ],
   postconditions: () => [],
-  narrate: (a) => `Click **${S.act.button.importCsv}** and choose \`${a.file}\`.`,
+  narrate: (a) => `Click **${S.act.button.import}** and choose \`${a.file}\`.`,
+})
+
+/** One decision on an emission source name the file has and the facility does not (spec 04.11). */
+const decisionArg = z
+  .object({
+    name: z.string(),
+    facility: z.string(),
+    /** A near name the preview offers: used with one click, no reason. */
+    use: z.string().optional(),
+    /** Any other source of the facility, with the reason nothing in the name suggested it. */
+    other: z.object({ source: z.string(), reason: z.string() }).optional(),
+    /** Create it, described as the activity form describes one; a reason when a near name exists. */
+    create: z.object({ kind: z.enum(['STATIONARY_COMBUSTION', 'MOBILE_COMBUSTION', 'PURCHASED_ELECTRICITY', 'PROCESS', 'FUGITIVE']), fuel: z.string().optional(), reason: z.string().optional() }).optional(),
+  })
+  .strict()
+
+type Decision = z.infer<typeof decisionArg>
+
+/** The decisions as the API takes them: the preview's digest, and each name resolved to a source id or a description. */
+async function resolveDecisions(ctx: ApiContext, orgId: string, file: string, decisions: Decision[]) {
+  const preview = await ctx.session().upload(`/api/ghg/organizations/${orgId}/activities/import`, fixture(file), { dryRun: 'true' })
+  if (!preview.ok) throw new Error(`the preview was refused with ${preview.status}`)
+  const body = preview.body as { sha256: string; unknownSources: Array<{ facilityId: string; name: string; candidates: Array<{ id: string; name: string }> }> }
+  const items = []
+  for (const d of decisions) {
+    const unknown = body.unknownSources.find((u) => u.name.toLowerCase() === d.name.toLowerCase())
+    if (!unknown) throw new Error(`the preview does not list '${d.name}' as unknown`)
+    const base = { facilityId: unknown.facilityId, name: unknown.name }
+    if (d.use) {
+      const candidate = unknown.candidates.find((c) => c.name === d.use)
+      if (!candidate) throw new Error(`'${d.use}' is not offered for '${d.name}'`)
+      items.push({ ...base, mapTo: candidate.id })
+    } else if (d.other) {
+      const stream = (await streamsOf(ctx.session(), unknown.facilityId)).find((s) => s.name === d.other!.source)
+      if (!stream) throw new Error(`no source '${d.other.source}' at ${d.facility}`)
+      items.push({ ...base, mapTo: stream.id, reason: d.other.reason })
+    } else if (d.create) {
+      items.push({ ...base, create: { name: unknown.name, kind: d.create.kind, fuel: d.create.fuel, contractorOperated: false }, reason: d.create.reason })
+    }
+  }
+  return { sha256: body.sha256, items }
+}
+
+/** The clicks that decide each name on the import page (spec 04.11): the radios carry the name, so no scope is needed. */
+function decisionOps(decisions: Decision[]) {
+  return decisions.flatMap((d) => {
+    if (d.use) return [{ op: 'tick', label: `Use ${d.use}`, prefix: true } as const]
+    if (d.other) {
+      return [
+        { op: 'tick', label: `Use another source of ${d.facility}`, prefix: true } as const,
+        { op: 'choose', label: S.act.field.emissionSource, option: d.other.source } as const,
+        { op: 'fill', label: S.act.field.whyThisSource, value: d.other.reason } as const,
+      ]
+    }
+    const create = d.create!
+    return [
+      { op: 'tick', label: `Create '${d.name}'`, prefix: true } as const,
+      { op: 'choose', label: S.act.field.kind, option: S.org.option.kind[create.kind] ?? create.kind } as const,
+      ...(create.fuel ? [{ op: 'fill', label: S.org.field.fuel, value: create.fuel } as const] : []),
+      ...(create.reason ? [{ op: 'fill', label: S.act.field.whyDifferentSource, value: create.reason } as const] : []),
+    ]
+  })
+}
+
+function narrateDecisions(decisions: Decision[]) {
+  return decisions
+    .map((d) => {
+      if (d.use) return `for '${d.name}' tick **Use ${d.use}**`
+      if (d.other) return `for '${d.name}' tick **Use another source of ${d.facility}**, choose ${d.other.source} and give the reason "${d.other.reason}"`
+      return `for '${d.name}' tick **Create '${d.name}'** and choose the kind ${S.org.option.kind[d.create!.kind] ?? d.create!.kind}`
+    })
+    .join('; ')
+}
+
+export const decideImport = defineVerb({
+  name: 'decideImport',
+  args: z.object({ organization: orgArg, file: z.string(), decisions: z.array(decisionArg).min(1) }).strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    const decisions = await resolveDecisions(ctx, org.id, a.file, a.decisions)
+    return ctx.session().upload(`/api/ghg/organizations/${org.id}/activities/import`, fixture(a.file), { dryRun: 'true' }, { decisions })
+  },
+  ui: (a) => [
+    { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
+    { op: 'click', button: S.act.button.import },
+    { op: 'upload', label: S.act.field.spreadsheetFile, fixture: a.file, within: S.act.dialog.import },
+    ...decisionOps(a.decisions),
+  ],
+  postconditions: () => [],
+  narrate: (a) => `Click **${S.act.button.import}**, choose \`${a.file}\` and, under **${S.act.text.decideUnknown}**, decide each name: ${narrateDecisions(a.decisions)}.`,
+})
+
+export const importDecided = defineVerb({
+  name: 'importDecided',
+  args: z.object({ organization: orgArg, file: z.string(), decisions: z.array(decisionArg).min(1) }).strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    const decisions = await resolveDecisions(ctx, org.id, a.file, a.decisions)
+    return ctx.session().upload(`/api/ghg/organizations/${org.id}/activities/import`, fixture(a.file), {}, { decisions })
+  },
+  ui: (a) => [
+    { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
+    { op: 'click', button: S.act.button.import },
+    { op: 'upload', label: S.act.field.spreadsheetFile, fixture: a.file, within: S.act.dialog.import },
+    ...decisionOps(a.decisions),
+    { op: 'click', button: S.act.button.addRecords, within: S.act.dialog.import },
+  ],
+  postconditions: () => [],
+  narrate: (a) => `With the decisions made (${narrateDecisions(a.decisions)}), click **${S.act.button.addRecords}**.`,
 })
 
 export const importActivities = defineVerb({
@@ -39,12 +149,12 @@ export const importActivities = defineVerb({
   },
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
-    { op: 'click', button: S.act.button.importCsv },
-    { op: 'upload', label: S.act.field.csvFile, fixture: a.file, within: S.act.dialog.import },
+    { op: 'click', button: S.act.button.import },
+    { op: 'upload', label: S.act.field.spreadsheetFile, fixture: a.file, within: S.act.dialog.import },
     { op: 'click', button: S.act.button.addRecords, within: S.act.dialog.import },
   ],
   postconditions: () => [],
-  narrate: (a) => `Click **${S.act.button.importCsv}**, choose \`${a.file}\` and click **${S.act.button.addRecords}**.`,
+  narrate: (a) => `Click **${S.act.button.import}**, choose \`${a.file}\` and click **${S.act.button.addRecords}**.`,
 })
 
 export const addActivityDraft = defineVerb({
@@ -202,14 +312,11 @@ export const removeActivities = defineVerb({
   name: 'removeActivities',
   args: z.object({ organization: orgArg, records: z.array(z.string()).min(1), reason: z.string() }).strict(),
   api: async (ctx, a) => {
+    // one request, one act (spec 04.11): all or nothing
     const org = await organization(ctx, a.organization)
-    let last = { status: 0, ok: true }
-    for (const record of a.records) {
-      const row = await activity(ctx.session(), org.id, record)
-      last = await ctx.session().delete(`/api/ghg/activities/${row.id}?reason=${encodeURIComponent(a.reason)}`)
-      if (!last.ok) return last
-    }
-    return last
+    const ids = []
+    for (const record of a.records) ids.push((await activity(ctx.session(), org.id, record)).id)
+    return ctx.session().post(`/api/ghg/organizations/${org.id}/activities/bulk`, { ids, action: 'REMOVE', reason: a.reason })
   },
   ui: (a) => [
     { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
@@ -220,6 +327,32 @@ export const removeActivities = defineVerb({
   ],
   postconditions: (a) => a.records.map((record) => ({ outcome: 'activityRemoved', args: { organization: a.organization, record } })),
   narrate: (a) => `Tick ${a.records.join(' and ')}, click **Remove ${a.records.length} selected** and give the reason "${a.reason}".`,
+})
+
+export const assignSourceToActivities = defineVerb({
+  name: 'assignSourceToActivities',
+  args: z.object({ organization: orgArg, records: z.array(z.string()).min(1), source: z.string(), reason: z.string() }).strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    const rows = []
+    for (const record of a.records) rows.push(await activity(ctx.session(), org.id, record))
+    const stream = (await streamsOf(ctx.session(), rows[0]!.facilityId)).find((s) => s.name === a.source)
+    if (!stream) throw new Error(`no source '${a.source}' at the records' facility`)
+    return ctx.session().post(`/api/ghg/organizations/${org.id}/activities/bulk`, { ids: rows.map((r) => r.id), action: 'ASSIGN_SOURCE', streamId: stream.id, reason: a.reason })
+  },
+  ui: (a) => {
+    const d = `Assign an emission source to ${a.records.length} record${a.records.length === 1 ? '' : 's'}`
+    return [
+      { op: 'orgPage', organization: a.organization, section: S.org.sections.activity },
+      ...a.records.map((record) => ({ op: 'tick', label: `Select ${record}` }) as const),
+      { op: 'click', button: S.act.button.assignSource },
+      { op: 'choose', label: S.act.field.emissionSource, option: a.source, within: d },
+      { op: 'fill', label: S.org.field.reason, value: a.reason, within: d },
+      { op: 'confirm', dialog: d, button: S.act.button.assign },
+    ]
+  },
+  postconditions: (a) => a.records.map((record) => ({ outcome: 'activityHasSource', args: { organization: a.organization, record, source: a.source } })),
+  narrate: (a) => `Tick ${a.records.join(' and ')}, click **${S.act.button.assignSource}**, choose ${a.source}, give the reason "${a.reason}" and click **${S.act.button.assign}**.`,
 })
 
 export const removeFacility = defineVerb({
@@ -239,4 +372,4 @@ export const removeFacility = defineVerb({
   postconditions: (a) => [{ outcome: 'facilityAbsent', args: { organization: a.organization, name: a.facility } }],
 })
 
-export const activityVerbs = [previewImport, importActivities, addActivityDraft, enterActivity, correctActivity, attachFile, attachLink, removeActivity, removeActivities, removeFacility]
+export const activityVerbs = [previewImport, importActivities, addActivityDraft, enterActivity, correctActivity, attachFile, attachLink, removeActivity, removeActivities, removeFacility, decideImport, importDecided, assignSourceToActivities]

@@ -101,6 +101,7 @@ export async function facility(session: ApiSession, orgId: string, name: string)
 }
 
 export interface StreamRow {
+  origin: 'REGISTER' | 'INLINE' | 'IMPORT'
   id: string
   name: string
   kind: string

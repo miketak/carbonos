@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/003-activity-data.yaml (sha256 d584067c346d2c4804d31ac1827b019bcd16ebac3e38ab4454c817d53d4757ca); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/003-activity-data.yaml (sha256 e275a38618b7dd11492ff1466d2c48873dcfc30151680eada7ae8ead9238a029); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 3, "d584067c346d2c4804d31ac1827b019bcd16ebac3e38ab4454c817d53d4757ca")
+const P = procedure("governance", 3, "e275a38618b7dd11492ff1466d2c48873dcfc30151680eada7ae8ead9238a029")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 3: Activity data", () => {
@@ -161,6 +161,46 @@ test.describe("Procedure 3: Activity data", () => {
     await test.step("3.I1.1", async () => {
       const s = P.step("3.I1.1")
       await s.expect(undefined, [{"outcome":"observe","args":{"text":"Type \"diesel\" in the search and choose the facility Kumasi Plant: one record, ACT-0004, and the address bar carries the search and the facility. Open ACT-0004, copy the address and open it in a new tab: the same view opens with the same record in the drawer. Press Escape, then use the arrow keys and Enter on the table: the cursor moves down the rows and Enter opens the record under it."}}])
+    })
+  })
+
+  test("J1. A name the facility lacks is decided in the preview", async () => {
+    await test.step("3.J1.1", async () => {
+      const s = P.step("3.J1.1")
+      const out = await s.do("previewImport", {"organization":"Adansi Foods Ltd","file":"adansi-2025-new-sources.csv"})
+      await s.expect(out, [{"outcome":"importUnknownSources","args":{"sources":[{"name":"Boiler LPG 2","facility":"Kumasi Plant","candidates":["Boiler LPG"]},{"name":"Chiller units","facility":"Kumasi Plant","candidates":[]}]},"why":"nothing is rejected and nothing is matched silently; \"Boiler LPG 2\" is a near miss of Boiler LPG, so it is offered; \"Chiller units\" is near nothing; the third row names no source and waits on nothing"}])
+    })
+    await test.step("3.J1.2", async () => {
+      const s = P.step("3.J1.2")
+      const out = await s.do("decideImport", {"organization":"Adansi Foods Ltd","file":"adansi-2025-new-sources.csv","decisions":[{"name":"Boiler LPG 2","facility":"Kumasi Plant","use":"Boiler LPG"},{"name":"Chiller units","facility":"Kumasi Plant","create":{"kind":"FUGITIVE","fuel":"R-410A"}}]})
+      await s.expect(out, [{"outcome":"importResolved","args":{"recordsToAdd":3},"why":"a suggested near name needs no reason; a name near nothing is created without one"}])
+    })
+    await test.step("3.J1.3", async () => {
+      const s = P.step("3.J1.3")
+      const out = await s.do("importDecided", {"organization":"Adansi Foods Ltd","file":"adansi-2025-new-sources.csv","decisions":[{"name":"Boiler LPG 2","facility":"Kumasi Plant","use":"Boiler LPG"},{"name":"Chiller units","facility":"Kumasi Plant","create":{"kind":"FUGITIVE","fuel":"R-410A"}}]})
+      await s.expect(out, [{"outcome":"screenReads","args":{"text":"3 records imported. 1 emission source added during import."}},{"outcome":"activityCount","args":{"organization":"Adansi Foods Ltd","count":13}},{"outcome":"activityHasSource","args":{"organization":"Adansi Foods Ltd","record":"ACT-0014","source":"Boiler LPG"}},{"outcome":"activityHasSource","args":{"organization":"Adansi Foods Ltd","record":"ACT-0015","source":"Chiller units"}},{"outcome":"streamListed","args":{"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Chiller units","kind":"FUGITIVE","origin":"IMPORT"}},{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"IMPORT_SOURCE_MAPPED","detail":"'Boiler LPG 2' in row 2 of adansi-2025-new-sources.csv mapped to 'Boiler LPG'"}},{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"STREAM_ADDED","detail":"Chiller units added at Kumasi Plant: fugitive, during import of adansi-2025-new-sources.csv"},"why":"the mapping and the creation each leave a row a verifier reads without opening the file; the created source is marked \"added during import\" on the facility's Emission sources page"}])
+    })
+  })
+
+  test("J2. One source for several records, one reason, one act", async () => {
+    await test.step("3.J2.1", async () => {
+      const s = P.step("3.J2.1")
+      const out = await s.do("assignSourceToActivities", {"organization":"Adansi Foods Ltd","records":["ACT-0016"],"source":"Chiller units","reason":"The chillers draw from the plant meter"})
+      await s.expect(out, [{"outcome":"activityHistoryHas","args":{"organization":"Adansi Foods Ltd","record":"ACT-0016","kind":"CORRECTED","field":"stream","after":"Chiller units","reason":"The chillers draw from the plant meter"}},{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"RECORDS_BULK_CORRECTED","detail":"Emission source 'Chiller units' assigned to 1 record (ACT-0016): The chillers draw from the plant meter"},"why":"the record's history reads as a single correction; the organization's history names the act once"}])
+    })
+    await test.step("3.J2.2", async () => {
+      const s = P.step("3.J2.2")
+      await s.expect(undefined, [{"outcome":"observe","args":{"text":"Tick ACT-0001 (which has a source) together with ACT-0016: **Assign emission source** is disabled with \"Select records at one facility with no emission source.\" The act fills a gap; it never moves a record from one source to another, because the source sets the default scope. A move is a correction of the one record, with its own reason."}}])
+    })
+    await test.step("3.J2.3", async () => {
+      const s = P.step("3.J2.3")
+      const out = await s.do("removeActivities", {"organization":"Adansi Foods Ltd","records":["ACT-0014","ACT-0015","ACT-0016"],"reason":"Scratch rows for the unknown-source case"})
+      await s.expect(out, [{"outcome":"activityCount","args":{"organization":"Adansi Foods Ltd","count":10}},{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"RECORDS_BULK_CORRECTED","detail":"3 records removed (ACT-0014, ACT-0015, ACT-0016): Scratch rows for the unknown-source case"},"why":"the three go under one reason in one request; the register is back to the ten records procedure 4 works on"}])
+    })
+    await test.step("3.J2.4", async () => {
+      const s = P.step("3.J2.4")
+      const out = await s.do("removeStream", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Chiller units"})
+      await s.expect(out, [{"outcome":"streamAbsent","args":{"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Chiller units"},"why":"with its records removed the source can go; Kumasi Plant is back to the two sources procedure 2 gave it, and the history keeps the import, the mapping and the removals"}])
     })
   })
 })

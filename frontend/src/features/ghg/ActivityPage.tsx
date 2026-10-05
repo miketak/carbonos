@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { controlClasses } from '../../components/Field'
 import { FilterRow, FilterSelect, SearchField } from '../../components/FilterRow'
@@ -9,7 +9,7 @@ import { SplitView, SummaryRow } from '../../components/SplitView'
 import { TableFooter } from '../../components/Table'
 import { Tabs } from '../../components/Tabs'
 import { useToast } from '../../components/toast'
-import { refusalMessage } from '../../lib/api'
+import { problemDetail, refusalMessage } from '../../lib/api'
 import { useShortcuts } from '../../lib/useShortcuts'
 import { PAGE_SIZE, useActivityFilters } from './activityFilters'
 import type { ActivitySort, ActivityTab } from './activityFilters'
@@ -17,8 +17,14 @@ import { ActivityDrawer } from './components/ActivityDrawer'
 import { ActivityHistoryModal } from './components/ActivityHistoryModal'
 import { ActivityTable } from './components/ActivityTable'
 import { CompletenessBanner } from './components/CompletenessBanner'
-import { ImportActivitiesModal } from './components/ImportActivitiesModal'
 import { RemoveDialog } from './components/RemoveDialog'
+import { bulkRefused } from './bulkRefused'
+import {
+  BulkAssignSourceDialog,
+  BulkLinkDialog,
+  BulkRefusedList,
+  BulkTierDialog,
+} from './components/BulkActionDialogs'
 import { useSearchField } from './useSearchField'
 import { RoleButton } from './components/RoleButton'
 import { ViewSwitch } from './components/ViewSwitch'
@@ -26,6 +32,7 @@ import { activityIssueLabels, formatQuantity, formatRecordPeriod } from './forma
 import { mayWrite, WRITE_TOOLTIP } from './roles'
 import {
   useActivityPageQuery,
+  useBulkActivities,
   useDeleteActivity,
   useFacilitiesQuery,
   useOrganizationQuery,
@@ -34,9 +41,11 @@ import {
 import type { Activity } from './api'
 
 type Dialog =
-  | { kind: 'import' }
   | { kind: 'remove'; activity: Activity }
   | { kind: 'bulkRemove'; ids: string[] }
+  | { kind: 'bulkAssign'; ids: string[] }
+  | { kind: 'bulkTier'; ids: string[] }
+  | { kind: 'bulkLink'; ids: string[] }
   | { kind: 'history'; activity: Activity }
   | null
 
@@ -98,18 +107,19 @@ function MonthFilter({
  */
 export function ActivityPage() {
   const { organizationId = '' } = useParams()
+  const navigate = useNavigate()
   const { filters, set, query } = useActivityFilters()
   const activitiesQuery = useActivityPageQuery(organizationId, query)
   const facilitiesQuery = useFacilitiesQuery(organizationId)
   const streamsQuery = useStreamsQuery(organizationId)
   const deleteActivity = useDeleteActivity(organizationId)
+  const bulk = useBulkActivities(organizationId)
   const organizationQuery = useOrganizationQuery(organizationId)
   const myRole = organizationQuery.data?.myRole
   const toast = useToast()
   const [dialog, setDialog] = useState<Dialog>(null)
   const [cursorId, setCursorId] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [removing, setRemoving] = useState(false)
   // the record whose row takes the focus back when its detail closes
   const returnTo = useRef<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -129,6 +139,37 @@ export function ActivityPage() {
     (stream) => filters.facility === '' || stream.facilityId === filters.facility,
   )
   const detailOpen = filters.record !== null
+  // what the selection allows (spec 04.11): a source is assigned only to records at one facility that have none
+  const selectedRecords = (activities ?? []).filter((a) => selected.has(a.id))
+  const selectedFacilities = new Set(selectedRecords.map((a) => a.facilityId))
+  const assignable =
+    selectedRecords.length > 0 &&
+    selectedFacilities.size === 1 &&
+    selectedRecords.every((a) => a.streamId === null && !a.removed)
+  const selectedFacilityId = [...selectedFacilities][0]
+  const selectedKinds = new Set(
+    selectedRecords.map((a) => (streamsQuery.data ?? []).find((s) => s.id === a.streamId)?.kind),
+  )
+  const refused = bulkRefused(bulk.error)
+  const bulkError =
+    bulk.isError &&
+    (refused ? (
+      <BulkRefusedList refused={refused} detail={problemDetail(bulk.error)} />
+    ) : (
+      <p role="alert" className="text-sm font-medium text-danger">
+        {refusalMessage(bulk.error, myRole)}
+      </p>
+    ))
+  const closeDialog = () => {
+    bulk.reset()
+    setDialog(null)
+  }
+  const afterBulk = (ids: string[], message: string) => {
+    closeDialog()
+    setSelected(new Set())
+    if (filters.record && ids.includes(filters.record)) set({ record: null })
+    toast(message)
+  }
 
   // the keyboard cursor follows the open record, and never points outside the page
   const openOnPage =
@@ -243,11 +284,11 @@ export function ActivityPage() {
               allowed={mayWrite(myRole)}
               tooltip={WRITE_TOOLTIP}
               variant="secondary"
-              onClick={() => setDialog({ kind: 'import' })}
+              onClick={() => navigate(`/app/ghg/${organizationId}/activity/import`)}
               disabled={facilities.length === 0}
               title={facilities.length === 0 ? 'Add a facility first' : undefined}
             >
-              Import CSV
+              Import
             </RoleButton>
             <RoleButton
               allowed={mayWrite(myRole)}
@@ -388,8 +429,35 @@ export function ActivityPage() {
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span>{countLine}</span>
                 {selected.size > 0 ? (
-                  <span className="flex items-center gap-2">
+                  <span className="flex flex-wrap items-center gap-2">
                     <span>{selected.size} selected</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={!assignable}
+                      title={
+                        assignable
+                          ? undefined
+                          : 'Select records at one facility with no emission source.'
+                      }
+                      onClick={() => setDialog({ kind: 'bulkAssign', ids: [...selected] })}
+                    >
+                      Assign emission source
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDialog({ kind: 'bulkTier', ids: [...selected] })}
+                    >
+                      Set data quality tier
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDialog({ kind: 'bulkLink', ids: [...selected] })}
+                    >
+                      Add evidence link
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -476,17 +544,6 @@ export function ActivityPage() {
         <span>Review status reflects completeness, not assurance.</span>
       </div>
 
-      {dialog?.kind === 'import' && (
-        <ImportActivitiesModal
-          organizationId={organizationId}
-          myRole={myRole}
-          onClose={() => setDialog(null)}
-          onImported={(count) => {
-            setDialog(null)
-            toast(`${count} record${count === 1 ? '' : 's'} imported.`)
-          }}
-        />
-      )}
       {dialog?.kind === 'remove' && (
         <RemoveDialog
           title={`Remove ${dialog.activity.activityType}?`}
@@ -514,34 +571,90 @@ export function ActivityPage() {
       {dialog?.kind === 'bulkRemove' && (
         <RemoveDialog
           title={`Remove ${dialog.ids.length} record${dialog.ids.length === 1 ? '' : 's'}?`}
-          description="Each record stays on file as removed, with your name, the date and this one reason. A record a run calculated cannot be removed and is left in place."
-          busy={removing}
-          onClose={() => setDialog(null)}
-          onConfirm={async (reason) => {
-            setRemoving(true)
-            const failed: string[] = []
-            for (const id of dialog.ids) {
-              try {
-                await deleteActivity.mutateAsync({ id, reason })
-              } catch (error) {
-                const record = activities?.find((a) => a.id === id)
-                failed.push(`${record?.recordRef ?? id}: ${refusalMessage(error, myRole)}`)
-              }
-            }
-            setRemoving(false)
-            setDialog(null)
-            setSelected(new Set())
-            if (
-              filters.record &&
-              dialog.ids.includes(filters.record) &&
-              !failed.some((f) => f.startsWith(filters.record ?? ''))
-            ) {
-              set({ record: null })
-            }
-            const removed = dialog.ids.length - failed.length
-            if (failed.length === 0) toast(`${removed} record${removed === 1 ? '' : 's'} removed.`)
-            else toast(`${removed} removed. Not removed: ${failed.join('; ')}`, 'error')
-          }}
+          description="Each record stays on file as removed, with your name, the date and this one reason, in one act. A record a run calculated cannot be removed: it refuses the act for all of them, by name."
+          busy={bulk.isPending}
+          error={bulkError || undefined}
+          onClose={closeDialog}
+          onConfirm={(reason) =>
+            bulk.mutate(
+              { ids: dialog.ids, action: 'REMOVE', reason },
+              {
+                onSuccess: (outcome) =>
+                  afterBulk(
+                    dialog.ids,
+                    `${outcome.applied} record${outcome.applied === 1 ? '' : 's'} removed.`,
+                  ),
+              },
+            )
+          }
+        />
+      )}
+      {dialog?.kind === 'bulkAssign' && (
+        <BulkAssignSourceDialog
+          count={dialog.ids.length}
+          facilityName={facilities.find((f) => f.id === selectedFacilityId)?.name ?? 'the facility'}
+          streams={(streamsQuery.data ?? []).filter((s) => s.facilityId === selectedFacilityId)}
+          busy={bulk.isPending}
+          error={bulkError || undefined}
+          onClose={closeDialog}
+          onConfirm={(streamId, reason) =>
+            bulk.mutate(
+              { ids: dialog.ids, action: 'ASSIGN_SOURCE', streamId, reason },
+              {
+                onSuccess: (outcome) =>
+                  afterBulk(
+                    [],
+                    `Emission source assigned to ${outcome.applied} record${outcome.applied === 1 ? '' : 's'}.`,
+                  ),
+              },
+            )
+          }
+        />
+      )}
+      {dialog?.kind === 'bulkTier' && (
+        <BulkTierDialog
+          count={dialog.ids.length}
+          kinds={selectedKinds.size}
+          busy={bulk.isPending}
+          error={bulkError || undefined}
+          onClose={closeDialog}
+          onConfirm={(dataQualityTier, reason) =>
+            bulk.mutate(
+              { ids: dialog.ids, action: 'SET_TIER', dataQualityTier, reason },
+              {
+                onSuccess: (outcome) =>
+                  afterBulk(
+                    [],
+                    outcome.applied === 0
+                      ? 'No record changed: every selected record was already at that tier.'
+                      : `Data quality tier set on ${outcome.applied} record${outcome.applied === 1 ? '' : 's'}.`,
+                  ),
+              },
+            )
+          }
+        />
+      )}
+      {dialog?.kind === 'bulkLink' && (
+        <BulkLinkDialog
+          count={dialog.ids.length}
+          busy={bulk.isPending}
+          error={refused ? bulkError || undefined : undefined}
+          linkError={
+            refused ? undefined : bulk.isError ? refusalMessage(bulk.error, myRole) : undefined
+          }
+          onClose={closeDialog}
+          onConfirm={(link, reason) =>
+            bulk.mutate(
+              { ids: dialog.ids, action: 'ADD_EVIDENCE_LINK', link, reason },
+              {
+                onSuccess: (outcome) =>
+                  afterBulk(
+                    [],
+                    `Evidence link added to ${outcome.applied} record${outcome.applied === 1 ? '' : 's'}.`,
+                  ),
+              },
+            )
+          }
         />
       )}
       {dialog?.kind === 'history' && (

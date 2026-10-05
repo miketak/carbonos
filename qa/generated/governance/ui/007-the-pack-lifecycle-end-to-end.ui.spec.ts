@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/007-the-pack-lifecycle-end-to-end.yaml (sha256 df29187277104319156abb1b5419e877ecc76590534f2dbe01c8317771ffba6f); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/007-the-pack-lifecycle-end-to-end.yaml (sha256 8c96bbccaf445c60a11205d7e465951e4b0199bfe93f7914fe8f1be9574abcfa); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 7, "df29187277104319156abb1b5419e877ecc76590534f2dbe01c8317771ffba6f")
+const P = procedure("governance", 7, "8c96bbccaf445c60a11205d7e465951e4b0199bfe93f7914fe8f1be9574abcfa")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 7: The pack lifecycle end to end", () => {
@@ -227,7 +227,7 @@ test.describe("Procedure 7: The pack lifecycle end to end", () => {
     await test.step("7.D1.1", async () => {
       const s = P.step("7.D1.1")
       const out = await s.do("importActivities", {"organization":"Adansi Foods Ltd","file":"adansi-2026.csv"})
-      await s.expect(out, [{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0014","quantity":2100,"unit":"litre"}},{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0015","quantity":110,"unit":"MWh"},"why":"\"2 records imported.\"; the two rows removed in procedure 3 do not count as duplicates"}])
+      await s.expect(out, [{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0017","quantity":2100,"unit":"litre"}},{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0015","quantity":110,"unit":"MWh"},"why":"\"2 records imported.\"; the two rows removed in procedure 3 do not count as duplicates"}])
     })
     await test.step("7.D1.2", async () => {
       const s = P.step("7.D1.2")

@@ -77,6 +77,7 @@ import {
   listOrganizations,
   listRuns,
   listStreams,
+  bulkActivities,
   listUnits,
   listUpstreamRules,
   publishInventory,
@@ -115,12 +116,12 @@ import {
 } from './api'
 import type {
   ActivityInput,
-  PackRowFilter,
   ActivityQuery,
   AssignmentQuery,
   BaseYearInput,
   BoundaryExclusionInput,
   BoundaryTreatmentInput,
+  BulkActivityInput,
   ClassifyInput,
   CustomUnitInput,
   DeleteOrganizationInput,
@@ -132,11 +133,13 @@ import type {
   EvidenceQuery,
   ExcludeInput,
   FacilityInput,
+  ImportDecisionsInput,
   InventoryInput,
   MarketFactorInput,
   OperationalBoundaryInput,
   OrgRole,
   OrganizationInput,
+  PackRowFilter,
   RaiseRecalculationInput,
   RecalculationCase,
   RecalculationDecisionInput,
@@ -554,13 +557,39 @@ export function useActivityQuery(activityId: string | null) {
 export function useImportActivities(orgId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ file, dryRun }: { file: File; dryRun?: boolean }) =>
-      importActivities(orgId, file, { dryRun }),
+    mutationFn: ({
+      file,
+      dryRun,
+      decisions,
+      onProgress,
+    }: {
+      file: File
+      dryRun?: boolean
+      decisions?: ImportDecisionsInput
+      onProgress?: (percent: number) => void
+    }) => importActivities(orgId, file, { dryRun, decisions, onProgress }),
     onSuccess: (result) => {
       if (result.dryRun) return
       void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
       void queryClient.invalidateQueries({ queryKey: ['ghg', 'evidence-page', orgId] })
       void queryClient.invalidateQueries({ queryKey: importBatchesKey(orgId) })
+      // the import may have created emission sources (spec 04.11)
+      if (result.sourcesCreated > 0) {
+        void queryClient.invalidateQueries({ queryKey: streamsKey(orgId) })
+      }
+    },
+  })
+}
+
+/** One act over several records (spec 04.11): the register, the open record and the documents refresh together. */
+export function useBulkActivities(orgId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: BulkActivityInput) => bulkActivities(orgId, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: activitiesKey(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['ghg', 'activity'] })
+      void queryClient.invalidateQueries({ queryKey: ['ghg', 'evidence-page', orgId] })
     },
   })
 }

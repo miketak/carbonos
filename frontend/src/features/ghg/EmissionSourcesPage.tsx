@@ -147,7 +147,11 @@ function SourceRegister({
                     {stream.contractorOperated ? 'contractor-operated' : 'owned or controlled'} ·
                     defaults to {scopeLabels[stream.defaultScope]},{' '}
                     {categoryLabel(stream.defaultCategory)}
-                    {stream.origin === 'INLINE' ? ' · added during data entry' : ''}
+                    {stream.origin === 'INLINE'
+                      ? ' · added during data entry'
+                      : stream.origin === 'IMPORT'
+                        ? ' · added during import'
+                        : ''}
                   </span>
                 </div>
                 <RoleButton

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { defineVerb } from '../contract.ts'
-import { entity, facility, orgArg, organization } from '../organizations.ts'
+import { entity, facility, orgArg, organization, streamsOf } from '../organizations.ts'
 import { S } from '../ui/surface.ts'
 
 /** Legal entities, facilities and source streams (specs 03.1, 03.3, 03.4, 04.3). */
@@ -204,4 +204,24 @@ export const addStream = defineVerb({
   postconditions: (a) => [{ outcome: 'streamListed', args: { organization: a.organization, facility: a.facility, name: a.name } }],
 })
 
-export const structureVerbs = [addEntity, editEntity, removeEntity, addFacility, addStream]
+export const removeStream = defineVerb({
+  name: 'removeStream',
+  args: z.object({ organization: orgArg, facility: z.string(), name: z.string() }).strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    const site = await facility(ctx.session(), org.id, a.facility)
+    const stream = (await streamsOf(ctx.session(), site.id)).find((s) => s.name === a.name)
+    if (!stream) throw new Error(`no source '${a.name}' at ${a.facility}`)
+    return ctx.session().delete(`/api/ghg/streams/${stream.id}`)
+  },
+  ui: (a) => [
+    { op: 'orgPage', organization: a.organization, section: S.org.sections.facilities },
+    { op: 'row', text: a.facility, button: S.org.button.emissionSources },
+    { op: 'row', text: a.name, button: S.org.button.remove },
+    { op: 'confirm', dialog: S.act.text.removeSourceDialog, button: S.org.button.remove },
+  ],
+  postconditions: (a) => [{ outcome: 'streamAbsent', args: { organization: a.organization, facility: a.facility, name: a.name } }],
+  narrate: (a) => `On ${a.facility}'s **${S.org.button.emissionSources}** page, click **${S.org.button.remove}** beside ${a.name} and confirm.`,
+})
+
+export const structureVerbs = [addEntity, editEntity, removeEntity, addFacility, addStream, removeStream]

@@ -74,6 +74,49 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T
 }
 
+/**
+ * A multipart upload that reports its progress (spec 04.11): the same cookies,
+ * CSRF header and ApiError as api(), through XMLHttpRequest because fetch has
+ * no upload progress. `onProgress` gets 0 to 100 while the body is sent.
+ */
+export async function apiUpload<T>(
+  path: string,
+  body: FormData,
+  options: { onProgress?: (percent: number) => void } = {},
+): Promise<T> {
+  await ensureCsrfCookie()
+  const csrfToken = readCookie('XSRF-TOKEN')
+  return new Promise<T>((resolve, reject) => {
+    const request = new XMLHttpRequest()
+    request.open('POST', `${API_URL}${path}`)
+    request.withCredentials = true
+    request.responseType = 'text'
+    if (csrfToken) request.setRequestHeader('X-XSRF-TOKEN', decodeURIComponent(csrfToken))
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable && options.onProgress) {
+        options.onProgress(Math.round((event.loaded / event.total) * 100))
+      }
+    }
+    request.onerror = () => reject(new ApiError(0))
+    request.onload = () => {
+      const parse = (): unknown => {
+        try {
+          return request.responseText ? (JSON.parse(request.responseText) as unknown) : undefined
+        } catch {
+          return undefined
+        }
+      }
+      if (request.status < 200 || request.status >= 300) {
+        reject(new ApiError(request.status, parse()))
+        return
+      }
+      options.onProgress?.(100)
+      resolve(parse() as T)
+    }
+    request.send(body)
+  })
+}
+
 /** Fetches a binary body (e.g. a stored image) as a Blob. */
 export async function apiBlob(path: string): Promise<Blob> {
   const response = await fetch(`${API_URL}${path}`, { credentials: 'include' })

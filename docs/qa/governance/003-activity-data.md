@@ -3,18 +3,18 @@
 
 **Objective.** Confirm that a clean file previews with control totals and imports once, that a file with a bad row imports nothing and names each row by number, and that a record is drafted, entered, corrected, evidenced and removed with the reasons the record keeps.
 
-**Covers** [spec 04](../../../specs/04-operational-boundary-and-classification.md), [spec 04.4](../../../specs/04.4-activity-data-quality-evidence-and-corrections.md), [spec 04.5](../../../specs/04.5-bulk-import-and-activity-register.md), [spec 04.6](../../../specs/04.6-activity-register-drafts-readiness-and-source-documents.md) and [spec 08](../../../specs/08-form-validation-and-ui-polish.md). Spec 08 for the inline rules.
+**Covers** [spec 04](../../../specs/04-operational-boundary-and-classification.md), [spec 04.4](../../../specs/04.4-activity-data-quality-evidence-and-corrections.md), [spec 04.5](../../../specs/04.5-bulk-import-and-activity-register.md), [spec 04.6](../../../specs/04.6-activity-register-drafts-readiness-and-source-documents.md), [spec 04.10](../../../specs/04.10-emission-sources-inline-creation-and-the-reconcile-prompt.md), [spec 04.11](../../../specs/04.11-import-round-two.md) and [spec 08](../../../specs/08-form-validation-and-ui-polish.md). Spec 08 for the inline rules.
 
-**Estimated time:** 30 minutes.
+**Estimated time:** 36 minutes.
 
-**Procedure version:** 3 (2026-10-02). The change notes are at the foot.
+**Procedure version:** 4 (2026-10-05). The change notes are at the foot.
 
 **Run this procedure** after procedure 2. Procedure 4 onwards works on the ten records it imports.
 
 ## Prerequisites
 
 - Adansi Foods Ltd as procedure 2 leaves it: three facilities, three emission sources.
-- The fixture files `adansi-2025.csv`, `adansi-2025-rejected.csv`, `adansi-2026.csv`, `source-document.txt` and `not-evidence.zip`.
+- The fixture files `adansi-2025.csv`, `adansi-2025-rejected.csv`, `adansi-2026.csv`, `adansi-2025-new-sources.csv`, `source-document.txt` and `not-evidence.zip`.
 - Ama in the normal window.
 - Accounts in this procedure (replace `you+…@…` with aliases of the mailbox you read):
 - Ama Owusu signs in with `you+ama@…` (the Ama alias) and `Ama-pass-2026`, in the private window.
@@ -27,14 +27,14 @@
 | --- | --- | --- | --- | --- |
 | 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
 | 2 | Look. | **Download CSV template** gives a file whose header is `facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note`, the same as the fixture's. |  |  |
-| 3 | Click **Import CSV** and choose `adansi-2025.csv`. | The file is checked at once, and nothing is written. **Control totals** groups the rows by facility, emission source and unit: Kumasi Plant, Boiler LPG, 2,400 litre; Kumasi Plant, Plant grid supply, 120 MWh; Tema Depot, Delivery fleet, 5,000 litre. "10 records to add" lists each row with its facility and period. Under **Worth a look before adding**, row 7 is named: "the period is longer than one month (2025-12-15 to 2026-01-15)". Rows 2, 3, 4 read **Ready**. 7 rows read "No emission source" and 2 of them "Needs evidence": "Missing source" appears nowhere, every row names its data source. |  |  |
+| 3 | Click **Import** and choose `adansi-2025.csv`. | The file is checked at once, and nothing is written. **Control totals** groups the rows by facility, emission source and unit: Kumasi Plant, Boiler LPG, 2,400 litre; Kumasi Plant, Plant grid supply, 120 MWh; Tema Depot, Delivery fleet, 5,000 litre. "10 records to add" lists each row with its facility and period. Under **Worth a look before adding**, row 7 is named: "the period is longer than one month (2025-12-15 to 2026-01-15)". Rows 2, 3, 4 read **Ready**. 7 rows read "No emission source" and 2 of them "Needs evidence": "Missing source" appears nowhere, every row names its data source. |  |  |
 
 ### A2. The import, and the same file again
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Import CSV**, choose `adansi-2025.csv` and click **Add records**. | The register holds 10 records. The register lists ACT-0001 to ACT-0010. Sorted by period with the newest first: ACT-0006 at the top, ACT-0001 at the foot. |  |  |
-| 2 | Click **Import CSV** and choose `adansi-2025.csv`. | Every row is rejected Row 2: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled. |  |  |
+| 1 | Click **Import**, choose `adansi-2025.csv` and click **Add records**. | The register holds 10 records. The register lists ACT-0001 to ACT-0010. Sorted by period with the newest first: ACT-0006 at the top, ACT-0001 at the foot. |  |  |
+| 2 | Click **Import** and choose `adansi-2025.csv`. | Every row is rejected Row 2: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled. |  |  |
 
 ## B. The rejected file
 
@@ -42,7 +42,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Import CSV** and choose `adansi-2025-rejected.csv`. | "Nothing will import: 4 rows rejected. Fix them and choose the file again." Row 2: "quantity '1,2O0' is not a number". Row 3: "period_start is in the future". Row 4: "no facility named 'Kumasi Depot'". Row 5: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled: the header is row 1, so the rows are named 2 to 5; row 3 also reads "period_end is in the future" because an empty end takes the start; row 5 repeats ACT-0001. The register holds 10 records: a file imports whole or not at all. |  |  |
+| 1 | Click **Import** and choose `adansi-2025-rejected.csv`. | "Nothing will import: 4 rows rejected. Fix them and choose the file again." Row 2: "quantity '1,2O0' is not a number". Row 3: "period_start is in the future". Row 4: "no facility named 'Kumasi Depot'". Row 5: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled: the header is row 1, so the rows are named 2 to 5; row 3 also reads "period_end is in the future" because an empty end takes the start; row 5 repeats ACT-0001. The register holds 10 records: a file imports whole or not at all. |  |  |
 
 ## C. Readiness
 
@@ -92,7 +92,7 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Open the "Generator diesel" record, click **Remove**, give "Scratch record for the draft case" and confirm. | The register holds 10 records: the dialog keeps its button disabled until a reason is typed; the record's history is kept. |  |  |
-| 2 | Click **Import CSV**, choose `adansi-2026.csv` and click **Add records**. | The register holds 12 records. |  |  |
+| 2 | Click **Import**, choose `adansi-2026.csv` and click **Add records**. | The register holds 12 records. |  |  |
 | 3 | Tick ACT-0012 and ACT-0013, click **Remove 2 selected** and give the reason "Scratch rows for the bulk removal case". | The register holds 10 records: both go under the one reason; procedure 7 imports the same file again for FY2026, and a removed record does not count as a duplicate. |  |  |
 
 ### G2. A facility with records is not removed
@@ -118,6 +118,25 @@
 | --- | --- | --- | --- | --- |
 | 1 | Look. | Type "diesel" in the search and choose the facility Kumasi Plant: one record, ACT-0004, and the address bar carries the search and the facility. Open ACT-0004, copy the address and open it in a new tab: the same view opens with the same record in the drawer. Press Escape, then use the arrow keys and Enter on the table: the cursor moves down the rows and Enter opens the record under it. |  |  |
 
+## J. Unknown sources, and several records at once
+
+### J1. A name the facility lacks is decided in the preview
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Click **Import** and choose `adansi-2025-new-sources.csv`. | Nothing is rejected. Under **Decide 2 unknown emission sources**, a card per name: 'Boiler LPG 2' at Kumasi Plant offers **Use Boiler LPG**; 'Chiller units' at Kumasi Plant offers no near name. Their rows read **Needs a decision** and **Add records** stays disabled: nothing is rejected and nothing is matched silently; "Boiler LPG 2" is a near miss of Boiler LPG, so it is offered; "Chiller units" is near nothing; the third row names no source and waits on nothing. |  |  |
+| 2 | Click **Import**, choose `adansi-2025-new-sources.csv` and, under **Decide**, decide each name: for 'Boiler LPG 2' tick **Use Boiler LPG**; for 'Chiller units' tick **Create 'Chiller units'** and choose the kind FUGITIVE. | No row reads **Needs a decision** any more; "3 records to add" and **Add records** is enabled: a suggested near name needs no reason; a name near nothing is created without one. |  |  |
+| 3 | With the decisions made (for 'Boiler LPG 2' tick **Use Boiler LPG**; for 'Chiller units' tick **Create 'Chiller units'** and choose the kind FUGITIVE), click **Add records**. | The screen reads "3 records imported. 1 emission source added during import.". The register holds 13 records. ACT-0014 names the emission source Boiler LPG. ACT-0015 names the emission source Chiller units. Chiller units is listed at Kumasi Plant with its kind, FUGITIVE and "added during import". **History** holds an import source mapped entry reading "'Boiler LPG 2' in row 2 of adansi-2025-new-sources.csv mapped to 'Boiler LPG'". **History** holds a stream added entry reading "Chiller units added at Kumasi Plant: fugitive, during import of adansi-2025-new-sources.csv": the mapping and the creation each leave a row a verifier reads without opening the file; the created source is marked "added during import" on the facility's Emission sources page. |  |  |
+
+### J2. One source for several records, one reason, one act
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Tick ACT-0016, click **Assign emission source**, choose Chiller units, give the reason "The chillers draw from the plant meter" and click **Assign**. | The history lists the corrected, the new value Chiller units, the reason "The chillers draw from the plant meter" and the actor's email. **History** holds a records bulk corrected entry reading "Emission source 'Chiller units' assigned to 1 record (ACT-0016): The chillers draw from the plant meter": the record's history reads as a single correction; the organization's history names the act once. |  |  |
+| 2 | Look. | Tick ACT-0001 (which has a source) together with ACT-0016: **Assign emission source** is disabled with "Select records at one facility with no emission source." The act fills a gap; it never moves a record from one source to another, because the source sets the default scope. A move is a correction of the one record, with its own reason. |  |  |
+| 3 | Tick ACT-0014 and ACT-0015 and ACT-0016, click **Remove 3 selected** and give the reason "Scratch rows for the unknown-source case". | The register holds 10 records. **History** holds a records bulk corrected entry reading "3 records removed (ACT-0014, ACT-0015, ACT-0016): Scratch rows for the unknown-source case": the three go under one reason in one request; the register is back to the ten records procedure 4 works on. |  |  |
+| 4 | On Kumasi Plant's **Emission sources** page, click **Remove** beside Chiller units and confirm. | Chiller units is no longer listed at Kumasi Plant: with its records removed the source can go; Kumasi Plant is back to the two sources procedure 2 gave it, and the history keeps the import, the mapping and the removals. |  |  |
+
 ## Sign-off
 
 | Field | Value |
@@ -133,3 +152,4 @@
 
 - **Version 2, 2026-09-29.** C1 step 3 quotes the drawer's evidence line, which now names the reference (the walkthrough fix of 2026-09-29).
 - **Version 3, 2026-10-02.** Transliterated to the QA scenario DSL. The dialog's title and eyebrow, the readiness pills' wording and the register's keyboard handling are observed by hand (case I1) or described in the drivers' projections; the import outcomes are checked against the server's preview figures.
+- **Version 4, 2026-10-05.** Spec 04.11: the import is a page reached by Import, the file field is "Spreadsheet file", and section J decides two unknown emission source names in the preview, assigns a source to several records in one act and removes them in one request. Procedure 7's re-import now lands on ACT-0017.

@@ -1,0 +1,4 @@
+facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note
+Kumasi Plant,Boiler LPG 2,Boiler LPG,900,litre,2025-09-01,2025-09-30,Gas supplier delivery note,LPG-2025-09B,MEASURED,1,2,
+Kumasi Plant,Chiller units,Refrigerant top-up,12,kg,2025-09-01,2025-09-30,Service report,SR-2025-09,MEASURED,1,,
+Kumasi Plant,,Chiller electricity,8,MWh,2025-09-01,2025-09-30,ECG invoice,ECG-KSI-2025-09,MEASURED,1,,

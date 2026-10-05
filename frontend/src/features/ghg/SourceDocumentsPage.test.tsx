@@ -63,6 +63,10 @@ beforeEach(() => {
         importedAt: '2026-09-02T10:00:00Z',
         firstRecordRef: 'ACT-0003',
         lastRecordRef: 'ACT-0015',
+        parser: 'csv',
+        renderedAvailable: false,
+        sourcesCreated: 0,
+        decisions: [],
       },
     ])
   vi.mocked(listFacilities).mockReset().mockResolvedValue([])
