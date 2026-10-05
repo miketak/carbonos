@@ -55,7 +55,7 @@ The launch is on hold because a gate other than Base year holds an error. Click 
 | Finding | Level | What clears it |
 | --- | --- | --- |
 | '*Record*' (…) is unclassified: assign an emission factor or exclude it. | Error | Either. |
-| '*Record*' is classified in *scope*; its emission source '*source*' defaults to *scope*. … | Error | A justification of at least 10 characters, or the default. |
+| '*Record*' is classified in *scope*; its emission source '*source*' defaults to *scope*. … | Error | A 10-character justification, or the default. |
 | '*Record*' (…) is a leased asset (…) stored in *scope*, but Appendix F under *approach* puts it in *scope* (…). … | Error | Choose the factor again. |
 | Fuel- and energy-related activities is declared, but no upstream rule matches a scope 1 or scope 2 factor in this view; … | Warning | Add a rule, or a reason in the declaration. |
 | Scope 3 '*category*' is declared as covered but no included record is classified into it: … | Warning | Classify a record into it, or give the reason. |

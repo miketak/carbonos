@@ -29,7 +29,7 @@ The foot of the organization's sidebar shows your own role: "Your role: Preparer
 | Act | Owner | Reviewer | Preparer | Verifier | Support access | Tooltip when refused |
 | --- | --- | --- | --- | --- | --- | --- |
 | Read every page of the organization | Yes | Yes | Yes | Yes | Yes | |
-| Record and correct legal entities, facilities, source streams, units and densities | Yes | Yes | Yes | No | Yes | Needs the Preparer, Reviewer or Owner role. |
+| Record and correct legal entities, facilities, emission sources, units and densities | Yes | Yes | Yes | No | Yes | Needs the Preparer, Reviewer or Owner role. |
 | Enter, import, correct, evidence and remove activity records | Yes | Yes | Yes | No | Yes | Needs the Preparer, Reviewer or Owner role. |
 | Import a factor pack; add or edit a factor by hand | Yes | Yes | Yes | No | Yes | Needs the Preparer, Reviewer or Owner role. |
 | Approve a factor | Yes, if someone else entered it | Yes, if someone else entered it | Yes, if someone else entered it | No | Yes, if someone else entered it | Needs the Preparer, Reviewer or Owner role. |

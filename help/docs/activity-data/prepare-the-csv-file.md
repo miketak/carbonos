@@ -45,7 +45,7 @@ A repeated row is rejected: "duplicate: the same facility, activity, quantity, u
 
 | Block | Meaning |
 | --- | --- |
-| **Control totals** | Rows and summed quantity per facility, stream and unit: "Check them against the spreadsheet's footer." |
+| **Control totals** | Rows and summed quantity per facility, emission source and unit: "Check them against the spreadsheet's footer." |
 | "*N* rows: reference only, nothing attached" | Rows with an `evidence_ref` and no file. Other counts name the missing item, for example "2 rows: missing source". |
 | **Worth a look before adding** | Warnings that do not stop the import. |
 | "*N* records to add" | The rows that will become records: "Row numbers count the header as row 1, as the spreadsheet does." |
@@ -55,14 +55,14 @@ A repeated row is rejected: "duplicate: the same facility, activity, quantity, u
 | --- | --- |
 | "the period is longer than one month (*start* to *end*); monthly rows make the coverage matrix and cut-off checks precise" | The row covers more than a month. |
 | "matches draft *ACT-NNNN* (same facility, activity and period): the draft stays on file, complete or remove it" | A draft on file has the same facility, activity type and period; the row adds a new record next to it. |
-| "'*Stream*' mixes units in this file:" followed by the units | Two rows on one stream use different units. |
+| "'*Source*' mixes units in this file:" followed by the units | Two rows on one emission source use different units. |
 
 ## Example
 
 The first rows of the walkthrough's file, [gye-nyame-2025.csv](../assets/gye-nyame-2025.csv):
 
 ```csv
-facility,stream,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note
+facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note
 Nyame Pit and Plant,Haul fleet,Haul fleet diesel,11923608,litre,2025-01-01,2025-12-31,Fuel farm reconciliation,FF-2025,MEASURED,1,2,Free-issue diesel drawn by the company fleet
 Nyame Pit and Plant,Contract ore haulage,Contract haulage diesel,1200000,litre,2025-01-01,2025-12-31,Contractor fuel issue log,CT-2025,MEASURED,1,3,Issued from the mine's fuel farm to the haulage contractor
 Nyame Pit and Plant,Plant grid supply,Plant grid electricity H1,34000000,kWh,2025-01-01,2025-06-30,ECG invoices,ECG-OBU-2025-H1,MEASURED,1,,

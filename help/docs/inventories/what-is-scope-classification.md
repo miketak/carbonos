@@ -11,28 +11,28 @@ category a record's emissions belong to, and which factor prices them. A
 record carries no scope of its own, because two inventories may decide
 differently about the same fact.
 
-<!-- sources: concepts/classification-is-an-accounting-decision.md (verified 2026-09-24); specs 04, 04.1, 04.3, 04.7, 02.2, 10; AssignmentDetail.tsx ("The stream suggests", "Leased facility: ... inherited", scope justification); InventoryService.java scope departure finding; detail texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "6 classified Contract haulage diesel", "7 run page" -->
+<!-- sources: concepts/classification-is-an-accounting-decision.md (verified 2026-09-24); specs 04, 04.1, 04.3, 04.7, 02.2, 10; AssignmentDetail.tsx ("The emission source suggests", "Leased facility: ... inherited", scope justification); InventoryService.java scope departure finding; detail texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "6 classified Contract haulage diesel", "7 run page" -->
 
 ## Where does the default come from?
 
-From the record's source stream. A stream has a kind and says whether a
+From the record's emission source. A source has a kind and says whether a
 contractor operates it; the kind fixes the categories, the operator the
 default scope.
 
-| Stream | Default scope |
+| Emission source | Default scope |
 | --- | --- |
-| Owned combustion or process stream | Scope 1 |
+| Owned combustion or process source | Scope 1 |
 | Purchased electricity, heat, steam or cooling | Scope 2 |
-| Contractor-operated stream | Scope 3, category 1: chapter 4 of the Corporate Standard puts a contractor's combustion in the customer's scope 3. |
+| Contractor-operated source | Scope 3, category 1: chapter 4 of the Corporate Standard puts a contractor's combustion in the customer's scope 3. |
 
-Gye Nyame Gold's Contract ore haulage stream is contractor-operated, so
+Gye Nyame Gold's Contract ore haulage source is contractor-operated, so
 "Contract haulage diesel" lands in **Scope 3**, **1. Purchased goods and
 services**, with no justification asked.
 
 ## When is a justification required?
 
 When you choose a scope other than the default. The record's detail says
-"The stream suggests Scope 1." and opens a justification field; until it
+"The emission source suggests Scope 1." and opens a justification field; until it
 holds 10 characters, the Classification gate holds the run: "Record why
 (a justification of at least 10 characters), or classify it in scope 1."
 
@@ -53,5 +53,6 @@ operational control, Obuasi Camp's lines sit in scope 1 and print
 ## Where next
 
 - [Review and classify records](review-and-classify-records.md).
+- [What is an emission source?](../organization/what-is-an-emission-source.md).
 - [What is a pre-flight gate?](what-is-a-pre-flight-gate.md).
 - [Meet Gye Nyame Gold](../get-started/meet-gye-nyame-gold.md).

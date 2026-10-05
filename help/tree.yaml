@@ -41,10 +41,10 @@ groups:
         from: get-started/your-first-inventory.md
         title: Create the organization and its legal entity
         disposition: split
-      - slug: record-the-facilities-and-source-streams
+      - slug: record-the-facilities-and-emission-sources
         kind: step
         from: get-started/your-first-inventory.md
-        title: Record the facilities and source streams
+        title: Record the facilities and emission sources
         disposition: split
       - slug: import-the-factor-packs
         kind: step
@@ -120,7 +120,7 @@ groups:
 
   - slug: organization
     title: Set up your organization
-    tagline: Describe the company, its entities, sites and streams, and the people who work on its inventory.
+    tagline: Describe the company, its entities, sites and emission sources, and the people who work on its inventory.
     showMoreAfter: 8
     articles:
       - slug: create-an-organization
@@ -138,11 +138,16 @@ groups:
         from: tasks/organization/record-legal-entities.md
         title: Record legal entities
         disposition: keep
-      - slug: record-facilities-and-source-streams
+      - slug: record-facilities-and-emission-sources
         kind: task
         from: tasks/organization/record-facilities-and-source-streams.md
-        title: Record facilities and source streams
+        title: Record facilities and emission sources
         disposition: keep
+      - slug: what-is-an-emission-source
+        kind: what-is
+        from: new
+        title: What is an emission source?
+        disposition: new
       - slug: define-units-and-densities
         kind: task
         from: tasks/organization/define-units-and-densities.md
@@ -474,7 +479,10 @@ legacy:
   /help/tasks/organization/create-an-organization/: organization/create-an-organization
   /help/tasks/organization/define-units-and-densities/: organization/define-units-and-densities
   /help/tasks/organization/edit-details-and-read-the-history/: organization/edit-the-details-and-read-the-history
-  /help/tasks/organization/record-facilities-and-source-streams/: organization/record-facilities-and-source-streams
+  /help/tasks/organization/record-facilities-and-source-streams/: organization/record-facilities-and-emission-sources
+  # the two pages renamed on 2026-10-04 (spec 04.10): source streams became emission sources
+  /help/organization/record-facilities-and-source-streams/: organization/record-facilities-and-emission-sources
+  /help/get-started/record-the-facilities-and-source-streams/: get-started/record-the-facilities-and-emission-sources
   /help/tasks/organization/record-legal-entities/: organization/record-legal-entities
   /help/tasks/reporting/export-the-report/: reporting/export-the-report
   /help/tasks/reporting/read-the-report-and-fill-the-header/: reporting/fill-the-report-header-and-read-the-report
