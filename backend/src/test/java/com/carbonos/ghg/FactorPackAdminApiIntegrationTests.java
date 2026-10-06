@@ -356,4 +356,34 @@ class FactorPackAdminApiIntegrationTests {
 		addRow(DRAFT, row("TEST:one")).andExpect(status().isUnprocessableEntity())
 			.andExpect(jsonPath("$.errors.code").exists());
 	}
+
+	@Test
+	void aCaveatedRowPublishesUnapproved() throws Exception {
+		createFamily();
+		createDraft(DRAFT, null);
+		// spec 02.5 rule 10 (ECO-23): the publisher's condition keeps the row unapproved until a check lifts it
+		addRow(DRAFT, row("TEST:td-losses", DIESEL_VALUES + ", \"approved\": true, "
+				+ "\"caveat\": \"Derived, not published: approve it after checking the year's loss rate.\""))
+			.andExpect(status().isCreated());
+		addRow(DRAFT, row("TEST:grid", DIESEL_VALUES + ", \"approved\": false, "
+				+ "\"caveat\": \"Derived, not published: approve it after checking the year's loss rate.\""))
+			.andExpect(status().isCreated());
+		// a note is provenance, not a condition, so an approved row with a note is fine
+		addRow(DRAFT, row("TEST:diesel", DIESEL_VALUES + ", \"approved\": true, "
+				+ "\"notes\": \"Secondary source: prefer a national figure when published.\""))
+			.andExpect(status().isCreated());
+
+		var report = body(mvc.perform(get("/api/admin/factor-packs/editions/" + DRAFT + "/validation")
+			.with(asAdmin())).andExpect(status().isOk()));
+		assertThat(JsonPath.<List<String>>read(report, "$[?(@.rule == 'caveat')].code"))
+			.containsExactly("TEST:td-losses");
+		assertThat(JsonPath.<List<String>>read(report, "$[?(@.rule == 'caveat')].message").getFirst())
+			.startsWith("'A test row' carries a caveat, so it publishes unapproved: Derived, not published");
+		// the row reads its caveat back, apart from its notes
+		mvc.perform(get("/api/admin/factor-packs/editions/" + DRAFT + "/rows").with(asAdmin()).param("size", "10"))
+			.andExpect(jsonPath("$.items[?(@.code == 'TEST:grid')].caveat")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("Derived, not published"))))
+			.andExpect(jsonPath("$.items[?(@.code == 'TEST:diesel')].caveat")
+				.value(org.hamcrest.Matchers.contains(org.hamcrest.Matchers.nullValue())));
+	}
 }

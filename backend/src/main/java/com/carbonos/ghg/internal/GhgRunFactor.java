@@ -114,6 +114,13 @@ public class GhgRunFactor {
 	@Column(name = "self_approved", nullable = false)
 	private boolean selfApproved;
 
+	// ECO-23: the publisher's caveat and the approver's check, so the report prints the condition and how it was met
+	@Column(length = 500)
+	private String caveat;
+
+	@Column(name = "approval_note", length = 500)
+	private String approvalNote;
+
 	protected GhgRunFactor() {
 	}
 
@@ -146,6 +153,8 @@ public class GhgRunFactor {
 		this.reportingBasis = factor.getReportingBasis();
 		this.approvedBy = factor.getApprovedBy();
 		this.selfApproved = factor.isSelfApproved();
+		this.caveat = factor.getCaveat();
+		this.approvalNote = factor.getApprovalNote();
 	}
 
 	public UUID getId() {
@@ -254,5 +263,13 @@ public class GhgRunFactor {
 
 	public boolean isSelfApproved() {
 		return selfApproved;
+	}
+
+	public String getCaveat() {
+		return caveat;
+	}
+
+	public String getApprovalNote() {
+		return approvalNote;
 	}
 }

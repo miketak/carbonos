@@ -22,7 +22,7 @@ public record AdminFactorPackRowResponse(UUID id, String editionId, int ordinal,
 		BigDecimal nf3KgPerUnit, BigDecimal biogenicCo2KgPerUnit, String blendComposition, String blendGwpSource,
 		Integer dataYear, String sourcePublication, String sourceUrl, Integer publicationYear, String sourceCategory,
 		String sourceActivity, String sourceDetail, boolean co2eOnly, boolean approved, String notes,
-		ReportingBasis reportingBasis) {
+		String caveat, ReportingBasis reportingBasis) {
 
 	public static AdminFactorPackRowResponse from(FactorPackRow row) {
 		var facts = row.facts();
@@ -32,7 +32,7 @@ public record AdminFactorPackRowResponse(UUID id, String editionId, int ordinal,
 				facts.pfcsKg(), facts.sf6(), facts.nf3(), facts.biogenicCo2(), facts.blendComposition(),
 				facts.blendGwpSource(), facts.dataYear(), facts.sourcePublication(), facts.sourceUrl(),
 				facts.publicationYear(), facts.sourceCategory(), facts.sourceActivity(), facts.sourceDetail(),
-				facts.co2eOnly(), facts.approved(), facts.notes(), row.getReportingBasis());
+				facts.co2eOnly(), facts.approved(), facts.notes(), facts.caveat(), row.getReportingBasis());
 	}
 
 	/** One page of rows with the values the workbench's filters offer. */

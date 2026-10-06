@@ -406,7 +406,7 @@ public class FactorPackAdminService {
 				trimToNull(facts.sourcePublication()), trimToNull(facts.sourceUrl()), facts.publicationYear(),
 				trimToNull(facts.sourceCategory()), trimToNull(facts.sourceActivity()),
 				trimToNull(facts.sourceDetail()), facts.co2eOnly(), facts.approved(), trimToNull(facts.notes()),
-				facts.reportingBasis());
+				trimToNull(facts.caveat()), facts.reportingBasis());
 	}
 
 	private static void requireKey(String field, String value) {

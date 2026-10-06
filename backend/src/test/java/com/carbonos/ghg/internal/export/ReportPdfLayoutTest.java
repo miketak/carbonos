@@ -231,16 +231,20 @@ class ReportPdfLayoutTest {
 						+ "facility's legal entity under the operational control approach (GHG Protocol Corporate Standard, "
 						+ "Chapter 3, Table 1), applied at every level of the group.",
 				List.of(new ReportResponse.UpstreamRuleLine("Diesel (100% mineral diesel)", "Well-to-tank diesel",
-						com.carbonos.ghg.internal.UpstreamRuleKind.WELL_TO_TANK, 4)));
+						com.carbonos.ghg.internal.UpstreamRuleKind.WELL_TO_TANK, 4)),
+				List.of(new ReportResponse.EditionApplied("defra", "defra-2026", java.time.LocalDate.of(2026, 1, 1), 1, 4),
+						new ReportResponse.EditionApplied("ghana", "ghana", java.time.LocalDate.of(2025, 1, 1), 1, 1)));
 		var factors = List.of(new ReportResponse.FactorRow(FACTOR_ID, "Diesel (100% mineral diesel)", "litre", GwpSet.AR5,
 				new BigDecimal("2.66"), new BigDecimal("2.6307"), new BigDecimal("0.0001"), true, new BigDecimal("0.0001"),
 				BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null,
 				"UK Government GHG Conversion Factors for Company Reporting 2025", 2026, 2026, List.of("defra-2026"),
-				ReportingBasis.SCOPES, "defra-2026", java.time.LocalDate.of(2026, 1, 1), null, false),
+				ReportingBasis.SCOPES, "defra-2026", java.time.LocalDate.of(2026, 1, 1), null, false, null, null),
 				new ReportResponse.FactorRow(UUID.randomUUID(), "Grid electricity, Ghana (2024)", "kWh", GwpSet.AR5,
 						new BigDecimal("0.469"), BigDecimal.ZERO, BigDecimal.ZERO, true, BigDecimal.ZERO, BigDecimal.ZERO,
 						BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null, "Ember 2024", 2025,
-						2024, List.of("ghana"), ReportingBasis.SCOPES, "ghana", java.time.LocalDate.of(2025, 1, 1), null, false));
+						2024, List.of("ghana"), ReportingBasis.SCOPES, "ghana", java.time.LocalDate.of(2025, 1, 1), null, false,
+						"Derived, not published: approve it after checking the year's loss rate.",
+						"Loss rate checked against the Energy Commission's 2024 statistics."));
 		var byFacility = List.of(new ReportResponse.Breakdown(FACILITY_ID, FIRST_FACILITY, total, BigDecimal.ZERO, BigDecimal.ZERO,
 				BigDecimal.ZERO, total, tonnes(total)),
 				new ReportResponse.Breakdown(UUID.randomUUID(), "Nkran Camp", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,

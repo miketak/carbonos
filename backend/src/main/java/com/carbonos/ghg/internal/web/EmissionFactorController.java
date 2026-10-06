@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -111,14 +112,18 @@ class EmissionFactorController {
 		return toResponse(ghgService.updateEmissionFactor(id, facts(body)));
 	}
 
+	/** The body is optional; a caveated factor needs its {@code note} (spec 02.5 rule 10). */
+	public record ApprovalRequest(String note) {
+	}
+
 	@PostMapping("/emission-factors/{id}/approve")
-	EmissionFactorResponse approve(@PathVariable UUID id) {
-		return toResponse(ghgService.setFactorApproval(id, true));
+	EmissionFactorResponse approve(@PathVariable UUID id, @RequestBody(required = false) ApprovalRequest body) {
+		return toResponse(ghgService.setFactorApproval(id, true, body == null ? null : body.note()));
 	}
 
 	@PostMapping("/emission-factors/{id}/unapprove")
 	EmissionFactorResponse unapprove(@PathVariable UUID id) {
-		return toResponse(ghgService.setFactorApproval(id, false));
+		return toResponse(ghgService.setFactorApproval(id, false, null));
 	}
 
 	@DeleteMapping("/emission-factors/{id}")

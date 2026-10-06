@@ -333,11 +333,29 @@ public final class ReportPdf {
 			}
 
 			paragraph(document, "8. Methodology and emission factors", report.methodology().statement());
+			// ECO-23: the editions the run applied, and the families it applied two editions of
+			var editionsApplied = report.methodology().editionsAppliedOrEmpty();
+			if (!editionsApplied.isEmpty()) {
+				var named = editionsApplied.stream()
+					.map(applied -> applied.editionId()
+							+ (applied.appliesFrom() == null ? "" : " (applies from " + applied.appliesFrom() + ")")
+							+ ", " + applied.lineCount() + (applied.lineCount() == 1 ? " line" : " lines"))
+					.toList();
+				document.add(new Paragraph("Factor pack editions applied: " + String.join("; ", named) + ".", SMALL));
+				for (var family : report.methodology().mixedFamilies()) {
+					var inFamily = editionsApplied.stream().filter(applied -> family.equals(applied.packKey())).toList();
+					document.add(new Paragraph("Two editions of '" + family + "' were applied in this run: "
+							+ inFamily.stream().map(ReportResponse.EditionApplied::editionId).toList()
+							+ ". A run is expected on one edition per publication; the factor table names the edition "
+							+ "behind every line, and the reason for the mix is the preparer's to record.", SMALL));
+				}
+			}
 			// spec 02.3: the publication with its years is the source; the packs that delivered it stand apart
 			// spec 02.6: the edition and the vintage name the version applied, not just the family
-			var factors = titled("Emission factors applied", SMALL_BOLD, 22, 12, 23, 7, 15, 21);
+			// ECO-23: a caveated factor prints the publisher's condition and what the approver checked
+			var factors = titled("Emission factors applied", SMALL_BOLD, 20, 10, 20, 6, 13, 16, 15);
 			head(factors, "Factor", "kg CO2e / unit", "Gases (kg per unit)", "GWP", "Edition (vintage)",
-					"Source (publication)");
+					"Source (publication)", "Caveat and check");
 			for (var f : report.factors()) {
 				var vintage = f.vintage();
 				// spec 07.4: a blend published under another set and not re-derived is said so, per row
@@ -348,7 +366,7 @@ public final class ReportPdf {
 						vintage != null ? vintage
 								: f.packs() == null || f.packs().isEmpty() ? "entered by hand"
 										: String.join(", ", f.packs()) + ", vintage not recorded",
-						f.source() + years(f));
+						f.source() + years(f), caveatAndCheck(f));
 			}
 			document.add(factors);
 			// spec 02.11: a factor approved by the person who entered it, nobody else being able to check
@@ -624,6 +642,14 @@ public final class ReportPdf {
 	private static String sentence(String text) {
 		var trimmed = text == null ? "" : text.strip();
 		return trimmed.isEmpty() || trimmed.endsWith(".") ? trimmed : trimmed + ".";
+	}
+
+	/** "Caveat: ... Checked: ..." for a caveated factor; a dash where there is none (ECO-23). */
+	private static String caveatAndCheck(ReportResponse.FactorRow f) {
+		if (f.caveat() == null) {
+			return "-";
+		}
+		return "Caveat: " + f.caveat() + (f.approvalNote() == null ? " Not yet checked." : " Checked: " + f.approvalNote());
 	}
 
 	private static String nvl(String value, String fallback) {

@@ -123,6 +123,10 @@ public class FactorPackRow {
 	@Column(length = 500)
 	private String notes;
 
+	// spec 02.5 rule 10: the publisher's condition on using the value, which keeps the row unapproved
+	@Column(length = 500)
+	private String caveat;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "reporting_basis", nullable = false, length = 30)
 	private ReportingBasis reportingBasis;
@@ -139,7 +143,7 @@ public class FactorPackRow {
 			BigDecimal biogenicCo2, String blendComposition, String blendGwpSource, Integer dataYear,
 			String sourcePublication, String sourceUrl, Integer publicationYear, String sourceCategory,
 			String sourceActivity, String sourceDetail, boolean co2eOnly, boolean approved, String notes,
-			ReportingBasis reportingBasis) {
+			String caveat, ReportingBasis reportingBasis) {
 	}
 
 	protected FactorPackRow() {
@@ -186,6 +190,7 @@ public class FactorPackRow {
 		this.co2eOnly = facts.co2eOnly();
 		this.approved = facts.approved();
 		this.notes = facts.notes();
+		this.caveat = facts.caveat();
 		this.reportingBasis = facts.reportingBasis() == null ? ReportingBasis.SCOPES : facts.reportingBasis();
 	}
 
@@ -194,7 +199,7 @@ public class FactorPackRow {
 		return new Facts(code, name, defaultScope, defaultCategory, scopeAgnostic, unit, kgCo2ePerUnit, co2KgPerUnit,
 				ch4KgPerUnit, ch4Fossil, n2oKgPerUnit, hfcsKgPerUnit, pfcsKgPerUnit, sf6KgPerUnit, nf3KgPerUnit,
 				biogenicCo2KgPerUnit, blendComposition, blendGwpSource, dataYear, sourcePublication, sourceUrl,
-				publicationYear, sourceCategory, sourceActivity, sourceDetail, co2eOnly, approved, notes,
+				publicationYear, sourceCategory, sourceActivity, sourceDetail, co2eOnly, approved, notes, caveat,
 				reportingBasis);
 	}
 
@@ -207,7 +212,7 @@ public class FactorPackRow {
 		return new FactorPacks.PackFactor(code, name, defaultScope, defaultCategory, scopeAgnostic, unit, kgCo2ePerUnit,
 				co2KgPerUnit, ch4KgPerUnit, ch4Fossil, n2oKgPerUnit, hfcsKgPerUnit, pfcsKgPerUnit, sf6KgPerUnit,
 				nf3KgPerUnit, blendComposition, blendGwpSource, biogenicCo2KgPerUnit, dataYear, sourceCategory,
-				sourceActivity, sourceDetail, approved, notes, sourcePublication, sourceUrl, publicationYear,
+				sourceActivity, sourceDetail, approved, notes, caveat, sourcePublication, sourceUrl, publicationYear,
 				reportingBasis);
 	}
 
@@ -293,6 +298,10 @@ public class FactorPackRow {
 
 	public Integer getDataYear() {
 		return dataYear;
+	}
+
+	public String getCaveat() {
+		return caveat;
 	}
 
 	public String getNotes() {

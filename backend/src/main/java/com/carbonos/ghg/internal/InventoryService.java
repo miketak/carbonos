@@ -69,6 +69,7 @@ public class InventoryService {
 	private final EvidenceRepository evidence;
 	private final SourceStreamRepository streams;
 	private final UpstreamRuleRepository upstreamRules;
+	private final FactorPackEditionRepository packEditions;
 	private final ObjectMapper json;
 
 	InventoryService(OrganizationRepository organizations, LegalEntityRepository entities,
@@ -80,7 +81,8 @@ public class InventoryService {
 			IntensityMetricRepository intensityMetrics, BaseYearService baseYears, ApplicationEventPublisher events,
 			GhgAccess access, OrganizationUnits organizationUnits, DensityRepository densities,
 			EvidenceRepository evidence, SourceStreamRepository streams, UpstreamRuleRepository upstreamRules,
-			ObjectMapper json) {
+			FactorPackEditionRepository packEditions, ObjectMapper json) {
+		this.packEditions = packEditions;
 		this.upstreamRules = upstreamRules;
 		this.streams = streams;
 		this.json = json;
@@ -2301,6 +2303,8 @@ public class InventoryService {
 						+ describeUnit(units, activityUnit) + ": the market-based figure falls back to location-based."));
 			}
 		}
+		// ECO-23: one edition per publication, and one data year per grid, is what a verifier expects of a run
+		factorFindings.addAll(vintageMixFindings(included));
 		// spec 02.4: the report owes a block of its own for gases outside the scopes, and a scope other
 		// than scope 1 on such a line is an error unless a lease type derived it
 		var outsideScopes = included.stream()
@@ -2693,6 +2697,11 @@ public class InventoryService {
 	private static String describeFacts(RelationshipType relationship, BigDecimal interest, boolean operated) {
 		return relationship.name().toLowerCase().replace('_', ' ') + ", "
 				+ interest.stripTrailingZeros().toPlainString() + "%, " + (operated ? "operated" : "not operated");
+	}
+
+	/** ECO-23: one edition per publication and one data year per grid; see {@link VintageMix}. */
+	List<Finding> vintageMixFindings(List<InventoryAssignment> included) {
+		return VintageMix.findings(included, ids -> packEditions.findAllById(ids));
 	}
 
 	private static String scopeName(Scope scope) {

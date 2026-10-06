@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.carbonos.ghg.internal.BaseYearService;
+import com.carbonos.ghg.internal.FactorPackEdition;
+import com.carbonos.ghg.internal.FactorPackEditionRepository;
 import com.carbonos.ghg.internal.GhgRun;
 import com.carbonos.ghg.internal.GhgRunLine;
 import com.carbonos.ghg.internal.GhgService;
@@ -39,10 +41,12 @@ public class ReportAssembler {
 	private final com.carbonos.ghg.internal.FactorPackAdoptionService adoption;
 	private final OrganizationUnits organizationUnits;
 	private final ObjectMapper mapper;
+	private final FactorPackEditionRepository editions;
 
 	ReportAssembler(InventoryService inventoryService, GhgService ghgService, BaseYearService baseYearService,
 			com.carbonos.ghg.internal.FactorPackAdoptionService adoption, OrganizationUnits organizationUnits,
-			ObjectMapper mapper) {
+			ObjectMapper mapper, FactorPackEditionRepository editions) {
+		this.editions = editions;
 		this.adoption = adoption;
 		this.organizationUnits = organizationUnits;
 		this.inventoryService = inventoryService;
@@ -59,6 +63,19 @@ public class ReportAssembler {
 				&& inventory.getPublishedReport() != null;
 		var report = published ? stored(inventory) : assembleLive(run, inventory);
 		return report.withAfter(published ? sincePublication(inventory, run) : null, correction(inventory, run));
+	}
+
+	/** The editions the run's factor snapshot names, by id (ECO-23: the report says which vintages it applied). */
+	private Map<String, FactorPackEdition> editionsOf(GhgRun run) {
+		var ids = run.getFactors()
+			.stream()
+			.map(com.carbonos.ghg.internal.GhgRunFactor::getSourceEdition)
+			.filter(Objects::nonNull)
+			.distinct()
+			.toList();
+		var found = new HashMap<String, FactorPackEdition>();
+		editions.findAllById(ids).forEach(edition -> found.put(edition.getEditionId(), edition));
+		return found;
 	}
 
 	/** The report as it read at publication, pointing at whatever superseded it since (spec 05.3). */
@@ -101,7 +118,7 @@ public class ReportAssembler {
 				adoption.decisionsFor(organization.getId()), inventoryService.marketFactors(inventory.getId()), inventoryService.predecessors(inventory.getId()),
 				successor, inventoryService.intensityMetrics(inventory.getId()),
 				inventoryService.listBoundaryVersions(inventory.getId()).size(),
-				organizationUnits.forOrganization(organization.getId()));
+				organizationUnits.forOrganization(organization.getId()), editionsOf(run));
 	}
 
 	/** Later acts, later inventories and facts that changed since the run was published (spec 05.3). */

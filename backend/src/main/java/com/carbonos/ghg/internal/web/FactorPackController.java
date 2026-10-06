@@ -45,15 +45,15 @@ class FactorPackController {
 			boolean scopeAgnostic, String unit, BigDecimal kgCo2ePerUnit, BigDecimal co2, BigDecimal ch4,
 			boolean ch4Fossil, BigDecimal n2o, BigDecimal hfcsKg, BigDecimal pfcsKg, BigDecimal sf6, BigDecimal nf3,
 			String blendComposition, String blendGwpSource, BigDecimal biogenicCo2, Integer dataYear,
-			String sourceDetail, boolean approved, String notes, String sourcePublication, String sourceUrl,
-			Integer publicationYear, ReportingBasis reportingBasis) {
+			String sourceDetail, boolean approved, String notes, String caveat, String sourcePublication,
+			String sourceUrl, Integer publicationYear, ReportingBasis reportingBasis) {
 		static PackFactorResponse of(FactorPacks.PackFactor factor) {
 			return new PackFactorResponse(factor.code(), factor.name(), factor.defaultScope(),
 					factor.defaultCategory(), factor.scopeAgnostic(), factor.unit(), factor.kgCo2ePerUnit(),
 					factor.co2(), factor.ch4(), factor.ch4Fossil(), factor.n2o(), factor.hfcsKg(), factor.pfcsKg(),
 					factor.sf6(), factor.nf3(), factor.blendComposition(), factor.blendGwpSource(),
 					factor.biogenicCo2(), factor.dataYear(), factor.sourcePath(), factor.approved(), factor.notes(),
-					factor.sourcePublication(), factor.sourceUrl(), factor.publicationYear(),
+					factor.caveat(), factor.sourcePublication(), factor.sourceUrl(), factor.publicationYear(),
 					factor.reportingBasis());
 		}
 	}

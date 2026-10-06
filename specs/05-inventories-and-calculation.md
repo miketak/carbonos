@@ -68,7 +68,12 @@ any warning, else PASSED; the inventory is ready when no gate is blocked.
 - **EMISSION_FACTOR**: an activity whose unit and factor unit are neither
   dimensionally convertible nor identical (ERROR, naming both dimensions); a
   scope 2 record at a facility with a market-based factor that cannot convert
-  to kWh (WARNING).
+  to kWh (WARNING); two editions of one publication applied in the run, named
+  with their applies-from dates and the records on each (WARNING, ECO-23); two
+  data years of one grid region applied in the run (WARNING, ECO-23). Both are
+  warnings and not errors because a fiscal year straddling an edition's
+  applies-from date, or a row only the newer edition carries, is legitimate;
+  the report's methodology names every edition applied and the lines on each.
 - **BASE_YEAR** (spec 06): an unresolved recalculation flag (ERROR above the
   threshold, else WARNING).
 
