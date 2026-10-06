@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/007-the-pack-lifecycle-end-to-end.yaml (sha256 fc4923818a120cba58c704489a3ddbaa16592c7c6453577e00885ea303362522); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/007-the-pack-lifecycle-end-to-end.yaml (sha256 9caec9265bf3882099668caac9eab3d2d5ceedba62b382e657b089f97fa1ece4); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 7, "fc4923818a120cba58c704489a3ddbaa16592c7c6453577e00885ea303362522")
+const P = procedure("governance", 7, "9caec9265bf3882099668caac9eab3d2d5ceedba62b382e657b089f97fa1ece4")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 7: The pack lifecycle end to end", () => {
@@ -244,7 +244,7 @@ test.describe("Procedure 7: The pack lifecycle end to end", () => {
     await test.step("7.D1.1", async () => {
       const s = P.step("7.D1.1")
       const out = await s.do("importActivities", {"organization":"Adansi Foods Ltd","file":"adansi-2026.csv"})
-      await s.expect(out, [{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0018","quantity":2100,"unit":"litre"}},{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0015","quantity":110,"unit":"MWh"},"why":"\"2 records imported.\"; the two rows removed in procedure 3 do not count as duplicates"}])
+      await s.expect(out, [{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0018","quantity":2100,"unit":"litre"}},{"outcome":"activityExists","args":{"organization":"Adansi Foods Ltd","record":"ACT-0019","quantity":110,"unit":"MWh"},"why":"\"2 records imported.\"; the two rows removed in procedure 3 do not count as duplicates"}])
     })
     await test.step("7.D1.2", async () => {
       const s = P.step("7.D1.2")
@@ -254,11 +254,11 @@ test.describe("Procedure 7: The pack lifecycle end to end", () => {
     await test.step("7.D1.3", async () => {
       const s = P.step("7.D1.3")
       const out = await s.do("reviewActivityData", {"organization":"Adansi Foods Ltd","inventory":"FY2026"})
-      await s.expect(out, [{"outcome":"recordView","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0014","status":"UNCLASSIFIED"}},{"outcome":"recordView","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0015","status":"UNCLASSIFIED"}},{"outcome":"recordView","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0006","status":"UNCLASSIFIED"}},{"outcome":"recordView","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0001","status":"EXCLUDED","reason":"OUTSIDE_PERIOD"}},{"outcome":"gateFinding","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","gate":"COMPLETENESS","severity":"WARNING","containing":"15 of 32 days"},"why":"three records are included: the two January rows and ACT-0006, the year-end LPG, whose 2025-12-15 to 2026-01-15 period reaches 15 days into 2026; every 2025 record is excluded as outside the period; the run pro-rates ACT-0006 to 46.88%"}])
+      await s.expect(out, [{"outcome":"recordView","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0018","status":"UNCLASSIFIED"}},{"outcome":"recordView","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0019","status":"UNCLASSIFIED"}},{"outcome":"recordView","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0006","status":"UNCLASSIFIED"}},{"outcome":"recordView","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0001","status":"EXCLUDED","reason":"OUTSIDE_PERIOD"}},{"outcome":"gateFinding","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","gate":"COMPLETENESS","severity":"WARNING","containing":"15 of 32 days"},"why":"three records are included: the two January rows and ACT-0006, the year-end LPG, whose 2025-12-15 to 2026-01-15 period reaches 15 days into 2026; every 2025 record is excluded as outside the period; the run pro-rates ACT-0006 to 46.88%"}])
     })
     await test.step("7.D1.4", async () => {
       const s = P.step("7.D1.4")
-      const out = await s.do("classifyRecord", {"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0014","factor":"Gaseous fuels: LPG (/litre)"})
+      const out = await s.do("classifyRecord", {"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0018","factor":"Gaseous fuels: LPG (/litre)"})
       await s.done()
     })
     await test.step("7.D1.5", async () => {
@@ -268,7 +268,7 @@ test.describe("Procedure 7: The pack lifecycle end to end", () => {
     })
     await test.step("7.D1.6", async () => {
       const s = P.step("7.D1.6")
-      const out = await s.do("classifyWithSuggestion", {"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0015"})
+      const out = await s.do("classifyWithSuggestion", {"organization":"Adansi Foods Ltd","inventory":"FY2026","record":"ACT-0019"})
       await s.expect(out, [{"outcome":"observe","args":{"text":"The picker offers the defra-2026 LPG version, the one live in 2026. The grid preview reads \"110 MWh → 110,000 kWh × 0.44 kg CO₂e/kWh\": the suggestion is the version live in the period."}}])
     })
     await test.step("7.D1.7", async () => {
@@ -284,7 +284,7 @@ test.describe("Procedure 7: The pack lifecycle end to end", () => {
     await test.step("7.D1.9", async () => {
       const s = P.step("7.D1.9")
       const out = await s.do("launchRun", {"organization":"Adansi Foods Ltd","inventory":"FY2026"})
-      await s.expect(out, [{"outcome":"runListed","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1,"totalKgCo2e":52253.9}},{"outcome":"runLine","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1,"record":"ACT-0015","kgCo2e":48400}},{"outcome":"runLine","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1,"record":"ACT-0014","kgCo2e":3269.97}},{"outcome":"runLine","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1,"record":"ACT-0006","kgCo2e":583.92,"coveredDays":15,"periodDays":32},"why":"48,400 for the electricity, 3,269.97 for the January LPG (2,100 litre × 1.55713) and 583.92 for the 15 pro-rated days of the year-end LPG (375 litre × 1.55713)"}])
+      await s.expect(out, [{"outcome":"runListed","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1,"totalKgCo2e":52253.9}},{"outcome":"runLine","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1,"record":"ACT-0019","kgCo2e":48400}},{"outcome":"runLine","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1,"record":"ACT-0018","kgCo2e":3269.97}},{"outcome":"runLine","args":{"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1,"record":"ACT-0006","kgCo2e":583.92,"coveredDays":15,"periodDays":32},"why":"48,400 for the electricity, 3,269.97 for the January LPG (2,100 litre × 1.55713) and 583.92 for the 15 pro-rated days of the year-end LPG (375 litre × 1.55713)"}])
     })
     await test.step("7.D1.10", async () => {
       const s = P.step("7.D1.10")

@@ -80,6 +80,7 @@ export const gateLabels: Record<GateResult['gate'], string> = {
 export const statusLabels: Record<InventoryStatus, string> = {
   DRAFT: 'Draft',
   FROZEN: 'Frozen',
+  IN_REVIEW: 'In review',
   FINAL: 'Final',
   PUBLISHED: 'Published',
 }
@@ -438,6 +439,10 @@ export const actionLabels: Record<AuditEvent['action'], string> = {
   FROZEN: 'Inventory frozen',
   REOPENED: 'Inventory reopened',
   RUN_LAUNCHED: 'Run launched',
+  SUBMITTED_FOR_REVIEW: 'Submitted for review',
+  REVIEW_RETURNED: 'Returned to preparer',
+  SUBMISSION_WITHDRAWN: 'Submission withdrawn',
+  SIGN_OFF_ASSIGNED: 'Sign-off assigned',
   FINAL_DESIGNATED: 'Final run designated',
   PUBLISHED: 'Published',
   CORRECTION_CREATED: 'Correction created',

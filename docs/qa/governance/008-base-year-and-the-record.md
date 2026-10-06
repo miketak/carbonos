@@ -7,7 +7,7 @@
 
 **Estimated time:** 30 minutes.
 
-**Procedure version:** 4 (2026-10-02). The change notes are at the foot.
+**Procedure version:** 5 (2026-10-06). The change notes are at the foot.
 
 **Run this procedure** after procedure 7. It runs last.
 
@@ -44,7 +44,7 @@
 | 1 | Open **Settings** and the **Baseline and targets** tab. Choose FY2025, significance threshold 5, the reason "First year with metered data at every site", and **From the transaction date (membership windows)**. Click **Designate base year**. | The page shows the year 2025, the reason "First year with metered data at every site", "5% of base-year emissions", the convention **From the transaction date (membership windows)**. **Established by** reads "Base-year run: Run 005 · 120.37 t CO₂e", the final run of the published inventory. |  |  |
 | 2 | In Adansi Foods Ltd, open **Baseline and targets**. | A FLAGGED candidate against boundary version 2 reads "structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required": one FLAGGED candidate at once, against FY2026 version 2: the designation weighed the frozen year without a new freeze. |  |  |
 | 3 | Read the **Base year** gate on the pre-flight panel under **Records**. | An error on the **Base year** gate: "Base year flagged for recalculation (structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required). Record the decision under the organization's base year.". |  |  |
-| 4 | Click **Mark as final** on Run 001 and confirm. | Refused: "The 2025 base year has a recalculation candidate above the significance threshold (structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required). An inventory that reports against the base year cannot be marked final until the recalculation is completed or declined. Calculation runs stay available, because quantifying the movement is how a recalculation is assessed.". |  |  |
+| 4 | On **Runs**, click **Submit for review** on Run 001 and confirm. | Refused: "The 2025 base year has a recalculation candidate above the significance threshold (structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required). An inventory that reports against the base year cannot be submitted for review until the recalculation is completed or declined. Calculation runs stay available, because quantifying the movement is how a recalculation is assessed.": the hold is on the acts that report a figure; a run is submitted for review before it is signed off (spec 05.8), and the submission meets the hold first. |  |  |
 | 5 | Open the inventory "FY2026" (**Open**). | The screen reads "Base year holds the final designation; runs stay available.". |  |  |
 | 6 | On **Runs**, click **Launch calculation run**. | Run 002 is listed; numbers are never reused: a run goes through: quantifying the movement is how a recalculation is assessed. |  |  |
 | 7 | Read the **Base year** gate on the pre-flight panel under **Records**. | A warning on the **Base year** gate: "This inventory is not held because it is an equity share view and the base year is operational control": a warning, not an error. |  |  |
@@ -131,3 +131,4 @@
 - **Version 2, 2026-09-29.** F1 step 3 expects the structure rows the organization history now records beside the member rows (PR #121).
 - **Version 3, 2026-09-29.** D1 step 1: a voided run is no longer offered as the recalculated base (the walkthrough fix of 2026-09-29). B1 step 1: the form sends the inventory the select shows, and an empty reason is refused in words.
 - **Version 4, 2026-10-02.** Transliterated to the QA scenario DSL. The designation, the candidates, the gate, the final-run hold, the runs the dialog offers, the report's GWP note, the deletion refusals and the history are read from the API as well as from the screen; the history's breadth and the tombstone's wording are observed on screen. The refusals carry rule ids (ghg.base-year.*, ghg.organization.has-records, ghg.organization.name-confirmation, ghg.factor.*). E1 counts the boundary versions the procedure cuts (six by its end).
+- **Version 5, 2026-10-06.** B1: the base-year hold meets the submission for review, which comes before the sign-off (spec 05.8, ECO-13).

@@ -21,10 +21,12 @@ import { MarketFactorsCard } from './components/MarketFactorsCard'
 import { OperationalBoundaryCard } from './components/OperationalBoundaryCard'
 import { PreflightChip } from './components/PreflightChip'
 import { ReportMetadataCard } from './components/ReportMetadataCard'
+import { SignOffCard } from './components/SignOffCard'
 import { UpstreamRulesCard } from './components/UpstreamRulesCard'
 import { RoleButton } from './components/RoleButton'
 import { actionLabels, approachLabels, exclusionLabels, formatCo2e } from './format'
 import { useInventoryFilters } from './inventoryFilters'
+import { useSession } from '../auth/useSession'
 import type { InventoryTab } from './inventoryFilters'
 import { APPROVE_TOOLTIP, mayApprove, mayWrite, WRITE_TOOLTIP } from './roles'
 import {
@@ -39,6 +41,7 @@ import {
   useAssignmentPageQuery,
   useCoverageQuery,
   useRunsQuery,
+  useSubmitForReview,
   useValidationQuery,
 } from './useGhg'
 import type { AuditEvent, DroppedExclusion, Inventory, Organization, Run } from './api'
@@ -349,7 +352,12 @@ function InventoryWorkbench({
         </div>
       )}
 
-      {tab === 'runs' && <LaunchSection inventory={inventory} myRole={myRole} />}
+      {tab === 'runs' && (
+        <>
+          <SignOffCard key={inventory.id} inventory={inventory} myRole={myRole} />
+          <LaunchSection inventory={inventory} myRole={myRole} />
+        </>
+      )}
 
       {tab === 'report' && (
         <ReportMetadataCard
@@ -377,7 +385,9 @@ function LaunchSection({
   const runsQuery = useRunsQuery(inventoryId)
   const execute = useExecuteRun(inventoryId)
   const finalize = useFinalizeRun(inventoryId)
+  const submit = useSubmitForReview(inventoryId)
   const voidRun = useVoidRun(inventoryId)
+  const session = useSession().data
   const eventsQuery = useAuditEventsQuery(inventoryId)
   const toast = useToast()
   const navigate = useNavigate()
@@ -392,9 +402,22 @@ function LaunchSection({
   const [finalizing, setFinalizing] = useState<Run | null>(null)
   const [finalNote, setFinalNote] = useState('')
   const [finalizeError, setFinalizeError] = useState<string | null>(null)
+  // spec 05.8: a run is put forward for review with a note for the approver
+  const [submitting, setSubmitting] = useState<Run | null>(null)
+  const [submitNote, setSubmitNote] = useState('')
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const report = validationQuery.data
-  const canDesignate = inventory.status === 'FROZEN' || inventory.status === 'FINAL'
+  const inReview = inventory.status === 'IN_REVIEW'
+  const canSubmit = inventory.status === 'FROZEN' || inReview
+  const submitter = inventory.signOff.submittedBy
+  // the submitter signs their own run only where nobody else in the organization may approve
+  const iSubmitted =
+    !!session &&
+    !!submitter &&
+    (submitter.userId === session.id ||
+      submitter.email?.toLowerCase() === session.email.toLowerCase())
+  const selfSignRefused = iSubmitted && !inventory.signOff.submitterMaySign
   const canVoid = inventory.status !== 'PUBLISHED'
   // spec 05.1: the runs of a published inventory are its record; the button says so in the
   // backend's own words instead of sitting disabled without a reason
@@ -475,6 +498,7 @@ function LaunchSection({
             <tbody>
               {runs.map((run) => {
                 const isFinal = run.id === inventory.finalRunId
+                const isSubmitted = inReview && run.id === inventory.signOff.submittedRunId
                 const muted = run.voided ? 'text-ink-muted' : ''
                 return (
                   <tr key={run.id}>
@@ -492,6 +516,7 @@ function LaunchSection({
                               {run.label}
                             </Link>
                             {run.voided && <Chip tone="warning">VOIDED</Chip>}
+                            {isSubmitted && <Chip tone="warning">IN REVIEW</Chip>}
                             {isFinal && <Chip tone="primary">FINAL</Chip>}
                           </span>
                         }
@@ -507,6 +532,13 @@ function LaunchSection({
                               Final designated by {inventory.finalDesignatedBy}
                               {inventory.finalDesignatedAt
                                 ? ` on ${new Date(inventory.finalDesignatedAt).toLocaleDateString()}`
+                                : ''}
+                            </>
+                          ) : isSubmitted && submitter ? (
+                            <>
+                              Submitted for review by {submitter.name ?? submitter.email}
+                              {inventory.signOff.submittedAt
+                                ? ` on ${new Date(inventory.signOff.submittedAt).toLocaleDateString()}`
                                 : ''}
                             </>
                           ) : undefined
@@ -537,12 +569,35 @@ function LaunchSection({
                     </Td>
                     <Td align="right" className="pr-5">
                       <span className="inline-flex gap-1">
-                        {!isFinal && canDesignate && !run.voided && (
+                        {/* spec 05.8: any run of a frozen inventory may be put forward for review */}
+                        {canSubmit && !run.voided && !isSubmitted && (
+                          <RoleButton
+                            allowed={mayWrite(myRole)}
+                            tooltip={WRITE_TOOLTIP}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSubmitNote('')
+                              setSubmitError(null)
+                              setSubmitting(run)
+                            }}
+                          >
+                            Submit for review
+                          </RoleButton>
+                        )}
+                        {/* spec 05.8: the sign-off acts on the submitted run, by someone other than its submitter */}
+                        {isSubmitted && (
                           <RoleButton
                             allowed={mayApprove(myRole)}
                             tooltip={APPROVE_TOOLTIP}
                             variant="ghost"
                             size="sm"
+                            disabled={selfSignRefused}
+                            title={
+                              selfSignRefused
+                                ? 'You submitted this run; another reviewer or owner signs it off.'
+                                : undefined
+                            }
                             onClick={() => {
                               setFinalNote('')
                               setFinalizeError(null)
@@ -584,9 +639,15 @@ function LaunchSection({
           <p className="text-sm text-ink-muted">
             Run #{String(finalizing.runNo).padStart(3, '0')} ({formatCo2e(finalizing.totalKgCo2e)})
             becomes this inventory's final run: the report and the base year attach to it, and the
-            inventory can be published. The designation, your name and your note are recorded in the
+            inventory can be published. Your sign-off, your name and your note are recorded in the
             history and printed in the report header.
           </p>
+          {iSubmitted && inventory.signOff.submitterMaySign && (
+            <p className="mt-2 text-sm text-warning">
+              Nobody else in the organization may approve, so your sign-off of the run you submitted
+              is recorded as a self-approval, and the report says so.
+            </p>
+          )}
           <div className="mt-4">
             <TextAreaField
               label="Review note (optional)"
@@ -627,6 +688,58 @@ function LaunchSection({
               }
             >
               Mark as final
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {submitting && (
+        <Modal title={`Submit ${submitting.label} for review?`} onClose={() => setSubmitting(null)}>
+          <p className="text-sm text-ink-muted">
+            Run #{String(submitting.runNo).padStart(3, '0')} ({formatCo2e(submitting.totalKgCo2e)})
+            goes to review. A reviewer or owner other than you marks it final, or returns it with a
+            reason. Launching another run withdraws the submission.
+          </p>
+          <div className="mt-4">
+            <TextAreaField
+              label="Note for the approver (optional)"
+              placeholder="What was checked, for example: reconciled against the fuel ledger"
+              value={submitNote}
+              onChange={(event) => setSubmitNote(event.target.value)}
+              maxLength={500}
+              rows={3}
+              hint={`${submitNote.length}/500 characters`}
+            />
+          </div>
+          {submitError && (
+            <p role="alert" className="mt-3 text-sm font-medium text-danger">
+              {submitError}
+            </p>
+          )}
+          <div className="mt-4 flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setSubmitting(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              busy={submit.isPending}
+              onClick={() =>
+                submit.mutate(
+                  {
+                    runId: submitting.id,
+                    note: submitNote.trim() === '' ? undefined : submitNote.trim(),
+                  },
+                  {
+                    onSuccess: () => {
+                      toast(`${submitting.label} submitted for review.`)
+                      setSubmitting(null)
+                    },
+                    onError: (error) => setSubmitError(refusalMessage(error, myRole)),
+                  },
+                )
+              }
+            >
+              Submit for review
             </Button>
           </div>
         </Modal>

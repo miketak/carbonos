@@ -42,6 +42,17 @@ const inventory: Inventory = {
   finalDesignatedBy: null,
   finalDesignatedAt: null,
   finalNote: null,
+  finalDesignatedByName: null,
+  finalSelfApproved: false,
+  signOff: {
+    preparer: null,
+    approver: null,
+    submittedRunId: null,
+    submittedBy: null,
+    submittedAt: null,
+    submitNote: null,
+    submitterMaySign: false,
+  },
   currentBoundaryVersionId: null,
   currentBoundaryVersionNo: null,
   createdAt: '2026-08-29T00:00:00Z',
@@ -301,6 +312,45 @@ test('a reviewer may withdraw a final designation and publish', async () => {
 
   expect(await screen.findByRole('button', { name: /withdraw final designation/i })).toBeEnabled()
   expect(screen.getByRole('button', { name: /^publish$/i })).toBeEnabled()
+})
+
+test('in review, the bar names who submitted and a reviewer may return it to the preparer (spec 05.8)', async () => {
+  renderWithProviders(
+    <LifecycleBar
+      inventory={{
+        ...inventory,
+        status: 'IN_REVIEW',
+        currentBoundaryVersionId: 'bv-1',
+        currentBoundaryVersionNo: 1,
+        signOff: {
+          preparer: null,
+          approver: null,
+          submittedRunId: 'run-1',
+          submittedBy: { userId: 'u-esi', email: 'esi@sankofa.test', name: 'Esi Boateng' },
+          submittedAt: '2026-09-12T09:00:00Z',
+          submitNote: 'fuel ledger attached',
+          submitterMaySign: false,
+        },
+      }}
+      inBoundaryCount={2}
+      myRole="REVIEWER"
+    />,
+  )
+
+  const lifecycle = await screen.findByRole('list', { name: 'Lifecycle' })
+  expect(within(lifecycle).getByText('In review').closest('li')).toHaveAttribute(
+    'aria-current',
+    'step',
+  )
+  expect(
+    screen.getByText(/Submitted for review by Esi Boateng on .*: fuel ledger attached/),
+  ).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Return to preparer' })).toBeEnabled()
+  expect(screen.getByRole('button', { name: /reopen as draft/i })).toBeEnabled()
+  expect(screen.getByRole('button', { name: /^publish$/i })).toHaveAttribute(
+    'title',
+    'Mark the submitted run as final first',
+  )
 })
 
 test('a preparer sees Create correction disabled with the approve role it needs', async () => {

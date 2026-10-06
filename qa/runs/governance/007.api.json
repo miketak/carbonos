@@ -1,14 +1,14 @@
 {
   "procedure": 7,
   "driver": "api",
-  "yamlSha256": "df29187277104319156abb1b5419e877ecc76590534f2dbe01c8317771ffba6f",
+  "yamlSha256": "9caec9265bf3882099668caac9eab3d2d5ceedba62b382e657b089f97fa1ece4",
   "productVersion": null,
-  "gitSha": "3dd7eed90aebb7d9020e6d9582f7a7533455c869",
-  "date": "2026-10-02",
-  "specialist": "unknown",
-  "digestSha256": "cf0425345fab099692fa27c9d0638a80200bb386baee699ecbae9cd6c2088495",
+  "gitSha": "c9113f608b0d41a4642b69c54110c6b30ea5b98f",
+  "date": "2026-10-06",
+  "specialist": "mtakrama",
+  "digestSha256": "7df270f2a101586bcaa3a1ffe369a43b0911f38e0db92cd2ddfee1d495b548f6",
   "counts": {
-    "pass": 63,
+    "pass": 66,
     "na": 5,
     "manual": 4
   },
@@ -49,6 +49,18 @@
     },
     {
       "id": "7.A2.3",
+      "status": "PASS"
+    },
+    {
+      "id": "7.A3.1",
+      "status": "PASS"
+    },
+    {
+      "id": "7.A3.2",
+      "status": "PASS"
+    },
+    {
+      "id": "7.A3.3",
       "status": "PASS"
     },
     {

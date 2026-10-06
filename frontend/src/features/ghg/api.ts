@@ -36,7 +36,8 @@ export type FindingSeverity = 'ERROR' | 'WARNING' | 'INFO'
  * view together: a draft blocks runs, freezing cuts a boundary version, a final
  * run moves it to FINAL, publishing makes it a record.
  */
-export type InventoryStatus = 'DRAFT' | 'FROZEN' | 'FINAL' | 'PUBLISHED'
+/** IN_REVIEW: a run is submitted for review and waits for someone other than its submitter (spec 05.8). */
+export type InventoryStatus = 'DRAFT' | 'FROZEN' | 'IN_REVIEW' | 'FINAL' | 'PUBLISHED'
 /** The five financial accounting categories of Table 1 of the Corporate Standard (spec 03.1, 03.3). */
 export type RelationshipType =
   'SUBSIDIARY' | 'JOINT_VENTURE' | 'ASSOCIATE' | 'FIXED_ASSET_INVESTMENT' | 'FRANCHISE'
@@ -832,7 +833,10 @@ export interface Inventory {
   straddleTreatment: StraddleTreatment
   /** "2025", or "FY2025/26" when the period crosses a year end (spec 04.2). */
   periodLabel: string
-  /** The report header (spec 07.4): the approver override, who published, and the assurance. */
+  /**
+   * The report header (spec 07.4): who published, and the assurance. `approvedBy` is the approver
+   * typed before spec 05.8, kept only for inventories published with it; the sign-off names it now.
+   */
   approvedBy: string | null
   publishedBy: string | null
   assuranceLevel: AssuranceLevel
@@ -861,9 +865,35 @@ export interface Inventory {
   finalDesignatedBy: string | null
   finalDesignatedAt: string | null
   finalNote: string | null
+  /** The signer's name, and whether nobody else in the organization could check it (spec 05.8). */
+  finalDesignatedByName: string | null
+  finalSelfApproved: boolean
+  /** The sign-off workflow (spec 05.8). */
+  signOff: SignOff
   currentBoundaryVersionId: string | null
   currentBoundaryVersionNo: number | null
   createdAt: string
+}
+
+/** A member as an act recorded them (spec 05.8): the account, with the email and name of the time. */
+export interface SignOffPerson {
+  userId: string | null
+  email: string | null
+  name: string | null
+}
+
+/**
+ * The sign-off workflow (spec 05.8): the named preparer and approver, the run in review or signed off,
+ * who submitted it, and whether its submitter may sign it themselves (only where nobody else may approve).
+ */
+export interface SignOff {
+  preparer: SignOffPerson | null
+  approver: SignOffPerson | null
+  submittedRunId: string | null
+  submittedBy: SignOffPerson | null
+  submittedAt: string | null
+  submitNote: string | null
+  submitterMaySign: boolean
 }
 
 export interface InventoryInput {
@@ -913,8 +943,8 @@ export interface IntensityMetricInput {
   unit: string
 }
 
+/** The typed report header (spec 07.4); the approver is the sign-off, not typed (spec 05.8). */
 export interface ReportMetadataInput {
-  approvedBy?: string
   assuranceLevel: AssuranceLevel
   assuranceProvider?: string
   assuranceStatement?: string
@@ -1310,6 +1340,10 @@ export interface AuditEvent {
     | 'FROZEN'
     | 'REOPENED'
     | 'RUN_LAUNCHED'
+    | 'SUBMITTED_FOR_REVIEW'
+    | 'REVIEW_RETURNED'
+    | 'SUBMISSION_WITHDRAWN'
+    | 'SIGN_OFF_ASSIGNED'
     | 'FINAL_DESIGNATED'
     | 'PUBLISHED'
     | 'CORRECTION_CREATED'
@@ -1937,6 +1971,17 @@ export interface ReportHeader {
   /** The boundary version the run cites, of how many were cut; null on reports snapshotted before spec 05.5. */
   boundaryVersionNo: number | null
   boundaryVersionCount: number | null
+  /**
+   * Spec 05.8: `preparedBy` and `approvedBy` are names, with the emails apart; the run they refer to,
+   * the submitter's note, when the sign-off was made, and whether it was a self-approval. Null on a
+   * report published before spec 05.8.
+   */
+  preparedByEmail?: string | null
+  preparedRunNo?: number | null
+  preparedNote?: string | null
+  approvedByEmail?: string | null
+  approvedAt?: string | null
+  selfApproved?: boolean
 }
 
 export interface Breakdown {
@@ -2855,6 +2900,33 @@ export function getRun(id: string): Promise<RunDetail> {
 }
 
 /** Designates the run as its inventory's final run, with the reviewer's optional note (spec 05.1, 05.5). */
+/** Puts the run forward for review, with an optional note for the approver (spec 05.8). */
+export function submitForReview(id: string, note?: string): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/runs/${id}/submit-for-review`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  })
+}
+
+/** Returns the inventory in review to its preparer, with a reason (spec 05.8). */
+export function returnToPreparer(inventoryId: string, reason: string): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/inventories/${inventoryId}/return-to-preparer`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+/** Names the inventory's preparer and approver, either or both; null clears (spec 05.8). */
+export function saveSignOff(
+  inventoryId: string,
+  input: { preparerUserId: string | null; approverUserId: string | null },
+): Promise<Inventory> {
+  return api<Inventory>(`/api/ghg/inventories/${inventoryId}/sign-off`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
 export function finalizeRun(id: string, note?: string): Promise<Inventory> {
   return api<Inventory>(`/api/ghg/runs/${id}/finalize`, {
     method: 'POST',

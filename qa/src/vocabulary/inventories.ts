@@ -111,7 +111,7 @@ export const categoryLabels: Record<string, string> = {
   INVESTMENTS: '15. Investments',
 }
 
-export const statusLabels: Record<string, string> = { DRAFT: 'Draft', FROZEN: 'Frozen', FINAL: 'Final', PUBLISHED: 'Published' }
+export const statusLabels: Record<string, string> = { DRAFT: 'Draft', FROZEN: 'Frozen', IN_REVIEW: 'In review', FINAL: 'Final', PUBLISHED: 'Published' }
 
 export const exclusionLabels: Record<string, string> = {
   NON_GHG: 'Non-GHG activity',

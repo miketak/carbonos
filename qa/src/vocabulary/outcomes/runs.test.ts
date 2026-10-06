@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { csvRows, runLabel } from '../runs.ts'
-import { voidRun } from '../verbs/runs.ts'
-import { roleDisabled } from './runs.ts'
+import { assignSignOff, voidRun } from '../verbs/runs.ts'
+import { optionWithheld, roleDisabled, ruleDisabled } from './runs.ts'
 import type { ApiContext } from '../contract.ts'
 
 describe('the run vocabulary', () => {
@@ -27,5 +27,25 @@ describe('the run vocabulary', () => {
     const out = await roleDisabled.api({} as ApiContext, { button: 'Publish', tooltip: 'Needs the Reviewer or Owner role.' }, { status: 403, ok: false, rule: 'ghg.role.required' })
     expect(out.ok).toBe(true)
     expect(roleDisabled.ui({ button: 'Publish', tooltip: 'Needs the Reviewer or Owner role.' })[0]).toMatchObject({ check: 'buttonDisabled', button: 'Publish' })
+  })
+
+  it('reads a rule refusal the page makes as a disabled control with its title', async () => {
+    const a = { button: 'Mark as final', title: 'You submitted this run; another reviewer or owner signs it off.', rule: 'ghg.run.self-signed' }
+    expect((await ruleDisabled.api({} as ApiContext, a, { status: 409, ok: false, rule: 'ghg.run.self-signed' })).ok).toBe(true)
+    expect((await ruleDisabled.api({} as ApiContext, a, { status: 409, ok: false, rule: 'ghg.run.not-submitted' })).ok).toBe(false)
+    expect((await ruleDisabled.api({} as ApiContext, a, { status: 200, ok: true })).ok).toBe(false)
+    expect(ruleDisabled.expectsRefusal).toBe(true)
+    expect(ruleDisabled.ui(a)[0]).toMatchObject({ check: 'buttonDisabled', button: 'Mark as final', tooltip: a.title })
+  })
+
+  it('reads a member the sign-off list leaves out as the refusal by its rule', async () => {
+    const a = { field: 'Approver', member: 'esi', rule: 'ghg.inventory.sign-off-role' }
+    expect((await optionWithheld.api({} as ApiContext, a, { status: 422, ok: false, rule: 'ghg.inventory.sign-off-role' })).ok).toBe(true)
+    expect((await optionWithheld.api({} as ApiContext, a, { status: 200, ok: true })).ok).toBe(false)
+    expect(optionWithheld.expectsRefusal).toBe(true)
+    expect(optionWithheld.ui(a)[0]).toEqual({ check: 'optionListed', label: 'Approver', option: '{name:esi}', absent: true })
+    const plan = assignSignOff.ui({ organization: 'Adansi Foods Ltd', inventory: 'FY2025 (correction)', approver: 'esi' })
+    expect(plan).toContainEqual({ op: 'choose', label: 'Approver', option: '{name:esi}', prefix: true, ifOffered: true })
+    expect(plan.at(-1)).toMatchObject({ op: 'click', ifEnabled: true })
   })
 })

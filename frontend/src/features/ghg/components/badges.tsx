@@ -22,6 +22,7 @@ export function ApproachBadge({ approach }: { approach: ConsolidationApproach })
 const statusTones: Record<Inventory['status'], ChipTone> = {
   DRAFT: 'neutral',
   FROZEN: 'primary',
+  IN_REVIEW: 'warning',
   FINAL: 'primary',
   PUBLISHED: 'success',
 }
@@ -37,7 +38,7 @@ export function InventoryStatusBadge({
       ? 'DRAFT'
       : inventory.status === 'PUBLISHED' && inventory.supersededById
         ? 'PUBLISHED · SUPERSEDED'
-        : `${inventory.status} · BOUNDARY v${inventory.currentBoundaryVersionNo}`
+        : `${inventory.status.replace('_', ' ')} · BOUNDARY v${inventory.currentBoundaryVersionNo}`
   return (
     <Chip tone={statusTones[inventory.status]} className="tracking-wide">
       {label}

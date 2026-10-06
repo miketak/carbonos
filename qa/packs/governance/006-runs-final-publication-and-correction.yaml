@@ -2,7 +2,7 @@ procedure: 6
 slug: runs-final-publication-and-correction
 title: Runs, final, publication and correction
 after: 5
-covers: ["05.1", "05.2", "05.3", "05.4", "05.7", "02.11", "07", "07.1", "07.4", "07.5", "07.7", "07.8"]
+covers: ["05.1", "05.2", "05.3", "05.4", "05.7", "05.8", "02.11", "07", "07.1", "07.4", "07.5", "07.7", "07.8"]
 let:
   org: Adansi Foods Ltd
   inv: FY2025
@@ -50,7 +50,7 @@ sections:
             expect:
               - runCount: { organization: "${org}", inventory: "${inv}", count: 2 }
           - expect:
-              - observe: { text: "Look for Mark as final on Run 001: there is none, a voided run cannot be designated final." }
+              - observe: { text: "Look for Submit for review and Mark as final on Run 001: there is neither, a voided run is never submitted or designated final." }
   - id: B
     title: What a final run refuses
     cases:
@@ -71,10 +71,10 @@ sections:
             expect:
               - runListed: { organization: "${org}", inventory: "${inv}", run: 3, boundaryVersion: 3 }
                 why: "the run completes: a run may use both"
-          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 3 } }
+          - do: { submitForReview: { organization: "${org}", inventory: "${inv}", run: 3 } }
             expect:
               - refused: { rule: ghg.run.final-holds, with: { run: "3" } }
-                why: "the message names the run by its number and then both holds, the blend first: \"'Chiller refrigerant top-up' uses 'Blends: R407C, Emissions including only Kyoto products', whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded): record the blend's composition, choose a factor on AR6, or run the inventory on AR5 (one GWP set across the inventory).\" and \"'Forklift diesel' converts through the typical density of Diesel (0.84 kg/litre), a planning value.\""
+                why: "the submission checks what the sign-off checks, so the preparer learns it first; the message names the run by its number and then both holds, the blend first: \"'Chiller refrigerant top-up' uses 'Blends: R407C, Emissions including only Kyoto products', whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded): record the blend's composition, choose a factor on AR6, or run the inventory on AR5 (one GWP set across the inventory).\" and \"'Forklift diesel' converts through the typical density of Diesel (0.84 kg/litre), a planning value.\""
       - id: B2
         title: The proxy route, and one GWP set
         steps:
@@ -100,11 +100,10 @@ sections:
       - id: C1
         title: Metadata persists and reaches the next run
         steps:
-          - do: { saveReportHeader: { organization: "${org}", inventory: "${inv}", approvedBy: "Kofi Mensah, Reviewer", uncertaintyStatement: "Metered fuel and electricity; the flights figure is the travel agent's estimate", denominators: [{ name: Product output, value: 1500, unit: t }] } }
+          - do: { saveReportHeader: { organization: "${org}", inventory: "${inv}", uncertaintyStatement: "Metered fuel and electricity; the flights figure is the travel agent's estimate", denominators: [{ name: Product output, value: 1500, unit: t }] } }
             why: "a row left in the fields is not saved; reload the page: every field reads what you typed, the denominator is on the inventory, not in the browser"
           - do: { launchRun: { organization: "${org}", inventory: "${inv}" } }
             expect:
-              - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, approvedBy: "Kofi Mensah, Reviewer" }
               - reportIntensity: { organization: "${org}", inventory: "${inv}", run: 5, name: Product output, value: 1500, unit: t, tCo2ePerUnit: 0.080249 }
                 why: 120.373 t divided by 1,500
               - reportStatementHas: { organization: "${org}", inventory: "${inv}", run: 5, section: uncertainty, containing: "Metered fuel and electricity; the flights figure is the travel agent's estimate" }
@@ -144,24 +143,57 @@ sections:
               - runListed: { organization: Solo Ltd, inventory: Solo FY2025, run: 1, totalKgCo2e: 266 }
           - expect:
               - observe: { text: 'Open the PDF: the methodology section prints "Approved by the person who entered them, no other member of the organization being able to check them at the time: Diesel (Solo) (<the Yaw alias>).". Adansi''s PDF of case D1 prints no such sentence: Kofi checked its factors.' }
+          - do: { submitForReview: { organization: Solo Ltd, inventory: Solo FY2025, run: 1 } }
+            expect:
+              - inventoryStatus: { organization: Solo Ltd, inventory: Solo FY2025, status: IN_REVIEW }
+          - do: { markFinal: { organization: Solo Ltd, inventory: Solo FY2025, run: 1 } }
+            expect:
+              - inventoryStatus: { organization: Solo Ltd, inventory: Solo FY2025, status: FINAL }
+              - reportHeader: { organization: Solo Ltd, inventory: Solo FY2025, run: 1, preparedBy: yaw, approvedBy: yaw, selfApproved: true }
+                why: 'Yaw is the only member who may approve, so his sign-off of the run he submitted goes through and the header says so: "Approved by <the Yaw alias>, run 1, <date>; self-approved: nobody else in the organization could check it". The Mark as final dialog said so before the sign-off.'
+          - do: { withdrawFinal: { organization: Solo Ltd, inventory: Solo FY2025, reason: Solo Ltd is a scratch organization } }
+            expect:
+              - inventoryStatus: { organization: Solo Ltd, inventory: Solo FY2025, status: FROZEN }
+                why: procedure 8 deletes Solo Ltd, which a final run would hold
   - id: E
     title: Final designation and publication
     cases:
       - id: E1
-        title: Only a reviewer or an owner designates and publishes
+        title: The preparer submits, someone else signs off, a reviewer or owner publishes
         steps:
           - as: esi
             do: { signIn: { user: esi } }
+          - do: { submitForReview: { organization: "${org}", inventory: "${inv}", run: 5, note: Fuel ledger and invoices attached } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: IN_REVIEW }
+              - inventoryHistoryHas: { organization: "${org}", inventory: "${inv}", action: SUBMITTED_FOR_REVIEW, detail: "run 5 submitted for review: Fuel ledger and invoices attached", actor: esi }
+                why: 'Run 005 reads IN REVIEW; the lifecycle bar reads "Submitted for review by <the Esi alias> on <date>: Fuel ledger and invoices attached"'
           - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5 } }
             expect:
               - roleDisabled: { button: Mark as final }
           - as: kofi
             do: { signIn: { user: kofi } }
-          - do: { unapproveFactor: { organization: "${org}", factor: "${flights}" } }
+          - do: { returnToPreparer: { organization: "${org}", inventory: "${inv}", reason: The June invoice is not attached } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: FROZEN }
+              - inventoryHistoryHas: { organization: "${org}", inventory: "${inv}", action: REVIEW_RETURNED, detail: "run 5 returned to the preparer: The June invoice is not attached", actor: kofi }
+          - do: { submitForReview: { organization: "${org}", inventory: "${inv}", run: 5 } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: IN_REVIEW }
+                why: a reviewer may submit too; what he may not do is sign what he submitted while someone else can
+          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5 } }
+            expect:
+              - ruleDisabled: { button: Mark as final, title: "You submitted this run; another reviewer or owner signs it off.", rule: ghg.run.self-signed, with: { run: "5", submitter: Kofi Mensah, checker: Ama Owusu } }
+                why: the screen withholds the sign-off from the run's submitter while Ama could sign; the API refusal names her
+          - do: { returnToPreparer: { organization: "${org}", inventory: "${inv}", reason: Esi prepares this inventory } }
+          - as: esi
+            do: { submitForReview: { organization: "${org}", inventory: "${inv}", run: 5, note: Reconciled against the fuel ledger } }
+          - as: kofi
+            do: { unapproveFactor: { organization: "${org}", factor: "${flights}" } }
           - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5 } }
             expect:
               - refused: { rule: ghg.run.final-holds, with: { run: "5" } }
-                why: "\"'Staff flights' uses 'Long-haul flights (supplier)', which is not approved. Approve it under Emission factors, or choose another.\": approval is checked again at the designation, not only at the run"
+                why: "\"'Staff flights' uses 'Long-haul flights (supplier)', which is not approved. Approve it under Emission factors, or choose another.\": approval is checked again at the sign-off, not only at the run and the submission"
           - do: { approveFactor: { organization: "${org}", factor: "${flights}" } }
             expect:
               - factorListed: { organization: "${org}", name: "${flights}", approved: true, approvedBy: kofi }
@@ -169,17 +201,21 @@ sections:
           - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5, note: Reconciled against the March and June invoices } }
             expect:
               - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: FINAL }
-              - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, finalNote: Reconciled against the March and June invoices }
+              - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, preparedBy: esi, approvedBy: kofi, finalNote: Reconciled against the March and June invoices }
+              - inventoryHistoryHas: { organization: "${org}", inventory: "${inv}", action: FINAL_DESIGNATED, detail: "run 5 signed off and designated final: Reconciled against the March and June invoices", actor: kofi }
               - buttonsOffered: { absent: [Reopen as draft] }
-                why: 'the lifecycle bar reads "Final designated by <the Kofi alias> on <date>: Reconciled against the March and June invoices"'
+                why: 'the lifecycle bar reads "Final designated by <the Kofi alias> on <date>: Reconciled against the March and June invoices"; the report header reads "Prepared by <the Esi name and alias>, run 5" and "Approved by <the Kofi name and alias>, run 5"'
           - do: { withdrawFinal: { organization: "${org}", inventory: "${inv}", reason: "" } }
             expect:
               - dialogButtonDisabled: { dialog: "Withdraw the final designation?", button: Withdraw designation, rule: ghg.reason-too-short }
           - do: { withdrawFinal: { organization: "${org}", inventory: "${inv}", reason: Checking the withdrawal } }
             expect:
               - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: FROZEN }
-                why: the history records the withdrawal with Kofi's email
-          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5 } }
+                why: the history records the withdrawal with Kofi's email; the submission went with the designation, so Esi submits again
+          - as: esi
+            do: { submitForReview: { organization: "${org}", inventory: "${inv}", run: 5, note: Reconciled against the fuel ledger } }
+          - as: kofi
+            do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5 } }
             expect:
               - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: FINAL }
           - as: esi
@@ -190,7 +226,7 @@ sections:
             do: { publishInventory: { organization: "${org}", inventory: "${inv}" } }
             expect:
               - inventoryStatus: { organization: "${org}", inventory: "${inv}", status: PUBLISHED }
-              - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, version: 1 }
+              - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, version: 1, preparedBy: esi, approvedBy: kofi }
                 why: 'the lifecycle bar reads "Final designated by <the Kofi alias>" and "Published <time>." and says nothing on this inventory can change and that a correction is a new inventory that supersedes it; the Report tab reads "Published by <the Kofi alias>"'
   - id: F
     title: The published record and its correction
@@ -232,6 +268,29 @@ sections:
           - expect:
               - reportHeader: { organization: "${org}", inventory: "${inv}", run: 5, version: 1, supersededBy: "FY2025 (correction)" }
                 why: unchanged, and its header says it is superseded by the correction
+      - id: F3
+        title: Assignment narrows who submits and who signs, within the roles
+        steps:
+          - do: { assignSignOff: { organization: "${org}", inventory: "FY2025 (correction)", approver: esi } }
+            expect:
+              - optionWithheld: { field: Approver, member: esi, rule: ghg.inventory.sign-off-role, with: { name: Esi Boateng, role: Preparer, act: sign off an inventory } }
+                why: the roles are the ceiling; the Approver list offers only the reviewer and the owner, so nothing is saved
+          - do: { assignSignOff: { organization: "${org}", inventory: "FY2025 (correction)", preparer: esi, approver: kofi } }
+            expect:
+              - inventoryHistoryHas: { organization: "${org}", inventory: "FY2025 (correction)", action: SIGN_OFF_ASSIGNED, detail: "preparer: Esi Boateng; approver: Kofi Mensah", actor: ama }
+          - do: { submitForReview: { organization: "${org}", inventory: "FY2025 (correction)", run: 1 } }
+            expect:
+              - refused: { rule: ghg.inventory.not-the-preparer, with: { name: Esi Boateng } }
+                why: Ama owns the organization, but Esi is this inventory's preparer
+          - as: esi
+            do: { submitForReview: { organization: "${org}", inventory: "FY2025 (correction)", run: 1, note: The June electricity restated } }
+            expect:
+              - inventoryStatus: { organization: "${org}", inventory: "FY2025 (correction)", status: IN_REVIEW }
+          - as: ama
+            do: { markFinal: { organization: "${org}", inventory: "FY2025 (correction)", run: 1 } }
+            expect:
+              - refused: { rule: ghg.inventory.not-the-approver, with: { name: Kofi Mensah } }
+                why: the correction stays in review for the walkthrough; procedure 7 reads only its run lines
   - id: G
     title: Copying the view across approaches
     cases:
@@ -252,13 +311,16 @@ sections:
           - expect:
               - observe: { text: "Leave the equity view a draft. Procedure 8 reads its base-year gate." }
 docs:
-  version: 4
+  version: 5
   estimatedMinutes: 50
   objective: >-
     Confirm that a run is a numbered snapshot that is voided with a reason and
     never renumbered, that a final run refuses a planning value and a blend
-    published on another GWP basis, that only a reviewer or an owner
-    designates and publishes, that the report carries its header and
+    published on another GWP basis, that a run is submitted for review and
+    signed off by someone other than its submitter (or disclosed as a
+    self-approval where nobody else may approve), that a named preparer and
+    approver narrow who acts, that only a reviewer or an owner signs off and
+    publishes, that the report carries its header and
     intensity, that the exports match the page, that a published report never
     changes, and that a correction supersedes it with a reason.
   runNote: Procedure 7 raises a notice against the organization it leaves published.
@@ -293,3 +355,12 @@ docs:
         and JSON exports and the correction block are read from the API as well
         as from the screen; the PDF's sentences, the voided banner and the
         inherited marks are observed on screen.
+    - version: 5
+      date: "2026-10-06"
+      text: >-
+        The sign-off workflow (spec 05.8, ECO-13). B1 reads the final-run holds
+        at the submission. C1 no longer types an approver. D2 signs Solo's run
+        as a disclosed self-approval, then withdraws it so procedure 8 can
+        delete Solo. E1 runs the review: Esi submits, Kofi returns it, Kofi's
+        own submission is refused his sign-off, Esi resubmits and Kofi signs.
+        F3 names a preparer and an approver on the correction.

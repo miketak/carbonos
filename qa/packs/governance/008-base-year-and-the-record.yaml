@@ -42,9 +42,10 @@ sections:
                 why: "one FLAGGED candidate at once, against FY2026 version 2: the designation weighed the frozen year without a new freeze"
           - expect:
               - gateFinding: { organization: "${org}", inventory: "${inv}", gate: BASE_YEAR, severity: ERROR, containing: "Base year flagged for recalculation (${removed}). Record the decision under the organization's base year." }
-          - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 1 } }
+          - do: { submitForReview: { organization: "${org}", inventory: "${inv}", run: 1 } }
             expect:
-              - refused: { rule: ghg.base-year.holds-final, with: { year: "2025", reason: "${removed}", act: marked final } }
+              - refused: { rule: ghg.base-year.holds-final, with: { year: "2025", reason: "${removed}", act: submitted for review } }
+                why: the hold is on the acts that report a figure; a run is submitted for review before it is signed off (spec 05.8), and the submission meets the hold first
           - do: { openInventory: { organization: "${org}", inventory: "${inv}" } }
             expect:
               - screenReads: { text: "Base year holds the final designation; runs stay available." }
@@ -158,7 +159,7 @@ sections:
               - platformSummary: { organizations: 1 }
                 why: Organizations counts Adansi Foods Ltd alone
 docs:
-  version: 4
+  version: 5
   estimatedMinutes: 30
   objective: >-
     Confirm that a base year is designated with its reason and policy, that
@@ -201,3 +202,8 @@ docs:
         rule ids (ghg.base-year.*, ghg.organization.has-records,
         ghg.organization.name-confirmation, ghg.factor.*). E1 counts the
         boundary versions the procedure cuts (six by its end).
+    - version: 5
+      date: "2026-10-06"
+      text: >-
+        B1: the base-year hold meets the submission for review, which comes
+        before the sign-off (spec 05.8, ECO-13).
