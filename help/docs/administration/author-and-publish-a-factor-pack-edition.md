@@ -10,7 +10,7 @@ minutes: 20
 
 An edition is one dated release of a publication's factors, cited by every report that uses it. One administrator builds the draft; a second checks it against the source document and publishes it, because a published edition never changes again.
 
-<!-- sources: specs 02.5, 02.6, 02.7; the old page tasks/administration/author-and-publish-a-factor-pack-edition.md (verified 2026-09-24 with ghana-2026, PR #100 behaviour); frontend/src/features/admin/AdminFactorPacksPage.tsx (family and edition forms, status hints, toasts); AdminFactorPackEditionPage.tsx (tabs, actions, withdraw and delete dialogs); components/PackRowFormModal.tsx (row fields and hints); components/PublishEditionDialog.tsx (the four conditions, checksum, erratum); components/BlastRadiusDrawer.tsx; AdminDashboardPage.tsx (the drafts line); backend/src/main/java/com/carbonos/ghg/internal/FactorPackPublication.java (separation of duties, withdrawal reason) -->
+<!-- sources: specs 02.5 (rule 10, the caveat, amended 2026-10-05), 02.6, 02.7; the old page tasks/administration/author-and-publish-a-factor-pack-edition.md (verified 2026-09-24 with ghana-2026, PR #100 behaviour); frontend/src/features/admin/AdminFactorPacksPage.tsx (family and edition forms, status hints, toasts); AdminFactorPackEditionPage.tsx (tabs, actions, withdraw and delete dialogs); components/PackRowFormModal.tsx (row fields and hints); components/PublishEditionDialog.tsx (the four conditions, checksum, erratum); components/BlastRadiusDrawer.tsx; AdminDashboardPage.tsx (the drafts line); backend/src/main/java/com/carbonos/ghg/internal/FactorPackPublication.java (separation of duties, withdrawal reason) -->
 
 ## Before you start
 
@@ -34,9 +34,9 @@ What you see: "*identifier* was created as an empty draft." The edition is liste
 3. Fill **Name**, **Default scope**, **Default category** and **Unit**: "One the registry knows; free text is refused."
 4. Fill **kg CO2e per unit** and the gas split, or tick "The row publishes a CO2e total with no gas split".
 5. Fill the provenance fields, from **Source publication** to **Source detail**, and **Reporting basis**.
-6. Untick **Approved for use in a calculation** for a derived row the organization must check itself, then click **Save row**.
+6. For a derived or estimated row the organization must check itself, fill **Caveat** with the condition, for example "Derived, not published: approve it after checking the year's loss rate", and untick **Approved for use in a calculation**. The caveat is the publisher's condition on using the value, apart from **Notes**, which say where it comes from; the organization reads it as the reason the factor is unapproved and records what it checked when it approves it. Then click **Save row**.
 
-What you see: "*code* was saved." **Validation** lists every row that breaks a rule, and **Blast radius** what publishing would move for each holder.
+What you see: "*code* was saved." **Validation** lists every row that breaks a rule, and **Blast radius** what publishing would move for each holder. A row with a caveat left ticked as approved is listed under "A caveated row publishes unapproved": untick it, or clear the caveat.
 
 ## Publish the edition
 
