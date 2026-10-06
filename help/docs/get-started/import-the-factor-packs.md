@@ -11,12 +11,12 @@ screens: [step-3-factor-packs.png]
 
 This third step of the Get started series gives Gye Nyame Gold its baseline of emission factors: two published pack editions, imported in two clicks, and one derived factor that you find but leave unapproved until step 6.
 
-<!-- sources: spec 10 (the factor packs table); specs 02.5, 02.6, 02.9 (factor packs, editions and approval); the old tutorial get-started/your-first-inventory.md (verified 2026-09-24); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
+<!-- sources: spec 10 (the factor packs table); specs 02.5 (rule 10, the caveat), 02.6, 02.9, 02.10 (the checklist step, decided 2026-10-05) (factor packs, editions and approval); the old tutorial get-started/your-first-inventory.md (verified 2026-09-24); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
 
 ## Before you start
 
 - The organization and its two facilities exist, from [Record the facilities and emission sources](record-the-facilities-and-emission-sources.md).
-- Nothing else. An organization starts with no factors: **Emission factors** reads "0 factors" and "None yet. Import a pack or add a supplier-specific factor."
+- Nothing else. An organization starts with no factors: **Emission factors** reads "0 factors" and "None yet. Import a pack or add a supplier-specific factor." The overview's checklist "From facts to a final inventory" shows this as the next step, "Import the factor packs, or enter your own factors", with the button **Open emission factors**.
 
 ## Import the two editions
 
@@ -37,7 +37,7 @@ Only approved factors can be run. One of the seven Ghana rows is different from 
 1. Tick **Show unapproved**.
 2. In **Search factors** type `losses`.
 
-What you see: one row, "Grid electricity T&D losses, Ghana (derived)", with the suggested scope "Scope 3" and category "3. Fuel- and energy-related activities", the value "0.117202 kg CO₂e/kWh", the status **Not approved**, and an **Approve** button. The row explains why: "Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure." Its source line shows the arithmetic: the 2024 Ember grid intensity of 0.468809 kg CO2e/kWh times the share of generation lost in transmission and distribution, 20% by the Energy Commission's statistics. Leave it as it is. Step 6 approves it before adding the upstream rule that needs it.
+What you see: one row, "Grid electricity T&D losses, Ghana (derived)", with the suggested scope "Scope 3" and category "3. Fuel- and energy-related activities", the value "0.117202 kg CO₂e/kWh", the status **Not approved**, and an **Approve** button. Under the status the row carries the publisher's caveat, the condition that keeps it unapproved: "Caveat: Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure." The six grid rows carry a note about their source instead, and arrive approved. Its source line shows the arithmetic: the 2024 Ember grid intensity of 0.468809 kg CO2e/kWh times the share of generation lost in transmission and distribution, 20% by the Energy Commission's statistics. Leave it as it is. Step 6 approves it before adding the upstream rule that needs it.
 
 ## What you have
 
