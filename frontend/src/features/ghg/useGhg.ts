@@ -388,8 +388,10 @@ export function useUpdateEmissionFactor(orgId: string) {
 }
 
 export function useSetFactorApproval(orgId: string) {
-  return useFactorMutation(orgId, ({ id, approved }: { id: string; approved: boolean }) =>
-    setFactorApproval(id, approved),
+  return useFactorMutation(
+    orgId,
+    ({ id, approved, note }: { id: string; approved: boolean; note?: string }) =>
+      setFactorApproval(id, approved, note),
   )
 }
 

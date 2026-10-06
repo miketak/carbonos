@@ -159,21 +159,42 @@ export const retireFactor = defineVerb({
       : `Click **${S.org.button.retire}** on "${a.factor}" and click **${S.org.button.retireFactor}** with **${S.org.field.validTo}** empty.`,
 })
 
+/**
+ * Approval as a control (spec 02.11). A caveated factor opens a dialog asking
+ * for the check note (spec 02.5 rule 10): {@code note} fills it; an empty
+ * note is refused by the page before any request, so the API driver reports
+ * it as not applicable.
+ */
 export const approveFactor = defineVerb({
   name: 'approveFactor',
-  args: z.object({ organization: orgArg, factor: z.string() }).strict(),
+  args: z.object({ organization: orgArg, factor: z.string(), note: z.string().optional() }).strict(),
   api: async (ctx, a) => {
+    if (a.note === '') return { status: 0, ok: false, na: 'the empty Check note is refused by the page before any request' }
     const org = await organization(ctx, a.organization)
     const row = await factor(ctx.session(), org.id, a.factor)
-    return ctx.session().post(`/api/ghg/emission-factors/${row.id}/approve`)
+    return ctx.session().post(`/api/ghg/emission-factors/${row.id}/approve`, a.note === undefined ? undefined : { note: a.note })
   },
-  ui: (a) => [
-    { op: 'orgPage', organization: a.organization, section: S.org.sections.factors },
-    { op: 'fill', label: S.org.field.searchFactors, value: a.factor },
-    { op: 'row', text: a.factor, button: S.org.button.approve },
-  ],
-  postconditions: (a) => [{ outcome: 'factorListed', args: { organization: a.organization, name: a.factor, approved: true } }],
-  narrate: (a) => `Click **${S.org.button.approve}** on "${a.factor}".`,
+  ui: (a) => {
+    const d = `${S.org.button.approve} ${a.factor}`
+    return [
+      { op: 'orgPage', organization: a.organization, section: S.org.sections.factors },
+      { op: 'fill', label: S.org.field.searchFactors, value: a.factor },
+      { op: 'row', text: a.factor, button: S.org.button.approve },
+      ...(a.note !== undefined
+        ? [
+            { op: 'fill', label: S.org.field.checkNote, value: a.note, within: d } as const,
+            { op: 'click', button: S.org.button.approveFactor, within: d } as const,
+          ]
+        : []),
+    ]
+  },
+  postconditions: (a) => (a.note === '' ? [] : [{ outcome: 'factorListed', args: { organization: a.organization, name: a.factor, approved: true } }]),
+  narrate: (a) =>
+    a.note === undefined
+      ? `Click **${S.org.button.approve}** on "${a.factor}".`
+      : a.note === ''
+        ? `Click **${S.org.button.approve}** on "${a.factor}", leave **${S.org.field.checkNote}** empty and click **${S.org.button.approveFactor}**.`
+        : `Click **${S.org.button.approve}** on "${a.factor}", type "${a.note}" in **${S.org.field.checkNote}** and click **${S.org.button.approveFactor}**.`,
 })
 
 export const libraryVerbs = [addCustomUnit, addDensity, importPack, addFactor, retireFactor, approveFactor]

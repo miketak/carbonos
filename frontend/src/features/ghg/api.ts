@@ -332,6 +332,10 @@ export interface EmissionFactor {
   approvedAt: string | null
   /** Approved by the person who entered it, nobody else being able to check it at the time. */
   selfApproved: boolean
+  /** The publisher's condition on using the value, copied from the edition row (spec 02.5 rule 10). */
+  caveat: string | null
+  /** What the approver checked before approving a caveated factor (spec 02.11). */
+  approvalNote: string | null
   /** The first pack that delivered the factor; `packs` carries every tag (spec 02.3). */
   pack: string | null
   /** Every pack that delivered this publication row, alphabetical (spec 02.3). */
@@ -1826,6 +1830,8 @@ export interface Report {
       kind: UpstreamRuleKind
       lineCount: number
     }[]
+    /** The factor pack editions the run applied, with the lines on each; absent before ECO-23. */
+    editionsApplied?: EditionApplied[]
   }
   /** Operations left out of the boundary, as the version froze them (spec 07.2). */
   boundaryExclusions: BoundaryExclusionEntry[]
@@ -1944,6 +1950,15 @@ export interface Breakdown {
   totalTCo2e: number
 }
 
+/** One factor pack edition a run applied (ECO-23): its family, the day it applies from, and its share of the run. */
+export interface EditionApplied {
+  packKey: string
+  editionId: string
+  appliesFrom: string | null
+  factorCount: number
+  lineCount: number
+}
+
 export interface FactorRow {
   factorId: string
   name: string
@@ -1971,6 +1986,9 @@ export interface FactorRow {
   reportingBasis?: ReportingBasis
   approvedBy: string | null
   selfApproved: boolean
+  /** Absent on a run launched before ECO-23. */
+  caveat?: string | null
+  approvalNote?: string | null
 }
 
 /**
@@ -2211,12 +2229,15 @@ export function updateEmissionFactor(
   })
 }
 
-export function setFactorApproval(id: string, approved: boolean): Promise<EmissionFactor> {
+/** Approves or unapproves; a caveated factor is approved with the note of what was checked (spec 02.11). */
+export function setFactorApproval(
+  id: string,
+  approved: boolean,
+  note?: string,
+): Promise<EmissionFactor> {
   return api<EmissionFactor>(
     `/api/ghg/emission-factors/${id}/${approved ? 'approve' : 'unapprove'}`,
-    {
-      method: 'POST',
-    },
+    note === undefined ? { method: 'POST' } : { method: 'POST', body: JSON.stringify({ note }) },
   )
 }
 

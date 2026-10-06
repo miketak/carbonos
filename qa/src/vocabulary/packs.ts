@@ -48,6 +48,8 @@ export interface PackRow {
   kgCo2ePerUnit: number
   dataYear: number | null
   approved: boolean
+  /** The publisher's condition on using the value (spec 02.5 rule 10); absent on a row without one. */
+  caveat?: string | null
   [key: string]: unknown
 }
 

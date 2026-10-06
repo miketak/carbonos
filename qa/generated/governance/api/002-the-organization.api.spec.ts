@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/002-the-organization.yaml (sha256 80869d1970ba72010d49de924d2c02d0ce5ea5029acfb8e284d7dd3311a73a43); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/002-the-organization.yaml (sha256 d3aef3691ca08df60988c918e35966e9577abc90d1587e038ee0656d6c71043a); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 2, "80869d1970ba72010d49de924d2c02d0ce5ea5029acfb8e284d7dd3311a73a43")
+const P = procedure("governance", 2, "d3aef3691ca08df60988c918e35966e9577abc90d1587e038ee0656d6c71043a")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 2: The organization", () => {
@@ -310,15 +310,30 @@ test.describe("Procedure 2: The organization", () => {
     await test.step("2.F1.2", async () => {
       const s = P.step("2.F1.2")
       const out = await s.do("importPack", {"organization":"Adansi Foods Ltd","pack":"ghana","packName":"Ghana: grid electricity and transmission losses"})
-      await s.expect(out, [{"outcome":"importResult","args":{"added":7,"versioned":0}},{"outcome":"factorListed","args":{"organization":"Adansi Foods Ltd","name":"Grid electricity T&D losses, Ghana (derived)","approved":false},"why":"leave it unapproved"}])
+      await s.expect(out, [{"outcome":"importResult","args":{"added":7,"versioned":0}},{"outcome":"factorListed","args":{"organization":"Adansi Foods Ltd","name":"Grid electricity T&D losses, Ghana (derived)","approved":false},"why":"the row reads \"Caveat: Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure.\" under Not approved; the six grid rows carry a note, not a caveat, and arrive approved"}])
     })
     await test.step("2.F1.3", async () => {
       const s = P.step("2.F1.3")
-      const out = await s.do("importPack", {"organization":"Adansi Foods Ltd","pack":"defra-2025","packName":"UK Government (DESNZ) GHG conversion factors 2025"})
-      await s.expect(out, [{"outcome":"importResult","args":{"added":1928,"versioned":0},"why":"the table pages at 50 and the search narrows it"}])
+      const out = await s.do("approveFactor", {"organization":"Adansi Foods Ltd","factor":"Grid electricity T&D losses, Ghana (derived)","note":""})
+      await s.expect(out, [{"outcome":"screenReads","args":{"text":"Say what you checked before approving this factor."},"why":"Approve opens the dialog \"Approve Grid electricity T&D losses, Ghana (derived)\" with the caveat and a Check note field; the empty note is refused by the page before any request (the API refuses it too, rule ghg.factor.caveat-note-required on the note field)"}])
     })
     await test.step("2.F1.4", async () => {
       const s = P.step("2.F1.4")
+      const out = await s.do("approveFactor", {"organization":"Adansi Foods Ltd","factor":"Grid electricity T&D losses, Ghana (derived)","note":"Loss rate checked against the Energy Commission's 2024 statistics (20%)."})
+      await s.expect(out, [{"outcome":"factorListed","args":{"organization":"Adansi Foods Ltd","name":"Grid electricity T&D losses, Ghana (derived)","approved":true},"why":"the row reads Approved by the approver with the moment, then \"Checked: Loss rate checked against the Energy Commission's 2024 statistics (20%).\"; the caveat stays on the row and both print in the report's factor table"}])
+    })
+    await test.step("2.F1.5", async () => {
+      const s = P.step("2.F1.5")
+      const out = await s.do("unapproveFactor", {"organization":"Adansi Foods Ltd","factor":"Grid electricity T&D losses, Ghana (derived)"})
+      await s.expect(out, [{"outcome":"factorListed","args":{"organization":"Adansi Foods Ltd","name":"Grid electricity T&D losses, Ghana (derived)","approved":false},"why":"leave it unapproved for the procedures that follow; unapproving clears the check note"}])
+    })
+    await test.step("2.F1.6", async () => {
+      const s = P.step("2.F1.6")
+      const out = await s.do("importPack", {"organization":"Adansi Foods Ltd","pack":"defra-2025","packName":"UK Government (DESNZ) GHG conversion factors 2025"})
+      await s.expect(out, [{"outcome":"importResult","args":{"added":1928,"versioned":0},"why":"the table pages at 50 and the search narrows it"}])
+    })
+    await test.step("2.F1.7", async () => {
+      const s = P.step("2.F1.7")
       const out = await s.do("importPack", {"organization":"Adansi Foods Ltd","pack":"defra-2026","packName":"UK Government (DESNZ) GHG conversion factors 2026"})
       await s.expect(out, [{"outcome":"importResult","args":{"added":385,"versioned":1483,"discontinued":445}},{"outcome":"factorListed","args":{"organization":"Adansi Foods Ltd","name":"Gaseous fuels: LPG","versions":["defra-2025","defra-2026"]},"why":"a row both years carry now shows two versions, defra-2025 to 2025-12-31 and defra-2026 from 2026-01-01; a pack-derived row offers Retire… and never Delete"}])
     })

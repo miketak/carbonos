@@ -233,7 +233,19 @@ sections:
             expect:
               - importResult: { added: 7, versioned: 0 }
               - factorListed: { organization: "${org}", name: "Grid electricity T&D losses, Ghana (derived)", approved: false }
-                why: leave it unapproved
+                why: "the row reads \"Caveat: Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure.\" under Not approved; the six grid rows carry a note, not a caveat, and arrive approved"
+          - do: { approveFactor: { organization: "${org}", factor: "Grid electricity T&D losses, Ghana (derived)", note: "" } }
+            expect:
+              - screenReads: { text: "Say what you checked before approving this factor." }
+                why: "Approve opens the dialog \"Approve Grid electricity T&D losses, Ghana (derived)\" with the caveat and a Check note field; the empty note is refused by the page before any request (the API refuses it too, rule ghg.factor.caveat-note-required on the note field)"
+          - do: { approveFactor: { organization: "${org}", factor: "Grid electricity T&D losses, Ghana (derived)", note: "Loss rate checked against the Energy Commission's 2024 statistics (20%)." } }
+            expect:
+              - factorListed: { organization: "${org}", name: "Grid electricity T&D losses, Ghana (derived)", approved: true }
+                why: "the row reads Approved by the approver with the moment, then \"Checked: Loss rate checked against the Energy Commission's 2024 statistics (20%).\"; the caveat stays on the row and both print in the report's factor table"
+          - do: { unapproveFactor: { organization: "${org}", factor: "Grid electricity T&D losses, Ghana (derived)" } }
+            expect:
+              - factorListed: { organization: "${org}", name: "Grid electricity T&D losses, Ghana (derived)", approved: false }
+                why: leave it unapproved for the procedures that follow; unapproving clears the check note
           - do: { importPack: { organization: "${org}", pack: defra-2025, packName: "UK Government (DESNZ) GHG conversion factors 2025" } }
             expect:
               - importResult: { added: 1928, versioned: 0 }

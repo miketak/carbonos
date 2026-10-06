@@ -77,6 +77,7 @@ function initialText(row: FactorPackRow | null): Text {
     sourceActivity: row?.sourceActivity ?? '',
     sourceDetail: row?.sourceDetail ?? '',
     notes: row?.notes ?? '',
+    caveat: row?.caveat ?? '',
   }
 }
 
@@ -151,6 +152,7 @@ export function PackRowFormModal({
       co2eOnly,
       approved,
       notes: textOrNull('notes'),
+      caveat: textOrNull('caveat'),
       reportingBasis: basis,
     }
     const onError = (failure: unknown) => {
@@ -379,6 +381,16 @@ export function PackRowFormModal({
             value={text.notes}
             error={errors.notes}
             onChange={(event) => set('notes')(event.target.value)}
+          />
+        </div>
+        <div className="mt-4">
+          {/* spec 02.5 rule 10: a condition on the value, apart from where it comes from */}
+          <TextAreaField
+            label="Caveat"
+            hint="The publisher's condition on using the value, for example a derived figure to check against the year's statistics. A row with a caveat publishes unapproved; the organization approves it with a note of what it checked."
+            value={text.caveat}
+            error={errors.caveat}
+            onChange={(event) => set('caveat')(event.target.value)}
           />
         </div>
 

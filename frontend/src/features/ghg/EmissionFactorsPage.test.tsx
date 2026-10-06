@@ -72,6 +72,8 @@ const diesel: EmissionFactor = {
   approvedBy: null,
   approvedAt: null,
   selfApproved: false,
+  caveat: null,
+  approvalNote: null,
   pack: null,
   packs: [],
   packCode: null,
@@ -236,7 +238,54 @@ test('imports a pack and approves a factor', async () => {
   ).toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: 'Approve' }))
-  await waitFor(() => expect(setFactorApproval).toHaveBeenCalledWith('f-2', true))
+  await waitFor(() => expect(setFactorApproval).toHaveBeenCalledWith('f-2', true, undefined))
+})
+
+test('a caveated factor shows its caveat and is approved with a check note (spec 02.5 rule 10)', async () => {
+  const user = userEvent.setup()
+  mockEmissionFactors([
+    diesel,
+    {
+      ...hfo,
+      id: 'f-3',
+      name: 'Grid electricity T&D losses, Ghana (derived)',
+      caveat:
+        "Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure.",
+    },
+  ])
+  vi.mocked(setFactorApproval).mockResolvedValue({
+    ...hfo,
+    id: 'f-3',
+    approved: true,
+    approvalNote: 'Loss rate checked against the 2024 statistics.',
+  })
+  renderPage()
+
+  expect(
+    await screen.findByText(/Caveat: Derived, not published: approve it after checking/),
+  ).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Approve' }))
+  // the dialog asks what was checked, and refuses an empty note before asking the server
+  const dialog = await screen.findByRole('dialog', {
+    name: 'Approve Grid electricity T&D losses, Ghana (derived)',
+  })
+  await user.click(within(dialog).getByRole('button', { name: 'Approve factor' }))
+  expect(
+    within(dialog).getByText('Say what you checked before approving this factor.'),
+  ).toBeInTheDocument()
+  expect(setFactorApproval).not.toHaveBeenCalled()
+  await user.type(
+    within(dialog).getByLabelText(/Check note/),
+    'Loss rate checked against the 2024 statistics.',
+  )
+  await user.click(within(dialog).getByRole('button', { name: 'Approve factor' }))
+  await waitFor(() =>
+    expect(setFactorApproval).toHaveBeenCalledWith(
+      'f-3',
+      true,
+      'Loss rate checked against the 2024 statistics.',
+    ),
+  )
 })
 
 test('the import toast names the rows the registry could not convert (spec 02.6)', async () => {

@@ -659,6 +659,19 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
 
       <Section number={8} title="Methodology">
         <p className="text-sm">{methodology.statement}</p>
+        {/* ECO-23: the editions the run applied, and the lines on each; two of one family are named */}
+        {methodology.editionsApplied && methodology.editionsApplied.length > 0 && (
+          <p className="mt-2 text-sm text-ink-muted">
+            Factor pack editions applied:{' '}
+            {methodology.editionsApplied
+              .map(
+                (edition) =>
+                  `${edition.editionId}${edition.appliesFrom ? ` (applies from ${edition.appliesFrom})` : ''}, ${edition.lineCount} ${edition.lineCount === 1 ? 'line' : 'lines'}`,
+              )
+              .join('; ')}
+            .
+          </p>
+        )}
         <p className="mt-2 text-sm text-ink-muted">
           GWP set: IPCC {methodology.gwpSet}, 100-year. Assessment reports used:{' '}
           {methodology.assessmentReports.join(', ')}.
@@ -1252,6 +1265,13 @@ function FactorTable({ factors }: { factors: Report['factors'] }) {
                     title="Approved by the person who entered it, nobody else being able to check it at the time (spec 02.11)"
                   >
                     self-approved{f.approvedBy ? ` by ${f.approvedBy}` : ''}
+                  </span>
+                )}
+                {/* ECO-23: the publisher's caveat and what the approver checked, as the PDF prints them */}
+                {f.caveat && (
+                  <span className="block">
+                    Caveat: {f.caveat}
+                    {f.approvalNote ? ` Checked: ${f.approvalNote}` : ' Not yet checked.'}
                   </span>
                 )}
               </Td>

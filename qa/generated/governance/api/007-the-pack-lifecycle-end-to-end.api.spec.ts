@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/007-the-pack-lifecycle-end-to-end.yaml (sha256 d54b0c48142a6cdb7be95bf9295273a16c76167cf98d284b5f6c7b548490dacb); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/007-the-pack-lifecycle-end-to-end.yaml (sha256 fc4923818a120cba58c704489a3ddbaa16592c7c6453577e00885ea303362522); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 7, "d54b0c48142a6cdb7be95bf9295273a16c76167cf98d284b5f6c7b548490dacb")
+const P = procedure("governance", 7, "fc4923818a120cba58c704489a3ddbaa16592c7c6453577e00885ea303362522")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 7: The pack lifecycle end to end", () => {
@@ -54,6 +54,23 @@ test.describe("Procedure 7: The pack lifecycle end to end", () => {
     await test.step("7.A2.3", async () => {
       const s = P.step("7.A2.3")
       const out = await s.do("editPackRow", {"edition":"ghana-2027-gov","code":"grid2024","newCode":"GHANA:grid:GHA:2024","unit":"kWh","dataYear":2024})
+      await s.expect(out, [{"outcome":"editionValidation","args":{"edition":"ghana-2027-gov","passes":true}}])
+    })
+  })
+
+  test("A3. A caveated row publishes unapproved", async () => {
+    await test.step("7.A3.1", async () => {
+      const s = P.step("7.A3.1")
+      await s.expect(undefined, [{"outcome":"packRowReads","args":{"edition":"ghana-2027-gov","code":"GHANA:td-losses","approved":false},"why":"the derived losses row arrived from ghana with its caveat and unapproved; its Edit dialog shows the Caveat field filled: \"Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure.\""}])
+    })
+    await test.step("7.A3.2", async () => {
+      const s = P.step("7.A3.2")
+      const out = await s.do("editPackRow", {"edition":"ghana-2027-gov","code":"GHANA:td-losses","approved":true})
+      await s.expect(out, [{"outcome":"editionValidation","args":{"edition":"ghana-2027-gov","findings":[{"rule":"caveat","code":"GHANA:td-losses"}]},"why":"one finding on the row: \"'Grid electricity T&D losses, Ghana (derived)' carries a caveat, so it publishes unapproved\", then the caveat itself; a caveat is the publisher's condition on using the value, and publication does not lift it (spec 02.5 rule 10)"}])
+    })
+    await test.step("7.A3.3", async () => {
+      const s = P.step("7.A3.3")
+      const out = await s.do("editPackRow", {"edition":"ghana-2027-gov","code":"GHANA:td-losses","approved":false})
       await s.expect(out, [{"outcome":"editionValidation","args":{"edition":"ghana-2027-gov","passes":true}}])
     })
   })

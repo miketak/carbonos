@@ -293,6 +293,8 @@ export interface FactorPackRow {
   co2eOnly: boolean
   approved: boolean
   notes: string | null
+  /** The publisher's condition on using the value; a row carrying one publishes unapproved (spec 02.5 rule 10). */
+  caveat: string | null
   reportingBasis: ReportingBasis
 }
 
