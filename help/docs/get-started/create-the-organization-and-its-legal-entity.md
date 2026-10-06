@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
+last_reviewed: 2026-10-06
 description: Create the Gye Nyame Gold Ltd organization, read its account number, and record its camp services subsidiary as a legal entity with its ownership facts.
 role: Owner
 minutes: 5
@@ -27,7 +27,7 @@ This first step of the Get started series produces the reporting organization, G
 5. Leave **Contact (optional)** and **Owner's email (optional)** empty. Naming somebody else as owner makes them the owner and leaves you outside the organization.
 6. Click **Create organization**.
 
-What you see: the message "Gye Nyame Gold Ltd (ORG-0001) created." and a row for the organization with ORG-0001 under its name, reading "0 facilities in the boundary", with **Open** and **Settings**. The account number identifies the organization on the platform. Click **Open**. The **Overview** lists four numbered steps, from "Add your legal entities and facilities" to "Clear pre-flight and launch a run", and the dark rail on the left holds the pages this series visits, numbered as steps: **01 Legal entities**, **02 Facilities**, **03 Activity data** and **04 Inventories**, then **Emission factors**.
+What you see: the message "Gye Nyame Gold Ltd (ORG-0001) created." and a row for the organization with ORG-0001 under its name, reading "0 facilities in the boundary", with **Open** and **Settings**. The account number identifies the organization on the platform. Click **Open**. The **Overview** lists five numbered steps, from "Add your legal entities and facilities" to "Clear pre-flight and launch a run", and the dark rail on the left holds the pages this series visits, numbered as steps: **01 Legal entities**, **02 Facilities**, **03 Activity data** and **04 Inventories**, then **Emission factors**.
 
 ## Record the legal entity
 

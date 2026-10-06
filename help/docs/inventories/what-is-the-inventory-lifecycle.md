@@ -1,7 +1,7 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
-description: The four states an inventory passes through, what each one lets you change, why a freeze cuts a boundary version, and how a correction supersedes a published report.
+last_reviewed: 2026-10-06
+description: The five states an inventory passes through, what each one lets you change, why a freeze cuts a boundary version, and how a correction supersedes a published report.
 ---
 
 # What is the inventory lifecycle?
@@ -10,18 +10,21 @@ The inventory lifecycle is the path from an editable draft to a published
 report that never changes; some steps ask for a reason and others are
 refused.
 
-<!-- sources: concepts/the-inventory-lifecycle.md (verified 2026-09-24); specs 05.1, 05.2, 05.3, 05.5, 05.7, 10; LifecycleBar.tsx stateCopy; RunDetailPage.tsx header ("Report version", "supersedes"); badges.tsx ("inherited"); lifecycle panel and dialog texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 freeze dialog", "7 after freeze", "8 after final", "8 publish dialog", "8 after publish" -->
+<!-- sources: spec 05.8 (the sign-off workflow), its strings checked in the Gye Nyame Gold walkthrough of 2026-10-06 (walkthrough-log.txt); concepts/the-inventory-lifecycle.md (verified 2026-09-24); specs 05.1, 05.2, 05.3, 05.5, 05.7, 10; LifecycleBar.tsx stateCopy; RunDetailPage.tsx header ("Report version", "supersedes"); badges.tsx ("inherited"); lifecycle panel and dialog texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 freeze dialog", "7 after freeze", "8 after final", "8 publish dialog", "8 after publish" -->
 
 ## Which states does an inventory pass through?
 
 ```mermaid
 stateDiagram-v2
-    accTitle: The four inventory states and the acts between them
-    accDescr: A new inventory is a draft. Freeze inventory makes it frozen and cuts a boundary version. Reopen as draft, with a reason, returns it to draft. Mark as final on a run makes it final. Withdraw final designation, with a reason, returns it to frozen. Publish makes it published, and nothing on it changes again. Create correction starts a new draft inventory that supersedes the published one.
+    accTitle: The five inventory states and the acts between them
+    accDescr: A new inventory is a draft. Freeze inventory makes it frozen and cuts a boundary version. Reopen as draft, with a reason, returns it to draft. Submit for review on a run puts it in review; Return to preparer, with a reason, makes it frozen again. Mark as final, by someone other than the submitter, makes it final. Withdraw final designation, with a reason, returns it to frozen. Publish makes it published, and nothing on it changes again. Create correction starts a new draft inventory that supersedes the published one.
     [*] --> Draft: New inventory
     Draft --> Frozen: Freeze inventory
     Frozen --> Draft: Reopen as draft, with a reason
-    Frozen --> Final: Mark as final, on a run
+    state "In review" as InReview
+    Frozen --> InReview: Submit for<br/>review
+    InReview --> Frozen: Return to preparer
+    InReview --> Final: Mark as final, by someone else
     Final --> Frozen: Withdraw final designation, with a reason
     Final --> Published: Publish
     Published --> Draft: Create correction, a new inventory
@@ -30,7 +33,8 @@ stateDiagram-v2
 | State | **Inventory lifecycle** says | You can | You cannot |
 | --- | --- | --- | --- |
 | Draft | "runs are blocked until the inventory is frozen" | Edit the boundary, the declaration, the rules and every classification. | Launch a run. |
-| Frozen | "The boundary and the activity view are read-only and runs are allowed." | **Launch calculation run**, void a run, **Reopen as draft** with a reason. | Change anything a run reads. |
+| Frozen | "The boundary and the activity view are read-only and runs are allowed." | **Launch calculation run**, void a run, **Submit for review**, **Reopen as draft** with a reason. | Change anything a run reads. |
+| In review | "A run was submitted for review." | **Mark as final** if you did not submit it, or **Return to preparer** or **Reopen as draft** with a reason. | Sign off your own submission while someone else can. |
 | Final | "A run is designated the final result." | **Publish**, or **Withdraw final designation** with a reason. | Reopen. |
 | Published | "The report was issued; nothing on this inventory can change." | Read the report as issued, **Create correction**. | Change anything. |
 

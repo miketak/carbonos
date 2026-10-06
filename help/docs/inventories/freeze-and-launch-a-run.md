@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
+last_reviewed: 2026-10-06
 description: Freeze the inventory to cut a boundary version, read what refuses a freeze, launch the run that produces the figures, and reopen the inventory as a draft with a reason.
 role: Preparer
 minutes: 10
@@ -11,7 +11,7 @@ screens: [step-7-freeze-dialog.png]
 
 A run can only be launched from a frozen inventory; the freeze cuts the boundary version every run cites. Freeze once every record is decided.
 
-<!-- sources: specs 05, 05.1, 05.5, 05.6 and 10 (the pre-flight chip, the lifecycle acts in the title row); the old pages tasks/inventories/freeze-and-launch-a-run.md and reference/pre-flight-gates-and-findings.md (verified 2026-09-24); LifecycleBar.tsx (freeze and reopen dialogs, describeFreezeBlockers); InventoryService.java freezeBlockers and leaseDisagreement; PreflightChip.tsx; InventoryDetailPage.tsx (Run label, launch, void); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "7 freeze dialog", "7 after freeze", "7 runs tab", "7 run page", "7 runs listed" -->
+<!-- sources: spec 05.8 (the sign-off workflow), its strings checked in the Gye Nyame Gold walkthrough of 2026-10-06 (walkthrough-log.txt); specs 05, 05.1, 05.5, 05.6 and 10 (the pre-flight chip, the lifecycle acts in the title row); the old pages tasks/inventories/freeze-and-launch-a-run.md and reference/pre-flight-gates-and-findings.md (verified 2026-09-24); LifecycleBar.tsx (freeze and reopen dialogs, describeFreezeBlockers); InventoryService.java freezeBlockers and leaseDisagreement; PreflightChip.tsx; InventoryDetailPage.tsx (Run label, launch, void); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "7 freeze dialog", "7 after freeze", "7 runs tab", "7 run page", "7 runs listed" -->
 
 ## Before you start
 
@@ -44,7 +44,7 @@ Only records refuse a freeze; the dialog lists them by reference, name and facil
 1. Open the **Runs** tab. **Run label** is prefilled, `Run 001`.
 2. Click **Launch calculation run**, disabled while the launch is on hold: "Resolve the blocking findings first".
 
-What you see: "Calculation complete." and the run's page, "Run 001", "Gye Nyame Gold Ltd (ORG-0001) · 2025-01-01 → 2025-12-31 · 11 lines", with **PDF report**, **Lines (CSV)** and **Exclusions (CSV)**; see [Fill the report header and read the report](../reporting/fill-the-report-header-and-read-the-report.md). The **Runs** tab lists "#001 Run 001", "11 lines · boundary v1" and "86,412 t CO₂e", with **Mark as final** and **Void…**.
+What you see: "Calculation complete." and the run's page, "Run 001", "Gye Nyame Gold Ltd (ORG-0001) · 2025-01-01 → 2025-12-31 · 11 lines", with **PDF report**, **Lines (CSV)** and **Exclusions (CSV)**; see [Fill the report header and read the report](../reporting/fill-the-report-header-and-read-the-report.md). The **Runs** tab lists "#001 Run 001", "11 lines · boundary v1" and "86,412 t CO₂e", with **Submit for review** and **Void…**.
 
 ## Reopen as a draft
 

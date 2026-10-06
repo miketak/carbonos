@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-06
 description: The permissions matrix, act by act, for the Owner, Reviewer, Preparer and Verifier roles and for support access, with the tooltip or refusal each blocked act shows.
 role: Anyone
 ---
@@ -9,7 +9,7 @@ role: Anyone
 
 Who may do what, act by act. A control your role may not use is disabled with a tooltip naming the roles that may, and the server refuses the same act naming the role: "This action needs the REVIEWER or OWNER role in the organization."
 
-<!-- sources: reference/roles-and-permissions.md (verified 2026-09-24 and 2026-09-26); specs 01.2, 01.3, 01.4, 01.5, 01.8, 02.7, 02.11; roles.ts (WRITE_ROLES, APPROVE_ROLES, OWNER_ROLES, mayManageMembership, the three tooltips); GhgAccess.java (checkWrite, checkApprove, checkTenantDecision, checkOwner, checkMemberOwner, RoleRequiredException); GhgService.java, InventoryService.java, BaseYearService.java, FactorPackAdoptionService.java, FactorPackImportService.java, ActivityImportService.java, EvidenceService.java (the check each act calls); BaseYearPage.tsx (every button uses mayWrite); MembersCard.tsx (labels); OrganizationSettingsPage.tsx ("Settings are the owner's"); ReadOnlyBanner.tsx; FactorPackPublication.java (the curator rule); UserService.java (the administrator's own account) -->
+<!-- sources: spec 05.8 (the sign-off workflow); reference/roles-and-permissions.md (verified 2026-09-24 and 2026-09-26); specs 01.2, 01.3, 01.4, 01.5, 01.8, 02.7, 02.11; roles.ts (WRITE_ROLES, APPROVE_ROLES, OWNER_ROLES, mayManageMembership, the three tooltips); GhgAccess.java (checkWrite, checkApprove, checkTenantDecision, checkOwner, checkMemberOwner, RoleRequiredException); GhgService.java, InventoryService.java, BaseYearService.java, FactorPackAdoptionService.java, FactorPackImportService.java, ActivityImportService.java, EvidenceService.java (the check each act calls); BaseYearPage.tsx (every button uses mayWrite); MembersCard.tsx (labels); OrganizationSettingsPage.tsx ("Settings are the owner's"); ReadOnlyBanner.tsx; FactorPackPublication.java (the curator rule); UserService.java (the administrator's own account) -->
 
 ## The roles
 
@@ -37,7 +37,9 @@ The foot of the organization's sidebar shows your own role: "Your role: Preparer
 | Review, classify and exclude records | Yes | Yes | Yes | No | Yes | Needs the Preparer, Reviewer or Owner role. |
 | Freeze, reopen, launch a run, void a run | Yes | Yes | Yes | No | Yes | Needs the Preparer, Reviewer or Owner role. |
 | Designate the base year, withdraw it, decide a recalculation candidate | Yes | Yes | Yes | No | Yes | Needs the Preparer, Reviewer or Owner role. |
-| Mark a run as final; withdraw the designation | Yes | Yes | No | No | Yes | Needs the Reviewer or Owner role. |
+| Submit a run for review | Yes | Yes | Yes | No | Yes | Needs the Preparer, Reviewer or Owner role. |
+| Mark a submitted run as final; return it to the preparer; withdraw the designation | Yes, but not final on a run you submitted while someone else may approve | Yes, but not final on a run you submitted while someone else may approve | No | No | Yes, but not final on a run support submitted | Needs the Reviewer or Owner role. |
+| Name an inventory's preparer and approver | Yes | Yes | No | No | Yes | Needs the Reviewer or Owner role. |
 | Publish; create a correction | Yes | Yes | No | No | Yes | Needs the Reviewer or Owner role. |
 | Accept or decline a factor pack update | Yes | Yes | No | No | No: refused with "Support access cannot adopt an edition for an organization." | Needs the Reviewer or Owner role. |
 | Add, change and remove members | Yes | No | No | No | No | Needs the Owner role. |
