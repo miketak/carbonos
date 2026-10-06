@@ -1,12 +1,12 @@
 {
   "procedure": 8,
   "driver": "api",
-  "yamlSha256": "86d8a9e976c94708772deb086bcdf3060df4b21a919b72dc6e0164452231502a",
+  "yamlSha256": "4f51c2827d9362bfba1ad407117676378d5a7028caa65dd9fd718eb009bb0070",
   "productVersion": null,
-  "gitSha": "3dd7eed90aebb7d9020e6d9582f7a7533455c869",
-  "date": "2026-10-02",
-  "specialist": "unknown",
-  "digestSha256": "09961d45a826ace15827fa67f2c9bcf6de9638a8eac7aeb8702bc90fa728efec",
+  "gitSha": "c9113f608b0d41a4642b69c54110c6b30ea5b98f",
+  "date": "2026-10-06",
+  "specialist": "mtakrama",
+  "digestSha256": "f034d15b73d25b21fc2937a2ec19ea6bcc2b28e0f8ee5e7cba89ee88ebd1f794",
   "counts": {
     "pass": 36,
     "na": 2,
@@ -154,7 +154,7 @@
     {
       "id": "8.F1.4",
       "status": "MANUAL",
-      "note": "observe: MANUAL, History lists the members added, the entities, facilities and streams of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label."
+      "note": "observe: MANUAL, History lists the members added, the entities, facilities and emission sources of procedure 2, support access assumed and ended, the adoption, and every act since, each with an email and a moment. Its rows are not only members: read them by their label."
     },
     {
       "id": "8.F2.1",
