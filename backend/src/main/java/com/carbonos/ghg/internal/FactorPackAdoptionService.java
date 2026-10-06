@@ -374,7 +374,9 @@ public class FactorPackAdoptionService {
 			.stream()
 			.reduce((first, second) -> second)
 			.or(() -> inventories
-				.findAllByOrganizationIdAndStatusOrderByPeriodStartAsc(organizationId, InventoryStatus.FROZEN)
+				// spec 05.8: an inventory in review is a frozen period too
+				.findAllByOrganizationIdAndStatusInOrderByPeriodStartAsc(organizationId,
+						List.of(InventoryStatus.FROZEN, InventoryStatus.IN_REVIEW))
 				.stream()
 				.reduce((first, second) -> second))
 			.orElse(null);

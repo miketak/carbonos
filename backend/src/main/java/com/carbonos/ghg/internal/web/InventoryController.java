@@ -44,6 +44,7 @@ import com.carbonos.ghg.internal.web.dto.MarketFactorResponse;
 import com.carbonos.ghg.internal.web.dto.OperationalBoundaryRequest;
 import com.carbonos.ghg.internal.web.dto.ReasonRequest;
 import com.carbonos.ghg.internal.web.dto.ReportMetadataRequest;
+import com.carbonos.ghg.internal.web.dto.SignOffRequest;
 import com.carbonos.ghg.internal.web.dto.ResidualMixRequest;
 import com.carbonos.ghg.internal.web.dto.SupersedeRequest;
 import com.carbonos.ghg.internal.web.dto.UpstreamRuleRequest;
@@ -240,10 +241,22 @@ class InventoryController {
 		return respond(inventoryService.withdrawFinal(id, body.reason()));
 	}
 
-	/** The report header: approver, assurance, intensity denominators (spec 07.4). */
+	/** Returns the inventory in review to its preparer, with a reason (spec 05.8). */
+	@PostMapping("/inventories/{id}/return-to-preparer")
+	InventoryResponse returnToPreparer(@PathVariable UUID id, @Valid @RequestBody ReasonRequest body) {
+		return respond(inventoryService.returnToPreparer(id, body.reason()));
+	}
+
+	/** Names the inventory's preparer and approver, either or both; null clears (spec 05.8). */
+	@PutMapping("/inventories/{id}/sign-off")
+	InventoryResponse signOff(@PathVariable UUID id, @RequestBody SignOffRequest body) {
+		return respond(inventoryService.assignSignOff(id, body.preparerUserId(), body.approverUserId()));
+	}
+
+	/** The report header: assurance, uncertainty, intensity denominators (spec 07.4; the approver is the sign-off). */
 	@PutMapping("/inventories/{id}/report-metadata")
 	InventoryResponse reportMetadata(@PathVariable UUID id, @Valid @RequestBody ReportMetadataRequest body) {
-		return respond(inventoryService.setReportMetadata(id, body.approvedBy(),
+		return respond(inventoryService.setReportMetadata(id,
 				body.assuranceLevel(), body.assuranceProvider(), body.assuranceStatement(), body.uncertaintyStatement(),
 				body.intensityMetrics()
 					.stream()
@@ -389,6 +402,7 @@ class InventoryController {
 	}
 	/** The inventory as the client holds it, with its saved intensity denominators (spec 05.6). */
 	private InventoryResponse respond(Inventory inventory) {
-		return InventoryResponse.from(inventory, inventoryService.intensityMetrics(inventory.getId()));
+		return InventoryResponse.from(inventory, inventoryService.intensityMetrics(inventory.getId()),
+				inventoryService.submitterMaySign(inventory));
 	}
 }

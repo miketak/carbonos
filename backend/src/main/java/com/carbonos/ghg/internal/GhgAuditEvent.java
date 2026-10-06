@@ -42,7 +42,9 @@ public class GhgAuditEvent {
 		// spec 04.7: a rule that derives category 3 lines is a method decision, not a review
 		UPSTREAM_RULE_ADDED, UPSTREAM_RULE_REMOVED,
 		// spec 04.11: an unknown source name mapped during an import, and one act over several records
-		IMPORT_SOURCE_MAPPED, RECORDS_BULK_CORRECTED
+		IMPORT_SOURCE_MAPPED, RECORDS_BULK_CORRECTED,
+		// spec 05.8: the review trail between frozen and final; FINAL_DESIGNATED stays the sign-off
+		SUBMITTED_FOR_REVIEW, REVIEW_RETURNED, SUBMISSION_WITHDRAWN, SIGN_OFF_ASSIGNED
 	}
 
 	@Id
@@ -100,7 +102,9 @@ public class GhgAuditEvent {
 		this.action = action;
 		this.actorUserId = actorUserId;
 		this.actor = actor;
-		this.reason = reason;
+		// the detail carries a typed note or reason after a prefix and, under support access, a marker:
+		// fit it to the column rather than lose the act (spec 05.8)
+		this.reason = reason != null && reason.length() > 500 ? reason.substring(0, 497) + "..." : reason;
 	}
 
 	public UUID getId() {

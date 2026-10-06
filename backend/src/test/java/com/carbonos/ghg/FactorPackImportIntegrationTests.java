@@ -345,6 +345,9 @@ class FactorPackImportIntegrationTests {
 
 	/** Designates the run final and publishes the inventory: the period is on record from here on. */
 	void finalizeAndPublish(String inventoryId, String runId) throws Exception {
+		// spec 05.8: submitted for review first; the sole owner's own sign-off is a disclosed self-approval
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asMember()).with(csrf())
+			.contentType("application/json").content("{}")).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("{}")).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
@@ -607,6 +610,9 @@ class FactorPackImportIntegrationTests {
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Reopen that inventory")));
 
 		// FINAL: a final run's factors must not shift under it
+		// spec 05.8: submitted for review first; the sole owner's own sign-off is a disclosed self-approval
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asMember()).with(csrf())
+			.contentType("application/json").content("{}")).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("{}")).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/" + SECOND + "/import").with(asMember())

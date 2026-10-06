@@ -344,6 +344,9 @@ class FactorPackAdoptionApiIntegrationTests {
 				.contentType("application/json").content("""
 						{"label": "Run"}"""))
 			.andExpect(status().isCreated())), "$.run.id");
+		// spec 05.8: submitted for review first; the sole owner's own sign-off is a disclosed self-approval
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asOwner()).with(csrf())
+			.contentType("application/json").content("{}")).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asOwner()).with(csrf())
 			.contentType("application/json").content("{}")).andExpect(status().isOk());
 		return runId;
@@ -881,6 +884,9 @@ class FactorPackAdoptionApiIntegrationTests {
 				.contentType("application/json").content("""
 						{"label": "Run"}"""))
 			.andExpect(status().isCreated())), "$.run.id");
+		// spec 05.8: submitted for review first; the sole owner's own sign-off is a disclosed self-approval
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asOwner()).with(csrf())
+			.contentType("application/json").content("{}")).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asOwner()).with(csrf())
 			.contentType("application/json").content("{}")).andExpect(status().isOk());
 		accept(noticeId, "VINTAGE_PROGRESSION", "The 2027 tables.", asOwner()).andExpect(status().isConflict())
@@ -1114,10 +1120,11 @@ class FactorPackAdoptionApiIntegrationTests {
 						{"label": "Assessing the movement"}"""))
 			.andExpect(status().isCreated())), "$.run.id");
 
-		// and the run cannot be designated final while the candidate stands
-		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asOwner()).with(csrf())
+		// and the run cannot be put forward for its sign-off while the candidate stands (spec 05.8: submission
+		// checks what the sign-off checks)
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asOwner()).with(csrf())
 			.contentType("application/json").content("{}")).andExpect(status().isConflict())
-			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("cannot be marked final")));
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("cannot be submitted for review")));
 
 		// the BASE_YEAR gate still says so, as a finding rather than a refusal to calculate
 		mvc.perform(get("/api/ghg/inventories/" + holder.draftInventoryId() + "/validation").with(asOwner()))
@@ -1132,6 +1139,9 @@ class FactorPackAdoptionApiIntegrationTests {
 			.content("""
 					{"decision": "DECLINED", "note": "Below materiality for the reported years."}"""))
 			.andExpect(status().isOk());
+		// spec 05.8: submitted for review first; the sole owner's own sign-off is a disclosed self-approval
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asOwner()).with(csrf())
+			.contentType("application/json").content("{}")).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asOwner()).with(csrf())
 			.contentType("application/json").content("{}")).andExpect(status().isOk());
 	}
