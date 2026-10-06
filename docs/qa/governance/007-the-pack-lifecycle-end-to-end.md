@@ -7,7 +7,7 @@
 
 **Estimated time:** 40 minutes.
 
-**Procedure version:** 4 (2026-10-02). The change notes are at the foot.
+**Procedure version:** 5 (2026-10-06). The change notes are at the foot.
 
 **Run this procedure** after procedure 6. The edition identifiers it publishes are citations and can never be reused: a second pass on the same database needs new ones.
 
@@ -123,15 +123,15 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Import**, choose `adansi-2026.csv` and click **Add records**. | ACT-0018 is on the register with the quantity 2100 litre. ACT-0015 is on the register with the quantity 110 MWh: "2 records imported."; the two rows removed in procedure 3 do not count as duplicates. |  |  |
+| 1 | Click **Import**, choose `adansi-2026.csv` and click **Add records**. | ACT-0018 is on the register with the quantity 2100 litre. ACT-0019 is on the register with the quantity 110 MWh: "2 records imported."; the two rows removed in procedure 3 do not count as duplicates. |  |  |
 | 2 | Open **Inventories** and click **New inventory**. Name "FY2026", period 2026-01-01 to 2026-12-31, consolidation approach operational control, GWP set AR5, straddling records **Pro-rate by days (default)**, and **Start with every operation the approach includes in the boundary** ticked. Click **Create inventory**. The inventory opens on its workbench. | The header reads DRAFT. |  |  |
-| 3 | Click **Review activity data**. | ACT-0014 is still unclassified. ACT-0015 is still unclassified. ACT-0006 is still unclassified. ACT-0001 reads "Excluded · Outside reporting period". A warning on the **Activity data completeness** gate: "15 of 32 days": three records are included: the two January rows and ACT-0006, the year-end LPG, whose 2025-12-15 to 2026-01-15 period reaches 15 days into 2026; every 2025 record is excluded as outside the period; the run pro-rates ACT-0006 to 46.88%. |  |  |
-| 4 | Open ACT-0014 and choose **Gaseous fuels: LPG (/litre)**. | ACT-0014 reads included, uses **Gaseous fuels: LPG**. |  |  |
+| 3 | Click **Review activity data**. | ACT-0018 is still unclassified. ACT-0019 is still unclassified. ACT-0006 is still unclassified. ACT-0001 reads "Excluded · Outside reporting period". A warning on the **Activity data completeness** gate: "15 of 32 days": three records are included: the two January rows and ACT-0006, the year-end LPG, whose 2025-12-15 to 2026-01-15 period reaches 15 days into 2026; every 2025 record is excluded as outside the period; the run pro-rates ACT-0006 to 46.88%. |  |  |
+| 4 | Open ACT-0018 and choose **Gaseous fuels: LPG (/litre)**. | ACT-0018 reads included, uses **Gaseous fuels: LPG**. |  |  |
 | 5 | Open ACT-0006 and choose **Gaseous fuels: LPG (/litre)**. | ACT-0006 reads included, uses **Gaseous fuels: LPG**. |  |  |
-| 6 | Open ACT-0015 and click the suggestion "Suggested for this facility's grid". | The picker offers the defra-2026 LPG version, the one live in 2026. The grid preview reads "110 MWh → 110,000 kWh × 0.44 kg CO₂e/kWh": the suggestion is the version live in the period. |  |  |
+| 6 | Open ACT-0019 and click the suggestion "Suggested for this facility's grid". | The picker offers the defra-2026 LPG version, the one live in 2026. The grid preview reads "110 MWh → 110,000 kWh × 0.44 kg CO₂e/kWh": the suggestion is the version live in the period. |  |  |
 | 7 | Choose **No residual mix is available** and save. | The inventory records that no residual mix is available. |  |  |
 | 8 | Click **Freeze inventory**. |  |  |  |
-| 9 | On **Runs**, click **Launch calculation run**. | Run 001 is listed with its total 52,253.90 kg CO₂e. The line of ACT-0015 reads 48,400.00 kg CO₂e. The line of ACT-0014 reads 3,269.97 kg CO₂e. The line of ACT-0006 reads 583.92 kg CO₂e and 15 covered days of 32: 48,400 for the electricity, 3,269.97 for the January LPG (2,100 litre × 1.55713) and 583.92 for the 15 pro-rated days of the year-end LPG (375 litre × 1.55713). |  |  |
+| 9 | On **Runs**, click **Launch calculation run**. | Run 001 is listed with its total 52,253.90 kg CO₂e. The line of ACT-0019 reads 48,400.00 kg CO₂e. The line of ACT-0018 reads 3,269.97 kg CO₂e. The line of ACT-0006 reads 583.92 kg CO₂e and 15 covered days of 32: 48,400 for the electricity, 3,269.97 for the January LPG (2,100 litre × 1.55713) and 583.92 for the 15 pro-rated days of the year-end LPG (375 litre × 1.55713). |  |  |
 | 10 | Look. | The factor table cites `ghana-2027-gov` from 2026-01-01 on the "Grid electricity, Ghana (2024)" row. The factor table cites `defra-2026` from 2026-01-01 on the "Gaseous fuels: LPG" row: open the PDF and read the factor table: the grid row cites ghana-2027-gov from 2026-01-01; the LPG row cites defra-2026 from 2026-01-01. |  |  |
 | 11 | Open Run 001 of "FY2025 (correction)". | The line of ACT-0002 reads 56,725.89 kg CO₂e: still 56,725.89 kg on the grid line at 0.468809: the reported year kept its factors. |  |  |
 
@@ -186,3 +186,4 @@
 - **Version 2, 2026-09-29.** E1 steps 2 and 3: the drawer and the refusal name the platform setting Editions inside a published period (PR #122). The case that switches the setting to Allowed and back is in the mining pack, procedure 10 case E5, not here: the FY2025 correction is frozen over the same period, and a frozen period blocks under either value. C3 step 4 reads "Support access" at the foot of the sidebar (PR #119).
 - **Version 3, 2026-09-29.** B1 and B2: the source citation is typed by the publisher, since the curator's typing is not kept once the dialog closes. C1 step 4: with no base year the drawer no longer also warns that accepting raises a candidate (the walkthrough fix of 2026-09-29).
 - **Version 4, 2026-10-02.** Transliterated to the QA scenario DSL. The editions, their rows, the validation report, the blast radius, the notices and their diff, the support grants and the history are read from the API as well as from the screen; the clone dialog's preamble, the banner's wording, the picker's preview and the adoption toast are observed on screen. The refusals carry rule ids (ghg.pack.*, ghg.adoption.*, ghg.support-access.*), and the imported 2026 rows are ACT-0014 and ACT-0015, the two rows procedure 3 removed having kept their numbers.
+- **Version 5, 2026-10-06.** D1 cites the imported 2026 rows by the numbers they now receive, ACT-0018 and ACT-0019: the records procedure 3 gained since version 4 take the numbers before them. Only the litre row had been renumbered.

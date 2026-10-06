@@ -203,20 +203,20 @@ sections:
           - do: { importActivities: { organization: "${org}", file: adansi-2026.csv } }
             expect:
               - activityExists: { organization: "${org}", record: ACT-0018, quantity: 2100, unit: litre }
-              - activityExists: { organization: "${org}", record: ACT-0015, quantity: 110, unit: MWh }
+              - activityExists: { organization: "${org}", record: ACT-0019, quantity: 110, unit: MWh }
                 why: "\"2 records imported.\"; the two rows removed in procedure 3 do not count as duplicates"
           - do: { createInventory: { organization: "${org}", name: FY2026, periodStart: "2026-01-01", periodEnd: "2026-12-31", approach: OPERATIONAL_CONTROL, gwpSet: AR5, straddle: PRO_RATE, prefillBoundary: true } }
           - do: { reviewActivityData: { organization: "${org}", inventory: FY2026 } }
             expect:
-              - recordView: { organization: "${org}", inventory: FY2026, record: ACT-0014, status: UNCLASSIFIED }
-              - recordView: { organization: "${org}", inventory: FY2026, record: ACT-0015, status: UNCLASSIFIED }
+              - recordView: { organization: "${org}", inventory: FY2026, record: ACT-0018, status: UNCLASSIFIED }
+              - recordView: { organization: "${org}", inventory: FY2026, record: ACT-0019, status: UNCLASSIFIED }
               - recordView: { organization: "${org}", inventory: FY2026, record: ACT-0006, status: UNCLASSIFIED }
               - recordView: { organization: "${org}", inventory: FY2026, record: ACT-0001, status: EXCLUDED, reason: OUTSIDE_PERIOD }
               - gateFinding: { organization: "${org}", inventory: FY2026, gate: COMPLETENESS, severity: WARNING, containing: "15 of 32 days" }
                 why: "three records are included: the two January rows and ACT-0006, the year-end LPG, whose 2025-12-15 to 2026-01-15 period reaches 15 days into 2026; every 2025 record is excluded as outside the period; the run pro-rates ACT-0006 to 46.88%"
-          - do: { classifyRecord: { organization: "${org}", inventory: FY2026, record: ACT-0014, factor: "${lpg}" } }
+          - do: { classifyRecord: { organization: "${org}", inventory: FY2026, record: ACT-0018, factor: "${lpg}" } }
           - do: { classifyRecord: { organization: "${org}", inventory: FY2026, record: ACT-0006, factor: "${lpg}" } }
-          - do: { classifyWithSuggestion: { organization: "${org}", inventory: FY2026, record: ACT-0015 } }
+          - do: { classifyWithSuggestion: { organization: "${org}", inventory: FY2026, record: ACT-0019 } }
             expect:
               - observe: { text: "The picker offers the defra-2026 LPG version, the one live in 2026. The grid preview reads \"110 MWh → 110,000 kWh × 0.44 kg CO₂e/kWh\": the suggestion is the version live in the period." }
           - do: { setResidualMix: { organization: "${org}", inventory: FY2026, available: false } }
@@ -224,8 +224,8 @@ sections:
           - do: { launchRun: { organization: "${org}", inventory: FY2026 } }
             expect:
               - runListed: { organization: "${org}", inventory: FY2026, run: 1, totalKgCo2e: 52253.90 }
-              - runLine: { organization: "${org}", inventory: FY2026, run: 1, record: ACT-0015, kgCo2e: 48400 }
-              - runLine: { organization: "${org}", inventory: FY2026, run: 1, record: ACT-0014, kgCo2e: 3269.97 }
+              - runLine: { organization: "${org}", inventory: FY2026, run: 1, record: ACT-0019, kgCo2e: 48400 }
+              - runLine: { organization: "${org}", inventory: FY2026, run: 1, record: ACT-0018, kgCo2e: 3269.97 }
               - runLine: { organization: "${org}", inventory: FY2026, run: 1, record: ACT-0006, kgCo2e: 583.92, coveredDays: 15, periodDays: 32 }
                 why: "48,400 for the electricity, 3,269.97 for the January LPG (2,100 litre × 1.55713) and 583.92 for the 15 pro-rated days of the year-end LPG (375 litre × 1.55713)"
           - expect:
@@ -313,7 +313,7 @@ sections:
               - runListed: { organization: "${org}", inventory: FY2025, run: 5, totalKgCo2e: 120373.32 }
                 why: "two versions, 120,373.32 kg: a withdrawal is the publisher's act"
 docs:
-  version: 4
+  version: 5
   estimatedMinutes: 40
   objective: >-
     Confirm that a platform administrator clones a published edition into a
@@ -372,3 +372,9 @@ docs:
         refusals carry rule ids (ghg.pack.*, ghg.adoption.*,
         ghg.support-access.*), and the imported 2026 rows are ACT-0014 and
         ACT-0015, the two rows procedure 3 removed having kept their numbers.
+    - version: 5
+      date: "2026-10-06"
+      text: >-
+        D1 cites the imported 2026 rows by the numbers they now receive,
+        ACT-0018 and ACT-0019: the records procedure 3 gained since version 4
+        take the numbers before them. Only the litre row had been renumbered.
