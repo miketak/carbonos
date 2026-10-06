@@ -154,7 +154,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | On **Runs**, under **Sign-off**, choose "Anyone who may prepare" as **Preparer** and Esi Boateng as **Approver**, then click **Save sign-off**. | Refused: "Esi Boateng holds the Preparer role and may not sign off an inventory; roles are the ceiling.": the roles are the ceiling; the Approver list offers only the reviewer and the owner. |  |  |
+| 1 | On **Runs**, under **Sign-off**, choose "Anyone who may prepare" as **Preparer** and Esi Boateng as **Approver**, then click **Save sign-off**. | **Approver** does not offer Esi Boateng; through the API the refusal reads "Esi Boateng holds the Preparer role and may not sign off an inventory; roles are the ceiling.": the roles are the ceiling; the Approver list offers only the reviewer and the owner, so nothing is saved. |  |  |
 | 2 | On **Runs**, under **Sign-off**, choose Esi Boateng as **Preparer** and Kofi Mensah as **Approver**, then click **Save sign-off**. | Under **History** on **Runs**, the entry "Sign-off assigned" reads "preparer: Esi Boateng; approver: Kofi Mensah", by `you+ama@…` (the Ama alias). |  |  |
 | 3 | On **Runs**, click **Submit for review** on Run 001 and confirm. | Refused: "Esi Boateng is this inventory's preparer; only they submit it for review.": Ama owns the organization, but Esi is this inventory's preparer. |  |  |
 | 4 | As Esi Boateng in the private window, on **Runs**, click **Submit for review** on Run 001, type "The June electricity restated" in **Note for the approver (optional)** and confirm. | The header reads IN REVIEW. |  |  |

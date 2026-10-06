@@ -149,10 +149,10 @@ export const assignSignOff = defineVerb({
   ui: (a) => [
     { op: 'inventoryPage', organization: a.organization, inventory: a.inventory, tab: 'Runs' },
     a.preparer
-      ? ({ op: 'choose', label: S.run.field.preparer, option: `{name:${a.preparer}}`, prefix: true } as const)
+      ? ({ op: 'choose', label: S.run.field.preparer, option: `{name:${a.preparer}}`, prefix: true, ifOffered: true } as const)
       : ({ op: 'choose', label: S.run.field.preparer, option: S.run.text.anyonePrepares } as const),
     a.approver
-      ? ({ op: 'choose', label: S.run.field.approver, option: `{name:${a.approver}}`, prefix: true } as const)
+      ? ({ op: 'choose', label: S.run.field.approver, option: `{name:${a.approver}}`, prefix: true, ifOffered: true } as const)
       : ({ op: 'choose', label: S.run.field.approver, option: S.run.text.anyoneApproves } as const),
     { op: 'click', button: S.run.button.saveSignOff, ifEnabled: true },
   ],

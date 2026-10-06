@@ -301,6 +301,25 @@ export const ruleDisabled = defineOutcome({
   narrate: (a) => `**${a.button}** is disabled with the title "${a.title}"; through the API the refusal reads "${ruleMessage(a.rule, a.with ?? {})}".`,
 })
 
+/**
+ * A member the page leaves out of a list for a product rule; through the API, the refusal by that rule
+ * (spec 05.8: the Approver list offers only the members whose role may sign off).
+ */
+export const optionWithheld = defineOutcome({
+  name: 'optionWithheld',
+  expectsRefusal: true,
+  args: z.object({ field: z.string(), member: actorArg, rule: z.string(), with: z.record(z.string(), z.string()).optional() }).strict(),
+  api: async (_ctx, a, last) => {
+    const entry = rule(a.rule)
+    if (!last) return fail('no action to be refused')
+    if (last.ok) return fail(`the action went through (${last.status})`)
+    if (last.rule !== a.rule) return fail(`refused by ${last.rule ?? 'an unnamed rule'} (${String((last.body as { detail?: string })?.detail)}), expected ${a.rule}`)
+    return pass(`${entry.status} ${a.rule}`)
+  },
+  ui: (a) => [{ check: 'optionListed', label: a.field, option: `{name:${a.member}}`, absent: true }],
+  narrate: (a, n) => `**${a.field}** does not offer ${n.actorName(a.member)}; through the API the refusal reads "${ruleMessage(a.rule, a.with ?? {})}".`,
+})
+
 /** A control disabled with a title that says why; nothing is sent. */
 export const controlDisabled = defineOutcome({
   name: 'controlDisabled',
@@ -423,4 +442,4 @@ export const inventoryHistoryHas = defineOutcome({
     `Under **History** on **Runs**, the entry "${S.run.history[a.action] ?? a.action}"${a.detail ? ` reads "${a.detail}"` : ' is listed'}${a.actor ? `, by ${n.actorAlias(a.actor)}` : ''}.`,
 })
 
-export const runOutcomes = [reportCorrection, runListed, runLine, runExclusions, runByGas, reportHeader, reportIntensity, reportStatementHas, csvHas, inputsHas, roleDisabled, ruleDisabled, controlDisabled, buttonsOffered, reportHeaderSaved, inventoryGwpSet, inheritanceDropped, runCount, inventoryHistoryHas]
+export const runOutcomes = [reportCorrection, runListed, runLine, runExclusions, runByGas, reportHeader, reportIntensity, reportStatementHas, csvHas, inputsHas, roleDisabled, ruleDisabled, optionWithheld, controlDisabled, buttonsOffered, reportHeaderSaved, inventoryGwpSet, inheritanceDropped, runCount, inventoryHistoryHas]

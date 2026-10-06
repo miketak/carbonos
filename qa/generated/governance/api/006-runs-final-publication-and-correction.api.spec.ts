@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/006-runs-final-publication-and-correction.yaml (sha256 60d9ac315ebf404587b7a6943cdaf5d95ce21407c24a0a784c8b08e63f9a8fc8); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/006-runs-final-publication-and-correction.yaml (sha256 52cbdcab2b3afb645b8ca85d33be6dbecc9364ca3a58e016a4c4221d5931d834); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 6, "60d9ac315ebf404587b7a6943cdaf5d95ce21407c24a0a784c8b08e63f9a8fc8")
+const P = procedure("governance", 6, "52cbdcab2b3afb645b8ca85d33be6dbecc9364ca3a58e016a4c4221d5931d834")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 6: Runs, final, publication and correction", () => {
@@ -363,7 +363,7 @@ test.describe("Procedure 6: Runs, final, publication and correction", () => {
     await test.step("6.F3.1", async () => {
       const s = P.step("6.F3.1")
       const out = await s.do("assignSignOff", {"organization":"Adansi Foods Ltd","inventory":"FY2025 (correction)","approver":"esi"})
-      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.inventory.sign-off-role","with":{"name":"Esi Boateng","role":"Preparer","act":"sign off an inventory"}},"why":"the roles are the ceiling; the Approver list offers only the reviewer and the owner"}])
+      await s.expect(out, [{"outcome":"optionWithheld","args":{"field":"Approver","member":"esi","rule":"ghg.inventory.sign-off-role","with":{"name":"Esi Boateng","role":"Preparer","act":"sign off an inventory"}},"why":"the roles are the ceiling; the Approver list offers only the reviewer and the owner, so nothing is saved"}])
     })
     await test.step("6.F3.2", async () => {
       const s = P.step("6.F3.2")

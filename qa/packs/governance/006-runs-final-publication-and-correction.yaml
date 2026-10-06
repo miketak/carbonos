@@ -273,8 +273,8 @@ sections:
         steps:
           - do: { assignSignOff: { organization: "${org}", inventory: "FY2025 (correction)", approver: esi } }
             expect:
-              - refused: { rule: ghg.inventory.sign-off-role, with: { name: Esi Boateng, role: Preparer, act: sign off an inventory } }
-                why: the roles are the ceiling; the Approver list offers only the reviewer and the owner
+              - optionWithheld: { field: Approver, member: esi, rule: ghg.inventory.sign-off-role, with: { name: Esi Boateng, role: Preparer, act: sign off an inventory } }
+                why: the roles are the ceiling; the Approver list offers only the reviewer and the owner, so nothing is saved
           - do: { assignSignOff: { organization: "${org}", inventory: "FY2025 (correction)", preparer: esi, approver: kofi } }
             expect:
               - inventoryHistoryHas: { organization: "${org}", inventory: "FY2025 (correction)", action: SIGN_OFF_ASSIGNED, detail: "preparer: Esi Boateng; approver: Kofi Mensah", actor: ama }

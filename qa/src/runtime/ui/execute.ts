@@ -296,6 +296,11 @@ export async function execute(page: Page, op: UiOp, ctx: ExecuteContext): Promis
       const scope = op.within ? dialog(page, await resolveAsync(ctx, t(op.within))) : page
       const option = await resolveAsync(ctx, op.option)
       const select = scope.getByLabel(await resolveAsync(ctx, t(op.label)), { exact: true })
+      if (op.ifOffered) {
+        // an option the page leaves out of the list (a member whose role may not act) is read, not chosen
+        const offered = await select.locator('option').filter({ hasText: option }).first().waitFor({ state: 'attached', timeout: 3_000 }).then(() => true, () => false)
+        if (!offered) return
+      }
       if (op.prefix) {
         // an option whose text goes on after what the scenario names ("Gaseous fuels: LPG (/litre) · Butane"): the first that starts with it
         const match = select.locator('option').filter({ hasText: option }).first()

@@ -11,7 +11,7 @@ export type UiOp =
   | { op: 'tab'; name: string }
   | { op: 'click'; button: string; within?: string; ifEnabled?: boolean }
   | { op: 'fill'; label: string; value: string; within?: string; blur?: boolean }
-  | { op: 'choose'; label: string; option: string; within?: string; byValue?: boolean; prefix?: boolean }
+  | { op: 'choose'; label: string; option: string; within?: string; byValue?: boolean; prefix?: boolean; ifOffered?: boolean }
   | { op: 'tick'; label: string; within?: string; on?: boolean; prefix?: boolean }
   | { op: 'upload'; label: string; fixture: string; within?: string }
   | { op: 'orgPage'; organization: string; section: string }
