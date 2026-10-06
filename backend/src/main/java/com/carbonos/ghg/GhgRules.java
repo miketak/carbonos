@@ -92,6 +92,10 @@ public class GhgRules implements RuleSource {
 			"You entered '{name}'. A factor is checked by someone other than the person who typed it "
 					+ "(Corporate Standard chapter 7): ask {checker} to approve it.");
 
+	public static final Rule FACTOR_CAVEAT_NOTE_REQUIRED = Rule.field("ghg.factor.caveat-note-required", "note",
+			"'{name}' carries the publisher's caveat: {caveat} Say what you checked before approving it; the note "
+					+ "prints beside the caveat in the report's factor table.");
+
 	// activity data, corrections, removals and evidence (specs 04.4, 04.5, 04.6)
 	public static final Rule REASON_TOO_SHORT = Rule.field("ghg.reason-too-short", "reason",
 			"{what} needs a reason of at least 5 characters.");
@@ -338,7 +342,7 @@ public class GhgRules implements RuleSource {
 			ENTITY_NAME_DUPLICATE, ENTITY_PARENT_LOOP, ENTITY_HAS_FACILITIES, LEASE_ENDS_BEFORE_START,
 			STREAM_NAME_DUPLICATE, STREAM_NAME_SIMILAR, STREAM_SIMILAR_REASON_TOO_SHORT, STREAM_HAS_RECORDS,
 			STREAM_OTHER_FACILITY, ACTIVITY_STREAM_AND_NEW_STREAM, UNIT_REGISTERED, UNIT_DUPLICATE, DENSITY_DUPLICATE, BLEND_FRACTIONS,
-			FACTOR_SELF_APPROVAL, REASON_TOO_SHORT, ACTIVITY_REMOVED_CANNOT_CORRECT, ACTIVITY_NO_WAY_BACK_TO_DRAFT,
+			FACTOR_SELF_APPROVAL, FACTOR_CAVEAT_NOTE_REQUIRED, REASON_TOO_SHORT, ACTIVITY_REMOVED_CANNOT_CORRECT, ACTIVITY_NO_WAY_BACK_TO_DRAFT,
 			ACTIVITY_ALREADY_REMOVED, ACTIVITY_USED_IN_RUN, ACTIVITY_BULK_EMPTY, ACTIVITY_BULK_TOO_MANY,
 			ACTIVITY_BULK_REFUSED, ACTIVITY_HAS_SOURCE, ACTIVITY_ZERO_NEEDS_NOTE, IMPORT_DECISION_UNUSED, IMPORT_MAP_REASON_REQUIRED,
 			FACILITY_HAS_RECORDS, EVIDENCE_UNSUPPORTED_TYPE, EVIDENCE_LINK_SCHEME,

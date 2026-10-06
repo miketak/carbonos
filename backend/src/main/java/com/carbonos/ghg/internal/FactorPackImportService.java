@@ -431,6 +431,8 @@ public class FactorPackImportService {
 		version.setSourceEdition(editionId);
 		version.setGridRegion(gridRegionOf(row.code()));
 		version.setReportingBasis(row.basis());
+		// spec 02.5 rule 10: the publisher's caveat travels with the row as the reason it is unapproved
+		version.setCaveat(trimToNull(row.caveat()));
 		// spec 02.5: the publisher's taxonomy travels with the row, so the picker can tell two factors
 		// of the same display name apart and filter on it (FU-03)
 		version.setTaxonomy(row.sourceCategory(), row.sourceActivity(), row.sourceDetail());

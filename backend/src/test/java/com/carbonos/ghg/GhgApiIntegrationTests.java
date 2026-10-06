@@ -212,6 +212,66 @@ class GhgApiIntegrationTests {
 		return user(new AuthenticatedUser(account.getId(), account.getEmail(), "irrelevant", "ADMIN", true));
 	}
 
+	@Test
+	void aCaveatedFactorImportsUnapprovedAndIsApprovedWithACheckNoteThatTheReportPrints() throws Exception {
+		var orgId = createOrganization("Caveat Mining Ltd");
+		var plant = createFacility(orgId, "Caveat Plant");
+		// ECO-23 (spec 02.5 rule 10): the Ghana pack's derived losses row arrives unapproved with its caveat
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/factor-packs/ghana/import").with(asMember())
+			.with(csrf())).andExpect(status().isOk());
+		var losses = body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("q", "losses").param("includeUnapproved", "true")).andExpect(status().isOk())
+			.andExpect(jsonPath("$.items.length()").value(1))
+			.andExpect(jsonPath("$.items[0].approved").value(false))
+			.andExpect(jsonPath("$.items[0].caveat").value(org.hamcrest.Matchers.startsWith("Derived, not published")))
+			.andExpect(jsonPath("$.items[0].approvalNote").value(org.hamcrest.Matchers.nullValue())));
+		var lossesId = com.jayway.jsonpath.JsonPath.<String>read(losses, "$.items[0].id");
+		// the grid rows carry a note, not a caveat: published, licensed values stay approved
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/emission-factors").with(asMember())
+			.param("q", "Ghana (2024)").param("includeUnapproved", "false"))
+			.andExpect(jsonPath("$.items[0].approved").value(true))
+			.andExpect(jsonPath("$.items[0].caveat").value(org.hamcrest.Matchers.nullValue()));
+
+		// approving a caveated factor without saying what was checked is refused in the note field
+		mvc.perform(post("/api/ghg/emission-factors/" + lossesId + "/approve").with(asMember()).with(csrf()))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.factor.caveat-note-required"))
+			.andExpect(jsonPath("$.errors.note").value(org.hamcrest.Matchers.containsString("carries the publisher's caveat")));
+		mvc.perform(post("/api/ghg/emission-factors/" + lossesId + "/approve").with(asMember()).with(csrf())
+			.contentType("application/json").content("{\"note\": \"   \"}"))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.factor.caveat-note-required"));
+		mvc.perform(post("/api/ghg/emission-factors/" + lossesId + "/approve").with(asMember()).with(csrf())
+			.contentType("application/json")
+			.content("{\"note\": \"Loss rate checked against the Energy Commission's 2024 statistics (20%).\"}"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.approved").value(true))
+			.andExpect(jsonPath("$.approvalNote").value("Loss rate checked against the Energy Commission's 2024 statistics (20%)."));
+
+		// the run's factor table prints the caveat and the check
+		var power = createActivity(orgId, plant, "Grid electricity bought", "1000", "kWh", "2025-06-30");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		classify(syncAndGetAssignmentId(inventoryId, power), lossesId);
+		freeze(inventoryId);
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.factors[?(@.factorId == '" + lossesId + "')].caveat")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("Derived, not published"))))
+			.andExpect(jsonPath("$.factors[?(@.factorId == '" + lossesId + "')].approvalNote")
+				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.startsWith("Loss rate checked"))))
+			// ECO-23: the methodology names the editions the run applied, with the lines on each
+			.andExpect(jsonPath("$.methodology.editionsApplied[0].editionId").value("ghana"))
+			.andExpect(jsonPath("$.methodology.editionsApplied[0].packKey").value("ghana"))
+			.andExpect(jsonPath("$.methodology.editionsApplied[0].appliesFrom").value("2025-01-01"))
+			.andExpect(jsonPath("$.methodology.editionsApplied[0].lineCount").value(1));
+		// unapproving clears the note with the approval
+		mvc.perform(post("/api/ghg/emission-factors/" + lossesId + "/unapprove").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.approved").value(false))
+			.andExpect(jsonPath("$.approvalNote").value(org.hamcrest.Matchers.nullValue()));
+	}
+
 	// --- helpers ------------------------------------------------------------
 
 	String body(org.springframework.test.web.servlet.ResultActions actions) throws Exception {
@@ -3974,7 +4034,7 @@ class GhgApiIntegrationTests {
 		return new FactorPacks.PackFactor(code, name, com.carbonos.ghg.internal.Scope.SCOPE_1,
 				com.carbonos.ghg.internal.ActivityCategory.STATIONARY_COMBUSTION, true, unit,
 				new java.math.BigDecimal("2.5"), new java.math.BigDecimal("2.5"), null, true, null, null, null, null,
-				null, null, null, null, 2026, null, null, "Test detail", true, null, "Test publication",
+				null, null, null, null, 2026, null, null, "Test detail", true, null, null, "Test publication",
 				"https://example.test/pack", 2026, com.carbonos.ghg.internal.ReportingBasis.SCOPES);
 	}
 

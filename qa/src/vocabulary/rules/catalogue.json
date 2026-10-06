@@ -323,6 +323,13 @@
       "field": "blendComposition"
     },
     {
+      "id": "ghg.factor.caveat-note-required",
+      "module": "ghg",
+      "status": 422,
+      "message": "'{name}' carries the publisher's caveat: {caveat} Say what you checked before approving it; the note prints beside the caveat in the report's factor table.",
+      "field": "note"
+    },
+    {
       "id": "ghg.factor.classified-not-deleted",
       "module": "ghg",
       "status": 409,

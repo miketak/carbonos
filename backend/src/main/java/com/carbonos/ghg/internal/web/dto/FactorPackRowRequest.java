@@ -49,6 +49,7 @@ public record FactorPackRowRequest( //
 		Boolean co2eOnly, //
 		Boolean approved, //
 		@Size(max = 500) String notes, //
+		@Size(max = 500) String caveat, //
 		ReportingBasis reportingBasis) {
 
 	public FactorPackRow.Facts facts() {
@@ -57,6 +58,6 @@ public record FactorPackRowRequest( //
 				hfcsKgPerUnit, pfcsKgPerUnit, sf6KgPerUnit, nf3KgPerUnit, biogenicCo2KgPerUnit, blendComposition,
 				blendGwpSource, dataYear, sourcePublication, sourceUrl, publicationYear, sourceCategory,
 				sourceActivity, sourceDetail, Boolean.TRUE.equals(co2eOnly), Boolean.TRUE.equals(approved), notes,
-				reportingBasis == null ? ReportingBasis.SCOPES : reportingBasis);
+				caveat, reportingBasis == null ? ReportingBasis.SCOPES : reportingBasis);
 	}
 }

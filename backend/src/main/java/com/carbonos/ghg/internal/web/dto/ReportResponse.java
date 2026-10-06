@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -18,6 +19,7 @@ import com.carbonos.ghg.internal.BaseYearService;
 import com.carbonos.ghg.internal.BoundaryVersion;
 import com.carbonos.ghg.internal.ConsolidationApproach;
 import com.carbonos.ghg.internal.ExclusionEstimateState;
+import com.carbonos.ghg.internal.FactorPackEdition;
 import com.carbonos.ghg.internal.ExclusionReason;
 import com.carbonos.ghg.internal.FactorPackAdoptionService;
 import com.carbonos.ghg.internal.FactorPackNotice;
@@ -159,7 +161,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			BigDecimal sf6, BigDecimal nf3, BigDecimal biogenicCo2, String blendComposition, String blendGwpSource,
 			String source, Integer publicationYear, Integer dataYear, List<String> packs,
 			ReportingBasis reportingBasis, String sourceEdition, java.time.LocalDate validFrom,
-			String approvedBy, boolean selfApproved) {
+			String approvedBy, boolean selfApproved, String caveat, String approvalNote) {
 
 		/** "defra-2026, from 2026-01-01", or null for a run made before spec 02.6 or a hand-entered factor. */
 		public String vintage() {
@@ -301,6 +303,36 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 		}
 	}
 
+	/**
+	 * The editions the run's factor snapshot names (spec 02.6), with the lines
+	 * resting on each, in the order the families and editions sort. A factor
+	 * entered by hand names no edition and is left out.
+	 */
+	static List<EditionApplied> editionsApplied(GhgRun run, Map<String, FactorPackEdition> editions) {
+		var factorsByEdition = new java.util.TreeMap<String, List<UUID>>();
+		for (var factor : run.getFactors()) {
+			if (factor.getSourceEdition() != null) {
+				factorsByEdition.computeIfAbsent(factor.getSourceEdition(), k -> new ArrayList<>())
+					.add(factor.getFactorId());
+			}
+		}
+		var linesByFactor = new java.util.HashMap<UUID, Integer>();
+		for (var line : run.getLines()) {
+			if (line.getFactorId() != null) {
+				linesByFactor.merge(line.getFactorId(), 1, Integer::sum);
+			}
+		}
+		var applied = new ArrayList<EditionApplied>();
+		for (var entry : factorsByEdition.entrySet()) {
+			var edition = editions == null ? null : editions.get(entry.getKey());
+			var lineCount = entry.getValue().stream().mapToInt(id -> linesByFactor.getOrDefault(id, 0)).sum();
+			applied.add(new EditionApplied(edition == null ? entry.getKey() : edition.getPackKey(), entry.getKey(),
+					edition == null ? null : edition.getAppliesFrom(), entry.getValue().size(), lineCount));
+		}
+		applied.sort(java.util.Comparator.comparing(EditionApplied::packKey).thenComparing(EditionApplied::editionId));
+		return List.copyOf(applied);
+	}
+
 	public record RunFigure(UUID runId, String label, BigDecimal totalKgCo2e, BigDecimal scope1KgCo2e,
 			BigDecimal scope2KgCo2e, BigDecimal scope3KgCo2e) {
 	}
@@ -310,7 +342,31 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 
 	public record Methodology(GwpSet gwpSet, ConsolidationApproach consolidationApproach, List<String> factorSources,
 			List<String> assessmentReports, boolean multipleAssessmentReports, String statement,
-			List<UpstreamRuleLine> upstreamRules) {
+			List<UpstreamRuleLine> upstreamRules, List<EditionApplied> editionsApplied) {
+
+		/** The edition decisions and the editions applied; null in a report stored before ECO-23. */
+		public List<EditionApplied> editionsAppliedOrEmpty() {
+			return editionsApplied == null ? List.of() : editionsApplied;
+		}
+
+		/** The publication families the run applied more than one edition of (ECO-23). */
+		public List<String> mixedFamilies() {
+			var byFamily = new LinkedHashMap<String, Integer>();
+			for (var edition : editionsAppliedOrEmpty()) {
+				byFamily.merge(edition.packKey(), 1, Integer::sum);
+			}
+			return byFamily.entrySet().stream().filter(e -> e.getValue() > 1).map(Map.Entry::getKey).toList();
+		}
+	}
+
+	/**
+	 * One factor pack edition the run applied (ECO-23): which family it belongs
+	 * to, the day it applies from, and how many of the run's factors and lines
+	 * rest on it. Two editions of one family in one run is the vintage mix the
+	 * pre-flight warned about, and the report names both.
+	 */
+	public record EditionApplied(String packKey, String editionId, LocalDate appliesFrom, int factorCount,
+			int lineCount) {
 	}
 
 	/**
@@ -327,7 +383,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			BaseYearService.Profile profile, List<FactorPackAdoptionService.EditionDecision> editionDecisions,
 			List<MarketFactor> marketFactors,
 			List<Inventory> predecessors, Inventory successor, List<IntensityMetric> metrics,
-			int boundaryVersionCount, UnitConverter.Scoped units) {
+			int boundaryVersionCount, UnitConverter.Scoped units, Map<String, FactorPackEdition> editions) {
 		var lines = run.getLines().stream().map(RunLineResponse::from).toList();
 		var header = new Header(organization.getName(), organization.getAccountNo(), organization.getAddress(),
 				organization.getContact(),
@@ -376,8 +432,9 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 					f.getHfcsKgPerUnit(), f.getPfcsKgPerUnit(), f.getSf6KgPerUnit(), f.getNf3KgPerUnit(),
 					f.getBiogenicCo2KgPerUnit(), f.getBlendComposition(), f.getBlendGwpSource(), f.getSource(),
 					f.getPublicationYear(), f.getDataYear(), f.getPacks(), f.getReportingBasis(), f.getSourceEdition(),
-					f.getValidFrom(), f.getApprovedBy(), f.isSelfApproved()))
+					f.getValidFrom(), f.getApprovedBy(), f.isSelfApproved(), f.getCaveat(), f.getApprovalNote()))
 			.toList();
+		var editionsApplied = editionsApplied(run, editions);
 		var intensity = metrics.stream()
 			.map(m -> new Intensity(m.getName(), m.getValue(), m.getUnit(),
 					tonnes(run.getTotalKgCo2e()).divide(m.getValue(), 6, java.math.RoundingMode.HALF_UP)))
@@ -511,7 +568,7 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				List.copyOf(byGas), byGasTotalKg, tonnes(byGasTotalKg), run.getBiogenicCo2Kg(),
 				tonnes(run.getBiogenicCo2Kg()), baseYearSection,
 				new Methodology(gwp, run.getConsolidationApproach(), sources, reports, blendReports.size() > 0,
-						statement, upstreamRules),
+						statement, upstreamRules, editionsApplied),
 				version == null ? List.of()
 						: version.getExclusions().stream().map(BoundaryExclusionResponse::from).toList(),
 				run.getExclusions().stream().map(RunExclusionResponse::from).toList(), lines,

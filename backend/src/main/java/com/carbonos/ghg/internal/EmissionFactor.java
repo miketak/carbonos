@@ -197,6 +197,13 @@ public class EmissionFactor {
 	@Column(name = "self_approved", nullable = false)
 	private boolean selfApproved;
 
+	// ECO-23 (spec 02.5 rule 10): the publisher's caveat the import copied, and what the approver checked
+	@Column(length = 500)
+	private String caveat;
+
+	@Column(name = "approval_note", length = 500)
+	private String approvalNote;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -305,12 +312,16 @@ public class EmissionFactor {
 		this.createdBy = email;
 	}
 
-	/** Approves for use in runs, naming the approver; {@code self} marks that nobody else could check it. */
-	void approve(String by, boolean self) {
+	/**
+	 * Approves for use in runs, naming the approver; {@code self} marks that nobody else could check
+	 * it, and {@code note} records what was checked when the factor carries a caveat.
+	 */
+	void approve(String by, boolean self, String note) {
 		this.approved = true;
 		this.approvedBy = by;
 		this.approvedAt = Instant.now();
 		this.selfApproved = self;
+		this.approvalNote = note;
 	}
 
 	void unapprove() {
@@ -318,6 +329,20 @@ public class EmissionFactor {
 		this.approvedBy = null;
 		this.approvedAt = null;
 		this.selfApproved = false;
+		this.approvalNote = null;
+	}
+
+	/** The publisher's caveat, carried from the edition row by the import. */
+	void setCaveat(String caveat) {
+		this.caveat = caveat;
+	}
+
+	public String getCaveat() {
+		return caveat;
+	}
+
+	public String getApprovalNote() {
+		return approvalNote;
 	}
 
 	public String getCreatedBy() {

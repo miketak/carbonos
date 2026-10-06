@@ -933,11 +933,16 @@ public class GhgService {
 	 * who may write could check it; where nobody else can, the approval is
 	 * recorded as a self-approval and the report says so.
 	 */
-	public EmissionFactor setFactorApproval(UUID id, boolean approved) {
+	public EmissionFactor setFactorApproval(UUID id, boolean approved, String note) {
 		var factor = getOwnFactor(id);
 		if (!approved) {
 			factor.unapprove();
 			return factor;
+		}
+		// ECO-23 (spec 02.5 rule 10): a caveat is lifted by a check, and the check is recorded
+		var checked = note == null || note.isBlank() ? null : note.trim();
+		if (factor.getCaveat() != null && checked == null) {
+			throw new GhgFieldException(GhgRules.FACTOR_CAVEAT_NOTE_REQUIRED, factor.getName(), factor.getCaveat());
 		}
 		var approver = access.currentUserEmail();
 		var own = factor.getCreatedBy() != null && factor.getCreatedBy().equalsIgnoreCase(approver);
@@ -952,7 +957,7 @@ public class GhgService {
 						checker.getDisplayName() == null ? checker.getEmail() : checker.getDisplayName());
 			}
 		}
-		factor.approve(approver, own);
+		factor.approve(approver, own, checked);
 		return factor;
 	}
 

@@ -55,6 +55,9 @@ public class FactorPackValidation {
 	/** A row approved in a published edition carries the approver and the moment of publication. */
 	public static final String RULE_APPROVAL = "approvalAttributable";
 
+	/** A row the publisher caveats publishes unapproved; the caveat is the condition an approver lifts. */
+	public static final String RULE_CAVEAT = "caveat";
+
 	/**
 	 * {@code ghg_emission_factors.source} is {@code varchar(2000)}, and the
 	 * import of spec 02.6 truncates a longer citation to fit. That truncation is
@@ -109,6 +112,7 @@ public class FactorPackValidation {
 			checkNonKyoto(findings, row);
 			checkScopeAndCategory(findings, row);
 			checkSourceForValue(findings, row);
+			checkCaveat(findings, row);
 		}
 		checkApprovalIsAttributable(findings, edition, rows);
 		return List.copyOf(findings);
@@ -288,6 +292,22 @@ public class FactorPackValidation {
 					"A zero CO2e per unit is only allowed on an unapproved template whose note names the document "
 							+ "to obtain, for example the supplier's product carbon footprint or environmental "
 							+ "product declaration."));
+		}
+	}
+
+	/**
+	 * Rule 10 (ECO-23). A caveat is the publisher's condition on using the
+	 * value: "approve it after checking the year's loss rate". It is not
+	 * provenance, which says where the value comes from, and it is not lifted by
+	 * publication. A caveated row therefore publishes unapproved, so that the
+	 * organization reads the condition as the reason and records what it checked
+	 * when it approves the factor (spec 02.11).
+	 */
+	private static void checkCaveat(List<Finding> findings, FactorPackRow row) {
+		if (row.isApproved() && !isBlank(row.getCaveat())) {
+			findings.add(new Finding(RULE_CAVEAT, row.getCode(), "'" + row.getName()
+					+ "' carries a caveat, so it publishes unapproved: " + row.getCaveat().trim()
+					+ " The organization approves it once the check is done, and records what it checked."));
 		}
 	}
 

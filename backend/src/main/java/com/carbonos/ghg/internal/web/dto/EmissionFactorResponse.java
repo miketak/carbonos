@@ -24,7 +24,7 @@ public record EmissionFactorResponse(UUID id, UUID organizationId, String name, 
 		String blendComposition, String blendCompositionEntered, boolean ch4Fossil, boolean co2eOnly, String source, String sourceUrl,
 		Integer publicationYear, Integer dataYear, LocalDate validFrom, LocalDate validTo, String note,
 		boolean approved, String createdBy, String approvedBy, Instant approvedAt, boolean selfApproved,
-		String pack, List<String> packs, String packCode, String gridRegion,
+		String caveat, String approvalNote, String pack, List<String> packs, String packCode, String gridRegion,
 		ReportingBasis reportingBasis, String sourceCategory, String sourceActivity, String sourceDetail,
 		String sourceEdition, boolean locallyEdited, UUID supersededById, List<Version> versions) {
 
@@ -66,7 +66,8 @@ public record EmissionFactorResponse(UUID id, UUID organizationId, String name, 
 				factor.isCh4Fossil(), factor.isCo2eOnly(), factor.getSource(), factor.getSourceUrl(),
 				factor.getPublicationYear(), factor.getDataYear(), factor.getValidFrom(), factor.getValidTo(),
 				factor.getNote(), factor.isApproved(), factor.getCreatedBy(), factor.getApprovedBy(),
-				factor.getApprovedAt(), factor.isSelfApproved(), factor.getPack(), factor.getPacks(), factor.getPackCode(),
+				factor.getApprovedAt(), factor.isSelfApproved(), factor.getCaveat(), factor.getApprovalNote(),
+				factor.getPack(), factor.getPacks(), factor.getPackCode(),
 				factor.getGridRegion(), factor.getReportingBasis(), factor.getSourceCategory(),
 				factor.getSourceActivity(), factor.getSourceDetail(), factor.getSourceEdition(),
 				factor.isLocallyEdited(), factor.getSupersededById(), versions.stream().map(Version::of).toList());
