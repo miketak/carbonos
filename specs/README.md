@@ -60,6 +60,7 @@ chapters follow the GHG Protocol Corporate Accounting and Reporting Standard
 | 05.5 | [Review at scale and deliberate lifecycle acts](05.5-review-at-scale-and-deliberate-lifecycle-acts.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
 | 05.6 | [The inventory as a workbench](05.6-the-inventory-workbench.md) | Ch. 7, 9, ISO 14064-1 | Implemented |
 | 05.7 | [What a final run refuses](05.7-what-a-final-run-refuses.md) | Ch. 1, 4, 9, ISO 14064-1 | Implemented |
+| 05.8 | [The sign-off workflow](05.8-the-sign-off-workflow.md) | Ch. 7, ISO 14064-1, ISO 14064-3 | Approved |
 | 06 | [Tracking emissions over time](06-tracking-emissions-over-time.md) | Ch. 5 | Implemented |
 | 06.1 | [Recalculation policy conformance](06.1-recalculation-policy-conformance.md) | Ch. 5, 9 | Implemented |
 | 07 | [Reporting and verification](07-reporting-and-verification.md) | Ch. 9, 10 | Implemented |
