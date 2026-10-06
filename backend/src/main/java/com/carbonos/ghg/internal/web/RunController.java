@@ -55,11 +55,20 @@ class RunController {
 		return RunDetailResponse.from(inventoryService.getRun(id));
 	}
 
-	/** Designates this run as its inventory's final run (spec 05.1); the inventory moves to FINAL. */
+	/** Signs off this run, the one submitted for review, as its inventory's final run (specs 05.1, 05.8). */
 	@PostMapping("/runs/{id}/finalize")
 	InventoryResponse finalizeRun(@PathVariable UUID id, @Valid @RequestBody(required = false) FinalNoteRequest body) {
 		var run = inventoryService.getRun(id);
 		return respond(inventoryService.designateFinal(run.getInventory().getId(), id,
+				body == null ? null : body.note()));
+	}
+
+	/** Submits this run for review (spec 05.8); the inventory moves to IN_REVIEW. */
+	@PostMapping("/runs/{id}/submit-for-review")
+	InventoryResponse submitForReview(@PathVariable UUID id,
+			@Valid @RequestBody(required = false) FinalNoteRequest body) {
+		var run = inventoryService.getRun(id);
+		return respond(inventoryService.submitForReview(run.getInventory().getId(), id,
 				body == null ? null : body.note()));
 	}
 
@@ -70,6 +79,7 @@ class RunController {
 	}
 	/** The inventory as the client holds it, with its saved intensity denominators (spec 05.6). */
 	private InventoryResponse respond(Inventory inventory) {
-		return InventoryResponse.from(inventory, inventoryService.intensityMetrics(inventory.getId()));
+		return InventoryResponse.from(inventory, inventoryService.intensityMetrics(inventory.getId()),
+				inventoryService.submitterMaySign(inventory));
 	}
 }

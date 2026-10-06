@@ -135,6 +135,7 @@ public final class ReportLabels {
 			case InventoryStatus status -> switch (status) {
 				case DRAFT -> "Draft";
 				case FROZEN -> "Frozen";
+				case IN_REVIEW -> "In review";
 				case FINAL -> "Final";
 				case PUBLISHED -> "Published";
 			};

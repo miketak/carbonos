@@ -372,10 +372,24 @@
       "field": null
     },
     {
+      "id": "ghg.inventory.already-final",
+      "module": "ghg",
+      "status": 409,
+      "message": "Run {run} is already designated final. Withdraw the designation, with a reason, to sign off another run.",
+      "field": null
+    },
+    {
       "id": "ghg.inventory.already-frozen",
       "module": "ghg",
       "status": 409,
       "message": "The inventory is already frozen.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.approver-is-preparer",
+      "module": "ghg",
+      "status": 409,
+      "message": "{name} cannot be both the preparer and the approver of one inventory: name someone else for one of the two.",
       "field": null
     },
     {
@@ -393,6 +407,27 @@
       "field": null
     },
     {
+      "id": "ghg.inventory.not-in-review",
+      "module": "ghg",
+      "status": 409,
+      "message": "The inventory is not in review, so there is nothing to return.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.not-the-approver",
+      "module": "ghg",
+      "status": 403,
+      "message": "{name} is this inventory's approver; only they return it or sign it off.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.not-the-preparer",
+      "module": "ghg",
+      "status": 403,
+      "message": "{name} is this inventory's preparer; only they submit it for review.",
+      "field": null
+    },
+    {
       "id": "ghg.inventory.publish-needs-final",
       "module": "ghg",
       "status": 409,
@@ -405,6 +440,27 @@
       "status": 422,
       "message": "Reopening needs a reason of at least 10 characters: what the draft will change. The next freeze cuts a new boundary version.",
       "field": "reason"
+    },
+    {
+      "id": "ghg.inventory.sign-off-on-record",
+      "module": "ghg",
+      "status": 409,
+      "message": "The inventory is published; its sign-off is on record and cannot change.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.sign-off-role",
+      "module": "ghg",
+      "status": 422,
+      "message": "{name} holds the {role} role and may not {act}; roles are the ceiling.",
+      "field": null
+    },
+    {
+      "id": "ghg.inventory.submit-needs-frozen",
+      "module": "ghg",
+      "status": 409,
+      "message": "The inventory is {status}. A run is submitted for review once the inventory is frozen, and before a run is designated final.",
+      "field": null
     },
     {
       "id": "ghg.member.duplicate",
@@ -568,10 +624,24 @@
       "field": null
     },
     {
+      "id": "ghg.run.not-submitted",
+      "module": "ghg",
+      "status": 409,
+      "message": "Run {run} has not been submitted for review. Submit it before marking it final.",
+      "field": null
+    },
+    {
       "id": "ghg.run.published-not-voidable",
       "module": "ghg",
       "status": 409,
       "message": "A published inventory's runs are a record and cannot be voided.",
+      "field": null
+    },
+    {
+      "id": "ghg.run.self-signed",
+      "module": "ghg",
+      "status": 409,
+      "message": "Run {run} was submitted by {submitter}, who cannot also sign it off. Ask {checker} or another reviewer or owner to mark it final.",
       "field": null
     },
     {
@@ -778,5 +848,5 @@
       "field": null
     }
   ],
-  "sha256": "481fe2a01dd5e67de2db24ca822da8cc91fcad536ca440169f711ae720b53c3e"
+  "sha256": "0d58da1e8fecc2537afe79d6182901bfd8c7b28d02a5aed614d52fedba4024e4"
 }

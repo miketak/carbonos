@@ -30,6 +30,7 @@ import com.carbonos.ghg.internal.Validation.GateResult;
 import com.carbonos.ghg.internal.Validation.Report;
 import com.carbonos.ghg.internal.Validation.Severity;
 import com.carbonos.ghg.internal.export.ReportLabels;
+import com.carbonos.user.UserDirectory;
 
 /**
  * The accounting-view side of spec 05: inventories and their lifecycle (spec
@@ -70,6 +71,8 @@ public class InventoryService {
 	private final SourceStreamRepository streams;
 	private final UpstreamRuleRepository upstreamRules;
 	private final FactorPackEditionRepository packEditions;
+	private final OrganizationMemberRepository members;
+	private final UserDirectory userDirectory;
 	private final ObjectMapper json;
 
 	InventoryService(OrganizationRepository organizations, LegalEntityRepository entities,
@@ -81,8 +84,11 @@ public class InventoryService {
 			IntensityMetricRepository intensityMetrics, BaseYearService baseYears, ApplicationEventPublisher events,
 			GhgAccess access, OrganizationUnits organizationUnits, DensityRepository densities,
 			EvidenceRepository evidence, SourceStreamRepository streams, UpstreamRuleRepository upstreamRules,
-			FactorPackEditionRepository packEditions, ObjectMapper json) {
+			FactorPackEditionRepository packEditions, OrganizationMemberRepository members,
+			UserDirectory userDirectory, ObjectMapper json) {
 		this.packEditions = packEditions;
+		this.members = members;
+		this.userDirectory = userDirectory;
 		this.upstreamRules = upstreamRules;
 		this.streams = streams;
 		this.json = json;
@@ -732,7 +738,11 @@ public class InventoryService {
 					"A run is designated final. Withdraw the designation before reopening the inventory.");
 			case PUBLISHED -> throw new GhgRuleViolationException(
 					"A published inventory cannot change. Create a correction that supersedes it.");
-			case FROZEN -> {
+			case FROZEN, IN_REVIEW -> {
+				// spec 05.8: reopening takes the submission with it, and the history says so
+				if (inventory.getStatus() == InventoryStatus.IN_REVIEW) {
+					withdrawSubmission(inventory, "the inventory was reopened as a draft");
+				}
 				if (inventory.getCurrentBoundaryVersionId() != null) {
 					boundaryVersions.findById(inventory.getCurrentBoundaryVersionId())
 						.ifPresent(version -> version.recordReopen(access.currentUserId(), access.currentUserEmail(), why));
@@ -745,9 +755,13 @@ public class InventoryService {
 	}
 
 	/**
-	 * Designates a run as the final one of its inventory, which moves the
-	 * inventory to FINAL. The reviewer's note, who designated and when are
-	 * recorded on the inventory and the audit event (spec 05.5).
+	 * The sign-off (specs 05.5, 05.8): designates the run submitted for review as
+	 * the final one, which moves the inventory to FINAL. Only the submitted run,
+	 * only by a member who may approve, only the named approver when one is
+	 * named, and never by its submitter while another member may approve; where
+	 * nobody else can, the submitter's sign-off is recorded as a self-approval.
+	 * The note, who signed and when are recorded on the inventory and the audit
+	 * event.
 	 */
 	public Inventory designateFinal(UUID inventoryId, UUID runId, String note) {
 		var inventory = get(inventoryId);
@@ -769,15 +783,199 @@ public class InventoryService {
 		if (run.isVoided()) {
 			throw new GhgRuleViolationException(GhgRules.RUN_VOIDED_NOT_FINAL, run.getRunNo());
 		}
+		if (inventory.getStatus() == InventoryStatus.FINAL) {
+			var finalRun = runs.findById(inventory.getFinalRunId()).map(GhgRun::getRunNo).orElse(run.getRunNo());
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_ALREADY_FINAL, finalRun);
+		}
+		// spec 05.8: only the run put forward for review is signed off
+		if (inventory.getStatus() != InventoryStatus.IN_REVIEW || !runId.equals(inventory.getSubmittedRunId())) {
+			throw new GhgRuleViolationException(GhgRules.RUN_NOT_SUBMITTED, run.getRunNo());
+		}
+		var signer = currentPerson(inventory);
+		refuseUnlessTheApprover(inventory, signer);
+		var selfApproved = inventory.wasSubmittedBy(signer);
+		if (selfApproved) {
+			var checker = anotherApprover(inventory, signer);
+			if (checker.isPresent()) {
+				throw new GhgRuleViolationException(GhgRules.RUN_SELF_SIGNED, run.getRunNo(),
+						inventory.getSubmittedBy().name(), checker.get());
+			}
+		}
 		refuseWhileARecalculationHolds(inventory, "marked final");
 		var holds = finalHolds(inventory);
 		if (!holds.isEmpty()) {
 			throw new GhgRuleViolationException(GhgRules.RUN_FINAL_HOLDS, run.getRunNo(), String.join(" ", holds));
 		}
-		inventory.designateFinal(runId, access.currentUserEmail(), reviewNote);
-		record(inventory, run, GhgAuditEvent.Action.FINAL_DESIGNATED,
-				"run " + run.getRunNo() + " designated final" + (reviewNote == null ? "" : ": " + reviewNote));
+		inventory.designateFinal(runId, signer, reviewNote, selfApproved);
+		record(inventory, run, GhgAuditEvent.Action.FINAL_DESIGNATED, "run " + run.getRunNo()
+				+ " signed off and designated final"
+				+ (selfApproved ? " (" + SELF_APPROVED + ")" : "") + (reviewNote == null ? "" : ": " + reviewNote));
 		return inventory;
+	}
+
+	/** What the history and the report say of a sign-off nobody else could check (spec 05.8). */
+	public static final String SELF_APPROVED = "self-approved: nobody else in the organization could check it";
+
+	/**
+	 * Puts a run forward for review (spec 05.8). A member who may write submits
+	 * a run of a frozen inventory, or replaces the run in review; the named
+	 * preparer only, when one is named, and never the named approver. What the
+	 * sign-off checks is checked here too, so the preparer learns of a hold
+	 * before the approver does.
+	 */
+	public Inventory submitForReview(UUID inventoryId, UUID runId, String note) {
+		var inventory = get(inventoryId);
+		access.checkWrite(inventory.getOrganization());
+		var submitNote = trimToNull(note);
+		if (submitNote != null && submitNote.length() > 500) {
+			throw new GhgFieldException("note", "The note for the approver is at most 500 characters.");
+		}
+		if (inventory.getStatus() != InventoryStatus.FROZEN && inventory.getStatus() != InventoryStatus.IN_REVIEW) {
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_SUBMIT_NEEDS_FROZEN, inventory.getStatus().label());
+		}
+		var run = runs.findById(runId).orElseThrow(() -> GhgNotFoundException.run(runId));
+		if (!run.getInventory().getId().equals(inventoryId)) {
+			throw GhgNotFoundException.run(runId);
+		}
+		if (run.isVoided()) {
+			throw new GhgRuleViolationException(GhgRules.RUN_VOIDED_NOT_FINAL, run.getRunNo());
+		}
+		var submitter = currentPerson(inventory);
+		var preparer = inventory.getPreparer();
+		if (preparer != null && !inventory.isPreparer(submitter)) {
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_NOT_THE_PREPARER, preparer.name());
+		}
+		if (inventory.isApprover(submitter)) {
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_APPROVER_IS_PREPARER, submitter.name());
+		}
+		refuseWhileARecalculationHolds(inventory, "submitted for review");
+		var holds = finalHolds(inventory);
+		if (!holds.isEmpty()) {
+			throw new GhgRuleViolationException(GhgRules.RUN_FINAL_HOLDS, run.getRunNo(), String.join(" ", holds));
+		}
+		inventory.submitForReview(run.getId(), submitter, submitNote);
+		record(inventory, run, GhgAuditEvent.Action.SUBMITTED_FOR_REVIEW,
+				"run " + run.getRunNo() + " submitted for review" + (submitNote == null ? "" : ": " + submitNote));
+		return inventory;
+	}
+
+	/** Returns the inventory to its preparer with a reason (spec 05.8): frozen again, nothing submitted. */
+	public Inventory returnToPreparer(UUID inventoryId, String reason) {
+		var inventory = get(inventoryId);
+		access.checkApprove(inventory.getOrganization());
+		var why = trimToNull(reason);
+		if (why == null || why.length() < 5) {
+			throw new GhgFieldException(GhgRules.REASON_TOO_SHORT, "Returning the inventory to the preparer");
+		}
+		if (why.length() > 500) {
+			throw new GhgFieldException("reason", "The reason is at most 500 characters.");
+		}
+		if (inventory.getStatus() != InventoryStatus.IN_REVIEW) {
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_NOT_IN_REVIEW);
+		}
+		refuseUnlessTheApprover(inventory, currentPerson(inventory));
+		var run = runs.findById(inventory.getSubmittedRunId()).orElse(null);
+		inventory.withdrawSubmission();
+		record(inventory, run, GhgAuditEvent.Action.REVIEW_RETURNED,
+				(run == null ? "returned" : "run " + run.getRunNo() + " returned") + " to the preparer: " + why);
+		return inventory;
+	}
+
+	/**
+	 * Names the inventory's preparer and approver, either or both; null clears
+	 * (spec 05.8). A member who may approve assigns, at any time before
+	 * publication. The preparer must hold a write role and the approver an
+	 * approve role, and the two may not be the same person.
+	 */
+	public Inventory assignSignOff(UUID inventoryId, UUID preparerUserId, UUID approverUserId) {
+		var inventory = get(inventoryId);
+		access.checkApprove(inventory.getOrganization());
+		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_SIGN_OFF_ON_RECORD);
+		}
+		var preparer = preparerUserId == null ? null : memberPerson(inventory, preparerUserId, true);
+		var approver = approverUserId == null ? null : memberPerson(inventory, approverUserId, false);
+		if (preparer != null && approver != null && Inventory.Person.same(approver.userId(), approver.email(), preparer)) {
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_APPROVER_IS_PREPARER, preparer.name());
+		}
+		inventory.assignSignOff(preparer, approver);
+		record(inventory, null, GhgAuditEvent.Action.SIGN_OFF_ASSIGNED, "preparer: "
+				+ (preparer == null ? "anyone who may prepare" : preparer.name()) + "; approver: "
+				+ (approver == null ? "anyone who may approve" : approver.name()));
+		return inventory;
+	}
+
+	/**
+	 * Whether the submitter of the run in review may sign it off themselves,
+	 * which they may only where nobody else in the organization may approve
+	 * (spec 05.8). False while nothing is submitted.
+	 */
+	@Transactional(readOnly = true)
+	public boolean submitterMaySign(Inventory inventory) {
+		var submitter = inventory.getSubmittedBy();
+		return submitter != null && anotherApprover(inventory, submitter).isEmpty();
+	}
+
+	/** The caller as an act records them (spec 05.8): account, email, and the account's current name. */
+	private Inventory.Person currentPerson(Inventory inventory) {
+		var id = access.currentUserId();
+		var email = access.currentUserEmail();
+		var name = userDirectory.findById(id)
+			.map(UserDirectory.UserSummary::displayName)
+			.filter(display -> display != null && !display.isBlank())
+			.orElse(email);
+		return new Inventory.Person(id, email, name);
+	}
+
+	/** A member named for the sign-off, refused when their role does not allow the part (spec 05.8). */
+	private Inventory.Person memberPerson(Inventory inventory, UUID userId, boolean preparer) {
+		var member = members.findByOrganizationIdAndUserId(inventory.getOrganization().getId(), userId)
+			.orElseThrow(() -> GhgNotFoundException.member(userId));
+		var name = userDirectory.findById(userId)
+			.map(UserDirectory.UserSummary::displayName)
+			.filter(display -> display != null && !display.isBlank())
+			.orElse(member.getDisplayName() == null ? member.getEmail() : member.getDisplayName());
+		var allowed = preparer ? member.getRole().canWrite() : member.getRole().canApprove();
+		if (!allowed) {
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_SIGN_OFF_ROLE, name, roleName(member.getRole()),
+					preparer ? "prepare an inventory" : "sign off an inventory");
+		}
+		return new Inventory.Person(userId, member.getEmail(), name);
+	}
+
+	private static String roleName(OrgRole role) {
+		var lower = role.name().toLowerCase(Locale.ROOT);
+		return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
+	}
+
+	/** Refuses anyone but the named approver, when one is named (spec 05.8). */
+	private void refuseUnlessTheApprover(Inventory inventory, Inventory.Person person) {
+		var approver = inventory.getApprover();
+		if (approver != null && !inventory.isApprover(person)) {
+			throw new GhgRuleViolationException(GhgRules.INVENTORY_NOT_THE_APPROVER, approver.name());
+		}
+	}
+
+	/** Another member who may approve, by name, other than the person (spec 05.8, like spec 02.11). */
+	private Optional<String> anotherApprover(Inventory inventory, Inventory.Person person) {
+		return members.findAllByOrganizationIdOrderByCreatedAtAsc(inventory.getOrganization().getId())
+			.stream()
+			.filter(member -> member.getRole().canApprove())
+			.filter(member -> !Inventory.Person.same(member.getUserId(), member.getEmail(), person))
+			.map(member -> userDirectory.findById(member.getUserId())
+				.map(UserDirectory.UserSummary::displayName)
+				.filter(display -> display != null && !display.isBlank())
+				.orElse(member.getDisplayName() == null ? member.getEmail() : member.getDisplayName()))
+			.findFirst();
+	}
+
+	/** Clears a submission and records why (spec 05.8): a new run, a void, a reopen. */
+	private void withdrawSubmission(Inventory inventory, String why) {
+		var submitted = inventory.getSubmittedRunId() == null ? null
+				: runs.findById(inventory.getSubmittedRunId()).orElse(null);
+		inventory.withdrawSubmission();
+		record(inventory, submitted, GhgAuditEvent.Action.SUBMISSION_WITHDRAWN,
+				(submitted == null ? "submission" : "submission of run " + submitted.getRunNo()) + " withdrawn: " + why);
 	}
 
 	/**
@@ -889,17 +1087,19 @@ public class InventoryService {
 
 	// --- report metadata (spec 07.4) -------------------------------------------------
 
-	/** The header the accountant types before publication: approver, assurance, intensity denominators. */
-	public Inventory setReportMetadata(UUID inventoryId, String approvedBy, AssuranceLevel assuranceLevel,
-			String assuranceProvider, String assuranceStatement, String uncertaintyStatement,
-			List<IntensityInput> metrics) {
+	/**
+	 * The header the accountant types before publication: assurance, uncertainty, intensity denominators.
+	 * The approver is not typed: the sign-off names it (spec 05.8).
+	 */
+	public Inventory setReportMetadata(UUID inventoryId, AssuranceLevel assuranceLevel, String assuranceProvider,
+			String assuranceStatement, String uncertaintyStatement, List<IntensityInput> metrics) {
 		var inventory = get(inventoryId);
 		if (inventory.getStatus() == InventoryStatus.PUBLISHED) {
 			throw new GhgRuleViolationException("A published inventory's report header cannot change.");
 		}
 		access.checkWrite(inventory.getOrganization());
-		inventory.setReportMetadata(trimToNull(approvedBy), assuranceLevel, trimToNull(assuranceProvider),
-				trimToNull(assuranceStatement), trimToNull(uncertaintyStatement));
+		inventory.setReportMetadata(assuranceLevel, trimToNull(assuranceProvider), trimToNull(assuranceStatement),
+				trimToNull(uncertaintyStatement));
 		record(inventory, null, GhgAuditEvent.Action.HEADER_SAVED, "report header saved");
 		intensityMetrics.deleteAllByInventoryId(inventoryId);
 		for (var metric : metrics) {
@@ -982,7 +1182,8 @@ public class InventoryService {
 		// spec 05.4: across approaches the boundary follows from Table 1, not from the source's decisions
 		var rebuild = approach != source.getConsolidationApproach();
 		target.setOperationalBoundary(source.getScope3Categories(), source.getScope3ExclusionsRationale());
-		target.setReportMetadata(source.getApprovedBy(), source.getAssuranceLevel(), source.getAssuranceProvider(),
+		// spec 05.8: the sign-off is not inherited; a correction is prepared and signed off afresh
+		target.setReportMetadata(source.getAssuranceLevel(), source.getAssuranceProvider(),
 				source.getAssuranceStatement(), source.getUncertaintyStatement());
 		if (rebuild) {
 			prefillBoundary(target);
@@ -1166,7 +1367,7 @@ public class InventoryService {
 	private void requireEditable(Inventory inventory) {
 		access.checkWrite(inventory.getOrganization());
 		if (!inventory.isEditable()) {
-			throw new GhgRuleViolationException("The inventory is " + inventory.getStatus().name().toLowerCase()
+			throw new GhgRuleViolationException("The inventory is " + inventory.getStatus().label()
 					+ ". Reopen it as a draft to change it.");
 		}
 	}
@@ -2522,6 +2723,10 @@ public class InventoryService {
 		}
 		run = runs.save(run);
 		record(inventory, run, GhgAuditEvent.Action.RUN_LAUNCHED, "run " + run.getRunNo() + " '" + run.getLabel() + "' launched");
+		// spec 05.8: the approver signs what was submitted, so a run after the submission withdraws it
+		if (inventory.getStatus() == InventoryStatus.IN_REVIEW) {
+			withdrawSubmission(inventory, "run " + run.getRunNo() + " launched after it");
+		}
 		events.publishEvent(new GhgRunCompleted(run.getId(), inventoryId, run.getTotalKgCo2e()));
 		return run;
 	}
@@ -2550,6 +2755,10 @@ public class InventoryService {
 		run.markVoid(access.currentUserId(), access.currentUserEmail(), reason.trim());
 		auditEvents.save(new GhgAuditEvent(inventory, run, GhgAuditEvent.Action.RUN_VOIDED,
 				access.currentUserId(), access.currentUserEmail(), access.attributed(inventory.getOrganization(), reason.trim())));
+		// spec 05.8: a voided run cannot be signed off, so its submission goes with it
+		if (inventory.getStatus() == InventoryStatus.IN_REVIEW && id.equals(inventory.getSubmittedRunId())) {
+			withdrawSubmission(inventory, "run " + run.getRunNo() + " was voided");
+		}
 		return run;
 	}
 

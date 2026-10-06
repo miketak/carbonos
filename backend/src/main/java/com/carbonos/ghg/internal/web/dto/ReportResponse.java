@@ -100,7 +100,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 				header.publishedBy(), header.publishedAt(), header.version(), header.supersedes(), supersededBy,
 				header.assuranceLevel(), header.assuranceProvider(), header.assuranceStatement(),
 				header.finalDesignatedBy(), header.finalDesignatedAt(), header.finalNote(), header.boundaryVersionNo(),
-				header.boundaryVersionCount());
+				header.boundaryVersionCount(), header.preparedByEmail(), header.preparedRunNo(), header.preparedNote(),
+				header.approvedByEmail(), header.approvedAt(), header.selfApproved());
 		return new ReportResponse(company, operationalBoundary, p, emissions, byGas, byGasTotalKgCo2e, byGasTotalTCo2e,
 				biogenicCo2Kg, biogenicCo2T, baseYear, methodology, boundaryExclusions, exclusions, lines, run, h,
 				byScope3Category, byFacility, byEntity, byCountry, factors, intensity, exclusionSummary, dataQuality,
@@ -130,7 +131,10 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 	 * The report's header block (spec 07.4): who, for which entity, when, which
 	 * version, with what assurance. {@code version} is the report version (one
 	 * more per correction); the boundary version is named apart (spec 05.5),
-	 * with who designated the final run and the review note.
+	 * with who designated the final run and the review note. Spec 05.8:
+	 * {@code preparedBy} is who submitted the run for review (else who launched
+	 * it) and {@code approvedBy} who signed it off, each a name with the email
+	 * apart; a report stored before spec 05.8 reads the new fields as null.
 	 */
 	public record Header(String organizationName, long organizationAccountNo, String address, String contact,
 			String periodLabel,
@@ -138,7 +142,8 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			String publishedBy, Instant publishedAt, int version, List<String> supersedes, String supersededBy,
 			AssuranceLevel assuranceLevel, String assuranceProvider, String assuranceStatement,
 			String finalDesignatedBy, Instant finalDesignatedAt, String finalNote, Integer boundaryVersionNo,
-			Integer boundaryVersionCount) {
+			Integer boundaryVersionCount, String preparedByEmail, Integer preparedRunNo, String preparedNote,
+			String approvedByEmail, Instant approvedAt, boolean selfApproved) {
 	}
 
 	/** Emissions of one scope 3 category (spec 07.4), declared or not, quantified or not (spec 07.6). */
@@ -385,19 +390,37 @@ public record ReportResponse(Company company, OperationalBoundary operationalBou
 			List<Inventory> predecessors, Inventory successor, List<IntensityMetric> metrics,
 			int boundaryVersionCount, UnitConverter.Scoped units, Map<String, FactorPackEdition> editions) {
 		var lines = run.getLines().stream().map(RunLineResponse::from).toList();
+		// spec 05.8: prepared by is who submitted this run for review, else who launched it; approved by is who
+		// signed it off. A run signed off before spec 05.8 keeps the typed approver, else the publisher.
+		var isFinal = run.getId().equals(inventory.getFinalRunId());
+		var submitter = run.getId().equals(inventory.getSubmittedRunId()) ? inventory.getSubmittedBy() : null;
+		var signedOff = isFinal && inventory.getFinalDesignatedByUserId() != null;
+		String approvedBy = null;
+		if (signedOff) {
+			approvedBy = inventory.getFinalDesignatedByName() != null ? inventory.getFinalDesignatedByName()
+					: inventory.getFinalDesignatedBy();
+		}
+		else if (isFinal) {
+			approvedBy = inventory.getApprovedBy() != null ? inventory.getApprovedBy() : inventory.getPublishedBy();
+		}
 		var header = new Header(organization.getName(), organization.getAccountNo(), organization.getAddress(),
 				organization.getContact(),
-				inventory.periodLabel(), run.getPeriodStart(), run.getPeriodEnd(), run.getCreatedBy(),
-				run.getCreatedAt(), inventory.getApprovedBy() != null ? inventory.getApprovedBy()
-						: inventory.getPublishedBy(),
+				inventory.periodLabel(), run.getPeriodStart(), run.getPeriodEnd(),
+				submitter == null ? run.getCreatedBy() : (submitter.name() != null ? submitter.name() : submitter.email()),
+				submitter == null ? run.getCreatedAt() : inventory.getSubmittedAt(), approvedBy,
 				inventory.getPublishedBy(), inventory.getPublishedAt(), predecessors.size() + 1,
 				predecessors.stream().map(Inventory::getName).toList(),
 				successor == null ? null : successor.getName(), inventory.getAssuranceLevel(),
 				inventory.getAssuranceProvider(), inventory.getAssuranceStatement(),
-				run.getId().equals(inventory.getFinalRunId()) ? inventory.getFinalDesignatedBy() : null,
-				run.getId().equals(inventory.getFinalRunId()) ? inventory.getFinalDesignatedAt() : null,
-				run.getId().equals(inventory.getFinalRunId()) ? inventory.getFinalNote() : null,
-				run.getBoundaryVersionNo(), boundaryVersionCount);
+				isFinal ? inventory.getFinalDesignatedBy() : null,
+				isFinal ? inventory.getFinalDesignatedAt() : null,
+				isFinal ? inventory.getFinalNote() : null,
+				run.getBoundaryVersionNo(), boundaryVersionCount,
+				submitter == null ? run.getCreatedBy() : submitter.email(), run.getRunNo(),
+				submitter == null ? null : inventory.getSubmitNote(),
+				signedOff ? inventory.getFinalDesignatedBy() : null,
+				signedOff ? inventory.getFinalDesignatedAt() : null,
+				signedOff && inventory.isFinalSelfApproved());
 		var byCategory = new java.util.TreeMap<ActivityCategory, BigDecimal[]>();
 		for (var line : run.scopedLines()) {
 			if (line.getScope() == Scope.SCOPE_3) {

@@ -24,10 +24,12 @@ import com.carbonos.platform.PlatformSettings.EditionsInPublishedPeriods;
 @Component
 class EditionLock {
 
-	private static final List<InventoryStatus> REOPENABLE = List.of(InventoryStatus.FROZEN, InventoryStatus.FINAL);
+	// spec 05.8: an inventory in review is frozen, with a run waiting for its sign-off
+	private static final List<InventoryStatus> REOPENABLE = List.of(InventoryStatus.FROZEN, InventoryStatus.IN_REVIEW,
+			InventoryStatus.FINAL);
 
 	private static final List<InventoryStatus> WITH_PUBLISHED = List.of(InventoryStatus.FROZEN,
-			InventoryStatus.FINAL, InventoryStatus.PUBLISHED);
+			InventoryStatus.IN_REVIEW, InventoryStatus.FINAL, InventoryStatus.PUBLISHED);
 
 	private final PlatformSettings settings;
 

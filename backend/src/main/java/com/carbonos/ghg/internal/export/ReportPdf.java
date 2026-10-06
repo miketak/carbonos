@@ -1,5 +1,6 @@
 package com.carbonos.ghg.internal.export;
 
+import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.AccountNumbers;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
@@ -96,8 +97,17 @@ public final class ReportPdf {
 			row(header, "Reporting entity", join(entity, h.address()));
 			row(header, "Contact", nvl(h.contact(), "not recorded"));
 			row(header, "Reporting period", h.periodLabel() + " (" + ReportLabels.period(h.periodStart(), h.periodEnd()) + ")");
-			row(header, "Prepared by", nvl(h.preparedBy(), "not recorded") + ", " + ReportLabels.instant(h.preparedAt()));
-			row(header, "Approved by", nvl(h.approvedBy(), "not yet approved"));
+			// spec 05.8: who submitted the run for review and who signed it off, each an account, with the run
+			row(header, "Prepared by", h.preparedBy() == null ? "not recorded"
+					: person(h.preparedBy(), h.preparedByEmail())
+							+ (h.preparedRunNo() == null ? "" : ", run " + h.preparedRunNo()) + ", "
+							+ ReportLabels.instant(h.preparedAt()) + (h.preparedNote() == null ? "" : ": " + h.preparedNote()));
+			row(header, "Approved by", h.approvedBy() == null ? "not yet approved"
+					: person(h.approvedBy(), h.approvedByEmail())
+							+ (h.approvedAt() == null ? ""
+									: (h.preparedRunNo() == null ? "" : ", run " + h.preparedRunNo()) + ", "
+											+ ReportLabels.day(h.approvedAt()))
+							+ (h.selfApproved() ? "; " + InventoryService.SELF_APPROVED : ""));
 			row(header, "Published", h.publishedAt() == null ? "not published"
 					: ReportLabels.instant(h.publishedAt()) + " by " + nvl(h.publishedBy(), "unknown"));
 			// spec 05.5: two numberings, two names; the report version here, the boundary version in section 1
@@ -650,6 +660,11 @@ public final class ReportPdf {
 			return "-";
 		}
 		return "Caveat: " + f.caveat() + (f.approvalNote() == null ? " Not yet checked." : " Checked: " + f.approvalNote());
+	}
+
+	/** "Esi Boateng (esi@...)": a name with the email apart, or the email alone when that is all there is. */
+	private static String person(String name, String email) {
+		return email == null || name.equalsIgnoreCase(email) ? name : name + " (" + email + ")";
 	}
 
 	private static String nvl(String value, String fallback) {

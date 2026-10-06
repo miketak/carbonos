@@ -521,6 +521,17 @@ class GhgApiIntegrationTests {
 		return JsonPath.read(body(run(inventoryId, label).andExpect(status().isCreated())), "$.run.id");
 	}
 
+	/**
+	 * Spec 05.8: a run is submitted for review before it is signed off. The owner submits; where nobody else
+	 * in the organization may approve, the owner's own sign-off goes through as a disclosed self-approval.
+	 */
+	String submitted(String runId) throws Exception {
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("IN_REVIEW"));
+		return runId;
+	}
+
 	// --- facts --------------------------------------------------------------
 
 	@Test
@@ -1583,7 +1594,7 @@ class GhgApiIntegrationTests {
 			.andReturn();
 		String runId = JsonPath.read(result.getResponse().getContentAsString(), "$.run.id");
 
-		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(runId) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.finalRunId").value(runId))
 			.andExpect(jsonPath("$.status").value("FINAL"));
@@ -2099,7 +2110,7 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isConflict());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"runId": "%s"}""".formatted(runId)))
+					{"runId": "%s"}""".formatted(submitted(runId))))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("FINAL"));
 
@@ -2128,7 +2139,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.run.boundaryVersionNo").value(2));
 
 		// PUBLISHED: nothing may change; a correction supersedes it
-		mvc.perform(post("/api/ghg/runs/" + secondRun + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(secondRun) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk())
@@ -2196,7 +2207,7 @@ class GhgApiIntegrationTests {
 				diesel(orgId));
 		freeze(base);
 		String baseRun = runAndGetId(base, "Base 2024");
-		mvc.perform(post("/api/ghg/runs/" + baseRun + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(baseRun) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 
 		mvc.perform(get("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()))
@@ -2345,7 +2356,7 @@ class GhgApiIntegrationTests {
 		var base = createInventory(orgId, "2024 Base Year", "OPERATIONAL_CONTROL", "2024-01-01", "2024-12-31");
 		putBoundary(base, pit);
 		prepare(base, pitDiesel, diesel(orgId));
-		mvc.perform(post("/api/ghg/runs/" + runAndGetId(base, "Base 2024") + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(runAndGetId(base, "Base 2024")) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -2446,7 +2457,7 @@ class GhgApiIntegrationTests {
 				diesel(orgId));
 		freeze(base);
 		String baseRun = runAndGetId(base, "Base 2024");
-		mvc.perform(post("/api/ghg/runs/" + baseRun + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(baseRun) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 
 		// 2025 is frozen once with the whole boundary, before anyone designates a base year
@@ -2519,7 +2530,7 @@ class GhgApiIntegrationTests {
 				.value(org.hamcrest.Matchers.containsString("a planning value. A run may use it; a final run may not")));
 		freeze(inventoryId);
 		var runId = runAndGetId(inventoryId, "Run 001");
-		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asMember()).with(csrf()))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.allOf(
 					org.hamcrest.Matchers.containsString("cannot be designated final"),
@@ -2537,7 +2548,7 @@ class GhgApiIntegrationTests {
 					org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("a planning value")))));
 		freeze(inventoryId);
 		var documented = runAndGetId(inventoryId, "Run 002");
-		mvc.perform(post("/api/ghg/runs/" + documented + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(documented) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("FINAL"));
 	}
@@ -2594,7 +2605,7 @@ class GhgApiIntegrationTests {
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + portDiesel + "')].id").getFirst(),
 				diesel(orgId));
 		freeze(base);
-		mvc.perform(post("/api/ghg/runs/" + runAndGetId(base, "Base 2024") + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(runAndGetId(base, "Base 2024")) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 
 		// 2025 was frozen without the terminal before anyone named a base year
@@ -2663,7 +2674,7 @@ class GhgApiIntegrationTests {
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
 			.andExpect(jsonPath("$.factors[0].gwpSet").value("AR6"))
 			.andExpect(jsonPath("$.factors[0].blendGwpSource").value("AR5"));
-		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asMember()).with(csrf()))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(
 					"whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded)")));
@@ -3205,7 +3216,7 @@ class GhgApiIntegrationTests {
 		// a correction inherits the exclusions of the published inventory
 		freeze(inventoryId);
 		String finalRun = runAndGetId(inventoryId, "Run 002");
-		mvc.perform(post("/api/ghg/runs/" + finalRun + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(finalRun) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
@@ -3393,7 +3404,8 @@ class GhgApiIntegrationTests {
 				diesel(orgId));
 		classify(JsonPath.<List<String>>read(listing, "$[?(@.activityId == '" + travel + "')].id").getFirst(),
 				flight(orgId));
-		// the header the accountant types: an approver override, assurance, an intensity denominator
+		// the header the accountant types: assurance and an intensity denominator. Spec 05.8: the approver is
+		// no longer typed, so an approver a client still sends is ignored and the sign-off names it instead
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/report-metadata").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"approvedBy": "Ama Mensah, Sustainability Lead", "assuranceLevel": "LIMITED",
@@ -3401,7 +3413,7 @@ class GhgApiIntegrationTests {
 					 "intensityMetrics": [{"name": "Gold produced", "value": 1000, "unit": "oz"}]}"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.assuranceLevel").value("LIMITED"))
-			.andExpect(jsonPath("$.approvedBy").value("Ama Mensah, Sustainability Lead"))
+			.andExpect(jsonPath("$.approvedBy").doesNotExist())
 			.andExpect(jsonPath("$.intensityMetrics[0].name").value("Gold produced"));
 		// spec 05.6: the denominators come back with the inventory, so the header form starts from them
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
@@ -3419,7 +3431,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.header.contact").value("sustainability@asante.example"))
 			.andExpect(jsonPath("$.header.periodLabel").value("2025"))
 			.andExpect(jsonPath("$.header.preparedBy").value("kojo@ecoriv.com"))
-			.andExpect(jsonPath("$.header.approvedBy").value("Ama Mensah, Sustainability Lead"))
+			.andExpect(jsonPath("$.header.approvedBy").doesNotExist())
 			.andExpect(jsonPath("$.header.version").value(1))
 			.andExpect(jsonPath("$.header.assuranceLevel").value("LIMITED"))
 			.andExpect(jsonPath("$.header.assuranceProvider").value("Verify Ghana Ltd"))
@@ -3445,11 +3457,31 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.intensity[0].tCo2ePerUnit").value(0.005051))
 			.andExpect(jsonPath("$.lines[?(@.facilityName == 'Obuom Processing Plant')].country").value(
 					org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.equalTo("GH"))));
-		// publication records the publisher; a correction is version 2 and names what it supersedes
-		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf())).andExpect(status().isOk());
+		// publication records the publisher; a correction is version 2 and names what it supersedes. Spec 05.8:
+		// nobody else in the organization may approve, so the owner signs their own submission, disclosed
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.signOff.submitterMaySign").value(true));
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.finalSelfApproved").value(true));
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.publishedBy").value("kojo@ecoriv.com"));
+		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
+			.andExpect(jsonPath("$.header.approvedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.header.selfApproved").value(true));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.action == 'FINAL_DESIGNATED')].reason").value(org.hamcrest.Matchers.hasItem(
+					"run 1 signed off and designated final (self-approved: nobody else in the organization could check it)")));
+		var signedPdf = mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember()))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsByteArray();
+		assertThat(pdfText(signedPdf).replaceAll("\\s+", " ")).containsPattern(
+				"Approved by\\s*kojo@ecoriv\\.com, run 1, \\d{1,2} [A-Z][a-z]+ \\d{4}; self-approved: nobody else in the "
+						+ "organization could check it");
 		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/report-metadata").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"assuranceLevel": "REASONABLE", "intensityMetrics": []}"""))
@@ -4150,6 +4182,14 @@ class GhgApiIntegrationTests {
 					{"label": "Run 001"}"""))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.run.createdBy").value("abena@client.test"))), "$.run.id");
+		// spec 05.8: the preparer submits the run she prepared, under her account
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(as(abena)).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("IN_REVIEW"))
+			.andExpect(jsonPath("$.signOff.submittedRunId").value(runId))
+			.andExpect(jsonPath("$.signOff.submittedBy.email").value("abena@client.test"))
+			.andExpect(jsonPath("$.signOff.submittedBy.name").value("Abena Owusu"))
+			.andExpect(jsonPath("$.signOff.submitterMaySign").value(false));
 		// a preparer cannot designate a final run or publish; a verifier cannot write at all
 		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(abena)).with(csrf()))
 			.andExpect(status().isForbidden())
@@ -4172,17 +4212,33 @@ class GhgApiIntegrationTests {
 			.contentType("application/json").content("""
 					{"role": "REVIEWER"}"""))
 			.andExpect(status().isOk());
-		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(abena)).with(csrf())).andExpect(status().isOk());
+		// spec 05.8: promoted, she still cannot sign off the run she submitted while the owner can
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(abena)).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.run.self-signed"))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers
+				.startsWith("Run 1 was submitted by Abena Owusu, who cannot also sign it off. Ask ")));
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.finalSelfApproved").value(false))
+			.andExpect(jsonPath("$.finalDesignatedBy").value("kojo@ecoriv.com"));
+		// the approver need not publish: the reviewer issues the report the owner signed
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(as(abena)).with(csrf()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.publishedBy").value("abena@client.test"));
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
-			.andExpect(jsonPath("$.header.preparedBy").value("abena@client.test"))
+			.andExpect(jsonPath("$.header.preparedBy").value("Abena Owusu"))
+			.andExpect(jsonPath("$.header.preparedByEmail").value("abena@client.test"))
+			.andExpect(jsonPath("$.header.preparedRunNo").value(1))
+			.andExpect(jsonPath("$.header.approvedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.header.approvedByEmail").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.header.selfApproved").value(false))
 			.andExpect(jsonPath("$.header.publishedBy").value("abena@client.test"));
 		// the history names every actor and act
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
 			.andExpect(jsonPath("$[*].action").value(org.hamcrest.Matchers.hasItems("REVIEWED", "CLASSIFIED", "FROZEN",
-					"RUN_LAUNCHED", "FINAL_DESIGNATED", "PUBLISHED")))
+					"RUN_LAUNCHED", "SUBMITTED_FOR_REVIEW", "FINAL_DESIGNATED", "PUBLISHED")))
+			.andExpect(jsonPath("$[?(@.action == 'SUBMITTED_FOR_REVIEW')].actor").value("abena@client.test"))
 			.andExpect(jsonPath("$[?(@.action == 'CLASSIFIED')].actor").value("abena@client.test"))
 			.andExpect(jsonPath("$[?(@.action == 'CLASSIFIED')].reason")
 				.value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("'Genset diesel'"))));
@@ -4350,7 +4406,7 @@ class GhgApiIntegrationTests {
 		putBoundary(inventoryId, plant);
 		prepare(inventoryId, diesel, diesel(orgId));
 		var runId = runAndGetId(inventoryId, "Run 001");
-		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(runId) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
@@ -4897,7 +4953,7 @@ class GhgApiIntegrationTests {
 		var baseRun = runAndGetId(inventoryId, "Base run");
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"runId": "%s"}""".formatted(baseRun))).andExpect(status().isOk());
+					{"runId": "%s"}""".formatted(submitted(baseRun)))).andExpect(status().isOk());
 		mvc.perform(put("/api/ghg/organizations/" + orgId + "/base-year").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
 					{"inventoryId": "%s", "thresholdPercent": 5, "reason": "first verifiable year",
@@ -4913,7 +4969,7 @@ class GhgApiIntegrationTests {
 		freeze(inventoryId);
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"runId": "%s"}""".formatted(baseRun))).andExpect(status().isOk());
+					{"runId": "%s"}""".formatted(submitted(baseRun)))).andExpect(status().isOk());
 		var comparison = runAndGetId(inventoryId, "Corrected method");
 		mvc.perform(post("/api/ghg/organizations/" + orgId + "/base-year/recalculations").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
@@ -5108,7 +5164,7 @@ class GhgApiIntegrationTests {
 		var publishedRun = runAndGetId(source, "Run 001");
 		mvc.perform(post("/api/ghg/inventories/" + source + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"runId": "%s"}""".formatted(publishedRun))).andExpect(status().isOk());
+					{"runId": "%s"}""".formatted(submitted(publishedRun)))).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + source + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + source + "/supersede").with(asMember()).with(csrf())
@@ -5164,7 +5220,7 @@ class GhgApiIntegrationTests {
 		var runId = runAndGetId(inventoryId, "Run 001");
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"runId": "%s"}""".formatted(runId))).andExpect(status().isOk());
+					{"runId": "%s"}""".formatted(submitted(runId)))).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
@@ -5929,6 +5985,12 @@ class GhgApiIntegrationTests {
 		putBoundary(inventoryId, pit);
 		prepare(inventoryId, diesel, diesel(orgId));
 		var runId = runAndGetId(inventoryId, "Run 003");
+		// spec 05.8: the preparer puts the run forward with a note for the approver
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(as(kofi)).with(csrf())
+			.contentType("application/json").content("""
+					{"note": "fuel ledger attached"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.signOff.submitNote").value("fuel ledger attached"));
 
 		// a preparer cannot designate; a reviewer's note over 500 characters is refused; the note lands everywhere
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(as(kofi)).with(csrf())
@@ -5946,18 +6008,26 @@ class GhgApiIntegrationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("FINAL"))
 			.andExpect(jsonPath("$.finalDesignatedBy").value("abena@asantegold.test"))
+			.andExpect(jsonPath("$.finalDesignatedByName").value("Abena Owusu"))
+			.andExpect(jsonPath("$.finalSelfApproved").value(false))
 			.andExpect(jsonPath("$.finalDesignatedAt").exists())
 			.andExpect(jsonPath("$.finalNote").value("reconciled against the fuel ledger"));
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
 			.andExpect(jsonPath("$[?(@.action == 'FINAL_DESIGNATED')].reason")
-				.value("run 1 designated final: reconciled against the fuel ledger"))
+				.value("run 1 signed off and designated final: reconciled against the fuel ledger"))
 			.andExpect(jsonPath("$[?(@.action == 'FINAL_DESIGNATED')].actor").value("abena@asantegold.test"));
 		mvc.perform(get("/api/ghg/runs/" + runId + "/report").with(asMember()))
 			.andExpect(jsonPath("$.header.version").value(1))
 			.andExpect(jsonPath("$.header.boundaryVersionNo").value(1))
 			.andExpect(jsonPath("$.header.boundaryVersionCount").value(1))
 			.andExpect(jsonPath("$.header.finalDesignatedBy").value("abena@asantegold.test"))
-			.andExpect(jsonPath("$.header.finalNote").value("reconciled against the fuel ledger"));
+			.andExpect(jsonPath("$.header.finalNote").value("reconciled against the fuel ledger"))
+			// spec 05.8: who submitted and who signed, as accounts, with the run
+			.andExpect(jsonPath("$.header.preparedBy").value("Kofi Mensah"))
+			.andExpect(jsonPath("$.header.preparedByEmail").value("kofi@asantegold.test"))
+			.andExpect(jsonPath("$.header.preparedNote").value("fuel ledger attached"))
+			.andExpect(jsonPath("$.header.approvedBy").value("Abena Owusu"))
+			.andExpect(jsonPath("$.header.approvedByEmail").value("abena@asantegold.test"));
 		var pdf = mvc.perform(get("/api/ghg/runs/" + runId + "/report.pdf").with(asMember()))
 			.andExpect(status().isOk())
 			.andReturn()
@@ -5966,20 +6036,232 @@ class GhgApiIntegrationTests {
 		var text = pdfText(pdf).replaceAll("\\s+", " ");
 		assertThat(text).containsPattern("Report version\\s*1\\b")
 			.containsPattern("Final designated\\s*by abena@asantegold\\.test on \\d{1,2} [A-Z][a-z]+ \\d{4}: reconciled against the fuel ledger")
+			.containsPattern("Prepared by\\s*Kofi Mensah \\(kofi@asantegold\\.test\\), run 1, .*: fuel ledger attached")
+			.containsPattern("Approved by\\s*Abena Owusu \\(abena@asantegold\\.test\\), run 1, \\d{1,2} [A-Z][a-z]+ \\d{4}")
 			.contains("Boundary version 1 of 1.");
 		// withdrawing the designation clears the record of it; designating through the run takes a note too
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/withdraw-final").with(as(abena)).with(csrf())
 			.contentType("application/json").content("""
 					{"reason": "the ledger was re-issued"}"""))
 			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("FROZEN"))
 			.andExpect(jsonPath("$.finalDesignatedBy").doesNotExist())
-			.andExpect(jsonPath("$.finalNote").doesNotExist());
+			.andExpect(jsonPath("$.finalNote").doesNotExist())
+			.andExpect(jsonPath("$.signOff.submittedRunId").doesNotExist());
+		// spec 05.8: the withdrawal took the submission with it, so the preparer resubmits first
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(abena)).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.run.not-submitted"))
+			.andExpect(jsonPath("$.detail")
+				.value("Run 1 has not been submitted for review. Submit it before marking it final."));
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(as(kofi)).with(csrf()))
+			.andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(abena)).with(csrf())
 			.contentType("application/json").content("""
 					{"note": "second review"}"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.finalNote").value("second review"));
 		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(as(kofi)).with(csrf())).andExpect(status().isForbidden());
+	}
+
+	/** Spec 05.8: submit, return, the acts that withdraw a submission, assignment, and the sign-off. */
+	@Test
+	void aRunIsSubmittedForReviewAndSignedOffBySomeoneElse() throws Exception {
+		var abena = userService.create("abena@gyenyame.test", "Abena Owusu", com.carbonos.user.internal.UserRole.MEMBER,
+				"reviewer-passw0rd");
+		var esi = userService.create("esi@gyenyame.test", "Esi Boateng", com.carbonos.user.internal.UserRole.MEMBER,
+				"preparer-passw0rd");
+		var orgId = createOrganization("Gye Nyame Gold");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "abena@gyenyame.test", "role": "REVIEWER"}""")).andExpect(status().isCreated());
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"email": "esi@gyenyame.test", "role": "PREPARER"}""")).andExpect(status().isCreated());
+		var pit = createFacility(orgId, "Nkran Pit");
+		var diesel = createActivity(orgId, pit, "Haul fleet diesel", "1000", "litre", "2025-06-30");
+		var inventoryId = createInventory(orgId, "FY2025", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, pit);
+		prepare(inventoryId, diesel, diesel(orgId));
+		var run1 = runAndGetId(inventoryId, "Run 001");
+
+		// nothing is signed off that was not submitted
+		mvc.perform(post("/api/ghg/runs/" + run1 + "/finalize").with(as(abena)).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.run.not-submitted"));
+		// the preparer submits; a reviewer returns it with a reason, which the history keeps
+		mvc.perform(post("/api/ghg/runs/" + run1 + "/submit-for-review").with(as(esi)).with(csrf())
+			.contentType("application/json").content("""
+					{"note": "reconciled against the fuel ledger"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("IN_REVIEW"))
+			.andExpect(jsonPath("$.signOff.submittedBy.name").value("Esi Boateng"));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/return-to-preparer").with(as(esi)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "Not mine to return"}"""))
+			.andExpect(status().isForbidden());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/return-to-preparer").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "ok"}"""))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.reason-too-short"));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/return-to-preparer").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "The June invoice is missing"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("FROZEN"))
+			.andExpect(jsonPath("$.signOff.submittedRunId").doesNotExist());
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/return-to-preparer").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "The June invoice is missing"}"""))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.inventory.not-in-review"));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.action == 'SUBMITTED_FOR_REVIEW')].reason")
+				.value(org.hamcrest.Matchers.hasItem("run 1 submitted for review: reconciled against the fuel ledger")))
+			.andExpect(jsonPath("$[?(@.action == 'SUBMITTED_FOR_REVIEW')].actor").value("esi@gyenyame.test"))
+			.andExpect(jsonPath("$[?(@.action == 'REVIEW_RETURNED')].reason")
+				.value(org.hamcrest.Matchers.hasItem("run 1 returned to the preparer: The June invoice is missing")))
+			.andExpect(jsonPath("$[?(@.action == 'REVIEW_RETURNED')].actor").value("abena@gyenyame.test"));
+
+		// a new run withdraws the submission: the approver would otherwise sign something else
+		mvc.perform(post("/api/ghg/runs/" + run1 + "/submit-for-review").with(as(esi)).with(csrf()))
+			.andExpect(status().isOk());
+		var run2 = runAndGetId(inventoryId, "Run 002");
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
+			.andExpect(jsonPath("$.status").value("FROZEN"))
+			.andExpect(jsonPath("$.signOff.submittedRunId").doesNotExist());
+		// so does voiding the submitted run, and so does reopening the inventory
+		mvc.perform(post("/api/ghg/runs/" + run2 + "/submit-for-review").with(as(esi)).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/runs/" + run2 + "/void").with(asMember()).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "the June invoice was keyed twice"}""")).andExpect(status().isOk());
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
+			.andExpect(jsonPath("$.status").value("FROZEN"));
+		mvc.perform(post("/api/ghg/runs/" + run2 + "/submit-for-review").with(as(esi)).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.run.voided-not-final"));
+		mvc.perform(post("/api/ghg/runs/" + run1 + "/submit-for-review").with(as(esi)).with(csrf()))
+			.andExpect(status().isOk());
+		reopen(inventoryId);
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.action == 'SUBMISSION_WITHDRAWN')].reason").value(org.hamcrest.Matchers.hasItems(
+					"submission of run 1 withdrawn: run 2 launched after it",
+					"submission of run 2 withdrawn: run 2 was voided",
+					"submission of run 1 withdrawn: the inventory was reopened as a draft")));
+		freeze(inventoryId);
+		var run3 = runAndGetId(inventoryId, "Run 003");
+
+		// assignment narrows within the roles, which stay the ceiling
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/sign-off").with(as(esi)).with(csrf())
+			.contentType("application/json").content("""
+					{"approverUserId": "%s"}""".formatted(abena.getId())))
+			.andExpect(status().isForbidden());
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/sign-off").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"approverUserId": "%s"}""".formatted(esi.getId())))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.inventory.sign-off-role"))
+			.andExpect(jsonPath("$.detail").value(
+					"Esi Boateng holds the Preparer role and may not sign off an inventory; roles are the ceiling."));
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/sign-off").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"preparerUserId": "%s", "approverUserId": "%s"}""".formatted(abena.getId(), abena.getId())))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.inventory.approver-is-preparer"));
+		// the named approver signs rather than submits
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/sign-off").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"approverUserId": "%s"}""".formatted(abena.getId())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.signOff.preparer").doesNotExist())
+			.andExpect(jsonPath("$.signOff.approver.name").value("Abena Owusu"));
+		mvc.perform(post("/api/ghg/runs/" + run3 + "/submit-for-review").with(as(abena)).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.detail").value("Abena Owusu cannot be both the preparer and the approver of one "
+					+ "inventory: name someone else for one of the two."));
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/sign-off").with(as(abena)).with(csrf())
+			.contentType("application/json").content("""
+					{"preparerUserId": "%s", "approverUserId": "%s"}""".formatted(esi.getId(), abena.getId())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.signOff.preparer.name").value("Esi Boateng"))
+			.andExpect(jsonPath("$.signOff.preparer.email").value("esi@gyenyame.test"));
+		mvc.perform(post("/api/ghg/runs/" + run3 + "/submit-for-review").with(asMember()).with(csrf()))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.rule").value("ghg.inventory.not-the-preparer"))
+			.andExpect(jsonPath("$.detail").value("Esi Boateng is this inventory's preparer; only they submit it for review."));
+		mvc.perform(post("/api/ghg/runs/" + run3 + "/submit-for-review").with(as(esi)).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(post("/api/ghg/runs/" + run3 + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.rule").value("ghg.inventory.not-the-approver"))
+			.andExpect(jsonPath("$.detail").value("Abena Owusu is this inventory's approver; only they return it or sign it off."));
+		mvc.perform(post("/api/ghg/runs/" + run3 + "/finalize").with(as(abena)).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("FINAL"))
+			.andExpect(jsonPath("$.finalDesignatedByName").value("Abena Owusu"))
+			.andExpect(jsonPath("$.finalSelfApproved").value(false));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.action == 'SIGN_OFF_ASSIGNED')].reason")
+				.value(org.hamcrest.Matchers.hasItem("preparer: Esi Boateng; approver: Abena Owusu")));
+
+		// a final inventory takes runs, but nothing more is submitted or signed until the designation is withdrawn
+		var run4 = runAndGetId(inventoryId, "Run 004");
+		mvc.perform(post("/api/ghg/runs/" + run4 + "/submit-for-review").with(as(esi)).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.inventory.submit-needs-frozen"))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.startsWith("The inventory is final.")));
+		mvc.perform(post("/api/ghg/runs/" + run4 + "/finalize").with(as(abena)).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.inventory.already-final"))
+			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.startsWith("Run 3 is already designated final.")));
+		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(as(abena)).with(csrf()))
+			.andExpect(status().isOk());
+		mvc.perform(put("/api/ghg/inventories/" + inventoryId + "/sign-off").with(as(abena)).with(csrf())
+			.contentType("application/json").content("{}"))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.inventory.sign-off-on-record"));
+		mvc.perform(get("/api/ghg/runs/" + run3 + "/report").with(asMember()))
+			.andExpect(jsonPath("$.header.preparedBy").value("Esi Boateng"))
+			.andExpect(jsonPath("$.header.preparedRunNo").value(3))
+			.andExpect(jsonPath("$.header.approvedBy").value("Abena Owusu"))
+			.andExpect(jsonPath("$.header.selfApproved").value(false));
+		// a run that was never submitted names who launched it, and nobody approved it
+		mvc.perform(get("/api/ghg/runs/" + run4 + "/report").with(asMember()))
+			.andExpect(jsonPath("$.header.preparedBy").value("kojo@ecoriv.com"))
+			.andExpect(jsonPath("$.header.approvedBy").doesNotExist());
+	}
+
+	/** Spec 05.8: support access may submit and sign, and never signs its own submission. */
+	@Test
+	void supportAccessMaySubmitAndSignButNeverItsOwnSubmission() throws Exception {
+		var admin = userService.create("support-signoff@ecoriv.com", "Ama Support",
+				com.carbonos.user.internal.UserRole.ADMIN, "support-passw0rd");
+		var orgId = createOrganization("Sankofa Gold plc");
+		var plant = createFacility(orgId, "Obuom Processing Plant");
+		var diesel = createActivity(orgId, plant, "Genset diesel", "1000", "litre", "2025-08-01");
+		var inventoryId = createInventory(orgId, "FY2025 Corporate", "OPERATIONAL_CONTROL");
+		putBoundary(inventoryId, plant);
+		prepare(inventoryId, diesel, diesel(orgId));
+		var runId = runAndGetId(inventoryId, "Run 001");
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/support-access").with(asAdmin(admin)).with(csrf())
+			.contentType("application/json").content("""
+					{"reason": "ticket 4512: preparer cannot submit the run"}"""))
+			.andExpect(status().isCreated());
+		mvc.perform(post("/api/ghg/runs/" + runId + "/submit-for-review").with(asAdmin(admin)).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.signOff.submittedBy.email").value("support-signoff@ecoriv.com"));
+		// the owner may approve, so support cannot sign what it submitted
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asAdmin(admin)).with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.run.self-signed"));
+		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.finalSelfApproved").value(false));
+		mvc.perform(get("/api/ghg/inventories/" + inventoryId + "/events").with(asMember()))
+			.andExpect(jsonPath("$[?(@.action == 'SUBMITTED_FOR_REVIEW')].reason")
+				.value(org.hamcrest.Matchers.hasItem("run 1 submitted for review (under support access)")));
 	}
 
 	@Test
@@ -6414,7 +6696,7 @@ class GhgApiIntegrationTests {
 		// a correction carries the rules with the view
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/finalize").with(asMember()).with(csrf())
 			.contentType("application/json").content("""
-					{"runId": "%s"}""".formatted(runId))).andExpect(status().isOk());
+					{"runId": "%s"}""".formatted(submitted(runId)))).andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		var correction = body(mvc
@@ -6551,7 +6833,7 @@ class GhgApiIntegrationTests {
 		putBoundary(inventoryId, plant);
 		classify(syncAndGetAssignmentId(inventoryId, fuel), diesel(orgId));
 		freeze(inventoryId);
-		var runId = runAndGetId(inventoryId, "Run 001");
+		var runId = submitted(runAndGetId(inventoryId, "Run 001"));
 		var factorName = JsonPath.<String>read(
 				body(mvc.perform(post("/api/ghg/emission-factors/" + diesel(orgId) + "/unapprove").with(asMember())
 					.with(csrf())).andExpect(status().isOk()).andExpect(jsonPath("$.approved").value(false))),
@@ -6562,8 +6844,9 @@ class GhgApiIntegrationTests {
 					org.hamcrest.Matchers.containsString("Run 1 cannot be designated final."),
 					org.hamcrest.Matchers.containsString("'Genset diesel' uses '" + factorName
 							+ "', which is not approved. Approve it under Emission factors, or choose another."))));
+		// spec 05.8: the hold refuses the sign-off, and the submission waits in review
 		mvc.perform(get("/api/ghg/inventories/" + inventoryId).with(asMember()))
-			.andExpect(jsonPath("$.status").value("FROZEN"));
+			.andExpect(jsonPath("$.status").value("IN_REVIEW"));
 		// approving it again clears the hold
 		mvc.perform(post("/api/ghg/emission-factors/" + diesel(orgId) + "/approve").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
@@ -6657,7 +6940,7 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.endsWith("which is FROZEN. A reported period "
 					+ "keeps the factors it reported with. Reopen that inventory, or import the edition into a later "
 					+ "period.")));
-		mvc.perform(post("/api/ghg/runs/" + runId + "/finalize").with(asMember()).with(csrf()))
+		mvc.perform(post("/api/ghg/runs/" + submitted(runId) + "/finalize").with(asMember()).with(csrf()))
 			.andExpect(status().isOk());
 		mvc.perform(post("/api/ghg/inventories/" + inventoryId + "/publish").with(asMember()).with(csrf()))
 			.andExpect(status().isOk())

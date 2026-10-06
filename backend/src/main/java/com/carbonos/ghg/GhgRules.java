@@ -213,6 +213,40 @@ public class GhgRules implements RuleSource {
 	public static final Rule PUBLISH_NEEDS_FINAL = Rule.of("ghg.inventory.publish-needs-final", HttpStatus.CONFLICT,
 			"Designate a final run before publishing the inventory.");
 
+	// the sign-off workflow (spec 05.8)
+	public static final Rule RUN_NOT_SUBMITTED = Rule.of("ghg.run.not-submitted", HttpStatus.CONFLICT,
+			"Run {run} has not been submitted for review. Submit it before marking it final.");
+
+	public static final Rule RUN_SELF_SIGNED = Rule.of("ghg.run.self-signed", HttpStatus.CONFLICT,
+			"Run {run} was submitted by {submitter}, who cannot also sign it off. Ask {checker} or another reviewer "
+					+ "or owner to mark it final.");
+
+	public static final Rule INVENTORY_ALREADY_FINAL = Rule.of("ghg.inventory.already-final", HttpStatus.CONFLICT,
+			"Run {run} is already designated final. Withdraw the designation, with a reason, to sign off another run.");
+
+	public static final Rule INVENTORY_SUBMIT_NEEDS_FROZEN = Rule.of("ghg.inventory.submit-needs-frozen",
+			HttpStatus.CONFLICT, "The inventory is {status}. A run is submitted for review once the inventory is "
+					+ "frozen, and before a run is designated final.");
+
+	public static final Rule INVENTORY_NOT_IN_REVIEW = Rule.of("ghg.inventory.not-in-review", HttpStatus.CONFLICT,
+			"The inventory is not in review, so there is nothing to return.");
+
+	public static final Rule INVENTORY_NOT_THE_PREPARER = Rule.of("ghg.inventory.not-the-preparer",
+			HttpStatus.FORBIDDEN, "{name} is this inventory's preparer; only they submit it for review.");
+
+	public static final Rule INVENTORY_NOT_THE_APPROVER = Rule.of("ghg.inventory.not-the-approver",
+			HttpStatus.FORBIDDEN, "{name} is this inventory's approver; only they return it or sign it off.");
+
+	public static final Rule INVENTORY_APPROVER_IS_PREPARER = Rule.of("ghg.inventory.approver-is-preparer",
+			HttpStatus.CONFLICT, "{name} cannot be both the preparer and the approver of one inventory: name someone "
+					+ "else for one of the two.");
+
+	public static final Rule INVENTORY_SIGN_OFF_ROLE = Rule.of("ghg.inventory.sign-off-role",
+			HttpStatus.UNPROCESSABLE_ENTITY, "{name} holds the {role} role and may not {act}; roles are the ceiling.");
+
+	public static final Rule INVENTORY_SIGN_OFF_ON_RECORD = Rule.of("ghg.inventory.sign-off-on-record",
+			HttpStatus.CONFLICT, "The inventory is published; its sign-off is on record and cannot change.");
+
 	public static final Rule CORRECTION_NEEDS_PUBLISHED = Rule.of("ghg.correction.needs-published", HttpStatus.CONFLICT,
 			"Only a published inventory can be superseded.");
 
@@ -351,6 +385,9 @@ public class GhgRules implements RuleSource {
 			EXCLUSION_JUSTIFICATION_TOO_SHORT, UPSTREAM_UNIT_MISMATCH, RESIDUAL_MIX_FACTOR_REQUIRED,
 			INVENTORY_REOPEN_REASON, INVENTORY_ALREADY_DRAFT, RUN_FINAL_HOLDS, RUN_VOIDED_NOT_FINAL,
 			RUN_FINAL_NOT_VOIDABLE, RUN_ALREADY_VOIDED, RUNS_ARE_A_RECORD, NO_FINAL_RUN, PUBLISH_NEEDS_FINAL,
+			RUN_NOT_SUBMITTED, RUN_SELF_SIGNED, INVENTORY_ALREADY_FINAL, INVENTORY_SUBMIT_NEEDS_FROZEN,
+			INVENTORY_NOT_IN_REVIEW, INVENTORY_NOT_THE_PREPARER, INVENTORY_NOT_THE_APPROVER,
+			INVENTORY_APPROVER_IS_PREPARER, INVENTORY_SIGN_OFF_ROLE, INVENTORY_SIGN_OFF_ON_RECORD,
 			CORRECTION_NEEDS_PUBLISHED, CORRECTION_ALREADY_SUPERSEDED, CORRECTION_REASON_TOO_SHORT,
 			PACK_EDITION_ID_REUSED, PACK_EDITION_IMMUTABLE, PACK_EDITION_HELD, PACK_APPLIES_FROM_REQUIRED,
 			PACK_EVIDENCE_REQUIRED, PACK_APPROVER_IS_CURATOR, PACK_ALREADY_PUBLISHED, PACK_DRAFT_NOT_WITHDRAWABLE,

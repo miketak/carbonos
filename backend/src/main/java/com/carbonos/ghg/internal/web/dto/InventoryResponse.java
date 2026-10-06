@@ -25,7 +25,25 @@ public record InventoryResponse(UUID id, UUID organizationId, String name, Local
 		Boolean residualMixAvailable, BigDecimal residualMixKgCo2ePerKwh, UUID finalRunId,
 		InventoryStatus status, UUID supersededById, UUID copiedFromId, String correctionReason, Instant publishedAt,
 		String finalDesignatedBy, Instant finalDesignatedAt, String finalNote, UUID currentBoundaryVersionId,
-		Integer currentBoundaryVersionNo, Instant createdAt, List<IntensityMetricResponse> intensityMetrics) {
+		Integer currentBoundaryVersionNo, Instant createdAt, List<IntensityMetricResponse> intensityMetrics,
+		String finalDesignatedByName, boolean finalSelfApproved, SignOffResponse signOff) {
+
+	/** A member as an act recorded them (spec 05.8). */
+	public record PersonResponse(UUID userId, String email, String name) {
+		static PersonResponse of(Inventory.Person person) {
+			return person == null ? null : new PersonResponse(person.userId(), person.email(), person.name());
+		}
+	}
+
+	/**
+	 * The sign-off workflow (spec 05.8): the named preparer and approver, the
+	 * run in review or signed off and who submitted it, and whether its
+	 * submitter may sign it themselves, which they may only where nobody else
+	 * in the organization may approve.
+	 */
+	public record SignOffResponse(PersonResponse preparer, PersonResponse approver, UUID submittedRunId,
+			PersonResponse submittedBy, Instant submittedAt, String submitNote, boolean submitterMaySign) {
+	}
 
 	/** A denominator the report divides the total by (spec 07.4), as saved on the inventory. */
 	public record IntensityMetricResponse(String name, BigDecimal value, String unit) {
@@ -40,7 +58,8 @@ public record InventoryResponse(UUID id, UUID organizationId, String name, Local
 	 * saved instead of from an empty set that a save would silently rewrite
 	 * (spec 05.6).
 	 */
-	public static InventoryResponse from(Inventory inventory, List<IntensityMetric> metrics) {
+	public static InventoryResponse from(Inventory inventory, List<IntensityMetric> metrics,
+			boolean submitterMaySign) {
 		return new InventoryResponse(inventory.getId(), inventory.getOrganization().getId(), inventory.getName(),
 				inventory.getPeriodStart(), inventory.getPeriodEnd(), inventory.getPurpose(),
 				inventory.getBaseYear(), inventory.getConsolidationApproach(), inventory.getGwpSet(),
@@ -53,6 +72,10 @@ public record InventoryResponse(UUID id, UUID organizationId, String name, Local
 				inventory.getPublishedAt(), inventory.getFinalDesignatedBy(), inventory.getFinalDesignatedAt(),
 				inventory.getFinalNote(), inventory.getCurrentBoundaryVersionId(),
 				inventory.getCurrentBoundaryVersionNo(), inventory.getCreatedAt(),
-				metrics.stream().map(IntensityMetricResponse::from).toList());
+				metrics.stream().map(IntensityMetricResponse::from).toList(), inventory.getFinalDesignatedByName(),
+				inventory.isFinalSelfApproved(),
+				new SignOffResponse(PersonResponse.of(inventory.getPreparer()), PersonResponse.of(inventory.getApprover()),
+						inventory.getSubmittedRunId(), PersonResponse.of(inventory.getSubmittedBy()),
+						inventory.getSubmittedAt(), inventory.getSubmitNote(), submitterMaySign));
 	}
 }

@@ -141,6 +141,55 @@ public class Inventory {
 	@Column(name = "final_note", length = 500)
 	private String finalNote;
 
+	// spec 05.8: the sign-off as an account, and whether nobody else in the organization could check it
+	@Column(name = "final_designated_by_user_id")
+	private UUID finalDesignatedByUserId;
+
+	@Column(name = "final_designated_by_name", length = 160)
+	private String finalDesignatedByName;
+
+	@Column(name = "final_self_approved", nullable = false)
+	private boolean finalSelfApproved;
+
+	// spec 05.8: the named preparer and approver, who narrow who may act within the organization roles
+	@Column(name = "preparer_user_id")
+	private UUID preparerUserId;
+
+	@Column(name = "preparer_email", length = 320)
+	private String preparerEmail;
+
+	@Column(name = "preparer_name", length = 160)
+	private String preparerName;
+
+	@Column(name = "approver_user_id")
+	private UUID approverUserId;
+
+	@Column(name = "approver_email", length = 320)
+	private String approverEmail;
+
+	@Column(name = "approver_name", length = 160)
+	private String approverName;
+
+	// spec 05.8: the run submitted for review, by whom, when, and the note for the approver; kept once
+	// the run is signed off, so the report names who prepared it
+	@Column(name = "submitted_run_id")
+	private UUID submittedRunId;
+
+	@Column(name = "submitted_by_user_id")
+	private UUID submittedByUserId;
+
+	@Column(name = "submitted_by", length = 320)
+	private String submittedBy;
+
+	@Column(name = "submitted_by_name", length = 160)
+	private String submittedByName;
+
+	@Column(name = "submitted_at")
+	private Instant submittedAt;
+
+	@Column(name = "submit_note", length = 500)
+	private String submitNote;
+
 	@Column(name = "published_at")
 	private Instant publishedAt;
 
@@ -203,10 +252,10 @@ public class Inventory {
 		return uncertaintyStatement;
 	}
 
-	void setReportMetadata(String approvedBy, AssuranceLevel assuranceLevel, String assuranceProvider,
-			String assuranceStatement, String uncertaintyStatement) {
+	/** The typed header (spec 07.4). The approver is no longer typed: the sign-off names it (spec 05.8). */
+	void setReportMetadata(AssuranceLevel assuranceLevel, String assuranceProvider, String assuranceStatement,
+			String uncertaintyStatement) {
 		this.uncertaintyStatement = uncertaintyStatement;
-		this.approvedBy = approvedBy;
 		this.assuranceLevel = assuranceLevel;
 		this.assuranceProvider = assuranceProvider;
 		this.assuranceStatement = assuranceStatement;
@@ -384,6 +433,48 @@ public class Inventory {
 		return finalNote;
 	}
 
+	public UUID getFinalDesignatedByUserId() {
+		return finalDesignatedByUserId;
+	}
+
+	public String getFinalDesignatedByName() {
+		return finalDesignatedByName;
+	}
+
+	public boolean isFinalSelfApproved() {
+		return finalSelfApproved;
+	}
+
+	/** The named preparer, or null (spec 05.8). */
+	public Person getPreparer() {
+		return preparerUserId == null && preparerEmail == null ? null
+				: new Person(preparerUserId, preparerEmail, preparerName);
+	}
+
+	/** The named approver, or null (spec 05.8). */
+	public Person getApprover() {
+		return approverUserId == null && approverEmail == null ? null
+				: new Person(approverUserId, approverEmail, approverName);
+	}
+
+	public UUID getSubmittedRunId() {
+		return submittedRunId;
+	}
+
+	/** Who submitted the run in review, or the run signed off; null when nothing is submitted. */
+	public Person getSubmittedBy() {
+		return submittedByUserId == null && submittedBy == null ? null
+				: new Person(submittedByUserId, submittedBy, submittedByName);
+	}
+
+	public Instant getSubmittedAt() {
+		return submittedAt;
+	}
+
+	public String getSubmitNote() {
+		return submitNote;
+	}
+
 	public Instant getPublishedAt() {
 		return publishedAt;
 	}
@@ -424,26 +515,107 @@ public class Inventory {
 		this.currentBoundaryVersionNo = version.getVersionNo();
 	}
 
-	/** Reopens the inventory for editing. The latest version is kept for reference. */
+	/** Reopens the inventory for editing; a submission goes with it. The latest version is kept for reference. */
 	void reopen() {
+		clearSubmission();
 		this.status = InventoryStatus.DRAFT;
 	}
 
-	/** Records the final run with who designated it, when, and the review note (spec 05.5). */
-	void designateFinal(UUID runId, String designatedBy, String note) {
+	/** Puts a run forward for review (spec 05.8): who, when and the note travel with it to the report. */
+	void submitForReview(UUID runId, Person submitter, String note) {
+		this.submittedRunId = runId;
+		this.submittedByUserId = submitter.userId();
+		this.submittedBy = submitter.email();
+		this.submittedByName = submitter.name();
+		this.submittedAt = Instant.now();
+		this.submitNote = note;
+		this.status = InventoryStatus.IN_REVIEW;
+	}
+
+	/** A return, a new run or a void of the submitted run: frozen again, nothing submitted (spec 05.8). */
+	void withdrawSubmission() {
+		clearSubmission();
+		this.status = InventoryStatus.FROZEN;
+	}
+
+	private void clearSubmission() {
+		this.submittedRunId = null;
+		this.submittedByUserId = null;
+		this.submittedBy = null;
+		this.submittedByName = null;
+		this.submittedAt = null;
+		this.submitNote = null;
+	}
+
+	/** Names the preparer and the approver, either or both; null clears (spec 05.8). */
+	void assignSignOff(Person preparer, Person approver) {
+		this.preparerUserId = preparer == null ? null : preparer.userId();
+		this.preparerEmail = preparer == null ? null : preparer.email();
+		this.preparerName = preparer == null ? null : preparer.name();
+		this.approverUserId = approver == null ? null : approver.userId();
+		this.approverEmail = approver == null ? null : approver.email();
+		this.approverName = approver == null ? null : approver.name();
+	}
+
+	/**
+	 * The sign-off (specs 05.5, 05.8): the submitted run becomes the final one, with who signed it, when,
+	 * the review note, and whether it was a self-approval because nobody else could check it.
+	 */
+	void designateFinal(UUID runId, Person signer, String note, boolean selfApproved) {
 		this.finalRunId = runId;
-		this.finalDesignatedBy = designatedBy;
+		this.finalDesignatedByUserId = signer.userId();
+		this.finalDesignatedBy = signer.email();
+		this.finalDesignatedByName = signer.name();
 		this.finalDesignatedAt = Instant.now();
 		this.finalNote = note;
+		this.finalSelfApproved = selfApproved;
 		this.status = InventoryStatus.FINAL;
 	}
 
+	/** Clears the sign-off and the submission together; the preparer resubmits (spec 05.8). */
 	void withdrawFinal() {
 		this.finalRunId = null;
+		this.finalDesignatedByUserId = null;
 		this.finalDesignatedBy = null;
+		this.finalDesignatedByName = null;
 		this.finalDesignatedAt = null;
 		this.finalNote = null;
+		this.finalSelfApproved = false;
+		clearSubmission();
 		this.status = InventoryStatus.FROZEN;
+	}
+
+	/** Whether the person is the named preparer, by account or by email. */
+	boolean isPreparer(Person person) {
+		return Person.same(preparerUserId, preparerEmail, person);
+	}
+
+	/** Whether the person is the named approver, by account or by email. */
+	boolean isApprover(Person person) {
+		return Person.same(approverUserId, approverEmail, person);
+	}
+
+	/** Whether the person submitted the run now in review or signed off, by account or by email. */
+	boolean wasSubmittedBy(Person person) {
+		return Person.same(submittedByUserId, submittedBy, person);
+	}
+
+	/**
+	 * A member as an act records them (spec 05.8): the account, and the email and name as they were at
+	 * the act, so a later profile change or removal does not rewrite who did it.
+	 */
+	public record Person(UUID userId, String email, String name) {
+
+		/** Matches by account, or by email ignoring case where the account is not known. */
+		static boolean same(UUID userId, String email, Person person) {
+			if (person == null || userId == null && email == null) {
+				return false;
+			}
+			if (userId != null && userId.equals(person.userId())) {
+				return true;
+			}
+			return email != null && person.email() != null && email.equalsIgnoreCase(person.email());
+		}
 	}
 
 	void publish(String publishedBy) {

@@ -12,9 +12,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-/** The report header an accountant types before publication (spec 07.4). */
+/**
+ * The report header an accountant types before publication (spec 07.4). The approver is no longer typed:
+ * the sign-off names it (spec 05.8), and a client that still sends {@code approvedBy} has it ignored.
+ */
 public record ReportMetadataRequest( //
-		@Size(max = 160) String approvedBy, //
 		@NotNull AssuranceLevel assuranceLevel, //
 		@Size(max = 160) String assuranceProvider, //
 		@Size(max = 255) String assuranceStatement, //
