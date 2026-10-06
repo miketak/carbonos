@@ -1,5 +1,7 @@
 package com.carbonos;
 
+import java.time.Duration;
+
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
@@ -31,7 +33,9 @@ public class TestcontainersConfiguration {
 			.withEnv("MINIO_ROOT_USER", MINIO_USER)
 			.withEnv("MINIO_ROOT_PASSWORD", MINIO_PASSWORD)
 			.withExposedPorts(9000)
-			.waitingFor(Wait.forHttp("/minio/health/live").forPort(9000));
+			// Liveness answers as soon as the process is up, before the object layer serves S3 calls;
+			// the first headBucket then met a closed connection on CI (ECO-48). Readiness waits for it.
+			.waitingFor(Wait.forHttp("/minio/health/ready").forPort(9000).withStartupTimeout(Duration.ofMinutes(2)));
 	}
 
 	@Bean
