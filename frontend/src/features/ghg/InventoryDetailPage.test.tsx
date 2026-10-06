@@ -1285,6 +1285,40 @@ test('the register reads as one line a row and opens the record beside it (spec 
   expect(screen.queryByRole('region', { name: 'Diesel consumption' })).not.toBeInTheDocument()
 })
 
+test('a record names its factor even when the factor lookup misses (ECO-7)', async () => {
+  const user = userEvent.setup()
+  // a published inventory whose factor version is not in the page's lookup: the row still has it
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'PUBLISHED',
+    finalRunId: 'run-1',
+    publishedAt: '2026-09-05T09:00:00Z',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  mockEmissionFactors([])
+  vi.mocked(searchAssignments).mockResolvedValue(
+    pageOf([
+      { ...classified, emissionFactorId: 'ef-old', factorName: 'Diesel 2024' },
+      { ...unclassified, id: 'as-2', activityId: 'act-2', activityType: 'Petrol consumption' },
+    ]),
+  )
+  renderPage()
+
+  const row = (await screen.findByRole('button', { name: 'Diesel consumption' })).closest('tr')!
+  await waitFor(() => expect(row).toHaveTextContent('Diesel 2024'))
+  expect(within(row).queryByText('No factor chosen')).not.toBeInTheDocument()
+  // a record with no factor still reads so
+  const other = screen.getByRole('button', { name: 'Petrol consumption' }).closest('tr')!
+  expect(within(other).getByText('No factor chosen')).toBeInTheDocument()
+
+  // the detail panel of the published record names it too
+  await user.click(within(row).getByRole('button', { name: 'Diesel consumption' }))
+  const detail = await screen.findByRole('region', { name: 'Diesel consumption' })
+  expect(within(detail).getByText('Diesel 2024')).toBeInTheDocument()
+  expect(within(detail).queryByText('No factor chosen')).not.toBeInTheDocument()
+})
+
 test('a row carries the record reference beside the activity, and the search names it (spec 04.6)', async () => {
   vi.mocked(searchAssignments).mockResolvedValue(pageOf([classified]))
   renderPage()

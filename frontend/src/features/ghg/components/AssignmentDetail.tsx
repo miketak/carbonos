@@ -566,7 +566,11 @@ function ClassifyPanel({
             Choose factor…
           </Button>
         )}
-        {!selected && !pickerOpen && !editable && (
+        {/* ECO-7: a record names its factor even when the lookup misses; only a record with no factor reads so */}
+        {!selected && !pickerOpen && !editable && assignment.emissionFactorId && (
+          <span className="text-sm">{assignment.factorName}</span>
+        )}
+        {!selected && !pickerOpen && !editable && !assignment.emissionFactorId && (
           <span className="text-sm text-ink-muted">No factor chosen</span>
         )}
         {pickerOpen && (
