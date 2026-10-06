@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-28
+last_reviewed: 2026-10-06
 description: The four organization roles, who assigns them, why signing off is kept apart from preparing, and how a platform administrator differs from an owner.
 ---
 
@@ -8,14 +8,14 @@ description: The four organization roles, who assigns them, why signing off is k
 
 A role is what your membership in one organization lets you do there: Owner, Reviewer, Preparer, or Verifier. It says nothing about any other organization, and nothing about running the platform.
 
-<!-- sources: concepts/roles-and-who-does-what.md (verified 2026-09-24); specs 01.2, 01.3, 01.4, 02.11; roles.ts (the role sets and tooltips); MembersCard.tsx (labels); GhgService.java (the last-owner rule, setFactorApproval); GhgAccess.java (the role checks); ReadOnlyBanner.tsx; OrganizationLayout.tsx ("Organization not found") -->
+<!-- sources: spec 05.8 (the sign-off workflow); concepts/roles-and-who-does-what.md (verified 2026-09-24); specs 01.2, 01.3, 01.4, 02.11; roles.ts (the role sets and tooltips); MembersCard.tsx (labels); GhgService.java (the last-owner rule, setFactorApproval); GhgAccess.java (the role checks); ReadOnlyBanner.tsx; OrganizationLayout.tsx ("Organization not found") -->
 
 ## What are the roles?
 
 | Role, as the **Members** card labels it | What it adds |
 | --- | --- |
 | Preparer (records, classifies, runs) | Records and corrects facts, imports and approves factors, classifies records, freezes, launches runs, designates the base year. |
-| Reviewer (approves and publishes) | Everything a preparer does, and signs: marks a run as final, publishes, creates a correction, accepts or declines an edition. |
+| Reviewer (approves and publishes) | Everything a preparer does, and signs: marks a submitted run as final or returns it, publishes, creates a correction, names an inventory's preparer and approver, accepts or declines an edition. |
 | Owner | Everything a reviewer does, and administers the organization: members, details, deletion. |
 | Verifier (read-only) | Reads every page and changes nothing. The banner reads "Your role in this organization is Verifier (read-only)." |
 
@@ -25,7 +25,7 @@ An owner, on the organization's **Settings** under **Members**, by the email of 
 
 ## Why is the reviewer not the preparer?
 
-The roles nest, so a reviewer could prepare as well, but CarbonOS keeps the sign-off apart. Marking a run as final, publishing and creating a correction are refused to a preparer with the tooltip "Needs the Reviewer or Owner role.", so approval takes a second role. A factor, too, is checked by someone other than the person who typed it, whatever the roles; only when nobody else could check it is the approval recorded as self-approved, and the report says so.
+The roles nest, so a reviewer could prepare as well, but CarbonOS keeps the sign-off apart. A run is submitted for review first, and **Mark as final** is refused to the person who submitted it while someone else may approve: "You submitted this run; another reviewer or owner signs it off." A factor, too, is checked by someone other than the person who typed it. Only when nobody else could check is the approval recorded as self-approved, and the report says so.
 
 ## How is a platform administrator different?
 

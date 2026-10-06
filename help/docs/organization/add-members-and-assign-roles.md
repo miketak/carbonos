@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-06
 description: Add an existing CarbonOS account to the organization as an owner, reviewer, preparer or verifier, change a member's role, remove a member, and read what each role allows.
 role: Owner
 minutes: 3
@@ -10,7 +10,7 @@ minutes: 3
 
 A member is an existing CarbonOS account with one role in the organization, and the role decides what the member may do. You add members after creating the organization, and again whenever somebody joins the inventory work.
 
-<!-- sources: specs 01.2, 01.3, 01.4; old page tasks/organization/add-members-and-assign-roles.md (verified 2026-09-24); OrganizationSettingsPage.tsx, MembersCard.tsx, roles.ts, format.ts (actionLabels), EmissionFactorsPage.tsx (the self-approved note), GhgService.java (addMember, changeMemberRole, removeMember); the History entry format from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt), "7 runs tab" -->
+<!-- sources: spec 05.8 (the sign-off workflow); specs 01.2, 01.3, 01.4; old page tasks/organization/add-members-and-assign-roles.md (verified 2026-09-24); OrganizationSettingsPage.tsx, MembersCard.tsx, roles.ts, format.ts (actionLabels), EmissionFactorsPage.tsx (the self-approved note), GhgService.java (addMember, changeMemberRole, removeMember); the History entry format from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt), "7 runs tab" -->
 
 ## Before you start
 
@@ -39,10 +39,10 @@ The organization keeps at least one owner: demoting or removing the last one is 
 | --- | --- |
 | Verifier | Read everything: records, evidence, inventories, runs, reports, exports and history. Change nothing. |
 | Preparer | Everything a verifier may, plus record and correct activity data, import packs, add and approve factors, create inventories, draw boundaries, classify, add rules and instruments, freeze and reopen, launch and void runs, designate the base year, and fill the report header. |
-| Reviewer | Everything a preparer may, plus designate a final run and withdraw the designation, publish, create a correction, and accept or decline a factor pack update. |
+| Reviewer | Everything a preparer may, plus mark a submitted run as final, return it or withdraw the designation, name an inventory's preparer and approver, publish, create a correction, and accept or decline a factor pack update. |
 | Owner | Everything a reviewer may, plus **Settings**: the organization's details, its members and its deletion. |
 
 An external auditor gets the Verifier role. A button that needs a higher role is disabled with a tooltip: "Needs the Preparer, Reviewer or Owner role.", "Needs the Reviewer or Owner role." or "Needs the Owner role." The matrix, act by act, is in [Check what your role may do](../access/check-what-your-role-may-do.md).
 
 !!! note "Adding a reviewer ends self-approval"
-    A factor entered by hand is approved by someone other than the person who entered it. A single-member organization can still approve, recorded as "(self-approved: nobody else could check it)" and printed in the report; adding a reviewer stops that.
+    A factor entered by hand is approved by someone other than the person who entered it, and a run is signed off by someone other than the person who submitted it for review. A single-member organization can still do both, recorded as self-approved and printed in the report; adding a reviewer stops that.

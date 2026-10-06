@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-06
 description: One stable name for each thing in CarbonOS, from activity record to voided run, with the page that explains it.
 ---
 
@@ -10,7 +10,7 @@ One stable name for each thing in CarbonOS, with the GHG Protocol term it
 stands for where there is one. The concept pages explain how these things
 relate; this page only says what each word means.
 
-<!-- sources: spec 00 (glossary table and invariants); format.ts label maps; roles.ts; verified in the browser on 2026-09-24. The spec's "seeded emission-factor library" row is retired (spec 02.10): factors now come from packs an organization imports or enters by hand.; spec 01.8 (account numbers, verified 2026-09-26) -->
+<!-- sources: spec 05.8 (the sign-off workflow); spec 00 (glossary table and invariants); format.ts label maps; roles.ts; verified in the browser on 2026-09-24. The spec's "seeded emission-factor library" row is retired (spec 02.10): factors now come from packs an organization imports or enters by hand.; spec 01.8 (account numbers, verified 2026-09-26) -->
 
 | Term | Meaning in CarbonOS | GHG Protocol term |
 | --- | --- | --- |
@@ -32,9 +32,10 @@ relate; this page only says what each word means.
 | Exclusion | A record left out of an inventory with a reason. The report still counts what was excluded, per reason, and never prints a false zero for it. | Justified exclusion |
 | Facility | A site under one legal entity: a plant, an office, a depot. Its lease type and grid region shape how its records are classified and which grid factor is suggested. | Operation, facility, business unit |
 | Factor pack | A family of editions of one publication, such as the UK Government (DESNZ) conversion factors or the Ghana grid factors. An organization imports an edition to hold its factors. | Emission factor source |
-| Final run | The calculation run a reviewer or owner designates as the inventory's result, with an optional review note. The report and the base year attach to it. | Approved inventory results |
+| Final run | The calculation run submitted for review and signed off, by a reviewer or owner other than its submitter unless nobody else may approve, with an optional review note. The report and the base year attach to it. | Approved inventory results |
 | Freeze | The act that makes an inventory's boundary and view read-only and cuts a boundary version, so that runs can be launched. Reopening as a draft undoes it, with a reason. | |
 | Gate | One of the five pre-flight checks (Reporting boundary, Activity data completeness, Classification, Emission factors, Base year) that CarbonOS runs live over a draft or frozen inventory. An error holds the launch; a warning does not. | |
+| In review | The state of an inventory whose run was submitted for review and waits for a reviewer or owner other than its submitter to mark it final or return it with a reason. A new run, a void of the submitted run or a reopen withdraws the submission. | Internal review |
 | Inventory | An accounting view over the organization's facts for one reporting period under one consolidation approach and one GWP set. Two inventories over the same facts may report different totals. | Inventory for a reporting period |
 | Legal entity | A company the organization consolidates: the reporting company itself, or a subsidiary, joint venture, associate, investment or franchise with its Table 1 facts. Every facility belongs to one. | Legal entity (Table 1) |
 | Lineage | One factor across editions: the same code in `defra-2025` and `defra-2026` is one lineage with two versions, each valid for its own dates. | |
@@ -49,6 +50,7 @@ relate; this page only says what each word means.
 | Run line | One row of a calculation run: the record, the factor and its version, the converted quantity, the accounting share, the period share, and the result in kilograms of CO₂e and per gas. | |
 | Scope | Scope 1, 2 or 3, chosen on each assignment. The record's emission source suggests a default; a departure from it needs a justification. | Scope 1, 2, 3 |
 | Scope 2 instrument | A supplier-specific factor, power purchase contract or energy attribute certificate recorded on the **Method** tab with the megawatt-hours it covers and the eight Scope 2 Quality Criteria. It is applied only when every criterion is met. | Contractual instrument |
+| Sign-off | **Mark as final** on the run submitted for review, by someone other than its submitter. The report header names who submitted the run and who signed it off; where nobody else could, it says the sign-off was self-approved. | Approval, management review |
 | Support access | A platform administrator's time-limited grant to act as an owner inside an organization, taken with a reason and recorded in the organization's history. It never carries deleting the organization, changing its members, or deciding a factor pack notice. | |
 | Table 1 | The GHG Protocol's table that turns a legal entity's relationship and economic interest into an accounting share under each consolidation approach. CarbonOS derives the share from the entity's facts. | Table 1 |
 | Upstream rule | A rule on the **Method** tab that derives a scope 3 category 3 line (well-to-tank, or transmission and distribution losses) from every included record priced with a given primary factor. | Fuel- and energy-related activities |

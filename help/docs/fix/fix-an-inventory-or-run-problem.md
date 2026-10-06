@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
+last_reviewed: 2026-10-06
 description: What CarbonOS says when a freeze, a classification, a run, a final designation or a publication is refused, what each message means, and what clears it.
 ---
 
@@ -11,7 +11,7 @@ published report: the pre-flight gates, freezing, classifying, running,
 designating a final run, and publishing. Every message is quoted as the
 product prints it.
 
-<!-- sources: troubleshooting/index.md (verified 2026-09-24); specs 02.1, 05.1, 05.4, 05.5, 06.1, 07.2; strings checked on 2026-09-28 in InventoryService.java (gate findings and refusals), GhgService.java (factor approval), PreflightChip.tsx (spec 10), AssignmentsSection.tsx, ReportMetadataCard.tsx, AnimatedCo2e.tsx; "Launch on hold" and "Reporting boundary is blocking." seen in the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
+<!-- sources: spec 05.8 (the sign-off workflow); troubleshooting/index.md (verified 2026-09-24); specs 02.1, 05.1, 05.4, 05.5, 06.1, 07.2; strings checked on 2026-09-28 in InventoryService.java (gate findings and refusals), GhgService.java (factor approval), PreflightChip.tsx (spec 10), AssignmentsSection.tsx, ReportMetadataCard.tsx, AnimatedCo2e.tsx; "Launch on hold" and "Reporting boundary is blocking." seen in the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
 
 | You see | It means | Do this |
 | --- | --- | --- |
@@ -23,10 +23,13 @@ product prints it.
 | "'*Record*' is classified in scope 3; its emission source '*source*' defaults to scope 1. Record why (a justification of at least 10 characters), or classify it in scope 1." | A departure from the emission source's default without a justification. | Fill the scope justification (10 characters or more), or take the default. |
 | "'*Record*' uses '*factor*', which is not approved. Approve it under Emission factors, or choose another." | A factor entered by hand, or a derived pack row, has not been approved. | A reviewer or owner other than its author approves it under **Emission factors**. |
 | "You entered '*factor*'. A factor is checked by someone other than the person who typed it (Corporate Standard chapter 7): ask *name* to approve it." | You tried to approve your own factor while another member could. | Ask the named member. |
-| "Run *N* cannot be designated final. '*Record*' uses '*factor*', which is not approved. Approve it under Emission factors, or choose another." | **Mark as final** after the factor was unapproved. | Approve the factor, or reopen, reclassify and launch a new run. |
+| "Run *N* cannot be designated final. '*Record*' uses '*factor*', which is not approved. Approve it under Emission factors, or choose another." | **Submit for review** or **Mark as final** while the factor is unapproved. | Approve the factor, or reopen, reclassify and launch a new run. |
+| "Run *N* has not been submitted for review. Submit it before marking it final." | **Mark as final** after someone withdrew the submission, for example with a new run. | Reload; the run must be submitted again. |
+| "Run *N* was submitted by *name*, who cannot also sign it off. Ask *name* or another reviewer or owner to mark it final." | You submitted the run and someone else in the organization may approve. | Ask the named member. |
+| "*Name* is this inventory's preparer; only they submit it for review." or "*Name* is this inventory's approver; only they return it or sign it off." | The inventory names its preparer or approver under **Sign-off**. | Ask the named member, or have a reviewer or owner change **Sign-off**. |
 | "Base year holds the final designation; runs stay available." in the pre-flight popover | An undecided recalculation candidate above the threshold. | Decide it under **Settings**, **Baseline and targets**; runs can still be launched. |
 | "The 2025 base year has a recalculation candidate above the significance threshold (…). An inventory that reports against the base year cannot be marked final until the recalculation is completed or declined." | **Mark as final** while a candidate is undecided. | Record a recalculated base or decline the candidate. |
-| "Designate a final run before publishing the inventory." | **Publish** on a frozen inventory with no final run. | Open the run on the **Runs** tab and **Mark as final** first. |
+| "Designate a final run before publishing the inventory." | **Publish** on an inventory with no final run. | **Submit for review** on the run, then have it marked final. |
 | "Run *N* is designated final. Withdraw the designation, with a reason, before voiding it." | **Void…** on the final run. | **Withdraw final designation** first. |
 | "A published inventory's runs are a record and cannot be voided." | **Void…** on a published inventory. | Create a correction instead. |
 | "Changed since publication: quantity" on a record in a published view | The fact was corrected after publication; the report is unchanged. | Create a correction to restate the year. |

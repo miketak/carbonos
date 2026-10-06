@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-29
+last_reviewed: 2026-10-06
 description: Fill the report header with the approver, the assurance and the intensity denominators, then read the run's report section by section, including the emissions-by-gas table.
 role: Preparer
 minutes: 10
@@ -11,7 +11,7 @@ screens: [step-8-report-header.png]
 
 A run's page is the report; the inventory's **Report** tab holds the header printed at its top, and the run page reads it live.
 
-<!-- sources: specs 07.1 to 07.6 (the report), 07.4 (report metadata and intensity), 07.7 (emissions by gas); old page tasks/reporting/read-the-report-and-fill-the-header.md (verified 2026-09-24); frontend/src/features/ghg/components/ReportMetadataCard.tsx (labels, hints, placeholders, disabled once published); frontend/src/features/ghg/RunDetailPage.tsx (sections); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "8 report tab", "8 header filled", "7 run page", "8 run after publish" -->
+<!-- sources: spec 05.8 (the sign-off workflow), its strings checked in the Gye Nyame Gold walkthrough of 2026-10-06 (walkthrough-log.txt); specs 07.1 to 07.6 (the report), 07.4 (report metadata and intensity), 07.7 (emissions by gas); old page tasks/reporting/read-the-report-and-fill-the-header.md (verified 2026-09-24); frontend/src/features/ghg/components/ReportMetadataCard.tsx (labels, hints, placeholders, disabled once published); frontend/src/features/ghg/RunDetailPage.tsx (sections); screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "8 report tab", "8 header filled", "7 run page", "8 run after publish" -->
 
 ## Before you start
 
@@ -20,16 +20,15 @@ A run's page is the report; the inventory's **Report** tab holds the header prin
 
 ## Fill the report header
 
-1. Open the inventory's **Report** tab.
-2. Fill **Approved by (optional)**; it defaults to whoever publishes.
-3. Choose **Assurance**: "Not verified", "Limited assurance" or "Reasonable assurance", with **Assurance provider (optional)** and **Assurance statement reference (optional)** where they apply.
-4. Fill **Uncertainty statement (optional)**.
-5. Under **Intensity denominators** fill **Denominator**, **Value** and **Unit**, then click **Add denominator**.
-6. Click **Save report header**.
+1. Open the inventory's **Report** tab. **Approved by** is not typed: it reads "Not yet approved: whoever signs off the run submitted for review" until the sign-off, and then names who signed.
+2. Choose **Assurance**: "Not verified", "Limited assurance" or "Reasonable assurance", with **Assurance provider (optional)** and **Assurance statement reference (optional)** where they apply.
+3. Fill **Uncertainty statement (optional)**.
+4. Under **Intensity denominators** fill **Denominator**, **Value** and **Unit**, then click **Add denominator**.
+5. Click **Save report header**.
 
-![The Report tab of FY2025 with Approved by filled as Ama Owusu, owner, Gye Nyame Gold Ltd, Assurance Not verified, and one denominator listed as Gold produced: 185,000 oz](../assets/screens/step-8-report-header.png)
+![The Report tab of FY2025 with Approved by reading Not yet approved, Assurance Not verified, and one denominator listed as Gold produced: 185,000 oz](../assets/screens/step-8-report-header.png)
 
-What you see: "Report header saved." The denominator is listed above the fields, for Gye Nyame Gold "Gold produced: 185,000 oz". Section 00 of the run shows the approver and the assurance, and section 04 gains an **Intensity** line per denominator: "0.467092 t CO₂e per oz of gold produced (185,000 oz)".
+What you see: "Report header saved." The denominator is listed above the fields, for Gye Nyame Gold "Gold produced: 185,000 oz". Section 00 of the run shows the assurance, and section 04 gains an **Intensity** line per denominator: "0.467092 t CO₂e per oz of gold produced (185,000 oz)".
 
 ## Read the report
 
@@ -37,7 +36,7 @@ Open the run from the **Runs** tab. The heading names the run and the approach, 
 
 | Section | What it holds |
 | --- | --- |
-| 00 Report | Reporting entity, contact, period, "Prepared by", "Approved by", "Published", "Report version" (corrections, not freezes), "Final designated" with the review note, "Assurance"; after publication, **Since publication**. |
+| 00 Report | Reporting entity, contact, period, "Prepared by" (who submitted the run for review, with the run and the note), "Approved by" (who signed it off), "Published", "Report version" (corrections, not freezes), "Final designated" with the review note, "Assurance"; after publication, **Since publication**. |
 | 01 Company and organizational boundary | The approach and boundary version, with each entity's facilities, economic interest, operated flag and accounting share. |
 | 02 Operational boundary | The scopes covered, each declared scope 3 category, and "Why other categories are excluded". |
 | 03 Reporting period | The inventory, its period and its state, for example "PUBLISHED · BOUNDARY v1". |

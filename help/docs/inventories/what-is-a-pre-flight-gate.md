@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
+last_reviewed: 2026-10-06
 description: The five checks that decide whether a run may launch, the difference between a hold, a warning and a note, and why a warning is a disclosure.
 ---
 
@@ -9,7 +9,7 @@ description: The five checks that decide whether a run may launch, the differenc
 A pre-flight gate is one of five checks that say whether a calculation
 run may launch; they recompute after every change you save.
 
-<!-- sources: concepts/pre-flight-gates.md (verified 2026-09-24); PreflightChip.tsx (the chip's labels; the popover's Pass, Warn and Hold; "Base year holds the final designation; runs stay available."); spec 10; Validation.java holdsFinal (PR #101); specs 05, 05.5, 05.7, 06.1, 07.6; chip and popover texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 freeze dialog", "7 after freeze" -->
+<!-- sources: spec 05.8 (the sign-off workflow); concepts/pre-flight-gates.md (verified 2026-09-24); PreflightChip.tsx (the chip's labels; the popover's Pass, Warn and Hold; "Base year holds the final designation; runs stay available."); spec 10; Validation.java holdsFinal (PR #101); specs 05, 05.5, 05.7, 06.1, 07.6; chip and popover texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "7 freeze dialog", "7 after freeze" -->
 
 ## What do the five gates read?
 
@@ -37,7 +37,8 @@ gate with **Pass**, **Warn** or **Hold** and its findings under it, then
 | **Pass** | Holds nothing. An information line may still print under the gate: something a verifier may ask about. |
 
 The **Base year** gate is different: an undecided recalculation
-candidate above the threshold holds **Mark as final** and **Publish**,
+candidate above the threshold holds **Submit for review**, **Mark as final**
+and **Publish**,
 not the run; the chip stays **Ready to launch** and its popover says
 "Base year holds the final designation; runs stay available."
 

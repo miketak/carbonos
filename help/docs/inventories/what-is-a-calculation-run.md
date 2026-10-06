@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
+last_reviewed: 2026-10-06
 description: A run is an immutable, numbered snapshot of the inventory's view; what it copies, how voiding and the final designation work, and what a later correction to a fact does.
 ---
 
@@ -10,7 +10,7 @@ A calculation run is the inventory's view calculated at a moment and
 kept as an immutable snapshot, lines and exclusions alike. A report that
 cites "Run 001" always finds the same numbers.
 
-<!-- sources: concepts/facts-views-and-runs.md, run half (verified 2026-09-24); specs 00, 05, 05.1, 05.2, 05.3; InventoryDetailPage.tsx (runs intro, void dialog); RunDetailPage.tsx ("VOIDED", "Since publication", correction block); AssignmentsSection.tsx and AssignmentDetail.tsx ("Changed since publication"); run page and dialog texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "7 run page", "8 final dialog", "8 after final", "8 run after publish" -->
+<!-- sources: spec 05.8 (the sign-off workflow), its strings checked in the Gye Nyame Gold walkthrough of 2026-10-06 (walkthrough-log.txt); concepts/facts-views-and-runs.md, run half (verified 2026-09-24); specs 00, 05, 05.1, 05.2, 05.3; InventoryDetailPage.tsx (runs intro, void dialog); RunDetailPage.tsx ("VOIDED", "Since publication", correction block); AssignmentsSection.tsx and AssignmentDetail.tsx ("Changed since publication"); run page and dialog texts from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "7 run page", "8 final dialog", "8 after final", "8 run after publish" -->
 
 ## What does a run hold?
 
@@ -28,7 +28,8 @@ never reused."
 | --- | --- |
 | **Launch calculation run** | Calculates the frozen view into the next number: Run 001, then Run 002. |
 | **Void run** | Takes a reason of at least 5 characters. "The run keeps its number, lines and totals on the record, marked VOIDED with your reason and your name. Run numbers are never reused. This cannot be undone." |
-| **Mark as final** | Makes one run the inventory's result: "the report and the base year attach to it, and the inventory can be published." The optional review note is printed in the report header. |
+| **Submit for review** | Puts one run forward for sign-off: "A reviewer or owner other than you marks it final, or returns it with a reason. Launching another run withdraws the submission." |
+| **Mark as final** | Signs off the submitted run as the inventory's result: "the report and the base year attach to it, and the inventory can be published." The optional review note is printed in the report header. |
 
 ## What happens to a published run when a fact changes?
 

@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
+last_reviewed: 2026-10-06
 description: Why the launch is on hold, how the pre-flight chip and its popover read, and every finding of the five gates as CarbonOS prints it, with what clears each one.
 role: Preparer
 ---
@@ -9,7 +9,7 @@ role: Preparer
 
 The launch is on hold because a gate other than Base year holds an error. Click the pre-flight chip beside the title, find the gate that reads **Hold** and take the action its table gives. Warnings and information lines never hold a run.
 
-<!-- sources: InventoryService.java validation findings (validate, excludedWithAShare, leaseDisagreement, PLACEHOLDER_MAGNITUDE; verified by grep 2026-09-28); PreflightChip.tsx (the chip's labels, the popover's summary line, Pass, Warn and Hold, Resolve the findings); spec 10; format.ts gateLabels; the old page reference/pre-flight-gates-and-findings.md (verified 2026-09-24); specs 02.1 to 02.4, 03, 04.2 to 04.8, 05.6, 06.1, 07.2, 07.3 and 07.6; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "6 under review", "6 records after rules" -->
+<!-- sources: spec 05.8 (the sign-off workflow); InventoryService.java validation findings (validate, excludedWithAShare, leaseDisagreement, PLACEHOLDER_MAGNITUDE; verified by grep 2026-09-28); PreflightChip.tsx (the chip's labels, the popover's summary line, Pass, Warn and Hold, Resolve the findings); spec 10; format.ts gateLabels; the old page reference/pre-flight-gates-and-findings.md (verified 2026-09-24); specs 02.1 to 02.4, 03, 04.2 to 04.8, 05.6, 06.1, 07.2, 07.3 and 07.6; screen text from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt): "5 workbench", "6 under review", "6 records after rules" -->
 
 ## How the chip reads
 
@@ -68,12 +68,12 @@ The launch is on hold because a gate other than Base year holds an error. Click 
 | --- | --- | --- |
 | '*Record*' uses '*factor*', which is not approved. … | Error | Someone other than its author approves it. |
 | '*Record*' is recorded in *unit* but its factor '*factor*' is per *unit*: choose the density that converts … | Error | Choose a density on **Classify**. |
-| '*Record*' is recorded in *unit* but its factor '*factor*' is per *unit*: no conversion between them. … | Error | A compatible unit, a factor in its unit, or a custom unit under **Units**. |
+| '*Record*' is recorded in *unit* but its factor '*factor*' is per *unit*: no conversion between them. … | Error | A compatible unit or factor, or a custom unit under **Units**. |
 | '*Record*' uses '*factor*', a gas outside the scopes, but is classified as *scope*. … | Error | Classify it as scope 1. |
 | '*factor*' publishes CO2e only. … | Warning | None. |
 | '*factor*' is valid from *date* until *date*, which does not cover the reporting period. | Warning | A version valid in the period, or accept. |
-| '*Record*' uses '*factor*', whose CO2e is published under *set* and cannot be re-derived under *set* … | Warning | The composition, or another factor. Holds **Mark as final**. |
-| '*Record*' converts through the typical density of *material* (…), a planning value. … | Warning | The supplier's density, or a proxy with a justification. Holds **Mark as final**. |
+| '*Record*' uses '*factor*', whose CO2e is published under *set* and cannot be re-derived under *set* … | Warning | The composition, or another factor. Holds **Submit for review** and **Mark as final**. |
+| '*Record*' converts through the typical density of *material* (…), a planning value. … | Warning | The supplier's density, or a justified proxy. Holds **Submit for review** and **Mark as final**. |
 | '*Record*' at *Facility* has a market-based factor per kWh but is recorded in *unit*: … | Warning | Record electricity in kWh or MWh. |
 | *N* records use a factor for a gas outside the scopes (Montreal Protocol). … | Warning | None. |
 | The inventory does not say whether a residual mix is available. … | Warning | **Residual mix available** on **Method**. |

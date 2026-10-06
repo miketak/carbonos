@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
+last_reviewed: 2026-10-06
 description: Freeze FY2025 to cut boundary version 1, launch Run 001, and read the report it produces section by section against the figures CarbonOS prints for Gye Nyame Gold.
 role: Owner
 minutes: 15
@@ -11,7 +11,7 @@ screens: [step-7-ready-to-launch.png]
 
 This step freezes FY2025, launches Run 001, and reads the report. Step 8 publishes it.
 
-<!-- sources: specs 05.1 and 05.2 (lifecycle, run snapshots, run numbering), 04.7 (derived lines), 07.2, 07.4 and 07.7 (report sections, factor table, by-gas table), 10 (the pre-flight chip, the lifecycle acts in the title row); sections 7 and 8 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
+<!-- sources: spec 05.8 (the sign-off workflow), its strings checked in the Gye Nyame Gold walkthrough of 2026-10-06 (walkthrough-log.txt); specs 05.1 and 05.2 (lifecycle, run snapshots, run numbering), 04.7 (derived lines), 07.2, 07.4 and 07.7 (report sections, factor table, by-gas table), 10 (the pre-flight chip, the lifecycle acts in the title row); sections 7 and 8 of the old tutorial help/docs/get-started/your-first-inventory.md; screen text and figures from the Gye Nyame Gold walkthrough of 2026-09-28 (replay-log.txt) -->
 
 ## Before you start
 
@@ -34,7 +34,7 @@ What you see: "Inventory frozen as boundary version 1." The status chip reads "F
 1. Open the **Runs** tab. **History** at its foot lists everything you did, from "7 records reviewed, 0 refreshed" to "Inventory frozen".
 2. Click **Launch calculation run**.
 
-What you see: "Calculation complete." and the run's page, "Run 001", headed "Gye Nyame Gold Ltd (ORG-0001) · 2025-01-01 → 2025-12-31 · 11 lines". On the **Runs** tab the run is listed as "#001 Run 001", "11 lines · boundary v1", with **Mark as final** and **Void…**. A run is never edited or deleted, only voided with a reason.
+What you see: "Calculation complete." and the run's page, "Run 001", headed "Gye Nyame Gold Ltd (ORG-0001) · 2025-01-01 → 2025-12-31 · 11 lines". On the **Runs** tab the run is listed as "#001 Run 001", "11 lines · boundary v1", with **Submit for review** and **Void…**. A run is never edited or deleted, only voided with a reason.
 
 ## Read Run 001
 
