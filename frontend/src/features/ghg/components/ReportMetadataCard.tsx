@@ -18,10 +18,10 @@ export const assuranceLabels: Record<AssuranceLevel, string> = {
 }
 
 /**
- * The report header the accountant types before publication (spec 07.4):
- * who approves the report, its assurance, and the intensity denominators the
- * report divides the total by. Who prepared the run and who published the
- * inventory are recorded automatically.
+ * The report header the accountant types before publication (spec 07.4): its
+ * assurance and the intensity denominators the report divides the total by.
+ * Who prepared the run, who signed it off (spec 05.8) and who published the
+ * inventory are recorded by the acts, never typed.
  */
 export function ReportMetadataCard({
   inventory,
@@ -36,7 +36,6 @@ export function ReportMetadataCard({
   const writable = editable && mayWrite(myRole)
   const save = useSetReportMetadata(inventory.id)
   const toast = useToast()
-  const [approvedBy, setApprovedBy] = useState(inventory.approvedBy ?? '')
   const [assuranceLevel, setAssuranceLevel] = useState<AssuranceLevel>(inventory.assuranceLevel)
   const [assuranceProvider, setAssuranceProvider] = useState(inventory.assuranceProvider ?? '')
   const [assuranceStatement, setAssuranceStatement] = useState(inventory.assuranceStatement ?? '')
@@ -52,7 +51,6 @@ export function ReportMetadataCard({
     event.preventDefault()
     save.mutate(
       {
-        approvedBy: approvedBy.trim() === '' ? undefined : approvedBy,
         assuranceLevel,
         assuranceProvider: assuranceProvider.trim() === '' ? undefined : assuranceProvider,
         assuranceStatement: assuranceStatement.trim() === '' ? undefined : assuranceStatement,
@@ -72,9 +70,9 @@ export function ReportMetadataCard({
         title="Report header"
         description={
           <>
-            Printed at the top of the report: who prepared it (whoever launches the run), who
-            approved it, when it was published, the version in the correction chain, and its
-            assurance.
+            Printed at the top of the report: who prepared it (whoever submitted the run for
+            review), who signed it off, when it was published, the version in the correction chain,
+            and its assurance.
             {inventory.publishedBy && ` Published by ${inventory.publishedBy}.`}
           </>
         }
@@ -82,13 +80,20 @@ export function ReportMetadataCard({
       <PanelBody>
         {/* spec 10: the header's fields in a two-column grid */}
         <form onSubmit={submit} className="grid gap-5 md:grid-cols-2">
-          <InputField
-            label="Approved by (optional)"
-            placeholder="Name and role; defaults to whoever publishes"
-            value={approvedBy}
-            disabled={!writable}
-            onChange={(event) => setApprovedBy(event.target.value)}
-          />
+          {/* spec 05.8: the approver is whoever signs the run off, recorded by the act */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[13px] font-medium">Approved by</span>
+            <span className="text-sm text-ink-muted">
+              {inventory.finalDesignatedBy
+                ? `${inventory.finalDesignatedByName ?? inventory.finalDesignatedBy}, who signed off the final run${
+                    inventory.finalSelfApproved
+                      ? ' (self-approved: nobody else in the organization could check it)'
+                      : ''
+                  }`
+                : (inventory.approvedBy ??
+                  'Not yet approved: whoever signs off the run submitted for review')}
+            </span>
+          </div>
           <SelectField
             label="Assurance"
             value={assuranceLevel}

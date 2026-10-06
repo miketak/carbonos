@@ -54,7 +54,19 @@ export interface RunDetail {
 
 export interface Report {
   run: RunRow
-  header: { approvedBy: string | null; publishedBy: string | null; version: number; supersedes: string[]; supersededBy: string | null; finalDesignatedBy: string | null; finalNote: string | null }
+  header: {
+    preparedBy: string | null
+    preparedByEmail?: string | null
+    approvedBy: string | null
+    approvedByEmail?: string | null
+    selfApproved?: boolean
+    publishedBy: string | null
+    version: number
+    supersedes: string[]
+    supersededBy: string | null
+    finalDesignatedBy: string | null
+    finalNote: string | null
+  }
   intensity: Array<{ name: string; value: number; unit: string; tCo2ePerUnit: number }>
   dataQuality: { statement: string; uncertaintyStatement: string | null; weightedUncertaintyPercent: number | null }
   methodology: { statement: string | null; factorSources: string[] }

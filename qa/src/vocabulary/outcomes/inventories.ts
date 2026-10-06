@@ -10,7 +10,7 @@ const invArgs = { organization: orgArg, inventory: z.string() }
 
 export const inventoryListed = defineOutcome({
   name: 'inventoryListed',
-  args: z.object({ organization: orgArg, name: z.string(), status: z.enum(['DRAFT', 'FROZEN', 'FINAL', 'PUBLISHED']).optional() }).strict(),
+  args: z.object({ organization: orgArg, name: z.string(), status: z.enum(['DRAFT', 'FROZEN', 'IN_REVIEW', 'FINAL', 'PUBLISHED']).optional() }).strict(),
   api: async (ctx, a) => {
     const org = await organization(ctx, a.organization)
     const row = (await inventories(ctx.session(), org.id)).find((i) => i.name === a.name)
@@ -24,7 +24,7 @@ export const inventoryListed = defineOutcome({
 
 export const inventoryStatus = defineOutcome({
   name: 'inventoryStatus',
-  args: z.object({ ...invArgs, status: z.enum(['DRAFT', 'FROZEN', 'FINAL', 'PUBLISHED']) }).strict(),
+  args: z.object({ ...invArgs, status: z.enum(['DRAFT', 'FROZEN', 'IN_REVIEW', 'FINAL', 'PUBLISHED']) }).strict(),
   api: async (ctx, a) => {
     const { inv } = await inventory(ctx, a.organization, a.inventory)
     return inv.status === a.status ? pass(inv.status) : fail(`'${a.inventory}' is ${inv.status}, expected ${a.status}`)

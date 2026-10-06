@@ -6,6 +6,7 @@ const STATES = [
     what: 'Records land, are classified, and carry evidence and a data quality tier.',
   },
   { name: 'Frozen', what: 'Freezing cuts a boundary version. Reopening needs a reason.' },
+  { name: 'In review', what: 'The preparer submits a run; someone else signs it off.' },
   { name: 'Final', what: 'A final run refuses known defects instead of warning about them.' },
   { name: 'Published', what: 'A correction becomes report version 2. Version 1 is never altered.' },
 ]
@@ -17,7 +18,7 @@ const RUNS = [
   { n: 'Run 4', state: 'final', note: 'Final · approved by K. Boateng · 86,412 tCO₂e' },
 ]
 
-/** The one dark band: four states, four runs, the voided one kept in the list. */
+/** The one dark band: five states, four runs, the voided one kept in the list. */
 export function LifecycleSection() {
   return (
     <section className="landing-section landing-section--dark">
@@ -26,7 +27,7 @@ export function LifecycleSection() {
           <p className="landing-eyebrow text-accent-green">A record a verifier can rely on</p>
           <h2 className="landing-title">Nothing changes silently.</h2>
           <p className="landing-lede">
-            An inventory moves through four states. Each one is a decision somebody made, with a
+            An inventory moves through five states. Each one is a decision somebody made, with a
             reason, on a date.
           </p>
         </Reveal>
@@ -36,7 +37,7 @@ export function LifecycleSection() {
             className="absolute top-3 right-3 left-3 hidden h-px bg-hairline md:block"
             aria-hidden
           />
-          <ol className="relative grid gap-8 md:grid-cols-4">
+          <ol className="relative grid gap-8 md:grid-cols-5">
             {STATES.map((s, i) => (
               <li key={s.name} className="flex flex-col gap-3">
                 <span

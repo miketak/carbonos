@@ -18,6 +18,7 @@ import {
   useReopenInventory,
   useSupersedeInventory,
   useValidationQuery,
+  useReturnToPreparer,
   useWithdrawFinal,
 } from '../useGhg'
 import { RoleButton } from './RoleButton'
@@ -28,16 +29,19 @@ const stateCopy: Record<Inventory['status'], string> = {
     'Draft. The boundary and the activity view are editable; runs are blocked until the inventory is frozen, which records a boundary version a verifier can trace every run back to.',
   FROZEN:
     'Frozen. The boundary and the activity view are read-only and runs are allowed. Reopen the inventory as a draft to change either.',
+  IN_REVIEW:
+    'In review. A run was submitted for review. A reviewer or owner other than the preparer marks it final, or returns it with a reason.',
   FINAL:
     'Final. A run is designated the final result. Withdraw the designation to reopen the inventory, or publish it to issue the report.',
   PUBLISHED:
     'Published. The report was issued; nothing on this inventory can change. A correction is a new inventory that supersedes this one.',
 }
 
-/** The four states in the order the inventory passes through them (spec 05.1). */
+/** The five states in the order the inventory passes through them (specs 05.1, 05.8). */
 const states: { status: Inventory['status']; label: string }[] = [
   { status: 'DRAFT', label: 'Draft' },
   { status: 'FROZEN', label: 'Frozen' },
+  { status: 'IN_REVIEW', label: 'In review' },
   { status: 'FINAL', label: 'Final' },
   { status: 'PUBLISHED', label: 'Published' },
 ]
@@ -94,6 +98,7 @@ export function useLifecycleActions(
   const freeze = useFreezeInventory(inventoryId)
   const reopen = useReopenInventory(inventoryId)
   const withdraw = useWithdrawFinal(inventoryId)
+  const returnToPreparer = useReturnToPreparer(inventoryId)
   const publish = usePublishInventory(inventoryId)
   const supersede = useSupersedeInventory(inventoryId)
   const validationQuery = useValidationQuery(inventoryId)
@@ -101,8 +106,9 @@ export function useLifecycleActions(
   const toast = useToast()
   const navigate = useNavigate()
   const [dialog, setDialog] = useState<
-    'freeze' | 'reopen' | 'publish' | 'supersede' | 'withdraw' | null
+    'freeze' | 'reopen' | 'publish' | 'supersede' | 'withdraw' | 'return' | null
   >(null)
+  const [returnReason, setReturnReason] = useState('')
   const [correctionName, setCorrectionName] = useState(`${inventory.name} (correction)`)
   const [withdrawReason, setWithdrawReason] = useState('')
   const [reopenReason, setReopenReason] = useState('')
@@ -135,7 +141,7 @@ export function useLifecycleActions(
           Freeze inventory
         </RoleButton>
       )}
-      {inventory.status === 'FROZEN' && (
+      {(inventory.status === 'FROZEN' || inventory.status === 'IN_REVIEW') && (
         <>
           <RoleButton
             allowed={mayWrite(myRole)}
@@ -148,7 +154,28 @@ export function useLifecycleActions(
           >
             Reopen as draft
           </RoleButton>
-          <Button disabled title="Designate a final run first">
+          {/* spec 05.8: the approver may send the submission back with a reason */}
+          {inventory.status === 'IN_REVIEW' && (
+            <RoleButton
+              allowed={mayApprove(myRole)}
+              tooltip={APPROVE_TOOLTIP}
+              variant="secondary"
+              onClick={() => {
+                setReturnReason('')
+                openDialog('return')
+              }}
+            >
+              Return to preparer
+            </RoleButton>
+          )}
+          <Button
+            disabled
+            title={
+              inventory.status === 'IN_REVIEW'
+                ? 'Mark the submitted run as final first'
+                : 'Submit a run for review and have it marked final first'
+            }
+          >
             Publish
           </Button>
         </>
@@ -303,6 +330,48 @@ export function useLifecycleActions(
               }
             >
               Reopen as draft
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {dialog === 'return' && (
+        <Modal title="Return the inventory to the preparer?" onClose={() => setDialog(null)}>
+          <p className="text-sm text-ink-muted">
+            The submission is cleared and the inventory returns to frozen. Your reason is recorded
+            in the inventory's history; the preparer submits a run again when it is ready.
+          </p>
+          <div className="mt-4">
+            <InputField
+              label="Reason"
+              placeholder="What the preparer should address, for example: the June invoice is missing"
+              value={returnReason}
+              onChange={(event) => setReturnReason(event.target.value)}
+              minLength={5}
+              maxLength={500}
+              required
+            />
+          </div>
+          {errorLine}
+          <div className="mt-4 flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={returnReason.trim().length < 5}
+              busy={returnToPreparer.isPending}
+              onClick={() =>
+                returnToPreparer.mutate(returnReason.trim(), {
+                  onSuccess: () => {
+                    setDialog(null)
+                    toast('Inventory returned to the preparer.')
+                  },
+                  onError: fail,
+                })
+              }
+            >
+              Return to preparer
             </Button>
           </div>
         </Modal>
@@ -542,6 +611,17 @@ export function LifecyclePanel({
           })}
         </ol>
         <p className="mt-2 text-sm text-ink-muted">{stateCopy[inventory.status]}</p>
+        {/* spec 05.8: who put the run forward, when, and their note for the approver */}
+        {inventory.status === 'IN_REVIEW' && inventory.signOff.submittedBy && (
+          <p className="mt-2 text-sm">
+            Submitted for review by{' '}
+            {inventory.signOff.submittedBy.name ?? inventory.signOff.submittedBy.email}
+            {inventory.signOff.submittedAt
+              ? ` on ${new Date(inventory.signOff.submittedAt).toLocaleDateString()}`
+              : ''}
+            {inventory.signOff.submitNote ? `: ${inventory.signOff.submitNote}` : ''}
+          </p>
+        )}
         {inventory.finalDesignatedBy && (
           <p className="mt-2 text-sm">
             Final designated by {inventory.finalDesignatedBy}
@@ -549,6 +629,9 @@ export function LifecyclePanel({
               ? ` on ${new Date(inventory.finalDesignatedAt).toLocaleDateString()}`
               : ''}
             {inventory.finalNote ? `: ${inventory.finalNote}` : ''}
+            {inventory.finalSelfApproved
+              ? ' (self-approved: nobody else in the organization could check it)'
+              : ''}
           </p>
         )}
         {inventory.status === 'PUBLISHED' && inventory.publishedAt && (

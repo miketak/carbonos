@@ -202,7 +202,7 @@ export interface BlastRadiusInventory {
   name: string
   periodStart: string
   periodEnd: string
-  status: 'DRAFT' | 'FROZEN' | 'FINAL' | 'PUBLISHED'
+  status: 'DRAFT' | 'FROZEN' | 'IN_REVIEW' | 'FINAL' | 'PUBLISHED'
 }
 
 /** What one organization would see if every holder adopted the edition. */

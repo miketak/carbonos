@@ -757,6 +757,7 @@ test('opens with the header block and prints the breakdown and factor tables', a
     within(header).getByText(/Sankofa Gold plc \(ORG-0001\), 12 Liberation Road, Accra/),
   ).toBeInTheDocument()
   expect(within(header).getByText(/kojo@ecoriv.test/)).toBeInTheDocument()
+  // a report published before spec 05.8 keeps the approver typed for it
   expect(within(header).getByText('Ama Mensah, Sustainability Lead')).toBeInTheDocument()
   // spec 05.5: "Report version", never a bare "Version", and the final designation line
   expect(within(header).getByText('Report version')).toBeInTheDocument()
@@ -780,6 +781,32 @@ test('opens with the header block and prints the breakdown and factor tables', a
     within(factors).getByText('DEFRA 2025 (published 2025, data year 2025)'),
   ).toBeInTheDocument()
   expect(within(factors).getByText('defra-2026')).toBeInTheDocument()
+})
+
+test('the header names who submitted the run and who signed it off, with the run (spec 05.8)', async () => {
+  vi.mocked(getReport).mockResolvedValue({
+    ...report,
+    header: {
+      ...report.header,
+      preparedBy: 'Esi Boateng',
+      preparedByEmail: 'esi@sankofa.test',
+      preparedRunNo: 3,
+      preparedNote: 'fuel ledger attached',
+      approvedBy: 'Ama Owusu',
+      approvedByEmail: 'ama@sankofa.test',
+      approvedAt: '2026-09-04T10:00:00Z',
+      selfApproved: true,
+    },
+  })
+  renderRunDetailPage()
+
+  const header = await screen.findByRole('table', { name: 'Report header' })
+  expect(within(header).getByText('Prepared by').closest('tr')).toHaveTextContent(
+    /Esi Boateng \(esi@sankofa\.test\), run 3, .*: fuel ledger attached/,
+  )
+  expect(within(header).getByText('Approved by').closest('tr')).toHaveTextContent(
+    /Ama Owusu \(ama@sankofa\.test\), run 3, .*; self-approved: nobody else in the organization could check it/,
+  )
 })
 
 test('gases outside the scopes print in a block of their own and move no total (spec 02.4)', async () => {

@@ -1057,7 +1057,14 @@ function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
  * the report, its version and assurance. A two-column table read as the
  * mockup's key-value list: labels muted on the left, values on the right.
  */
+/** "Esi Boateng (esi@...)": a name with the email apart, or the one alone when that is all there is. */
+function person(name: string, email: string | null | undefined): string {
+  return !email || name.toLowerCase() === email.toLowerCase() ? name : `${name} (${email})`
+}
+
 function ReportHeaderBlock({ header }: { header: Report['header'] }) {
+  // spec 05.8: who submitted the run for review and who signed it off, each an account, with the run
+  const run = header.preparedRunNo ? `, run ${header.preparedRunNo}` : ''
   const rows: [string, string][] = [
     [
       'Reporting entity',
@@ -1069,9 +1076,16 @@ function ReportHeaderBlock({ header }: { header: Report['header'] }) {
     ['Reporting period', `${header.periodLabel} (${header.periodStart} → ${header.periodEnd})`],
     [
       'Prepared by',
-      `${header.preparedBy ?? 'not recorded'}, ${new Date(header.preparedAt).toLocaleString()}`,
+      header.preparedBy
+        ? `${person(header.preparedBy, header.preparedByEmail)}${run}, ${new Date(header.preparedAt).toLocaleString()}${header.preparedNote ? `: ${header.preparedNote}` : ''}`
+        : 'not recorded',
     ],
-    ['Approved by', header.approvedBy ?? 'not yet approved'],
+    [
+      'Approved by',
+      header.approvedBy
+        ? `${person(header.approvedBy, header.approvedByEmail)}${header.approvedAt ? `${run}, ${new Date(header.approvedAt).toLocaleDateString()}` : ''}${header.selfApproved ? '; self-approved: nobody else in the organization could check it' : ''}`
+        : 'not yet approved',
+    ],
     [
       'Published',
       header.publishedAt

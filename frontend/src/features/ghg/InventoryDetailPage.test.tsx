@@ -18,6 +18,14 @@ import type {
 } from './api'
 
 vi.mock('./api', () => import('./testApiMock'))
+vi.mock('../auth/api', () => ({
+  login: vi.fn(),
+  logout: vi.fn(),
+  me: vi.fn(),
+}))
+
+import { me } from '../auth/api'
+import { ApiError } from '../../lib/api'
 
 import { listEmissionFactors, mockEmissionFactors } from './testApiMock'
 
@@ -26,6 +34,10 @@ import {
   excludeAssignment,
   finalizeRun,
   freezeInventory,
+  listMembers,
+  returnToPreparer,
+  saveSignOff,
+  submitForReview,
   getInheritance,
   getBoundary,
   getOrganization,
@@ -125,6 +137,17 @@ const inventory: Inventory = {
   finalDesignatedBy: null,
   finalDesignatedAt: null,
   finalNote: null,
+  finalDesignatedByName: null,
+  finalSelfApproved: false,
+  signOff: {
+    preparer: null,
+    approver: null,
+    submittedRunId: null,
+    submittedBy: null,
+    submittedAt: null,
+    submitNote: null,
+    submitterMaySign: false,
+  },
   currentBoundaryVersionId: null,
   currentBoundaryVersionNo: null,
   createdAt: '2026-08-29T00:00:00Z',
@@ -456,6 +479,12 @@ beforeEach(() => {
   vi.mocked(getValidation).mockReset().mockResolvedValue(blockedReport)
   vi.mocked(listRuns).mockReset().mockResolvedValue([])
   vi.mocked(listAuditEvents).mockReset().mockResolvedValue([])
+  vi.mocked(listMembers).mockReset().mockResolvedValue([])
+  vi.mocked(submitForReview).mockReset()
+  vi.mocked(returnToPreparer).mockReset()
+  vi.mocked(saveSignOff).mockReset()
+  // signed out, as the session reads a 401
+  vi.mocked(me).mockRejectedValue(new ApiError(401))
   vi.mocked(voidRun).mockReset()
   vi.mocked(listBoundaryVersions).mockReset().mockResolvedValue([])
   vi.mocked(getBoundaryVersion).mockReset().mockResolvedValue(v1Full)
@@ -1166,14 +1195,26 @@ test('a draft with versions cut says how many, and a frozen inventory prints who
   expect(await screen.findByText('2 boundary versions cut')).toBeInTheDocument()
 })
 
+/** Spec 05.8: an inventory in review, with run 1 submitted by Esi. */
+const inReview: Inventory = {
+  ...inventory,
+  status: 'IN_REVIEW',
+  currentBoundaryVersionId: 'bv-1',
+  currentBoundaryVersionNo: 1,
+  signOff: {
+    preparer: null,
+    approver: null,
+    submittedRunId: 'run-1',
+    submittedBy: { userId: 'u-esi', email: 'esi@asantegold.com', name: 'Esi Boateng' },
+    submittedAt: '2026-09-12T09:00:00Z',
+    submitNote: 'fuel ledger attached',
+    submitterMaySign: false,
+  },
+}
+
 test('marking a run final is confirmed with a note by a reviewer (spec 05.5)', async () => {
   const user = userEvent.setup()
-  vi.mocked(getInventory).mockResolvedValue({
-    ...inventory,
-    status: 'FROZEN',
-    currentBoundaryVersionId: 'bv-1',
-    currentBoundaryVersionNo: 1,
-  })
+  vi.mocked(getInventory).mockResolvedValue(inReview)
   vi.mocked(getOrganization).mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
@@ -1214,12 +1255,7 @@ test('marking a run final is confirmed with a note by a reviewer (spec 05.5)', a
 })
 
 test('a preparer sees Mark as final disabled with the role it needs (spec 01.4, 05.5)', async () => {
-  vi.mocked(getInventory).mockResolvedValue({
-    ...inventory,
-    status: 'FROZEN',
-    currentBoundaryVersionId: 'bv-1',
-    currentBoundaryVersionNo: 1,
-  })
+  vi.mocked(getInventory).mockResolvedValue(inReview)
   vi.mocked(getOrganization).mockResolvedValue({
     id: 'org-1',
     name: 'Ecoriv Holdings',
@@ -1238,6 +1274,187 @@ test('a preparer sees Mark as final disabled with the role it needs (spec 01.4, 
   await waitFor(() => expect(button).toBeDisabled())
   expect(button).toHaveAttribute('title', 'Needs the Reviewer or Owner role.')
   expect(button).toHaveAccessibleDescription('Needs the Reviewer or Owner role.')
+})
+
+test('a run of a frozen inventory is submitted for review with a note (spec 05.8)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'FROZEN',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    accountNo: 3,
+    myRole: 'PREPARER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(listRuns).mockResolvedValue([run])
+  vi.mocked(submitForReview).mockResolvedValue(inReview)
+  renderPage('runs')
+
+  // nothing is signed off before it is submitted, so a frozen inventory offers the submission only
+  await user.click(await screen.findByRole('button', { name: 'Submit for review' }))
+  expect(screen.queryByRole('button', { name: /mark as final/i })).not.toBeInTheDocument()
+  const dialog = await screen.findByRole('dialog', { name: 'Submit Run 001 for review?' })
+  expect(
+    within(dialog).getByText(/A reviewer or owner other than you marks it final/),
+  ).toBeInTheDocument()
+  await user.type(within(dialog).getByLabelText(/note for the approver/i), 'fuel ledger attached')
+  await user.click(within(dialog).getByRole('button', { name: 'Submit for review' }))
+  await waitFor(() => expect(submitForReview).toHaveBeenCalledWith('run-1', 'fuel ledger attached'))
+  expect(await screen.findByText('Run 001 submitted for review.')).toBeInTheDocument()
+})
+
+test('the submitted run reads IN REVIEW, and its submitter cannot sign it while someone else may (spec 05.8)', async () => {
+  vi.mocked(me).mockResolvedValue({
+    id: 'u-esi',
+    email: 'esi@asantegold.com',
+    displayName: 'Esi Boateng',
+    role: 'MEMBER',
+    status: 'ACTIVE',
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(getInventory).mockResolvedValue(inReview)
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    accountNo: 3,
+    myRole: 'REVIEWER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(listRuns).mockResolvedValue([run])
+  renderPage('runs')
+
+  expect(await screen.findByText('IN REVIEW')).toBeInTheDocument()
+  expect(screen.getAllByText(/Submitted for review by Esi Boateng/)[0]).toBeInTheDocument()
+  const button = await screen.findByRole('button', { name: /mark as final/i })
+  await waitFor(() =>
+    expect(button).toHaveAttribute(
+      'title',
+      'You submitted this run; another reviewer or owner signs it off.',
+    ),
+  )
+  expect(button).toBeDisabled()
+})
+
+test('an approver returns the inventory in review to its preparer with a reason (spec 05.8)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getInventory).mockResolvedValue(inReview)
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    accountNo: 2,
+    myRole: 'REVIEWER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(returnToPreparer).mockResolvedValue({ ...inventory, status: 'FROZEN' })
+  renderPage()
+
+  await user.click(await screen.findByRole('button', { name: 'Return to preparer' }))
+  const dialog = await screen.findByRole('dialog', {
+    name: 'Return the inventory to the preparer?',
+  })
+  const confirm = within(dialog).getByRole('button', { name: 'Return to preparer' })
+  expect(confirm).toBeDisabled()
+  await user.type(within(dialog).getByLabelText(/reason/i), 'The June invoice is missing')
+  await user.click(confirm)
+  await waitFor(() =>
+    expect(returnToPreparer).toHaveBeenCalledWith('inv-1', 'The June invoice is missing'),
+  )
+  expect(await screen.findByText('Inventory returned to the preparer.')).toBeInTheDocument()
+})
+
+test('a reviewer names the preparer and the approver from the members whose role allows it (spec 05.8)', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getInventory).mockResolvedValue({
+    ...inventory,
+    status: 'FROZEN',
+    currentBoundaryVersionId: 'bv-1',
+    currentBoundaryVersionNo: 1,
+  })
+  vi.mocked(getOrganization).mockResolvedValue({
+    id: 'org-1',
+    name: 'Ecoriv Holdings',
+    accountNo: 2,
+    myRole: 'REVIEWER',
+    address: null,
+    contact: null,
+    facilityCount: 3,
+    supportAccess: [],
+    createdAt: '2026-08-01T00:00:00Z',
+  })
+  vi.mocked(listMembers).mockResolvedValue([
+    {
+      id: 'm-1',
+      userId: 'u-ama',
+      email: 'ama@asantegold.com',
+      displayName: 'Ama Owusu',
+      role: 'OWNER',
+      createdAt: '2026-08-01T00:00:00Z',
+    },
+    {
+      id: 'm-2',
+      userId: 'u-kofi',
+      email: 'kofi@asantegold.com',
+      displayName: 'Kofi Mensah',
+      role: 'REVIEWER',
+      createdAt: '2026-08-01T00:00:00Z',
+    },
+    {
+      id: 'm-3',
+      userId: 'u-esi',
+      email: 'esi@asantegold.com',
+      displayName: 'Esi Boateng',
+      role: 'PREPARER',
+      createdAt: '2026-08-01T00:00:00Z',
+    },
+    {
+      id: 'm-4',
+      userId: 'u-yaw',
+      email: 'yaw@asantegold.com',
+      displayName: 'Yaw Darko',
+      role: 'VERIFIER',
+      createdAt: '2026-08-01T00:00:00Z',
+    },
+  ])
+  vi.mocked(saveSignOff).mockResolvedValue({ ...inventory, status: 'FROZEN' })
+  renderPage('runs')
+
+  const preparer = await screen.findByLabelText('Preparer')
+  // a verifier prepares nothing, and only a reviewer or an owner may be the approver
+  await waitFor(() =>
+    expect(
+      within(preparer).getByRole('option', { name: 'Esi Boateng (Preparer)' }),
+    ).toBeInTheDocument(),
+  )
+  expect(within(preparer).queryByRole('option', { name: /Yaw Darko/ })).not.toBeInTheDocument()
+  const approver = screen.getByLabelText('Approver')
+  expect(within(approver).queryByRole('option', { name: /Esi Boateng/ })).not.toBeInTheDocument()
+  await user.selectOptions(preparer, 'u-esi')
+  await user.selectOptions(approver, 'u-kofi')
+  await user.click(screen.getByRole('button', { name: 'Save sign-off' }))
+  await waitFor(() =>
+    expect(saveSignOff).toHaveBeenCalledWith('inv-1', {
+      preparerUserId: 'u-esi',
+      approverUserId: 'u-kofi',
+    }),
+  )
+  expect(await screen.findByText('Sign-off saved.')).toBeInTheDocument()
 })
 
 test('the final inventory prints who designated the run and the note', async () => {

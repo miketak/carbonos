@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { defineOutcome, fail, notApplicable, pass } from '../contract.ts'
 import { inventory } from '../inventories.ts'
+import { account, actorArg } from '../helpers.ts'
 import { orgArg } from '../organizations.ts'
 import { csvRows, exportText, report, run, runDetail, runLabel, runs } from '../runs.ts'
 import { S } from '../ui/surface.ts'
@@ -140,11 +141,29 @@ export const runByGas = defineOutcome({
 
 export const reportHeader = defineOutcome({
   name: 'reportHeader',
-  args: z.object({ ...invArgs, run: runArg, approvedBy: z.string().optional(), version: z.number().int().optional(), supersedes: z.string().optional(), supersededBy: z.string().optional(), publishedBy: z.string().optional(), finalDesignatedBy: z.string().optional(), finalNote: z.string().optional() }).strict(),
+  args: z
+    .object({
+      ...invArgs,
+      run: runArg,
+      // spec 05.8: who submitted the run for review and who signed it off, by actor
+      preparedBy: actorArg.optional(),
+      approvedBy: actorArg.optional(),
+      selfApproved: z.boolean().optional(),
+      version: z.number().int().optional(),
+      supersedes: z.string().optional(),
+      supersededBy: z.string().optional(),
+      publishedBy: z.string().optional(),
+      finalDesignatedBy: z.string().optional(),
+      finalNote: z.string().optional(),
+    })
+    .strict(),
   api: async (ctx, a) => {
     const { run: r } = await run(ctx, a.organization, a.inventory, a.run)
     const h = (await report(ctx.session(), r.id)).header
-    if (a.approvedBy !== undefined && h.approvedBy !== a.approvedBy) return fail(`approved by "${h.approvedBy}"`)
+    const same = (email: string | null | undefined, actor: string) => (email ?? '').toLowerCase() === account(ctx, actor).email.toLowerCase()
+    if (a.preparedBy !== undefined && !same(h.preparedByEmail, a.preparedBy)) return fail(`prepared by "${h.preparedBy}"`)
+    if (a.approvedBy !== undefined && !same(h.approvedByEmail, a.approvedBy)) return fail(`approved by "${h.approvedBy}"`)
+    if (a.selfApproved !== undefined && (h.selfApproved ?? false) !== a.selfApproved) return fail(`self-approved: ${String(h.selfApproved)}`)
     if (a.version !== undefined && h.version !== a.version) return fail(`report version ${h.version}`)
     if (a.supersedes !== undefined && !h.supersedes.includes(a.supersedes)) return fail(`supersedes ${h.supersedes.join(', ') || 'nothing'}`)
     if (a.supersededBy !== undefined && h.supersededBy !== a.supersededBy) return fail(`superseded by ${h.supersededBy ?? 'nothing'}`)
@@ -155,14 +174,18 @@ export const reportHeader = defineOutcome({
   },
   ui: (a) => [
     { check: 'atRun', organization: a.organization, inventory: a.inventory, run: String(a.run) },
-    ...(a.approvedBy ? [{ check: 'rowHas' as const, text: 'Approved by', cells: [a.approvedBy] }] : []),
+    ...(a.preparedBy ? [{ check: 'rowHas' as const, text: 'Prepared by', cells: [`{email:${a.preparedBy}}`] }] : []),
+    ...(a.approvedBy ? [{ check: 'rowHas' as const, text: 'Approved by', cells: [`{email:${a.approvedBy}}`] }] : []),
+    ...(a.selfApproved ? [{ check: 'textVisible', text: S.run.text.selfApproved } as const] : []),
     ...(a.version !== undefined ? [{ check: 'rowHas' as const, text: S.run.text.reportVersion, cells: [`${a.version}${a.supersedes ? `, supersedes ${a.supersedes}` : ''}`] }] : []),
     ...(a.supersededBy ? [{ check: 'textVisible', text: `superseded by ${a.supersededBy}` } as const] : []),
     ...(a.finalNote ? [{ check: 'textVisible', text: a.finalNote } as const] : []),
   ],
-  narrate: (a) => {
+  narrate: (a, n) => {
     const parts: string[] = []
-    if (a.approvedBy) parts.push(`the header names the approver "${a.approvedBy}"`)
+    if (a.preparedBy) parts.push(`**Prepared by** names ${n.actorAlias(a.preparedBy)} with the run`)
+    if (a.approvedBy) parts.push(`**Approved by** names ${n.actorAlias(a.approvedBy)} with the run`)
+    if (a.selfApproved) parts.push(`it adds "${S.run.text.selfApproved}"`)
     if (a.version !== undefined) parts.push(`the header reads "Report version ${a.version}${a.supersedes ? `, supersedes ${a.supersedes}` : ''}"`)
     if (a.supersededBy) parts.push(`its header says it is superseded by ${a.supersededBy}`)
     if (a.publishedBy) parts.push(`published by ${a.publishedBy}`)
@@ -279,11 +302,10 @@ export const buttonsOffered = defineOutcome({
 
 export const reportHeaderSaved = defineOutcome({
   name: 'reportHeaderSaved',
-  args: z.object({ ...invArgs, approvedBy: z.string().optional(), denominators: z.array(z.object({ name: z.string(), value: z.number(), unit: z.string() }).strict()).optional() }).strict(),
+  args: z.object({ ...invArgs, denominators: z.array(z.object({ name: z.string(), value: z.number(), unit: z.string() }).strict()).optional() }).strict(),
   api: async (ctx, a) => {
     const { inv } = await inventory(ctx, a.organization, a.inventory)
-    const full = inv as unknown as { approvedBy: string | null; intensityMetrics: Array<{ name: string; value: number; unit: string }> }
-    if (a.approvedBy !== undefined && full.approvedBy !== a.approvedBy) return fail(`approved by "${full.approvedBy}"`)
+    const full = inv as unknown as { intensityMetrics: Array<{ name: string; value: number; unit: string }> }
     for (const d of a.denominators ?? []) {
       const hit = full.intensityMetrics.find((m) => m.name === d.name)
       if (!hit || Number(hit.value) !== d.value || hit.unit !== d.unit) return fail(`denominator ${d.name}: ${JSON.stringify(hit)}`)
@@ -292,7 +314,6 @@ export const reportHeaderSaved = defineOutcome({
   },
   ui: (a) => [
     { check: 'atInventory', organization: a.organization, inventory: a.inventory, tab: 'Report' },
-    ...(a.approvedBy ? [{ check: 'fieldValue', label: S.run.field.approvedBy, value: a.approvedBy } as const] : []),
     ...(a.denominators ?? []).map((d) => ({ check: 'textVisible', text: `${d.name}: ${d.value.toLocaleString('en-US')} ${d.unit}` }) as const),
   ],
   narrate: (a) => `"Report header saved." Every field reads what you typed${a.denominators?.length ? `; the row reads "${a.denominators.map((d) => `${d.name}: ${d.value.toLocaleString('en-US')} ${d.unit}`).join('", "')}"` : ''}.`,
@@ -353,4 +374,33 @@ export const reportCorrection = defineOutcome({
   narrate: (a) => `The correction block reads "Against the published run: ${a.added} lines added, ${a.removed} removed, ${a.changed} changed".`,
 })
 
-export const runOutcomes = [reportCorrection, runListed, runLine, runExclusions, runByGas, reportHeader, reportIntensity, reportStatementHas, csvHas, inputsHas, roleDisabled, controlDisabled, buttonsOffered, reportHeaderSaved, inventoryGwpSet, inheritanceDropped, runCount]
+/**
+ * One act in an inventory's history (specs 05.2, 05.8): the action, a text its detail contains, and
+ * who did it. The History list sits under the runs on the Runs tab.
+ */
+export const inventoryHistoryHas = defineOutcome({
+  name: 'inventoryHistoryHas',
+  args: z.object({ ...invArgs, action: z.string(), detail: z.string().optional(), actor: actorArg.optional() }).strict(),
+  api: async (ctx, a) => {
+    const { inv } = await inventory(ctx, a.organization, a.inventory)
+    const out = await ctx.session().get(`/api/ghg/inventories/${inv.id}/events`)
+    if (!out.ok) return fail(`could not read the history: ${out.status}`)
+    const rows = out.body as Array<{ action: string; actor: string; reason: string | null }>
+    const hit = rows.find(
+      (e) =>
+        e.action === a.action &&
+        (a.detail === undefined || (e.reason ?? '').includes(a.detail)) &&
+        (a.actor === undefined || e.actor.toLowerCase() === account(ctx, a.actor).email.toLowerCase()),
+    )
+    return hit ? pass() : fail(`no ${a.action} entry${a.detail ? ` "${a.detail}"` : ''}; last: ${rows.slice(0, 3).map((e) => `${e.action}: ${e.reason ?? ''}`).join(' | ')}`)
+  },
+  ui: (a) => [
+    { check: 'atInventory', organization: a.organization, inventory: a.inventory, tab: 'Runs' },
+    ...(S.run.history[a.action] ? [{ check: 'textVisible', text: S.run.history[a.action]! } as const] : []),
+    ...(a.detail ? [{ check: 'textVisible', text: a.detail } as const] : []),
+  ],
+  narrate: (a, n) =>
+    `Under **History** on **Runs**, the entry "${S.run.history[a.action] ?? a.action}"${a.detail ? ` reads "${a.detail}"` : ' is listed'}${a.actor ? `, by ${n.actorAlias(a.actor)}` : ''}.`,
+})
+
+export const runOutcomes = [reportCorrection, runListed, runLine, runExclusions, runByGas, reportHeader, reportIntensity, reportStatementHas, csvHas, inputsHas, roleDisabled, controlDisabled, buttonsOffered, reportHeaderSaved, inventoryGwpSet, inheritanceDropped, runCount, inventoryHistoryHas]

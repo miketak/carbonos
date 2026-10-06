@@ -35,6 +35,9 @@ import {
   excludeFacility,
   executeRun,
   finalizeRun,
+  returnToPreparer,
+  saveSignOff,
+  submitForReview,
   freezeInventory,
   getActivity,
   getBaseYear,
@@ -1164,6 +1167,29 @@ export function useExecuteRun(inventoryId: string) {
       void queryClient.invalidateQueries({ queryKey: runsKey(inventoryId) })
     },
   })
+}
+
+/** Spec 05.8: the preparer puts a run forward for review. */
+export function useSubmitForReview(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, ({ runId, note }: { runId: string; note?: string }) =>
+    submitForReview(runId, note),
+  )
+}
+
+/** Spec 05.8: the approver returns the inventory to its preparer, with a reason. */
+export function useReturnToPreparer(inventoryId: string) {
+  return useLifecycleMutation(inventoryId, (reason: string) =>
+    returnToPreparer(inventoryId, reason),
+  )
+}
+
+/** Spec 05.8: names the inventory's preparer and approver. */
+export function useSaveSignOff(inventoryId: string) {
+  return useLifecycleMutation(
+    inventoryId,
+    (input: { preparerUserId: string | null; approverUserId: string | null }) =>
+      saveSignOff(inventoryId, input),
+  )
 }
 
 export function useFinalizeRun(inventoryId: string) {

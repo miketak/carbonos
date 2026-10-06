@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/008-base-year-and-the-record.yaml (sha256 3e19ad37381fdc52e9b228f036c9dab3ee44a4a589c636e024bbd5b6bb9e2774); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/008-base-year-and-the-record.yaml (sha256 4f51c2827d9362bfba1ad407117676378d5a7028caa65dd9fd718eb009bb0070); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 8, "3e19ad37381fdc52e9b228f036c9dab3ee44a4a589c636e024bbd5b6bb9e2774")
+const P = procedure("governance", 8, "4f51c2827d9362bfba1ad407117676378d5a7028caa65dd9fd718eb009bb0070")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 8: Base year and the organization's record", () => {
@@ -52,8 +52,8 @@ test.describe("Procedure 8: Base year and the organization's record", () => {
     })
     await test.step("8.B1.4", async () => {
       const s = P.step("8.B1.4")
-      const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1})
-      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.base-year.holds-final","with":{"year":"2025","reason":"structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required","act":"marked final"}}}])
+      const out = await s.do("submitForReview", {"organization":"Adansi Foods Ltd","inventory":"FY2026","run":1})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.base-year.holds-final","with":{"year":"2025","reason":"structural change: Tema Depot removed; 11.06% of base-year emissions, above the 5% threshold, recalculation required","act":"submitted for review"}},"why":"the hold is on the acts that report a figure; a run is submitted for review before it is signed off (spec 05.8), and the submission meets the hold first"}])
     })
     await test.step("8.B1.5", async () => {
       const s = P.step("8.B1.5")

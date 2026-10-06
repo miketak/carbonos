@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { defineVerb } from '../contract.ts'
 import { inventory } from '../inventories.ts'
-import { facility, factor, orgArg, organization } from '../organizations.ts'
+import { account, actorArg } from '../helpers.ts'
+import { facility, factor, members, orgArg, organization } from '../organizations.ts'
 import { run, runLabel, runs } from '../runs.ts'
 import { S } from '../ui/surface.ts'
 
@@ -84,6 +85,82 @@ export const markFinal = defineVerb({
   narrate: (a) => `Click **${S.run.button.markFinal}** on ${typeof a.run === 'number' ? runLabel(a.run) : a.run}${a.note ? `, type the review note "${a.note}"` : ''} and confirm.`,
 })
 
+/** Spec 05.8: the preparer puts a run forward for review, with a note for the approver. */
+export const submitForReview = defineVerb({
+  name: 'submitForReview',
+  args: z.object({ ...invArgs, run: runArg, note: z.string().optional() }).strict(),
+  api: async (ctx, a) => {
+    const { run: r } = await run(ctx, a.organization, a.inventory, a.run)
+    return ctx.session().post(`/api/ghg/runs/${r.id}/submit-for-review`, { note: a.note ?? null })
+  },
+  ui: (a) => {
+    const label = typeof a.run === 'number' ? runLabel(a.run) : a.run
+    const d = `Submit ${label} for review?`
+    return [
+      { op: 'inventoryPage', organization: a.organization, inventory: a.inventory, tab: 'Runs' },
+      { op: 'row', text: label, button: S.run.button.submitForReview, ifEnabled: true },
+      ...(a.note ? [{ op: 'fill', label: S.run.field.submitNote, value: a.note, within: d } as const] : []),
+      { op: 'click', button: S.run.button.submitForReview, within: d, ifEnabled: true },
+    ]
+  },
+  postconditions: () => [],
+  narrate: (a) =>
+    `On **Runs**, click **${S.run.button.submitForReview}** on ${typeof a.run === 'number' ? runLabel(a.run) : a.run}${a.note ? `, type "${a.note}" in **${S.run.field.submitNote}**` : ''} and confirm.`,
+})
+
+/** Spec 05.8: the approver sends the inventory in review back to its preparer, with a reason. */
+export const returnToPreparer = defineVerb({
+  name: 'returnToPreparer',
+  args: z.object({ ...invArgs, reason: z.string() }).strict(),
+  api: async (ctx, a) => {
+    const { inv } = await inventory(ctx, a.organization, a.inventory)
+    return ctx.session().post(`/api/ghg/inventories/${inv.id}/return-to-preparer`, { reason: a.reason })
+  },
+  ui: (a) => [
+    { op: 'inventoryPage', organization: a.organization, inventory: a.inventory },
+    { op: 'click', button: S.run.button.returnToPreparer },
+    { op: 'fill', label: S.cls.field.reason, value: a.reason, within: S.run.dialog.returnToPreparer },
+    { op: 'click', button: S.run.button.returnToPreparer, within: S.run.dialog.returnToPreparer, ifEnabled: true },
+  ],
+  postconditions: () => [],
+  narrate: (a) => `Click **${S.run.button.returnToPreparer}**, give "${a.reason}" and confirm.`,
+})
+
+/**
+ * Spec 05.8: a Reviewer or Owner names the inventory's preparer and approver, by actor; leaving
+ * one out keeps it open to anyone whose role allows it.
+ */
+export const assignSignOff = defineVerb({
+  name: 'assignSignOff',
+  args: z.object({ ...invArgs, preparer: actorArg.optional(), approver: actorArg.optional() }).strict(),
+  api: async (ctx, a) => {
+    const { org, inv } = await inventory(ctx, a.organization, a.inventory)
+    const roster = await members(ctx.session(), org.id)
+    const userOf = (actor: string | undefined) => {
+      if (actor === undefined) return null
+      const email = account(ctx, actor).email.toLowerCase()
+      return roster.find((member) => member.email.toLowerCase() === email)?.userId ?? null
+    }
+    return ctx.session().put(`/api/ghg/inventories/${inv.id}/sign-off`, {
+      preparerUserId: userOf(a.preparer),
+      approverUserId: userOf(a.approver),
+    })
+  },
+  ui: (a) => [
+    { op: 'inventoryPage', organization: a.organization, inventory: a.inventory, tab: 'Runs' },
+    a.preparer
+      ? ({ op: 'choose', label: S.run.field.preparer, option: `{name:${a.preparer}}`, prefix: true } as const)
+      : ({ op: 'choose', label: S.run.field.preparer, option: S.run.text.anyonePrepares } as const),
+    a.approver
+      ? ({ op: 'choose', label: S.run.field.approver, option: `{name:${a.approver}}`, prefix: true } as const)
+      : ({ op: 'choose', label: S.run.field.approver, option: S.run.text.anyoneApproves } as const),
+    { op: 'click', button: S.run.button.saveSignOff, ifEnabled: true },
+  ],
+  postconditions: () => [],
+  narrate: (a, n) =>
+    `On **Runs**, under **Sign-off**, choose ${a.preparer ? n.actorName(a.preparer) : `"${S.run.text.anyonePrepares}"`} as **${S.run.field.preparer}** and ${a.approver ? n.actorName(a.approver) : `"${S.run.text.anyoneApproves}"`} as **${S.run.field.approver}**, then click **${S.run.button.saveSignOff}**.`,
+})
+
 export const withdrawFinal = defineVerb({
   name: 'withdrawFinal',
   args: z.object({ ...invArgs, reason: z.string() }).strict(),
@@ -140,7 +217,6 @@ export const saveReportHeader = defineVerb({
   args: z
     .object({
       ...invArgs,
-      approvedBy: z.string().optional(),
       uncertaintyStatement: z.string().optional(),
       denominators: z.array(z.object({ name: z.string(), value: z.number(), unit: z.string() }).strict()).optional(),
     })
@@ -148,7 +224,6 @@ export const saveReportHeader = defineVerb({
   api: async (ctx, a) => {
     const { inv } = await inventory(ctx, a.organization, a.inventory)
     return ctx.session().put(`/api/ghg/inventories/${inv.id}/report-metadata`, {
-      approvedBy: a.approvedBy ?? null,
       assuranceLevel: 'UNVERIFIED',
       assuranceProvider: null,
       assuranceStatement: null,
@@ -158,7 +233,6 @@ export const saveReportHeader = defineVerb({
   },
   ui: (a) => [
     { op: 'inventoryPage', organization: a.organization, inventory: a.inventory, tab: 'Report' },
-    ...(a.approvedBy ? [{ op: 'fill', label: S.run.field.approvedBy, value: a.approvedBy } as const] : []),
     ...(a.uncertaintyStatement ? [{ op: 'fill', label: S.run.field.uncertainty, value: a.uncertaintyStatement } as const] : []),
     ...(a.denominators ?? []).flatMap((d) => [
       { op: 'fill', label: S.run.field.denominator, value: d.name } as const,
@@ -168,10 +242,9 @@ export const saveReportHeader = defineVerb({
     ]),
     { op: 'click', button: S.run.button.saveHeader },
   ],
-  postconditions: (a) => [{ outcome: 'reportHeaderSaved', args: { organization: a.organization, inventory: a.inventory, approvedBy: a.approvedBy, denominators: a.denominators } }],
+  postconditions: (a) => [{ outcome: 'reportHeaderSaved', args: { organization: a.organization, inventory: a.inventory, denominators: a.denominators } }],
   narrate: (a) => {
     const parts: string[] = []
-    if (a.approvedBy) parts.push(`fill in **${S.run.field.approvedBy}** "${a.approvedBy}"`)
     if (a.uncertaintyStatement) parts.push(`the uncertainty statement "${a.uncertaintyStatement}"`)
     for (const d of a.denominators ?? []) parts.push(`type the denominator "${d.name}", value ${d.value}, unit \`${d.unit}\`, then click **${S.run.button.addDenominator}**`)
     return `On **Report**, ${parts.join(', ')}. Click **${S.run.button.saveHeader}**.`
@@ -316,4 +389,4 @@ export const showInheritance = defineVerb({
   narrate: () => `Open **${S.run.text.cameFrom}** at the top of the workbench.`,
 })
 
-export const runVerbs = [showInheritance, launchRun, openRun, voidRun, markFinal, withdrawFinal, publishInventory, createCorrection, saveReportHeader, setGwpSet, unapproveFactor, recordActivity]
+export const runVerbs = [showInheritance, launchRun, openRun, voidRun, submitForReview, returnToPreparer, assignSignOff, markFinal, withdrawFinal, publishInventory, createCorrection, saveReportHeader, setGwpSet, unapproveFactor, recordActivity]

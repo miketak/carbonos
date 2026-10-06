@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/006-runs-final-publication-and-correction.yaml (sha256 0c7c2886be109feba7a88dd216079810bbf88c68c31884b36c6cdf54dba74ac4); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/006-runs-final-publication-and-correction.yaml (sha256 d6db999181acda2225fbb786067e5958d28eb5f772055233469c12ea43f9ba1b); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 6, "0c7c2886be109feba7a88dd216079810bbf88c68c31884b36c6cdf54dba74ac4")
+const P = procedure("governance", 6, "d6db999181acda2225fbb786067e5958d28eb5f772055233469c12ea43f9ba1b")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 6: Runs, final, publication and correction", () => {
@@ -51,7 +51,7 @@ test.describe("Procedure 6: Runs, final, publication and correction", () => {
     })
     await test.step("6.A2.4", async () => {
       const s = P.step("6.A2.4")
-      await s.expect(undefined, [{"outcome":"observe","args":{"text":"Look for Mark as final on Run 001: there is none, a voided run cannot be designated final."}}])
+      await s.expect(undefined, [{"outcome":"observe","args":{"text":"Look for Submit for review and Mark as final on Run 001: there is neither, a voided run is never submitted or designated final."}}])
     })
   })
 
@@ -83,8 +83,8 @@ test.describe("Procedure 6: Runs, final, publication and correction", () => {
     })
     await test.step("6.B1.6", async () => {
       const s = P.step("6.B1.6")
-      const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":3})
-      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.run.final-holds","with":{"run":"3"}},"why":"the message names the run by its number and then both holds, the blend first: \"'Chiller refrigerant top-up' uses 'Blends: R407C, Emissions including only Kyoto products', whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded): record the blend's composition, choose a factor on AR6, or run the inventory on AR5 (one GWP set across the inventory).\" and \"'Forklift diesel' converts through the typical density of Diesel (0.84 kg/litre), a planning value.\""}])
+      const out = await s.do("submitForReview", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":3})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.run.final-holds","with":{"run":"3"}},"why":"the submission checks what the sign-off checks, so the preparer learns it first; the message names the run by its number and then both holds, the blend first: \"'Chiller refrigerant top-up' uses 'Blends: R407C, Emissions including only Kyoto products', whose CO2e is published under AR5 and cannot be re-derived under AR6 (no composition recorded): record the blend's composition, choose a factor on AR6, or run the inventory on AR5 (one GWP set across the inventory).\" and \"'Forklift diesel' converts through the typical density of Diesel (0.84 kg/litre), a planning value.\""}])
     })
   })
 
@@ -119,13 +119,13 @@ test.describe("Procedure 6: Runs, final, publication and correction", () => {
   test("C1. Metadata persists and reaches the next run", async () => {
     await test.step("6.C1.1", async () => {
       const s = P.step("6.C1.1")
-      const out = await s.do("saveReportHeader", {"organization":"Adansi Foods Ltd","inventory":"FY2025","approvedBy":"Kofi Mensah, Reviewer","uncertaintyStatement":"Metered fuel and electricity; the flights figure is the travel agent's estimate","denominators":[{"name":"Product output","value":1500,"unit":"t"}]})
+      const out = await s.do("saveReportHeader", {"organization":"Adansi Foods Ltd","inventory":"FY2025","uncertaintyStatement":"Metered fuel and electricity; the flights figure is the travel agent's estimate","denominators":[{"name":"Product output","value":1500,"unit":"t"}]})
       await s.done()
     })
     await test.step("6.C1.2", async () => {
       const s = P.step("6.C1.2")
       const out = await s.do("launchRun", {"organization":"Adansi Foods Ltd","inventory":"FY2025"})
-      await s.expect(out, [{"outcome":"reportHeader","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"approvedBy":"Kofi Mensah, Reviewer"}},{"outcome":"reportIntensity","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"name":"Product output","value":1500,"unit":"t","tCo2ePerUnit":0.080249},"why":"120.373 t divided by 1,500"},{"outcome":"reportStatementHas","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"section":"uncertainty","containing":"Metered fuel and electricity; the flights figure is the travel agent's estimate"}},{"outcome":"reportStatementHas","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"section":"dataQuality","containing":"3 of 9 lines record a quantitative uncertainty; weighted by emissions it is ±2.8% for those lines."},"why":"the run has nine lines, seven records and the two derived ones"}])
+      await s.expect(out, [{"outcome":"reportIntensity","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"name":"Product output","value":1500,"unit":"t","tCo2ePerUnit":0.080249},"why":"120.373 t divided by 1,500"},{"outcome":"reportStatementHas","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"section":"uncertainty","containing":"Metered fuel and electricity; the flights figure is the travel agent's estimate"}},{"outcome":"reportStatementHas","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"section":"dataQuality","containing":"3 of 9 lines record a quantitative uncertainty; weighted by emissions it is ±2.8% for those lines."},"why":"the run has nine lines, seven records and the two derived ones"}])
     })
   })
 
@@ -199,9 +199,24 @@ test.describe("Procedure 6: Runs, final, publication and correction", () => {
       const s = P.step("6.D2.10")
       await s.expect(undefined, [{"outcome":"observe","args":{"text":"Open the PDF: the methodology section prints \"Approved by the person who entered them, no other member of the organization being able to check them at the time: Diesel (Solo) (<the Yaw alias>).\". Adansi's PDF of case D1 prints no such sentence: Kofi checked its factors."}}])
     })
+    await test.step("6.D2.11", async () => {
+      const s = P.step("6.D2.11")
+      const out = await s.do("submitForReview", {"organization":"Solo Ltd","inventory":"Solo FY2025","run":1})
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Solo Ltd","inventory":"Solo FY2025","status":"IN_REVIEW"}}])
+    })
+    await test.step("6.D2.12", async () => {
+      const s = P.step("6.D2.12")
+      const out = await s.do("markFinal", {"organization":"Solo Ltd","inventory":"Solo FY2025","run":1})
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Solo Ltd","inventory":"Solo FY2025","status":"FINAL"}},{"outcome":"reportHeader","args":{"organization":"Solo Ltd","inventory":"Solo FY2025","run":1,"preparedBy":"yaw","approvedBy":"yaw","selfApproved":true},"why":"Yaw is the only member who may approve, so his sign-off of the run he submitted goes through and the header says so: \"Approved by <the Yaw alias>, run 1, <date>; self-approved: nobody else in the organization could check it\". The Mark as final dialog said so before the sign-off."}])
+    })
+    await test.step("6.D2.13", async () => {
+      const s = P.step("6.D2.13")
+      const out = await s.do("withdrawFinal", {"organization":"Solo Ltd","inventory":"Solo FY2025","reason":"Solo Ltd is a scratch organization"})
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Solo Ltd","inventory":"Solo FY2025","status":"FROZEN"},"why":"procedure 8 deletes Solo Ltd, which a final run would hold"}])
+    })
   })
 
-  test("E1. Only a reviewer or an owner designates and publishes", async () => {
+  test("E1. The preparer submits, someone else signs off, a reviewer or owner publishes", async () => {
     await test.step("6.E1.1", async () => {
       const s = P.step("6.E1.1").as("esi")
       const out = await s.do("signIn", {"user":"esi"})
@@ -209,58 +224,93 @@ test.describe("Procedure 6: Runs, final, publication and correction", () => {
     })
     await test.step("6.E1.2", async () => {
       const s = P.step("6.E1.2")
+      const out = await s.do("submitForReview", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"note":"Fuel ledger and invoices attached"})
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"IN_REVIEW"}},{"outcome":"inventoryHistoryHas","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","action":"SUBMITTED_FOR_REVIEW","detail":"run 5 submitted for review: Fuel ledger and invoices attached","actor":"esi"},"why":"Run 005 reads IN REVIEW; the lifecycle bar reads \"Submitted for review by <the Esi alias> on <date>: Fuel ledger and invoices attached\""}])
+    })
+    await test.step("6.E1.3", async () => {
+      const s = P.step("6.E1.3")
       const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5})
       await s.expect(out, [{"outcome":"roleDisabled","args":{"button":"Mark as final"}}])
     })
-    await test.step("6.E1.3", async () => {
-      const s = P.step("6.E1.3").as("kofi")
-      const out = await s.do("signIn", {"user":"kofi"})
-      await s.done()
-    })
     await test.step("6.E1.4", async () => {
-      const s = P.step("6.E1.4")
-      const out = await s.do("unapproveFactor", {"organization":"Adansi Foods Ltd","factor":"Long-haul flights (supplier)"})
+      const s = P.step("6.E1.4").as("kofi")
+      const out = await s.do("signIn", {"user":"kofi"})
       await s.done()
     })
     await test.step("6.E1.5", async () => {
       const s = P.step("6.E1.5")
-      const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5})
-      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.run.final-holds","with":{"run":"5"}},"why":"\"'Staff flights' uses 'Long-haul flights (supplier)', which is not approved. Approve it under Emission factors, or choose another.\": approval is checked again at the designation, not only at the run"}])
+      const out = await s.do("returnToPreparer", {"organization":"Adansi Foods Ltd","inventory":"FY2025","reason":"The June invoice is not attached"})
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"FROZEN"}},{"outcome":"inventoryHistoryHas","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","action":"REVIEW_RETURNED","detail":"run 5 returned to the preparer: The June invoice is not attached","actor":"kofi"}}])
     })
     await test.step("6.E1.6", async () => {
       const s = P.step("6.E1.6")
-      const out = await s.do("approveFactor", {"organization":"Adansi Foods Ltd","factor":"Long-haul flights (supplier)"})
-      await s.expect(out, [{"outcome":"factorListed","args":{"organization":"Adansi Foods Ltd","name":"Long-haul flights (supplier)","approved":true,"approvedBy":"kofi"},"why":"approved by Kofi, who did not enter it"}])
+      const out = await s.do("submitForReview", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5})
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"IN_REVIEW"},"why":"a reviewer may submit too; what he may not do is sign what he submitted while someone else can"}])
     })
     await test.step("6.E1.7", async () => {
       const s = P.step("6.E1.7")
-      const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"note":"Reconciled against the March and June invoices"})
-      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"FINAL"}},{"outcome":"reportHeader","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"finalNote":"Reconciled against the March and June invoices"}},{"outcome":"buttonsOffered","args":{"absent":["Reopen as draft"]},"why":"the lifecycle bar reads \"Final designated by <the Kofi alias> on <date>: Reconciled against the March and June invoices\""}])
+      const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.run.self-signed","with":{"run":"5","submitter":"Kofi Mensah","checker":"Ama Owusu"}},"why":"Mark as final on Run 005 is disabled with \"You submitted this run; another reviewer or owner signs it off.\"; through the API the refusal names Ama as someone who can"}])
     })
     await test.step("6.E1.8", async () => {
       const s = P.step("6.E1.8")
+      const out = await s.do("returnToPreparer", {"organization":"Adansi Foods Ltd","inventory":"FY2025","reason":"Esi prepares this inventory"})
+      await s.done()
+    })
+    await test.step("6.E1.9", async () => {
+      const s = P.step("6.E1.9").as("esi")
+      const out = await s.do("submitForReview", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"note":"Reconciled against the fuel ledger"})
+      await s.done()
+    })
+    await test.step("6.E1.10", async () => {
+      const s = P.step("6.E1.10").as("kofi")
+      const out = await s.do("unapproveFactor", {"organization":"Adansi Foods Ltd","factor":"Long-haul flights (supplier)"})
+      await s.done()
+    })
+    await test.step("6.E1.11", async () => {
+      const s = P.step("6.E1.11")
+      const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.run.final-holds","with":{"run":"5"}},"why":"\"'Staff flights' uses 'Long-haul flights (supplier)', which is not approved. Approve it under Emission factors, or choose another.\": approval is checked again at the sign-off, not only at the run and the submission"}])
+    })
+    await test.step("6.E1.12", async () => {
+      const s = P.step("6.E1.12")
+      const out = await s.do("approveFactor", {"organization":"Adansi Foods Ltd","factor":"Long-haul flights (supplier)"})
+      await s.expect(out, [{"outcome":"factorListed","args":{"organization":"Adansi Foods Ltd","name":"Long-haul flights (supplier)","approved":true,"approvedBy":"kofi"},"why":"approved by Kofi, who did not enter it"}])
+    })
+    await test.step("6.E1.13", async () => {
+      const s = P.step("6.E1.13")
+      const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"note":"Reconciled against the March and June invoices"})
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"FINAL"}},{"outcome":"reportHeader","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"preparedBy":"esi","approvedBy":"kofi","finalNote":"Reconciled against the March and June invoices"}},{"outcome":"inventoryHistoryHas","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","action":"FINAL_DESIGNATED","detail":"run 5 signed off and designated final: Reconciled against the March and June invoices","actor":"kofi"}},{"outcome":"buttonsOffered","args":{"absent":["Reopen as draft"]},"why":"the lifecycle bar reads \"Final designated by <the Kofi alias> on <date>: Reconciled against the March and June invoices\"; the report header reads \"Prepared by <the Esi name and alias>, run 5\" and \"Approved by <the Kofi name and alias>, run 5\""}])
+    })
+    await test.step("6.E1.14", async () => {
+      const s = P.step("6.E1.14")
       const out = await s.do("withdrawFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","reason":""})
       await s.expect(out, [{"outcome":"dialogButtonDisabled","args":{"dialog":"Withdraw the final designation?","button":"Withdraw designation","rule":"ghg.reason-too-short"}}])
     })
-    await test.step("6.E1.9", async () => {
-      const s = P.step("6.E1.9")
+    await test.step("6.E1.15", async () => {
+      const s = P.step("6.E1.15")
       const out = await s.do("withdrawFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","reason":"Checking the withdrawal"})
-      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"FROZEN"},"why":"the history records the withdrawal with Kofi's email"}])
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"FROZEN"},"why":"the history records the withdrawal with Kofi's email; the submission went with the designation, so Esi submits again"}])
     })
-    await test.step("6.E1.10", async () => {
-      const s = P.step("6.E1.10")
+    await test.step("6.E1.16", async () => {
+      const s = P.step("6.E1.16").as("esi")
+      const out = await s.do("submitForReview", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"note":"Reconciled against the fuel ledger"})
+      await s.done()
+    })
+    await test.step("6.E1.17", async () => {
+      const s = P.step("6.E1.17").as("kofi")
       const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5})
       await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"FINAL"}}])
     })
-    await test.step("6.E1.11", async () => {
-      const s = P.step("6.E1.11").as("esi")
+    await test.step("6.E1.18", async () => {
+      const s = P.step("6.E1.18").as("esi")
       const out = await s.do("publishInventory", {"organization":"Adansi Foods Ltd","inventory":"FY2025"})
       await s.expect(out, [{"outcome":"roleDisabled","args":{"button":"Publish"}}])
     })
-    await test.step("6.E1.12", async () => {
-      const s = P.step("6.E1.12").as("kofi")
+    await test.step("6.E1.19", async () => {
+      const s = P.step("6.E1.19").as("kofi")
       const out = await s.do("publishInventory", {"organization":"Adansi Foods Ltd","inventory":"FY2025"})
-      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"PUBLISHED"}},{"outcome":"reportHeader","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"version":1},"why":"the lifecycle bar reads \"Final designated by <the Kofi alias>\" and \"Published <time>.\" and says nothing on this inventory can change and that a correction is a new inventory that supersedes it; the Report tab reads \"Published by <the Kofi alias>\""}])
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","status":"PUBLISHED"}},{"outcome":"reportHeader","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"version":1,"preparedBy":"esi","approvedBy":"kofi"},"why":"the lifecycle bar reads \"Final designated by <the Kofi alias>\" and \"Published <time>.\" and says nothing on this inventory can change and that a correction is a new inventory that supersedes it; the Report tab reads \"Published by <the Kofi alias>\""}])
     })
   })
 
@@ -306,6 +356,34 @@ test.describe("Procedure 6: Runs, final, publication and correction", () => {
     await test.step("6.F2.5", async () => {
       const s = P.step("6.F2.5")
       await s.expect(undefined, [{"outcome":"reportHeader","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5,"version":1,"supersededBy":"FY2025 (correction)"},"why":"unchanged, and its header says it is superseded by the correction"}])
+    })
+  })
+
+  test("F3. Assignment narrows who submits and who signs, within the roles", async () => {
+    await test.step("6.F3.1", async () => {
+      const s = P.step("6.F3.1")
+      const out = await s.do("assignSignOff", {"organization":"Adansi Foods Ltd","inventory":"FY2025 (correction)","approver":"esi"})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.inventory.sign-off-role","with":{"name":"Esi Boateng","role":"Preparer","act":"sign off an inventory"}},"why":"the roles are the ceiling; the Approver list offers only the reviewer and the owner"}])
+    })
+    await test.step("6.F3.2", async () => {
+      const s = P.step("6.F3.2")
+      const out = await s.do("assignSignOff", {"organization":"Adansi Foods Ltd","inventory":"FY2025 (correction)","preparer":"esi","approver":"kofi"})
+      await s.expect(out, [{"outcome":"inventoryHistoryHas","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025 (correction)","action":"SIGN_OFF_ASSIGNED","detail":"preparer: Esi Boateng; approver: Kofi Mensah","actor":"ama"}}])
+    })
+    await test.step("6.F3.3", async () => {
+      const s = P.step("6.F3.3")
+      const out = await s.do("submitForReview", {"organization":"Adansi Foods Ltd","inventory":"FY2025 (correction)","run":1})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.inventory.not-the-preparer","with":{"name":"Esi Boateng"}},"why":"Ama owns the organization, but Esi is this inventory's preparer"}])
+    })
+    await test.step("6.F3.4", async () => {
+      const s = P.step("6.F3.4").as("esi")
+      const out = await s.do("submitForReview", {"organization":"Adansi Foods Ltd","inventory":"FY2025 (correction)","run":1,"note":"The June electricity restated"})
+      await s.expect(out, [{"outcome":"inventoryStatus","args":{"organization":"Adansi Foods Ltd","inventory":"FY2025 (correction)","status":"IN_REVIEW"}}])
+    })
+    await test.step("6.F3.5", async () => {
+      const s = P.step("6.F3.5").as("ama")
+      const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025 (correction)","run":1})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.inventory.not-the-approver","with":{"name":"Kofi Mensah"}},"why":"the correction stays in review for the walkthrough; procedure 7 reads only its run lines"}])
     })
   })
 
