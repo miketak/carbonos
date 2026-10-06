@@ -81,6 +81,9 @@ function FactorCell({
   factor: EmissionFactor | undefined
 }) {
   if (!assignment.included) return <span className="text-[13px] text-ink-muted">·</span>
+  // ECO-7: the row carries its factor's name; the lookup only adds the unit, the packs and the
+  // approval. A miss (the list still loading, a failed request) must not read as "no factor".
+  if (!factor && assignment.emissionFactorId) return <span>{assignment.factorName}</span>
   if (!factor)
     return (
       <span className="text-[13px] text-warning">
