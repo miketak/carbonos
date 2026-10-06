@@ -139,7 +139,7 @@ it establishes the cross-module event pattern.
 - Forced rotation on first sign-in. Password reset and change-own-password
   are spec 01.9: a temporary password an administrator sets stays the
   password until its holder changes it on the profile or resets it.
-- Per-inventory roles and a formal sign-off workflow; membership and
-  organization roles are spec 01.2.
+- Membership and organization roles are spec 01.2; the per-inventory
+  preparer and approver and the sign-off workflow are spec 05.8.
 - Audit logging of administrative actions.
 - Pagination, search and filtering of the user list.
