@@ -183,8 +183,8 @@ sections:
                 why: a reviewer may submit too; what he may not do is sign what he submitted while someone else can
           - do: { markFinal: { organization: "${org}", inventory: "${inv}", run: 5 } }
             expect:
-              - refused: { rule: ghg.run.self-signed, with: { run: "5", submitter: Kofi Mensah, checker: Ama Owusu } }
-                why: 'Mark as final on Run 005 is disabled with "You submitted this run; another reviewer or owner signs it off."; through the API the refusal names Ama as someone who can'
+              - ruleDisabled: { button: Mark as final, title: "You submitted this run; another reviewer or owner signs it off.", rule: ghg.run.self-signed, with: { run: "5", submitter: Kofi Mensah, checker: Ama Owusu } }
+                why: the screen withholds the sign-off from the run's submitter while Ama could sign; the API refusal names her
           - do: { returnToPreparer: { organization: "${org}", inventory: "${inv}", reason: Esi prepares this inventory } }
           - as: esi
             do: { submitForReview: { organization: "${org}", inventory: "${inv}", run: 5, note: Reconciled against the fuel ledger } }

@@ -5,6 +5,7 @@ import { account, actorArg } from '../helpers.ts'
 import { orgArg } from '../organizations.ts'
 import { csvRows, exportText, report, run, runDetail, runLabel, runs } from '../runs.ts'
 import { S } from '../ui/surface.ts'
+import { rule, ruleMessage } from '../rules/index.ts'
 
 /** Statements about runs, their lines and exports, the report and the lifecycle (specs 05.1 to 05.3, 07.4, 07.5). */
 
@@ -281,6 +282,25 @@ export const roleDisabled = defineOutcome({
   narrate: (a) => `**${a.button}** is disabled, with the tooltip "${a.tooltip}": a preparer's refusals are disabled controls, not dialogs.`,
 })
 
+/**
+ * A control the page disables for a product rule, with a title that says why; through the API, the
+ * refusal by that rule (spec 05.8: Mark as final for the run's submitter while someone else may sign).
+ */
+export const ruleDisabled = defineOutcome({
+  name: 'ruleDisabled',
+  expectsRefusal: true,
+  args: z.object({ button: z.string(), title: z.string(), rule: z.string(), with: z.record(z.string(), z.string()).optional() }).strict(),
+  api: async (_ctx, a, last) => {
+    const entry = rule(a.rule)
+    if (!last) return fail('no action to be refused')
+    if (last.ok) return fail(`the action went through (${last.status})`)
+    if (last.rule !== a.rule) return fail(`refused by ${last.rule ?? 'an unnamed rule'} (${String((last.body as { detail?: string })?.detail)}), expected ${a.rule}`)
+    return pass(`${entry.status} ${a.rule}`)
+  },
+  ui: (a) => [{ check: 'buttonDisabled', button: a.button, tooltip: a.title }],
+  narrate: (a) => `**${a.button}** is disabled with the title "${a.title}"; through the API the refusal reads "${ruleMessage(a.rule, a.with ?? {})}".`,
+})
+
 /** A control disabled with a title that says why; nothing is sent. */
 export const controlDisabled = defineOutcome({
   name: 'controlDisabled',
@@ -403,4 +423,4 @@ export const inventoryHistoryHas = defineOutcome({
     `Under **History** on **Runs**, the entry "${S.run.history[a.action] ?? a.action}"${a.detail ? ` reads "${a.detail}"` : ' is listed'}${a.actor ? `, by ${n.actorAlias(a.actor)}` : ''}.`,
 })
 
-export const runOutcomes = [reportCorrection, runListed, runLine, runExclusions, runByGas, reportHeader, reportIntensity, reportStatementHas, csvHas, inputsHas, roleDisabled, controlDisabled, buttonsOffered, reportHeaderSaved, inventoryGwpSet, inheritanceDropped, runCount, inventoryHistoryHas]
+export const runOutcomes = [reportCorrection, runListed, runLine, runExclusions, runByGas, reportHeader, reportIntensity, reportStatementHas, csvHas, inputsHas, roleDisabled, ruleDisabled, controlDisabled, buttonsOffered, reportHeaderSaved, inventoryGwpSet, inheritanceDropped, runCount, inventoryHistoryHas]

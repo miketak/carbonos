@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/006-runs-final-publication-and-correction.yaml (sha256 d6db999181acda2225fbb786067e5958d28eb5f772055233469c12ea43f9ba1b); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/006-runs-final-publication-and-correction.yaml (sha256 60d9ac315ebf404587b7a6943cdaf5d95ce21407c24a0a784c8b08e63f9a8fc8); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 6, "d6db999181acda2225fbb786067e5958d28eb5f772055233469c12ea43f9ba1b")
+const P = procedure("governance", 6, "60d9ac315ebf404587b7a6943cdaf5d95ce21407c24a0a784c8b08e63f9a8fc8")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 6: Runs, final, publication and correction", () => {
@@ -250,7 +250,7 @@ test.describe("Procedure 6: Runs, final, publication and correction", () => {
     await test.step("6.E1.7", async () => {
       const s = P.step("6.E1.7")
       const out = await s.do("markFinal", {"organization":"Adansi Foods Ltd","inventory":"FY2025","run":5})
-      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.run.self-signed","with":{"run":"5","submitter":"Kofi Mensah","checker":"Ama Owusu"}},"why":"Mark as final on Run 005 is disabled with \"You submitted this run; another reviewer or owner signs it off.\"; through the API the refusal names Ama as someone who can"}])
+      await s.expect(out, [{"outcome":"ruleDisabled","args":{"button":"Mark as final","title":"You submitted this run; another reviewer or owner signs it off.","rule":"ghg.run.self-signed","with":{"run":"5","submitter":"Kofi Mensah","checker":"Ama Owusu"}},"why":"the screen withholds the sign-off from the run's submitter while Ama could sign; the API refusal names her"}])
     })
     await test.step("6.E1.8", async () => {
       const s = P.step("6.E1.8")
