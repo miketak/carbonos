@@ -57,6 +57,7 @@ const ruleNames: Record<string, string> = {
   scopeCategory: 'The scope and the category agree',
   sourceForValue: 'No value without a source',
   approvalAttributable: 'Approval is attributable',
+  caveat: 'A caveated row publishes unapproved',
 }
 
 const PAGE_SIZE = 50

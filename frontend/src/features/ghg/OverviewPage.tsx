@@ -15,6 +15,7 @@ import { TopFacilities } from './components/TopFacilities'
 import { roleShortLabels } from './format'
 import {
   useActivityPageQuery,
+  useEmissionFactorsQuery,
   useFacilitiesQuery,
   useInventoriesQuery,
   useOrganizationQuery,
@@ -32,9 +33,16 @@ export function OverviewPage() {
   const organization = useOrganizationQuery(organizationId).data
   const facilitiesQuery = useFacilitiesQuery(organizationId)
   const activitiesQuery = useActivityPageQuery(organizationId, { size: 1 })
+  // ECO-23: the checklist asks whether any factor exists, so one row and the page total is enough
+  const factorsQuery = useEmissionFactorsQuery(organizationId, { size: 1 })
   const inventoriesQuery = useInventoriesQuery(organizationId)
 
-  if (facilitiesQuery.isPending || activitiesQuery.isPending || inventoriesQuery.isPending) {
+  if (
+    facilitiesQuery.isPending ||
+    activitiesQuery.isPending ||
+    factorsQuery.isPending ||
+    inventoriesQuery.isPending
+  ) {
     return (
       <div aria-label="Loading overview" className="flex flex-col gap-4">
         <Skeleton className="h-9 w-64" />
@@ -45,6 +53,7 @@ export function OverviewPage() {
 
   const facilities = facilitiesQuery.data ?? []
   const activityCount = activitiesQuery.data?.total ?? 0
+  const factorCount = factorsQuery.data?.total ?? 0
   const counts = activitiesQuery.data?.counts
   const inventories = inventoriesQuery.data ?? []
   // the headline inventory: prefer one with a designated final run, else the newest
@@ -108,6 +117,7 @@ export function OverviewPage() {
 
       <SetupChecklist
         facilityCount={facilities.length}
+        factorCount={factorCount}
         activityCount={activityCount}
         inventories={inventories}
       />
@@ -135,10 +145,12 @@ function roleLine(organization: Organization): string | undefined {
 
 function SetupChecklist({
   facilityCount,
+  factorCount,
   activityCount,
   inventories,
 }: {
   facilityCount: number
+  factorCount: number
   activityCount: number
   inventories: Inventory[]
 }) {
@@ -150,6 +162,15 @@ function SetupChecklist({
       done: facilityCount > 0,
       to: 'facilities',
       cta: 'Add facilities',
+    },
+    {
+      // spec 02.10 (decided 2026-10-05, ECO-23): a baseline is chosen, not inherited, so the prompt is here
+      title: 'Import the factor packs, or enter your own factors',
+      detail:
+        'The published editions this organization reports with. One import of each gives the DESNZ and Ghana rows; a supplier factor is entered by hand.',
+      done: factorCount > 0,
+      to: 'factors',
+      cta: 'Open emission factors',
     },
     {
       title: 'Record activity data',

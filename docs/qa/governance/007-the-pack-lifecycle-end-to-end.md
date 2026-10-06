@@ -44,6 +44,14 @@
 | 2 | On `ghana-2027-gov`, click **Edit** on `GHANA:grid:GHA:2024`, change its code to `grid2024`, its unit to `widgets`, its data year to empty and click **Save row**. | **Validation** lists 3 findings on the row: "The code names the publication and the row", "The unit is one the registry knows", "The provenance is complete": three findings on the row: the code needs two or more colon-separated segments, widgets is not a registered unit, and the provenance is missing the data year. |  |  |
 | 3 | On `ghana-2027-gov`, click **Edit** on `grid2024`, change its code to `GHANA:grid:GHA:2024`, its unit to `kWh`, its data year to 2024 and click **Save row**. | **Validation** reads "Every rule passes". |  |  |
 
+### A3. A caveated row publishes unapproved
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Open `ghana-2027-gov`. | On `ghana-2027-gov`, `GHANA:td-losses` reads not approved: the derived losses row arrived from ghana with its caveat and unapproved; its Edit dialog shows the Caveat field filled: "Derived, not published: approve it after checking the year's loss rate with the Energy Commission statistics, or replace it with the utility's figure.". |  |  |
+| 2 | On `ghana-2027-gov`, click **Edit** on `GHANA:td-losses`, change tick **Approved for use in a calculation** and click **Save row**. | **Validation** lists 1 findings on the row: "A caveated row publishes unapproved": one finding on the row: "'Grid electricity T&D losses, Ghana (derived)' carries a caveat, so it publishes unapproved", then the caveat itself; a caveat is the publisher's condition on using the value, and publication does not lift it (spec 02.5 rule 10). |  |  |
+| 3 | On `ghana-2027-gov`, click **Edit** on `GHANA:td-losses`, change untick **Approved for use in a calculation** and click **Save row**. | **Validation** reads "Every rule passes". |  |  |
+
 ## B. Publication
 
 ### B1. The curator cannot publish

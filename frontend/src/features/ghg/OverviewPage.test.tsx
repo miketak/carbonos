@@ -13,12 +13,14 @@ vi.mock('../auth/api', () => ({
 
 import {
   getOrganization,
+  listEmissionFactors,
   listOrganizationEvents,
   searchActivities,
   listFacilities,
   listInventories,
   listRuns,
 } from './api'
+import { factorPage } from './testApiMock'
 
 const organization: Organization = {
   id: 'org-1',
@@ -143,6 +145,9 @@ beforeEach(() => {
   vi.mocked(listInventories).mockReset()
   vi.mocked(listRuns).mockReset()
   vi.mocked(getOrganization).mockResolvedValue(organization)
+  // most pages have their factors; the fresh-organization test says otherwise
+  vi.mocked(listEmissionFactors).mockReset()
+  vi.mocked(listEmissionFactors).mockResolvedValue({ ...factorPage([]), total: 1935 })
 })
 
 test('walks a new organization from facts to a final inventory', async () => {
@@ -163,6 +168,30 @@ test('walks a new organization from facts to a final inventory', async () => {
   expect(screen.getByRole('link', { name: /add facilities/i })).toHaveAttribute(
     'href',
     '/app/ghg/org-1/facilities',
+  )
+  // only the next incomplete step gets a call to action
+  expect(screen.queryByRole('link', { name: /create inventory/i })).not.toBeInTheDocument()
+})
+
+test('after the facilities, the checklist asks for the factor packs (spec 02.10, ECO-23)', async () => {
+  vi.mocked(listFacilities).mockResolvedValue([facility])
+  vi.mocked(listEmissionFactors).mockResolvedValue(factorPage([]))
+  vi.mocked(searchActivities).mockResolvedValue({
+    items: [],
+    page: 0,
+    size: 1,
+    total: 0,
+    counts: { total: 0, ready: 0, readyWithDocument: 0, needsAttention: 0, drafts: 0 },
+  })
+  vi.mocked(listInventories).mockResolvedValue([])
+  renderOverviewPage()
+
+  expect(
+    await screen.findByText('Import the factor packs, or enter your own factors'),
+  ).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /open emission factors/i })).toHaveAttribute(
+    'href',
+    '/app/ghg/org-1/factors',
   )
   // only the next incomplete step gets a call to action
   expect(screen.queryByRole('link', { name: /create inventory/i })).not.toBeInTheDocument()

@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { Chip } from '../../components/Chip'
-import { InputField, SelectField } from '../../components/Field'
+import { InputField, SelectField, TextAreaField } from '../../components/Field'
 import { FilterRow, FilterSelect, SearchField } from '../../components/FilterRow'
 import { Modal } from '../../components/Modal'
 import { PageHeader } from '../../components/PageHeader'
@@ -261,7 +261,9 @@ function FactorTable({
               ) : (
                 provenance(factor)
               )}
-              {factor.note && <span className="block">{factor.note}</span>}
+              {factor.note && factor.note !== factor.caveat && (
+                <span className="block">{factor.note}</span>
+              )}
               {/* spec 02.6: a lineage holds one version per vintage, so the chain says which applies */}
               {factor.versions.length > 1 && (
                 <details className="mt-1">
@@ -306,9 +308,18 @@ function FactorTable({
                         {factor.selfApproved ? ' (self-approved: nobody else could check it)' : ''}
                       </span>
                     )}
+                    {factor.approvalNote && (
+                      <span className="text-[13px] text-ink-muted">
+                        Checked: {factor.approvalNote}
+                      </span>
+                    )}
                   </>
                 ) : (
                   <StatusDot tone="warning">Not approved</StatusDot>
+                )}
+                {/* spec 02.5 rule 10: the publisher's condition is the reason, until a check lifts it */}
+                {factor.caveat && (
+                  <span className="text-[13px] text-warning">Caveat: {factor.caveat}</span>
                 )}
                 {/* spec 02.6: an import leaves this row alone and reports it as a conflict */}
                 {factor.locallyEdited && (
@@ -389,6 +400,8 @@ export function EmissionFactorsPage() {
   const [adding, setAdding] = useState(false)
   // spec 02.6: the factor whose validity end is being set, if any
   const [retiring, setRetiring] = useState<EmissionFactor | null>(null)
+  // spec 02.5 rule 10: the caveated factor whose approval needs a check note, if any
+  const [approving, setApproving] = useState<EmissionFactor | null>(null)
   // spec 02.8: the pack whose factors are open for reading, if any
   const [viewing, setViewing] = useState<FactorPack | null>(null)
   // FU-03: an imported edition can be thousands of rows, so the search and the filters are
@@ -424,11 +437,16 @@ export function EmissionFactorsPage() {
   }
   const myRole = organizationQuery.data?.myRole ?? null
 
-  const onApprove = (factor: EmissionFactor, approved: boolean) =>
+  const onApprove = (factor: EmissionFactor, approved: boolean) => {
+    if (approved && factor.caveat) {
+      setApproving(factor)
+      return
+    }
     approve.mutate(
       { id: factor.id, approved },
       { onError: (error) => toast(refusalMessage(error, myRole), 'error') },
     )
+  }
   const onDelete = (factor: EmissionFactor) =>
     remove.mutate(factor.id, {
       onSuccess: () => toast(`${factor.name} deleted.`),
@@ -676,6 +694,19 @@ export function EmissionFactorsPage() {
         />
       )}
 
+      {approving && (
+        <ApproveCaveatedFactorModal
+          organizationId={organizationId}
+          factor={approving}
+          myRole={myRole}
+          onClose={() => setApproving(null)}
+          onSaved={() => {
+            setApproving(null)
+            toast(`${approving.name} approved.`)
+          }}
+        />
+      )}
+
       {viewing && (
         <PackRowsDrawer
           organizationId={organizationId}
@@ -692,6 +723,77 @@ export function EmissionFactorsPage() {
  * entered by hand or delivered by a pack, since the runs that used it keep it as
  * their record. The rest of the factor goes back to the endpoint unchanged.
  */
+/**
+ * A caveated factor is approved with the note of what was checked (spec 02.5
+ * rule 10, spec 02.11): the caveat is the publisher's condition, the note how
+ * it was met, and the report prints both beside the factor.
+ */
+function ApproveCaveatedFactorModal({
+  organizationId,
+  factor,
+  myRole,
+  onClose,
+  onSaved,
+}: {
+  organizationId: string
+  factor: EmissionFactor
+  myRole: Organization['myRole']
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const approve = useSetFactorApproval(organizationId)
+  const [note, setNote] = useState('')
+  const [missing, setMissing] = useState(false)
+  const errors = fieldErrors(approve.error)
+  // the dialog shows one field: a refusal about anything else must not vanish
+  const generalError =
+    approve.isError && !errors?.note ? refusalMessage(approve.error, myRole) : undefined
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    if (note.trim() === '') {
+      setMissing(true)
+      return
+    }
+    approve.mutate({ id: factor.id, approved: true, note: note.trim() }, { onSuccess: onSaved })
+  }
+
+  return (
+    <Modal title={`Approve ${factor.name}`} onClose={onClose}>
+      <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
+        <p className="text-sm text-ink-muted">
+          The publisher attached a caveat to this value. Say what you checked before approving it;
+          the note prints beside the caveat in the report's factor table.
+        </p>
+        <p className="text-sm text-warning">Caveat: {factor.caveat}</p>
+        <TextAreaField
+          label="Check note"
+          value={note}
+          onChange={(event) => {
+            setMissing(false)
+            setNote(event.target.value)
+          }}
+          error={missing ? 'Say what you checked before approving this factor.' : errors?.note}
+          required
+        />
+        {generalError && (
+          <p role="alert" className="text-sm font-medium text-danger">
+            {generalError}
+          </p>
+        )}
+        <div className="mt-2 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" busy={approve.isPending}>
+            Approve factor
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 function RetireFactorModal({
   organizationId,
   factor,

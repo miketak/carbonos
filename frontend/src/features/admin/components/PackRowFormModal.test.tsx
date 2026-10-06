@@ -86,6 +86,7 @@ const existing: FactorPackRow = {
   co2eOnly: false,
   approved: true,
   notes: null,
+  caveat: null,
   reportingBasis: 'SCOPES',
 }
 

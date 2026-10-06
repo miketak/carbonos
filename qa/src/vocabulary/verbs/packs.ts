@@ -67,7 +67,11 @@ export const cloneEdition = defineVerb({
   narrate: (a) => `Click **${S.pack.button.clone}** on \`${a.from}\`, type the identifier \`${a.editionId}\`${a.appliesFrom ? `, applies from ${a.appliesFrom}` : ''} and click **${S.pack.button.createDraft}**.`,
 })
 
-/** One row of a draft, corrected: its value, its code, its unit or its data year (an empty data year clears it). */
+/**
+ * One row of a draft, corrected: its value, its code, its unit, its data year
+ * (an empty data year clears it), its caveat (an empty caveat clears it) or
+ * its approved tick (spec 02.5 rule 10).
+ */
 export const editPackRow = defineVerb({
   name: 'editPackRow',
   args: z
@@ -78,6 +82,8 @@ export const editPackRow = defineVerb({
       newCode: z.string().optional(),
       unit: z.string().optional(),
       dataYear: z.number().int().nullable().optional(),
+      caveat: z.string().nullable().optional(),
+      approved: z.boolean().optional(),
     })
     .strict(),
   api: async (ctx, a) => {
@@ -87,6 +93,8 @@ export const editPackRow = defineVerb({
     if (a.newCode !== undefined) changes.code = a.newCode
     if (a.unit !== undefined) changes.unit = a.unit
     if (a.dataYear !== undefined) changes.dataYear = a.dataYear
+    if (a.caveat !== undefined) changes.caveat = a.caveat
+    if (a.approved !== undefined) changes.approved = a.approved
     return ctx.session().put(`/api/admin/factor-packs/editions/${encodeURIComponent(a.edition)}/rows/${row.id}`, rowRequest(row, changes))
   },
   ui: (a) => {
@@ -98,16 +106,20 @@ export const editPackRow = defineVerb({
       ...(a.unit !== undefined ? [{ op: 'fill', label: S.pack.field.unit, value: a.unit, within: d } as const] : []),
       ...(a.kgCo2ePerUnit !== undefined ? [{ op: 'fill', label: S.pack.field.kgCo2e, value: String(a.kgCo2ePerUnit), within: d } as const] : []),
       ...(a.dataYear !== undefined ? [{ op: 'fill', label: S.pack.field.dataYear, value: a.dataYear === null ? '' : String(a.dataYear), within: d } as const] : []),
+      ...(a.caveat !== undefined ? [{ op: 'fill', label: S.pack.field.caveat, value: a.caveat ?? '', within: d } as const] : []),
+      ...(a.approved !== undefined ? [{ op: 'tick', label: S.pack.field.approvedForRuns, on: a.approved, within: d } as const] : []),
       { op: 'click', button: S.pack.button.saveRow, within: d },
     ]
   },
-  postconditions: (a) => [{ outcome: 'packRowReads', args: { edition: a.edition, code: a.newCode ?? a.code, kgCo2ePerUnit: a.kgCo2ePerUnit, unit: a.unit, dataYear: a.dataYear } }],
+  postconditions: (a) => [{ outcome: 'packRowReads', args: { edition: a.edition, code: a.newCode ?? a.code, kgCo2ePerUnit: a.kgCo2ePerUnit, unit: a.unit, dataYear: a.dataYear, approved: a.approved } }],
   narrate: (a) => {
     const changes: string[] = []
     if (a.kgCo2ePerUnit !== undefined) changes.push(`its ${S.org.field.kgCo2ePerUnit} to ${a.kgCo2ePerUnit}`)
     if (a.newCode !== undefined) changes.push(`its code to \`${a.newCode}\``)
     if (a.unit !== undefined) changes.push(`its unit to \`${a.unit}\``)
     if (a.dataYear !== undefined) changes.push(a.dataYear === null ? 'its data year to empty' : `its data year to ${a.dataYear}`)
+    if (a.caveat !== undefined) changes.push(a.caveat === null || a.caveat === '' ? `its ${S.pack.field.caveat} to empty` : `its ${S.pack.field.caveat} to "${a.caveat}"`)
+    if (a.approved !== undefined) changes.push(`${a.approved ? 'tick' : 'untick'} **${S.pack.field.approvedForRuns}**`)
     return `On \`${a.edition}\`, click **${S.pack.button.edit}** on \`${a.code}\`, change ${changes.join(', ')} and click **${S.pack.button.saveRow}**.`
   },
 })

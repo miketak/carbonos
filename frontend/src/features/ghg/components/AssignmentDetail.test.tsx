@@ -171,6 +171,8 @@ const dieselFactor: EmissionFactor = {
   approvedBy: null,
   approvedAt: null,
   selfApproved: false,
+  caveat: null,
+  approvalNote: null,
   pack: null,
   packs: [],
   packCode: null,

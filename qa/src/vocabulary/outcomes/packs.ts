@@ -73,23 +73,31 @@ export const editionAbsent = defineOutcome({
 
 export const packRowReads = defineOutcome({
   name: 'packRowReads',
-  args: z.object({ edition: editionArg, code: z.string(), kgCo2ePerUnit: z.number().optional(), unit: z.string().optional(), dataYear: z.number().int().nullable().optional() }).strict(),
+  args: z
+    .object({ edition: editionArg, code: z.string(), kgCo2ePerUnit: z.number().optional(), unit: z.string().optional(), dataYear: z.number().int().nullable().optional(), approved: z.boolean().optional() })
+    .strict(),
   api: async (ctx, a) => {
     const row = await packRow(await ctx.admin(), a.edition, a.code)
     if (a.kgCo2ePerUnit !== undefined && Number(row.kgCo2ePerUnit) !== a.kgCo2ePerUnit) return fail(`${a.code} reads ${row.kgCo2ePerUnit}`)
     if (a.unit !== undefined && row.unit !== a.unit) return fail(`${a.code} is per ${row.unit}`)
     if (a.dataYear !== undefined && (row.dataYear ?? null) !== a.dataYear) return fail(`${a.code} data year is ${row.dataYear}`)
+    if (a.approved !== undefined && row.approved !== a.approved) return fail(`${a.code} is ${row.approved ? 'approved' : 'not approved'}`)
     return pass(`${row.kgCo2ePerUnit} kg CO2e per ${row.unit}`)
   },
   ui: (a) => [
     { check: 'atEdition', edition: a.edition },
-    { check: 'rowHas', text: a.code, cells: [...(a.kgCo2ePerUnit !== undefined ? [String(a.kgCo2ePerUnit)] : []), ...(a.unit ? [a.unit] : [])] },
+    {
+      check: 'rowHas',
+      text: a.code,
+      cells: [...(a.kgCo2ePerUnit !== undefined ? [String(a.kgCo2ePerUnit)] : []), ...(a.unit ? [a.unit] : []), ...(a.approved !== undefined ? [a.approved ? 'Yes' : 'No'] : [])],
+    },
   ],
   narrate: (a) => {
     const parts = [`On \`${a.edition}\`, \`${a.code}\` reads`]
     if (a.kgCo2ePerUnit !== undefined) parts.push(`${a.kgCo2ePerUnit}`)
     if (a.unit) parts.push(`per ${a.unit}`)
     if (a.dataYear !== undefined) parts.push(a.dataYear === null ? 'with no data year' : `with the data year ${a.dataYear}`)
+    if (a.approved !== undefined) parts.push(a.approved ? 'approved' : 'not approved')
     return parts.join(' ') + '.'
   },
 })
