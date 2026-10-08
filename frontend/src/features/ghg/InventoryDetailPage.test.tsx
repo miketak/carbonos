@@ -1584,6 +1584,7 @@ test('the activity view filters by scope, category, emission source and lease (s
       allowedCategories: ['PURCHASED_ELECTRICITY'],
       origin: 'REGISTER',
       createdAt: '2026-08-01T00:00:00Z',
+      recordCount: 0,
     },
   ])
   renderPage()

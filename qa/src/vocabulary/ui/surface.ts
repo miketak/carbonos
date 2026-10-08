@@ -143,6 +143,7 @@ export const S = {
       retireFactor: 'Retire factor',
       remove: 'Remove',
       edit: 'Edit',
+      save: 'Save',
     },
     field: {
       name: 'Name',
@@ -170,6 +171,7 @@ export const S = {
       fuel: 'Fuel or material (optional)',
       meterOrSupplier: 'Meter or supplier (optional)',
       contractorOperated: 'Operated by a contractor (its emissions default to scope 3)',
+      reclassifyReason: 'Reason for the change of kind or operator',
       code: 'Code',
       label: 'Label',
       oneUnitEquals: 'One unit equals',
@@ -199,6 +201,7 @@ export const S = {
       editEntity: 'Edit legal entity',
       addFacility: 'Add facility',
       addFactor: 'Add an emission factor',
+      editEmissionSource: 'Edit emission source',
     },
     option: {
       memberRole: {

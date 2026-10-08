@@ -680,6 +680,13 @@
       "field": null
     },
     {
+      "id": "ghg.stream.reclassify-reason-required",
+      "module": "ghg",
+      "status": 422,
+      "message": "'{name}' has activity records. Say in at least 10 characters why its kind or operator changes; the records already filed keep their scope and category.",
+      "field": "reclassifyReason"
+    },
+    {
       "id": "ghg.stream.similar-reason-too-short",
       "module": "ghg",
       "status": 422,
@@ -848,5 +855,5 @@
       "field": null
     }
   ],
-  "sha256": "0d58da1e8fecc2537afe79d6182901bfd8c7b28d02a5aed614d52fedba4024e4"
+  "sha256": "116e6a44900a8d6f474e0ae07efad5e043081ba2bf4d0282296b7c375fb00ffa"
 }

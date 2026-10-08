@@ -193,6 +193,32 @@ sections:
           - expect:
               - historyCount: { organization: "${org}", action: STREAM_ADDED, count: 3 }
                 why: a refused source creates nothing, and the record it came with is not written either
+      - id: D5
+        title: An edit keeps the source and writes what changed
+        steps:
+          - do: { addStream: { organization: "${org}", facility: Tema Depot, name: Yard genset, kind: STATIONARY_COMBUSTION, fuel: Diesel } }
+          - do: { editStream: { organization: "${org}", facility: Tema Depot, name: Yard genset, newName: Yard standby genset, meterOrSupplier: Yard tank dip } }
+            expect:
+              - streamListed: { organization: "${org}", facility: Tema Depot, name: Yard standby genset, kind: STATIONARY_COMBUSTION }
+              - historyHas: { organization: "${org}", action: STREAM_EDITED, detail: "Yard standby genset at Tema Depot: name Yard genset → Yard standby genset, meter or supplier none → Yard tank dip", actor: ama }
+                why: the source is what the evidence pack keys on, so a rename or a changed meter is written with the old and new values
+          - do: { editStream: { organization: "${org}", facility: Tema Depot, name: Yard standby genset } }
+            expect:
+              - historyCount: { organization: "${org}", action: STREAM_EDITED, count: 1 }
+                why: a save that changes nothing is not an act
+          - do: { editStream: { organization: "${org}", facility: Tema Depot, name: Yard standby genset, kind: MOBILE_COMBUSTION } }
+            expect:
+              - streamListed: { organization: "${org}", facility: Tema Depot, name: Yard standby genset, kind: MOBILE_COMBUSTION }
+              - historyHas: { organization: "${org}", action: STREAM_EDITED, detail: "Yard standby genset at Tema Depot: kind stationary combustion → mobile combustion" }
+                why: no record names the source yet, so the kind changes without a reason; procedure 3 case L1 asks for one once records exist
+          - do: { editStream: { organization: "${org}", facility: Tema Depot, name: Yard standby genset, newName: delivery fleet } }
+            expect:
+              - refused: { rule: ghg.stream.name-duplicate, with: { facility: Tema Depot, name: delivery fleet } }
+                why: the check skips the source itself but not its neighbours, and ignores case
+          - do: { removeStream: { organization: "${org}", facility: Tema Depot, name: Yard standby genset } }
+            expect:
+              - streamAbsent: { organization: "${org}", facility: Tema Depot, name: Yard standby genset }
+                why: the depot goes into procedure 3 with the one source it had
 
   - id: E
     title: Units and densities
@@ -308,8 +334,8 @@ sections:
           - do: { signOut: { user: yaw } }
 
 docs:
-  version: 4
-  estimatedMinutes: 50
+  version: 5
+  estimatedMinutes: 55
   objective: >-
     Confirm that an owner records the organization's members, legal entities,
     sites, source streams, units, densities and emission factors; that each
@@ -330,9 +356,9 @@ docs:
     a joint venture and a franchise (the mining pack records them); a facility
     deleted with records, which procedure 3 covers; a facility inside a frozen
     boundary, which procedure 4 covers; reading a pack without importing it,
-    which the mining pack covers in detail; a history row for editing a source
-    stream (only adding and removing one is recorded); the switcher in the
-    header and the way back to a changed name while it is typed (A3).
+    which the mining pack covers in detail; a change of kind or operator on a
+    source with records, which procedure 3 covers; the switcher in the header
+    and the way back to a changed name while it is typed (A3).
   changeNotes:
     - version: 2
       date: "2026-09-29"
@@ -363,3 +389,13 @@ docs:
         name's notice and the disabled fields of the reporting company's form
         are described in the drivers' projections or listed under the
         non-goals.
+    - version: 5
+      date: "2026-10-07"
+      text: >-
+        New case D5: **Edit** on a source's row opens the Edit emission
+        source page (spec 04.3 amended, spec 04.10); a rename and a changed
+        meter write an "Emission source edited" row with the old and new
+        values, an unchanged save writes none, a kind change on a source
+        without records needs no reason, and the duplicate check skips the
+        source itself. The reason a reclassification needs once records
+        exist is procedure 3's case L1.

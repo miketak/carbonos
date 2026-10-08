@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/002-the-organization.yaml (sha256 d3aef3691ca08df60988c918e35966e9577abc90d1587e038ee0656d6c71043a); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/002-the-organization.yaml (sha256 34251348982e0b03d84e4accf0e1864f6f7def1a310a1b594fc8576645011cef); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 2, "d3aef3691ca08df60988c918e35966e9577abc90d1587e038ee0656d6c71043a")
+const P = procedure("governance", 2, "34251348982e0b03d84e4accf0e1864f6f7def1a310a1b594fc8576645011cef")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 2: The organization", () => {
@@ -264,6 +264,39 @@ test.describe("Procedure 2: The organization", () => {
     await test.step("2.D4.3", async () => {
       const s = P.step("2.D4.3")
       await s.expect(undefined, [{"outcome":"historyCount","args":{"organization":"Adansi Foods Ltd","action":"STREAM_ADDED","count":3},"why":"a refused source creates nothing, and the record it came with is not written either"}])
+    })
+  })
+
+  test("D5. An edit keeps the source and writes what changed", async () => {
+    await test.step("2.D5.1", async () => {
+      const s = P.step("2.D5.1")
+      const out = await s.do("addStream", {"organization":"Adansi Foods Ltd","facility":"Tema Depot","name":"Yard genset","kind":"STATIONARY_COMBUSTION","fuel":"Diesel"})
+      await s.done()
+    })
+    await test.step("2.D5.2", async () => {
+      const s = P.step("2.D5.2")
+      const out = await s.do("editStream", {"organization":"Adansi Foods Ltd","facility":"Tema Depot","name":"Yard genset","newName":"Yard standby genset","meterOrSupplier":"Yard tank dip"})
+      await s.expect(out, [{"outcome":"streamListed","args":{"organization":"Adansi Foods Ltd","facility":"Tema Depot","name":"Yard standby genset","kind":"STATIONARY_COMBUSTION"}},{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"STREAM_EDITED","detail":"Yard standby genset at Tema Depot: name Yard genset → Yard standby genset, meter or supplier none → Yard tank dip","actor":"ama"},"why":"the source is what the evidence pack keys on, so a rename or a changed meter is written with the old and new values"}])
+    })
+    await test.step("2.D5.3", async () => {
+      const s = P.step("2.D5.3")
+      const out = await s.do("editStream", {"organization":"Adansi Foods Ltd","facility":"Tema Depot","name":"Yard standby genset"})
+      await s.expect(out, [{"outcome":"historyCount","args":{"organization":"Adansi Foods Ltd","action":"STREAM_EDITED","count":1},"why":"a save that changes nothing is not an act"}])
+    })
+    await test.step("2.D5.4", async () => {
+      const s = P.step("2.D5.4")
+      const out = await s.do("editStream", {"organization":"Adansi Foods Ltd","facility":"Tema Depot","name":"Yard standby genset","kind":"MOBILE_COMBUSTION"})
+      await s.expect(out, [{"outcome":"streamListed","args":{"organization":"Adansi Foods Ltd","facility":"Tema Depot","name":"Yard standby genset","kind":"MOBILE_COMBUSTION"}},{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"STREAM_EDITED","detail":"Yard standby genset at Tema Depot: kind stationary combustion → mobile combustion"},"why":"no record names the source yet, so the kind changes without a reason; procedure 3 case L1 asks for one once records exist"}])
+    })
+    await test.step("2.D5.5", async () => {
+      const s = P.step("2.D5.5")
+      const out = await s.do("editStream", {"organization":"Adansi Foods Ltd","facility":"Tema Depot","name":"Yard standby genset","newName":"delivery fleet"})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.stream.name-duplicate","with":{"facility":"Tema Depot","name":"delivery fleet"}},"why":"the check skips the source itself but not its neighbours, and ignores case"}])
+    })
+    await test.step("2.D5.6", async () => {
+      const s = P.step("2.D5.6")
+      const out = await s.do("removeStream", {"organization":"Adansi Foods Ltd","facility":"Tema Depot","name":"Yard standby genset"})
+      await s.expect(out, [{"outcome":"streamAbsent","args":{"organization":"Adansi Foods Ltd","facility":"Tema Depot","name":"Yard standby genset"},"why":"the depot goes into procedure 3 with the one source it had"}])
     })
   })
 

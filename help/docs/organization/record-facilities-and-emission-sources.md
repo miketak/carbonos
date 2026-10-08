@@ -1,7 +1,7 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-04
-description: Record each site with its country, grid region, lease and legal entity, then register its emission sources, whose kind and operator set the scope a record defaults to.
+last_reviewed: 2026-10-07
+description: Record each site with its country, grid region, lease and legal entity, then register and edit its emission sources, whose kind and operator set the scope a record defaults to.
 role: Preparer
 minutes: 6
 screens: [step-2-emission-sources.png]
@@ -9,9 +9,9 @@ screens: [step-2-emission-sources.png]
 
 # Record facilities and emission sources
 
-A facility is a site, and an emission source is one source of emissions at it: a generator, a boiler, a haul fleet, a grid supply. A record names both. Register the sources here when you know them, or describe one on the record itself when the invoice arrives; see [Enter a record](../activity-data/enter-a-record.md#describe-a-new-emission-source-on-the-record).
+A facility is a site, and an emission source is one source of emissions at it: a generator, a boiler, a haul fleet, a grid supply. A record names both. Register the sources here, or describe one on the record when the invoice arrives; see [Enter a record](../activity-data/enter-a-record.md#describe-a-new-emission-source-on-the-record).
 
-<!-- sources: specs 03, 04.1, 04.3, 04.7, 04.10; QA governance 002 D; FacilitiesPage.tsx, FacilityFormPage.tsx, EmissionSourcesPage.tsx, RemoveDialog.tsx, StreamKind.java, GhgRules.java (ghg.stream.has-records), GhgService.java (deleteFacility, deleteStream, createStreamAt), StructureChanges.java (the history reasons); screen text and figures from the local walkthrough of 2026-10-04 (Gye Nyame Gold on the ECO-5 branch) -->
+<!-- sources: specs 03, 04.1, 04.3, 04.7, 04.10; QA governance 002 D, 003 L; FacilitiesPage.tsx, FacilityFormPage.tsx, EmissionSourcesPage.tsx, EmissionSourceFormPage.tsx, RemoveDialog.tsx, StreamKind.java, GhgRules.java (ghg.stream.has-records, ghg.stream.reclassify-reason-required), GhgService.java (deleteFacility, deleteStream, createStreamAt, updateStream), StructureChanges.java (the history reasons); screen text and figures from the local walkthroughs of 2026-10-04 (Gye Nyame Gold on the ECO-5 branch) and 2026-10-07 (the edit page) -->
 
 ## Before you start
 
@@ -42,21 +42,30 @@ What you see: "Nyame Pit and Plant added." and a row with the location, the type
 
 ![The Emission sources page for Nyame Pit and Plant listing Contract ore haulage, Haul fleet and Plant grid supply, each with the scope its records default to, above the Add emission source form](../assets/screens/step-2-emission-sources.png)
 
-What you see: "Haul fleet added to Nyame Pit and Plant." and a line per source with the default it gives its records: "Mobile combustion · Diesel · owned or controlled · defaults to Scope 1, Mobile combustion". A source created on the activity form carries "added during data entry" at the end of its line, so a reviewer can tell the two apart.
+What you see: "Haul fleet added to Nyame Pit and Plant." and a line per source with the default it gives its records: "Mobile combustion · Diesel · owned or controlled · defaults to Scope 1, Mobile combustion", with **Edit** and **Remove**. A source created on the activity form carries "added during data entry" at the end of its line.
+
+## Edit a source
+
+1. In the source's line, click **Edit**. The page opens under the breadcrumb **Facilities › Nyame Pit and Plant › Emission sources › Edit emission source**, with the fields filled in.
+2. Change the name, kind, fuel, meter or supplier, the contractor box, or **Note (optional)**.
+3. If records name the source and you change **Kind** or the contractor box, **Reason for the change of kind or operator** appears with the record count. Say why, in 10 to 500 characters: the kind and the operator set the scope a record defaults to, and a verifier reads the reason in the history. Filed records keep the scope, category and factor they were classified with; only new records take the new default. A short reason is refused: "'Haul fleet' has activity records. Say in at least 10 characters why its kind or operator changes; the records already filed keep their scope and category."
+4. Click **Save**. "Haul fleet updated." and the list again; **Cancel** returns without saving.
+
+A fuel change needs no reason: a hint under the field says filed records keep their factor. An edit moves no records; see [Act on several records at once](../activity-data/correct-or-remove-a-record-and-attach-evidence.md#act-on-several-records-at-once).
 
 ## What each kind defaults to
 
-The twelve kinds are Stationary combustion, Mobile combustion, Process, Fugitive, Purchased electricity, Purchased heat, steam or cooling, Waste, Transport, Business travel, Employee commuting, Purchased goods and services, and Other. Owned or controlled, the first four default to scope 1, the next two to scope 2, and the rest to the kind's own scope 3 category; a contractor-operated source defaults to scope 3 whatever its kind. The emission factor is not on the source: each inventory chooses it when the record is classified. See [What is an emission source?](what-is-an-emission-source.md).
+The twelve kinds run from Stationary combustion to Other. Owned or controlled, Stationary combustion, Mobile combustion, Process and Fugitive default to scope 1, Purchased electricity and Purchased heat, steam or cooling to scope 2, and the rest to the kind's own scope 3 category; a contractor-operated source defaults to scope 3 whatever its kind. The emission factor is not on the source: each inventory chooses it when the record is classified. See [What is an emission source?](what-is-an-emission-source.md).
 
 ## Names at one facility
 
-A facility's sources have different names. A name it already carries is refused: "'Nyame Pit and Plant' already has an emission source named 'haul fleet'." On the activity form, a name close to an existing one is answered with the existing source to choose from; here, on the register, only the exact name is checked.
+A facility's sources have different names. A name it already carries is refused, on the add form and on the edit page alike: "'Nyame Pit and Plant' already has an emission source named 'haul fleet'." On the activity form, a name close to an existing one is answered with the existing source to choose from; on the register, only the exact name is checked.
 
 ## Remove a facility or a source
 
-**Remove** on a facility asks for a **Reason** of at least 5 characters and keeps it on file as removed; it is refused while the facility has activity records or sits in an unpublished inventory's boundary. **Remove** on a source asks "Remove emission source?" and needs no reason; it is refused while records name it: "'Haul fleet' has activity records. Move them to another emission source before deleting it."
+**Remove** on a facility asks for a **Reason** of at least 5 characters and keeps it on file as removed; it is refused while the facility has records or sits in an unpublished inventory's boundary. **Remove** on a source asks "Remove emission source?" and needs no reason; it is refused while records name it: "'Haul fleet' has activity records. Move them to another emission source before deleting it."
 
-The organization's history records adding, editing and removing a facility, with the old and new values of an edit and the reason for a removal, and adding and removing a source, with "during data entry" and the reason given beside a similar name when that is how it was created; see [Read the history](edit-the-details-and-read-the-history.md#read-the-history).
+The organization's history records adding, editing and removing a facility or a source: the old and new values of an edit ("Haul fleet at Nyame Pit and Plant: kind mobile combustion → stationary combustion; reason: ..."), the reason for a removal, and how a source was created; see [Read the history](edit-the-details-and-read-the-history.md#read-the-history).
 
 ## What happens next
 

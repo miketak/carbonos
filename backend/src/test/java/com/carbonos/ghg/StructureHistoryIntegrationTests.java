@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
@@ -155,6 +156,126 @@ class StructureHistoryIntegrationTests {
 
 		// one row per act, eight acts, and the refused ones leave nothing
 		assertThat(history(orgId)).hasSize(8);
+	}
+
+	/**
+	 * Spec 04.3 (amended 2026-10-07): editing a source writes a row with the old
+	 * and new values; a change of kind or operator on a source with records needs
+	 * a reason of at least 10 characters, which the row carries; the duplicate
+	 * check skips the source itself.
+	 */
+	@Test
+	void editingASourceWritesARowAndReclassifyingOneWithRecordsNeedsAReason() throws Exception {
+		var orgId = createOrganization("Adansi Sources plc");
+		String entityId = JsonPath.read(body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/entities")
+			.with(asOwner()).with(csrf()).contentType("application/json").content(CAMP_SERVICES.formatted(100, 100)))
+			.andExpect(status().isCreated())), "$.id");
+		String facilityId = JsonPath.read(body(mvc.perform(post("/api/ghg/organizations/" + orgId + "/facilities")
+			.with(asOwner()).with(csrf()).contentType("application/json")
+			.content(CAMP.formatted("Nkran", entityId))).andExpect(status().isCreated())), "$.id");
+		String streamId = JsonPath.read(body(mvc.perform(post("/api/ghg/facilities/" + facilityId + "/streams")
+			.with(asOwner()).with(csrf()).contentType("application/json").content("""
+					{"name": "Camp genset", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel"}"""))
+			.andExpect(status().isCreated())), "$.id");
+		mvc.perform(post("/api/ghg/facilities/" + facilityId + "/streams").with(asOwner()).with(csrf())
+			.contentType("application/json").content("""
+					{"name": "Camp kitchen LPG", "kind": "STATIONARY_COMBUSTION", "fuel": "LPG"}"""))
+			.andExpect(status().isCreated());
+
+		// a rename and a meter: no records yet, so no reason is asked; the row names the fields
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "Camp genset 1", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel",
+					 "meterOrSupplier": "Tank dip, genset 1", "contractorOperated": false}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("Camp genset 1"))
+			.andExpect(jsonPath("$.recordCount").value(0));
+		assertThat(rows(orgId, "STREAM_EDITED")).singleElement()
+			.extracting(row -> row.get("reason"))
+			.isEqualTo("Camp genset 1 at Nkran camp: name Camp genset → Camp genset 1, "
+					+ "meter or supplier none → Tank dip, genset 1");
+
+		// the same facts again, and the source's own name in another case: not an act, not a duplicate
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "camp genset 1", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel",
+					 "meterOrSupplier": "Tank dip, genset 1", "contractorOperated": false}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("camp genset 1"));
+		assertThat(rows(orgId, "STREAM_EDITED")).hasSize(2);
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "Camp genset 1", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel",
+					 "meterOrSupplier": "Tank dip, genset 1", "contractorOperated": false}"""))
+			.andExpect(status().isOk());
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "Camp genset 1", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel",
+					 "meterOrSupplier": "Tank dip, genset 1", "contractorOperated": false}"""))
+			.andExpect(status().isOk());
+		assertThat(rows(orgId, "STREAM_EDITED")).hasSize(3);
+		// another source's name is still refused
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "camp kitchen lpg", "kind": "STATIONARY_COMBUSTION", "contractorOperated": false}"""))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.name-duplicate"));
+
+		// a change of kind without records needs no reason
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "Camp genset 1", "kind": "MOBILE_COMBUSTION", "fuel": "Diesel",
+					 "meterOrSupplier": "Tank dip, genset 1", "contractorOperated": false}"""))
+			.andExpect(status().isOk());
+		assertThat(rows(orgId, "STREAM_EDITED").getFirst().get("reason"))
+			.isEqualTo("Camp genset 1 at Nkran camp: kind stationary combustion → mobile combustion");
+
+		// a record names the source: the kind and the operator now need a reason
+		mvc.perform(post("/api/ghg/organizations/" + orgId + "/activities").with(asOwner()).with(csrf())
+			.contentType("application/json").content("""
+					{"facilityId": "%s", "streamId": "%s", "activityType": "Diesel consumption", "quantity": 900,
+					 "unit": "litre", "periodStart": "2025-06-01", "periodEnd": "2025-06-30", "dataQuality": "MEASURED"}"""
+				.formatted(facilityId, streamId)))
+			.andExpect(status().isCreated());
+		mvc.perform(get("/api/ghg/facilities/" + facilityId + "/streams").with(asOwner()))
+			.andExpect(jsonPath("$[?(@.name == 'Camp genset 1')].recordCount").value(1));
+		var reclassify = """
+				{"name": "Camp genset 1", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel",
+				 "meterOrSupplier": "Tank dip, genset 1", "contractorOperated": false%s}""";
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content(reclassify.formatted("")))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.reclassify-reason-required"))
+			.andExpect(jsonPath("$.errors.reclassifyReason").value("'Camp genset 1' has activity records. Say in at "
+					+ "least 10 characters why its kind or operator changes; the records already filed keep their "
+					+ "scope and category."));
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content(reclassify.formatted(", \"reclassifyReason\": \"moved\"")))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.rule").value("ghg.stream.reclassify-reason-required"));
+		var count = rows(orgId, "STREAM_EDITED").size();
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content(reclassify.formatted(", \"reclassifyReason\": \"unit was taken off the trailer and fixed to the camp slab in March\"")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.kind").value("STATIONARY_COMBUSTION"))
+			.andExpect(jsonPath("$.recordCount").value(1));
+		assertThat(rows(orgId, "STREAM_EDITED")).hasSize(count + 1);
+		assertThat(rows(orgId, "STREAM_EDITED").getFirst().get("reason"))
+			.isEqualTo("Camp genset 1 at Nkran camp: kind mobile combustion → stationary combustion; "
+					+ "reason: unit was taken off the trailer and fixed to the camp slab in March");
+		// the record still names the source
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities").with(asOwner()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].streamName").value("Camp genset 1"));
+
+		// a fuel change on a source with records needs no reason
+		mvc.perform(put("/api/ghg/streams/" + streamId).with(asOwner()).with(csrf()).contentType("application/json")
+			.content("""
+					{"name": "Camp genset 1", "kind": "STATIONARY_COMBUSTION", "fuel": "Diesel (B7)",
+					 "meterOrSupplier": "Tank dip, genset 1", "contractorOperated": false}"""))
+			.andExpect(status().isOk());
+		assertThat(rows(orgId, "STREAM_EDITED").getFirst().get("reason"))
+			.isEqualTo("Camp genset 1 at Nkran camp: fuel Diesel → Diesel (B7)");
 	}
 
 	@Test

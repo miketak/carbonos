@@ -24,6 +24,7 @@ const gensets: SourceStream = {
   allowedCategories: ['STATIONARY_COMBUSTION'],
   origin: 'REGISTER',
   createdAt: '2026-08-01T00:00:00Z',
+  recordCount: 0,
 }
 const boiler: SourceStream = { ...gensets, id: 'str-2', name: 'Boiler LPG', fuel: 'LPG' }
 

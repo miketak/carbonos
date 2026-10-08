@@ -37,7 +37,7 @@ The **History** card at the foot of the page lists every act that touched the or
 | Member role changed | "*email*: PREPARER → REVIEWER" |
 | Member removed | "*email* removed" |
 | Legal entity added, Facility added, Emission source added | The name and its main facts; a source created on the activity form adds "during data entry", and one created beside a similar name adds the reason |
-| Legal entity edited, Facility edited | Each changed field, old → new: "*name*: economic interest 100% → 60%, legal ownership 100% → 60%" |
+| Legal entity edited, Facility edited, Emission source edited | Each changed field, old → new: "*name*: economic interest 100% → 60%, legal ownership 100% → 60%"; a source's row adds "; reason: ..." when the change of kind or operator needed one |
 | Legal entity removed, Facility removed, Emission source removed | "*name* removed: *reason*", or "*source* removed from *facility*" |
 | Factor pack adopted, Factor pack declined | The edition and the note you gave |
 | Support access assumed | The administrator's reason |

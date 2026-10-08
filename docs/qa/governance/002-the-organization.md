@@ -5,9 +5,9 @@
 
 **Covers** [spec 01.2](../../../specs/01.2-organization-membership-and-roles.md), [spec 01.4](../../../specs/01.4-role-aware-ui-and-visible-refusals.md), [spec 01.7](../../../specs/01.7-the-organization-settings-area.md), [spec 01.8](../../../specs/01.8-account-numbers-and-shared-organization-names.md), [spec 03.1](../../../specs/03.1-legal-entities-and-table-1.md), [spec 03.3](../../../specs/03.3-table-1-completeness.md), [spec 03.4](../../../specs/03.4-entity-dates-facility-attributes-and-boundary-prefill.md), [spec 04.3](../../../specs/04.3-source-streams-and-scope-choice.md), [spec 02.2](../../../specs/02.2-units-densities-and-custom-units.md), [spec 02.1](../../../specs/02.1-emission-factor-library.md), [spec 02.4](../../../specs/02.4-sector-pack-completeness.md), [spec 02.9](../../../specs/02.9-narrowing-the-catalogue-to-defra-and-ghana.md), [spec 02.10](../../../specs/02.10-retiring-the-shared-factor-library.md) and [spec 02.11](../../../specs/02.11-approval-as-a-control.md).
 
-**Estimated time:** 50 minutes.
+**Estimated time:** 55 minutes.
 
-**Procedure version:** 4 (2026-10-02). The change notes are at the foot.
+**Procedure version:** 5 (2026-10-07). The change notes are at the foot.
 
 **Run this procedure** after procedure 1. Procedures 3 to 8 rest on the organization it builds.
 
@@ -137,6 +137,17 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 | 2 | Add the record "Boiler LPG top-up" at Kumasi Plant: 400 kg, 2025-03-01 to 2025-03-31. | Refused: "'Kumasi Plant' already has an emission source named 'boiler lpg'.": the exact name is taken, so the notice offers "Use Boiler LPG" and no "anyway". |  |  |
 | 3 | Look. | **History** holds 3 stream added entries: a refused source creates nothing, and the record it came with is not written either. |  |  |
 
+### D5. An edit keeps the source and writes what changed
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | In Adansi Foods Ltd, open **Facilities**, then click **Emission sources** on the row of Tema Depot. Fill in **Source name** with `Yard genset`, set **Kind** to **Stationary combustion**, fill in **Fuel or material (optional)** with `Diesel`, then click **Add emission source**. | Yard genset is listed at Tema Depot. |  |  |
+| 2 | On Tema Depot's **Emission sources** page, click **Edit** beside Yard genset, set **Source name** to Yard standby genset, **Meter or supplier (optional)** to Yard tank dip. Click **Save**. | Yard standby genset is listed at Tema Depot with its kind, Stationary combustion. **History** holds a stream edited entry reading "Yard standby genset at Tema Depot: name Yard genset → Yard standby genset, meter or supplier none → Yard tank dip", with `you+ama@…` (the Ama alias) and the moment: the source is what the evidence pack keys on, so a rename or a changed meter is written with the old and new values. |  |  |
+| 3 | On Tema Depot's **Emission sources** page, click **Edit** beside Yard standby genset and change nothing. Click **Save**. | **History** holds 1 stream edited entry: a save that changes nothing is not an act. |  |  |
+| 4 | On Tema Depot's **Emission sources** page, click **Edit** beside Yard standby genset, set **Kind** to **Mobile combustion**. Click **Save**. | Yard standby genset is listed at Tema Depot with its kind, Mobile combustion. **History** holds a stream edited entry reading "Yard standby genset at Tema Depot: kind stationary combustion → mobile combustion": no record names the source yet, so the kind changes without a reason; procedure 3 case L1 asks for one once records exist. |  |  |
+| 5 | On Tema Depot's **Emission sources** page, click **Edit** beside Yard standby genset, set **Source name** to delivery fleet. Click **Save**. | Refused: "'Tema Depot' already has an emission source named 'delivery fleet'.": the check skips the source itself but not its neighbours, and ignores case. |  |  |
+| 6 | On Tema Depot's **Emission sources** page, click **Remove** beside Yard standby genset and confirm. | Yard standby genset is no longer listed at Tema Depot: the depot goes into procedure 3 with the one source it had. |  |  |
+
 ## E. Units and densities
 
 ### E1. A custom unit is a multiple of a registered one
@@ -214,10 +225,11 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 | Cases failed | |
 | Issues filed | |
 
-**Known non-goals:** a joint venture and a franchise (the mining pack records them); a facility deleted with records, which procedure 3 covers; a facility inside a frozen boundary, which procedure 4 covers; reading a pack without importing it, which the mining pack covers in detail; a history row for editing a source stream (only adding and removing one is recorded); the switcher in the header and the way back to a changed name while it is typed (A3).
+**Known non-goals:** a joint venture and a franchise (the mining pack records them); a facility deleted with records, which procedure 3 covers; a facility inside a frozen boundary, which procedure 4 covers; reading a pack without importing it, which the mining pack covers in detail; a change of kind or operator on a source with records, which procedure 3 covers; the switcher in the header and the way back to a changed name while it is typed (A3).
 
 ## Change notes
 
 - **Version 2, 2026-09-29.** The sidebar's "Your role" line (A1, A2) and "Reporting company" on **Legal entities** and in the facility form (B1, C1; PR #119). A1 step 7 no longer assumes the History card holds only member rows. New case D3 reads the structure rows of the history and checks that a save with no change writes none (PR #121). "Retire, not delete" is gone: F1 step 5 reads **Retire…**, and new case F2b retires a factor by setting **Valid to** (PR #119).
 - **Version 3, 2026-09-29.** Case A3 sat under the heading of section B; the heading now opens B1. B1 step 2 reads the reporting company's structure fields as disabled rather than absent (PR #126). B2 step 2 quotes the list as it reads ("from 2025-07-01"). C1 step 1: the **Facilities** list names the reporting company as such, and its counter reads "Under the company or a subsidiary" (the walkthrough fix of 2026-09-29).
 - **Version 4, 2026-10-02.** Transliterated to the QA scenario DSL. Cases F2b and F3 are now F3 and F4. The percentage range of an entity's shares is refused by the service with a named rule rather than by form validation. The rows of the history are checked by kind and count; the switcher, the typed name's notice and the disabled fields of the reporting company's form are described in the drivers' projections or listed under the non-goals.
+- **Version 5, 2026-10-07.** New case D5: **Edit** on a source's row opens the Edit emission source page (spec 04.3 amended, spec 04.10); a rename and a changed meter write an "Emission source edited" row with the old and new values, an unchanged save writes none, a kind change on a source without records needs no reason, and the duplicate check skips the source itself. The reason a reclassification needs once records exist is procedure 3's case L1.

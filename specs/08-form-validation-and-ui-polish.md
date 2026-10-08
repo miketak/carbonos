@@ -12,6 +12,7 @@
 - **Amended**: 2026-10-04, spec 04.10: the Source streams dialog becomes the
   Emission sources page of a facility
 - **Amended**: 2026-10-05, spec 04.11: the activity import becomes a page
+- **Amended**: 2026-10-07, spec 04.10: editing an emission source is a page
 
 ## Problem
 
@@ -146,7 +147,10 @@ facility's **Emission sources** is a page too since spec 04.10
 (`/app/ghg/<org>/facilities/<id>/sources`, breadcrumb **Facilities ›
 <name> › Emission sources**): a list with an add form that keeps the kind
 and the contractor flag between additions, and a confirmation modal for
-**Remove**. Still to move under the same rule: **New organization**, **Add
+**Remove**; **Edit** on a row opens the Edit emission source page
+(`.../sources/<streamId>/edit`, since 2026-10-07), the add form's fields
+prefilled with a reason field when a reclassification needs one. Still to
+move under the same rule: **New organization**, **Add
 an emission factor** and the instrument **Evidence** panel, which keep
 their dialogs for now.
 
