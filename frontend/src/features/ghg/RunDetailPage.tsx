@@ -1,3 +1,4 @@
+import { formatDate, formatDateRange, useDateFormat } from '../../lib/dates'
 import { Link, useParams } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { Banner } from '../../components/Banner'
@@ -99,6 +100,7 @@ const ghostLink = `${downloadLink} border-transparent text-ink hover:bg-surface-
  * gas, biogenic CO2, base year, methodology, exclusions, then the lines.
  */
 export function RunDetailPage() {
+  const dateFormat = useDateFormat()
   const { organizationId = '', inventoryId = '', runId = '' } = useParams()
   const reportQuery = useReportQuery(runId)
   const report = reportQuery.data
@@ -143,7 +145,7 @@ export function RunDetailPage() {
           { label: report.period.inventoryName, to: inventoryPath },
           { label: report.run.label },
         ]}
-        status={`Calculated ${formatDateTime(report.run.createdAt)}`}
+        status={`Calculated ${formatDateTime(report.run.createdAt, dateFormat)}`}
         title={
           <>
             {/* the number is visual only; the label already carries it, and the heading's name stays the label */}
@@ -163,8 +165,8 @@ export function RunDetailPage() {
         subtitle={
           <>
             {report.company.organizationName} ({accountLabel(report.company.organizationAccountNo)})
-            · {report.period.periodStart} → {report.period.periodEnd} · {report.run.activityCount}{' '}
-            line{report.run.activityCount === 1 ? '' : 's'}
+            · {formatDateRange(report.period.periodStart, report.period.periodEnd, dateFormat)} ·{' '}
+            {report.run.activityCount} line{report.run.activityCount === 1 ? '' : 's'}
           </>
         }
         actions={
@@ -181,8 +183,9 @@ export function RunDetailPage() {
       {report.run.voided && (
         <Banner tone="danger" role="alert" title="This run is voided">
           It must not be relied on. Voided by {report.run.voidedBy ?? 'unknown'}
-          {report.run.voidedAt ? ` on ${new Date(report.run.voidedAt).toLocaleString()}` : ''}:{' '}
-          {report.run.voidReason}. The figures are kept on the record as calculated.
+          {report.run.voidedAt
+            ? ` on ${formatDateTime(report.run.voidedAt, dateFormat)}`
+            : ''}: {report.run.voidReason}. The figures are kept on the record as calculated.
         </Banner>
       )}
       <ReportBody report={report} organizationId={organizationId} />
@@ -191,6 +194,7 @@ export function RunDetailPage() {
 }
 
 function ReportBody({ report, organizationId }: { report: Report; organizationId: string }) {
+  const dateFormat = useDateFormat()
   const { company, operationalBoundary, period, emissions, methodology } = report
   const undeclared = operationalBoundary.scope3CategoriesReported.filter(
     (category) => !operationalBoundary.scope3Categories.includes(category),
@@ -365,7 +369,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold">{period.inventoryName}</span>
           <span className="text-sm text-ink-muted">
-            {period.periodStart} → {period.periodEnd}
+            {formatDateRange(period.periodStart, period.periodEnd, dateFormat)}
           </span>
           <InventoryStatusBadge
             inventory={{
@@ -377,7 +381,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
         </div>
         {period.publishedAt && (
           <p className="mt-2 text-sm text-ink-muted">
-            Published {new Date(period.publishedAt).toLocaleString()}.
+            Published {formatDateTime(period.publishedAt, dateFormat)}.
           </p>
         )}
         {period.supersededById && (
@@ -452,7 +456,7 @@ function ReportBody({ report, organizationId }: { report: Report; organizationId
                         ? ` · covers ${(instrument.coveredKwh / 1000).toLocaleString()} MWh`
                         : ' · covers every kWh'}
                       {instrument.periodStart || instrument.periodEnd
-                        ? ` (${instrument.periodStart ?? 'period start'} to ${instrument.periodEnd ?? 'period end'})`
+                        ? ` (${instrument.periodStart ? formatDate(instrument.periodStart, dateFormat) : 'period start'} to ${instrument.periodEnd ? formatDate(instrument.periodEnd, dateFormat) : 'period end'})`
                         : ''}{' '}
                       · {instrument.source}
                       {instrument.meetsQualityCriteria
@@ -715,6 +719,7 @@ function BaseYearSection({
   baseYear: NonNullable<Report['baseYear']>
   path: string
 }) {
+  const dateFormat = useDateFormat()
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p>
@@ -772,7 +777,9 @@ function BaseYearSection({
                 {decision.decidedBy && (
                   <p className="text-[13px] text-ink-muted">
                     Decided by {decision.decidedBy}
-                    {decision.decidedAt ? `, ${new Date(decision.decidedAt).toLocaleString()}` : ''}
+                    {decision.decidedAt
+                      ? `, ${formatDateTime(decision.decidedAt, dateFormat)}`
+                      : ''}
                   </p>
                 )}
                 {recalculatedBase && (
@@ -996,6 +1003,7 @@ function ExclusionSummaryTable({ summary }: { summary: Report['exclusionSummary'
 
 /** Exclusions grouped by their documented reason (Chapter 9). */
 function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
+  const dateFormat = useDateFormat()
   if (exclusions.length === 0) {
     return <p className="text-sm text-ink-muted">No exclusions.</p>
   }
@@ -1026,7 +1034,7 @@ function Exclusions({ exclusions }: { exclusions: RunExclusion[] }) {
                     {row.quantity.toLocaleString()} {row.unit}
                   </Td>
                   <Td className="whitespace-nowrap text-ink-muted">
-                    {formatPeriod(row.periodStart, row.periodEnd)}
+                    {formatPeriod(row.periodStart, row.periodEnd, dateFormat)}
                   </Td>
                   <Td className="text-ink-muted">
                     {row.exclusionDetail ?? ''}
@@ -1063,6 +1071,7 @@ function person(name: string, email: string | null | undefined): string {
 }
 
 function ReportHeaderBlock({ header }: { header: Report['header'] }) {
+  const dateFormat = useDateFormat()
   // spec 05.8: who submitted the run for review and who signed it off, each an account, with the run
   const run = header.preparedRunNo ? `, run ${header.preparedRunNo}` : ''
   const rows: [string, string][] = [
@@ -1073,23 +1082,26 @@ function ReportHeaderBlock({ header }: { header: Report['header'] }) {
         .join(', '),
     ],
     ['Contact', header.contact ?? 'not recorded'],
-    ['Reporting period', `${header.periodLabel} (${header.periodStart} → ${header.periodEnd})`],
+    [
+      'Reporting period',
+      `${header.periodLabel} (${formatDateRange(header.periodStart, header.periodEnd, dateFormat)})`,
+    ],
     [
       'Prepared by',
       header.preparedBy
-        ? `${person(header.preparedBy, header.preparedByEmail)}${run}, ${new Date(header.preparedAt).toLocaleString()}${header.preparedNote ? `: ${header.preparedNote}` : ''}`
+        ? `${person(header.preparedBy, header.preparedByEmail)}${run}, ${formatDateTime(header.preparedAt, dateFormat)}${header.preparedNote ? `: ${header.preparedNote}` : ''}`
         : 'not recorded',
     ],
     [
       'Approved by',
       header.approvedBy
-        ? `${person(header.approvedBy, header.approvedByEmail)}${header.approvedAt ? `${run}, ${new Date(header.approvedAt).toLocaleDateString()}` : ''}${header.selfApproved ? '; self-approved: nobody else in the organization could check it' : ''}`
+        ? `${person(header.approvedBy, header.approvedByEmail)}${header.approvedAt ? `${run}, ${formatDate(header.approvedAt, dateFormat)}` : ''}${header.selfApproved ? '; self-approved: nobody else in the organization could check it' : ''}`
         : 'not yet approved',
     ],
     [
       'Published',
       header.publishedAt
-        ? `${new Date(header.publishedAt).toLocaleString()} by ${header.publishedBy ?? 'unknown'}`
+        ? `${formatDateTime(header.publishedAt, dateFormat)} by ${header.publishedBy ?? 'unknown'}`
         : 'not published',
     ],
     [
@@ -1099,7 +1111,7 @@ function ReportHeaderBlock({ header }: { header: Report['header'] }) {
     [
       'Final designated',
       header.finalDesignatedBy
-        ? `by ${header.finalDesignatedBy}${header.finalDesignatedAt ? ` on ${new Date(header.finalDesignatedAt).toLocaleDateString()}` : ''}${header.finalNote ? `: ${header.finalNote}` : ''}`
+        ? `by ${header.finalDesignatedBy}${header.finalDesignatedAt ? ` on ${formatDate(header.finalDesignatedAt, dateFormat)}` : ''}${header.finalNote ? `: ${header.finalNote}` : ''}`
         : 'not designated',
     ],
     [

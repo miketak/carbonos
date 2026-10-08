@@ -1,3 +1,5 @@
+import type { DateFormat } from '../../lib/dates'
+import { formatDate, formatDateRange, formatDateTime as formatInstant } from '../../lib/dates'
 import type {
   ActivityCategory,
   AuditEvent,
@@ -137,9 +139,9 @@ export const conventionLabels: Record<StructuralChangeConvention, string> = {
   WHOLE_YEAR: 'For the whole year, as the Standard recommends',
 }
 
-/** "2025-03-15" for a one-day record, else "2025-01-01 → 2025-12-31" (spec 04.2). */
-export function formatPeriod(start: string, end: string): string {
-  return start === end ? start : `${start} → ${end}`
+/** "15/03/2025" for a one-day record, else "01/01/2025 → 31/12/2025", in the reader's form (specs 04.2, 01.10). */
+export function formatPeriod(start: string, end: string, format: DateFormat): string {
+  return formatDateRange(start, end, format)
 }
 
 export const streamKindLabels: Record<StreamKind, string> = {
@@ -303,18 +305,20 @@ export function monthBounds(month: string): { from: string; to: string } {
 }
 
 /** A record's period as the register prints it: the month when it is one, the dates otherwise. */
-export function formatRecordPeriod(start: string | null, end: string | null): string {
+export function formatRecordPeriod(
+  start: string | null,
+  end: string | null,
+  format: DateFormat,
+): string {
   if (start === null || end === null) return 'No period'
   const { from, to } = monthBounds(start.slice(0, 7))
   if (start === from && end === to) return formatMonth(start.slice(0, 7))
-  return formatPeriod(start, end)
+  return formatPeriod(start, end, format)
 }
 
-/** An instant as "2026-09-11 08:11", the register's date form with the time, in the viewer's zone. */
-export function formatDateTime(iso: string): string {
-  const date = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+/** An instant as "11/09/2026 08:11", the reader's date form with the time, in the viewer's zone. */
+export function formatDateTime(iso: string, format: DateFormat): string {
+  return formatInstant(iso, format)
 }
 
 export function formatQuantity(quantity: number | null): string {
@@ -416,18 +420,22 @@ export function categoriesForScope(scope: GhgScope): typeof categories {
   return categories.filter((entry) => entry.scope === scope)
 }
 
-/** "frozen 02/09/2026, 10:14 by ama@ecoriv.test", or without the "by" for versions migrated in. */
-export function describeFreeze(version: BoundaryVersionSummary): string {
-  const when = new Date(version.frozenAt).toLocaleString()
+/** "frozen 02/09/2026 10:14 by ama@ecoriv.test", or without the "by" for versions migrated in. */
+export function describeFreeze(version: BoundaryVersionSummary, format: DateFormat): string {
+  const when = formatInstant(version.frozenAt, format)
   return version.frozenBy ? `frozen ${when} by ${version.frozenBy}` : `frozen ${when}`
 }
 
-/** "member from 2025-07-01", "member until ...", or null when the window is unbounded. */
-export function describeWindow(from: string | null, to: string | null): string | null {
-  if (!from && !to) return null
-  if (!to) return `member from ${from}`
-  if (!from) return `member until ${to}`
-  return `member from ${from} until ${to}`
+/** "member from 01/07/2025", "member until ...", or null when the window is unbounded. */
+export function describeWindow(
+  from: string | null,
+  to: string | null,
+  format: DateFormat,
+): string | null {
+  if (from && to) return `member from ${formatDate(from, format)} until ${formatDate(to, format)}`
+  if (from) return `member from ${formatDate(from, format)}`
+  if (to) return `member until ${formatDate(to, format)}`
+  return null
 }
 
 /** Every recorded act: an inventory's (spec 05.2) and an organization's (spec 01.3). */

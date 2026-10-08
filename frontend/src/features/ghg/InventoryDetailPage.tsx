@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, useDateFormat } from '../../lib/dates'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -380,6 +381,7 @@ function LaunchSection({
   inventory: Inventory
   myRole: Organization['myRole']
 }) {
+  const dateFormat = useDateFormat()
   const inventoryId = inventory.id
   const validationQuery = useValidationQuery(inventoryId)
   const runsQuery = useRunsQuery(inventoryId)
@@ -524,21 +526,23 @@ function LaunchSection({
                           run.voided ? (
                             <>
                               Voided by {run.voidedBy ?? 'unknown'}
-                              {run.voidedAt ? ` on ${new Date(run.voidedAt).toLocaleString()}` : ''}
+                              {run.voidedAt
+                                ? ` on ${formatDateTime(run.voidedAt, dateFormat)}`
+                                : ''}
                               : {run.voidReason}
                             </>
                           ) : isFinal && inventory.finalDesignatedBy ? (
                             <>
                               Final designated by {inventory.finalDesignatedBy}
                               {inventory.finalDesignatedAt
-                                ? ` on ${new Date(inventory.finalDesignatedAt).toLocaleDateString()}`
+                                ? ` on ${formatDate(inventory.finalDesignatedAt, dateFormat)}`
                                 : ''}
                             </>
                           ) : isSubmitted && submitter ? (
                             <>
                               Submitted for review by {submitter.name ?? submitter.email}
                               {inventory.signOff.submittedAt
-                                ? ` on ${new Date(inventory.signOff.submittedAt).toLocaleDateString()}`
+                                ? ` on ${formatDate(inventory.signOff.submittedAt, dateFormat)}`
                                 : ''}
                             </>
                           ) : undefined
@@ -549,7 +553,7 @@ function LaunchSection({
                       <TwoLine
                         primary={
                           <span className="font-normal">
-                            {new Date(run.createdAt).toLocaleString()}
+                            {formatDateTime(run.createdAt, dateFormat)}
                           </span>
                         }
                         secondary={`${run.activityCount} line${run.activityCount === 1 ? '' : 's'} · boundary v${run.boundaryVersionNo ?? '?'}`}
@@ -800,6 +804,7 @@ function LaunchSection({
 
 /** The recorded acts on the inventory (spec 05.2), newest first. */
 function HistoryList({ events }: { events: AuditEvent[] }) {
+  const dateFormat = useDateFormat()
   if (events.length === 0) return null
   return (
     <PanelBody className="border-t border-hairline">
@@ -812,7 +817,7 @@ function HistoryList({ events }: { events: AuditEvent[] }) {
               <span className="text-ink-muted"> · run #{String(event.runNo).padStart(3, '0')}</span>
             )}
             <span className="block text-[13px] text-ink-muted">
-              {event.actor}, {new Date(event.at).toLocaleString()}: {event.reason}
+              {event.actor}, {formatDateTime(event.at, dateFormat)}: {event.reason}
             </span>
           </li>
         ))}

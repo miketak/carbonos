@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, useDateFormat } from '../../lib/dates'
 import { useState } from 'react'
 import { Button } from '../../components/Button'
 import { Chip } from '../../components/Chip'
@@ -32,14 +33,6 @@ function titleOf(slug: string): string {
 
 function percent(rate: number): string {
   return `${Math.round(rate * 100)}%`
-}
-
-function onDay(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' })
-}
-
-function at(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 function underTarget(page: HelpPageStat): boolean {
@@ -86,6 +79,7 @@ const crumbs = [{ label: 'Administration' }, { label: 'Help metrics' }]
  * reader, and the tests, reach each table from its heading.
  */
 export function AdminHelpMetricsPage() {
+  const dateFormat = useDateFormat()
   const [tab, setTab] = useState<VoteTab>('all')
   const [slug, setSlug] = useState('')
 
@@ -142,7 +136,9 @@ export function AdminHelpMetricsPage() {
                           {marked && <Chip tone="warning">Under target</Chip>}
                         </span>
                       </Td>
-                      <Td className="whitespace-nowrap text-ink-muted">{onDay(page.lastVoteAt)}</Td>
+                      <Td className="whitespace-nowrap text-ink-muted">
+                        {formatDate(page.lastVoteAt, dateFormat)}
+                      </Td>
                     </tr>
                   )
                 })}
@@ -213,7 +209,7 @@ export function AdminHelpMetricsPage() {
                         <TwoLine primary={titleOf(vote.pageSlug)} secondary={vote.pageSlug} />
                       </Td>
                       <Td className="whitespace-nowrap align-top text-ink-muted">
-                        {at(vote.createdAt)}
+                        {formatDateTime(vote.createdAt, dateFormat)}
                       </Td>
                     </tr>
                   ))}
@@ -267,7 +263,9 @@ export function AdminHelpMetricsPage() {
                   <tr key={miss.query}>
                     <Td className="font-medium">{miss.query}</Td>
                     <Td align="right">{miss.count}</Td>
-                    <Td className="whitespace-nowrap text-ink-muted">{onDay(miss.lastSeen)}</Td>
+                    <Td className="whitespace-nowrap text-ink-muted">
+                      {formatDate(miss.lastSeen, dateFormat)}
+                    </Td>
                     <Td align="right">
                       <a
                         href={`/help/search?q=${encodeURIComponent(miss.query)}`}

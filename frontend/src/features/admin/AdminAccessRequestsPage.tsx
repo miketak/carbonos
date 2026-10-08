@@ -1,3 +1,4 @@
+import { formatDate, useDateFormat } from '../../lib/dates'
 import { PageHeader } from '../../components/PageHeader'
 import { Panel, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
@@ -7,10 +8,6 @@ import { Table, Td, Th } from '../../components/Table'
 import { AccessRequestsSection } from './components/AccessRequestsSection'
 import { useAccessRequestsQuery } from './useAccessRequests'
 import type { AccessRequest } from './api'
-
-function when(iso: string | null): string {
-  return iso ? new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' }) : ''
-}
 
 const outcome: Record<string, string> = {
   APPROVED: 'Approved, waiting for the password to be set',
@@ -34,6 +31,7 @@ const crumbs = [{ label: 'Administration' }, { label: 'Access requests' }]
  * who was not, rather than a queue that empties into nothing.
  */
 export function AdminAccessRequestsPage() {
+  const dateFormat = useDateFormat()
   const requestsQuery = useAccessRequestsQuery()
   const decided = (requestsQuery.data ?? []).filter((request) => request.status !== 'PENDING')
 
@@ -79,7 +77,9 @@ export function AdminAccessRequestsPage() {
                       {outcome[request.status] ?? request.status}
                     </StatusDot>
                   </Td>
-                  <Td className="whitespace-nowrap text-ink-muted">{when(request.decidedAt)}</Td>
+                  <Td className="whitespace-nowrap text-ink-muted">
+                    {request.decidedAt ? formatDate(request.decidedAt, dateFormat) : ''}
+                  </Td>
                 </tr>
               ))}
             </tbody>

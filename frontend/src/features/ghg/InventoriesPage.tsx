@@ -1,3 +1,4 @@
+import { formatDateRange, useDateFormat } from '../../lib/dates'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { PageHeader } from '../../components/PageHeader'
@@ -19,6 +20,7 @@ import { useDeleteInventory, useInventoriesQuery, useOrganizationQuery } from '.
  * consolidation approach. A table, not cards (spec 10).
  */
 export function InventoriesPage() {
+  const dateFormat = useDateFormat()
   const { organizationId = '' } = useParams()
   const inventoriesQuery = useInventoriesQuery(organizationId)
   const organizationQuery = useOrganizationQuery(organizationId)
@@ -90,7 +92,7 @@ export function InventoriesPage() {
                     <TwoLine
                       primary={
                         <span className="font-normal">
-                          {inventory.periodStart} → {inventory.periodEnd}
+                          {formatDateRange(inventory.periodStart, inventory.periodEnd, dateFormat)}
                         </span>
                       }
                       secondary={inventory.purpose ?? undefined}

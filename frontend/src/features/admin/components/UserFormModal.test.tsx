@@ -53,6 +53,7 @@ test('submits the create payload', async () => {
     role: 'MEMBER',
     status: 'ACTIVE',
     createdAt: '2026-08-28T00:00:00Z',
+    dateFormat: null,
   })
   const onSaved = vi.fn()
   const user = userEvent.setup({ delay: null })

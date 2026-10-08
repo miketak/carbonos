@@ -45,12 +45,14 @@ beforeEach(() => {
     role: 'MEMBER',
     status: 'ACTIVE',
     createdAt: '2026-08-28T00:00:00Z',
+    dateFormat: null,
   })
   vi.mocked(getProfile).mockReset().mockResolvedValue({
     id: 'u1',
     email: 'ama@ecoriv.test',
     displayName: 'Ama Mensah',
     hasAvatar: false,
+    dateFormat: null,
   })
   vi.mocked(listOrganizations).mockReset().mockResolvedValue([organization])
   vi.mocked(listFactorPackNotices).mockReset().mockResolvedValue([])

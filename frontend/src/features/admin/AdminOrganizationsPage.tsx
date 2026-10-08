@@ -1,3 +1,4 @@
+import { formatDateTime, useDateFormat } from '../../lib/dates'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
@@ -24,12 +25,6 @@ function windowPhrase(hours: number | undefined): string {
   return hours === undefined ? 'a fixed window' : `${hours} ${hours === 1 ? 'hour' : 'hours'}`
 }
 
-function formatDateTime(iso: string): string {
-  const date = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
 const crumbs = [{ label: 'Administration' }, { label: 'Organizations' }]
 
 /**
@@ -40,6 +35,7 @@ const crumbs = [{ label: 'Administration' }, { label: 'Organizations' }]
  * history for its owners to read.
  */
 export function AdminOrganizationsPage() {
+  const dateFormat = useDateFormat()
   const organizationsQuery = useAdminOrganizationsQuery()
   const settingsQuery = usePlatformSettingsQuery()
   const endAccess = useEndSupportAccess()
@@ -104,7 +100,7 @@ export function AdminOrganizationsPage() {
                     {organization.supportAccess ? (
                       <StatusDot tone="warning" className="items-start">
                         <span className="whitespace-normal">
-                          Until {formatDateTime(organization.supportAccess.expiresAt)}:{' '}
+                          Until {formatDateTime(organization.supportAccess.expiresAt, dateFormat)}:{' '}
                           {organization.supportAccess.reason}
                         </span>
                       </StatusDot>

@@ -1,3 +1,4 @@
+import { formatDate, useDateFormat } from '../../../lib/dates'
 import { Button } from '../../../components/Button'
 import { Panel, PanelHead } from '../../../components/Panel'
 import { Skeleton } from '../../../components/Skeleton'
@@ -34,6 +35,7 @@ function requestMeta(request: AccessRequest): string | undefined {
 }
 
 export function AccessRequestsSection() {
+  const dateFormat = useDateFormat()
   const requestsQuery = useAccessRequestsQuery()
   const approve = useApproveAccessRequest()
   const deny = useDenyAccessRequest()
@@ -86,7 +88,7 @@ export function AccessRequestsSection() {
                 </Td>
                 <Td className="text-ink-muted">{request.email}</Td>
                 <Td className="whitespace-nowrap text-ink-muted">
-                  {new Date(request.createdAt).toLocaleDateString()}
+                  {formatDate(request.createdAt, dateFormat)}
                 </Td>
                 <Td align="right">
                   <div className="flex justify-end gap-1">

@@ -1,4 +1,5 @@
 import { api } from '../../lib/api'
+import type { DateFormat } from '../../lib/dates'
 
 export type Role = 'ADMIN' | 'MEMBER'
 export type Status = 'ACTIVE' | 'DISABLED' | 'PENDING'
@@ -10,6 +11,8 @@ export interface SessionUser {
   role: Role
   status: Status
   createdAt: string
+  /** Spec 01.10: null until chosen; the app then follows the browser. */
+  dateFormat: DateFormat | null
 }
 
 export function login(email: string, password: string): Promise<SessionUser> {

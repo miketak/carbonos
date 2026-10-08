@@ -1,3 +1,4 @@
+import { useDateFormat } from '../../lib/dates'
 import { useRef, useState } from 'react'
 import type { DragEvent, ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -100,6 +101,7 @@ function toDecisions(
  * corrected file can be chosen again without doubling records.
  */
 export function ImportActivitiesPage() {
+  const dateFormat = useDateFormat()
   const { organizationId = '' } = useParams()
   const navigate = useNavigate()
   const toast = useToast()
@@ -496,7 +498,7 @@ export function ImportActivitiesPage() {
                         <Td className="py-2">
                           <span className="block">{row.facilityName}</span>
                           <span className="block text-[13px] text-ink-muted">
-                            {formatRecordPeriod(row.periodStart, row.periodEnd)}
+                            {formatRecordPeriod(row.periodStart, row.periodEnd, dateFormat)}
                           </span>
                         </Td>
                         <Td align="right" className="py-2">

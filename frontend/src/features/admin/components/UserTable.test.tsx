@@ -12,6 +12,7 @@ const users: User[] = [
     role: 'ADMIN',
     status: 'ACTIVE',
     createdAt: '2026-08-28T00:00:00Z',
+    dateFormat: null,
   },
   {
     id: 'u2',
@@ -20,6 +21,7 @@ const users: User[] = [
     role: 'MEMBER',
     status: 'DISABLED',
     createdAt: '2026-08-28T00:00:00Z',
+    dateFormat: null,
   },
 ]
 

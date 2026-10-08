@@ -1,3 +1,4 @@
+import { useDateFormat } from '../../../lib/dates'
 import { Table, Td, Th } from '../../../components/Table'
 import type { BoundaryVersionEntry } from '../api'
 import { describeWindow, relationshipShortLabels } from '../format'
@@ -9,6 +10,7 @@ import { describeWindow, relationshipShortLabels } from '../format'
  * A zero-share entity is shown as excluded with its reason (spec 05.1).
  */
 export function BoundaryVersionEntries({ entries }: { entries: BoundaryVersionEntry[] }) {
+  const dateFormat = useDateFormat()
   if (entries.length === 0) {
     return <p className="mt-2 text-sm text-ink-muted">This version recorded no entities.</p>
   }
@@ -25,7 +27,7 @@ export function BoundaryVersionEntries({ entries }: { entries: BoundaryVersionEn
         </thead>
         <tbody>
           {entries.map((entry) => {
-            const window = describeWindow(entry.effectiveFrom, entry.effectiveTo)
+            const window = describeWindow(entry.effectiveFrom, entry.effectiveTo, dateFormat)
             return (
               <tr key={entry.entityId} className="align-top">
                 <Td className="align-top">

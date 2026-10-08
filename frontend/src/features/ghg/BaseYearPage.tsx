@@ -1,3 +1,4 @@
+import { formatDateTime, useDateFormat } from '../../lib/dates'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -348,6 +349,7 @@ function RecalculationHistory({
   baseYear: BaseYear
   myRole: MyRole | undefined
 }) {
+  const dateFormat = useDateFormat()
   const [decision, setDecision] = useState<Decision>(null)
   const toast = useToast()
   // the base-year inventory's runs, so a recalculated candidate can name the run it rests on
@@ -393,7 +395,7 @@ function RecalculationHistory({
                 <Td>
                   <div className="flex flex-col gap-0.5">
                     <span className="font-medium">
-                      {new Date(recalculation.createdAt).toLocaleString()}
+                      {formatDateTime(recalculation.createdAt, dateFormat)}
                       {recalculation.boundaryVersionNo !== null
                         ? ` · boundary v${recalculation.boundaryVersionNo}`
                         : ''}
@@ -416,7 +418,7 @@ function RecalculationHistory({
                           ? `Decided by ${recalculation.decidedBy}`
                           : 'Decided'}
                         {recalculation.decidedAt
-                          ? `, ${new Date(recalculation.decidedAt).toLocaleString()}`
+                          ? `, ${formatDateTime(recalculation.decidedAt, dateFormat)}`
                           : ''}
                         {recalculation.decisionNote ? ` · ${recalculation.decisionNote}` : ''}
                         {recalculation.status === 'RECALCULATED' && recalculation.runId
