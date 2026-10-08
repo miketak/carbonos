@@ -498,8 +498,7 @@ test('cites the boundary version the run computed from, including silent entitie
   ).toBeInTheDocument()
   // Sankofa's own entity has no run line, yet the version shows it was in scope at 100% from July
   const own = screen.getByText('Sankofa Gold plc', { selector: 'span.font-medium' }).closest('tr')
-  // spec 01.10: the window reads in the viewer's date form; jsdom's locale puts the month first
-  expect(own).toHaveTextContent(/Subsidiary · member from \d{2}\/\d{2}\/2025/)
+  expect(own).toHaveTextContent(/Subsidiary · member from 2025-07-01/)
   expect(own).toHaveTextContent(/Nkran Camp/)
   expect(own).toHaveTextContent(/100%.*Yes.*100%/)
   expect(vi.mocked(getBoundaryVersion)).toHaveBeenCalledWith('bv-1')

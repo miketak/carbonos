@@ -1,4 +1,3 @@
-import { useDateFormat } from '../../lib/dates'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
@@ -204,7 +203,6 @@ function FactorTable({
   onRetire?: (factor: EmissionFactor) => void
   onDelete?: (factor: EmissionFactor) => void
 }) {
-  const dateFormat = useDateFormat()
   return (
     <Table>
       <thead>
@@ -306,9 +304,7 @@ function FactorTable({
                     {factor.approvedBy && (
                       <span className="text-[13px] text-ink-muted">
                         by {factor.approvedBy}
-                        {factor.approvedAt
-                          ? ` on ${formatDateTime(factor.approvedAt, dateFormat)}`
-                          : ''}
+                        {factor.approvedAt ? ` on ${formatDateTime(factor.approvedAt)}` : ''}
                         {factor.selfApproved ? ' (self-approved: nobody else could check it)' : ''}
                       </span>
                     )}

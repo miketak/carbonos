@@ -11,11 +11,8 @@ import java.util.UUID;
  */
 public interface UserDirectory {
 
-	/**
-	 * An account as another module may know it; never the password hash. The
-	 * date format is {@code DMY}, {@code MDY} or null for no choice yet (spec 01.10).
-	 */
-	record UserSummary(UUID id, String email, String displayName, String status, String dateFormat) {
+	/** An account as another module may know it; never the password hash. */
+	record UserSummary(UUID id, String email, String displayName, String status) {
 	}
 
 	Optional<UserSummary> findByEmail(String email);

@@ -118,9 +118,6 @@ class GhgApiIntegrationTests {
 	MockMvc mvc;
 
 	@Autowired
-	com.carbonos.user.internal.ProfileService profileService;
-
-	@Autowired
 	GhgRunRepository runs;
 
 	@Autowired
@@ -195,17 +192,6 @@ class GhgApiIntegrationTests {
 
 	RequestPostProcessor asMember() {
 		return user(new AuthenticatedUser(ownerId, "kojo@ecoriv.com", "irrelevant", "MEMBER", true));
-	}
-
-	/** Spec 01.10: a reviewer who reads dates month first, for the files that follow the downloader's form. */
-	com.carbonos.user.internal.User monthFirstReviewer(String orgId) throws Exception {
-		var email = "kwame-" + java.util.UUID.randomUUID() + "@sankofa.test";
-		var kwame = userService.create(email, "Kwame Boateng", com.carbonos.user.internal.UserRole.MEMBER, "analyst-passw0rd");
-		profileService.updateDateFormat(kwame.getId(), com.carbonos.user.internal.DateFormat.MDY);
-		mvc.perform(post("/api/ghg/organizations/" + orgId + "/members").with(asMember()).with(csrf())
-			.contentType("application/json").content("{\"email\": \"" + email + "\", \"role\": \"REVIEWER\"}"))
-			.andExpect(status().isCreated());
-		return kwame;
 	}
 
 	/** A real platform account, so membership by email can resolve it (spec 01.2). */
@@ -3587,18 +3573,10 @@ class GhgApiIntegrationTests {
 			.contains(",2660,").contains(",AR5,");
 		// byte-identical on a second download
 		assertThat(body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(asMember())))).isEqualTo(csv);
-		// spec 01.10: the period columns follow the downloader's date form; every other cell is the same
-		var monthFirst = body(mvc.perform(get("/api/ghg/runs/" + runId + "/lines.csv").with(as(monthFirstReviewer(orgId))))
-			.andExpect(status().isOk()));
-		var isoCells = csvCells(rows[1]);
-		var monthFirstCells = csvCells(monthFirst.split("\r\n")[1]);
+		// ECO-134: the period columns read ISO for every downloader, so the file is the same for all
 		var periodStart = java.util.Arrays.asList(rows[0].split(",")).indexOf("period_start");
-		assertThat(isoCells.get(periodStart)).matches("\\d{4}-\\d{2}-\\d{2}");
-		assertThat(monthFirstCells.get(periodStart)).matches("\\d{2}/\\d{2}/\\d{4}");
-		assertThat(monthFirstCells.get(periodStart + 1)).matches("\\d{2}/\\d{2}/\\d{4}");
-		monthFirstCells.set(periodStart, isoCells.get(periodStart));
-		monthFirstCells.set(periodStart + 1, isoCells.get(periodStart + 1));
-		assertThat(monthFirstCells).isEqualTo(isoCells);
+		assertThat(csvCells(rows[1]).get(periodStart)).matches("\\d{4}-\\d{2}-\\d{2}");
+		assertThat(csvCells(rows[1]).get(periodStart + 1)).matches("\\d{4}-\\d{2}-\\d{2}");
 		mvc.perform(get("/api/ghg/runs/" + runId + "/exclusions.csv").with(asMember()))
 			.andExpect(status().isOk())
 			.andExpect(content().string(org.hamcrest.Matchers.startsWith("record_id,record_ref,facility,activity_type,")));
@@ -5709,10 +5687,6 @@ class GhgApiIntegrationTests {
 		assertThat(index).startsWith("record_ref,activity_type,facility,period_start,period_end,evidence_ref,document,kind,url,")
 			.contains("ACT-0001,Genset diesel,Nkran Mine,2025-08-01,2025-08-01,INV-2938,invoice-2938.pdf,FILE,,application/pdf,")
 			.contains("ACT-0002,Mill grid electricity,Obuom Processing Plant,2025-08-01,2025-08-01,INV-2938,ECG bill (SharePoint),LINK,https://example.com/ecg-08,");
-		// spec 01.10: the same index reads month first for an account that chose so; the owner, with no choice, keeps ISO
-		assertThat(body(mvc.perform(get("/api/ghg/organizations/" + orgId + "/evidence/index.csv").with(as(monthFirstReviewer(orgId))))))
-			.contains("ACT-0001,Genset diesel,Nkran Mine,08/01/2025,08/01/2025,INV-2938,")
-			.containsPattern(",\\d{2}/\\d{2}/\\d{4} \\d{2}:\\d{2}:\\d{2} UTC\\r\\n");
 
 		// a removed record's document is an orphan: listed under that filter, out of the index
 		mvc.perform(delete("/api/ghg/activities/" + power).with(asMember()).with(csrf()).param("reason", "entered twice"))

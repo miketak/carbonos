@@ -1,4 +1,4 @@
-import { formatDate, useDateFormat } from '../../lib/dates'
+import { formatDate } from '../../lib/dates'
 import { PageHeader } from '../../components/PageHeader'
 import { Panel, PanelHead } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
@@ -31,7 +31,6 @@ const crumbs = [{ label: 'Administration' }, { label: 'Access requests' }]
  * who was not, rather than a queue that empties into nothing.
  */
 export function AdminAccessRequestsPage() {
-  const dateFormat = useDateFormat()
   const requestsQuery = useAccessRequestsQuery()
   const decided = (requestsQuery.data ?? []).filter((request) => request.status !== 'PENDING')
 
@@ -78,7 +77,7 @@ export function AdminAccessRequestsPage() {
                     </StatusDot>
                   </Td>
                   <Td className="whitespace-nowrap text-ink-muted">
-                    {request.decidedAt ? formatDate(request.decidedAt, dateFormat) : ''}
+                    {request.decidedAt ? formatDate(request.decidedAt) : ''}
                   </Td>
                 </tr>
               ))}

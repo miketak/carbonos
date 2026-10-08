@@ -20,7 +20,6 @@ const newUser: SessionUser = {
   role: 'MEMBER',
   status: 'ACTIVE',
   createdAt: '2026-08-29T00:00:00Z',
-  dateFormat: null,
 }
 
 function renderPage(route = '/set-password?token=tok-1') {

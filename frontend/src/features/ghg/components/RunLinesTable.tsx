@@ -1,4 +1,3 @@
-import { useDateFormat } from '../../../lib/dates'
 import { Chip } from '../../../components/Chip'
 import { Table, Td, Th } from '../../../components/Table'
 import { categoryLabel, formatCo2e, formatPeriod, leaseLabels } from '../format'
@@ -7,7 +6,6 @@ import type { RunLine } from '../api'
 
 /** The per-activity snapshot lines of a run, weight and CO₂e included. */
 export function RunLinesTable({ lines }: { lines: RunLine[] }) {
-  const dateFormat = useDateFormat()
   if (lines.length === 0) {
     return <p className="text-sm text-ink-muted">No activity fell inside this run's period.</p>
   }
@@ -80,7 +78,7 @@ export function RunLinesTable({ lines }: { lines: RunLine[] }) {
                   {line.quantity.toLocaleString()} {line.unit}
                 </span>
                 <span className="text-[13px] text-ink-muted">
-                  {formatPeriod(line.periodStart, line.periodEnd, dateFormat)}
+                  {formatPeriod(line.periodStart, line.periodEnd)}
                 </span>
                 {line.unit.toLowerCase() !== line.factorUnit.toLowerCase() && (
                   <span className="text-[13px] text-ink-muted">

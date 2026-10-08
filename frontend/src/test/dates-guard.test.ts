@@ -4,10 +4,10 @@ import { join, relative, resolve } from 'node:path'
 import { expect, it } from 'vitest'
 
 /*
- * Spec 01.10: every date the app prints goes through src/lib/dates.ts, so the
- * reader's day/month order holds on every screen. A feature that formats a
- * date on its own would print the browser's form again, and the one place
- * that should catch it is here, not a tester in Accra.
+ * Every date the app prints goes through src/lib/dates.ts, so one form (ISO,
+ * ECO-134) holds on every screen. A feature that formats a date on its own
+ * would print the browser's form again, and the one place that should catch
+ * it is here, not a tester in Accra.
  */
 
 const root = resolve(process.cwd(), 'src')

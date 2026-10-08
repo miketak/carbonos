@@ -1,4 +1,4 @@
-import { formatDateTime, useDateFormat } from '../../lib/dates'
+import { formatDateTime } from '../../lib/dates'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../../components/Button'
@@ -78,7 +78,6 @@ export function AdminSettingsPage() {
  * would render once with the wrong values first.
  */
 function SettingsForm({ settings }: { settings: PlatformSettings }) {
-  const dateFormat = useDateFormat()
   const historyQuery = usePlatformSettingsHistoryQuery()
   const save = useUpdatePlatformSettings()
   const toast = useToast()
@@ -186,7 +185,7 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
             <div className="flex flex-wrap items-center justify-between gap-4 sm:col-span-2">
               <span className="text-[13px] text-ink-muted">
                 {settings.updatedBy &&
-                  `Last changed by ${settings.updatedBy} on ${formatDateTime(settings.updatedAt, dateFormat)}`}
+                  `Last changed by ${settings.updatedBy} on ${formatDateTime(settings.updatedAt)}`}
               </span>
               <Button type="submit" busy={save.isPending}>
                 Save settings
@@ -229,7 +228,7 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
                   <Td className="text-ink-muted">{change.reason}</Td>
                   <Td className="text-ink-muted">{change.actorEmail}</Td>
                   <Td className="whitespace-nowrap text-ink-muted">
-                    {formatDateTime(change.changedAt, dateFormat)}
+                    {formatDateTime(change.changedAt)}
                   </Td>
                 </tr>
               ))}

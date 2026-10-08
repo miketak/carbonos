@@ -25,7 +25,6 @@ const member: SessionUser = {
   role: 'MEMBER',
   status: 'ACTIVE',
   createdAt: '2026-08-28T00:00:00Z',
-  dateFormat: null,
 }
 
 const organization = (id: string, name: string) =>

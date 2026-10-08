@@ -1,4 +1,4 @@
-import { formatDateTime, useDateFormat } from '../../../lib/dates'
+import { formatDateTime } from '../../../lib/dates'
 import { useState } from 'react'
 import { Chip } from '../../../components/Chip'
 import { Panel, PanelHead } from '../../../components/Panel'
@@ -445,7 +445,6 @@ function ExclusionControl({
 
 /** Every version ever frozen, newest first, as a table-like list (spec 10); each expands to the boundary it recorded. */
 function BoundaryHistory({ inventoryId }: { inventoryId: string }) {
-  const dateFormat = useDateFormat()
   const versionsQuery = useBoundaryVersionsQuery(inventoryId)
   const [openId, setOpenId] = useState<string | null>(null)
   const versions = versionsQuery.data ?? []
@@ -467,14 +466,14 @@ function BoundaryHistory({ inventoryId }: { inventoryId: string }) {
               className="w-full rounded-lg px-3 py-2.5 text-left text-[15px] transition-colors duration-150 hover:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
             >
               <span className="font-medium">Boundary version {version.versionNo}</span> ·{' '}
-              {describeFreeze(version, dateFormat)} · {version.entityCount}{' '}
+              {describeFreeze(version)} · {version.entityCount}{' '}
               {version.entityCount === 1 ? 'entity' : 'entities'}, {version.facilityCount}{' '}
               {version.facilityCount === 1 ? 'facility' : 'facilities'}
             </button>
             {version.reopenedAt && (
               <p className="px-3 pb-2 text-[13px] text-ink-muted">
                 Reopened by {version.reopenedBy ?? 'unknown'} on{' '}
-                {formatDateTime(version.reopenedAt, dateFormat)}: {version.reopenReason}
+                {formatDateTime(version.reopenedAt)}: {version.reopenReason}
               </p>
             )}
             {openId === version.id && (

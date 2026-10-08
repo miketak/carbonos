@@ -1,4 +1,3 @@
-import { useDateFormat } from '../../../lib/dates'
 import { Table, Td, Th, TwoLine } from '../../../components/Table'
 import type { Activity } from '../api'
 import { formatQuantity, formatRecordPeriod } from '../format'
@@ -48,7 +47,6 @@ export function ActivityTable({
   /** Selection exists only to feed the bulk Remove action (spec 01.4): hidden for a role that cannot write. */
   selectable?: boolean
 }) {
-  const dateFormat = useDateFormat()
   const allSelected = activities.length > 0 && activities.every((a) => selected.has(a.id))
   return (
     <Table>
@@ -126,11 +124,7 @@ export function ActivityTable({
               <Td>
                 <TwoLine
                   primary={<span className="font-normal">{activity.facilityName}</span>}
-                  secondary={formatRecordPeriod(
-                    activity.periodStart,
-                    activity.periodEnd,
-                    dateFormat,
-                  )}
+                  secondary={formatRecordPeriod(activity.periodStart, activity.periodEnd)}
                 />
               </Td>
               <Td align="right">

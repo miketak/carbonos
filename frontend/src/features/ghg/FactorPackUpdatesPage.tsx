@@ -1,4 +1,3 @@
-import { useDateFormat } from '../../lib/dates'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
@@ -41,7 +40,6 @@ function movement(kg: number | null): string {
  * accounting decision, and this page is where the organization makes it.
  */
 export function FactorPackUpdatesPage() {
-  const dateFormat = useDateFormat()
   const { organizationId = '' } = useParams()
   const noticesQuery = useFactorPackNoticesQuery(organizationId)
   const organizationQuery = useOrganizationQuery(organizationId)
@@ -114,7 +112,7 @@ export function FactorPackUpdatesPage() {
                     }`}
                   />
                 </Td>
-                <Td className="whitespace-nowrap">{formatDateTime(notice.raisedAt, dateFormat)}</Td>
+                <Td className="whitespace-nowrap">{formatDateTime(notice.raisedAt)}</Td>
                 <Td align="right">{notice.rowsAffected}</Td>
                 <Td align="right">{notice.rowsOverThreshold}</Td>
                 <Td
