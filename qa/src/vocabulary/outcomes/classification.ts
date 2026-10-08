@@ -236,7 +236,7 @@ export const dialogButtonDisabled = defineOutcome({
     return pass(`${entry.status} ${a.rule}`)
   },
   ui: (a) => [{ check: 'buttonDisabled', button: a.button, within: a.dialog }],
-  narrate: (a) => `**${a.button}** stays disabled: "${rule(a.rule).message}".`,
+  narrate: (a) => `**${a.button}** stays disabled until the rule "${rule(a.rule).message}" is met; the dialog shows no message, only the disabled button.`,
 })
 
 export const classificationOutcomes = [recordView, recordCounts, screenReads, inventoryStraddle, upstreamRuleListed, instrumentListed, residualMix, noGateErrors, boundaryVersion, dialogButtonDisabled]

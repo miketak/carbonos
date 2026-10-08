@@ -259,7 +259,7 @@ export const activityExists = defineOutcome({
 })
 
 function issueLabel(issue: string): string {
-  return { NO_STREAM: 'No emission source', NO_EVIDENCE: 'Needs evidence', NO_DATA_SOURCE: 'Missing source', EVIDENCE_REFERENCE_ONLY: 'reference only', MISSING_QUANTITY: 'No quantity', MISSING_UNIT: 'No unit', MISSING_PERIOD: 'No period' }[issue] ?? issue
+  return { NO_STREAM: 'No emission source', NO_EVIDENCE: 'Needs evidence', NO_DATA_SOURCE: 'Missing source', EVIDENCE_REFERENCE_ONLY: 'reference only', DOCUMENTED_ZERO: 'documented zero', MISSING_QUANTITY: 'No quantity', MISSING_UNIT: 'No unit', MISSING_PERIOD: 'No period' }[issue] ?? issue
 }
 
 export const activityRemoved = defineOutcome({

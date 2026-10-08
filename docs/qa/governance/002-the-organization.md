@@ -56,10 +56,10 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 | --- | --- | --- | --- | --- |
 | 1 | As Ama Owusu in the private window, open **GHG accounting**, then click **New organization**. Fill in **Name** with `adansi foods ltd`, then click **Create organization**. | Refused: "An organization named 'adansi foods ltd' already exists: <duplicates>. Confirm to use the name anyway.": refused once, in the form, naming the organization of A1 with its number; names are compared without regard to case, and the button now reads Create anyway. |  |  |
 | 2 | Open **GHG accounting**, then click **New organization**. Fill in **Name** with `adansi foods ltd`, then click **Create organization**. Click **Create anyway**. | "adansi foods ltd (ORG-<NNNN>) created." The list shows the organization with its account number. |  |  |
-| 3 | Open **GHG accounting**. | Ama Owusu sees 2 organization(s): both organizations are listed in the switcher, each with its number. |  |  |
+| 3 | Open **GHG accounting**. | Ama Owusu sees 2 organizations: both organizations are listed in the switcher, each with its number. |  |  |
 | 4 | In adansi foods ltd, open **Settings**, fill in **Name** with `Adansi Foods Ltd`, then click **Save details**. | Refused: "An organization named 'Adansi Foods Ltd' already exists: <duplicates>. Confirm to use the name anyway.": the same sentence, naming the first organization; the button reads Save anyway. |  |  |
 | 5 | In adansi foods ltd, open **Settings**, fill in **Name** with `Adansi Foods Ltd`, then click **Save details**. Click **Save anyway**. | **History** holds an organization renamed entry reading "renamed from 'adansi foods ltd' to 'Adansi Foods Ltd'". |  |  |
-| 6 | In Adansi Foods Ltd, open **Settings**, then click **Delete organization**. Fill in **Type Adansi Foods Ltd to confirm** with `Adansi Foods Ltd`, fill in **Reason** with `duplicate created for the walkthrough, no client data`, then click **Delete**. | Ama Owusu sees 1 organization(s). |  |  |
+| 6 | In Adansi Foods Ltd, open **Settings**, then click **Delete organization**. Fill in **Type Adansi Foods Ltd to confirm** with `Adansi Foods Ltd`, fill in **Reason** with `duplicate created for the walkthrough, no client data`, then click **Delete**. | Ama Owusu sees 1 organization. |  |  |
 | 7 | Open **GHG accounting**, then click **New organization**. Fill in **Name** with `Adansi Foods Ltd`, then click **Create organization**. | Refused: "An organization named 'Adansi Foods Ltd' already exists: <duplicates>. Confirm to use the name anyway.": still refused once, naming only the live organization; the removed one does not count. |  |  |
 
 ## B. Legal entities
@@ -133,8 +133,8 @@ Spec 01.8: a name is refused once when another organization carries it, and acce
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Add the record "Boiler LPG top-up" at Kumasi Plant: 400 kg, 2025-03-01 to 2025-03-31. | Refused: "'Kumasi Plant' has an emission source with a similar name: 'Boiler LPG'. Use it, or give a reason to create 'Boiler LPG 2' as a separate source.": a near name is a prompt, never a silent match; the record is not saved and no number is used. |  |  |
-| 2 | Add the record "Boiler LPG top-up" at Kumasi Plant: 400 kg, 2025-03-01 to 2025-03-31. | Refused: "'Kumasi Plant' already has an emission source named 'boiler lpg'.": the exact name is taken, so the notice offers "Use Boiler LPG" and no "anyway". |  |  |
+| 1 | Add the record "Boiler LPG top-up" at Kumasi Plant: 400 kg, 2025-03-01 to 2025-03-31, with **Emission source** set to **New emission source…**, **Source name *** "Boiler LPG 2" and **Kind** Stationary combustion, **Fuel or material (optional)** LPG. | Refused: "'Kumasi Plant' has an emission source with a similar name: 'Boiler LPG'. Use it, or give a reason to create 'Boiler LPG 2' as a separate source.": a near name is a prompt, never a silent match; the record is not saved and no number is used. |  |  |
+| 2 | Add the record "Boiler LPG top-up" at Kumasi Plant: 400 kg, 2025-03-01 to 2025-03-31, with **Emission source** set to **New emission source…**, **Source name *** "boiler lpg" and **Kind** Stationary combustion. | Refused: "'Kumasi Plant' already has an emission source named 'boiler lpg'.": the exact name is taken, so the notice offers "Use Boiler LPG" and no "anyway". |  |  |
 | 3 | Look. | **History** holds 3 stream added entries: a refused source creates nothing, and the record it came with is not written either. |  |  |
 
 ### D5. An edit keeps the source and writes what changed

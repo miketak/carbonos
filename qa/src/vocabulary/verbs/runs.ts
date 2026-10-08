@@ -370,7 +370,12 @@ export const recordActivity = defineVerb({
   ],
   postconditions: (a) => [{ outcome: 'activityExists', args: { organization: a.organization, record: a.activityType, draft: false, quantity: a.quantity, unit: a.unit } }],
   narrate: (a) =>
-    `Add the record "${a.activityType}" at ${a.facility}: ${a.quantity} ${a.unit}, ${a.periodStart} to ${a.periodEnd}${a.dataSource ? `, source "${a.dataSource}"` : ''}.`,
+    `Add the record "${a.activityType}" at ${a.facility}: ${a.quantity} ${a.unit}, ${a.periodStart} to ${a.periodEnd}${a.dataSource ? `, source "${a.dataSource}"` : ''}` +
+    (a.newSource
+      ? `, with **${S.act.field.emissionSource}** set to **${S.act.option.newEmissionSource}**, **${S.act.field.newSourceName}** "${a.newSource.name}" and **${S.org.field.kind}** ${S.org.option.kind[a.newSource.kind] ?? a.newSource.kind}${a.newSource.fuel ? `, **${S.org.field.fuel}** ${a.newSource.fuel}` : ''}${a.newSource.contractorOperated ? `, **${S.org.field.contractorOperated}** ticked` : ''}`
+      : '') +
+    (a.newSource && a.reason ? `. In the notice, fill in **${S.act.field.whyDifferentSource}** with "${a.reason}" and click **Create '${a.newSource.name}' anyway**` : '') +
+    '.',
 })
 
 /** The disclosure at the top of a copied inventory, opened to read where it came from (spec 05.4). */

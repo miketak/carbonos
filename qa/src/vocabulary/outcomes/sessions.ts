@@ -110,7 +110,7 @@ export const organizationCount = defineOutcome({
   },
   ui: ({ count }) => [{ check: 'at', nav: S.nav.ghg }, ...(count === 0 ? [{ check: 'textVisible', text: S.text.noOrganizationsYet } as const] : [])],
   narrate: ({ user, count }, n) =>
-    count === 0 ? `${n.actorName(user)} lands on **${S.nav.ghg}** with no organizations.` : `${n.actorName(user)} sees ${count} organization(s).`,
+    count === 0 ? `${n.actorName(user)} lands on **${S.nav.ghg}** with no organizations.` : `${n.actorName(user)} sees ${count} ${count === 1 ? 'organization' : 'organizations'}.`,
 })
 
 export const canCreateOrganization = defineOutcome({

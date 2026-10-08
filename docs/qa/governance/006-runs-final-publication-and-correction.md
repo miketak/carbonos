@@ -29,10 +29,10 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
-| 2 | On **Runs**, click **Launch calculation run**. | Run 001 is listed with its total 120,458.96 kg CO₂e and "boundary v2". |  |  |
-| 3 | Open Run 001. | The line of ACT-0004 reads 9,591.17 kg CO₂e and "3 tonne = 3000 kg ÷ 0.8325 kg/litre = 3603.603604 litre (density of Diesel (Adansi CoA))". The line of ACT-0006 reads 661.78 kg CO₂e and 17 covered days of 32. The derived line of ACT-0001 reads 445.22 kg CO₂e. The derived line of ACT-0006 reads 78.84 kg CO₂e: one line per included record as the table in the preamble lists them, plus two derived well-to-tank lines, each naming the LPG line it derives from. |  |  |
+| 2 | On **Runs**, click **Launch calculation run**. | Run 001 is listed with its total 120.46 t CO₂e (120,458.96 kg) and "boundary v2". |  |  |
+| 3 | Open Run 001. | The line of ACT-0004 reads 9.59 t CO₂e (9,591.17 kg) and "3 tonne = 3000 kg ÷ 0.8325 kg/litre = 3603.603604 litre (density of Diesel (Adansi CoA))". The line of ACT-0006 reads 661.8 kg CO₂e (661.78 kg) and 17 covered days of 32. The derived line of ACT-0001 reads 445.2 kg CO₂e (445.22 kg). The derived line of ACT-0006 reads 78.8 kg CO₂e (78.84 kg): one line per included record as the table in the preamble lists them, plus two derived well-to-tank lines, each naming the LPG line it derives from. |  |  |
 | 4 | Open Run 001 of "FY2025". | The exclusions are ACT-0007 (outside boundary, member from 2025-07-01), ACT-0008 (outside boundary), ACT-0009 (methodology, not estimated), each with its reason and detail. |  |  |
-| 5 | Open Run 001 of "FY2025". | The refrigerant line carries 20 kg under HFCs. The row "CO₂e from factors without a gas split" carries 60,681.14 kg: four lines are priced from factors that publish CO₂e only, the Ghana grid 56,257.08, the flights 3,900.00 and the two well-to-tank LPG lines 445.22 and 78.84; the footing row "Total (scope 2 location-based), ties to section 04" equals the section 04 total. |  |  |
+| 5 | Open Run 001 of "FY2025". | The refrigerant line carries 20 kg under HFCs. The row "CO₂e from factors without a gas split" carries 60.681 t CO₂e (60,681.14 kg): four lines are priced from factors that publish CO₂e only, the Ghana grid 56,257.08, the flights 3,900.00 and the two well-to-tank LPG lines 445.22 and 78.84; the footing row "Total (scope 2 location-based), ties to section 04" equals the section 04 total. |  |  |
 
 ### A2. Voiding keeps the number and the figures
 
@@ -64,7 +64,7 @@
 | 2 | Open ACT-0004 and choose **Liquid fuels: Diesel (100% mineral diesel) (/litre)**, choose the density "Diesel (typical value)", tick **proxy factor** and type "No certificate of analysis for this delivery; typical mid-range density". | The **Emission factors** gate no longer says "typical density": a documented proxy is an answer. |  |  |
 | 3 | Click **Edit inventory**, set the GWP set to AR5, and save. | The **Emission factors** gate no longer says "cannot be re-derived". |  |  |
 | 4 | Click **Freeze inventory**. | The header reads "Boundary version 4". |  |  |
-| 5 | On **Runs**, click **Launch calculation run**. | Run 004 is listed with its total 120,373.32 kg CO₂e. The line of ACT-0004 reads 9,505.54 kg CO₂e and "(density of Diesel, typical value)". The proxy justification is not printed on the line; the lines CSV of case D1 carries it in proxy_justification. |  |  |
+| 5 | On **Runs**, click **Launch calculation run**. | Run 004 is listed with its total 120.37 t CO₂e (120,373.32 kg). The line of ACT-0004 reads 9.51 t CO₂e (9,505.54 kg) and "(density of Diesel, typical value)". The proxy justification is not printed on the line; the lines CSV of case D1 carries it in proxy_justification. |  |  |
 
 ## C. The report header and the intensity
 
@@ -98,7 +98,7 @@
 | 6 | Open Office generator diesel and choose **Diesel (Solo)**. | Office generator diesel reads included, uses **Diesel (Solo)**. |  |  |
 | 7 | Choose **No residual mix is available** and save. | The inventory records that no residual mix is available. |  |  |
 | 8 | Click **Freeze inventory**. |  |  |  |
-| 9 | On **Runs**, click **Launch calculation run**. | Run 001 is listed with its total 266.00 kg CO₂e. |  |  |
+| 9 | On **Runs**, click **Launch calculation run**. | Run 001 is listed with its total 266 kg CO₂e (266.00 kg). |  |  |
 | 10 | Look. | Open the PDF: the methodology section prints "Approved by the person who entered them, no other member of the organization being able to check them at the time: Diesel (Solo) (<the Yaw alias>).". Adansi's PDF of case D1 prints no such sentence: Kofi checked its factors. |  |  |
 | 11 | On **Runs**, click **Submit for review** on Run 001 and confirm. | The header reads IN REVIEW. |  |  |
 | 12 | Click **Mark as final** on Run 001 and confirm. | The header reads FINAL. **Prepared by** names `you+yaw@…` (the Yaw alias) with the run; **Approved by** names `you+yaw@…` (the Yaw alias) with the run; it adds "self-approved: nobody else in the organization could check it": Yaw is the only member who may approve, so his sign-off of the run he submitted goes through and the header says so: "Approved by <the Yaw alias>, run 1, <date>; self-approved: nobody else in the organization could check it". The Mark as final dialog said so before the sign-off.. |  |  |
@@ -123,7 +123,7 @@
 | 11 | Click **Mark as final** on Run 005 and confirm. | Refused: "Run 5 cannot be designated final. <holds>": "'Staff flights' uses 'Long-haul flights (supplier)', which is not approved. Approve it under Emission factors, or choose another.": approval is checked again at the sign-off, not only at the run and the submission. |  |  |
 | 12 | Click **Approve** on "Long-haul flights (supplier)". | "Long-haul flights (supplier)" is listed as **Approved** "by `you+kofi@…` (the Kofi alias)" with the date: approved by Kofi, who did not enter it. |  |  |
 | 13 | Click **Mark as final** on Run 005, type the review note "Reconciled against the March and June invoices" and confirm. | The header reads FINAL. **Prepared by** names `you+esi@…` (the Esi alias) with the run; **Approved by** names `you+kofi@…` (the Kofi alias) with the run. Under **History** on **Runs**, the entry "Final run designated" reads "run 5 signed off and designated final: Reconciled against the March and June invoices", by `you+kofi@…` (the Kofi alias). no **Reopen as draft**: the lifecycle bar reads "Final designated by <the Kofi alias> on <date>: Reconciled against the March and June invoices"; the report header reads "Prepared by <the Esi name and alias>, run 5" and "Approved by <the Kofi name and alias>, run 5". |  |  |
-| 14 | Click **Withdraw final designation** with no reason and confirm. | **Withdraw designation** stays disabled: "{what} needs a reason of at least 5 characters.". |  |  |
+| 14 | Click **Withdraw final designation** with no reason and confirm. | **Withdraw designation** stays disabled until the rule "{what} needs a reason of at least 5 characters." is met; the dialog shows no message, only the disabled button. |  |  |
 | 15 | Click **Withdraw final designation**, give "Checking the withdrawal" and confirm. | The header reads FROZEN: the history records the withdrawal with Kofi's email; the submission went with the designation, so Esi submits again. |  |  |
 | 16 | As Esi Boateng in the private window, on **Runs**, click **Submit for review** on Run 005, type "Reconciled against the fuel ledger" in **Note for the approver (optional)** and confirm. |  |  |  |
 | 17 | As Kofi Mensah in the private window, click **Mark as final** on Run 005 and confirm. | The header reads FINAL. |  |  |
@@ -138,16 +138,16 @@
 | --- | --- | --- | --- | --- |
 | 1 | As Ama Owusu in the private window, open the inventory "FY2025" (**Open**). | Only **Create correction** is offered: no **Reopen as draft**, no **Freeze inventory**, no **Edit inventory**. |  |  |
 | 2 | On the inventory "FY2025", open **Runs**. | no **Void…**. The screen reads "Published. The runs are a record; a correction restates the year.". **Launch calculation run** is disabled with the title "A published inventory cannot be recalculated. Create a correction that supersedes it.": a published inventory's runs are a record. |  |  |
-| 3 | Open ACT-0002, change the quantity to 121, and save with the reason "June invoice re-read after publication". | ACT-0002 is marked "Changed since publication: quantity". The line of ACT-0002 reads 56,257.08 kg CO₂e: the published report still reads 120 MWh and 56,257.08 kg: the report is frozen; the view marks what moved after it. |  |  |
+| 3 | Open ACT-0002, change the quantity to 121, and save with the reason "June invoice re-read after publication". | ACT-0002 is marked "Changed since publication: quantity". The line of ACT-0002 reads 56.26 t CO₂e (56,257.08 kg): the published report still reads 120 MWh and 56,257.08 kg: the report is frozen; the view marks what moved after it. |  |  |
 
 ### F2. A correction needs a reason and inherits the view
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Create correction** and type the reason "typo". | **Create correction** stays disabled: "A correction needs a reason of at least 10 characters: what was wrong in the published inventory.". |  |  |
+| 1 | Click **Create correction** and type the reason "typo". | **Create correction** stays disabled until the rule "A correction needs a reason of at least 10 characters: what was wrong in the published inventory." is met; the dialog shows no message, only the disabled button. |  |  |
 | 2 | Click **Create correction** and type the reason "June electricity was 121 MWh, not 120". | The header reads DRAFT. A new draft, FY2025 (correction), opens with the boundary, the declaration, the classifications, the rule, the instrument and the residual mix inherited. Each inherited decision is marked as inherited. |  |  |
 | 3 | Click **Freeze inventory**. |  |  |  |
-| 4 | On **Runs**, click **Launch calculation run**. | The line of ACT-0002 reads 56,725.89 kg CO₂e. The header reads "Report version 2, supersedes FY2025". The correction block reads "Against the published run: 0 lines added, 0 removed, 1 changed". |  |  |
+| 4 | On **Runs**, click **Launch calculation run**. | The line of ACT-0002 reads 56.73 t CO₂e (56,725.89 kg). The header reads "Report version 2, supersedes FY2025". The correction block reads "Against the published run: 0 lines added, 0 removed, 1 changed". |  |  |
 | 5 | Open Run 005 of "FY2025". | The header reads "Report version 1"; its header says it is superseded by FY2025 (correction): unchanged, and its header says it is superseded by the correction. |  |  |
 
 ### F3. Assignment narrows who submits and who signs, within the roles

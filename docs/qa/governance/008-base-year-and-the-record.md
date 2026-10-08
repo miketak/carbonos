@@ -110,7 +110,7 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Yaw Darko in the private window, sign in as "Yaw Darko" with `you+yaw@…` (the Yaw alias) and `Yaw-pass-2026`. | Yaw Darko is signed in. |  |  |
-| 2 | In Solo Ltd, open **Settings**, then click **Delete organization**. Fill in **Type Solo Ltd to confirm** with `solo ltd`, fill in **Reason** with `Scratch organization of the governance pack`, then click **Delete**. | **Delete** stays disabled: "Type the organization's name exactly to confirm.": the name must match exactly. |  |  |
+| 2 | In Solo Ltd, open **Settings**, then click **Delete organization**. Fill in **Type Solo Ltd to confirm** with `solo ltd`, fill in **Reason** with `Scratch organization of the governance pack`, then click **Delete**. | **Delete** stays disabled until the rule "Type the organization's name exactly to confirm." is met; the dialog shows no message, only the disabled button: the name must match exactly. |  |  |
 | 3 | In Solo Ltd, open **Settings**, then click **Delete organization**. Fill in **Type Solo Ltd to confirm** with `Solo Ltd`, fill in **Reason** with `Scratch organization of the governance pack`, then click **Delete**. | Solo Ltd leaves the list and its URL is not found. The dialog said the record of who removed it, when and why is kept. |  |  |
 | 4 | As Admin in the normal window, sign in as "Admin" with your administrator address (the Admin alias) and the password the engineering team sent you. | Admin is signed in. |  |  |
 | 5 | Open **Dashboard**. | **Organizations** reads 1. No tile carries a client's emissions figure: Organizations counts Adansi Foods Ltd alone. |  |  |

@@ -163,7 +163,7 @@ wait the hour.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As the Newcomer, on **Settings**, add the Analyst's email with the role **PREPARER** and the Auditor's email with the role **VERIFIER**. | The two members appear with their roles, and **History** at the foot of the page lists two "Member added" entries at once, without a reload. | | |
-| 2 | Add `nobody@example.test`. | Refused under the field with "No account with that email. Add the user under Manage users first. Ask a platform administrator to add them." The typed address stays in the field. | | |
+| 2 | Add `nobody@example.test`. | Refused under the field with "No account with that email. Ask a platform administrator to add the user first." The typed address stays in the field. | | |
 | 3 | Add the Analyst a second time. | Refused as already a member. | | |
 
 ### B4. A preparer works but cannot publish

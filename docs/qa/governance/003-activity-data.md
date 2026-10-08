@@ -145,7 +145,7 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Look. | Click **+ Add activity**, choose Kumasi Plant and Boiler LPG, type 0 as the quantity: the field reads "A zero needs a note: what showed that nothing was consumed. A meter or log reading is measured; 'the site said so' is estimated." and **Notes** reads "Required for a zero". Click **Save** with the note empty: "A zero needs a note of at least 10 characters: what showed that nothing was consumed." prints under **Context for the reviewer** and nothing is saved. |  |  |
-| 2 | Click **+ Add activity** and enter Boiler LPG, February at Kumasi Plant (Boiler LPG): 0 litre, 2025-02-01 to 2025-02-28, supplier Ghana Gas, with the note "Boiler off for relining; no delivery in February". Click **Save**. | ACT-0017 is on the register with the quantity 0 litre reading "DOCUMENTED_ZERO" and "reference only": a zero with its note, a data source and a reference is Ready and labelled "documented zero"; the supplier is who billed it, the data source what showed the figure. |  |  |
+| 2 | Click **+ Add activity** and enter Boiler LPG, February at Kumasi Plant (Boiler LPG): 0 litre, 2025-02-01 to 2025-02-28, supplier Ghana Gas, with the note "Boiler off for relining; no delivery in February". Click **Save**. | ACT-0017 is on the register with the quantity 0 litre reading "documented zero" and "reference only": a zero with its note, a data source and a reference is Ready and labelled "documented zero"; the supplier is who billed it, the data source what showed the figure. |  |  |
 | 3 | Open the "ACT-0017" record, click **Remove**, give "Scratch record for the documented-zero case" and confirm. | The register holds 10 records. |  |  |
 
 ### K2. The monthly template
