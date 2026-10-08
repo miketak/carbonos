@@ -83,11 +83,34 @@ final class StructureChanges {
 	}
 
 	/**
+	 * The fields of an emission source the history names (spec 04.3). The kind
+	 * and the operator are the source's operational-boundary decision; the note
+	 * is named without its value.
+	 */
+	static StructureChanges of(SourceStream stream) {
+		return new StructureChanges().field("name", stream.getName())
+			.field("kind", kind(stream.getKind()))
+			.field("fuel", stream.getFuel())
+			.field("meter or supplier", stream.getMeterOrSupplier())
+			.field("operated by", stream.isContractorOperated() ? "a contractor" : "the company")
+			.note("note", stream.getNote());
+	}
+
+	/**
 	 * "Subject: field old → new, field old → new", or null when nothing
 	 * changed. A field present on one side only (the franchise control fact
 	 * when the relationship changes) is left to the relationship to explain.
 	 */
 	static String changed(String subject, StructureChanges before, StructureChanges after) {
+		return changed(subject, before, after, null);
+	}
+
+	/**
+	 * As above, then "; reason: the reason typed" when the edit needed one (a
+	 * source with records changing its kind or operator, spec 04.3). The whole
+	 * sentence is fit to the column, so a long reason is cut, not the fields.
+	 */
+	static String changed(String subject, StructureChanges before, StructureChanges after, String reason) {
 		var changes = new ArrayList<String>();
 		for (var entry : after.fields.entrySet()) {
 			var name = entry.getKey();
@@ -98,7 +121,11 @@ final class StructureChanges {
 			}
 			changes.add(after.namedOnly.contains(name) ? name + " changed" : name + " " + was + " → " + now);
 		}
-		return changes.isEmpty() ? null : fit(subject + ": " + String.join(", ", changes));
+		if (changes.isEmpty()) {
+			return null;
+		}
+		var text = subject + ": " + String.join(", ", changes);
+		return fit(reason == null ? text : text + "; reason: " + reason);
 	}
 
 	/** "Name added: joint venture, economic interest 60%, legal ownership 60%, held through Parent". */

@@ -14,7 +14,9 @@ public record SourceStreamRequest( //
 		@Size(max = 80) String fuel, //
 		@Size(max = 120) String meterOrSupplier, //
 		Boolean contractorOperated, //
-		@Size(max = 255) String note) {
+		@Size(max = 255) String note, //
+		/** Why the kind or the operator changes on a source with records (spec 04.3); 10 to 500 characters. */
+		@Size(max = 500) String reclassifyReason) {
 
 	public GhgService.StreamFacts toFacts() {
 		return new GhgService.StreamFacts(name, kind, fuel, meterOrSupplier, Boolean.TRUE.equals(contractorOperated),

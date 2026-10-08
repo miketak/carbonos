@@ -26,6 +26,7 @@ import { EmissionFactorsPage } from '../features/ghg/EmissionFactorsPage'
 import { FactorPackUpdatesPage } from '../features/ghg/FactorPackUpdatesPage'
 import { UnitsPage } from '../features/ghg/UnitsPage'
 import { FacilitiesPage } from '../features/ghg/FacilitiesPage'
+import { EmissionSourceFormPage } from '../features/ghg/EmissionSourceFormPage'
 import { FacilityFormPage } from '../features/ghg/FacilityFormPage'
 import { EmissionSourcesPage } from '../features/ghg/EmissionSourcesPage'
 import { InventoriesPage } from '../features/ghg/InventoriesPage'
@@ -101,6 +102,10 @@ export function App() {
           <Route path="facilities/new" element={<FacilityFormPage />} />
           <Route path="facilities/:facilityId/edit" element={<FacilityFormPage />} />
           <Route path="facilities/:facilityId/sources" element={<EmissionSourcesPage />} />
+          <Route
+            path="facilities/:facilityId/sources/:streamId/edit"
+            element={<EmissionSourceFormPage />}
+          />
           <Route path="activity" element={<ActivityPage />} />
           <Route path="activity/import" element={<ImportActivitiesPage />} />
           <Route path="activity/documents" element={<SourceDocumentsPage />} />

@@ -53,6 +53,7 @@ const gensets: SourceStream = {
   allowedCategories: ['STATIONARY_COMBUSTION'],
   origin: 'REGISTER',
   createdAt: '2026-08-01T00:00:00Z',
+  recordCount: 0,
 }
 
 const fleet: SourceStream = {
@@ -157,6 +158,28 @@ test('a verifier reads the register without the add form and with Remove disable
   const remove = screen.getByRole('button', { name: 'Remove emission source Standby gensets' })
   expect(remove).toBeDisabled()
   expect(remove).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+  const edit = screen.getByRole('button', { name: 'Edit emission source Standby gensets' })
+  expect(edit).toBeDisabled()
+  expect(edit).toHaveAccessibleDescription('Needs the Preparer, Reviewer or Owner role.')
+})
+
+test('Edit opens the edit page of the source', async () => {
+  const user = userEvent.setup()
+  renderWithProviders(<EmissionSourcesPage />, {
+    route: '/app/ghg/org-1/facilities/fac-1/sources',
+    path: '/app/ghg/:organizationId/facilities/:facilityId/sources',
+    extraRoutes: [
+      {
+        path: '/app/ghg/:organizationId/facilities/:facilityId/sources/:streamId/edit',
+        element: <h1>Edit emission source</h1>,
+      },
+    ],
+  })
+
+  await user.click(
+    await screen.findByRole('button', { name: 'Edit emission source Standby gensets' }),
+  )
+  expect(await screen.findByRole('heading', { name: 'Edit emission source' })).toBeInTheDocument()
 })
 
 test('a facility that is gone reads "Facility not found" with the way back', async () => {

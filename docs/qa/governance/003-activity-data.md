@@ -5,9 +5,9 @@
 
 **Covers** [spec 04](../../../specs/04-operational-boundary-and-classification.md), [spec 04.4](../../../specs/04.4-activity-data-quality-evidence-and-corrections.md), [spec 04.5](../../../specs/04.5-bulk-import-and-activity-register.md), [spec 04.6](../../../specs/04.6-activity-register-drafts-readiness-and-source-documents.md), [spec 04.10](../../../specs/04.10-emission-sources-inline-creation-and-the-reconcile-prompt.md), [spec 04.11](../../../specs/04.11-import-round-two.md), [spec 04.12](../../../specs/04.12-the-activity-register-round-two.md) and [spec 08](../../../specs/08-form-validation-and-ui-polish.md). Spec 08 for the inline rules.
 
-**Estimated time:** 40 minutes.
+**Estimated time:** 45 minutes.
 
-**Procedure version:** 5 (2026-10-05). The change notes are at the foot.
+**Procedure version:** 6 (2026-10-07). The change notes are at the foot.
 
 **Run this procedure** after procedure 2. Procedure 4 onwards works on the ten records it imports.
 
@@ -154,6 +154,18 @@
 | --- | --- | --- | --- | --- |
 | 1 | Look. | **Download the monthly template** for Kumasi Plant, 2025-09 gives one row per emission source (Boiler LPG, Plant grid supply), the period filled, the quantity and data quality blank: a source that ran nothing is recorded as 0 with a note and its reading, not deleted; data quality is left blank because a zero typed from memory is an estimate. |  |  |
 
+## L. Editing a source with records
+
+### L1. A change of kind on a source with records needs a reason, and the records keep theirs
+
+| Step | Action | Expected result | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | On Kumasi Plant's **Emission sources** page, click **Edit** beside Boiler LPG, set **Kind** to **Mobile combustion**. Click **Save**. | Refused inline: "'Boiler LPG' has activity records. Say in at least 10 characters why its kind or operator changes; the records already filed keep their scope and category.": the kind and the operator are the source's operational-boundary decision (Corporate Standard chapter 4); with records filed under it, the change is documented or not made. |  |  |
+| 2 | On Kumasi Plant's **Emission sources** page, click **Edit** beside Boiler LPG, set **Kind** to **Mobile combustion**, type "moved" as **Reason for the change of kind or operator**. Click **Save**. | Refused inline: "'Boiler LPG' has activity records. Say in at least 10 characters why its kind or operator changes; the records already filed keep their scope and category.": five characters say nothing a verifier can read. |  |  |
+| 3 | On Kumasi Plant's **Emission sources** page, click **Edit** beside Boiler LPG, set **Kind** to **Mobile combustion**, type "boiler skid moved onto a trailer and towed between the two plant halls since June" as **Reason for the change of kind or operator**. Click **Save**. | Boiler LPG is listed at Kumasi Plant with its kind, Mobile combustion. **History** holds a stream edited entry reading "Boiler LPG at Kumasi Plant: kind stationary combustion → mobile combustion; reason: boiler skid moved onto a trailer and towed between the two plant halls since June", with `you+ama@…` (the Ama alias) and the moment: the row carries the reason; the records already filed keep the scope and category they were classified under, and only new records take the new default. |  |  |
+| 4 | On Kumasi Plant's **Emission sources** page, click **Edit** beside Boiler LPG, set **Fuel or material (optional)** to LPG (bulk). Click **Save**. | **History** holds a stream edited entry reading "Boiler LPG at Kumasi Plant: fuel LPG → LPG (bulk)": a fuel change asks no reason; filed records keep the factor they were classified with. |  |  |
+| 5 | On Kumasi Plant's **Emission sources** page, click **Edit** beside Boiler LPG, set **Kind** to **Stationary combustion**, **Fuel or material (optional)** to LPG, type "walkthrough: the skid is back on its slab; procedures 4 to 8 expect the boiler as stationary combustion" as **Reason for the change of kind or operator**. Click **Save**. | Boiler LPG is listed at Kumasi Plant with its kind, Stationary combustion: the later procedures classify the boiler's records under the stationary default, so the source goes back as it was, with a reason of its own. |  |  |
+
 ## Sign-off
 
 | Field | Value |
@@ -171,3 +183,4 @@
 - **Version 3, 2026-10-02.** Transliterated to the QA scenario DSL. The dialog's title and eyebrow, the readiness pills' wording and the register's keyboard handling are observed by hand (case I1) or described in the drivers' projections; the import outcomes are checked against the server's preview figures.
 - **Version 4, 2026-10-05.** Spec 04.11: the import is a page reached by Import, the file field is "Spreadsheet file", and section J decides two unknown emission source names in the preview, assigns a source to several records in one act and removes them in one request. Procedure 7's re-import now lands on ACT-0017.
 - **Version 5, 2026-10-05.** Spec 04.12: the template header gains supplier; C1 clicks Resolve and reads the seven rows; section K enters a documented zero with its supplier and removes it, and reads the monthly template. Procedure 7's re-import now lands on ACT-0018.
+- **Version 6, 2026-10-07.** New section L: editing a source with records (spec 04.3 amended). A change of kind without a reason, or with a five-character one, is refused under the field by `ghg.stream.reclassify-reason-required`; with a reason it goes through and the "Emission source edited" row carries it; a fuel change asks nothing. The case puts Boiler LPG back as stationary combustion before procedure 4.

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { InputField, SelectField } from '../../components/Field'
 import { Modal } from '../../components/Modal'
@@ -86,6 +86,7 @@ function SourceRegister({
   const organizationQuery = useOrganizationQuery(organizationId)
   const create = useCreateStream(organizationId)
   const remove = useDeleteStream(organizationId)
+  const navigate = useNavigate()
   const toast = useToast()
   const streams = (streamsQuery.data ?? []).filter((stream) => stream.facilityId === facility.id)
   const myRole = organizationQuery.data?.myRole ?? null
@@ -154,17 +155,29 @@ function SourceRegister({
                         : ''}
                   </span>
                 </div>
-                <RoleButton
-                  allowed={mayWrite(myRole)}
-                  tooltip={WRITE_TOOLTIP}
-                  variant="ghost"
-                  size="sm"
-                  className="text-danger"
-                  aria-label={`Remove emission source ${stream.name}`}
-                  onClick={() => setRemoving(stream)}
-                >
-                  Remove
-                </RoleButton>
+                <div className="flex shrink-0 items-center gap-1">
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Edit emission source ${stream.name}`}
+                    onClick={() => navigate(`${stream.id}/edit`)}
+                  >
+                    Edit
+                  </RoleButton>
+                  <RoleButton
+                    allowed={mayWrite(myRole)}
+                    tooltip={WRITE_TOOLTIP}
+                    variant="ghost"
+                    size="sm"
+                    className="text-danger"
+                    aria-label={`Remove emission source ${stream.name}`}
+                    onClick={() => setRemoving(stream)}
+                  >
+                    Remove
+                  </RoleButton>
+                </div>
               </li>
             ))}
           </ul>

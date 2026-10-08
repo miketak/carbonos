@@ -224,4 +224,71 @@ export const removeStream = defineVerb({
   narrate: (a) => `On ${a.facility}'s **${S.org.button.emissionSources}** page, click **${S.org.button.remove}** beside ${a.name} and confirm.`,
 })
 
-export const structureVerbs = [addEntity, editEntity, removeEntity, addFacility, addStream, removeStream]
+/**
+ * Spec 04.3 (amended 2026-10-07): an edit keeps the source and its records; a change of kind
+ * or operator on a source with records needs a reason, which the history row carries.
+ */
+export const editStream = defineVerb({
+  name: 'editStream',
+  args: z
+    .object({
+      organization: orgArg,
+      facility: z.string(),
+      name: z.string(),
+      newName: z.string().optional(),
+      kind: z.enum(['STATIONARY_COMBUSTION', 'MOBILE_COMBUSTION', 'PURCHASED_ELECTRICITY', 'PROCESS', 'FUGITIVE']).optional(),
+      fuel: z.string().optional(),
+      meterOrSupplier: z.string().optional(),
+      contractorOperated: z.boolean().optional(),
+      reason: z.string().optional(),
+    })
+    .strict(),
+  api: async (ctx, a) => {
+    const org = await organization(ctx, a.organization)
+    const site = await facility(ctx.session(), org.id, a.facility)
+    const stream = (await streamsOf(ctx.session(), site.id)).find((s) => s.name === a.name)
+    if (!stream) throw new Error(`no source '${a.name}' at ${a.facility}`)
+    return ctx.session().put(`/api/ghg/streams/${stream.id}`, {
+      name: a.newName ?? stream.name,
+      kind: a.kind ?? stream.kind,
+      fuel: a.fuel ?? stream.fuel,
+      meterOrSupplier: a.meterOrSupplier ?? stream.meterOrSupplier,
+      contractorOperated: a.contractorOperated ?? stream.contractorOperated,
+      reclassifyReason: a.reason ?? null,
+    })
+  },
+  ui: (a) => {
+    const d = S.org.dialog.editEmissionSource
+    return [
+      { op: 'orgPage', organization: a.organization, section: S.org.sections.facilities },
+      { op: 'row', text: a.facility, button: S.org.button.emissionSources },
+      { op: 'row', text: a.name, button: S.org.button.edit },
+      ...(a.newName !== undefined ? [{ op: 'fill', label: S.org.field.sourceName, value: a.newName, within: d } as const] : []),
+      ...(a.kind !== undefined ? [{ op: 'choose', label: S.org.field.kind, option: S.org.option.kind[a.kind] ?? a.kind, within: d } as const] : []),
+      ...(a.fuel !== undefined ? [{ op: 'fill', label: S.org.field.fuel, value: a.fuel, within: d } as const] : []),
+      ...(a.meterOrSupplier !== undefined ? [{ op: 'fill', label: S.org.field.meterOrSupplier, value: a.meterOrSupplier, within: d } as const] : []),
+      ...(a.contractorOperated !== undefined ? [{ op: 'tick', label: S.org.field.contractorOperated, within: d, on: a.contractorOperated } as const] : []),
+      ...(a.reason !== undefined ? [{ op: 'fill', label: S.org.field.reclassifyReason, value: a.reason, within: d } as const] : []),
+      { op: 'click', button: S.org.button.save, within: d },
+    ]
+  },
+  postconditions: (a) =>
+    a.newName !== undefined || a.kind !== undefined || a.contractorOperated !== undefined
+      ? [{ outcome: 'streamListed', args: { organization: a.organization, facility: a.facility, name: a.newName ?? a.name, kind: a.kind, contractorOperated: a.contractorOperated } }]
+      : [],
+  narrate: (a) => {
+    const changes = [
+      a.newName !== undefined ? `**${S.org.field.sourceName}** to ${a.newName}` : null,
+      a.kind !== undefined ? `**${S.org.field.kind}** to **${S.org.option.kind[a.kind] ?? a.kind}**` : null,
+      a.fuel !== undefined ? `**${S.org.field.fuel}** to ${a.fuel}` : null,
+      a.meterOrSupplier !== undefined ? `**${S.org.field.meterOrSupplier}** to ${a.meterOrSupplier}` : null,
+      a.contractorOperated !== undefined ? `${a.contractorOperated ? 'tick' : 'untick'} **${S.org.field.contractorOperated}**` : null,
+    ].filter((c) => c !== null)
+    const head = `On ${a.facility}'s **${S.org.button.emissionSources}** page, click **${S.org.button.edit}** beside ${a.name}`
+    const body = changes.length === 0 ? ' and change nothing' : `, set ${changes.join(', ')}`
+    const reason = a.reason !== undefined ? `, type "${a.reason}" as **${S.org.field.reclassifyReason}**` : ''
+    return `${head}${body}${reason}. Click **${S.org.button.save}**.`
+  },
+})
+
+export const structureVerbs = [addEntity, editEntity, removeEntity, addFacility, addStream, editStream, removeStream]

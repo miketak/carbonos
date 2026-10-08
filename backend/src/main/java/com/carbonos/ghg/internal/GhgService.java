@@ -769,7 +769,19 @@ public class GhgService {
 		recordStructure(organization, GhgAuditEvent.Action.IMPORT_SOURCE_MAPPED, detail);
 	}
 
-	public SourceStream updateStream(UUID id, StreamFacts facts) {
+	/** The minimum length of the reason that changes the kind or the operator of a source with records (spec 04.3). */
+	static final int RECLASSIFY_REASON_MIN = 10;
+
+	/**
+	 * Spec 04.3: an edit keeps the source's identity and its records. The kind
+	 * and the contractor flag are the operational-boundary decision for the
+	 * source (Corporate Standard chapter 4); changing either on a source with
+	 * records needs a typed reason, which chapter 9 wants documented. Records
+	 * already filed keep their stored scope and category; only new records take
+	 * the new default. Every edit that changes something writes a history row
+	 * with the old and new values and the reason when one was given.
+	 */
+	public SourceStream updateStream(UUID id, StreamFacts facts, String reclassifyReason) {
 		var stream = getStream(id);
 		access.checkWrite(stream.getFacility().getOrganization());
 		var trimmed = facts.name().trim();
@@ -777,9 +789,39 @@ public class GhgService {
 				&& streams.existsByFacilityIdAndNameIgnoreCase(stream.getFacility().getId(), trimmed)) {
 			throw new GhgRuleViolationException(GhgRules.STREAM_NAME_DUPLICATE, stream.getFacility().getName(), trimmed);
 		}
+		var reason = trimToNull(reclassifyReason);
+		var reclassified = facts.kind() != stream.getKind() || facts.contractorOperated() != stream.isContractorOperated();
+		if (reclassified) {
+			var records = activities.countByStreamIdAndDeletedAtIsNull(id);
+			if (records > 0 && (reason == null || reason.length() < RECLASSIFY_REASON_MIN)) {
+				throw new GhgFieldException(GhgRules.STREAM_RECLASSIFY_REASON_REQUIRED, stream.getName());
+			}
+		}
+		var before = StructureChanges.of(stream);
 		stream.update(trimmed, facts.kind(), trimToNull(facts.fuel()), trimToNull(facts.meterOrSupplier()),
 				facts.contractorOperated(), trimToNull(facts.note()));
+		var detail = StructureChanges.changed(stream.getName() + " at " + stream.getFacility().getName(), before,
+				StructureChanges.of(stream), reason);
+		if (detail != null) {
+			recordStructure(stream.getFacility().getOrganization(), GhgAuditEvent.Action.STREAM_EDITED, detail);
+		}
 		return stream;
+	}
+
+	/** The live records that name the source (spec 04.10). */
+	@Transactional(readOnly = true)
+	public long recordCount(SourceStream stream) {
+		return activities.countByStreamIdAndDeletedAtIsNull(stream.getId());
+	}
+
+	/** The live records per source of an organization, keyed by source id; a source with none is absent. */
+	@Transactional(readOnly = true)
+	public Map<UUID, Long> recordCountsByStream(UUID organizationId) {
+		var counts = new HashMap<UUID, Long>();
+		for (var row : activities.countByStreamOfOrganization(organizationId)) {
+			counts.put((UUID) row[0], (Long) row[1]);
+		}
+		return counts;
 	}
 
 	/** A stream with records is part of the register the facts are filed under; it cannot be deleted. */

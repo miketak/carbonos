@@ -74,6 +74,7 @@ const gensets: SourceStream = {
   allowedCategories: ['STATIONARY_COMBUSTION'],
   origin: 'REGISTER',
   createdAt: '2026-08-01T00:00:00Z',
+  recordCount: 0,
 }
 
 const diesel: Activity = {

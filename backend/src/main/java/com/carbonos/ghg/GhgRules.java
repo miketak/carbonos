@@ -68,6 +68,11 @@ public class GhgRules implements RuleSource {
 	public static final Rule STREAM_HAS_RECORDS = Rule.of("ghg.stream.has-records", HttpStatus.CONFLICT,
 			"'{name}' has activity records. Move them to another emission source before deleting it.");
 
+	// editing a source with records (spec 04.3): the kind and the operator are its operational-boundary decision
+	public static final Rule STREAM_RECLASSIFY_REASON_REQUIRED = Rule.field("ghg.stream.reclassify-reason-required",
+			"reclassifyReason", "'{name}' has activity records. Say in at least 10 characters why its kind or operator "
+					+ "changes; the records already filed keep their scope and category.");
+
 	public static final Rule STREAM_OTHER_FACILITY = Rule.of("ghg.stream.other-facility", HttpStatus.CONFLICT,
 			"The emission source '{name}' belongs to '{owner}', not to '{facility}'.");
 
@@ -375,7 +380,7 @@ public class GhgRules implements RuleSource {
 			MEMBER_DUPLICATE, LAST_OWNER, ENTITY_DISPOSAL_BEFORE_ACQUISITION, ENTITY_PERCENT_RANGE,
 			ENTITY_NAME_DUPLICATE, ENTITY_PARENT_LOOP, ENTITY_HAS_FACILITIES, LEASE_ENDS_BEFORE_START,
 			STREAM_NAME_DUPLICATE, STREAM_NAME_SIMILAR, STREAM_SIMILAR_REASON_TOO_SHORT, STREAM_HAS_RECORDS,
-			STREAM_OTHER_FACILITY, ACTIVITY_STREAM_AND_NEW_STREAM, UNIT_REGISTERED, UNIT_DUPLICATE, DENSITY_DUPLICATE, BLEND_FRACTIONS,
+			STREAM_RECLASSIFY_REASON_REQUIRED, STREAM_OTHER_FACILITY, ACTIVITY_STREAM_AND_NEW_STREAM, UNIT_REGISTERED, UNIT_DUPLICATE, DENSITY_DUPLICATE, BLEND_FRACTIONS,
 			FACTOR_SELF_APPROVAL, FACTOR_CAVEAT_NOTE_REQUIRED, REASON_TOO_SHORT, ACTIVITY_REMOVED_CANNOT_CORRECT, ACTIVITY_NO_WAY_BACK_TO_DRAFT,
 			ACTIVITY_ALREADY_REMOVED, ACTIVITY_USED_IN_RUN, ACTIVITY_BULK_EMPTY, ACTIVITY_BULK_TOO_MANY,
 			ACTIVITY_BULK_REFUSED, ACTIVITY_HAS_SOURCE, ACTIVITY_ZERO_NEEDS_NOTE, IMPORT_DECISION_UNUSED, IMPORT_MAP_REASON_REQUIRED,

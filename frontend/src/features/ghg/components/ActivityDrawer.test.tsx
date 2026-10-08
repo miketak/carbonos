@@ -89,6 +89,7 @@ const haulFleet: SourceStream = {
   allowedCategories: ['MOBILE_COMBUSTION'],
   origin: 'REGISTER',
   createdAt: '2026-09-01T00:00:00Z',
+  recordCount: 0,
 }
 
 function renderDrawer(

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.ghg.internal.GhgService;
+import com.carbonos.ghg.internal.SourceStream;
 import com.carbonos.ghg.internal.web.dto.SourceStreamRequest;
 import com.carbonos.ghg.internal.web.dto.SourceStreamResponse;
 
@@ -36,12 +37,20 @@ class SourceStreamController {
 
 	@GetMapping("/organizations/{organizationId}/streams")
 	List<SourceStreamResponse> listAll(@PathVariable UUID organizationId) {
-		return ghgService.listStreams(organizationId).stream().map(SourceStreamResponse::from).toList();
+		return withCounts(ghgService.listStreams(organizationId), organizationId);
 	}
 
 	@GetMapping("/facilities/{facilityId}/streams")
 	List<SourceStreamResponse> list(@PathVariable UUID facilityId) {
-		return ghgService.listStreamsOfFacility(facilityId).stream().map(SourceStreamResponse::from).toList();
+		var streams = ghgService.listStreamsOfFacility(facilityId);
+		return streams.isEmpty() ? List.of()
+				: withCounts(streams, streams.getFirst().getFacility().getOrganization().getId());
+	}
+
+	private List<SourceStreamResponse> withCounts(List<SourceStream> streams, UUID organizationId) {
+		var counts = ghgService.recordCountsByStream(organizationId);
+		return streams.stream().map(stream -> SourceStreamResponse.from(stream, counts.getOrDefault(stream.getId(), 0L)))
+			.toList();
 	}
 
 	@PostMapping("/facilities/{facilityId}/streams")
@@ -57,7 +66,8 @@ class SourceStreamController {
 
 	@PutMapping("/streams/{id}")
 	SourceStreamResponse update(@PathVariable UUID id, @Valid @RequestBody SourceStreamRequest body) {
-		return SourceStreamResponse.from(ghgService.updateStream(id, facts(body)));
+		var stream = ghgService.updateStream(id, facts(body), body.reclassifyReason());
+		return SourceStreamResponse.from(stream, ghgService.recordCount(stream));
 	}
 
 	@DeleteMapping("/streams/{id}")

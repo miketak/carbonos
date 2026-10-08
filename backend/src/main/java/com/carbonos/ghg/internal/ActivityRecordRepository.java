@@ -6,6 +6,8 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ActivityRecordRepository
 		extends JpaRepository<ActivityRecord, UUID>, JpaSpecificationExecutor<ActivityRecord> {
@@ -33,5 +35,12 @@ public interface ActivityRecordRepository
 	List<Object[]> recordRange(UUID batchId);
 
 	boolean existsByStreamIdAndDeletedAtIsNull(UUID streamId);
+
+	long countByStreamIdAndDeletedAtIsNull(UUID streamId);
+
+	/** The live records per source of an organization, for the register's record counts (spec 04.10). */
+	@Query("select a.stream.id, count(a) from ActivityRecord a where a.stream.facility.organization.id = :organizationId"
+			+ " and a.deletedAt is null group by a.stream.id")
+	List<Object[]> countByStreamOfOrganization(@Param("organizationId") UUID organizationId);
 
 }

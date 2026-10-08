@@ -113,6 +113,8 @@ export interface SourceStream {
   allowedCategories: ActivityCategory[]
   origin: SourceOrigin
   createdAt: string
+  /** The live records that name the source; a change of kind or operator on one with records needs a reason. */
+  recordCount: number
 }
 
 export interface SourceStreamInput {
@@ -122,6 +124,8 @@ export interface SourceStreamInput {
   meterOrSupplier?: string
   contractorOperated: boolean
   note?: string
+  /** Why the kind or the operator changes on a source with records (spec 04.3); 10 to 500 characters. */
+  reclassifyReason?: string
 }
 
 /** The assurance a report carries (spec 07.4). */
@@ -1366,6 +1370,7 @@ export interface AuditEvent {
     | 'FACILITY_UPDATED'
     | 'FACILITY_REMOVED'
     | 'STREAM_ADDED'
+    | 'STREAM_EDITED'
     | 'STREAM_REMOVED'
     | 'UPSTREAM_RULE_ADDED'
     | 'UPSTREAM_RULE_REMOVED'

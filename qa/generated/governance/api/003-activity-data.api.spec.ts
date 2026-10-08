@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/003-activity-data.yaml (sha256 634e185ed66b0db2a7fa7001c7615920065f90a71eb625d635337f22145a26b0); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/003-activity-data.yaml (sha256 2360e6f20f61aeeb7fe63b8db4c84d73081435be770d46b54b5f8ad72a30332a); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/api/index.ts'
 
-const P = procedure("governance", 3, "634e185ed66b0db2a7fa7001c7615920065f90a71eb625d635337f22145a26b0")
+const P = procedure("governance", 3, "2360e6f20f61aeeb7fe63b8db4c84d73081435be770d46b54b5f8ad72a30332a")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 3: Activity data", () => {
@@ -230,6 +230,34 @@ test.describe("Procedure 3: Activity data", () => {
     await test.step("3.K2.1", async () => {
       const s = P.step("3.K2.1").as("ama")
       await s.expect(undefined, [{"outcome":"monthlyTemplateRows","args":{"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","month":"2025-09","sources":["Boiler LPG","Plant grid supply"]},"why":"a source that ran nothing is recorded as 0 with a note and its reading, not deleted; data quality is left blank because a zero typed from memory is an estimate"}])
+    })
+  })
+
+  test("L1. A change of kind on a source with records needs a reason, and the records keep theirs", async () => {
+    await test.step("3.L1.1", async () => {
+      const s = P.step("3.L1.1")
+      const out = await s.do("editStream", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Boiler LPG","kind":"MOBILE_COMBUSTION"})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.stream.reclassify-reason-required","with":{"name":"Boiler LPG"}},"why":"the kind and the operator are the source's operational-boundary decision (Corporate Standard chapter 4); with records filed under it, the change is documented or not made"}])
+    })
+    await test.step("3.L1.2", async () => {
+      const s = P.step("3.L1.2")
+      const out = await s.do("editStream", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Boiler LPG","kind":"MOBILE_COMBUSTION","reason":"moved"})
+      await s.expect(out, [{"outcome":"refused","args":{"rule":"ghg.stream.reclassify-reason-required","with":{"name":"Boiler LPG"}},"why":"five characters say nothing a verifier can read"}])
+    })
+    await test.step("3.L1.3", async () => {
+      const s = P.step("3.L1.3")
+      const out = await s.do("editStream", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Boiler LPG","kind":"MOBILE_COMBUSTION","reason":"boiler skid moved onto a trailer and towed between the two plant halls since June"})
+      await s.expect(out, [{"outcome":"streamListed","args":{"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Boiler LPG","kind":"MOBILE_COMBUSTION"}},{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"STREAM_EDITED","detail":"Boiler LPG at Kumasi Plant: kind stationary combustion → mobile combustion; reason: boiler skid moved onto a trailer and towed between the two plant halls since June","actor":"ama"},"why":"the row carries the reason; the records already filed keep the scope and category they were classified under, and only new records take the new default"}])
+    })
+    await test.step("3.L1.4", async () => {
+      const s = P.step("3.L1.4")
+      const out = await s.do("editStream", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Boiler LPG","fuel":"LPG (bulk)"})
+      await s.expect(out, [{"outcome":"historyHas","args":{"organization":"Adansi Foods Ltd","action":"STREAM_EDITED","detail":"Boiler LPG at Kumasi Plant: fuel LPG → LPG (bulk)"},"why":"a fuel change asks no reason; filed records keep the factor they were classified with"}])
+    })
+    await test.step("3.L1.5", async () => {
+      const s = P.step("3.L1.5")
+      const out = await s.do("editStream", {"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Boiler LPG","kind":"STATIONARY_COMBUSTION","fuel":"LPG","reason":"walkthrough: the skid is back on its slab; procedures 4 to 8 expect the boiler as stationary combustion"})
+      await s.expect(out, [{"outcome":"streamListed","args":{"organization":"Adansi Foods Ltd","facility":"Kumasi Plant","name":"Boiler LPG","kind":"STATIONARY_COMBUSTION"},"why":"the later procedures classify the boiler's records under the stationary default, so the source goes back as it was, with a reason of its own"}])
     })
   })
 })
