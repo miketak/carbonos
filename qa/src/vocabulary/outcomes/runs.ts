@@ -45,7 +45,7 @@ export const runListed = defineOutcome({
   },
   narrate: (a) => {
     const parts = [`${label(a.run)} is listed`]
-    if (a.totalKgCo2e !== undefined) parts.push(`with its total ${kg(a.totalKgCo2e)} kg CO₂e`)
+    if (a.totalKgCo2e !== undefined) parts.push(`with its total ${onScreen(a.totalKgCo2e)} (${kg(a.totalKgCo2e)} kg)`)
     if (a.boundaryVersion !== undefined) parts.push(`and "boundary v${a.boundaryVersion}"`)
     if (a.voided) parts.push(`marked VOIDED${a.voidReason ? ` with your email and the reason "${a.voidReason}"` : ''}`)
     if (a.final) parts.push('marked FINAL')
@@ -89,7 +89,7 @@ export const runLine = defineOutcome({
   ],
   narrate: (a) => {
     const parts = [`the ${a.derived ? 'derived line of ' : 'line of '}${a.record}`]
-    if (a.kgCo2e !== undefined) parts.push(`reads ${kg(a.kgCo2e)} kg CO₂e`)
+    if (a.kgCo2e !== undefined) parts.push(`reads ${onScreen(a.kgCo2e)} (${kg(a.kgCo2e)} kg)`)
     if (a.conversionNote) parts.push(`and "${a.conversionNote}"`)
     if (a.coveredDays !== undefined) parts.push(`and ${a.coveredDays} covered days of ${a.periodDays ?? '?'}`)
     return parts.join(' ').replace(/^./, (c) => c.toUpperCase()) + '.'
@@ -137,7 +137,7 @@ export const runByGas = defineOutcome({
     ...(a.unsplitKgCo2e !== undefined ? [{ check: 'rowHas' as const, text: 'CO₂e from factors without a gas split', cells: [`${(a.unsplitKgCo2e / 1000).toFixed(3)} t CO₂e`] }] : []),
   ],
   narrate: (a) =>
-    `${a.hfcsKg !== undefined ? `The refrigerant line carries ${a.hfcsKg} kg under HFCs. ` : ''}${a.unsplitKgCo2e !== undefined ? `The row "CO₂e from factors without a gas split" carries ${kg(a.unsplitKgCo2e)} kg.` : ''}`.trim(),
+    `${a.hfcsKg !== undefined ? `The refrigerant line carries ${a.hfcsKg} kg under HFCs. ` : ''}${a.unsplitKgCo2e !== undefined ? `The row "CO₂e from factors without a gas split" carries ${(a.unsplitKgCo2e / 1000).toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} t CO₂e (${kg(a.unsplitKgCo2e)} kg).` : ''}`.trim(),
 })
 
 export const reportHeader = defineOutcome({

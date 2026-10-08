@@ -272,7 +272,26 @@ test('the validation tab names every broken rule with the rows that break it', a
   ).toBeInTheDocument()
   expect(screen.getByText('tdlosses')).toBeInTheDocument()
   expect(screen.getByText('TEST:crates')).toBeInTheDocument()
-  expect(screen.getByText(/3 rows break a publication rule/i)).toBeInTheDocument()
+  expect(
+    screen.getByText(/3 rows break a publication rule\. Publication is refused/i),
+  ).toBeInTheDocument()
+})
+
+test('the validation summary counts rows, not findings', async () => {
+  const user = userEvent.setup()
+  vi.mocked(getFactorPackValidation).mockResolvedValue([
+    { rule: 'code', code: 'grid2024', message: 'The code needs two or more segments.' },
+    { rule: 'unit', code: 'grid2024', message: "'widgets' is not a registered unit." },
+    { rule: 'provenance', code: 'grid2024', message: 'The row is missing the data year.' },
+  ])
+  renderPage()
+
+  await user.click(await screen.findByRole('tab', { name: /validation 3/i }))
+  expect(
+    await screen.findByText(
+      /1 row breaks a publication rule \(3 findings in all\)\. Publication is refused while it stands/i,
+    ),
+  ).toBeInTheDocument()
 })
 
 test('an edition with no broken rule says so', async () => {

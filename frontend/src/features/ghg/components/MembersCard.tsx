@@ -177,17 +177,17 @@ export function MembersCard({ organization }: { organization: Organization }) {
           {addError && (
             <p role="alert" className="text-[13px] font-medium text-danger md:col-span-3">
               {addError === UNKNOWN_EMAIL ? (
-                <>
-                  No account with that email. Add the user under{' '}
-                  {isPlatformAdmin ? (
+                isPlatformAdmin ? (
+                  <>
+                    No account with that email. Add the user under{' '}
                     <Link to="/admin/users" className="font-semibold underline">
                       Manage users
-                    </Link>
-                  ) : (
-                    'Manage users'
-                  )}{' '}
-                  first.{isPlatformAdmin ? '' : ' Ask a platform administrator to add them.'}
-                </>
+                    </Link>{' '}
+                    first.
+                  </>
+                ) : (
+                  'No account with that email. Ask a platform administrator to add the user first.'
+                )
               ) : (
                 addError
               )}

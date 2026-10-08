@@ -226,7 +226,9 @@ test('an unknown email under Add member says what to do about it (spec 01.4)', a
   await user.click(screen.getByRole('button', { name: /add member/i }))
 
   expect(
-    await screen.findByText(/No account with that email\. Add the user under Manage users first\./),
+    await screen.findByText(
+      /No account with that email\. Ask a platform administrator to add the user first\./,
+    ),
   ).toBeInTheDocument()
   expect(field).toHaveValue('nobody@example.com')
 })

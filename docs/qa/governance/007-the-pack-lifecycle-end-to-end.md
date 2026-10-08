@@ -58,7 +58,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Publish** on `ghana-2027-gov`, and click **Publish** in the dialog. | The dialog "Publish ghana-2027-gov" lists the conditions and reads "No source document yet. Upload the publication this edition was transcribed from."; **Publish** stays disabled. **Publish** stays disabled: "The approver must not be the curator. {curator} built this draft, so somebody else checks it against the source document and publishes it.": the dialog lists the conditions; the rules line passes; no source document yet, and the curator is the one asking. |  |  |
+| 1 | Click **Publish** on `ghana-2027-gov`, and click **Publish** in the dialog. | The dialog "Publish ghana-2027-gov" lists the conditions and reads "No source document yet. Upload the publication this edition was transcribed from."; **Publish** stays disabled. **Publish** stays disabled until the rule "The approver must not be the curator. {curator} built this draft, so somebody else checks it against the source document and publishes it." is met; the dialog shows no message, only the disabled button: the dialog lists the conditions; the rules line passes; no source document yet, and the curator is the one asking. |  |  |
 | 2 | Click **Publish** on `ghana-2027-gov` and choose `source-document.txt` under **Source document**. | The dialog shows the document's SHA-256 "computed over the bytes stored"; the last condition reads not met, "The approver must not be the curator. You built this draft, so another administrator checks it against the source document and publishes it."; **Publish** stays disabled. `ghana-2027-gov` is listed as DRAFT: the citation is typed by whoever publishes, in case B2; the edition is still a draft. |  |  |
 
 ### B2. The second administrator reads the blast radius and publishes
@@ -67,10 +67,10 @@
 | --- | --- | --- | --- | --- |
 | 1 | As Admin B in the private window, sign in as "Admin B" with `you+adminb@…` (the Admin B alias) and `AdminB-pass-2026`. | Admin B is signed in. |  |  |
 | 2 | Open `ghana-2027-gov` and click **Blast radius**. | A drawer says publishing changes no organization's data. One row changed, `GHANA:grid:GHA:2024` from 0.468809 to 0.44, -6.15%. "1 organization holds one of these lineages". Adansi Foods Ltd's card names the estimated movement, about -3,486 kg CO₂e from its last completed run (Run 001) and lists the lineage inside a locked period (FY2025): the correction's Run 001 priced 121,000 kWh; (0.44 - 0.468809) × 121,000 is about -3,486 kg CO₂e. |  |  |
-| 3 | Click **Publish** on `ghana-2027-gov`, clear **Applies from**, and click **Publish** in the dialog. | The screen reads "Give the date the edition applies from. It is the vintage boundary an adoption is run from.". **Publish** stays disabled: "Give the date the edition applies from. It is the vintage boundary an adoption is run from.". |  |  |
+| 3 | Click **Publish** on `ghana-2027-gov`, clear **Applies from**, and click **Publish** in the dialog. | The screen reads "Give the date the edition applies from. It is the vintage boundary an adoption is run from.". **Publish** stays disabled until the rule "Give the date the edition applies from. It is the vintage boundary an adoption is run from." is met; the dialog shows no message, only the disabled button. |  |  |
 | 4 | Click **Publish** on `ghana-2027-gov`, set **Applies from** to 2026-01-01, type "Gas supplier delivery note, March 2025 (test source)" as **Source document as cited**, and click **Publish** in the dialog. | `ghana-2027-gov` is listed as PUBLISHED, applying from 2026-01-01 superseding `ghana`. `ghana` is listed as SUPERSEDED. The **Metadata** tab names Admin as curator and Admin B as approver: "ghana-2027-gov was published."; ghana reads SUPERSEDED because the new edition applies after it; the Metadata tab prints the provenance review and the evidence checksum, not the publication moment, which the edition's events carry. |  |  |
 | 5 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
-| 6 | In Adansi Foods Ltd, open **Emission factors**. | "Grid electricity, Ghana (2024)" is listed with one version, ghana. Run 005 is listed with its total 120,373.32 kg CO₂e: 0.468809 and 120,373.32 kg: publishing moved nothing. |  |  |
+| 6 | In Adansi Foods Ltd, open **Emission factors**. | "Grid electricity, Ghana (2024)" is listed with one version, ghana. Run 005 is listed with its total 120.37 t CO₂e (120,373.32 kg): 0.468809 and 120,373.32 kg: publishing moved nothing. |  |  |
 
 ## C. The organization decides
 
@@ -96,7 +96,7 @@
 | --- | --- | --- | --- | --- |
 | 1 | As Admin B in the private window, sign in as "Admin B" with `you+adminb@…` (the Admin B alias) and `AdminB-pass-2026`. | Admin B is signed in. |  |  |
 | 2 | Open **GHG accounting**. | Adansi Foods Ltd is not listed under **GHG accounting**: an administrator is an outsider. |  |  |
-| 3 | Open **Administration**, **Organizations**, click **Assume access** on Adansi Foods Ltd, type the reason "short" and confirm. | **Assume access** stays disabled: "Give a reason of at least 10 characters.". |  |  |
+| 3 | Open **Administration**, **Organizations**, click **Assume access** on Adansi Foods Ltd, type the reason "short" and confirm. | **Assume access** stays disabled until the rule "Give a reason of at least 10 characters." is met; the dialog shows no message, only the disabled button. |  |  |
 | 4 | Open **Administration**, **Organizations**, click **Assume access** on Adansi Foods Ltd, type the reason "Ticket 118: the owner asked what the notice means" and confirm. | The row shows the expiry and **End access**. "Support access to Adansi Foods Ltd assumed.". |  |  |
 | 5 | Open **Updates**. | The screen reads "under support access until". Every page carries the banner "You are in Adansi Foods Ltd under support access until <time>. Every act is recorded in this organization's history.". Settings opens only on Baseline and targets, with no Organization tab, and the foot of the sidebar reads "Support access" where a member's reads their role. |  |  |
 | 6 | Open the drawer of `ghana-2027-gov`, answer "Vintage progression: the edition applies to the next reporting year forward" and click **Accept**. | Refused: "Support access cannot adopt an edition for an organization. That is the organization's own decision, so a reviewer or an owner of the organization has to make it.". |  |  |
@@ -110,7 +110,7 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | As Kofi Mensah in the private window, sign in as "Kofi Mensah" with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`. | Kofi Mensah is signed in. |  |  |
-| 2 | Open the drawer of `ghana-2027-gov` and click **Accept** without answering. | The three answers under **How does chapter 5 treat this adoption?** are "Vintage progression: the edition applies to the next reporting year forward", "Retrospective adoption: the edition is applied to a year already reported", "Erratum: the edition corrects a wrong value in a year already reported". **Accept** stays disabled: "Say how chapter 5 treats this adoption: VINTAGE_PROGRESSION, RETROSPECTIVE_ADOPTION, or ERRATUM_ON_REPORTED_YEAR.". |  |  |
+| 2 | Open the drawer of `ghana-2027-gov` and click **Accept** without answering. | The three answers under **How does chapter 5 treat this adoption?** are "Vintage progression: the edition applies to the next reporting year forward", "Retrospective adoption: the edition is applied to a year already reported", "Erratum: the edition corrects a wrong value in a year already reported". **Accept** stays disabled until the rule "Say how chapter 5 treats this adoption: VINTAGE_PROGRESSION, RETROSPECTIVE_ADOPTION, or ERRATUM_ON_REPORTED_YEAR." is met; the dialog shows no message, only the disabled button. |  |  |
 | 3 | Open the drawer of `ghana-2027-gov`, answer "Vintage progression: the edition applies to the next reporting year forward" and click **Accept**. | One row: `ghana-2027-gov`, status "Accepted", with `you+kofi@…` (the Kofi alias)'s email. The badge on **Updates** is gone: "Adopted ghana-2027-gov: 1 version cut, 0 lineages added.". |  |  |
 | 4 | In Adansi Foods Ltd, open **Emission factors**. | "Grid electricity, Ghana (2024)" is listed with 2 versions: ghana and ghana-2027-gov: the old version until 2025-12-31 at 0.468809, the live one from 2026-01-01 at 0.44; nothing rewrote a past value. |  |  |
 | 5 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
@@ -131,9 +131,9 @@
 | 6 | Open ACT-0019 and click the suggestion "Suggested for this facility's grid". | The picker offers the defra-2026 LPG version, the one live in 2026. The grid preview reads "110 MWh → 110,000 kWh × 0.44 kg CO₂e/kWh": the suggestion is the version live in the period. |  |  |
 | 7 | Choose **No residual mix is available** and save. | The inventory records that no residual mix is available. |  |  |
 | 8 | Click **Freeze inventory**. |  |  |  |
-| 9 | On **Runs**, click **Launch calculation run**. | Run 001 is listed with its total 52,253.90 kg CO₂e. The line of ACT-0019 reads 48,400.00 kg CO₂e. The line of ACT-0018 reads 3,269.97 kg CO₂e. The line of ACT-0006 reads 583.92 kg CO₂e and 15 covered days of 32: 48,400 for the electricity, 3,269.97 for the January LPG (2,100 litre × 1.55713) and 583.92 for the 15 pro-rated days of the year-end LPG (375 litre × 1.55713). |  |  |
+| 9 | On **Runs**, click **Launch calculation run**. | Run 001 is listed with its total 52.25 t CO₂e (52,253.90 kg). The line of ACT-0019 reads 48.4 t CO₂e (48,400.00 kg). The line of ACT-0018 reads 3.27 t CO₂e (3,269.97 kg). The line of ACT-0006 reads 583.9 kg CO₂e (583.92 kg) and 15 covered days of 32: 48,400 for the electricity, 3,269.97 for the January LPG (2,100 litre × 1.55713) and 583.92 for the 15 pro-rated days of the year-end LPG (375 litre × 1.55713). |  |  |
 | 10 | Look. | The factor table cites `ghana-2027-gov` from 2026-01-01 on the "Grid electricity, Ghana (2024)" row. The factor table cites `defra-2026` from 2026-01-01 on the "Gaseous fuels: LPG" row: open the PDF and read the factor table: the grid row cites ghana-2027-gov from 2026-01-01; the LPG row cites defra-2026 from 2026-01-01. |  |  |
-| 11 | Open Run 001 of "FY2025 (correction)". | The line of ACT-0002 reads 56,725.89 kg CO₂e: still 56,725.89 kg on the grid line at 0.468809: the reported year kept its factors. |  |  |
+| 11 | Open Run 001 of "FY2025 (correction)". | The line of ACT-0002 reads 56.73 t CO₂e (56,725.89 kg): still 56,725.89 kg on the grid line at 0.468809: the reported year kept its factors. |  |  |
 
 ## E. An edition inside a reported period
 
@@ -168,7 +168,7 @@
 | 7 | As Kofi Mensah in the private window, sign in as "Kofi Mensah" with `you+kofi@…` (the Kofi alias) and `Kofi-pass-2026`. | Kofi Mensah is signed in. |  |  |
 | 8 | Open **Updates**. | One row: `ghana-2027-gov.r2`, status "Withdrawn by the publisher", with the reason "Published against the wrong period; retracted". The badge on **Updates** is gone. |  |  |
 | 9 | On **Updates**, click **Review** on `ghana-2027-gov.r2`. | The screen reads "The publisher withdrew this edition, so there is nothing to decide.". |  |  |
-| 10 | In Adansi Foods Ltd, open **Emission factors**. | "Grid electricity, Ghana (2024)" is listed with 2 versions: ghana and ghana-2027-gov. Run 005 is listed with its total 120,373.32 kg CO₂e: two versions, 120,373.32 kg: a withdrawal is the publisher's act. |  |  |
+| 10 | In Adansi Foods Ltd, open **Emission factors**. | "Grid electricity, Ghana (2024)" is listed with 2 versions: ghana and ghana-2027-gov. Run 005 is listed with its total 120.37 t CO₂e (120,373.32 kg): two versions, 120,373.32 kg: a withdrawal is the publisher's act. |  |  |
 
 ## Sign-off
 

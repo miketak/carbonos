@@ -657,11 +657,15 @@ function ValidationTab({
     byRule.set(finding.rule, [...(byRule.get(finding.rule) ?? []), finding])
   }
 
+  const rowCount = new Set(findings.map((finding) => finding.code)).size
+  const findingCount = findings.length
+
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-ink-muted">
-        {findings.length} {findings.length === 1 ? 'row breaks' : 'rows break'} a publication rule.
-        Publication is refused while any of them stands.
+        {rowCount} {rowCount === 1 ? 'row breaks' : 'rows break'} a publication rule
+        {findingCount !== rowCount ? ` (${findingCount} findings in all)` : ''}. Publication is
+        refused while {rowCount === 1 ? 'it' : 'any of them'} stands.
       </p>
       {[...byRule.entries()].map(([rule, group]) => (
         <Panel key={rule}>
