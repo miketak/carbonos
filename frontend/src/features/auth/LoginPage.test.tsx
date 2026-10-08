@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { useLocation } from 'react-router-dom'
 import { ApiError } from '../../lib/api'
 import { renderWithProviders } from '../../test/utils'
 import { LoginPage } from './LoginPage'
@@ -68,6 +69,30 @@ test('a deep link returns the account to the page it asked for', async () => {
   await waitFor(() => expect(screen.getByText('the users page')).toBeInTheDocument())
   expect(screen.queryByText('the landing resolver')).not.toBeInTheDocument()
 })
+
+test('the page a deep link opens is told it came from the sign-in', async () => {
+  const user = userEvent.setup({ delay: null })
+  vi.mocked(login).mockResolvedValue(admin)
+  renderWithProviders(<LoginPage />, {
+    route: { pathname: '/login', state: { from: '/admin/users' } },
+    extraRoutes: [
+      { path: '/app', element: <p>the landing resolver</p> },
+      { path: '/admin/users', element: <StateProbe /> },
+    ],
+  })
+
+  await user.type(screen.getByLabelText(/email/i), 'admin@ecoriv.com')
+  await user.type(screen.getByLabelText(/password/i), 'correct-horse')
+  await user.click(screen.getByRole('button', { name: /sign in/i }))
+
+  await waitFor(() => expect(screen.getByText('fromSignIn: true')).toBeInTheDocument())
+})
+
+/** Prints the router state the page arrived with. */
+function StateProbe() {
+  const state = useLocation().state as { fromSignIn?: boolean } | null
+  return <p>fromSignIn: {String(state?.fromSignIn)}</p>
+}
 
 test('a sign-out clears the deep link so the next account lands on its own work', async () => {
   const user = userEvent.setup({ delay: null })
