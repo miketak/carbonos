@@ -31,8 +31,13 @@ export function LoginPage() {
       queryClient.setQueryData(sessionQueryKey, user)
       triggerSplash()
       // a deep link wins; otherwise "/app" resolves where this account's work
-      // starts, so the rule lives in one place (spec 01.6)
-      void navigate(from ?? '/app', { replace: true })
+      // starts, so the rule lives in one place (spec 01.6). The page the deep
+      // link opens is told it came from here, so one it cannot open falls back
+      // to the resolver instead of stranding the account on its failure
+      void navigate(from ?? '/app', {
+        replace: true,
+        state: from ? { fromSignIn: true } : undefined,
+      })
     },
   })
 

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { ApiError } from '../../lib/api'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { ToastProvider } from '../../components/toast'
 import { OrganizationLayout } from './OrganizationLayout'
@@ -63,7 +64,7 @@ beforeEach(() => {
  * The layout is mounted as the real nested route it is, so `NavLink` resolves
  * its relative targets and marks the active one the way it does in the app.
  */
-function renderAt(route: string) {
+function renderAt(route: string | { pathname: string; state?: unknown }) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
@@ -79,6 +80,7 @@ function renderAt(route: string) {
               <Route path="settings/baseline" element={<p>baseline</p>} />
               <Route path="base-year" element={<Navigate to="../settings/baseline" replace />} />
             </Route>
+            <Route path="/app" element={<p>the landing resolver</p>} />
           </Routes>
         </MemoryRouter>
       </ToastProvider>
@@ -181,4 +183,26 @@ test('two organizations of one name are told apart in the switcher (spec 01.8)',
       .getAllByRole('option')
       .map((option) => option.textContent),
   ).toEqual(['Ecoriv Holdings (ORG-0001)', 'Ecoriv Holdings (ORG-0002)'])
+})
+
+// spec 01.6: the deep link the sign-in page follows wins only when it opens
+test('an organization the sign-in deep link cannot open falls back to the resolver', async () => {
+  vi.mocked(getOrganization).mockRejectedValue(new ApiError(404))
+  renderAt({ pathname: '/app/ghg/org-gone/settings', state: { fromSignIn: true } })
+
+  await waitFor(() => expect(screen.getByText('the landing resolver')).toBeInTheDocument())
+  expect(screen.queryByRole('heading', { name: 'Organization not found' })).not.toBeInTheDocument()
+})
+
+test('an organization that stops answering mid-session keeps its explanation and a way out', async () => {
+  vi.mocked(getOrganization).mockRejectedValue(new ApiError(404))
+  renderAt('/app/ghg/org-gone/settings')
+
+  await screen.findByRole('heading', { name: 'Organization not found' })
+  expect(screen.getByText(/head back to the list to pick another/i)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Back to the organizations list' })).toHaveAttribute(
+    'href',
+    '/app/ghg',
+  )
+  expect(screen.queryByText('the landing resolver')).not.toBeInTheDocument()
 })

@@ -1,4 +1,4 @@
-import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Panel } from '../../components/Panel'
 import { RailLink, Sidebar, railIcons } from '../../components/Sidebar'
 import type { RailSection } from '../../components/Sidebar'
@@ -42,6 +42,14 @@ export function OrganizationLayout() {
   const location = useLocation()
 
   const organizations = organizationsQuery.data
+  // spec 01.6: the sign-in page returned the account to this address. One it
+  // cannot open (deleted since, or no membership and no grant, as after a
+  // database reset) is not where its work starts, so the resolver decides
+  // instead; a failure met mid-session keeps its explanation below
+  const fromSignIn = (location.state as { fromSignIn?: boolean } | null)?.fromSignIn === true
+  if (fromSignIn && organizationQuery.isError) {
+    return <Navigate to="/app" replace />
+  }
   // spec 01.8: the name and the account number together, so two of one name read apart
   const organizationName = organizationQuery.data ? organizationLabel(organizationQuery.data) : ''
   // spec 02.7: the navigation entry carries a count of the notices still waiting on a decision
@@ -120,6 +128,12 @@ export function OrganizationLayout() {
                 ? 'You are not inside this organization. Support access ends on its own when its window expires, and a platform administrator holds no standing access without a grant.'
                 : 'It may have been deleted. Head back to the list to pick another.'}
             </p>
+            <Link
+              to="/app/ghg"
+              className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-primary px-5 font-medium text-primary-ink transition-colors duration-150 hover:bg-primary-hover"
+            >
+              Back to the organizations list
+            </Link>
           </Panel>
         )}
         {organizationQuery.data && (
