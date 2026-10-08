@@ -126,6 +126,7 @@ nav:
               - specs/01.7-the-organization-settings-area.md
               - specs/01.8-account-numbers-and-shared-organization-names.md
               - specs/01.9-password-change-and-reset.md
+              - specs/01.10-date-format-preference.md
           - "02 Organization and facts":
               - specs/02-organization-and-facts.md
               - specs/02.1-emission-factor-library.md

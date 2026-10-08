@@ -1,3 +1,4 @@
+import { formatDateTime, useDateFormat } from '../../../lib/dates'
 import { Skeleton } from '../../../components/Skeleton'
 import { approachLabels, describeFreeze, exclusionLabels } from '../format'
 import { useBoundaryVersionQuery } from '../useGhg'
@@ -5,6 +6,7 @@ import { BoundaryVersionEntries } from './BoundaryVersionEntries'
 
 /** One boundary version in full, loaded on demand: who froze it, when, and every entity it held. */
 export function BoundaryVersionPanel({ versionId }: { versionId: string }) {
+  const dateFormat = useDateFormat()
   const query = useBoundaryVersionQuery(versionId)
 
   if (query.isPending) {
@@ -22,11 +24,11 @@ export function BoundaryVersionPanel({ versionId }: { versionId: string }) {
     <div className="mt-3 rounded-lg border border-hairline p-4">
       <p className="text-[13px] text-ink-muted">
         Boundary version {version.versionNo} · {approachLabels[version.consolidationApproach]} ·{' '}
-        {describeFreeze(version)} · {version.entityCount}{' '}
+        {describeFreeze(version, dateFormat)} · {version.entityCount}{' '}
         {version.entityCount === 1 ? 'entity' : 'entities'}, {version.facilityCount}{' '}
         {version.facilityCount === 1 ? 'facility' : 'facilities'}
         {version.reopenedAt &&
-          ` · reopened ${new Date(version.reopenedAt).toLocaleString()} by ${version.reopenedBy ?? 'unknown'}: ${version.reopenReason ?? ''}`}
+          ` · reopened ${formatDateTime(version.reopenedAt, dateFormat)} by ${version.reopenedBy ?? 'unknown'}: ${version.reopenReason ?? ''}`}
       </p>
       <BoundaryVersionEntries entries={entries} />
       {exclusions.length > 0 && (

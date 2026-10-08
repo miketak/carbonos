@@ -68,6 +68,7 @@ beforeEach(() => {
     role: 'ADMIN',
     status: 'ACTIVE',
     createdAt: '2026-08-28T00:00:00Z',
+    dateFormat: null,
   })
   vi.mocked(getAccountsSummary).mockReset().mockResolvedValue(accounts)
   vi.mocked(getPlatformSummary).mockReset().mockResolvedValue(platform)
@@ -78,6 +79,7 @@ beforeEach(() => {
     email: 'admin@ecoriv.com',
     displayName: 'Ama Admin',
     hasAvatar: false,
+    dateFormat: null,
   })
 })
 

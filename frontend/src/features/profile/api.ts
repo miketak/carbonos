@@ -1,10 +1,16 @@
 import { api, apiBlob, ApiError } from '../../lib/api'
+import type { DateFormat } from '../../lib/dates'
 
 export interface Profile {
   id: string
   email: string
   displayName: string
   hasAvatar: boolean
+  dateFormat: DateFormat | null
+}
+
+export function updatePreferences(input: { dateFormat: DateFormat }): Promise<Profile> {
+  return api<Profile>('/api/profile/preferences', { method: 'PUT', body: JSON.stringify(input) })
 }
 
 export function getProfile(): Promise<Profile> {

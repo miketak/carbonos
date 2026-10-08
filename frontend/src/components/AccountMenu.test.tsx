@@ -27,6 +27,7 @@ const member: SessionUser = {
   role: 'MEMBER',
   status: 'ACTIVE',
   createdAt: '2026-08-28T00:00:00Z',
+  dateFormat: null,
 }
 
 const open = async (route = '/app/ghg') => {
@@ -44,6 +45,7 @@ beforeEach(() => {
     email: member.email,
     displayName: member.displayName,
     hasAvatar: false,
+    dateFormat: null,
   })
 })
 

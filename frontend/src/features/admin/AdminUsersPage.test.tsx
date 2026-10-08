@@ -34,6 +34,7 @@ const user: User = {
   role: 'MEMBER',
   status: 'ACTIVE',
   createdAt: '2026-09-01T00:00:00Z',
+  dateFormat: null,
 }
 
 beforeEach(() => {

@@ -1,3 +1,4 @@
+import { useDateFormat } from '../../lib/dates'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
@@ -106,6 +107,7 @@ function MonthFilter({
  * never here (spec 02). Filters and the open record live in the URL.
  */
 export function ActivityPage() {
+  const dateFormat = useDateFormat()
   const { organizationId = '' } = useParams()
   const navigate = useNavigate()
   const { filters, set, query } = useActivityFilters()
@@ -518,7 +520,7 @@ export function ActivityPage() {
                       <SummaryRow
                         key={activity.id}
                         title={activity.activityType}
-                        meta={`${activity.facilityName} · ${formatRecordPeriod(activity.periodStart, activity.periodEnd)}`}
+                        meta={`${activity.facilityName} · ${formatRecordPeriod(activity.periodStart, activity.periodEnd, dateFormat)}`}
                         issue={
                           attention && blocking[0] ? activityIssueLabels[blocking[0]] : undefined
                         }

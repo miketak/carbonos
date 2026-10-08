@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, useDateFormat } from '../../../lib/dates'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -551,6 +552,7 @@ export function LifecyclePanel({
   actions?: ReactNode
   dialogs?: ReactNode
 }) {
+  const dateFormat = useDateFormat()
   const current = states.findIndex((state) => state.status === inventory.status)
 
   return (
@@ -617,7 +619,7 @@ export function LifecyclePanel({
             Submitted for review by{' '}
             {inventory.signOff.submittedBy.name ?? inventory.signOff.submittedBy.email}
             {inventory.signOff.submittedAt
-              ? ` on ${new Date(inventory.signOff.submittedAt).toLocaleDateString()}`
+              ? ` on ${formatDate(inventory.signOff.submittedAt, dateFormat)}`
               : ''}
             {inventory.signOff.submitNote ? `: ${inventory.signOff.submitNote}` : ''}
           </p>
@@ -626,7 +628,7 @@ export function LifecyclePanel({
           <p className="mt-2 text-sm">
             Final designated by {inventory.finalDesignatedBy}
             {inventory.finalDesignatedAt
-              ? ` on ${new Date(inventory.finalDesignatedAt).toLocaleDateString()}`
+              ? ` on ${formatDate(inventory.finalDesignatedAt, dateFormat)}`
               : ''}
             {inventory.finalNote ? `: ${inventory.finalNote}` : ''}
             {inventory.finalSelfApproved
@@ -636,7 +638,7 @@ export function LifecyclePanel({
         )}
         {inventory.status === 'PUBLISHED' && inventory.publishedAt && (
           <p className="mt-2 text-sm">
-            Published {new Date(inventory.publishedAt).toLocaleString()}.
+            Published {formatDateTime(inventory.publishedAt, dateFormat)}.
           </p>
         )}
       </PanelBody>

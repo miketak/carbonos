@@ -1,3 +1,4 @@
+import { useDateFormat } from '../../../lib/dates'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../../../components/Button'
@@ -60,6 +61,7 @@ export function EvidencePanel({
   editable: boolean
   myRole?: MyRole
 }) {
+  const dateFormat = useDateFormat()
   const evidenceQuery = useEvidenceQuery(owner)
   const upload = useUploadEvidence(owner, organizationId)
   const addLink = useAddEvidenceLink(owner, organizationId)
@@ -124,7 +126,7 @@ export function EvidencePanel({
                 )}
                 <span className="block text-[13px] text-ink-muted">
                   {item.kind === 'FILE' ? `file, ${formatSize(item.sizeBytes)}` : 'link'} ·{' '}
-                  {item.uploadedBy}, {formatDateTime(item.uploadedAt)}
+                  {item.uploadedBy}, {formatDateTime(item.uploadedAt, dateFormat)}
                 </span>
               </span>
               {editable ? (

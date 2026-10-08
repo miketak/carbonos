@@ -1,3 +1,4 @@
+import { formatDateTime, useDateFormat } from '../../lib/dates'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../../components/Button'
@@ -33,10 +34,6 @@ const valueLabels: Record<string, Record<string, string>> = {
 function valueLabel(setting: string, value: string): string {
   if (setting === 'supportAccessWindowHours') return `${value} ${value === '1' ? 'hour' : 'hours'}`
   return valueLabels[setting]?.[value] ?? value
-}
-
-function when(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 const crumbs = [{ label: 'Administration' }, { label: 'Platform settings' }]
@@ -81,6 +78,7 @@ export function AdminSettingsPage() {
  * would render once with the wrong values first.
  */
 function SettingsForm({ settings }: { settings: PlatformSettings }) {
+  const dateFormat = useDateFormat()
   const historyQuery = usePlatformSettingsHistoryQuery()
   const save = useUpdatePlatformSettings()
   const toast = useToast()
@@ -188,7 +186,7 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
             <div className="flex flex-wrap items-center justify-between gap-4 sm:col-span-2">
               <span className="text-[13px] text-ink-muted">
                 {settings.updatedBy &&
-                  `Last changed by ${settings.updatedBy} on ${when(settings.updatedAt)}`}
+                  `Last changed by ${settings.updatedBy} on ${formatDateTime(settings.updatedAt, dateFormat)}`}
               </span>
               <Button type="submit" busy={save.isPending}>
                 Save settings
@@ -230,7 +228,9 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
                   <Td>{valueLabel(change.setting, change.newValue)}</Td>
                   <Td className="text-ink-muted">{change.reason}</Td>
                   <Td className="text-ink-muted">{change.actorEmail}</Td>
-                  <Td className="whitespace-nowrap text-ink-muted">{when(change.changedAt)}</Td>
+                  <Td className="whitespace-nowrap text-ink-muted">
+                    {formatDateTime(change.changedAt, dateFormat)}
+                  </Td>
                 </tr>
               ))}
             </tbody>

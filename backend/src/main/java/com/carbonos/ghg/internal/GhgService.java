@@ -198,7 +198,7 @@ public class GhgService {
 		var callerId = access.currentUserId();
 		var callerEmail = access.currentUserEmail();
 		return userDirectory.findById(callerId)
-			.orElse(new UserDirectory.UserSummary(callerId, callerEmail, callerEmail, null));
+			.orElse(new UserDirectory.UserSummary(callerId, callerEmail, callerEmail, null, null));
 	}
 
 	/**

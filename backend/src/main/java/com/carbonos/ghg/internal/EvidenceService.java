@@ -51,11 +51,12 @@ public class EvidenceService {
 	private final FacilityRepository facilities;
 	private final MediaStorage media;
 	private final GhgAccess access;
+	private final CallerDates dates;
 
 	EvidenceService(EvidenceRepository evidence, ActivityRecordRepository activities,
 			MarketFactorRepository marketFactors, OrganizationRepository organizations, GhgRunLineRepository runLines,
 			ImportBatchRepository batches, ImportDecisionRepository decisions, SourceStreamRepository streams,
-			FacilityRepository facilities, MediaStorage media, GhgAccess access) {
+			FacilityRepository facilities, MediaStorage media, GhgAccess access, CallerDates dates) {
 		this.decisions = decisions;
 		this.streams = streams;
 		this.facilities = facilities;
@@ -67,6 +68,7 @@ public class EvidenceService {
 		this.batches = batches;
 		this.media = media;
 		this.access = access;
+		this.dates = dates;
 	}
 
 	/** Which documents the source documents page lists (spec 04.6). */
@@ -194,20 +196,38 @@ public class EvidenceService {
 			var activity = root.join("activity");
 			return cb.and(cb.equal(activity.get("organizationId"), organizationId), cb.isNull(activity.get("deletedAt")));
 		};
+		// spec 01.10: the three date columns in the downloader's form, ISO while no choice is made
+		var dateForm = dates.formatter();
 		var out = new StringBuilder(
 				"record_ref,activity_type,facility,period_start,period_end,evidence_ref,document,kind,url,content_type,size_bytes,uploaded_by,uploaded_at\r\n");
 		for (var item : evidence.findAll(live, Sort.by("activity.recordNo", "uploadedAt"))) {
 			var activity = item.getActivity();
 			for (var value : java.util.Arrays.asList(activity.getRecordRef(), activity.getActivityType(),
-					activity.getFacility().getName(), activity.getPeriodStart(), activity.getPeriodEnd(),
-					activity.getEvidenceRef(), item.getName(), item.getKind(), item.getUrl(), item.getContentType(),
-					item.getSizeBytes(), item.getUploadedBy(), item.getUploadedAt())) {
+					activity.getFacility().getName(), date(activity.getPeriodStart(), dateForm),
+					date(activity.getPeriodEnd(), dateForm), activity.getEvidenceRef(), item.getName(), item.getKind(),
+					item.getUrl(), item.getContentType(), item.getSizeBytes(), item.getUploadedBy(),
+					date(item.getUploadedAt(), dateForm))) {
 				out.append(csv(value)).append(',');
 			}
 			out.setLength(out.length() - 1);
 			out.append("\r\n");
 		}
 		return out.toString();
+	}
+
+	/** A date in the caller's form; an instant keeps its UTC time after the date, ISO when no form is chosen. */
+	private static String date(Object value, java.time.format.DateTimeFormatter form) {
+		if (value instanceof java.time.LocalDate day) {
+			return form.format(day);
+		}
+		if (value instanceof java.time.Instant at) {
+			if (form == java.time.format.DateTimeFormatter.ISO_LOCAL_DATE) {
+				return at.toString();
+			}
+			var utc = at.atZone(java.time.ZoneOffset.UTC);
+			return form.format(utc) + " " + java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss").format(utc) + " UTC";
+		}
+		return value == null ? null : value.toString();
 	}
 
 	private static String csv(Object value) {

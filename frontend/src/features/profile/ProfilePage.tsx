@@ -2,15 +2,23 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { AppHeader } from '../../components/AppHeader'
 import { Button } from '../../components/Button'
-import { InputField } from '../../components/Field'
+import { InputField, SelectField } from '../../components/Field'
 import { Panel } from '../../components/Panel'
 import { Skeleton } from '../../components/Skeleton'
 import { useToast } from '../../components/toast'
 import { fieldErrors, problemDetail } from '../../lib/api'
+import { browserDateFormat, dateFormatOptions } from '../../lib/dates'
+import type { DateFormat } from '../../lib/dates'
 import { ChangePasswordSection } from './ChangePasswordSection'
-import { useAvatarQuery, useProfileQuery, useUpdateProfile, useUploadAvatar } from './useProfile'
+import {
+  useAvatarQuery,
+  useProfileQuery,
+  useUpdatePreferences,
+  useUpdateProfile,
+  useUploadAvatar,
+} from './useProfile'
 
-/** Self-service profile: display name, profile picture, and password (spec 01.9). */
+/** Self-service profile: display name, profile picture, password (spec 01.9) and the date format (spec 01.10). */
 export function ProfilePage() {
   const toast = useToast()
   const profileQuery = useProfileQuery()
@@ -18,6 +26,7 @@ export function ProfilePage() {
 
   const update = useUpdateProfile()
   const avatarUpload = useUploadAvatar()
+  const preferences = useUpdatePreferences()
 
   const [displayName, setDisplayName] = useState<string | null>(null)
   const avatarInput = useRef<HTMLInputElement>(null)
@@ -48,7 +57,17 @@ export function ProfilePage() {
     if (file) avatarUpload.mutate(file, { onSuccess: () => toast('Profile picture updated') })
   }
 
-  const banner = problemDetail(update.error) ?? problemDetail(avatarUpload.error)
+  function pickDateFormat(event: ChangeEvent<HTMLSelectElement>) {
+    preferences.mutate(
+      { dateFormat: event.target.value as DateFormat },
+      { onSuccess: () => toast('Preferences updated') },
+    )
+  }
+
+  const banner =
+    problemDetail(update.error) ??
+    problemDetail(avatarUpload.error) ??
+    problemDetail(preferences.error)
 
   return (
     <div className="min-h-screen">
@@ -125,6 +144,28 @@ export function ProfilePage() {
                   Save changes
                 </Button>
               </form>
+
+              <section className="mt-10 flex flex-col gap-4">
+                <h2 className="text-lg">Preferences</h2>
+                <SelectField
+                  label="Date format"
+                  value={profile.dateFormat ?? browserDateFormat()}
+                  onChange={pickDateFormat}
+                  disabled={preferences.isPending}
+                  hint={
+                    profile.dateFormat
+                      ? 'Every date in CarbonOS and in the files you download follows this.'
+                      : 'Following your browser until you choose. Every date in CarbonOS and in the files you download follows this.'
+                  }
+                  error={fieldErrors(preferences.error)?.dateFormat}
+                >
+                  {dateFormatOptions().map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </SelectField>
+              </section>
 
               <ChangePasswordSection />
             </>

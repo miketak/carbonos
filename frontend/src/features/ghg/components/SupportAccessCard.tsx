@@ -1,3 +1,4 @@
+import { useDateFormat } from '../../../lib/dates'
 import { Panel, PanelBody, PanelHead } from '../../../components/Panel'
 import { formatDateTime } from '../format'
 import { usePublicPlatformSettingsQuery } from '../useGhg'
@@ -13,6 +14,7 @@ import type { Organization } from '../api'
  * so this card carries the grant and nothing else.
  */
 export function SupportAccessCard({ organization }: { organization: Organization }) {
+  const dateFormat = useDateFormat()
   const settingsQuery = usePublicPlatformSettingsQuery()
   const grants = organization.supportAccess ?? []
 
@@ -33,10 +35,10 @@ export function SupportAccessCard({ organization }: { organization: Organization
         <ul className="flex flex-col gap-2 text-sm">
           {grants.map((grant) => (
             <li key={`${grant.adminEmail}-${grant.grantedAt}`} className="font-medium">
-              Support access: {grant.adminEmail} since {formatDateTime(grant.grantedAt)}:{' '}
-              {grant.reason}
+              Support access: {grant.adminEmail} since {formatDateTime(grant.grantedAt, dateFormat)}
+              : {grant.reason}
               <span className="block text-[13px] font-normal text-ink-muted">
-                Until {formatDateTime(grant.expiresAt)}.
+                Until {formatDateTime(grant.expiresAt, dateFormat)}.
               </span>
             </li>
           ))}

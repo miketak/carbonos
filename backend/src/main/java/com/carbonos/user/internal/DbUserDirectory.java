@@ -39,6 +39,7 @@ class DbUserDirectory implements UserDirectory {
 	}
 
 	private static UserSummary summary(User user) {
-		return new UserSummary(user.getId(), user.getEmail(), user.getDisplayName(), user.getStatus().name());
+		return new UserSummary(user.getId(), user.getEmail(), user.getDisplayName(), user.getStatus().name(),
+				user.getDateFormat() == null ? null : user.getDateFormat().name());
 	}
 }

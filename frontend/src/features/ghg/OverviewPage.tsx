@@ -1,3 +1,4 @@
+import { formatDateRange, useDateFormat } from '../../lib/dates'
 import { Link, useParams } from 'react-router-dom'
 import { Chip } from '../../components/Chip'
 import { PageHeader } from '../../components/PageHeader'
@@ -257,6 +258,7 @@ function LatestRunStat({ inventory }: { inventory: Inventory }) {
 
 /** The organization's headline numbers: the latest run of its leading inventory. */
 function HeadlineInventory({ inventory }: { inventory: Inventory }) {
+  const dateFormat = useDateFormat()
   const runsQuery = useRunsQuery(inventory.id)
   const runs = runsQuery.data ?? []
   const run = runs.find((candidate) => candidate.id === inventory.finalRunId) ?? runs[0]
@@ -279,7 +281,7 @@ function HeadlineInventory({ inventory }: { inventory: Inventory }) {
               {run.isFinal && <Chip tone="primary">FINAL</Chip>}
             </span>
           }
-          description={`${run.label} · ${run.periodStart} → ${run.periodEnd}`}
+          description={`${run.label} · ${formatDateRange(run.periodStart, run.periodEnd, dateFormat)}`}
         >
           <Link
             to={`inventories/${inventory.id}/runs/${run.id}`}

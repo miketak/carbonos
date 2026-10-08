@@ -22,6 +22,7 @@ const user = (role: SessionUser['role']): SessionUser => ({
   role,
   status: 'ACTIVE',
   createdAt: '2026-08-28T00:00:00Z',
+  dateFormat: null,
 })
 
 beforeEach(() => {

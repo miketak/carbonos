@@ -1,3 +1,4 @@
+import { useDateFormat } from '../../lib/dates'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -67,6 +68,7 @@ export function OrganizationSettingsPage() {
  * render once with the wrong values first.
  */
 function Settings({ organization }: { organization: Organization }) {
+  const dateFormat = useDateFormat()
   const eventsQuery = useOrganizationEventsQuery(organization.id)
   const save = useUpdateOrganization()
   const toast = useToast()
@@ -202,7 +204,7 @@ function Settings({ organization }: { organization: Organization }) {
                 <tr key={event.id}>
                   <Td className="font-medium">{actionLabels[event.action]}</Td>
                   <Td>{event.actor}</Td>
-                  <Td className="whitespace-nowrap">{formatDateTime(event.at)}</Td>
+                  <Td className="whitespace-nowrap">{formatDateTime(event.at, dateFormat)}</Td>
                   <Td className="text-ink-muted">{event.reason}</Td>
                 </tr>
               ))}

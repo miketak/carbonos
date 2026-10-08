@@ -63,6 +63,39 @@ class ProfileApiIntegrationTests {
 		mvc.perform(get("/api/profile")).andExpect(status().isUnauthorized());
 	}
 
+	/** Spec 01.10: the date form round-trips, reaches the session, and an unknown value is refused. */
+	@Test
+	void dateFormatPreferencePersists() throws Exception {
+		var session = login();
+		mvc.perform(get("/api/profile").session(session))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.dateFormat").value(org.hamcrest.Matchers.nullValue()));
+
+		mvc.perform(put("/api/profile/preferences").with(csrf())
+			.session(session)
+			.contentType("application/json")
+			.content("""
+					{"dateFormat": "MDY"}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.dateFormat").value("MDY"));
+
+		mvc.perform(get("/api/profile").session(session)).andExpect(jsonPath("$.dateFormat").value("MDY"));
+		mvc.perform(get("/api/auth/me").session(session)).andExpect(jsonPath("$.dateFormat").value("MDY"));
+
+		mvc.perform(put("/api/profile/preferences").with(csrf())
+			.session(session)
+			.contentType("application/json")
+			.content("""
+					{"dateFormat": "YMD"}"""))
+			.andExpect(status().isUnprocessableEntity());
+		mvc.perform(put("/api/profile/preferences").with(csrf())
+			.session(session)
+			.contentType("application/json")
+			.content("{}"))
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.errors.dateFormat").value("Choose a date format."));
+	}
+
 	@Test
 	void updateDisplayNamePersists() throws Exception {
 		var session = login();

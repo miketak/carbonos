@@ -37,6 +37,7 @@ beforeEach(() => {
     role: 'ADMIN',
     status: 'ACTIVE',
     createdAt: '2026-08-28T00:00:00Z',
+    dateFormat: null,
   })
 })
 

@@ -46,6 +46,13 @@ public class ProfileService {
 		return user;
 	}
 
+	/** Spec 01.10: the date form every screen and CSV follows for this account. */
+	public User updateDateFormat(UUID userId, DateFormat dateFormat) {
+		var user = get(userId);
+		user.setDateFormat(dateFormat);
+		return user;
+	}
+
 	public User storeAvatar(UUID userId, MultipartFile file) {
 		var user = get(userId);
 		var type = validate(file, AVATAR_TYPES, MAX_AVATAR_BYTES, "PNG, JPEG, or WebP image");

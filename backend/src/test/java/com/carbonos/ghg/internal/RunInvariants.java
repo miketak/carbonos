@@ -3,6 +3,7 @@ package com.carbonos.ghg.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 
 import com.carbonos.ghg.internal.export.RunCsv;
 
@@ -52,7 +53,7 @@ final class RunInvariants {
 			.isLessThanOrEqualTo(gasFootingToleranceKg);
 		assertThat(run.co2eUnsplitKg()).isEqualByComparingTo(
 				run.scopedLines().stream().map(GhgRunLine::co2eUnsplitKg).reduce(BigDecimal.ZERO, BigDecimal::add));
-		var rows = RunCsv.lines(run).strip().split("\n").length - 1;
+		var rows = RunCsv.lines(run, DateTimeFormatter.ISO_LOCAL_DATE).strip().split("\n").length - 1;
 		assertThat(rows).as("one CSV row per line").isEqualTo(run.getActivityCount());
 	}
 }
