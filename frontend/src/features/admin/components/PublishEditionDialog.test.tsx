@@ -200,7 +200,6 @@ const curator = {
   role: 'ADMIN' as const,
   status: 'ACTIVE' as const,
   createdAt: '2026-01-01T00:00:00Z',
-  dateFormat: null,
 }
 
 test('the curator sees the approver condition unmet and cannot publish (spec 02.5)', async () => {

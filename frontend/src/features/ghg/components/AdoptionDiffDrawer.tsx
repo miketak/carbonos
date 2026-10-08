@@ -1,4 +1,3 @@
-import { useDateFormat } from '../../../lib/dates'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Drawer } from '../../../components/Drawer'
@@ -96,7 +95,6 @@ export function AdoptionDiffDrawer({
   myRole: MyRole | undefined
   onClose: () => void
 }) {
-  const dateFormat = useDateFormat()
   const diffQuery = useFactorPackDiffQuery(notice.id)
   const accept = useAcceptFactorPackNotice(organizationId)
   const decline = useDeclineFactorPackNotice(organizationId)
@@ -215,7 +213,7 @@ export function AdoptionDiffDrawer({
           {diff.lockedPeriod && (
             <p role="status" className={`${noticeClasses} border-l-warning-dot`}>
               {diff.appliesFrom} falls inside {diff.lockedPeriod.name} (
-              {formatPeriod(diff.lockedPeriod.periodStart, diff.lockedPeriod.periodEnd, dateFormat)}
+              {formatPeriod(diff.lockedPeriod.periodStart, diff.lockedPeriod.periodEnd)}
               ), which is {diff.lockedPeriod.status.toLowerCase()}. A reported period keeps the
               factors it reported with, so this edition cannot be accepted{' '}
               {diff.lockedPeriod.status === 'PUBLISHED'
@@ -328,7 +326,7 @@ export function AdoptionDiffDrawer({
               <ul className="mt-2 flex flex-col gap-1 text-[13px]">
                 {diff.earlierPeriods.map((period) => (
                   <li key={period.inventoryId}>
-                    {period.name} ({formatPeriod(period.periodStart, period.periodEnd, dateFormat)})
+                    {period.name} ({formatPeriod(period.periodStart, period.periodEnd)})
                   </li>
                 ))}
               </ul>

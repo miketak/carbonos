@@ -1,4 +1,3 @@
-import { useDateFormat } from '../../../lib/dates'
 import { Banner } from '../../../components/Banner'
 import { useSession } from '../../auth/useSession'
 import { formatDateTime } from '../format'
@@ -13,7 +12,6 @@ import { organizationLabel } from '../../../lib/organizationLabel'
  * (spec 01.3), the way spec 01.4's read-only banner travels with a verifier.
  */
 export function SupportAccessBanner({ organization }: { organization: Organization }) {
-  const dateFormat = useDateFormat()
   const session = useSession()
   if (organization.myRole !== 'ADMIN') return null
 
@@ -24,8 +22,8 @@ export function SupportAccessBanner({ organization }: { organization: Organizati
   return (
     <Banner role="status" tone="warning" className="mb-6 font-medium">
       You are in {organizationLabel(organization)} under support access
-      {grant ? ` until ${formatDateTime(grant.expiresAt, dateFormat)}` : ''}. Every act is recorded
-      in this organization&rsquo;s history.
+      {grant ? ` until ${formatDateTime(grant.expiresAt)}` : ''}. Every act is recorded in this
+      organization&rsquo;s history.
     </Banner>
   )
 }

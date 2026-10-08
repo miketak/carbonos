@@ -1,4 +1,4 @@
-import { formatDateTime, useDateFormat } from '../../lib/dates'
+import { formatDateTime } from '../../lib/dates'
 import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { OrganizationName } from '../../components/OrganizationName'
@@ -96,7 +96,6 @@ function HelpFigure({ label, value, note }: { label: string; value: string; note
 }
 
 function ActivityLine({ activity }: { activity: SummaryActivity }) {
-  const dateFormat = useDateFormat()
   const said: Record<string, string> = {
     PUBLISHED: 'published',
     WITHDRAWN: 'withdrew',
@@ -105,7 +104,7 @@ function ActivityLine({ activity }: { activity: SummaryActivity }) {
   }
   return (
     <li className="flex flex-wrap items-baseline gap-x-2 border-b border-hairline py-2.5 text-sm last:border-b-0">
-      <span className="text-ink-muted">{formatDateTime(activity.at, dateFormat)}</span>
+      <span className="text-ink-muted">{formatDateTime(activity.at)}</span>
       <span className="font-medium">{activity.actor}</span>
       <span className="text-ink-muted">
         {said[activity.action] ?? activity.action.toLowerCase()}
@@ -116,7 +115,6 @@ function ActivityLine({ activity }: { activity: SummaryActivity }) {
 }
 
 function GrantLine({ grant }: { grant: SummaryGrant }) {
-  const dateFormat = useDateFormat()
   const closed = grant.endedAt !== null
   return (
     <li className="border-b border-hairline py-2.5 text-sm last:border-b-0">
@@ -129,8 +127,8 @@ function GrantLine({ grant }: { grant: SummaryGrant }) {
           <OrganizationName name={grant.organizationName} accountNo={grant.organizationAccountNo} />
         </span>
         <span className="text-ink-muted">
-          {formatDateTime(grant.grantedAt, dateFormat)}, {closed ? 'until' : 'expiring'}{' '}
-          {formatDateTime(grant.endedAt ?? grant.expiresAt, dateFormat)} ({ranFor(grant)})
+          {formatDateTime(grant.grantedAt)}, {closed ? 'until' : 'expiring'}{' '}
+          {formatDateTime(grant.endedAt ?? grant.expiresAt)} ({ranFor(grant)})
         </span>
       </div>
       <p className="text-[13px] text-ink-muted">{grant.reason}</p>
@@ -162,7 +160,6 @@ const crumbs = [{ label: 'Administration' }, { label: 'Dashboard' }]
  * an organization until they assume logged support access (spec 01.3).
  */
 export function AdminDashboardPage() {
-  const dateFormat = useDateFormat()
   const summaryQuery = useAdminSummaryQuery()
   const settingsQuery = usePlatformSettingsQuery()
 
@@ -222,7 +219,7 @@ export function AdminDashboardPage() {
         to="/admin/organizations"
         tone="info"
         headline={`You hold support access to ${myGrants.length} organization${myGrants.length === 1 ? '' : 's'}`}
-        detail={`The next expires ${formatDateTime(myGrants[0].expiresAt, dateFormat)}. End it when the case is closed.`}
+        detail={`The next expires ${formatDateTime(myGrants[0].expiresAt)}. End it when the case is closed.`}
       />
     ),
     help.pagesBelowTarget.length > 0 && (

@@ -1,34 +1,10 @@
-import { useSession } from '../features/auth/useSession'
-
 /**
- * The date form a reader uses (spec 01.10): day first, as in Ghana, or month
- * first, as in the United States. Every date the app prints goes through
- * here, so one preference moves them all; the lint rule keeps bare
- * `toLocaleDateString` calls out of the features.
+ * Every date the app prints goes through here, so one place decides the form.
+ * The form is ISO (ECO-134): "2026-04-03" for a calendar day and "2026-04-03 08:11"
+ * for an instant, in the viewer's zone. No reader misorders it, and a downloaded
+ * file reads the same as the screen. Date pickers stay native: the browser already
+ * shows them in the reader's own form and sends ISO.
  */
-export type DateFormat = 'DMY' | 'MDY'
-
-const locales: Record<DateFormat, string> = { DMY: 'en-GB', MDY: 'en-US' }
-
-/** What the browser would do: month first only when its own locale puts the month first. */
-export function browserDateFormat(): DateFormat {
-  try {
-    const parts = new Intl.DateTimeFormat(undefined, {
-      month: 'numeric',
-      day: 'numeric',
-    }).formatToParts(new Date(2000, 11, 25))
-    const first = parts.find((part) => part.type === 'month' || part.type === 'day')
-    return first?.type === 'month' ? 'MDY' : 'DMY'
-  } catch {
-    return 'DMY'
-  }
-}
-
-/** The signed-in account's choice, else the browser's form. */
-export function useDateFormat(): DateFormat {
-  const session = useSession()
-  return session.data?.dateFormat ?? browserDateFormat()
-}
 
 /**
  * A date-only value ("2026-04-03") is that calendar day wherever it is read;
@@ -40,42 +16,24 @@ function calendarDay(iso: string): Date {
   return new Date(year, month - 1, day)
 }
 
-function dayFormatter(format: DateFormat): Intl.DateTimeFormat {
-  return new Intl.DateTimeFormat(locales[format], {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+const pad = (n: number) => String(n).padStart(2, '0')
+
+function isoDay(at: Date): string {
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`
 }
 
-/** A calendar date ("2026-04-03") as "03/04/2026" or "04/03/2026". */
-export function formatDate(iso: string, format: DateFormat): string {
-  return dayFormatter(format).format(calendarDay(iso))
+/** A calendar date ("2026-04-03") or an instant as "2026-04-03". */
+export function formatDate(iso: string): string {
+  return isoDay(calendarDay(iso))
 }
 
-/** An instant as "03/04/2026 08:11" in the viewer's zone, 24-hour clock. */
-export function formatDateTime(iso: string, format: DateFormat): string {
+/** An instant as "2026-04-03 08:11" in the viewer's zone, 24-hour clock. */
+export function formatDateTime(iso: string): string {
   const at = new Date(iso)
-  const time = new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(at)
-  return `${dayFormatter(format).format(at)} ${time}`
+  return `${isoDay(at)} ${pad(at.getHours())}:${pad(at.getMinutes())}`
 }
 
-/** "03/04/2026" for a one-day span, else "01/01/2026 → 31/12/2026". */
-export function formatDateRange(start: string, end: string, format: DateFormat): string {
-  return start === end
-    ? formatDate(start, format)
-    : `${formatDate(start, format)} → ${formatDate(end, format)}`
-}
-
-/** The two choices as the profile page lists them, each with today's date as its example. */
-export function dateFormatOptions(today = new Date()): { value: DateFormat; label: string }[] {
-  const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-  return [
-    { value: 'DMY', label: `Day/Month/Year (${formatDate(iso, 'DMY')})` },
-    { value: 'MDY', label: `Month/Day/Year (${formatDate(iso, 'MDY')})` },
-  ]
+/** "2026-04-03" for a one-day span, else "2026-01-01 → 2026-12-31". */
+export function formatDateRange(start: string, end: string): string {
+  return start === end ? formatDate(start) : `${formatDate(start)} → ${formatDate(end)}`
 }

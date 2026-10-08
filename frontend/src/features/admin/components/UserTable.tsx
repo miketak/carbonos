@@ -1,4 +1,4 @@
-import { formatDate, useDateFormat } from '../../../lib/dates'
+import { formatDate } from '../../../lib/dates'
 import { Button } from '../../../components/Button'
 import { Skeleton } from '../../../components/Skeleton'
 import { Table, Td, Th, TwoLine } from '../../../components/Table'
@@ -25,7 +25,6 @@ export function UserTable({
   onResetPassword,
   onDelete,
 }: UserTableProps) {
-  const dateFormat = useDateFormat()
   if (isPending) {
     return (
       <div aria-label="Loading users" className="flex flex-col gap-3 p-6">
@@ -86,9 +85,7 @@ export function UserTable({
             <Td>
               <StatusBadge status={user.status} />
             </Td>
-            <Td className="whitespace-nowrap text-ink-muted">
-              {formatDate(user.createdAt, dateFormat)}
-            </Td>
+            <Td className="whitespace-nowrap text-ink-muted">{formatDate(user.createdAt)}</Td>
             <Td align="right">
               <div className="flex justify-end gap-1">
                 <Button size="sm" variant="ghost" onClick={() => onEdit(user)}>

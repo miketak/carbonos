@@ -19,7 +19,6 @@ import com.carbonos.user.internal.ProfileService;
 import com.carbonos.user.AuthenticatedUser;
 import com.carbonos.user.internal.web.dto.ChangePasswordRequest;
 import com.carbonos.user.internal.web.dto.ProfileResponse;
-import com.carbonos.user.internal.web.dto.UpdatePreferencesRequest;
 import com.carbonos.user.internal.web.dto.UpdateProfileRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,13 +45,6 @@ class ProfileController {
 	ProfileResponse update(@AuthenticationPrincipal AuthenticatedUser principal,
 			@Valid @RequestBody UpdateProfileRequest body) {
 		return ProfileResponse.from(profile.updateDisplayName(principal.getId(), body.displayName()));
-	}
-
-	/** Spec 01.10: the date form this account reads; the session query picks it up on the next fetch. */
-	@PutMapping("/preferences")
-	ProfileResponse updatePreferences(@AuthenticationPrincipal AuthenticatedUser principal,
-			@Valid @RequestBody UpdatePreferencesRequest body) {
-		return ProfileResponse.from(profile.updateDateFormat(principal.getId(), body.dateFormat()));
 	}
 
 	/** Spec 01.9: this session stays signed in; every other session of the account ends. */

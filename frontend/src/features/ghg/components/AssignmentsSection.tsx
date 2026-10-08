@@ -1,5 +1,3 @@
-import type { DateFormat } from '../../../lib/dates'
-import { useDateFormat } from '../../../lib/dates'
 import { useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from '../../../components/Button'
@@ -133,7 +131,6 @@ export function AssignmentsSection({
   /** The inventory's reporting period, so the picker offers the versions live in it (spec 02.6). */
   period?: { start: string; end: string }
 }) {
-  const dateFormat = useDateFormat()
   const writable = editable && mayWrite(myRole)
   const { filters, set, query } = useInventoryFilters()
   const assignmentsQuery = useAssignmentPageQuery(inventoryId, query)
@@ -520,11 +517,7 @@ export function AssignmentsSection({
                       <Td>
                         <TwoLine
                           primary={<span className="font-normal">{assignment.facilityName}</span>}
-                          secondary={formatPeriod(
-                            assignment.periodStart,
-                            assignment.periodEnd,
-                            dateFormat,
-                          )}
+                          secondary={formatPeriod(assignment.periodStart, assignment.periodEnd)}
                         />
                       </Td>
                       <Td align="right">
@@ -612,7 +605,7 @@ export function AssignmentsSection({
                     <SummaryRow
                       key={assignment.id}
                       title={assignment.activityType}
-                      meta={summaryMeta(assignment, dateFormat)}
+                      meta={summaryMeta(assignment)}
                       issue={
                         assignment.included && !assignment.classified ? 'Unclassified' : undefined
                       }
@@ -682,13 +675,13 @@ export function AssignmentsSection({
 }
 
 /** The summary row's second line (spec 10): the facility with the scope and category, or with the period until classified. */
-function summaryMeta(assignment: Assignment, dateFormat: DateFormat): ReactNode {
+function summaryMeta(assignment: Assignment): ReactNode {
   if (assignment.included && assignment.classified && assignment.scope) {
     return `${assignment.facilityName} · ${scopeLabels[assignment.scope]}${
       assignment.category ? ` · ${categoryLabel(assignment.category)}` : ''
     }`
   }
-  return `${assignment.facilityName} · ${formatPeriod(assignment.periodStart, assignment.periodEnd, dateFormat)}`
+  return `${assignment.facilityName} · ${formatPeriod(assignment.periodStart, assignment.periodEnd)}`
 }
 
 /**

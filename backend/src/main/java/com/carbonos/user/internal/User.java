@@ -43,11 +43,6 @@ public class User {
 	@Column(name = "avatar_content_type", length = 100)
 	private String avatarContentType;
 
-	/** Spec 01.10: null until the holder chooses; the app follows the browser meanwhile. */
-	@Enumerated(EnumType.STRING)
-	@Column(name = "date_format", length = 3)
-	private DateFormat dateFormat;
-
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -110,14 +105,6 @@ public class User {
 
 	void setDisplayName(String displayName) {
 		this.displayName = displayName;
-	}
-
-	public DateFormat getDateFormat() {
-		return dateFormat;
-	}
-
-	void setDateFormat(DateFormat dateFormat) {
-		this.dateFormat = dateFormat;
 	}
 
 	void setAvatar(String key, String contentType) {

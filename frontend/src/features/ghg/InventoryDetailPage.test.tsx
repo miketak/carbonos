@@ -1320,7 +1320,6 @@ test('the submitted run reads IN REVIEW, and its submitter cannot sign it while 
     role: 'MEMBER',
     status: 'ACTIVE',
     createdAt: '2026-08-01T00:00:00Z',
-    dateFormat: null,
   })
   vi.mocked(getInventory).mockResolvedValue(inReview)
   vi.mocked(getOrganization).mockResolvedValue({

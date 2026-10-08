@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime, useDateFormat } from '../../../lib/dates'
+import { formatDate, formatDateTime } from '../../../lib/dates'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -552,7 +552,6 @@ export function LifecyclePanel({
   actions?: ReactNode
   dialogs?: ReactNode
 }) {
-  const dateFormat = useDateFormat()
   const current = states.findIndex((state) => state.status === inventory.status)
 
   return (
@@ -619,7 +618,7 @@ export function LifecyclePanel({
             Submitted for review by{' '}
             {inventory.signOff.submittedBy.name ?? inventory.signOff.submittedBy.email}
             {inventory.signOff.submittedAt
-              ? ` on ${formatDate(inventory.signOff.submittedAt, dateFormat)}`
+              ? ` on ${formatDate(inventory.signOff.submittedAt)}`
               : ''}
             {inventory.signOff.submitNote ? `: ${inventory.signOff.submitNote}` : ''}
           </p>
@@ -627,9 +626,7 @@ export function LifecyclePanel({
         {inventory.finalDesignatedBy && (
           <p className="mt-2 text-sm">
             Final designated by {inventory.finalDesignatedBy}
-            {inventory.finalDesignatedAt
-              ? ` on ${formatDate(inventory.finalDesignatedAt, dateFormat)}`
-              : ''}
+            {inventory.finalDesignatedAt ? ` on ${formatDate(inventory.finalDesignatedAt)}` : ''}
             {inventory.finalNote ? `: ${inventory.finalNote}` : ''}
             {inventory.finalSelfApproved
               ? ' (self-approved: nobody else in the organization could check it)'
@@ -637,9 +634,7 @@ export function LifecyclePanel({
           </p>
         )}
         {inventory.status === 'PUBLISHED' && inventory.publishedAt && (
-          <p className="mt-2 text-sm">
-            Published {formatDateTime(inventory.publishedAt, dateFormat)}.
-          </p>
+          <p className="mt-2 text-sm">Published {formatDateTime(inventory.publishedAt)}.</p>
         )}
       </PanelBody>
       {dialogs}

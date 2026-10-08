@@ -1,8 +1,6 @@
 package com.carbonos.ghg.internal.export;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Function;
 
@@ -14,15 +12,14 @@ import com.carbonos.ghg.internal.GhgRunLine;
  * The calculation file a verifier re-performs a sample from (spec 07.5): one
  * row per snapshot line with every input the arithmetic used, and the
  * exclusions in a second file. Plain decimals, UTF-8, a header row, and
- * nothing that varies between downloads except the form of the two period
- * columns, which follow the downloader's date format (spec 01.10).
+ * nothing that varies between downloads.
  */
 public final class RunCsv {
 
 	private RunCsv() {
 	}
 
-	public static String lines(GhgRun run, DateTimeFormatter dates) {
+	public static String lines(GhgRun run) {
 		var columns = List.<Column<GhgRunLine>>of(new Column<>("line_id", l -> l.getId()),
 				// spec 04.7: the primary line a derived category 3 line rides on, and the kind of upstream emissions
 				new Column<>("derived_from_line_id", GhgRunLine::getDerivedFromLineId),
@@ -32,8 +29,8 @@ public final class RunCsv {
 				new Column<>("facility", GhgRunLine::getFacilityName), new Column<>("legal_entity", GhgRunLine::getEntityName),
 				new Column<>("country", GhgRunLine::getCountry), new Column<>("activity_type", GhgRunLine::getActivityType),
 				new Column<>("evidence_ref", GhgRunLine::getEvidenceRef),
-				new Column<>("period_start", l -> date(l.getPeriodStart(), dates)),
-				new Column<>("period_end", l -> date(l.getPeriodEnd(), dates)), new Column<>("scope", GhgRunLine::getScope), new Column<>("category", GhgRunLine::getCategory),
+				new Column<>("period_start", GhgRunLine::getPeriodStart), new Column<>("period_end", GhgRunLine::getPeriodEnd),
+				new Column<>("scope", GhgRunLine::getScope), new Column<>("category", GhgRunLine::getCategory),
 				// spec 02.4: SCOPES, or OUTSIDE_SCOPES_NON_KYOTO for a line no scope total includes
 				new Column<>("reporting_basis", GhgRunLine::getReportingBasis),
 				new Column<>("lease_type", GhgRunLine::getLeaseType), new Column<>("quantity", GhgRunLine::getQuantity),
@@ -74,14 +71,13 @@ public final class RunCsv {
 		return render(columns, run.getLines());
 	}
 
-	public static String exclusions(GhgRun run, DateTimeFormatter dates) {
+	public static String exclusions(GhgRun run) {
 		var columns = List.<Column<GhgRunExclusion>>of(new Column<>("record_id", GhgRunExclusion::getActivityId),
 				new Column<>("record_ref", GhgRunExclusion::getRecordRef),
 				new Column<>("facility", GhgRunExclusion::getFacilityName),
 				new Column<>("activity_type", GhgRunExclusion::getActivityType),
-				new Column<>("period_start", e -> date(e.getPeriodStart(), dates)),
-				new Column<>("period_end", e -> date(e.getPeriodEnd(), dates)),
-				new Column<>("quantity", GhgRunExclusion::getQuantity),
+				new Column<>("period_start", GhgRunExclusion::getPeriodStart),
+				new Column<>("period_end", GhgRunExclusion::getPeriodEnd), new Column<>("quantity", GhgRunExclusion::getQuantity),
 				new Column<>("unit", GhgRunExclusion::getUnit), new Column<>("reason", GhgRunExclusion::getExclusionReason),
 				new Column<>("detail", GhgRunExclusion::getExclusionDetail),
 				new Column<>("justification", GhgRunExclusion::getExclusionJustification),
@@ -93,10 +89,6 @@ public final class RunCsv {
 	}
 
 	private record Column<T>(String header, Function<T, Object> value) {
-	}
-
-	private static String date(LocalDate value, DateTimeFormatter dates) {
-		return value == null ? null : dates.format(value);
 	}
 
 	private static <T> String render(List<Column<T>> columns, List<T> rows) {

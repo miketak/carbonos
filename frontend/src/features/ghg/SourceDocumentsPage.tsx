@@ -1,4 +1,3 @@
-import { useDateFormat } from '../../lib/dates'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { FilterRow, FilterSelect, SearchField } from '../../components/FilterRow'
@@ -42,7 +41,6 @@ const secondaryLinkClasses =
  * contents. A table, not cards (spec 10).
  */
 export function SourceDocumentsPage() {
-  const dateFormat = useDateFormat()
   const { organizationId = '' } = useParams()
   const organizationQuery = useOrganizationQuery(organizationId)
   const myRole = organizationQuery.data?.myRole
@@ -132,7 +130,7 @@ export function SourceDocumentsPage() {
                             ? ` (${batch.firstRecordRef}${batch.lastRecordRef !== batch.firstRecordRef ? ` to ${batch.lastRecordRef}` : ''})`
                             : ''}{' '}
                           · {formatSize(batch.sizeBytes)} · {batch.importedBy},{' '}
-                          {formatDateTime(batch.importedAt, dateFormat)} · sha256{' '}
+                          {formatDateTime(batch.importedAt)} · sha256{' '}
                           <span title={batch.sha256}>{batch.sha256.slice(0, 12)}…</span>
                         </>
                       }
@@ -265,7 +263,6 @@ function DocumentRow({
   item: EvidenceDocument
   myRole?: MyRole
 }) {
-  const dateFormat = useDateFormat()
   const remove = useDeleteEvidence({ activityId: item.activityId }, organizationId)
   const toast = useToast()
   return (
@@ -311,11 +308,11 @@ function DocumentRow({
       <Td>
         <TwoLine
           primary={<span className="font-normal">{item.facilityName}</span>}
-          secondary={formatRecordPeriod(item.periodStart, item.periodEnd, dateFormat)}
+          secondary={formatRecordPeriod(item.periodStart, item.periodEnd)}
         />
       </Td>
       <Td className="text-ink-muted">
-        {item.uploadedBy}, {formatDateTime(item.uploadedAt, dateFormat)}
+        {item.uploadedBy}, {formatDateTime(item.uploadedAt)}
       </Td>
       <Td align="right" className="text-[13px]">
         {item.calculated ? (

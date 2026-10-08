@@ -1,4 +1,4 @@
-import { formatDateTime, useDateFormat } from '../../lib/dates'
+import { formatDateTime } from '../../lib/dates'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
@@ -35,7 +35,6 @@ const crumbs = [{ label: 'Administration' }, { label: 'Organizations' }]
  * history for its owners to read.
  */
 export function AdminOrganizationsPage() {
-  const dateFormat = useDateFormat()
   const organizationsQuery = useAdminOrganizationsQuery()
   const settingsQuery = usePlatformSettingsQuery()
   const endAccess = useEndSupportAccess()
@@ -100,7 +99,7 @@ export function AdminOrganizationsPage() {
                     {organization.supportAccess ? (
                       <StatusDot tone="warning" className="items-start">
                         <span className="whitespace-normal">
-                          Until {formatDateTime(organization.supportAccess.expiresAt, dateFormat)}:{' '}
+                          Until {formatDateTime(organization.supportAccess.expiresAt)}:{' '}
                           {organization.supportAccess.reason}
                         </span>
                       </StatusDot>

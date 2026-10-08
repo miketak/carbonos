@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.carbonos.ghg.internal.CallerDates;
 import com.carbonos.ghg.internal.InventoryService;
 import com.carbonos.ghg.internal.export.ReportPdf;
 import com.carbonos.ghg.internal.export.RunCsv;
@@ -29,12 +28,10 @@ class ExportController {
 
 	private final InventoryService inventoryService;
 	private final ReportAssembler reports;
-	private final CallerDates dates;
 
-	ExportController(InventoryService inventoryService, ReportAssembler reports, CallerDates dates) {
+	ExportController(InventoryService inventoryService, ReportAssembler reports) {
 		this.inventoryService = inventoryService;
 		this.reports = reports;
-		this.dates = dates;
 	}
 
 	@GetMapping(value = "/runs/{id}/report.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
@@ -53,13 +50,13 @@ class ExportController {
 	@GetMapping(value = "/runs/{id}/lines.csv", produces = "text/csv")
 	ResponseEntity<byte[]> lines(@PathVariable UUID id) {
 		var run = inventoryService.getRun(id);
-		return csv("run-" + run.getRunNo() + "-lines.csv", RunCsv.lines(run, dates.formatter()));
+		return csv("run-" + run.getRunNo() + "-lines.csv", RunCsv.lines(run));
 	}
 
 	@GetMapping(value = "/runs/{id}/exclusions.csv", produces = "text/csv")
 	ResponseEntity<byte[]> exclusions(@PathVariable UUID id) {
 		var run = inventoryService.getRun(id);
-		return csv("run-" + run.getRunNo() + "-exclusions.csv", RunCsv.exclusions(run, dates.formatter()));
+		return csv("run-" + run.getRunNo() + "-exclusions.csv", RunCsv.exclusions(run));
 	}
 
 	/** The frozen inputs (spec 07.5): the boundary version, the factor set, the instruments and the residual mix. */

@@ -1,4 +1,3 @@
-import { useDateFormat } from '../../../lib/dates'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Button } from '../../../components/Button'
@@ -906,7 +905,6 @@ function CompletionNote({
  * fields and no Save. Evidence and history stay on their own tab and button.
  */
 function ActivityFacts({ activity }: { activity: Activity | undefined }) {
-  const dateFormat = useDateFormat()
   if (!activity) {
     return <p className="text-sm text-ink-muted">You do not have permission to add a record.</p>
   }
@@ -919,7 +917,7 @@ function ActivityFacts({ activity }: { activity: Activity | undefined }) {
           <Fact label="Emission source" value={activity.streamName ?? 'No emission source'} />
           <Fact
             label="Period"
-            value={formatRecordPeriod(activity.periodStart, activity.periodEnd, dateFormat)}
+            value={formatRecordPeriod(activity.periodStart, activity.periodEnd)}
           />
           <Fact
             label="Quantity"

@@ -1,4 +1,3 @@
-import { useDateFormat } from '../../../lib/dates'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Banner } from '../../../components/Banner'
@@ -253,7 +252,6 @@ function AssignmentPanel({
   onExclude: (input: ExcludeInput) => void
   onInclude: () => void
 }) {
-  const dateFormat = useDateFormat()
   const [tab, setTab] = useState<DetailTab>('classify')
   const bodyRef = useRef<HTMLDivElement>(null)
 
@@ -280,7 +278,7 @@ function AssignmentPanel({
             <span>
               {assignment.recordRef} · {assignment.facilityName} ·{' '}
               {assignment.quantity.toLocaleString()} {assignment.unit} ·{' '}
-              {formatPeriod(assignment.periodStart, assignment.periodEnd, dateFormat)}
+              {formatPeriod(assignment.periodStart, assignment.periodEnd)}
             </span>
             <AssignmentStatusPills
               assignment={assignment}

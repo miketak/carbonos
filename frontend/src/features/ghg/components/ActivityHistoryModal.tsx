@@ -1,4 +1,4 @@
-import { formatDateTime, useDateFormat } from '../../../lib/dates'
+import { formatDateTime } from '../../../lib/dates'
 import { Button } from '../../../components/Button'
 import { Modal } from '../../../components/Modal'
 import { Skeleton } from '../../../components/Skeleton'
@@ -30,7 +30,6 @@ export function ActivityHistoryModal({
   activity: Activity
   onClose: () => void
 }) {
-  const dateFormat = useDateFormat()
   const revisionsQuery = useActivityRevisionsQuery(activity.id)
   return (
     <Modal title={`History of ${activity.activityType}`} onClose={onClose}>
@@ -54,7 +53,7 @@ export function ActivityHistoryModal({
                 </span>
                 <span className="text-ink-muted">
                   {' '}
-                  by {revision.changedBy}, {formatDateTime(revision.changedAt, dateFormat)}
+                  by {revision.changedBy}, {formatDateTime(revision.changedAt)}
                 </span>
               </p>
               <p className="text-ink-muted">{revision.reason}</p>
