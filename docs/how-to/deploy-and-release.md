@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-09-11
+last_reviewed: 2026-10-08
 ---
 
 # Deploy and release
@@ -97,6 +97,16 @@ in a run.
 
 A version tag pushed by hand also starts `Release`; the sign-off path is
 the normal one.
+
+## Approve both gates from the terminal
+
+`scripts/promote-release.sh v0.7.0-rc.1` does the two approvals for a
+candidate you have already decided to ship: it waits for the `QA` run to
+reach the sign-off job, approves it, waits for the `Release` run to reach
+the production job, approves that, and waits for the deploy. It needs `gh`
+signed in as a required reviewer of `qa-signoff` and `production`, and it
+stops with the run URL when a job fails. In Claude Code, `/release v0.7.0`
+tags the candidate from `main` and runs the script.
 
 ## Wipe an environment's database
 
