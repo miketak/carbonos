@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-05
+last_reviewed: 2026-10-18
 description: Import the seven 2025 activity records for Gye Nyame Gold from a CSV file, read the preview, then correct the electricity record whose figure lost a zero.
 role: Preparer
 minutes: 10
@@ -22,11 +22,11 @@ This fourth step of the Get started series brings in the year's activity data fo
 
 1. Open **Activity data**. The page reads "No activity data yet". Click **Import**.
 2. Under **Select your completed spreadsheet** on the **Import activity data** page, choose `gye-nyame-2025.csv`. The page also offers **Download CSV template**, which the fixture follows.
-3. Read the preview. **Control totals** groups the rows by facility and emission source (Nyame Pit and Plant, Plant grid supply: 2 rows, 37,600,000 kWh, and so on) so you can check them against the spreadsheet's footer. A badge reads "7 rows: reference only, nothing attached".
+3. Read the preview. **Date format** under the file is preset from your browser's language; the fixture writes its dates as `2025-03-31`, which is read under every setting. A badge reads "7 rows: reference only, nothing attached".
 4. Read **Worth a look before adding**. Every row is listed, for example "Row 5: the period is longer than one month (2025-07-01 to 2025-12-31); monthly rows make the coverage matrix and cut-off checks precise". A long period is a warning rather than an error because the fact is still a fact; monthly rows are better because they let the coverage matrix and the cut-off checks see each month on its own.
 5. Check that each row under **7 records to add** reads "Ready", then click **Add records**.
 
-![The import preview for gye-nyame-2025.csv with the control totals by facility and emission source and the Worth a look before adding warnings](../assets/screens/step-4-import-preview.png)
+![The import preview for gye-nyame-2025.csv with the Date format select and the Worth a look before adding warnings](../assets/screens/step-4-import-preview.png)
 
 What you see: "Uploading…", "Checking 7 rows…", then back on **Activity data** "7 records imported." The strip above the table reads **Records ready** 7 "of 7" and **Record completeness** 100%. The records are numbered ACT-0001 to ACT-0007 in the order of the file: "Haul fleet diesel" (ACT-0001), "Contract haulage diesel" (ACT-0002), "Plant grid electricity H1" (ACT-0003), "Plant grid electricity H2" (ACT-0004), "Genset diesel" (ACT-0005), "Kitchen LPG" (ACT-0006) and "Year-end kitchen LPG" (ACT-0007). The list sorts by period, so the year-end row comes first. Each row has the data status **Ready** and a "ref" mark, because it cites a document reference and nothing is attached.
 

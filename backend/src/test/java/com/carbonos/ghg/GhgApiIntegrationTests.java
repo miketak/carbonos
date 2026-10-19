@@ -1314,6 +1314,62 @@ class GhgApiIntegrationTests {
 			.andExpect(jsonPath("$.length()").value(5));
 	}
 
+	/** ECO-138: the preparer says how the file writes its dates; 2025-03-31 is read under every setting. */
+	@Test
+	void anImportReadsDatesInTheFormatThePreparerChose() throws Exception {
+		var orgId = createOrganization("Gye Nyame Gold");
+		createFacility(orgId, "Obuasi Camp");
+		var csv = ("facility,activity_type,quantity,unit,period_start,period_end,data_source,evidence_ref\r\n"
+				+ "Obuasi Camp,LPG,20800,litre,01/03/2025,31/03/2025,Supplier invoice,LPG-3\r\n"
+				+ "Obuasi Camp,Diesel,900000,litre,03.04.2025,09-04-2025,Fuel register,INV-4\r\n"
+				+ "Obuasi Camp,Diesel,980000,litre,2025-09-01,2025-09-30,Fuel register,INV-9\r\n")
+			.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		var file = new org.springframework.mock.web.MockMultipartFile("file", "camp-2025.csv", "text/csv", csv);
+
+		// without the parameter the file reads ISO, as the template says
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import").file(file).param("dryRun", "true")
+			.with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.rejected.length()").value(2))
+			.andExpect(jsonPath("$.rejected[0].row").value(2))
+			.andExpect(jsonPath("$.rejected[0].message")
+				.value(org.hamcrest.Matchers.containsString("period_start '01/03/2025' is not a date (use 2025-03-31)")));
+
+		// day-first: every separator reads, and the ISO row reads as itself
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import").file(file).param("dryRun", "true")
+			.param("dateFormat", "DAY_FIRST").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.rejected").isEmpty())
+			.andExpect(jsonPath("$.rows[0].periodStart").value("2025-03-01"))
+			.andExpect(jsonPath("$.rows[0].periodEnd").value("2025-03-31"))
+			.andExpect(jsonPath("$.rows[1].periodStart").value("2025-04-03"))
+			.andExpect(jsonPath("$.rows[1].periodEnd").value("2025-04-09"))
+			.andExpect(jsonPath("$.rows[2].periodStart").value("2025-09-01"));
+
+		// month-first: 31 is no month, and the rejection names the dropdown
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import").file(file).param("dryRun", "true")
+			.param("dateFormat", "MONTH_FIRST").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.rejected.length()").value(2))
+			.andExpect(jsonPath("$.rejected[0].row").value(2))
+			.andExpect(jsonPath("$.rejected[0].message").value(org.hamcrest.Matchers.containsString(
+					"period_end '31/03/2025' is not a Month / Day / Year date. If the file is day-first, change 'Date format' above.")))
+			.andExpect(jsonPath("$.rejected[1].row").value(3));
+
+		// the real import reads the same parameter
+		mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.multipart("/api/ghg/organizations/" + orgId + "/activities/import").file(file)
+			.param("dateFormat", "DAY_FIRST").with(asMember()).with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.imported").value(3));
+		mvc.perform(get("/api/ghg/organizations/" + orgId + "/activities/page").with(asMember())
+			.param("sort", "periodStart").param("dir", "asc"))
+			.andExpect(jsonPath("$.total").value(3));
+	}
+
 	/** Audit findings F10, F26, F27, F30 (T-11): the stream register, the scope choice and proxy factors. */
 	@Test
 	void aStreamDrivesTheDefaultScopeAndAnyDepartureNeedsAJustification() throws Exception {

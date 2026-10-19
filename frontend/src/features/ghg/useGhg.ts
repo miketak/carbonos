@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { ImportDateFormat } from '../../lib/dates'
 import {
   acceptFactorPackNotice,
   addEvidenceLink,
@@ -565,14 +566,16 @@ export function useImportActivities(orgId: string) {
     mutationFn: ({
       file,
       dryRun,
+      dateFormat,
       decisions,
       onProgress,
     }: {
       file: File
       dryRun?: boolean
+      dateFormat?: ImportDateFormat
       decisions?: ImportDecisionsInput
       onProgress?: (percent: number) => void
-    }) => importActivities(orgId, file, { dryRun, decisions, onProgress }),
+    }) => importActivities(orgId, file, { dryRun, dateFormat, decisions, onProgress }),
     onSuccess: (result) => {
       if (result.dryRun) return
       invalidateActivityReaders(queryClient, orgId)

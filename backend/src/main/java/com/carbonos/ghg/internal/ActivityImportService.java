@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -164,25 +163,25 @@ public class ActivityImportService {
 
 	/** Validates the file and reports what would import; saves nothing (spec 04.6). */
 	@Transactional(readOnly = true)
-	public Result preview(UUID organizationId, MultipartFile file, Decisions decided) {
+	public Result preview(UUID organizationId, MultipartFile file, Decisions decided, ImportDateFormat dateFormat) {
 		var organization = organizations.findById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.checkWrite(organization);
 		var source = Source.read(file);
 		checkDigest(decided, source.sha256());
-		var parsed = parse(organization, source, decided, true);
+		var parsed = parse(organization, source, decided, true, dateFormat);
 		return new Result(true, null, 0, parsed.rejected(), parsed.rows(), parsed.totals(), parsed.warnings(),
 				source.sha256(), parsed.unknown(), 0);
 	}
 
-	public Result importFile(UUID organizationId, MultipartFile file, Decisions decided) {
+	public Result importFile(UUID organizationId, MultipartFile file, Decisions decided, ImportDateFormat dateFormat) {
 		// row-locked: the records take a block of numbers from the organization's counter (spec 04.6)
 		var organization = organizations.lockById(organizationId)
 			.orElseThrow(() -> GhgNotFoundException.organization(organizationId));
 		access.checkWrite(organization);
 		var source = Source.read(file);
 		checkDigest(decided, source.sha256());
-		var parsed = parse(organization, source, decided, false);
+		var parsed = parse(organization, source, decided, false, dateFormat);
 		if (!parsed.rejected().isEmpty()) {
 			return new Result(false, null, 0, parsed.rejected(), List.of(), parsed.totals(), parsed.warnings(),
 					source.sha256(), List.of(), 0);
@@ -302,7 +301,8 @@ public class ActivityImportService {
 		return facilityId + "|" + name.trim().toLowerCase(Locale.ROOT);
 	}
 
-	private Parsed parse(Organization organization, Source source, Decisions decided, boolean dryRun) {
+	private Parsed parse(Organization organization, Source source, Decisions decided, boolean dryRun,
+			ImportDateFormat dateFormat) {
 		var organizationId = organization.getId();
 		var table = source.table();
 		if (table.header().isEmpty()) {
@@ -436,8 +436,9 @@ public class ActivityImportService {
 			else if (unit.length() > 30) {
 				problems.add("unit is longer than 30 characters");
 			}
-			var start = date(cells.get("period_start"), "period_start", problems);
-			var end = cells.get("period_end").isBlank() ? start : date(cells.get("period_end"), "period_end", problems);
+			var start = date(cells.get("period_start"), "period_start", dateFormat, problems);
+			var end = cells.get("period_end").isBlank() ? start
+					: date(cells.get("period_end"), "period_end", dateFormat, problems);
 			if (start != null && start.isAfter(today)) {
 				problems.add("period_start is in the future");
 			}
@@ -648,18 +649,18 @@ public class ActivityImportService {
 		return resolved;
 	}
 
-	private static LocalDate date(String value, String field, List<String> problems) {
+	/** ISO always; otherwise the order the preparer chose in the preview (ECO-138). */
+	private static LocalDate date(String value, String field, ImportDateFormat dateFormat, List<String> problems) {
 		if (value.isBlank()) {
 			problems.add(field + " is empty");
 			return null;
 		}
-		try {
-			return LocalDate.parse(value.trim());
-		}
-		catch (DateTimeParseException ex) {
-			problems.add(field + " '" + value + "' is not a date (use 2025-03-31)");
+		var parsed = dateFormat.parse(value);
+		if (parsed.isEmpty()) {
+			problems.add(dateFormat.rejection(field, value));
 			return null;
 		}
+		return parsed.get();
 	}
 
 	private static String key(UUID facilityId, String type, BigDecimal quantity, String unit, LocalDate start,

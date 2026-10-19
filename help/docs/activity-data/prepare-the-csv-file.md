@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-05
+last_reviewed: 2026-10-18
 description: The columns, limits and accepted values of the CSV or XLSX that Import reads, the monthly template, and every rejection message the preview can print.
 role: Preparer
 ---
@@ -19,7 +19,7 @@ The file **Import** accepts on **Activity data**: a CSV, or an XLSX read from it
 | File size | 5 MB | "The file is larger than 5 MB." |
 | Rows | 10,000 per file | "The file has more than 10000 rows. Split it." |
 | Header | The five required columns, in any order; other columns may be left out. | "The header lacks the '*column*' column. Download the template." |
-| Dates | `2025-03-31`; a workbook's date-formatted cell reads as such. | "*field* '*value*' is not a date (use 2025-03-31)" |
+| Dates | `2025-03-31` always; with **Date format** on the import page set to **Day / Month / Year**, also `31/03/2025`, `31-03-2025` and `31.03.2025`; set to **Month / Day / Year**, also `03/31/2025` and `03-31-2025`. A workbook's date-formatted cell reads as `2025-03-31`. | "*field* '*value*' is not a date (use 2025-03-31)"; "*field* '*value*' is not a Day / Month / Year date. If the file is month-first, change 'Date format' above." |
 | Workbook cells | A number reads as a plain decimal; a formula reads as its cached value. | No rejection; the preview warns. |
 
 ## Columns
@@ -47,7 +47,7 @@ A repeated row is rejected: "duplicate: the same facility, activity, quantity, u
 
 | Block | Meaning |
 | --- | --- |
-| **Control totals** | Rows and summed quantity per facility, emission source and unit: "Check them against the spreadsheet's footer." |
+| **Date format** | How the dates in the file are written, preset from your browser's language. Changing it checks the file again. |
 | "*N* rows: reference only, nothing attached" | Rows with an `evidence_ref` and no file. Other counts name the missing item, for example "2 rows: missing source". |
 | **Worth a look before adding** | Warnings that do not stop the import. |
 | **Decide *N* unknown emission sources** | One card per emission source name the file has and the facility does not: the rows it covers, the similar names offered as **Use *name***, **Use another source of *facility*** with **Why this source?**, or **Create '*name*'**. Its rows read **Needs a decision** until then. |

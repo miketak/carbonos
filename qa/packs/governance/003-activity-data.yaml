@@ -289,7 +289,7 @@ docs:
   version: 6
   estimatedMinutes: 45
   objective: >-
-    Confirm that a clean file previews with control totals and imports once,
+    Confirm that a clean file previews its rows and imports once,
     that a file with a bad row imports nothing and names each row by number,
     and that a record is drafted, entered, corrected, evidenced and removed
     with the reasons the record keeps.

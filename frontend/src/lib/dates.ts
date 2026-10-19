@@ -37,3 +37,19 @@ export function formatDateTime(iso: string): string {
 export function formatDateRange(start: string, end: string): string {
   return start === end ? formatDate(start) : `${formatDate(start)} → ${formatDate(end)}`
 }
+
+/** How an import file writes its dates (spec 04.11, ECO-138); the API's names. */
+export type ImportDateFormat = 'DAY_FIRST' | 'MONTH_FIRST' | 'ISO'
+
+/**
+ * The import's default date format from the browser's language: month-first for
+ * United States English, day-first everywhere else (Ghana, the UK, the rest of the
+ * world). The preparer can change it on the import page; ISO is read under every
+ * setting.
+ */
+export function browserImportDateFormat(
+  language: string = typeof navigator === 'undefined' ? '' : navigator.language,
+): ImportDateFormat {
+  const region = language.split(/[-_]/)[1]?.toUpperCase()
+  return region === 'US' ? 'MONTH_FIRST' : 'DAY_FIRST'
+}

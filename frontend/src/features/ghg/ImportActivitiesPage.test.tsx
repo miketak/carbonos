@@ -143,6 +143,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
+  vi.restoreAllMocks()
   vi.mocked(importActivities).mockReset()
   vi.mocked(listStreams).mockReset().mockResolvedValue([gensets, boiler])
   vi.mocked(listFacilities)
@@ -178,8 +179,10 @@ beforeEach(() => {
   })
 })
 
-test('choosing a file previews it: totals, rows with their readiness, warnings; Add records commits it and returns to the register', async () => {
+test('choosing a file previews it: rows with their readiness, warnings; Add records commits it and returns to the register', async () => {
   const user = userEvent.setup()
+  // a preparer in Accra: the import reads day-first unless they say otherwise (ECO-138)
+  vi.spyOn(navigator, 'language', 'get').mockReturnValue('en-GH')
   vi.mocked(importActivities)
     .mockResolvedValueOnce(preview)
     .mockResolvedValueOnce({ ...preview, dryRun: false, batchId: 'batch-1', imported: 2, rows: [] })
@@ -201,12 +204,12 @@ test('choosing a file previews it: totals, rows with their readiness, warnings; 
     expect(importActivities).toHaveBeenCalledWith(
       'org-1',
       file,
-      expect.objectContaining({ dryRun: true, decisions: undefined }),
+      expect.objectContaining({ dryRun: true, dateFormat: 'DAY_FIRST', decisions: undefined }),
     ),
   )
   expect(await within(form).findByText('2 records to add')).toBeInTheDocument()
-  const totals = within(form).getByRole('table', { name: 'Control totals' })
-  expect(within(totals).getByText('12,500 litre')).toBeInTheDocument()
+  // ECO-138: the preview is the rows of the sheet; no control totals table
+  expect(within(form).queryByRole('table', { name: 'Control totals' })).not.toBeInTheDocument()
   expect(within(form).getByText(/mixes units in this file/)).toBeInTheDocument()
   expect(within(form).getByText('Ready')).toBeInTheDocument()
 
@@ -360,4 +363,34 @@ test('a facility and a month give the monthly template link (spec 04.12)', async
     'href',
     '/api/ghg/organizations/org-1/activities/import-template.csv?facilityId=fac-1&month=2025-09',
   )
+})
+
+test('the Date format select is preset from the browser language and reads the file again when changed (ECO-138)', async () => {
+  const user = userEvent.setup()
+  vi.spyOn(navigator, 'language', 'get').mockReturnValue('en-US')
+  vi.mocked(importActivities).mockResolvedValue(preview)
+  renderPage()
+
+  const form = screen.getByRole('form', { name: 'Import activity data' })
+  expect(within(form).queryByLabelText('Date format')).not.toBeInTheDocument()
+  const file = new File(['facility,activity_type\nNkran Mine,Diesel\n'], 'q1.csv', {
+    type: 'text/csv',
+  })
+  await user.upload(within(form).getByLabelText('Spreadsheet file'), file)
+  await waitFor(() =>
+    expect(importActivities).toHaveBeenCalledWith(
+      'org-1',
+      file,
+      expect.objectContaining({ dryRun: true, dateFormat: 'MONTH_FIRST' }),
+    ),
+  )
+  const select = within(form).getByLabelText('Date format')
+  expect(select).toHaveValue('MONTH_FIRST')
+
+  await user.selectOptions(select, 'DAY_FIRST')
+  await waitFor(() => expect(importActivities).toHaveBeenCalledTimes(2))
+  expect(vi.mocked(importActivities).mock.calls[1]?.[2]).toEqual(
+    expect.objectContaining({ dryRun: true, dateFormat: 'DAY_FIRST' }),
+  )
+  expect(select).toHaveValue('DAY_FIRST')
 })

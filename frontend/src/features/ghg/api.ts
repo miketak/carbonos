@@ -1,4 +1,5 @@
 import { api, apiUpload } from '../../lib/api'
+import type { ImportDateFormat } from '../../lib/dates'
 
 export type ConsolidationApproach = 'EQUITY_SHARE' | 'FINANCIAL_CONTROL' | 'OPERATIONAL_CONTROL'
 export type GhgScope = 'SCOPE_1' | 'SCOPE_2' | 'SCOPE_3'
@@ -2452,6 +2453,8 @@ export function importActivities(
   file: File,
   options: {
     dryRun?: boolean
+    /** how the file writes its dates (ECO-138); the server reads ISO when it is left out */
+    dateFormat?: ImportDateFormat
     decisions?: ImportDecisionsInput
     onProgress?: (percent: number) => void
   } = {},
@@ -2464,8 +2467,12 @@ export function importActivities(
       new Blob([JSON.stringify(options.decisions)], { type: 'application/json' }),
     )
   }
+  const params = new URLSearchParams()
+  if (options.dryRun) params.set('dryRun', 'true')
+  if (options.dateFormat) params.set('dateFormat', options.dateFormat)
+  const query = params.size > 0 ? `?${params}` : ''
   return apiUpload<ActivityImportResult>(
-    `/api/ghg/organizations/${organizationId}/activities/import${options.dryRun ? '?dryRun=true' : ''}`,
+    `/api/ghg/organizations/${organizationId}/activities/import${query}`,
     body,
     { onProgress: options.onProgress },
   )

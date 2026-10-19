@@ -45,14 +45,13 @@ export const importPreview = defineOutcome({
     if (a.noEvidence !== undefined && p.rows.filter((r) => r.issues.includes('NO_EVIDENCE')).length !== a.noEvidence) return fail(`needs-evidence rows: ${p.rows.filter((r) => r.issues.includes('NO_EVIDENCE')).length}`)
     return pass()
   },
+  // ECO-138: the page shows the rows of the sheet; the control totals stay an API-side check
   ui: (a) => [
-    { check: 'textVisible', text: S.act.text.controlTotals },
+    { check: 'textVisible', text: S.act.text.dateFormat },
     { check: 'textVisible', text: `${a.recordsToAdd} records to add` },
-    ...(a.totals ?? []).map((t) => ({ check: 'textVisible', text: `${t.quantity.toLocaleString('en-GB')} ${t.unit}` }) as const),
   ],
   narrate: (a) => {
-    const parts = [`The file is checked at once, and nothing is written.`]
-    if (a.totals) parts.push(`**${S.act.text.controlTotals}** groups the rows by facility, emission source and unit: ${a.totals.map((t) => `${t.facility}, ${t.stream ?? 'no emission source'}, ${t.quantity.toLocaleString('en-GB')} ${t.unit}`).join('; ')}.`)
+    const parts = [`The file is checked at once, and nothing is written. **${S.act.text.dateFormat}** is preset from the browser's language.`]
     parts.push(`"${a.recordsToAdd} records to add" lists each row with its facility and period.`)
     if (a.warning) parts.push(`Under **Worth a look before adding**, row ${a.warning.row} is named: "${a.warning.containing}".`)
     if (a.ready) parts.push(`Rows ${a.ready.join(', ')} read **${S.act.text.ready}**.`)

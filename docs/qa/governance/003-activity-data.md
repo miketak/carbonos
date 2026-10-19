@@ -1,7 +1,7 @@
 <!-- generated from qa/packs/governance/003-activity-data.yaml by make qa-export; edit the YAML -->
 # Procedure 3: Activity data
 
-**Objective.** Confirm that a clean file previews with control totals and imports once, that a file with a bad row imports nothing and names each row by number, and that a record is drafted, entered, corrected, evidenced and removed with the reasons the record keeps.
+**Objective.** Confirm that a clean file previews its rows and imports once, that a file with a bad row imports nothing and names each row by number, and that a record is drafted, entered, corrected, evidenced and removed with the reasons the record keeps.
 
 **Covers** [spec 04](../../../specs/04-operational-boundary-and-classification.md), [spec 04.4](../../../specs/04.4-activity-data-quality-evidence-and-corrections.md), [spec 04.5](../../../specs/04.5-bulk-import-and-activity-register.md), [spec 04.6](../../../specs/04.6-activity-register-drafts-readiness-and-source-documents.md), [spec 04.10](../../../specs/04.10-emission-sources-inline-creation-and-the-reconcile-prompt.md), [spec 04.11](../../../specs/04.11-import-round-two.md), [spec 04.12](../../../specs/04.12-the-activity-register-round-two.md) and [spec 08](../../../specs/08-form-validation-and-ui-polish.md). Spec 08 for the inline rules.
 
@@ -27,7 +27,7 @@
 | --- | --- | --- | --- | --- |
 | 1 | As Ama Owusu in the private window, sign in as "Ama Owusu" with `you+ama@…` (the Ama alias) and `Ama-pass-2026`. | Ama Owusu is signed in. |  |  |
 | 2 | Look. | **Download CSV template** gives a file whose header is `facility,emission_source,activity_type,quantity,unit,period_start,period_end,data_source,supplier,evidence_ref,data_quality,data_quality_tier,uncertainty_percent,note`, the same as the fixture's. |  |  |
-| 3 | Click **Import** and choose `adansi-2025.csv`. | The file is checked at once, and nothing is written. **Control totals** groups the rows by facility, emission source and unit: Kumasi Plant, Boiler LPG, 2,400 litre; Kumasi Plant, Plant grid supply, 120 MWh; Tema Depot, Delivery fleet, 5,000 litre. "10 records to add" lists each row with its facility and period. Under **Worth a look before adding**, row 7 is named: "the period is longer than one month (2025-12-15 to 2026-01-15)". Rows 2, 3, 4 read **Ready**. 7 rows read "No emission source" and 2 of them "Needs evidence": "Missing source" appears nowhere, every row names its data source. |  |  |
+| 3 | Click **Import** and choose `adansi-2025.csv`. | The file is checked at once, and nothing is written. **Date format** is preset from the browser's language. "10 records to add" lists each row with its facility and period. Under **Worth a look before adding**, row 7 is named: "the period is longer than one month (2025-12-15 to 2026-01-15)". Rows 2, 3, 4 read **Ready**. 7 rows read "No emission source" and 2 of them "Needs evidence": "Missing source" appears nowhere, every row names its data source. |  |  |
 
 ### A2. The import, and the same file again
 
