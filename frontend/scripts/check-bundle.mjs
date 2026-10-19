@@ -46,7 +46,9 @@ const search = files.find((f) => /^search-.*\.js$/.test(f))
 if (search) check('search', search, BUDGETS.search)
 
 // an article chunk is group__slug-hash.js; the hash alone may end in "__" (search-CTRCEM__.js once did)
-for (const f of files.filter((f) => /^[a-z0-9-]+__[a-z0-9-]+-[\w-]+\.js$/.test(f) || /^glossary-.*\.js$/.test(f))) {
+for (const f of files.filter(
+  (f) => /^[a-z0-9-]+__[a-z0-9-]+-[\w-]+\.js$/.test(f) || /^glossary-.*\.js$/.test(f),
+)) {
   check(
     f.startsWith('glossary') ? 'glossary' : 'page',
     f,
