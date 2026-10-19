@@ -10,6 +10,8 @@ import { StatusDot } from '../../components/StatusDot'
 import { Table, Td, Th } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
+import { browserImportDateFormat } from '../../lib/dates'
+import type { ImportDateFormat } from '../../lib/dates'
 import { activityImportTemplateUrl } from './api'
 import type {
   ActivityImportResult,
@@ -93,8 +95,10 @@ function toDecisions(
 /**
  * Bulk entry from a CSV file or a workbook (specs 04.5, 04.6, 04.11), as a page
  * under the register. Choosing a file runs a dry run: every row as it would
- * import with its readiness, the control totals to check against the sheet's
- * footer, and warnings; nothing is saved until "Add records". An emission
+ * import with its readiness and the warnings; nothing is saved until "Add
+ * records". The **Date format** select says how the file writes its dates
+ * (ECO-138), preset from the browser's language; changing it reads the file
+ * again. An emission
  * source the facility does not have is decided here, in a card per name, and
  * the decisions travel with the file. A rejected row blocks the import so the
  * corrected file can be chosen again without doubling records.
@@ -112,6 +116,7 @@ export function ImportActivitiesPage() {
   const [templateFacility, setTemplateFacility] = useState('')
   const [templateMonth, setTemplateMonth] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [dateFormat, setDateFormat] = useState<ImportDateFormat>(() => browserImportDateFormat())
   const [rowCount, setRowCount] = useState<number | null>(null)
   const [preview, setPreview] = useState<ActivityImportResult | null>(null)
   const [decisions, setDecisions] = useState<Map<string, DecisionDraft>>(new Map())
@@ -128,12 +133,13 @@ export function ImportActivitiesPage() {
         : refusalMessage(importActivities.error, myRole)
       : undefined
 
-  const run = (chosen: File, dryRun: boolean) => {
+  const run = (chosen: File, dryRun: boolean, format: ImportDateFormat = dateFormat) => {
     setProgress(0)
     importActivities.mutate(
       {
         file: chosen,
         dryRun,
+        dateFormat: format,
         decisions:
           preview && !dryRun
             ? { sha256: preview.sha256, items: toDecisions(preview.unknownSources, decisions) }
@@ -338,6 +344,30 @@ export function ImportActivitiesPage() {
           </Step>
         </div>
 
+        {file && (
+          <div className="flex items-center justify-end gap-3">
+            <label htmlFor="import-date-format" className="text-[13px] font-medium">
+              Date format
+            </label>
+            <select
+              id="import-date-format"
+              value={dateFormat}
+              disabled={importActivities.isPending}
+              onChange={(event) => {
+                const next = event.target.value as ImportDateFormat
+                setDateFormat(next)
+                importActivities.reset()
+                run(file, true, next)
+              }}
+              className="min-h-11 w-full max-w-[300px] rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-ink focus:border-primary focus:ring-2 focus:ring-focus/40"
+            >
+              <option value="DAY_FIRST">Day / Month / Year (31/03/2025)</option>
+              <option value="MONTH_FIRST">Month / Day / Year (03/31/2025)</option>
+              <option value="ISO">Year / Month / Day (2025-03-31)</option>
+            </select>
+          </div>
+        )}
+
         {preview && preview.rejected.length > 0 && (
           <div className="max-h-48 overflow-y-auto">
             <Banner
@@ -391,41 +421,6 @@ export function ImportActivitiesPage() {
 
         {preview && preview.rows.length > 0 && (
           <div className="flex flex-col gap-5">
-            <section>
-              <h3 className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold">
-                Control totals
-                <span className="text-[13px] font-normal text-ink-muted">
-                  Check them against the spreadsheet's footer.
-                </span>
-              </h3>
-              <div className="mt-2">
-                <Table aria-label="Control totals">
-                  <thead>
-                    <tr>
-                      <Th>Facility</Th>
-                      <Th>Emission source</Th>
-                      <Th align="right">Rows</Th>
-                      <Th align="right">Total</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.totals.map((total) => (
-                      <tr key={`${total.facilityName}|${total.streamName ?? ''}|${total.unit}`}>
-                        <Td className="py-2">{total.facilityName}</Td>
-                        <Td className="py-2">{total.streamName ?? 'No emission source'}</Td>
-                        <Td align="right" className="py-2">
-                          {total.rows}
-                        </Td>
-                        <Td align="right" className="py-2 font-medium">
-                          {total.quantity.toLocaleString()} {total.unit}
-                        </Td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-            </section>
-
             {Object.keys(issueCounts).length > 0 && (
               <ul className="flex flex-wrap gap-2">
                 {(Object.entries(issueCounts) as [ReadinessIssue, number][]).map(

@@ -52,7 +52,8 @@ try {
   if (!executablePath) throw new Error('no Playwright browser: run npx playwright install chromium')
   browser = await chromium.launch({ executablePath })
 }
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+// Ama Owusu works in Accra: the import's Date format preselects day-first for her (ECO-138)
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'en-GH' })
 const page = await ctx.newPage()
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))

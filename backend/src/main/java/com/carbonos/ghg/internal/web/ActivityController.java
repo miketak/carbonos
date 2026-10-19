@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.carbonos.ghg.internal.ActivityImportService;
+import com.carbonos.ghg.internal.ImportDateFormat;
 import com.carbonos.ghg.internal.ActivityStatus;
 import com.carbonos.ghg.internal.GhgService;
 import com.carbonos.ghg.internal.web.dto.ActivityImportResponse;
@@ -76,15 +77,17 @@ class ActivityController {
 	/**
 	 * Bulk entry from a CSV file or a workbook: all rows or none (specs 04.5, 04.11); a
 	 * dry run previews without saving (spec 04.6). The optional {@code decisions} part
-	 * (JSON) says what to do with each emission source name the facility does not have.
+	 * (JSON) says what to do with each emission source name the facility does not have;
+	 * {@code dateFormat} says how the period columns are written (ECO-138), ISO by default.
 	 */
 	@PostMapping(path = "/organizations/{organizationId}/activities/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	ActivityImportResponse importFile(@PathVariable UUID organizationId, @RequestPart("file") MultipartFile file,
 			@RequestPart(value = "decisions", required = false) @Valid ImportDecisionsRequest decisions,
-			@RequestParam(defaultValue = "false") boolean dryRun) {
+			@RequestParam(defaultValue = "false") boolean dryRun,
+			@RequestParam(defaultValue = "ISO") ImportDateFormat dateFormat) {
 		var decided = decisions == null ? null : decisions.toDecisions();
-		return ActivityImportResponse.from(dryRun ? imports.preview(organizationId, file, decided)
-				: imports.importFile(organizationId, file, decided));
+		return ActivityImportResponse.from(dryRun ? imports.preview(organizationId, file, decided, dateFormat)
+				: imports.importFile(organizationId, file, decided, dateFormat));
 	}
 
 	/** One act over several records, all or nothing (spec 04.11). */

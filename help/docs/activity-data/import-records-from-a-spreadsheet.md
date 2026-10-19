@@ -1,6 +1,6 @@
 ---
 owner: miketak
-last_reviewed: 2026-10-05
+last_reviewed: 2026-10-18
 description: Load a CSV or XLSX of activity records at once through Import, check the preview, decide any emission source the facility lacks, and add the records.
 role: Preparer
 minutes: 6
@@ -24,13 +24,13 @@ An import brings several source records into the register at once, after a previ
 1. Open **Activity data** and click **Import**. The page **Import activity data** opens, under the breadcrumb **Activity data › Import**.
 2. Starting from scratch, click **Download CSV template** under **Use the activity template**. **What each column must contain** opens the column reference. For a month's meter reads, choose the facility and the month under **Download a monthly template**: one row per emission source, the period filled, so a source that ran nothing is recorded as 0 with a note, not deleted.
 3. Under **Select your completed spreadsheet**, click **Choose a CSV or XLSX file**, or drop the file on the page. The page reads "Uploading…" with the percentage, then "Checking *N* rows…" (for a workbook, "Checking the workbook…").
-4. Check **Control totals** against the spreadsheet's footer: rows and summed quantity per facility and emission source.
+4. Check **Date format**, the select that appears under the file. It is preset from your browser's language (**Day / Month / Year** in Ghana, **Month / Day / Year** in the United States) and says how the dates in your file are written; `2025-03-31` is read under every setting. Change it and the file is checked again.
 5. Read **Worth a look before adding**. These warnings do not stop the import.
 6. Decide each name under **Decide *N* unknown emission sources**, if the block appears; see the next section.
 7. Read the list of records to add, for example "7 records to add".
 8. Click **Add records**. The page reads "Adding *N* records…" and returns to **Activity data**.
 
-![The import preview for gye-nyame-2025.csv: control totals per facility and emission source, the reference-only count, and the warnings on long periods](../assets/screens/step-4-import-preview.png)
+![The import preview for gye-nyame-2025.csv: the Date format select, the reference-only count, and the warnings on long periods](../assets/screens/step-4-import-preview.png)
 
 What you see: "7 records imported." and one row per record in the register, numbered in the order of the file (ACT-0001 to ACT-0007 for Gye Nyame Gold). When the import created emission sources, the message goes on: "1 emission source added during import." Rows the preview counted as "7 rows: reference only, nothing attached" carry "ref" in the attachments column. Row numbers in the preview count the header as row 1, as the spreadsheet does.
 

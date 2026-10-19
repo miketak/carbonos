@@ -293,7 +293,7 @@ export const S = {
       evidence: 'Evidence',
     },
     text: {
-      controlTotals: 'Control totals',
+      dateFormat: 'Date format',
       recordsToAdd: 'Records to add',
       needsDecision: 'Needs a decision',
       decideUnknown: 'Decide',

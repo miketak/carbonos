@@ -1,7 +1,7 @@
-// generated from qa/packs/governance/003-activity-data.yaml (sha256 2360e6f20f61aeeb7fe63b8db4c84d73081435be770d46b54b5f8ad72a30332a); edit the YAML, then `make qa-compile`
+// generated from qa/packs/governance/003-activity-data.yaml (sha256 712d5c3c4e867bd56d6a0a881a981d460f3ed72e68789cee6f33fecca4367cea); edit the YAML, then `make qa-compile`
 import { procedure, test } from '../../../src/runtime/ui/index.ts'
 
-const P = procedure("governance", 3, "2360e6f20f61aeeb7fe63b8db4c84d73081435be770d46b54b5f8ad72a30332a")
+const P = procedure("governance", 3, "712d5c3c4e867bd56d6a0a881a981d460f3ed72e68789cee6f33fecca4367cea")
 
 test.describe.configure({ mode: 'serial' })
 test.describe("Procedure 3: Activity data", () => {

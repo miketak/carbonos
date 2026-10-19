@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { formatDate, formatDateRange, formatDateTime } from './dates'
+import { browserImportDateFormat, formatDate, formatDateRange, formatDateTime } from './dates'
 
 /** ECO-134: every date reads ISO, which no reader misorders. */
 describe('formatDate', () => {
@@ -32,4 +32,14 @@ describe('formatDateRange', () => {
     expect(formatDateRange('2026-04-03', '2026-04-03')).toBe('2026-04-03')
     expect(formatDateRange('2026-01-01', '2026-12-31')).toBe('2026-01-01 → 2026-12-31')
   })
+})
+
+// ECO-138: the import's default follows the browser's region; only the US is month-first
+test('presets the import date format from the browser language', () => {
+  expect(browserImportDateFormat('en-GH')).toBe('DAY_FIRST')
+  expect(browserImportDateFormat('en-GB')).toBe('DAY_FIRST')
+  expect(browserImportDateFormat('fr')).toBe('DAY_FIRST')
+  expect(browserImportDateFormat('')).toBe('DAY_FIRST')
+  expect(browserImportDateFormat('en-US')).toBe('MONTH_FIRST')
+  expect(browserImportDateFormat('en_us')).toBe('MONTH_FIRST')
 })
