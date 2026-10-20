@@ -372,10 +372,7 @@ export function ImportActivitiesPage() {
 
         {preview && preview.rejected.length > 0 && (
           <div className="max-h-48 overflow-y-auto">
-            <Banner
-              tone="danger"
-              title="Import Failed"
-            >
+            <Banner tone="danger" title="Import Failed">
               <ul className="mt-1 flex flex-col gap-1 text-[13px]">
                 {preview.rejected.map((rejection) => (
                   <li key={rejection.row}>

@@ -40,12 +40,7 @@ export function formatDateRange(start: string, end: string): string {
 
 /** How an import file writes its dates (spec 04.11, ECO-138); the API's names. */
 export type ImportDateFormat =
-  | 'DAY_FIRST'
-  | 'DAY_FIRST_DASH'
-  | 'MONTH_FIRST'
-  | 'MONTH_FIRST_DASH'
-  | 'ISO'
-  | 'ISO_SLASH'
+  'DAY_FIRST' | 'DAY_FIRST_DASH' | 'MONTH_FIRST' | 'MONTH_FIRST_DASH' | 'ISO' | 'ISO_SLASH'
 
 /** The Date format options in dropdown order: each order with slashes, then with dashes. */
 export const IMPORT_DATE_FORMATS: ReadonlyArray<{ value: ImportDateFormat; label: string }> = [
