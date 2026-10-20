@@ -344,7 +344,7 @@ test('a rejected row keeps Add records disabled and names the row', async () => 
     new File(['facility,activity_type\n'], 'march.csv', { type: 'text/csv' }),
   )
 
-  expect(await within(form).findByText(/Nothing will import: 1 row rejected/)).toBeInTheDocument()
+  expect(await within(form).findByText('Import Failed')).toBeInTheDocument()
   expect(within(form).getByText("quantity 'abc' is not a number")).toBeInTheDocument()
   expect(within(form).getByRole('button', { name: 'Add records' })).toBeDisabled()
 })

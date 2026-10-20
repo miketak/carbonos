@@ -42,7 +42,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Import** and choose `adansi-2025-rejected.csv`. | "Nothing will import: 4 rows rejected. Fix them and choose the file again." Row 2: "quantity '1,2O0' is not a number". Row 3: "period_start is in the future". Row 4: "no facility named 'Kumasi Depot'". Row 5: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled: the header is row 1, so the rows are named 2 to 5; row 3 also reads "period_end is in the future" because an empty end takes the start; row 5 repeats ACT-0001. The register holds 10 records: a file imports whole or not at all. |  |  |
+| 1 | Click **Import** and choose `adansi-2025-rejected.csv`. | "Import Failed". Row 2: "quantity '1,2O0' is not a number". Row 3: "period_start is in the future". Row 4: "no facility named 'Kumasi Depot'". Row 5: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled: the header is row 1, so the rows are named 2 to 5; row 3 also reads "period_end is in the future" because an empty end takes the start; row 5 repeats ACT-0001. The register holds 10 records: a file imports whole or not at all. |  |  |
 
 ## C. Readiness
 

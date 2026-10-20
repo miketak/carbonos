@@ -76,12 +76,12 @@ export const importRejected = defineOutcome({
     return pass()
   },
   ui: (a) => [
-    ...(typeof a.rows === 'number' ? [{ check: 'textVisible', text: `${a.rows} rows rejected` } as const] : []),
+    { check: 'textVisible', text: 'Import Failed' } as const,
     ...Object.values(a.messages ?? {}).map((m) => ({ check: 'textVisible', text: m }) as const),
     { check: 'buttonDisabled', button: S.act.button.addRecords },
   ],
   narrate: (a) => {
-    const parts = [a.rows === 'all' ? 'Every row is rejected' : `"Nothing will import: ${a.rows} rows rejected. Fix them and choose the file again."`]
+    const parts = [a.rows === 'all' ? '"Import Failed": every row is rejected' : `"Import Failed", ${a.rows} rows rejected`]
     for (const [row, m] of Object.entries(a.messages ?? {})) parts.push(`Row ${row}: "${m}".`)
     parts.push(`**${S.act.button.addRecords}** stays disabled.`)
     return parts.join(' ')

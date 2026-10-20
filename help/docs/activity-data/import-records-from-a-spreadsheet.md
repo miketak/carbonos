@@ -56,7 +56,7 @@ When a row names an emission source its facility does not have, nothing is rejec
 
 ## If the file is rejected
 
-The preview reads "Nothing will import: *N* rows rejected. Fix them and choose the file again." and names each row with its problems, for example "no facility named 'Plant 2'". Nothing is added while any row is rejected. Every rejection message is listed in [Prepare the spreadsheet](prepare-the-csv-file.md#columns).
+The preview reads "Import Failed" and names each rejected row with its problems, for example "no facility named 'Plant 2'". Nothing is added while any row is rejected. Every rejection message is listed in [Prepare the spreadsheet](prepare-the-csv-file.md#columns).
 
 ## What happens next
 

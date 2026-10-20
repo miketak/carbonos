@@ -372,9 +372,7 @@ export function ImportActivitiesPage() {
           <div className="max-h-48 overflow-y-auto">
             <Banner
               tone="danger"
-              title={`Nothing will import: ${preview.rejected.length} row${
-                preview.rejected.length === 1 ? '' : 's'
-              } rejected. Fix them and choose the file again.`}
+              title="Import Failed"
             >
               <ul className="mt-1 flex flex-col gap-1 text-[13px]">
                 {preview.rejected.map((rejection) => (

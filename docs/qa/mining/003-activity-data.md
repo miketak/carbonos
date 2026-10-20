@@ -167,7 +167,7 @@ removed record.
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | In the spreadsheet, fill twelve rows: one per month of **2024** for S2, stream Mill grid supply, "Mill grid electricity", 4000 MWh plus the month number (4001 for January, 4012 for December, so E1 has quantities to sort), period the whole month, source "ECG invoice", evidence `ECG-2024-MM`, quality MEASURED, tier 1. (2024, not 2025: the 2025 inventories of the later procedures exclude these rows as outside the reporting period, so the July 2025 record of procedure 5 stays the mill's only 2025 electricity and the scope 2 arithmetic of procedures 6 and 7 holds.) | | | |
-| 2 | In row 5, replace the quantity with `4,0O0` (a letter O). Save as CSV and choose the file in step 2 of the dialog. | The file is checked at once: "Nothing will import: 1 row rejected. Fix them and choose the file again.", naming row 6 (the header is row 1) and "quantity '4,0O0' is not a number". **Add records** stays disabled. The register is unchanged. | | |
+| 2 | In row 5, replace the quantity with `4,0O0` (a letter O). Save as CSV and choose the file in step 2 of the dialog. | The file is checked at once: "Import Failed", naming row 6 (the header is row 1) and "quantity '4,0O0' is not a number". **Add records** stays disabled. The register is unchanged. | | |
 
 ### F3. A clean file previews, then imports; the same file again is all duplicates
 
