@@ -10,7 +10,7 @@ import { StatusDot } from '../../components/StatusDot'
 import { Table, Td, Th } from '../../components/Table'
 import { useToast } from '../../components/toast'
 import { fieldErrors, refusalMessage } from '../../lib/api'
-import { browserImportDateFormat } from '../../lib/dates'
+import { IMPORT_DATE_FORMATS, browserImportDateFormat } from '../../lib/dates'
 import type { ImportDateFormat } from '../../lib/dates'
 import { activityImportTemplateUrl } from './api'
 import type {
@@ -361,21 +361,18 @@ export function ImportActivitiesPage() {
               }}
               className="min-h-11 w-full max-w-[300px] rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-ink focus:border-primary focus:ring-2 focus:ring-focus/40"
             >
-              <option value="DAY_FIRST">Day / Month / Year (31/03/2025)</option>
-              <option value="MONTH_FIRST">Month / Day / Year (03/31/2025)</option>
-              <option value="ISO">Year / Month / Day (2025-03-31)</option>
+              {IMPORT_DATE_FORMATS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
         )}
 
         {preview && preview.rejected.length > 0 && (
           <div className="max-h-48 overflow-y-auto">
-            <Banner
-              tone="danger"
-              title={`Nothing will import: ${preview.rejected.length} row${
-                preview.rejected.length === 1 ? '' : 's'
-              } rejected. Fix them and choose the file again.`}
-            >
+            <Banner tone="danger" title="Import Failed">
               <ul className="mt-1 flex flex-col gap-1 text-[13px]">
                 {preview.rejected.map((rejection) => (
                   <li key={rejection.row}>

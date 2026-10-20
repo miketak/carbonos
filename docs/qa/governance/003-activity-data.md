@@ -34,7 +34,7 @@
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
 | 1 | Click **Import**, choose `adansi-2025.csv` and click **Add records**. | The register holds 10 records. The register lists ACT-0001 to ACT-0010. Sorted by period with the newest first: ACT-0006 at the top, ACT-0001 at the foot. |  |  |
-| 2 | Click **Import** and choose `adansi-2025.csv`. | Every row is rejected Row 2: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled. |  |  |
+| 2 | Click **Import** and choose `adansi-2025.csv`. | "Import Failed": every row is rejected. Row 2: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled. |  |  |
 
 ## B. The rejected file
 
@@ -42,7 +42,7 @@
 
 | Step | Action | Expected result | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Click **Import** and choose `adansi-2025-rejected.csv`. | "Nothing will import: 4 rows rejected. Fix them and choose the file again." Row 2: "quantity '1,2O0' is not a number". Row 3: "period_start is in the future". Row 4: "no facility named 'Kumasi Depot'". Row 5: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled: the header is row 1, so the rows are named 2 to 5; row 3 also reads "period_end is in the future" because an empty end takes the start; row 5 repeats ACT-0001. The register holds 10 records: a file imports whole or not at all. |  |  |
+| 1 | Click **Import** and choose `adansi-2025-rejected.csv`. | "Import Failed": 4 rows rejected. Row 2: "quantity '1,2O0' is not a number". Row 3: "period_start is in the future". Row 4: "no facility named 'Kumasi Depot'". Row 5: "duplicate: the same facility, activity, quantity, unit and period already exist on file or earlier in this file". **Add records** stays disabled: the header is row 1, so the rows are named 2 to 5; row 3 also reads "period_end is in the future" because an empty end takes the start; row 5 repeats ACT-0001. The register holds 10 records: a file imports whole or not at all. |  |  |
 
 ## C. Readiness
 

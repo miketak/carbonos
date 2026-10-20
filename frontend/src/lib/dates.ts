@@ -39,13 +39,24 @@ export function formatDateRange(start: string, end: string): string {
 }
 
 /** How an import file writes its dates (spec 04.11, ECO-138); the API's names. */
-export type ImportDateFormat = 'DAY_FIRST' | 'MONTH_FIRST' | 'ISO'
+export type ImportDateFormat =
+  'DAY_FIRST' | 'DAY_FIRST_DASH' | 'MONTH_FIRST' | 'MONTH_FIRST_DASH' | 'ISO' | 'ISO_SLASH'
+
+/** The Date format options in dropdown order: each order with slashes, then with dashes. */
+export const IMPORT_DATE_FORMATS: ReadonlyArray<{ value: ImportDateFormat; label: string }> = [
+  { value: 'DAY_FIRST', label: 'Day / Month / Year (31/03/2025)' },
+  { value: 'DAY_FIRST_DASH', label: 'Day - Month - Year (31-03-2025)' },
+  { value: 'MONTH_FIRST', label: 'Month / Day / Year (03/31/2025)' },
+  { value: 'MONTH_FIRST_DASH', label: 'Month - Day - Year (03-31-2025)' },
+  { value: 'ISO_SLASH', label: 'Year / Month / Day (2025/03/31)' },
+  { value: 'ISO', label: 'Year - Month - Day (2025-03-31)' },
+]
 
 /**
  * The import's default date format from the browser's language: month-first for
  * United States English, day-first everywhere else (Ghana, the UK, the rest of the
- * world). The preparer can change it on the import page; ISO is read under every
- * setting.
+ * world), slashes in both cases. The preparer can change it on the import page;
+ * 2025-03-31 is read under every setting.
  */
 export function browserImportDateFormat(
   language: string = typeof navigator === 'undefined' ? '' : navigator.language,
