@@ -81,7 +81,7 @@ export const importRejected = defineOutcome({
     { check: 'buttonDisabled', button: S.act.button.addRecords },
   ],
   narrate: (a) => {
-    const parts = [a.rows === 'all' ? '"Import Failed": every row is rejected' : `"Import Failed", ${a.rows} rows rejected`]
+    const parts = [a.rows === 'all' ? '"Import Failed": every row is rejected.' : `"Import Failed": ${a.rows} rows rejected.`]
     for (const [row, m] of Object.entries(a.messages ?? {})) parts.push(`Row ${row}: "${m}".`)
     parts.push(`**${S.act.button.addRecords}** stays disabled.`)
     return parts.join(' ')
