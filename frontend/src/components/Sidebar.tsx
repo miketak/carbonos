@@ -80,28 +80,37 @@ export function Sidebar({
     </Fragment>
   )
 
+  // ECO-143: on a wide screen the rail is pinned to the viewport, as tall as
+  // it and no taller, so a long table in the content column cannot push the
+  // foot out of reach; the head and the foot stay put and the navigation
+  // between them is the one region that scrolls, when its entries do not fit
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-5 bg-sidebar-bg px-3 pt-5 pb-4 text-sidebar-ink md:min-h-screen md:w-[260px]">
+    <aside className="flex w-full shrink-0 flex-col gap-5 bg-sidebar-bg px-3 pt-5 pb-4 text-sidebar-ink md:sticky md:top-0 md:h-screen md:w-[260px]">
       {/* "/app" resolves by role (spec 01.6), so the wordmark means "my home" */}
-      <Link to="/app" aria-label="CarbonOS home" className="px-3">
+      <Link to="/app" aria-label="CarbonOS home" className="shrink-0 px-3">
         <Wordmark surface="dark" byline={false} />
       </Link>
 
-      <div>
+      <div className="shrink-0">
         <div className="mb-2 px-3 text-[11px] font-semibold tracking-[0.08em] text-sidebar-muted uppercase">
           {workspaceLabel}
         </div>
         {workspace}
       </div>
 
-      <nav aria-label={navLabel} className="flex flex-1 flex-col gap-0.5">
+      {/* the scroll region reaches the rail's edges (-mx-3 px-3) so the focus
+          rings of the entries are not clipped and the scrollbar sits at the edge */}
+      <nav
+        aria-label={navLabel}
+        className="-mx-3 flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto px-3 [scrollbar-color:var(--sidebar-hairline)_transparent] [scrollbar-width:thin]"
+      >
         {sections.map(entry)}
         {tail.length > 0 && (
           <div className="mt-auto flex flex-col gap-0.5 pt-3">{tail.map(entry)}</div>
         )}
       </nav>
 
-      <div className="flex flex-col gap-0.5 border-t border-sidebar-hairline pt-3">
+      <div className="flex shrink-0 flex-col gap-0.5 border-t border-sidebar-hairline pt-3">
         {foot}
         <AccountMenu variant="rail" roleLine={roleLine ?? undefined} />
       </div>

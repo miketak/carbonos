@@ -77,6 +77,29 @@ test('the rail numbers the workflow as decoration, leaves the reference sections
   expect(screen.getByTitle('2 factor pack updates waiting')).toHaveTextContent('2')
 })
 
+test('the rail pins its head and foot and scrolls the navigation between them (ECO-143)', () => {
+  renderRail('/app/ghg/org-1')
+  const rail = screen.getByRole('complementary')
+  // pinned to the viewport and as tall as it, never stretched by the content column
+  expect(rail.className).toMatch(/\bmd:sticky\b/)
+  expect(rail.className).toMatch(/\bmd:h-screen\b/)
+  expect(rail.className).not.toMatch(/min-h-screen/)
+  // the navigation is the one region that scrolls, and it can shrink to make room
+  const nav = screen.getByRole('navigation', { name: 'Organization sections' })
+  expect(nav.className).toMatch(/\boverflow-y-auto\b/)
+  expect(nav.className).toMatch(/\bmin-h-0\b/)
+  // the head (wordmark, workspace) sits before the nav and the foot after it, both fixed in size
+  const children = Array.from(rail.children)
+  const navIndex = children.indexOf(nav)
+  expect(navIndex).toBeGreaterThan(0)
+  const foot = children[navIndex + 1]
+  expect(foot).toContainElement(screen.getByRole('link', { name: 'Help' }))
+  expect(foot).toContainElement(screen.getByText('Your role: Owner'))
+  for (const band of children.filter((child) => child !== nav)) {
+    expect(band.className).toMatch(/\bshrink-0\b/)
+  }
+})
+
 test('the rail carries the workspace, the links out, and the role line', () => {
   renderRail('/app/ghg/org-1')
   expect(screen.getByText('Workspace')).toBeInTheDocument()
