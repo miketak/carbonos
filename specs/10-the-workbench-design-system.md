@@ -42,7 +42,13 @@ and re-keys both to the ECORIV teal.
   holds, top to bottom: the wordmark; a labelled workspace switcher (the
   organization's name over its account number, opening a menu of the
   member's organizations and **All organizations**); the sections; and a
-  foot with **Settings**, **Help** and the account.
+  foot with **Settings**, **Help** and the account. On a wide screen the
+  rail is pinned to the viewport and exactly as tall as it: the wordmark
+  and the switcher stay at the top, the foot stays at the bottom, and the
+  sections between them scroll on their own when they do not fit. A long
+  table in the content column never pushes **Help** or the account out of
+  reach. Below the tablet breakpoint the rail stacks above the content and
+  scrolls with the page.
 - **The sections.** Entries that are steps of the inventory workflow carry a
   number: **01 Legal entities**, **02 Facilities**, **03 Activity data**,
   **04 Inventories**. **Overview** sits above them with a dash. Below a
